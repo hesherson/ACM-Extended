@@ -43,6 +43,11 @@ private _afibChance = missionNamespace getVariable ["ACME_rhythm_afibHypoChance"
     private _u = _x;
     private _hpmkOn = _u getVariable ["ACME_hpmk_on", false];
 
+    // Infection owns only the requested fever offset. This established writer owns
+    // the actual core-temperature state, so hypothermia, HPMK and fever cannot race.
+    private _feverOffset = (_u getVariable ["ACM_infection_Fever_Offset", 0]) max 0;
+    private _feverActive = _u getVariable ["ACME_infectionFeverActive", false];
+
     private _bv = _u getVariable ["ACM_circulation_Blood_Volume", _bloodNormal];
     private _tx = _u getVariable ["ACM_circulation_TransfusedBlood_Volume", 0];
 
@@ -125,6 +130,24 @@ private _afibChance = missionNamespace getVariable ["ACME_rhythm_afibHypoChance"
         };
     };
 
+    // Apply fever last so an infection's prescribed thermal response is not
+    // overwritten by the same tick's trauma-cooling calculation. Fever recovery
+    // is likewise owned here and returns only a fever-raised temperature to 37 C.
+    private _tempAfterTrauma = _u getVariable ["ACME_hypo_temp", 37];
+    if (_feverOffset > 0) then {
+        private _feverTarget = (37 + _feverOffset) min 40.5;
+        if (_tempAfterTrauma < _feverTarget) then {
+            [_u, (_tempAfterTrauma + (0.25 * (ACME_hypo_coolTickSec / 5))) min _feverTarget, true, true, false] call ACME_fnc_hypothermiaTemperatureCommit;
+        };
+        _u setVariable ["ACME_infectionFeverActive", true, false];
+    } else {
+        if (_feverActive && {_tempAfterTrauma > 37}) then {
+            private _cooled = (_tempAfterTrauma - (0.15 * (ACME_hypo_coolTickSec / 5))) max 37;
+            [_u, _cooled, true, true, false] call ACME_fnc_hypothermiaTemperatureCommit;
+            if (_cooled <= 37) then { _u setVariable ["ACME_infectionFeverActive", false, false]; };
+        };
+    };
+
     // severe hypothermia, at or below afibtempc, gives a chance of AFib with RVR.
     if ((_u getVariable ["ACME_hypo_temp", 37]) <= _afibTempC
         && {(_u getVariable ["ACME_rhythm_active", 0]) == 0}
@@ -139,5 +162,7 @@ private _afibChance = missionNamespace getVariable ["ACME_rhythm_afibHypoChance"
         ((_x getVariable ["ACM_circulation_Blood_Volume", _bloodNormal]) < (_bloodNormal - 0.2))  // bled.
         || {(_x getVariable ["ACM_circulation_TransfusedBlood_Volume", 0]) > 0}  // transfused.
         || {(_x getVariable ["ACME_hypo_temp", 37]) < 36.9}  // already cooling.
+        || {(_x getVariable ["ACM_infection_Fever_Offset", 0]) > 0}  // infection fever.
+        || {_x getVariable ["ACME_infectionFeverActive", false]}  // fever recovery.
     }
 });
