@@ -10,7 +10,7 @@ Version 1.2.2 includes the release check corrections and the complete RC1 patch 
 
 Each file below is one complete post under 4,000 characters. Copy the contents of each file as a separate message, in order. The @everyone mention appears in the first post.
 
-- [Post 1 of 3](1.2.2-discord-1.txt) (3,815 characters)
+- [Post 1 of 3](1.2.2-discord-1.txt) (3,942 characters)
 - [Post 2 of 3](1.2.2-discord-2.txt) (1,962 characters)
 - [Post 3 of 3](1.2.2-discord-3.txt) (3,883 characters)
 
@@ -36,6 +36,7 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [Provider hold synchronization](2026-09-19-provider-hold-observers.md)
 - [Release build drag handle exclusion](2026-09-19-release-drag-build-gate.md)
 
 - [Medication push duration input](2026-09-19-push-duration-input.md)

@@ -8,6 +8,7 @@
 
 ## GENERAL FIXES
 
+- Fixed remote observers seeing Feel Pulse and Auscultate Chest continue animating after the provider reached the frozen pose.
 - Removed Attach Drag Handle and Release Drag Handle from release packages, including releases built from dev. Experimental actions are available only in dev or launch builds from the dev branch.
 
 - Fixed a missing UI scaling definition when changing syringe size in the Narc Box.

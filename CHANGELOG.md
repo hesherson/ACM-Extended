@@ -71,6 +71,7 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### Auscultation controls, sound and posterior view
 
+- Fixed remote observers seeing Feel Pulse and Auscultate Chest continue animating after the provider reached the frozen pose.
 - The bell opens at the cursor and is 19% larger. Hold left mouse to listen and move it with drag resistance; it shrinks by 12% while pressed. Releasing lifts it and stops contact sound.
 - Left lung, right lung and cardiac sounds mix continuously as the bell moves, without restarting their phase at each listening point.
 - Reduced all 21 stethoscope sound variants by another 6 dB, including cardiac, normal, shallow, dull and crackling sounds.
@@ -98,8 +99,11 @@ The medication duration followup passed 36 focused checks on this branch, includ
 
 The release build followup produced 14 PBOs from each branch with HEMTT 1.21.0 using `--no-bin --no-sign --no-archive`. Inspection of the packaged binary config, GUI renderer and startup script confirmed that every drag handle action and startup call is absent. The separate development build retains its actions. Main passed 9 checks with its development-only check skipped; dev passed all 21 checks. Full Windows asset binarization and in-game verification remain outstanding.
 
+The provider hold followup passed 18 checks on each branch, including SQF execution of observer recovery and packet ordering, strict HEMTT diagnostics and full addon config compilation. Two-client Arma verification remains outstanding.
+
 ### Detailed patch records
 
+- [Provider hold synchronization](docs/patch-notes/2026-09-19-provider-hold-observers.md)
 - [Release build drag handle exclusion](docs/patch-notes/2026-09-19-release-drag-build-gate.md)
 
 - [Transfusion and thoracostomy](docs/patch-notes/2026-09-19-transfusion-thoracostomy.md)

@@ -6,11 +6,6 @@ if (isNull _medic) exitWith {};
 private _record = _medic getVariable ["ACME_treatmentPoseRemote", [-1, "", -1]];
 if ((_record select 0) > _epoch) exitWith {};
 if ((_record select 0) == _epoch && {(_record select 1) == "release"}) exitWith {};
-if (_operation == "hold" && {local _medic} && {owner _medic == _owner}) exitWith {
-    // B57: the owner controller already froze and sought this exact frame before broadcasting. Re-applying the
-    // same switchMove through the global event can look like a one-frame animation restart.
-    _medic setAnimSpeedCoef 0;
-};
 // The JIP event and object variables have separate delivery paths. Wait for the
 // atomic episode record when it is not known yet; unknown is not a cancelled hold.
 private _episode = _medic getVariable ["ACME_treatmentPoseEpisode", [-1, false]];
@@ -22,6 +17,17 @@ if (_operation == "hold" && {(_episode select 0) < _epoch}) exitWith {
         _this call ACME_fnc_treatmentPoseSync;
     }, _this, 3] call CBA_fnc_waitUntilAndExecute;
 };
+// Validate the episode before the owner shortcut too. A delayed hold must never freeze a provider
+// after cancellation or during a newer treatment, even when this machine still owns the unit.
+if (_operation == "hold" && {!(_episode isEqualTo [_epoch, true])}) exitWith {};
+if (_operation == "hold" && {local _medic} && {owner _medic == _owner}) exitWith {
+    // The owner already sought and froze this frame. Do not restart its animation or camera.
+    _medic setAnimSpeedCoef 0;
+};
+// Repeated owner packets refresh the same hold, not a new animation. Its local watchdog already
+// repairs speed/state drift. Replacing the handler here caused unnecessary unfreeze/seek cycles.
+if (_operation == "hold" && {(_record select 0) == _epoch}
+    && {(_record select 1) == "hold"} && {(_record select 2) >= 0}) exitWith {};
 if ((_record select 2) >= 0) then {
     [(_record select 2)] call CBA_fnc_removePerFrameHandler;
     _medic setAnimSpeedCoef 1;
@@ -35,7 +41,7 @@ if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]}
 // exact requested frame stopped. An unknown owner duration arrives as phase -1 and only freezes in place.
 if (_phase >= 0) then {_medic switchMove [_main, _phase, 1, false];};
 _medic setAnimSpeedCoef 0;
-private _record = [_epoch, "hold", -1];
+private _record = [_epoch, "hold", -1, CBA_missionTime];
 _medic setVariable ["ACME_treatmentPoseRemote", _record];
 private _pfh = [{
     params ["_args", "_pfh"];
@@ -50,12 +56,9 @@ private _pfh = [{
         || {!isNull objectParent _medic}
         || {owner _medic != _owner}
         || {!_episodeActive};
-    private _lostFrame = toLower animationState _medic != toLower _main;
-    if (_hardRelease || {_lostFrame}) exitWith {
+    if (_hardRelease) exitWith {
         _medic setAnimSpeedCoef 1;
-        // A transient animation replacement is not the end of the stethoscope episode. Mark it lost so the
-        // owner can broadcast the held frame again. Only a real episode/context end becomes an irreversible release.
-        _medic setVariable ["ACME_treatmentPoseRemote", [_epoch, ["lost", "release"] select _hardRelease, -1]];
+        _medic setVariable ["ACME_treatmentPoseRemote", [_epoch, "release", -1]];
         [_pfh] call CBA_fnc_removePerFrameHandler;
         // Ownership transfer aborts the old provider's theatre on the new owner too.
         if (local _medic && {owner _medic != _owner}) then {
@@ -69,10 +72,21 @@ private _pfh = [{
             };
         };
     };
-    // A late starter-treatment speed reset must not resume the held pose on peers.
-    if (getAnimSpeedCoef _medic != 0) then {
-        if (_phase >= 0) then {_medic switchMove [_main, _phase, 1, false];};
-        _medic setAnimSpeedCoef 0;
+    // Remote animation updates can arrive after the hold packet. Keep observing the active episode:
+    // the owner may stay perfectly frozen and therefore never send another correction for this peer.
+    private _stateDrift = toLower animationState _medic != toLower _main;
+    private _phaseDrift = false;
+    if (!_stateDrift && {_phase >= 0}) then {
+        private _visiblePhase = _medic getUnitMovesInfo 0;
+        if (_visiblePhase isEqualType 0) then {_phaseDrift = abs (_visiblePhase - _phase) > 0.01;};
     };
+    if ((_stateDrift || {_phaseDrift}) && {_phase >= 0}
+        && {CBA_missionTime - (_record param [3, -1]) >= 0.25}) then {
+        _medic switchMove [_main, _phase, 1, false];
+        _record set [3, CBA_missionTime];
+    };
+    // Speed-only drift needs no switchMove. Reassert locally without restarting the move or broadcasting
+    // another hold. Even a deferred engine transition cannot make this observer abandon the episode.
+    if (getAnimSpeedCoef _medic != 0) then {_medic setAnimSpeedCoef 0;};
 }, 0, [_medic, _epoch, _main, _phase, _owner]] call CBA_fnc_addPerFrameHandler;
 _record set [2, _pfh];
