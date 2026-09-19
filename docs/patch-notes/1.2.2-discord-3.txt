@@ -33,7 +33,7 @@
 
 ## VALIDATION
 
-- The input fix passed 36 focused checks, including strict HEMTT checks, config compilation and duration execution checks. Rebuild from main for release; keyboard focus still needs verification in Arma.
+- Verified actual release PBOs from both branches: no drag handle actions, menu rows or startup call. Main passed 9 checks; dev passed 21. Full Windows binarization and in-game verification remain outstanding.
 
 -# **[Full patch notes](https://github.com/hesherson/ACM-Extended/blob/dev/CHANGELOG.md)**
 

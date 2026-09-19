@@ -296,10 +296,12 @@ call ACME_fnc_registerProviderStanceReleaseRuntime;
 // Phase 31: head-elevation drag/carry teardown and automatic ground-setdown restoration.
 call ACME_fnc_registerHeadElevationTransportRuntime;
 
+// ACME_DEV_ONLY_BEGIN
 // Phase 31: hands-free PhysX casualty drag handle. This intentionally initializes after the head-elevation
 // transport events because it reuses those same down/up handoffs for elevated casualties.
-call ACME_fnc_initDragHandleRuntime;
+if (getNumber (configFile >> 'CfgPatches' >> 'ACM_Extended' >> 'acme_developmentBuild') == 1) then {call ACME_fnc_initDragHandleRuntime;};
 
+// ACME_DEV_ONLY_END
 // Phase 32: custom-rhythm tick, obtunded-apply event, per-life respawn scrub and post-ROSC rhythm release.
 call ACME_fnc_registerRhythmLifecycleRuntime;
 

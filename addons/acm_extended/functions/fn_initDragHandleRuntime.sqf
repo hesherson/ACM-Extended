@@ -1,3 +1,5 @@
+// Experimental drag handles are available only in HEMTT dev/launch builds.
+if (getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acme_developmentBuild") != 1) exitWith {};
 // ACME hands-free ragdoll drag handle.
 // Physics stays patient-owner authoritative; provider locomotion is local.
 if (missionNamespace getVariable ["ACME_dragHandle_runtimeInstalled",false]) exitWith {};

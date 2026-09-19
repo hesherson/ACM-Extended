@@ -4,13 +4,15 @@ The [cumulative 1.2.2 notes](../../CHANGELOG.md) combine all subsequent patches 
 
 Version 1.2.2 includes the release check corrections and the complete RC1 patch series and updates the public, debug and build versions. Use the cumulative notes for current behavior. The dated records below retain the implementation history and validation details; later corrections supersede earlier descriptions, particularly seizure speed/startup and drag handle presentation.
 
+`hemtt release` and `hemtt build` omit drag handle options on both branches. Experimental actions require `hemtt dev` or `hemtt launch` on the dev branch. Replace the installed mod with the newly generated release before restarting Arma.
+
 ## Discord copy
 
 Each file below is one complete post under 4,000 characters. Copy the contents of each file as a separate message, in order. The @everyone mention appears in the first post.
 
-- [Post 1 of 3](1.2.2-discord-1.txt) (3,749 characters)
-- [Post 2 of 3](1.2.2-discord-2.txt) (2,988 characters)
-- [Post 3 of 3](1.2.2-discord-3.txt) (3,876 characters)
+- [Post 1 of 3](1.2.2-discord-1.txt) (3,815 characters)
+- [Post 2 of 3](1.2.2-discord-2.txt) (1,962 characters)
+- [Post 3 of 3](1.2.2-discord-3.txt) (3,883 characters)
 
 The latest medication duration followup passed 36 focused checks on this branch. See the [input patch record](2026-09-19-push-duration-input.md) for scope and the remaining in-game checks.
 
@@ -33,6 +35,8 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 ```
 
 ## Individual patch records
+
+- [Release build drag handle exclusion](2026-09-19-release-drag-build-gate.md)
 
 - [Medication push duration input](2026-09-19-push-duration-input.md)
 

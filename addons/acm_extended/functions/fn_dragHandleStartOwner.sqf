@@ -1,3 +1,5 @@
+// Experimental drag handles are available only in HEMTT dev/launch builds.
+if (getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acme_developmentBuild") != 1) exitWith {};
 // Patient-owner authoritative drag-handle start.
 // The patient remains unattached. Its owner drives a real PhysX ragdoll with addForce impulses.
 params [["_patient",objNull,[objNull]],["_medic",objNull,[objNull]]];

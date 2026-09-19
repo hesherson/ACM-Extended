@@ -8,9 +8,10 @@
 
 ## GENERAL FIXES
 
-- Fixed two drag handle condition errors that could interrupt attachment and release checks.
+- Removed Attach Drag Handle and Release Drag Handle from release packages, including releases built from dev. Experimental actions are available only in dev or launch builds from the dev branch.
+
 - Fixed a missing UI scaling definition when changing syringe size in the Narc Box.
-- Fixed the duplicate ACE_Actions declaration and invalid inheritance that stopped HEMTT with L-C03/L-C04. Drag handle actions now share the existing patient action tree, preserving Get Up and release actions.
+- Fixed the duplicate ACE_Actions declaration and invalid inheritance that stopped HEMTT with L-C03/L-C04. Patient actions use the existing action tree, preserving Get Up.
 - Updated the public/runtime version and debug overlay to 1.2.2. HEMTT and native addon metadata now use 1.2.2.0.
 - Separated shared gameplay settings from client preferences. Gameplay rules remain globally controlled; presentation, accessibility, interface and debug preferences are controlled by each client and cannot be overridden by the server or mission.
 

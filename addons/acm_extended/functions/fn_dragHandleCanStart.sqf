@@ -1,3 +1,5 @@
+// Experimental drag handles are available only in HEMTT dev/launch builds.
+if (getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acme_developmentBuild") != 1) exitWith {false};
 // Can this medic attach the hands-free ACME drag handle to this casualty?
 params [["_medic",objNull,[objNull]],["_patient",objNull,[objNull]]];
 if (isNull _medic || {isNull _patient} || {_medic isEqualTo _patient}) exitWith {false};

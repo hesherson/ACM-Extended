@@ -1,3 +1,5 @@
+// Experimental drag handles are available only in HEMTT dev/launch builds.
+if (getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acme_developmentBuild") != 1) exitWith {};
 // Local dragger movement/load controller after the patient owner accepts the transaction.
 params [["_medic",objNull,[objNull]],["_patient",objNull,[objNull]],["_weight",350,[0]],["_session","",[""]]];
 if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {};

@@ -97,9 +97,11 @@ _menuActions = _menuActions select {
         || {[_target, ACE_player] call ACME_fnc_headElevateCanStart}
 };
 
+// ACME_DEV_ONLY_BEGIN
 // Drag Handle is injected at paint time instead of collection time. This guarantees the row exists in the live
 // Drag / Carry page even if ACE/ACM rebuilt its action array before ACME runtime functions were available.
-if (_selectedCategory == 'drag' && {!isNull _target} && {ACE_player != _target}) then {
+if (getNumber (configFile >> 'CfgPatches' >> 'ACM_Extended' >> 'acme_developmentBuild') == 1
+    && {_selectedCategory == 'drag'} && {!isNull _target} && {ACE_player != _target}) then {
     private _dragHandleActive = _target getVariable ['ACME_dragHandle_active', false];
     private _dragHandleMedic = _target getVariable ['ACME_dragHandle_dragger', objNull];
 
@@ -140,6 +142,7 @@ if (_selectedCategory == 'drag' && {!isNull _target} && {ACE_player != _target})
     };
 };
 
+// ACME_DEV_ONLY_END
 // Dog tags always remain the last standalone examination, even if another addon
 // supplied group metadata or the native collector fallback has no class metadata.
 private _dogTagLabel = getText (configFile >> 'ace_medical_treatment_actions' >> 'CheckDogTags' >> 'displayName');

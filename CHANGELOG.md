@@ -8,9 +8,10 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### Build, debug and settings
 
-- Fixed two drag handle condition errors that could interrupt attachment and release checks.
+- Removed Attach Drag Handle and Release Drag Handle from release packages, including releases built from dev. Experimental actions are available only in dev or launch builds from the dev branch.
+
 - Fixed a missing UI scaling definition when changing syringe size in the Narc Box.
-- Fixed the duplicate ACE_Actions declaration and invalid inheritance that stopped HEMTT with L-C03/L-C04. Drag handle actions now share the existing patient action tree, preserving Get Up and release actions.
+- Fixed the duplicate ACE_Actions declaration and invalid inheritance that stopped HEMTT with L-C03/L-C04. Patient actions use the existing action tree, preserving Get Up.
 - Updated the public/runtime version and debug overlay to 1.2.2. HEMTT and native addon metadata now use 1.2.2.0.
 - Separated shared gameplay settings from client preferences. Gameplay rules remain globally controlled; presentation, accessibility, interface and debug preferences are controlled by each client and cannot be overridden by the server or mission.
 
@@ -53,15 +54,9 @@ These notes describe the combined current behavior. Later corrections take prece
 - Seizures yield to CPR, active rolls, vehicles and drag/carry. Repeating the debug action can recover an interrupted visual driver without repeating the collapse.
 - Full heal, episode replacement and stop clear the seizure gesture and invalidate delayed callbacks, preventing an old episode from restarting.
 
-### Drag handle and patient positioning
+### Patient positioning
 
-- Added hip interactions and a medical Drag/Carry row for attaching and releasing the drag handle, with eligibility checked again by the patient owner.
-- Replaced the drawn thin line with a native rope using ACE fast roping helper endpoints. ACE fast roping is now an explicit addon dependency.
-- Changed dragging to use native ragdoll forces and removed the reset to a prone animation that snapped unconscious patients into a new position.
-- Stopped unconscious pose and training manikin handlers from pinning an actively dragged casualty. Settled bodies are awakened for physics impulses, with consistent force scaling across frame rates.
-- Added bounded startup grace for brief tether stretches. Sustained overextension, teleports and conflicting procedures still release the handle.
-- Retained weight, fatigue and movement limits. The drag speed cap cannot accelerate a provider who is already slowed or overwrite a zero movement coefficient.
-- Hardened cleanup for release, wake/full heal, deleted patients, vehicle entry and ownership changes. Delayed start/stop acknowledgements are tied to the current session; restoration of head elevation waits for transport or conflicting procedures to finish.
+- Removed Attach Drag Handle and Release Drag Handle from release packages, including releases built from dev. Experimental actions are available only in dev or launch builds from the dev branch.
 - Semi-Fowler's is unavailable for standing or crouching patients, including when an old lying flag remains. Eligibility is checked in the menu and again before positioning.
 
 ### Finger thoracostomy and chest seals
@@ -101,7 +96,11 @@ The version update changes release metadata and documentation; the cumulative ga
 
 The medication duration followup passed 36 focused checks on this branch, including strict HEMTT diagnostics, complete config compilation and SQF execution of the duration readers and input filtering. Mouse focus and actual keyboard entry still require verification in Arma. See the detailed input patch record below.
 
+The release build followup produced 14 PBOs from each branch with HEMTT 1.21.0 using `--no-bin --no-sign --no-archive`. Inspection of the packaged binary config, GUI renderer and startup script confirmed that every drag handle action and startup call is absent. The separate development build retains its actions. Main passed 9 checks with its development-only check skipped; dev passed all 21 checks. Full Windows asset binarization and in-game verification remain outstanding.
+
 ### Detailed patch records
+
+- [Release build drag handle exclusion](docs/patch-notes/2026-09-19-release-drag-build-gate.md)
 
 - [Transfusion and thoracostomy](docs/patch-notes/2026-09-19-transfusion-thoracostomy.md)
 - [Patient motion and ketamine](docs/patch-notes/2026-09-19-patient-motion.md)
