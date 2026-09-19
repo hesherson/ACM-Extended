@@ -11,8 +11,8 @@ Version 1.2.2 includes the release check corrections and the complete RC1 patch 
 Each file below is one complete post under 4,000 characters. Copy the contents of each file as a separate message, in order. The @everyone mention appears in the first post.
 
 - [Post 1 of 3](1.2.2-discord-1.txt) (3,942 characters)
-- [Post 2 of 3](1.2.2-discord-2.txt) (3,721 characters)
-- [Post 3 of 3](1.2.2-discord-3.txt) (3,883 characters)
+- [Post 2 of 3](1.2.2-discord-2.txt) (3,855 characters)
+- [Post 3 of 3](1.2.2-discord-3.txt) (3,962 characters)
 
 The latest medication duration followup passed 36 focused checks on this branch. See the [input patch record](2026-09-19-push-duration-input.md) for scope and the remaining in-game checks.
 
@@ -36,6 +36,7 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [Repeat seal burping and Carry Assist release](2026-09-19-burp-carry-release.md)
 - [Shared menus and death cleanup](2026-09-19-shared-menus-death-cleanup.md)
 - [Bag visibility and CPR stop followup](2026-09-19-bag-visibility-cpr-stop.md)
 - [Server bag visibility and BVM recovery](2026-09-19-server-bag-bvm.md)
@@ -51,4 +52,4 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 - [PEA morphology](2026-09-19-pea-morphology.md)
 - [Release check corrections](2026-09-19-release-warnings.md)
 
-Windows release creation succeeded. The release check corrections passed strict HEMTT checks and 16 focused tests. Rebuild after pulling these corrections and verify gameplay in Arma. See the validation section in the main notes and the detailed checks in each patch record.
+The current source passed 124 focused tests, including strict HEMTT checks and config compilation; one optional development package test was skipped. Both branches built 14 release PBOs without binarization, signing or archiving. Rebuild after pulling these corrections and verify gameplay in Arma. See the validation section in the main notes and the detailed checks in each patch record.

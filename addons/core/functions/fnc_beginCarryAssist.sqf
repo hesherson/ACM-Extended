@@ -40,6 +40,31 @@ if (_patient getVariable [QGVAR(CarryAssist_State), false]) exitWith {
     ];
     GVAR(CarryAssistCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
+    // The on-screen Cancel hint is LMB. Handle the real mouse event as well as
+    // CBA's synthetic DIK code, and consume Escape before the pause menu takes it.
+    private _oldDisplay = missionNamespace getVariable [QGVAR(CarryAssistCancel_Display), displayNull];
+    {
+        _x params ["_event", "_id"];
+        if (!isNull _oldDisplay && {_id >= 0}) then {_oldDisplay displayRemoveEventHandler [_event, _id];};
+    } forEach (missionNamespace getVariable [QGVAR(CarryAssistCancel_DisplayEHs), []]);
+    private _main = findDisplay 46;
+    GVAR(CarryAssistCancel_Display) = _main;
+    GVAR(CarryAssistCancel_DisplayEHs) = [];
+    if (!isNull _main) then {
+        GVAR(CarryAssistCancel_Epoch) = _epoch;
+        private _mouseCode = compile format [
+            "if ((_this select 1) != 0 || {(missionNamespace getVariable ['ACM_core_CarryAssistCancel_Epoch', -1]) != %1} || {(missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -1]) != %1}) exitWith {false}; missionNamespace setVariable ['ACM_core_ContinuousAction_Active', false]; true",
+            _epoch
+        ];
+        private _escapeCode = compile format [
+            "if ((_this select 1) != 1 || {(missionNamespace getVariable ['ACM_core_CarryAssistCancel_Epoch', -1]) != %1} || {(missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -1]) != %1}) exitWith {false}; missionNamespace setVariable ['ACM_core_ContinuousAction_Active', false]; true",
+            _epoch
+        ];
+        private _cancelMouse = _main displayAddEventHandler ["MouseButtonDown", _mouseCode];
+        private _cancelEscape = _main displayAddEventHandler ["KeyDown", _escapeCode];
+        GVAR(CarryAssistCancel_DisplayEHs) = [["MouseButtonDown", _cancelMouse], ["KeyDown", _cancelEscape]];
+    };
+
     [ACELLSTRING(common,Cancel), "", ""] call ACEFUNC(interaction,showMouseHint);
     [(format [LLSTRING(AssistCarry_Complete), ([_patient, false, true] call ACEFUNC(common,getName))]), 2, _medic] call ACEFUNC(common,displayTextStructured);
 
@@ -56,9 +81,17 @@ if (_patient getVariable [QGVAR(CarryAssist_State), false]) exitWith {
 }, { // On cancel
     params ["_medic", "_patient", "_bodyPart", "", "_notInVehicle"];
 
+    GVAR(CarryAssistCancel_Epoch) = -1;
     private _id = missionNamespace getVariable [QGVAR(CarryAssistCancel_MouseID), -1];
     if (!(_id isEqualTo -1) && {!(_id isEqualTo "")}) then {[_id, "keydown"] call CBA_fnc_removeKeyHandler;};
     GVAR(CarryAssistCancel_MouseID) = -1;
+    private _main = missionNamespace getVariable [QGVAR(CarryAssistCancel_Display), displayNull];
+    {
+        _x params ["_event", "_id"];
+        if (!isNull _main && {_id >= 0}) then {_main displayRemoveEventHandler [_event, _id];};
+    } forEach (missionNamespace getVariable [QGVAR(CarryAssistCancel_DisplayEHs), []]);
+    GVAR(CarryAssistCancel_DisplayEHs) = [];
+    GVAR(CarryAssistCancel_Display) = displayNull;
 
     ["", "", ""] call ACEFUNC(interaction,showMouseHint);
 

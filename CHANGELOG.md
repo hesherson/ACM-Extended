@@ -34,6 +34,7 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### Shared menus and provider cleanup
 
+- Carry Assist now handles left click and Escape directly as well as through CBA. Cancellation removes both input paths and releases the patient, and the shared holding animations include native crouch and prone exits. Stale callbacks cannot cancel a later action.
 - Chest seal and ventilator menu entry no longer waits for a provider stance or holster animation. Each provider has one pending menu request and one display update loop.
 - Fixed duplicate chest menu updates bypassing finger drag resistance. Reopening cannot inherit an old panel's drag state, and a late unload cannot close a newer panel.
 - Chest workspace restoration waits for the last viewer and cannot restore gear or positioning over a new session. Server cleanup releases viewers lost through death, respawn or disconnect.
@@ -81,8 +82,8 @@ These notes describe the combined current behavior. Later corrections take prece
 
 - Added removal and burping of a seal over a finger thoracostomy tract. After removing the seal, the existing tract can be swept again without consuming another kit, then used for a chest tube.
 - In Adjust Thoracostomy, put down the held tool. Right click the surgical seal to remove it; scroll five notches to lift and burp a corner, and reverse the wheel to lay it flat. Select the finger and click the open tract to repeat the sweep.
-- Traumatic and surgical chest seal burps share a cooldown of 10 seconds per patient, including between providers. Rejected repeats do not repeat the treatment, activity log entry or animation. The lifted corner can still be laid flat during cooldown.
-- Accepted burps request the corresponding chest seal treatment animation on the provider.
+- Traumatic and surgical chest seal burps share a cooldown of 6 seconds per patient, including between providers. Rejected repeats do not repeat the treatment, activity log entry or animation. The lifted corner can still be laid flat during cooldown.
+- Accepted burps request the corresponding chest seal treatment animation on the provider. After cooldown, scrolling a fully lifted corner starts another peel cycle without moving off the seal. Both seal types remain usable on a corpse without restarting physiology.
 - Chest seal Flip waits for the actual provider roll animation before physically rolling the patient. Entry transitions no longer trigger the flip; closing, cancelling or timing out the panel cancels a pending roll.
 - Aftercare acts on the selected side and preserves unrelated seals and a chest tube on the opposite side.
 - Current gameplay behavior: an open finger tract vents air, while sealing it can allow pressure to recur if an internal leak remains. No penalty is added for time spent open, and the tract does not close spontaneously. Continuous passive blood drainage belongs to chest tubes; inadequate preparation can flag the incision for infection.
@@ -123,8 +124,11 @@ The server bag and BVM followup passed 33 checks on each branch, with one option
 
 The bag visibility and CPR stop followup passed 72 focused checks on each branch, with one optional development package check skipped. Both produced 14 release PBOs. Revised client/server tests reproduce the earlier failures and verify the corrected paths. Actual multiplayer rendering and animation still need verification.
 
+The seal burping and Carry Assist followup passed 124 focused checks on each branch, with one optional development package check skipped. Both built 14 release PBOs without binarization, signing or archiving. The new tests reproduce the previous seal latch failure and execute the actual Carry Assist cancel callbacks. Arma multiplayer input and animation still need verification.
+
 ### Detailed patch records
 
+- [Repeat seal burping and Carry Assist release](docs/patch-notes/2026-09-19-burp-carry-release.md)
 - [Shared menus and death cleanup](docs/patch-notes/2026-09-19-shared-menus-death-cleanup.md)
 - [Bag visibility and CPR stop followup](docs/patch-notes/2026-09-19-bag-visibility-cpr-stop.md)
 - [Server bag visibility and BVM recovery](docs/patch-notes/2026-09-19-server-bag-bvm.md)

@@ -1,7 +1,7 @@
 /* Patient-owner aftercare for a completed surgical tract. No inventory writes. */
 params ["_patient", "_medic", "_side", "_operation", "_epoch"];
-if (isNull _patient || {!local _patient} || {!alive _patient}
-    || {isNull _medic} || {!alive _medic}
+if (isNull _patient || {!local _patient}
+    || {isNull _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
     || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}
     || {!(_side in ["left", "right"])}
     || {!(_operation in ["peel", "burp", "sweep"])}) exitWith {};
@@ -31,8 +31,10 @@ if (_operation == "peel") then {
 // The surgical tract provides direct pleural access, independent of traumatic-wound seals.
 // Burping relieves pressure once while retaining the dressing; peeling restores the open tract.
 // Preserve any chest tube on the opposite side and ACM's aggregate tube state.
-[_patient, "thora"] call ACME_fnc_ptxTreat;
-[_patient] call ACM_breathing_fnc_updateLungState;
+if (alive _patient) then {
+    [_patient, "thora"] call ACME_fnc_ptxTreat;
+    [_patient] call ACM_breathing_fnc_updateLungState;
+};
 private _message = switch (_operation) do {
     case "peel": {"%1 removed the chest seal over the %2 thoracostomy"};
     case "burp": {"%1 burped the chest seal over the %2 thoracostomy"};

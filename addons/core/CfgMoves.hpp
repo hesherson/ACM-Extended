@@ -17,17 +17,20 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             aiming = "empty";
             aimingBody = "empty";
             //ConnectAs = "";
-            ConnectTo[] = {};
+            ConnectTo[] = {"AmovPknlMstpSnonWnonDnon", 0.1};
             forceAim = 1;
             //InterpolateFrom[] = {};
             //InterpolateWith[] = {};
             InterpolateTo[] = {
+                "AmovPknlMstpSnonWnonDnon", 0.1,
                 "Unconscious",
                 0.02
             };
         };
         class ACM_ProneContinuous: ACM_GenericContinuous {
             file = "\a3\anims_f\data\anim\sdr\idl\pne\stp\non\non\AidlPpneMstpSnonWnonDnon_G02.rtm";
+            ConnectTo[] = {"AmovPpneMstpSnonWnonDnon", 0.1};
+            InterpolateTo[] = {"AmovPpneMstpSnonWnonDnon", 0.1, "Unconscious", 0.02};
         };
         class ainjppnemstpsnonwrfldnon;
         class ACM_LyingState: ainjppnemstpsnonwrfldnon {

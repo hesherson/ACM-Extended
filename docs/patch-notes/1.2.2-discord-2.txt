@@ -6,6 +6,7 @@
 
 ## SERVER FIXES
 
+- Carry Assist now cancels with left click or Escape and returns to a movable crouch. Old input callbacks cannot cancel a new action.
 - Fixed chest seal and ventilator menu entry waiting on provider animations. Each provider now has one menu request and update loop, and stale panels cannot close newer ones.
 - Fixed repeated chest menu updates removing finger drag resistance. Closing one viewer no longer restores the workspace over another provider.
 - Dead patients no longer trigger the ventilator recovery warning or disable its controls. Attached equipment remains available to view and recover.

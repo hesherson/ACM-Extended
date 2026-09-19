@@ -43,7 +43,7 @@ def test_both_burp_paths_commit_shared_cooldown_before_effects():
     gate = fn("chestSealBurpReady")
     assert "ACME_fnc_clinicalEpoch" in gate
     assert "local _patient" in gate
-    assert 'getVariable ["ACME_chestSealBurpCooldown",10]' in gate
+    assert 'serverTime + 6' in gate
     assert 'case "chestSealBurpGesture"' in fn("ownerDispatch")
 
 
