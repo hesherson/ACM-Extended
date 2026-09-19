@@ -34,7 +34,7 @@ def test_push_uses_frame_interpolation():
     assert 'ACME_SK_PushAnimPFH' in c
     assert 'private _e = _t * _t * (3 - (2 * _t));' in c
     assert 'ctrlCommit _pushSec' not in c
-    assert '_injectBusy && {_slot == 2}' in r
+    assert 'if !(_normalPushAnimActive && {_slot == 2})' in r
 
 def test_chrom_duplicate_reference_restored():
     t=read('functions/fn_visualFxTick.sqf')
@@ -62,11 +62,11 @@ def test_nav_buttons_are_narrow_and_action_spans_both():
     assert 'private _navW = _tw * 0.72;' in inj
     assert 'private _actionW = ((_vr select 0) + (_vr select 2)) - _actionX;' in body
 
-def test_push_duration_uses_ghost_suggestion_not_default_value():
+def test_push_duration_uses_separate_suggestion_and_blank_default():
     body=read('functions/fn_skBodyActionRender.sqf')
     start=read('functions/fn_hardcorePushStart.sqf')
-    assert 'ACME_SK_GhostActive' in body
-    assert 'Grey text is only the recommended value' in body
+    assert '_durHint ctrlSetText _suggested;' in body
+    assert '_durEdit ctrlSetText _suggested;' not in body
     assert '_validPushTime' in body
-    assert 'private _dur = -1;' in start
-    assert 'The grey number is only the recommended value' in start
+    assert 'private _dur = 3;' in start
+    assert 'if (_raw != "") then {' in start

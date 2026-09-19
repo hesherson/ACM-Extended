@@ -3170,6 +3170,14 @@ class ACME_SK_NameEdit: RscEdit {
     sizeEx = "safeZoneH / 44";
     autocomplete = "";
 };
+// Explicit native edit semantics for the medication push duration.
+class ACME_SK_PushDurationEdit: ACME_SK_NameEdit {
+    type = 2;
+    style = 0;
+    canModify = 1;
+    maxChars = 3;
+    text = "";
+};
 class ACME_SK_TagEdit: RscEdit {
     // B64: ST_NO_RECT preserves a clickable caret/text surface but suppresses the default black RscEdit frame.
     style = 0x200;

@@ -16,7 +16,8 @@
 
 ## MEDICATION PUSHES AND IV TRAY
 
-- Restored typing and keyboard focus in the push duration seconds box. The duration row follows the Push button layout.
+- Reworked the Seconds to Push field with an explicitly editable control and click focus. Carousel shortcuts and click areas now leave the field available for typing.
+- Moved the gray recommended time onto a separate label so it cannot replace entered digits. Correcting an invalid duration now updates the Push button while typing. The duration row still follows the Push button layout.
 - A blank seconds field defaults to a push lasting 3 seconds in both normal and Hardcore medication modes. Gray suggested times are guidance; entering a duration selects that duration, within 1–300 seconds.
 - Restored continuous syringe plunger movement during Hardcore pushes, following the actual remaining medication volume.
 - Corrected the IV tray catheter fan's visual anchoring.

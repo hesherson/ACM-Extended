@@ -83,12 +83,8 @@ if (_body) then {
     };
 };
 if (_body) then {
-    // Do not continuously repaint the duration RscEdit while the provider is typing. Repeated ctrlEnable/
-    // ctrlSetPosition calls can steal its focus/caret and make the seconds box appear non-editable.
-    private _focus = focusedCtrl _d;
-    if (isNull _focus || {(ctrlIDC _focus) != 84831}) then {
-        call ACME_fnc_skBodyActionRender;
-    };
+    // Keep Push validation live while typing. The renderer only changes edit geometry/enable state when needed.
+    call ACME_fnc_skBodyActionRender;
 };
 private _navPulse = ["info", 0.30 + 0.45 * (0.5 + 0.5 * sin (_now * 220))] call ACME_fnc_a11yColor;
 (_d displayCtrl 84153) ctrlSetBackgroundColor _navPulse;

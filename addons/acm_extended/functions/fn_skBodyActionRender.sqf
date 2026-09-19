@@ -14,59 +14,49 @@ if (isNull _back || {isNull _btn}) exitWith {};
 private _hcMed = missionNamespace getVariable ["ACME_hcEff_medications",false];
 private _durLabel = _d displayCtrl 84830;
 private _durEdit = _d displayCtrl 84831;
+private _durHint = _d displayCtrl 84832;
 if (isNull _durLabel) then {
-        _durLabel = _d ctrlCreate ["RscText",84830];
-        _durLabel ctrlSetText "Seconds to Push over:";
-        _durLabel ctrlSetTextColor [0.94,0.91,0.82,1];
-        _durLabel ctrlSetBackgroundColor [0.043,0.082,0.188,0.90];
-        _durLabel ctrlEnable false;
-    };
-    if (isNull _durEdit) then {
-        _durEdit = _d ctrlCreate ["RscEdit",84831];
-        _durEdit ctrlSetText "";
-        _durEdit ctrlSetTextColor [1,1,1,1];
-        _durEdit ctrlSetBackgroundColor [0.02,0.03,0.06,0.94];
-        _durEdit ctrlSetTooltip "Optional: type whole seconds to push over (1-300). Leave it blank for 3 seconds. Grey text is the recommended value.";
-        _durEdit setVariable ["ACME_SK_GhostActive",false];
-        _durEdit setVariable ["ACME_SK_GhostText",""];
-        _durEdit ctrlAddEventHandler ["MouseButtonDown", {
-            params ["_ctrl"];
-            if (_ctrl getVariable ["ACME_SK_GhostActive",false]) then {
-                _ctrl ctrlSetText "";
-                _ctrl ctrlSetTextColor [1,1,1,1];
-                _ctrl setVariable ["ACME_SK_GhostActive",false];
-            };
-        }];
-        // Clear the grey recommendation when the edit actually receives focus, not inside KeyDown. Changing
-        // ctrlText during KeyDown races Arma's own RscEdit key processing and can swallow every attempted digit.
-        _durEdit ctrlAddEventHandler ["SetFocus", {
-            params ["_ctrl"];
-            if (_ctrl getVariable ["ACME_SK_GhostActive",false]) then {
-                _ctrl ctrlSetText "";
-                _ctrl ctrlSetTextColor [1,1,1,1];
-                _ctrl setVariable ["ACME_SK_GhostActive",false];
-            };
-        }];
-        _durEdit ctrlAddEventHandler ["KeyUp", {
-            params ["_ctrl"];
-            if !(_ctrl getVariable ["ACME_SK_GhostActive",false]) then {
-                private _raw = ctrlText _ctrl;
-                private _clean = toString ((toArray _raw) select {_x >= 48 && {_x <= 57}});
-                if (_clean != _raw) then {_ctrl ctrlSetText _clean;};
-            };
-        }];
-        _durEdit ctrlAddEventHandler ["KillFocus", {
-            params ["_ctrl"];
-            if ((ctrlText _ctrl) == "") then {
-                private _g = _ctrl getVariable ["ACME_SK_GhostText",""];
-                if (_g != "") then {
-                    _ctrl ctrlSetText _g;
-                    _ctrl ctrlSetTextColor [0.56,0.58,0.62,0.82];
-                    _ctrl setVariable ["ACME_SK_GhostActive",true];
-                };
-            };
-        }];
-    };
+    _durLabel = _d ctrlCreate ["RscText",84830];
+    _durLabel ctrlSetText "Seconds to Push over:";
+    _durLabel ctrlSetTextColor [0.94,0.91,0.82,1];
+    _durLabel ctrlSetBackgroundColor [0.043,0.082,0.188,0.90];
+    _durLabel ctrlEnable false;
+};
+if (isNull _durEdit) then {
+    _durEdit = _d ctrlCreate ["ACME_SK_PushDurationEdit",84831];
+    _durEdit ctrlShow false; // Lay out the new control before it can receive focus.
+    _durEdit ctrlSetText "";
+    _durEdit ctrlSetTextColor [1,1,1,1];
+    _durEdit ctrlSetBackgroundColor [0.02,0.03,0.06,0.94];
+    _durEdit ctrlSetTooltip "Optional: type whole seconds to push over (1-300). Leave it blank for 3 seconds. Grey text is the recommended value.";
+    // Recommendations live on a separate noninteractive control, never in the editable value.
+    _durEdit setVariable ["ACME_SK_GhostActive",false];
+    _durEdit ctrlAddEventHandler ["MouseButtonDown", {
+        params ["_ctrl","_button"];
+        if (_button == 0) then {ctrlSetFocus _ctrl;};
+        false
+    }];
+    _durEdit ctrlAddEventHandler ["SetFocus", {
+        params ["_ctrl"];
+        uiNamespace setVariable ["ACME_SK_CarouselHeldDir",0];
+        uiNamespace setVariable ["ACME_SK_CarouselRepeatAt",0];
+        ((ctrlParent _ctrl) displayCtrl 84832) ctrlShow false;
+    }];
+    _durEdit ctrlAddEventHandler ["KeyUp", {
+        params ["_ctrl"];
+        private _raw = ctrlText _ctrl;
+        private _clean = toString ((toArray _raw) select {_x >= 48 && {_x <= 57}});
+        if (_clean != _raw) then {_ctrl ctrlSetText _clean;};
+        false
+    }];
+};
+if (isNull _durHint) then {
+    _durHint = _d ctrlCreate ["RscText",84832];
+    _durHint ctrlSetTextColor [0.56,0.58,0.62,0.82];
+    _durHint ctrlSetBackgroundColor [0,0,0,0];
+    _durHint ctrlEnable false;
+    _durHint ctrlShow false;
+};
 private _durFocusCtrl = focusedCtrl _d;
 private _durFocused = !isNull _durFocusCtrl && {_durFocusCtrl isEqualTo _durEdit};
 
@@ -79,7 +69,7 @@ private _usable = _body && {!_editMode} && {_idx >= 0} && {_idx < count _store} 
 if (!_usable) exitWith {
     _back ctrlShow false;
     _btn ctrlShow false;
-    _durLabel ctrlShow false; _durEdit ctrlShow false;
+    _durLabel ctrlShow false; _durEdit ctrlShow false; _durHint ctrlShow false;
 };
 
 private _viewL = _d displayCtrl 84150;
@@ -105,13 +95,16 @@ private _labelW = (_pushRect select 2) - _editW - _durGap;
 _durLabel ctrlSetPosition [_pushRect select 0, _durY, _labelW, _durH];
 _durLabel ctrlSetFontHeight (_durH * 0.63);
 _durLabel ctrlCommit 0;
-// RscEdit loses keyboard/caret ownership when layout/enable state is repeatedly rewritten while it has focus.
-// The UI tick renders this function continuously, so leave the edit control physically untouched during typing.
-if (!_durFocused) then {
-    _durEdit ctrlSetPosition [(_pushRect select 0) + _labelW + _durGap, _durY, _editW, _durH];
+// Only move the edit when its rectangle changes. Reading/validating text never rewrites its caret or focus.
+private _editRect = [(_pushRect select 0) + _labelW + _durGap, _durY, _editW, _durH];
+if (!_durFocused && {(ctrlPosition _durEdit) isNotEqualTo _editRect}) then {
+    _durEdit ctrlSetPosition _editRect;
     _durEdit ctrlSetFontHeight (_durH * 0.63);
     _durEdit ctrlCommit 0;
 };
+_durHint ctrlSetPosition (ctrlPosition _durEdit);
+_durHint ctrlSetFontHeight (_durH * 0.63);
+_durHint ctrlCommit 0;
 
 private _entry = _store select _idx;
 private _id = _entry param [11,"",[""]];
@@ -121,6 +114,7 @@ private _pending = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
 private _hcJob = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
 private _hcOwns = _hcJob isEqualType createHashMap && {count _hcJob > 0} && {(_hcJob getOrDefault ["stableId",""]) == _id};
 if (_hcOwns) exitWith {
+    _durHint ctrlShow false;
     private _flowing = _hcJob getOrDefault ["flowing",false];
     _btn ctrlSetText (if (_flowing) then {"Stop Push"} else {"Stopping..."});
     _btn ctrlSetTooltip (if (_flowing) then {"Stop the active medication push and preserve the exact remaining syringe volume"} else {"Settling the last delivered medication volume"});
@@ -128,11 +122,10 @@ if (_hcOwns) exitWith {
     _back ctrlSetBackgroundColor (["danger",0.90] call ACME_fnc_a11yColor);
     if (_hcMed) then {
         _durLabel ctrlShow true;
-        _durEdit ctrlShow true;
-        _durEdit ctrlEnable false;
-        _durEdit setVariable ["ACME_SK_GhostActive",false];
-        _durEdit ctrlSetTextColor [1,1,1,1];
-        _durEdit ctrlSetText str (round (_hcJob getOrDefault ["duration",3]));
+        if !(ctrlShown _durEdit) then {_durEdit ctrlShow true;};
+        if (ctrlEnabled _durEdit) then {_durEdit ctrlEnable false;};
+        private _runningDuration = str (round (_hcJob getOrDefault ["duration",3]));
+        if ((ctrlText _durEdit) != _runningDuration) then {_durEdit ctrlSetText _runningDuration;};
     };
     _back ctrlShow true;
     _btn ctrlShow true;
@@ -144,10 +137,8 @@ if (_pending isEqualType [] && {count _pending >= 3}) then {
         private _defaultFor = _d getVariable ["ACME_HCMedPushDefaultFor",""];
         if (!_durFocused && {_defaultFor != _id}) then {
             private _suggested = str (round ([_entry] call ACME_fnc_medicationSuggestedPushSec));
-            _durEdit setVariable ["ACME_SK_GhostText",_suggested];
-            _durEdit setVariable ["ACME_SK_GhostActive",true];
-            _durEdit ctrlSetText _suggested;
-            _durEdit ctrlSetTextColor [0.56,0.58,0.62,0.82];
+            _durHint ctrlSetText _suggested;
+            _durEdit ctrlSetText "";
             _d setVariable ["ACME_HCMedPushDefaultFor",_id];
         };
     };
@@ -189,12 +180,12 @@ if (_pending isEqualType [] && {count _pending >= 3}) then {
     _back ctrlSetBackgroundColor (["success",0.82] call ACME_fnc_a11yColor);
     private _showDuration = _route != "im";
     _durLabel ctrlShow _showDuration;
-    if (!_durFocused) then {
-        _durEdit ctrlShow _showDuration;
-        _durEdit ctrlEnable (_showDuration && {!_busy});
-    };
+    if ((ctrlShown _durEdit) isNotEqualTo _showDuration) then {_durEdit ctrlShow _showDuration;};
+    private _durationEnabled = _showDuration && {!_busy};
+    if ((ctrlEnabled _durEdit) isNotEqualTo _durationEnabled) then {_durEdit ctrlEnable _durationEnabled;};
+    _durHint ctrlShow (_showDuration && {!_busy} && {!_durFocused} && {(ctrlText _durEdit) == ""});
 } else {
-    _durLabel ctrlShow false; _durEdit ctrlShow false;
+    _durLabel ctrlShow false; _durEdit ctrlShow false; _durHint ctrlShow false;
     private _armed = uiNamespace getVariable ["ACME_SK_DiscardArmedId",""];
     if (_armed != _id) then {uiNamespace setVariable ["ACME_SK_DiscardArmedId",""]; _armed = "";};
     _btn ctrlSetText (if (_armed == _id) then {"Confirm discard?"} else {"Discard Syringe"});

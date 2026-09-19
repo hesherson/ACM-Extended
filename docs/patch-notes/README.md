@@ -8,9 +8,11 @@ Version 1.2.2 includes the release check corrections and the complete RC1 patch 
 
 Each file below is one complete post under 4,000 characters. Copy the contents of each file as a separate message, in order. The @everyone mention appears in the first post.
 
-- [Post 1 of 3](1.2.2-discord-1.txt) (3,481 characters)
+- [Post 1 of 3](1.2.2-discord-1.txt) (3,749 characters)
 - [Post 2 of 3](1.2.2-discord-2.txt) (2,988 characters)
-- [Post 3 of 3](1.2.2-discord-3.txt) (3,859 characters)
+- [Post 3 of 3](1.2.2-discord-3.txt) (3,876 characters)
+
+The latest medication duration followup passed 36 focused checks on this branch. See the [input patch record](2026-09-19-push-duration-input.md) for scope and the remaining in-game checks.
 
 ## Discord format
 
@@ -31,6 +33,8 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 ```
 
 ## Individual patch records
+
+- [Medication push duration input](2026-09-19-push-duration-input.md)
 
 - [Transfusion and thoracostomy](2026-09-19-transfusion-thoracostomy.md)
 - [Patient motion and ketamine](2026-09-19-patient-motion.md)

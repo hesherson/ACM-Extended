@@ -33,7 +33,7 @@
 
 ## VALIDATION
 
-- Windows release creation succeeded. These additional corrections passed HEMTT strict checks and all 16 focused tests. Rebuild after pulling; gameplay still needs verification in Arma.
+- The input fix passed 36 focused checks, including strict HEMTT checks, config compilation and duration execution checks. Rebuild from main for release; keyboard focus still needs verification in Arma.
 
 -# **[Full patch notes](https://github.com/hesherson/ACM-Extended/blob/dev/CHANGELOG.md)**
 

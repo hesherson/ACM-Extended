@@ -373,13 +373,17 @@ _pushStatus ctrlCommit 0;
 
 
 // A/D controls the same stable syringe selection in either the full carousel or Body Map mini-carousel. The keys
-// remain ordinary text input when one of the three tag fields owns focus.
+// remain ordinary text input whenever an edit control, including push duration, owns focus.
 _display displayAddEventHandler ["KeyDown", {
     params ["_d","_key"];
     private _view = uiNamespace getVariable ["ACME_SK_View", "syringe"];
     if (_view != "body") exitWith {false};
     private _focus = focusedCtrl _d;
-    if (!isNull _focus && {(ctrlIDC _focus) in [84460,84461,84462,84601,84602,84603]}) exitWith {false};
+    if (!isNull _focus && {ctrlType _focus == 2}) exitWith {
+        uiNamespace setVariable ["ACME_SK_CarouselHeldDir",0];
+        uiNamespace setVariable ["ACME_SK_CarouselRepeatAt",0];
+        false
+    };
     if (uiNamespace getVariable ["ACME_SK_TagEditMode",false]) exitWith {_key in [30,32]};
     private _dir = switch (_key) do {case 30: {-1}; case 32: {1}; default {0};};
     if (_dir == 0) exitWith {false};
@@ -393,6 +397,12 @@ _display displayAddEventHandler ["KeyDown", {
 }];
 _display displayAddEventHandler ["KeyUp", {
     params ["_d","_key"];
+    private _focus = focusedCtrl _d;
+    if (!isNull _focus && {ctrlType _focus == 2}) exitWith {
+        uiNamespace setVariable ["ACME_SK_CarouselHeldDir",0];
+        uiNamespace setVariable ["ACME_SK_CarouselRepeatAt",0];
+        false
+    };
     if (uiNamespace getVariable ["ACME_SK_TagEditMode",false]) exitWith {_key in [30,32]};
     private _dir = switch (_key) do {case 30: {-1}; case 32: {1}; default {0};};
     if (_dir == 0) exitWith {false};
