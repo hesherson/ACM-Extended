@@ -22,24 +22,19 @@
 params [["_target", objNull], ["_presetMode", false]];
 if (!hasInterface) exitWith {};
 if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
-if (!isNull _target && {_target isNotEqualTo ACE_player} && {(!alive _target) || {_target getVariable ["ACME_vent_recovering", false]}}) exitWith {
+if (!isNull (uiNamespace getVariable ["ACME_vent_dlg", displayNull])
+    || {uiNamespace getVariable ["ACME_vent_openPending", false]}) exitWith {};
+private _self = isNull _target || {_target isEqualTo ACE_player};
+if (_self) then {_target = ACE_player getVariable ["ACME_vent_devicePatient", objNull];};
+if (!isNull _target && {_target getVariable ["ACME_vent_recovering", false]}) exitWith {
     ["This ventilator is being recovered from the patient.", 3] call ace_common_fnc_displayTextStructured;
 };
-
-// a machine already affixed to this casualty is reachable without carrying one, because connecting it is what
-// removed it from the kit of the medic in the first place. carrying a spare still opens it preset-style.
-private _affixed = (!isNull _target) && {_target getVariable ["ACME_vent_onPatient", false]};
+private _affixed = !isNull _target && {_target getVariable ["ACME_vent_onPatient", false]};
 if (!_affixed && {([ACE_player, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
     ["No ventilator in your kit.", 2] call ace_common_fnc_displayTextStructured;
 };
-
-private _self = (isNull _target) || {_target isEqualTo ACE_player};
+if (!_affixed) then {_target = objNull;};
 private _presetMode = false;
-
-if (_self) then {
-    // the self-interaction shows whatever casualty this device is already on.
-    _target = ACE_player getVariable ["ACME_vent_devicePatient", objNull];
-};
 
 // preset mode. there is no patient yet, so you are configuring the machine: the weight, mode, interface and
 // params, dialled in on the ground before you ever reach the casualty. that is a real workflow.
@@ -49,7 +44,7 @@ if (_self) then {
 // the drive and alarm ticks require both. the old bug was that presetting could walk you through the connect
 // screen and set connected to true on the medic, which made you a ventilated patient with an open circuit and no
 // tube, and started screaming circuit disconnect at you. so configure freely and connect never.
-if (isNull _target || {!alive _target}) then {
+if (isNull _target) then {
     _target = ACE_player;
     _presetMode = true;
 };
@@ -126,32 +121,19 @@ private _targetConfigured = _target getVariable ["ACME_vent_configured", false];
 uiNamespace setVariable ["ACME_vent_doBoot", _wasOn && {!_hasBooted} && {!_targetConfigured}];
 if (_wasOn && {!_hasBooted}) then { _pwrHolder setVariable ["ACME_vent_hasBooted", true, true]; };
 
-// the self-interaction opens immediately, because that path has always worked. the patient path is launched from
-// a medical-menu treatment, after which ACE closes the menu through closedialog, which would close this dialog
-// too. so that open is deferred past ACE's cleanup, exactly like the intubation mini-game. the _target check
-// runs here, in this scope where _target is defined, and only the createdialog is deferred. the deferred block
-// must not reference _target, or it evaluates as nil in the scheduled scope and the open silently fails.
-// THE OPEN VERIFIES ITSELF, BECAUSE IN A VEHICLE IT WAS NOT TAKING.
-// the patient path is deferred past ACE's own cleanup, because ACE closes the medical menu with closeDialog after
-// callbackSuccess has run and that would take our dialog with it. the delay was a fixed 0.1 s, which is a race
-// against ACE's timing rather than a wait for it.
-// inside a vehicle that race is lost. the panel opened and shut again in the same breath, which is what a
-// closeDialog arriving a moment too late looks like from the outside.
-// so rather than guess at a longer number, the open checks whether it took and repeats it once if it did not.
-// one retry, never a loop: if the second attempt is closed as well, something other than the cleanup is doing it
-// and hammering createDialog would only make that harder to see.
-private _fnOpen = {
-    if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+// One pending open per client. Every delayed callback carries its original provider and generation.
+private _serial = 1 + (uiNamespace getVariable ["ACME_vent_openSerial", 0]);
+uiNamespace setVariable ["ACME_vent_openSerial", _serial];
+uiNamespace setVariable ["ACME_vent_openPending", true];
+[{
+    params ["_serial", "_medic", "_target", "_preset"];
+    if ((uiNamespace getVariable ["ACME_vent_openSerial", -1]) != _serial) exitWith {};
+    uiNamespace setVariable ["ACME_vent_openPending", false];
+    if (isNull _medic || {!alive _medic} || {_medic isNotEqualTo ACE_player}
+        || {_medic getVariable ["ACE_isUnconscious", false]} || {isNull _target}) exitWith {};
+    if (!_preset && {!(_target getVariable ["ACME_vent_onPatient", false])
+        || {_target getVariable ["ACME_vent_recovering", false]}}) exitWith {};
+    if !([_medic, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+    if (!isNull (uiNamespace getVariable ["ACME_vent_dlg", displayNull])) exitWith {};
     createDialog "ACME_Ventilator_Dialog";
-    [{
-        if (!isNull (findDisplay 87700)) exitWith {};
-        if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
-        createDialog "ACME_Ventilator_Dialog";
-    }, [], (missionNamespace getVariable ["ACME_vent_openRetrySec", 0.35])] call CBA_fnc_waitAndExecute;
-};
-
-if (_target isEqualTo ACE_player) then {
-    call _fnOpen;
-} else {
-    [_fnOpen, [], 0.1] call CBA_fnc_waitAndExecute;
-};
+}, [_serial, ACE_player, _target, _presetMode], 0.1] call CBA_fnc_waitAndExecute;

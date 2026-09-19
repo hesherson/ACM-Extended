@@ -40,3 +40,6 @@ PREP(setContinuousActionActive);
 PREP(setAceMedicalState);
 PREP(setDraggingCapability);
 PREP(setCursorInteractionMode);
+
+PREP(continuousHoldRelease);
+PREP(registerContinuousRuntime);

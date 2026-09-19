@@ -1,11 +1,18 @@
 /* Keep the visual pass after every procedural early return. */
 private _acmeNVArgs = if (isNil "_this") then {[]} else {_this};
 _acmeNVArgs call {
-params ["", "_h"];
+params ["_args", "_h"];
 disableSerialization;
 
 private _display = uiNamespace getVariable ["ACME_CS_DLG", displayNull];
-if (isNull _display) exitWith {[_h] call CBA_fnc_removePerFrameHandler;};
+if (isNull _display || {_display isNotEqualTo (_args param [0, displayNull])}
+    || {_h != (uiNamespace getVariable ["ACME_CS_PFH", -1])}) exitWith {[_h] call CBA_fnc_removePerFrameHandler;};
+private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
+if (isNull _medic || {!alive _medic} || {_medic isNotEqualTo ACE_player}
+    || {_medic getVariable ["ACE_isUnconscious", false]}
+    || {isNull (uiNamespace getVariable ["ACME_CS_Patient", objNull])}) exitWith {
+    _display closeDisplay 2;
+};
 
 // MOVING OFF A SEAL RELEASES ITS PEEL LOCK, AND THAT IS THE ONLY RELEASE.
 // fn_chestSealScroll locks the corner to the direction of the first notch on a seal and holds that lock even
@@ -227,7 +234,8 @@ private _lagDenom = uiNamespace getVariable ["ACME_CS_DragLagDenom", 0.36];
 if !(([_lagDenom] call _isFiniteNumber) && {_lagDenom > 0.01}) then {_lagDenom = 0.36;};
 private _lagCurve = ((_lagNorm max 0) / ((_lagNorm max 0) + _lagDenom)) min 1;
 private _rate = (_baseRate + (_gainRate * _lagCurve)) min _maxRate;
-private _f = if (_dt <= 0) then {1} else {((_rate * _dt) max 0) min 1};
+// A second update at the same timestamp must not snap the resisted finger to the cursor.
+private _f = ((_rate * _dt) max 0) min 1;
 if !([_f] call _isFiniteNumber) then {_f = 1;};
 _px = _px + (_lagX * _f);
 _py = _py + (_lagY * _f);

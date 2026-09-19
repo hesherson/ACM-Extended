@@ -1,7 +1,5 @@
 params ["_medic", "_patient", ["_bodyPart", ""], ["_startTool", "seal"]];
 if (isNull _patient || {isNull _medic}) exitWith {};
-private _ecgJostleKey = "ui:chest:" + str clientOwner;
-[_patient, _ecgJostleKey, true] call ACME_fnc_ecgJostleRequest;
 
 if !(missionNamespace getVariable ["ACME_sys_chestSeal", true]) exitWith {
     if (_startTool == "spear") then {
@@ -17,6 +15,8 @@ if !(missionNamespace getVariable ["ACME_sys_chestSeal", true]) exitWith {
     };
 };
 
+if (!isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])
+    || {(uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != ""}) exitWith {};
 uiNamespace setVariable ["ACME_CS_Medic", _medic];
 uiNamespace setVariable ["ACME_CS_Patient", _patient];
 uiNamespace setVariable ["ACME_CS_BodyPart", _bodyPart];
@@ -31,15 +31,27 @@ private _sessionToken = format ["%1:%2:%3", clientOwner, CBA_missionTime, _seria
 uiNamespace setVariable ["ACME_CS_SessionToken", _sessionToken];
 [_patient, "chestSealPatientBegin", [_patient, _sessionToken]] call ACME_fnc_ownerDispatch;
 
+// Register pending viewers too, so disconnect/death before onLoad cannot strand a workspace token.
+["ACME_CS_session", [_patient, _medic, "join", _sessionToken]] call CBA_fnc_serverEvent;
+private _open = {
+    params ["_p", "_tok", "_m"];
+    if ((uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != _tok) exitWith {};
+    if (isNull _p || {isNull _m} || {!alive _m} || {!local _m}
+        || {_m isNotEqualTo ACE_player} || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {
+        [] call ACME_fnc_chestSealClose;
+    };
+    ["ACME_ChestSeal_Dialog"] call ACME_fnc_minigameOpen;
+    [{
+        params ["_p", "_tok"];
+        if ((uiNamespace getVariable ["ACME_CS_SessionToken", ""]) == _tok
+            && {isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])}) then {
+            [] call ACME_fnc_chestSealClose;
+        };
+    }, [_p, _tok], 0.2] call CBA_fnc_waitAndExecute;
+};
 [{
-    params ["_p", "_tok"];
-    if (isNull _p) exitWith {true};
-    private _tokens = _p getVariable ["ACME_CS_ProcedureTokens", []];
-    private _readyAt = _p getVariable ["ACME_CS_ProcedureReadyAt", CBA_missionTime + 99];
-    (_tok in _tokens) && {CBA_missionTime >= _readyAt}
-}, {
-    ["ACME_ChestSeal_Dialog"] call ACME_fnc_minigameOpen;
-}, [_patient, _sessionToken], 4, {
-    // Owner routing should normally acknowledge in one frame. A timeout must not strand the treatment callback.
-    ["ACME_ChestSeal_Dialog"] call ACME_fnc_minigameOpen;
-}] call CBA_fnc_waitUntilAndExecute;
+    params ["_p", "_tok", "_m"];
+    if (isNull _p || {!alive _m} || {(uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != _tok}) exitWith {true};
+    (_tok in (_p getVariable ["ACME_CS_ProcedureTokens", []]))
+        && {CBA_missionTime >= (_p getVariable ["ACME_CS_ProcedureReadyAt", CBA_missionTime + 99])}
+}, _open, [_patient, _sessionToken, _medic], 4, _open] call CBA_fnc_waitUntilAndExecute;

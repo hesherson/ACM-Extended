@@ -34,7 +34,7 @@ if (!isNull _medicVehicle || {!isNull _patientVehicle}) exitWith {
 private _pulseEpoch = (uiNamespace getVariable ["ACME_PulseEpoch", 0]) + 1;
 uiNamespace setVariable ["ACME_PulseEpoch", _pulseEpoch];
 private _oldEsc = uiNamespace getVariable ["ACME_PulseEscKey", -1];
-if (_oldEsc >= 0) then {[_oldEsc,"keydown"] call CBA_fnc_removeKeyHandler;};
+if (!(_oldEsc isEqualTo -1) && {!(_oldEsc isEqualTo "")}) then {[_oldEsc,"keydown"] call CBA_fnc_removeKeyHandler;};
 private _oldMain = uiNamespace getVariable ["ACME_PulseEscDisplay", displayNull];
 private _oldEscEH = uiNamespace getVariable ["ACME_PulseEscEH", -1];
 if (!isNull _oldMain && {_oldEscEH >= 0}) then {_oldMain displayRemoveEventHandler ["KeyDown", _oldEscEH];};

@@ -1,6 +1,10 @@
 // Local service access ends with this panel. The patient device continues its normal lifecycle.
 disableSerialization;
+params [["_closing", displayNull]];
 private _serviceParent = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+if (_this isNotEqualTo [] && {_closing isNotEqualTo _serviceParent}) exitWith {};
+uiNamespace setVariable ["ACME_vent_openSerial", 1 + (uiNamespace getVariable ["ACME_vent_openSerial", 0])];
+uiNamespace setVariable ["ACME_vent_openPending", false];
 if (!isNull _serviceParent) then {
     private _prompt = _serviceParent getVariable ["ACME_vent_techPrompt", displayNull];
     if (!isNull _prompt) then { _prompt closeDisplay 2; };
@@ -13,7 +17,7 @@ if (!isNull _serviceParent) then {
 { ctrlDelete _x } forEach (uiNamespace getVariable ["ACME_vent_graphBars", []]);
 uiNamespace setVariable ["ACME_vent_graphBars", []];
 private _pfh = uiNamespace getVariable ["ACME_vent_pfh", -1];
-if (_pfh >= 0) then { _pfh call CBA_fnc_removePerFrameHandler; };
+if (_pfh >= 0) then { [_pfh] call CBA_fnc_removePerFrameHandler; };
 uiNamespace setVariable ["ACME_vent_pfh", -1];
 
 // the value fields are created into the dialog, so they die with it. clear the handles, or the next open would find
@@ -42,3 +46,6 @@ uiNamespace setVariable ["ACME_vent_shutT0", -1];
 private _stC = uiNamespace getVariable ["ACME_vent_shutTitle", controlNull];
 if (!isNull _stC) then { ctrlDelete _stC; };
 uiNamespace setVariable ["ACME_vent_shutTitle", controlNull];
+
+uiNamespace setVariable ["ACME_vent_dlg", displayNull];
+uiNamespace setVariable ["ACME_vent_target", objNull];

@@ -1,3 +1,7 @@
+disableSerialization;
+params [["_closing", displayNull]];
+// A late unload from an older panel cannot release the current workspace or its input loop.
+if (_this isNotEqualTo [] && {_closing isNotEqualTo (uiNamespace getVariable ["ACME_CS_DLG", displayNull])}) exitWith {};
 // Cancel a pending provider-entry wait before any patient-session restoration.
 uiNamespace setVariable ["ACME_CS_FlipPendingToken",""];
 private _flipMedic = uiNamespace getVariable ["ACME_CS_Medic",objNull];
@@ -36,6 +40,8 @@ uiNamespace setVariable ["ACME_CS_PFH", -1];
 // closed, gvar is -1 and ACE re-adds its own pfh the next time it opens, so we only restore an open menu.
 call ACM_GUI_fnc_resumeMedicalMenuPFH;
 uiNamespace setVariable ["ACME_CS_Dragging", false];
+uiNamespace setVariable ["ACME_CS_DragPt", []];
+uiNamespace setVariable ["ACME_CS_DragLast", -1];
 uiNamespace setVariable ["ACME_CS_FlipLockedUntil", 0];
 uiNamespace setVariable ["ACME_CS_VirtualFlip", false];
 uiNamespace setVariable ["ACME_CS_FingerGlow", []];
@@ -59,10 +65,11 @@ uiNamespace setVariable ["ACME_CS_DLG", displayNull];
 uiNamespace setVariable ["ACME_CS_GhostPool", []];
 uiNamespace setVariable ["ACME_CS_presenceLastT", -1];
 uiNamespace setVariable ["ACME_CS_presenceLastState", ["", ""]];
-private _viewer = uiNamespace getVariable ["ACME_CS_presenceViewer", player];
+private _viewer = uiNamespace getVariable ["ACME_CS_presenceViewer", objNull];
+if (isNull _viewer) then {_viewer = _flipMedic;};
 if (!isNull _patient) then {
     private _targets = (uiNamespace getVariable ["ACME_CS_presenceTargets", []]) - [_viewer];
-    ["ACME_CS_session", [_patient, _viewer, "leave"]] call CBA_fnc_serverEvent;
+    ["ACME_CS_session", [_patient, _viewer, "leave", _sessionToken]] call CBA_fnc_serverEvent;
     if !(_targets isEqualTo []) then {
         ["ACME_CS_presenceLeave", [netId _patient, netId _viewer], _targets] call CBA_fnc_targetEvent;
     };
@@ -89,7 +96,10 @@ uiNamespace setVariable ["ACME_minigame_open", false];
 
 // drop back into the medical menu rather than exiting to the game. it is a no-op during the flashlight close and
 // reopen.
-[uiNamespace getVariable ["ACME_CS_Patient", objNull], "airway"] call ACME_fnc_reopenMedicalMenu;
+if (!isNull _flipMedic && {alive _flipMedic} && {_flipMedic isEqualTo ACE_player}
+    && {!(_flipMedic getVariable ["ACE_isUnconscious", false])}) then {
+    [uiNamespace getVariable ["ACME_CS_Patient", objNull], "airway"] call ACME_fnc_reopenMedicalMenu;
+};
 
 // a burp in progress dies with the panel. the state is uiNamespace, so leaving it set would make the next panel
 // open with a seal already drawn half lifted and a timestamp from the last casualty.

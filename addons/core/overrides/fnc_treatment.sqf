@@ -60,6 +60,22 @@ if (_classname == "ACME_StopDirectPressure") exitWith {
 
 if !([_medic, _classname] call ACME_fnc_procedureActionAllowed) exitWith {false};
 
+// Opening a shared workspace must not wait for a free kneeling/holster animation.
+// Each actual intervention inside the panel retains its own checks and animation.
+if (_classname in ["ACME_ApplyChestSeal", "ACME_PerformNARSPEAR", "ACME_VentOpenPatient"]) exitWith {
+    if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
+    if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
+    if !([_medic, _patient, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith) exitWith {false};
+    if ((_medic distance _patient) > ace_medical_gui_maxDistance) exitWith {false};
+    ace_medical_gui_pendingReopen = false;
+    if (_classname == "ACME_VentOpenPatient") then {
+        [_patient] call ACME_fnc_ventPanelOpen;
+    } else {
+        [_medic, _patient, _bodyPart, ["seal", "spear"] select (_classname == "ACME_PerformNARSPEAR")] call ACME_fnc_chestSealOpen;
+    };
+    true
+};
+
 if (_classname != "ACME_ConnectETVent") exitWith {
     // Preserve ACM/ACE cursor-menu deferral before ACME starts its one-shot stance/weapon preflight.
     if (uiNamespace getVariable ["ace_interact_menu_cursorMenuOpened", false]) exitWith {

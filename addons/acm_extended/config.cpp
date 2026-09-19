@@ -3281,7 +3281,7 @@ class ACME_ChestSeal_Dialog {
     idd = 86400;
     movingEnable = 0;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_chestSealInit";
-    onUnload = "[] call ACME_fnc_chestSealClose";
+    onUnload = "_this call ACME_fnc_chestSealClose";
     class ControlsBackground {
         class CS_Dim: RscText {
             idc = -1;
@@ -5045,7 +5045,7 @@ class ACME_Ventilator_Dialog {
     movingEnable = 0;
     enableSimulation = 1;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_vent_dlg', _this select 0]; [] call ACME_fnc_ventPanelInit;";
-    onUnload = "[] call ACME_fnc_ventPanelClose;";
+    onUnload = "_this call ACME_fnc_ventPanelClose;";
     class controlsBackground {
         class Dim: ACME_VentText {
             idc = 87709;

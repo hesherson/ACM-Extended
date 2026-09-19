@@ -57,8 +57,16 @@ if (isServer) then {
             private _key = _x;
             (ACME_CS_sessions get _key) params ["_patient", "_members"];
             private _keep = _members select {
-                !isNull (_x select 0) && {(_x select 0) in _players} && {CBA_missionTime - (_x select 1) <= 15}
+                !isNull (_x select 0) && {alive (_x select 0)} && {(_x select 0) in _players}
+                    && {!((_x select 0) getVariable ["ACE_isUnconscious", false])}
+                    && {CBA_missionTime - (_x select 1) <= 15}
             };
+            // A provider can disappear without an onUnload (death, respawn or disconnect).
+            // Release that viewer only. Patient death does not evict the remaining providers.
+            {
+                private _token = _x param [2, ""];
+                if (_token != "") then {[_patient, "chestSealPatientEnd", [_patient, _token]] call ACME_fnc_ownerDispatch;};
+            } forEach (_members - _keep);
             if (isNull _patient || {count _keep == 0}) then { ACME_CS_sessions deleteAt _key; }
             else {
                 if (count _keep != count _members) then {

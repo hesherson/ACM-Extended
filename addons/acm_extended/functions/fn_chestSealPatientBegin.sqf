@@ -11,7 +11,8 @@ if (!local _patient) exitWith {
 
 private _tokens = +(_patient getVariable ["ACME_CS_ProcedureTokens", []]);
 if (_token in _tokens) exitWith {};
-private _first = _tokens isEqualTo [];
+private _first = !(_patient getVariable ["ACME_CS_ProcedureActive", false]);
+_patient setVariable ["ACME_CS_ProcedureGeneration", 1 + (_patient getVariable ["ACME_CS_ProcedureGeneration", 0])];
 _tokens pushBack _token;
 _patient setVariable ["ACME_CS_ProcedureTokens", _tokens, true];
 _patient setVariable ["ACME_CS_ProcedureActive", true, true];

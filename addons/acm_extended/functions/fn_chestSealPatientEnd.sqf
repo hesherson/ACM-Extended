@@ -10,7 +10,9 @@ if (!local _patient) exitWith {
 };
 
 private _tokens = +(_patient getVariable ["ACME_CS_ProcedureTokens", []]);
-if (_token != "") then {_tokens = _tokens - [_token];};
+if (_token == "" || {!(_token in _tokens)}) exitWith {};
+_tokens = _tokens - [_token];
+private _generation = _patient getVariable ["ACME_CS_ProcedureGeneration", 0];
 _patient setVariable ["ACME_CS_ProcedureTokens", _tokens, true];
 if !(_tokens isEqualTo []) exitWith {};
 if !(_patient getVariable ["ACME_CS_ProcedureActive", false]) exitWith {};
@@ -27,8 +29,10 @@ if (_preHeadElev) then {_preSide = "front";};
 
 // Finalize the non-roll pieces only after the body is back on its original side.
 private _finish = {
-    params ["_p", "_wasHeadElev", "_wasRecovery", "_oldAnim"];
-    if (isNull _p || {!local _p}) exitWith {};
+    params ["_p", "_wasHeadElev", "_wasRecovery", "_oldAnim", "_generation"];
+    if (isNull _p || {!local _p}
+        || {(_p getVariable ["ACME_CS_ProcedureGeneration", -1]) != _generation}
+        || {!((_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo [])}) exitWith {};
 
     private _vestEntry = +(_p getVariable ["ACME_CS_vestLoadout", []]);
     if ((count _vestEntry) == 2 && {(vest _p) == ""}) then {
@@ -70,8 +74,10 @@ private _finish = {
 };
 
 private _restoreSide = {
-    params ["_p", "_side", "_wasHeadElev", "_wasRecovery", "_oldAnim", "_finishCode"];
-    if (isNull _p || {!local _p}) exitWith {};
+    params ["_p", "_side", "_wasHeadElev", "_wasRecovery", "_oldAnim", "_finishCode", "_generation"];
+    if (isNull _p || {!local _p}
+        || {(_p getVariable ["ACME_CS_ProcedureGeneration", -1]) != _generation}
+        || {!((_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo [])}) exitWith {};
     private _actual = [_p, _p getVariable ["ACME_CS_facing", "front"]] call ACME_fnc_chestSealActualSide;
     private _dead = (!alive _p) || {(lifeState _p) isEqualTo "DEAD"};
     private _grounded = (_p getVariable ["ACE_isUnconscious", false])
@@ -87,11 +93,11 @@ private _restoreSide = {
         private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85];
         if (!(_rollTime isEqualType 0) || {_rollTime < 0}) then {_rollTime = 1.85;};
         [{
-            params ["_unit", "_head", "_recovery", "_anim", "_fn"];
-            [_unit, _head, _recovery, _anim] call _fn;
-        }, [_p, _wasHeadElev, _wasRecovery, _oldAnim, _finishCode], _rollTime + 0.08] call CBA_fnc_waitAndExecute;
+            params ["_unit", "_head", "_recovery", "_anim", "_fn", "_generation"];
+            [_unit, _head, _recovery, _anim, _generation] call _fn;
+        }, [_p, _wasHeadElev, _wasRecovery, _oldAnim, _finishCode, _generation], _rollTime + 0.08] call CBA_fnc_waitAndExecute;
     } else {
-        [_p, _wasHeadElev, _wasRecovery, _oldAnim] call _finishCode;
+        [_p, _wasHeadElev, _wasRecovery, _oldAnim, _generation] call _finishCode;
     };
 };
 
@@ -104,9 +110,9 @@ private _wait = if (_rollUntil isEqualType 0 && {_rollUntil > CBA_missionTime}) 
 
 if (_wait > 0) then {
     [{
-        params ["_p", "_side", "_head", "_recovery", "_anim", "_restore", "_finishCode"];
-        [_p, _side, _head, _recovery, _anim, _finishCode] call _restore;
-    }, [_patient, _preSide, _preHeadElev, _preRecovery, _preAnim, _restoreSide, _finish], _wait] call CBA_fnc_waitAndExecute;
+        params ["_p", "_side", "_head", "_recovery", "_anim", "_restore", "_finishCode", "_generation"];
+        [_p, _side, _head, _recovery, _anim, _finishCode, _generation] call _restore;
+    }, [_patient, _preSide, _preHeadElev, _preRecovery, _preAnim, _restoreSide, _finish, _generation], _wait] call CBA_fnc_waitAndExecute;
 } else {
-    [_patient, _preSide, _preHeadElev, _preRecovery, _preAnim, _finish] call _restoreSide;
+    [_patient, _preSide, _preHeadElev, _preRecovery, _preAnim, _finish, _generation] call _restoreSide;
 };

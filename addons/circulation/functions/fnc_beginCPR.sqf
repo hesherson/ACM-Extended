@@ -117,6 +117,11 @@ GVAR(CPRSwap_MouseID) = [0xF2, [false, false, false], _swapCode, "keydown", "", 
 ACEGVAR(medical_gui,pendingReopen) = false;
 if (dialog) then {closeDialog 0;};
 
+// A finite assessment can still own a zero-speed hold when the next maneuver starts.
+// Retire that owner before this action takes over, including its observer/JIP freeze.
+if (!isNil "ACME_fnc_treatmentPoseStop") then {[_medic] call ACME_fnc_treatmentPoseStop;};
+[QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
+
 private _notInVehicle = isNull objectParent _medic;
 private _initialAnimation = animationState _medic;
 private _startDelay = 2;
@@ -166,7 +171,11 @@ private _controller = [{
         if !([_medic, _patient, _epoch] call FUNC(cprCleanupLocal)) exitWith {};
 
         if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo ACE_player} && {isNull objectParent _medic}) then {
+            [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
+            _medic setUnitPos "AUTO";
+            // Play the release, then queue a controllable native idle. medicEnd alone can stop at its last frame.
             [_medic, "AinvPknlMstpSnonWnonDnon_medicEnd", 2] call ACEFUNC(common,doAnimation);
+            [_medic, "AmovPknlMstpSnonWnonDnon", 0] call ACEFUNC(common,doAnimation);
         };
 
         if (_started && {!isNull _patient}) then {

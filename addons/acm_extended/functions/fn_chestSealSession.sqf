@@ -1,20 +1,26 @@
 /* Low-frequency membership only. No server-wide cursor broadcast or per-cursor
    allPlayers scan. Snapshot and roster are sent to EVERY viewer of this patient. */
-params ["_patient", "_viewer", "_mode"];
+params ["_patient", "_viewer", "_mode", ["_token", ""]];
 if (!isServer || {isNull _patient} || {isNull _viewer}) exitWith {};
 private _key = netId _patient;
 private _entry = ACME_CS_sessions getOrDefault [_key, [_patient, []]];
 private _members = +(_entry select 1);
 private _idx = _members findIf {(_x select 0) == _viewer};
 private _changed = false;
+private _oldToken = if (_idx < 0) then {""} else {(_members select _idx) param [2, ""]};
+if (_mode == "leave" && {_token != ""} && {_token != _oldToken}) exitWith {};
+if (_token == "") then {_token = _oldToken;};
 switch (_mode) do {
     case "join";
     case "ping";
     case "sync": {
-        if (_idx < 0) then { _members pushBack [_viewer, CBA_missionTime]; _changed = true; }
-        else { _members set [_idx, [_viewer, CBA_missionTime]]; };
+        if (_idx < 0) then { _members pushBack [_viewer, CBA_missionTime, _token]; _changed = true; }
+        else { _members set [_idx, [_viewer, CBA_missionTime, _token]]; };
     };
-    case "leave": { if (_idx >= 0) then { _members deleteAt _idx; _changed = true; }; };
+    case "leave": {
+        if (_idx >= 0) then { _members deleteAt _idx; _changed = true; };
+        if (_token != "") then {[_patient, "chestSealPatientEnd", [_patient, _token]] call ACME_fnc_ownerDispatch;};
+    };
 };
 if (count _members == 0) then { ACME_CS_sessions deleteAt _key; }
 else { ACME_CS_sessions set [_key, [_patient, _members]]; };

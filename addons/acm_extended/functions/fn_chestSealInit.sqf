@@ -1,5 +1,8 @@
 disableSerialization;
 params ["_display"];
+private _oldPFH = uiNamespace getVariable ["ACME_CS_PFH", -1];
+if (_oldPFH >= 0) then {[_oldPFH] call CBA_fnc_removePerFrameHandler;};
+uiNamespace setVariable ["ACME_CS_PFH", -1];
 uiNamespace setVariable ["ACME_CS_DLG", _display];
 uiNamespace setVariable ["ACME_minigame_open", true];
 
@@ -19,7 +22,7 @@ private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
 private _patient = uiNamespace getVariable ["ACME_CS_Patient", objNull];
 if (!isNull _patient) then {[_patient, "ui:chest:" + str clientOwner, true] call ACME_fnc_ecgJostleRequest;};
 // Publish interest only on open/close, not for every cursor update.
-private _viewer = player;
+private _viewer = ACE_player;
 uiNamespace setVariable ["ACME_CS_presenceViewer", _viewer];
 if (!isNull _viewer) then { _viewer setVariable ["ACME_CS_viewing", _patient, true]; };
 ACME_CS_presence = createHashMap;
@@ -315,7 +318,7 @@ if (_startTool == "spear" && {(uiNamespace getVariable ["ACME_CS_SpearsLeft", 0]
 };
 uiNamespace setVariable ["ACME_CS_StartTool", ""];
 
-private _pfh = [ACME_fnc_chestSealTick, 0, []] call CBA_fnc_addPerFrameHandler;
+private _pfh = [ACME_fnc_chestSealTick, 0, [_display]] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_CS_PFH", _pfh];
 // THE WHEEL BURPS AN APPLIED SEAL, AND THE HANDLER CANNOT LIVE ON THE DISPLAY ALONE.
 // a display level MouseZChanged does not fire while the cursor sits over a control, and on this panel the body

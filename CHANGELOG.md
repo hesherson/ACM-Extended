@@ -32,9 +32,18 @@ These notes describe the combined current behavior. Later corrections take prece
 - Fixed IV/IO access selection so clicking a site updates the selected access, top left name, artwork and bag lists together.
 - Added the normal button sound to access site clicks and removed the top left IV/IO toggle. The inventory source switch remains available.
 
+### Shared menus and provider cleanup
+
+- Chest seal and ventilator menu entry no longer waits for a provider stance or holster animation. Each provider has one pending menu request and one display update loop.
+- Fixed duplicate chest menu updates bypassing finger drag resistance. Reopening cannot inherit an old panel's drag state, and a late unload cannot close a newer panel.
+- Chest workspace restoration waits for the last viewer and cannot restore gear or positioning over a new session. Server cleanup releases viewers lost through death, respawn or disconnect.
+- Dead patients no longer trigger the ventilator recovery warning or disable its controls solely because they died. Connected devices remain available to multiple viewers and for manual recovery.
+- Fixed Head Tilt–Chin Lift, Carry Assist, Feel Pulse and stethoscope startup or cleanup aborting on string key handler IDs. Manual holds have a server watchdog for abandoned providers and preserve another provider's replacement session.
+- Patient death preserves treatment evidence and attached equipment. Provider death or replacement clears the affected local action and UI without opening menus on the replacement player.
+
 ### CPR and BVM on servers
 
-- Fixed CPR cancellation leaving the provider in the compression animation. Cancellation disables animation re-entry and releases the patient before removing input handlers, then plays the existing exit animation.
+- Fixed CPR cancellation leaving the provider in the compression animation. Cancellation disables animation re-entry and releases the patient before removing input handlers, then plays the existing exit animation and queues a normal movable crouch. CPR loop states now include native exit connections, and stale assessment holds are retired before a new maneuver starts.
 - Pausing CPR disables the compression loop before changing pose. Repeated starts, respawn, disconnect and abandoned CPR sessions now receive session cleanup without stopping another provider's BVM.
 - Corrected boolean status comparisons that interrupted CPR and BVM updates, including BVM oxygen status.
 - Fixed string input handler IDs interrupting BVM startup or cleanup and leaving providers stuck or patients permanently reserved.
@@ -116,6 +125,7 @@ The bag visibility and CPR stop followup passed 72 focused checks on each branch
 
 ### Detailed patch records
 
+- [Shared menus and death cleanup](docs/patch-notes/2026-09-19-shared-menus-death-cleanup.md)
 - [Bag visibility and CPR stop followup](docs/patch-notes/2026-09-19-bag-visibility-cpr-stop.md)
 - [Server bag visibility and BVM recovery](docs/patch-notes/2026-09-19-server-bag-bvm.md)
 - [Provider hold synchronization](docs/patch-notes/2026-09-19-provider-hold-observers.md)

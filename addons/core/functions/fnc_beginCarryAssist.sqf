@@ -32,7 +32,7 @@ if (_patient getVariable [QGVAR(CarryAssist_State), false]) exitWith {
     // generation that actually accepted this carry-assist session. A missed old handler therefore cannot cancel a
     // later BVM/head-tilt/other continuous maneuver.
     private _oldID = missionNamespace getVariable [QGVAR(CarryAssistCancel_MouseID), -1];
-    if (_oldID >= 0) then {[_oldID, "keydown"] call CBA_fnc_removeKeyHandler;};
+    if (!(_oldID isEqualTo -1) && {!(_oldID isEqualTo "")}) then {[_oldID, "keydown"] call CBA_fnc_removeKeyHandler;};
     private _epoch = missionNamespace getVariable [QGVAR(ContinuousAction_Epoch), -1];
     private _cancelCode = compile format [
         "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) == %1) then {missionNamespace setVariable ['ACM_core_ContinuousAction_Active', false];}; false",
@@ -50,12 +50,14 @@ if (_patient getVariable [QGVAR(CarryAssist_State), false]) exitWith {
     _ctrlTextUpper ctrlSetText LLSTRING(AssistCarry_Progress);
     _ctrlTextLower ctrlSetText ([_patient, false, true] call ACEFUNC(common,getName));
 
+    _patient setVariable ["ACM_core_CarryAssist_State_Session", [_medic, _epoch], true];
     _patient setVariable [QGVAR(CarryAssist_State), true, true];
+    ["ACM_core_continuousHoldTrack", [_medic, _patient, _epoch, "ACM_core_CarryAssist_State"]] call CBA_fnc_serverEvent;
 }, { // On cancel
     params ["_medic", "_patient", "_bodyPart", "", "_notInVehicle"];
 
     private _id = missionNamespace getVariable [QGVAR(CarryAssistCancel_MouseID), -1];
-    if (_id >= 0) then {[_id, "keydown"] call CBA_fnc_removeKeyHandler;};
+    if (!(_id isEqualTo -1) && {!(_id isEqualTo "")}) then {[_id, "keydown"] call CBA_fnc_removeKeyHandler;};
     GVAR(CarryAssistCancel_MouseID) = -1;
 
     ["", "", ""] call ACEFUNC(interaction,showMouseHint);
@@ -64,9 +66,13 @@ if (_patient getVariable [QGVAR(CarryAssist_State), false]) exitWith {
 
     [LLSTRING(AssistCarry_Cancelled), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
 
-    _patient setVariable [QGVAR(CarryAssist_State), false, true];
+    [_medic, _patient, GVAR(ContinuousAction_Epoch), "ACM_core_CarryAssist_State"] call FUNC(continuousHoldRelease);
 }, { // PerFrame
     params ["_medic", "_patient", "_bodyPart"];
+
+    if !((_patient getVariable ["ACM_core_CarryAssist_State_Session", []]) isEqualTo [_medic, GVAR(ContinuousAction_Epoch)]) exitWith {
+        missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+    };
 
     if (_patient call ACEFUNC(common,isBeingDragged) || _patient call ACEFUNC(common,isBeingCarried)) then {
         GVAR(ContinuousAction_Active) = false;

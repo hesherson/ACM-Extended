@@ -6,8 +6,12 @@
 
 ## SERVER FIXES
 
+- Fixed chest seal and ventilator menu entry waiting on provider animations. Each provider now has one menu request and update loop, and stale panels cannot close newer ones.
+- Fixed repeated chest menu updates removing finger drag resistance. Closing one viewer no longer restores the workspace over another provider.
+- Dead patients no longer trigger the ventilator recovery warning or disable its controls. Attached equipment remains available to view and recover.
+- Fixed Head Tilt–Chin Lift, Carry Assist, Feel Pulse and stethoscope input cleanup. Added recovery for abandoned manual holds and chest viewers after provider death, respawn or disconnect, while preserving treatment evidence on the patient.
 - Corrected the remaining ownership check that kept hung IV bags and lines invisible to other clients after the initial fix. The same correction applies to frozen Feel Pulse and Auscultate Chest poses.
-- CPR now releases the provider and patient when stopped and plays the existing exit animation. Pause and resume no longer let the old animation loop restart compressions.
+- CPR now releases the provider and patient when stopped and plays the release animation before returning to a movable crouch. Pause and resume no longer let the old animation loop restart compressions.
 - Added CPR cleanup for respawn, disconnect and abandoned sessions. Corrected boolean status checks in CPR and BVM, including oxygen updates.
 - Other players can now see the held IV bag and its matching custom line, including players joining during a hold. Both remain visible through lowering and are removed when the session ends.
 - Fixed BVM input handler cleanup leaving providers stuck and patients permanently marked as being ventilated by someone else.

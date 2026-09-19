@@ -24,9 +24,9 @@ ace_medical_gui_pendingReopen = false;
 // Remove generic continuous-action key handlers left by an interrupted older generation. The stethoscope dialog
 // uses its own display handler when possible, but the non-dialog fallback shares the global ESC slot.
 private _oldOpenID = missionNamespace getVariable ["ACM_core_ContinuousAction_OpenMedicalMenu_ID", -1];
-if (_oldOpenID >= 0) then {[_oldOpenID, "keydown"] call CBA_fnc_removeKeyHandler;};
+if (!(_oldOpenID isEqualTo -1) && {!(_oldOpenID isEqualTo "")}) then {[_oldOpenID, "keydown"] call CBA_fnc_removeKeyHandler;};
 private _oldEscapeID = missionNamespace getVariable ["ACM_core_ContinuousAction_Cancel_EscapeID", -1];
-if (_oldEscapeID >= 0) then {[_oldEscapeID, "keydown"] call CBA_fnc_removeKeyHandler;};
+if (!(_oldEscapeID isEqualTo -1) && {!(_oldEscapeID isEqualTo "")}) then {[_oldEscapeID, "keydown"] call CBA_fnc_removeKeyHandler;};
 missionNamespace setVariable ["ACM_core_ContinuousAction_OpenMedicalMenu_ID", -1];
 missionNamespace setVariable ["ACM_core_ContinuousAction_Cancel_EscapeID", -1];
 
@@ -84,13 +84,13 @@ private _pfh = [{
         if (_isDialog) then {
             if (!isNull _scopeDisplay && {_dialogKeyEH >= 0}) then {_scopeDisplay displayRemoveEventHandler ["KeyDown", _dialogKeyEH];};
         } else {
-            if (_keyID >= 0) then {[_keyID, "keydown"] call CBA_fnc_removeKeyHandler;};
+            if (!(_keyID isEqualTo -1) && {!(_keyID isEqualTo "")}) then {[_keyID, "keydown"] call CBA_fnc_removeKeyHandler;};
         };
         [_medic, "stethoscope", _poseEpoch] call ACME_fnc_treatmentPoseStop;
     };
 
     private _patientCondition = isNull _patient;
-    private _medicCondition = isNull _medic || {!local _medic} || {!(alive _medic)} || {_medic getVariable ["ACE_isUnconscious", false]};
+    private _medicCondition = isNull _medic || {!local _medic} || {!(alive _medic)} || {_medic getVariable ["ACE_isUnconscious", false]} || {_medic isNotEqualTo ACE_player};
     private _vehicleCondition = (objectParent _medic isNotEqualTo objectParent _patient);
     private _enteredVehicle = _notInVehicle && {!isNull objectParent _medic};
     private _distanceCondition = (!isNull _patient) && {(_patient distance2D _medic > ace_medical_gui_maxDistance)};
@@ -110,7 +110,7 @@ private _pfh = [{
             private _d = findDisplay _dialogID;
             if (!isNull _d && {_dialogKeyEH >= 0}) then {_d displayRemoveEventHandler ["KeyDown", _dialogKeyEH];};
         } else {
-            if (_keyID >= 0) then {[_keyID, "keydown"] call CBA_fnc_removeKeyHandler;};
+            if (!(_keyID isEqualTo -1) && {!(_keyID isEqualTo "")}) then {[_keyID, "keydown"] call CBA_fnc_removeKeyHandler;};
             if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Cancel_EscapeID", -1]) == _keyID) then {
                 missionNamespace setVariable ["ACM_core_ContinuousAction_Cancel_EscapeID", -1];
             };

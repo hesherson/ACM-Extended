@@ -24,16 +24,18 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             };
             //ConnectAs = "";
             ConnectTo[] = {
-                "ACM_CPR",
-                0.1
+                "ACM_CPR", 0.1,
+                "AinvPknlMstpSnonWnonDnon_medicEnd", 0.1,
+                "AmovPknlMstpSnonWnonDnon", 0.1
             };
             forceAim = 1;
             //InterpolateFrom[] = {};
             //InterpolateWith[] = {};
             InterpolateTo[]=
             {
-                "ACM_CPR",
-                0.1,
+                "ACM_CPR", 0.1,
+                "AinvPknlMstpSnonWnonDnon_medicEnd", 0.1,
+                "AmovPknlMstpSnonWnonDnon", 0.1,
                 "Unconscious",
                 0.02
             };
@@ -56,16 +58,18 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             };
             //ConnectAs = "";
             ConnectTo[] = {
-                "ACM_CPR",
-                0.1
+                "ACM_CPR", 0.1,
+                "AinvPknlMstpSnonWnonDnon_medicEnd", 0.1,
+                "AmovPknlMstpSnonWnonDnon", 0.1
             };
             forceAim = 1;
             //InterpolateFrom[] = {};
             //InterpolateWith[] = {};
             InterpolateTo[]=
             {
-                "ACM_CPR",
-                0.1,
+                "ACM_CPR", 0.1,
+                "AinvPknlMstpSnonWnonDnon_medicEnd", 0.1,
+                "AmovPknlMstpSnonWnonDnon", 0.1,
                 "Unconscious",
                 0.02
             };

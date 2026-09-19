@@ -37,6 +37,7 @@ def source(name):
         'local _medic': '_local',
         'owner _medic': '_testOwner',
         'currentWeapon _medic': '""',
+        '_medic setUnitPos "AUTO";': '_stanceFreed = true;',
         'animationState _medic': '"amovpknlmstpsnonwnondnon"',
         'closeDialog 0;': '_closed = _closed + 1;',
         'hasInterface': '_hasInterface',
@@ -75,6 +76,7 @@ def execute(scenario, runtime=False):
         private _distance = 1;
         private _dialog = false;
         private _closed = 0;
+        private _stanceFreed = false;
         private _hints = 0;
         private _keys = [];
         private _removedKeys = [];
@@ -126,6 +128,7 @@ def execute(scenario, runtime=False):
         CBA_fnc_targetEvent = {};
         CBA_fnc_localEvent = {_reopens = _reopens + 1;};
         CBA_fnc_globalEvent = {
+            if ((_this select 0) == "ace_common_setAnimSpeedCoef") exitWith {};
             private _move = (_this select 1) select 1;
             _moves pushBack _move;
             if (_fireAnimOnSwitch && {!_duringSwitch}) then {
@@ -183,7 +186,8 @@ def test_stop_with_string_ids_releases_patient_loop_and_requests_native_exit():
         call _start; call _enter;
         call _cancel; call _freed;
         [count _removedKeys == 4 && {count _removedAnims == 1}, "handlers not removed"] call _check;
-        [(_moves select (count _moves - 1)) == "AinvPknlMstpSnonWnonDnon_medicEnd", "native exit missing"] call _check;
+        [(_moves select [count _moves - 2,2]) isEqualTo ["AinvPknlMstpSnonWnonDnon_medicEnd","AmovPknlMstpSnonWnonDnon"], "release and controllable idle missing"] call _check;
+        [_stanceFreed, "stance lock retained"] call _check;
         ["CPR_ActionLog_Stopped" in _logs && {_reopens == 1}, "normal stop completion missing"] call _check;
     ''')
 
@@ -306,4 +310,12 @@ def test_provider_sequence_survives_change_to_another_clients_counter():
         [ACM_circulation_CPR_Epoch > _oldEpoch, "new client reused old epoch"] call _check;
         [_medic, _patient, _oldEpoch] call ACM_circulation_fnc_cprRelease;
         [[_medic, _patient] call ACM_circulation_fnc_cprSessionValid, "old owner cleared new CPR"] call _check;
+    ''')
+
+
+def test_death_during_cpr_does_not_prevent_stop_or_restart():
+    execute('''call _start; call _enter;
+        _patientAlive = false; call _tick;
+        call _cancel; call _freed;
+        call _start; call _enter; call _cancel; call _freed;
     ''')

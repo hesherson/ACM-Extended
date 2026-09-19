@@ -5,6 +5,10 @@
 disableSerialization;
 private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
+_dlg setVariable ["ACME_vent_viewer", ACE_player];
+private _oldPFH = uiNamespace getVariable ["ACME_vent_pfh", -1];
+if (_oldPFH >= 0) then {[_oldPFH] call CBA_fnc_removePerFrameHandler;};
+uiNamespace setVariable ["ACME_vent_pfh", -1];
 // Technician access and confirmations cannot survive a new panel session.
 _dlg setVariable ["ACME_vent_techUnlocked", false];
 _dlg setVariable ["ACME_vent_techAuthCode", ""];
@@ -517,7 +521,13 @@ if (_doBoot) then {
 };
 
 // start the tick.
-private _pfh = [{ [] call ACME_fnc_ventPanelTick; }, 0, []] call CBA_fnc_addPerFrameHandler;
+private _pfh = [{
+    params ["_args", "_id"];
+    private _display = _args select 0;
+    if (isNull _display || {_display isNotEqualTo (uiNamespace getVariable ["ACME_vent_dlg", displayNull])}
+        || {_id != (uiNamespace getVariable ["ACME_vent_pfh", -1])}) exitWith {[_id] call CBA_fnc_removePerFrameHandler;};
+    [] call ACME_fnc_ventPanelTick;
+}, 0, [_dlg]] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_vent_pfh", _pfh];
 
 // knob emulation. the mouse wheel turns the knob. for MouseZChanged, _this is [display, scroll], and a scroll

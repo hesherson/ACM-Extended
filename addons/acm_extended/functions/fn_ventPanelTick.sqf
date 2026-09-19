@@ -4,6 +4,10 @@
 disableSerialization;
 private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
+private _provider = _dlg getVariable ["ACME_vent_viewer", objNull];
+if (isNull _provider || {!alive _provider} || {_provider isNotEqualTo ACE_player}
+    || {_provider getVariable ["ACE_isUnconscious", false]}
+    || {isNull (uiNamespace getVariable ["ACME_vent_target", objNull])}) exitWith {_dlg closeDisplay 2;};
 if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {
     [87700] call ACME_fnc_minigameClose;
 };
@@ -11,7 +15,7 @@ if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {
 private _custodyTarget = uiNamespace getVariable ["ACME_vent_target", objNull];
 private _tgtM = uiNamespace getVariable ["ACME_vent_target", ACE_player];
 if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo ACE_player}
-    && {!alive _custodyTarget || {!(_custodyTarget getVariable ["ACME_vent_onPatient", false])} || {_custodyTarget getVariable ["ACME_vent_recovering", false]}}) exitWith {
+    && {!(_custodyTarget getVariable ["ACME_vent_onPatient", false]) || {_custodyTarget getVariable ["ACME_vent_recovering", false]}}) exitWith {
     [87700] call ACME_fnc_minigameClose;
 };
 

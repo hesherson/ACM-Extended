@@ -17,7 +17,7 @@ params ["_action"];
 if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
 private _custodyTarget = uiNamespace getVariable ["ACME_vent_target", objNull];
 if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo ACE_player}
-    && {!alive _custodyTarget || {!(_custodyTarget getVariable ["ACME_vent_onPatient", false])} || {_custodyTarget getVariable ["ACME_vent_recovering", false]}}) exitWith {};
+    && {!(_custodyTarget getVariable ["ACME_vent_onPatient", false]) || {_custodyTarget getVariable ["ACME_vent_recovering", false]}}) exitWith {};
 private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (isNull _vTgt) then { _vTgt = ACE_player; };
 playSound "ACME_VentClick";
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
