@@ -3,7 +3,7 @@
 // hung between the bag and the patient, and it collides with terrain. there is no Draw3D fallback.
 params ["_medic", "_patient", ["_bodyPart", ""], ["_fluidType", ""]];
 _bodyPart = toLower _bodyPart;
-if (isNull _patient || {isNull _medic}) exitWith {};
+if (isNull _patient || {isNull _medic} || {!local _medic}) exitWith {};
 if (_fluidType == "") then { _fluidType = [_patient, _bodyPart] call ACME_fnc_hangBagFluidType; };
 
 if (_medic getVariable ["ACME_hang_Active", false]) exitWith {
@@ -73,7 +73,7 @@ _bag attachTo [_medic,
     _handOffset,
     (missionNamespace getVariable ["ACME_hang_handSel", "RightHand"]), true];
 [_bag, missionNamespace getVariable ["ACME_hang_bagEuler", [-106.246,70.3435,179.392]]] call BIS_fnc_setObjectRotation;
-_medic setVariable ["ACME_hang_Bag", _bag, true];
+_medic setVariable ["ACME_hang_Bag", _bag];
 
 // the weapon was already stowed by fn_hangbagprep. do not issue another asynchronous SwitchWeapon here, because
 // that second command was completing after the pose started and knocking the raised arm animation back out.
@@ -159,6 +159,23 @@ if ((missionNamespace getVariable ["ACME_hang_useRope", true]) && {!isNull _anch
 };
 _medic setVariable ["ACME_hang_Rope", _rope];
 _medic setVariable ["ACME_hang_RopeShown", !isNull _rope, true];
+
+// Replicate the visual description, never the IDs of local props. Each observing client builds its own
+// matching hand bag, endpoints and custom rope, including clients which join during this hold.
+private _visualEpoch = (_medic getVariable ["ACME_hang_VisualEpoch", 0]) + 1;
+_medic setVariable ["ACME_hang_VisualEpoch", _visualEpoch, true];
+_medic setVariable ["ACME_hang_VisualEpisode", [_visualEpoch, true], true];
+private _visualJip = format ["ACME_hangVisual_%1_%2", netId _medic, _visualEpoch];
+_medic setVariable ["ACME_hang_VisualJip", _visualJip];
+private _visualData = [_patient, _bagModel, _bagTexture, _handOffset,
+    missionNamespace getVariable ["ACME_hang_handSel", "RightHand"],
+    missionNamespace getVariable ["ACME_hang_bagEuler", [-106.246,70.3435,179.392]],
+    _anchorClass, _lineEnd, _lineRot, _lineTip, _bagOut, _ropeClass,
+    missionNamespace getVariable ["ACME_hang_lineLength", 3],
+    missionNamespace getVariable ["ACME_hang_lineSagSegs", 24],
+    missionNamespace getVariable ["ACME_hang_useRope", true]];
+["ACME_hangBagVisualSync", [_medic, _visualEpoch, "show", _visualData, owner _medic], _visualJip] call CBA_fnc_globalEventJIP;
+[_visualJip, _medic] call CBA_fnc_removeGlobalEventJIP;
 
 // the manual release and the placement tuner.
 private _ids = [];

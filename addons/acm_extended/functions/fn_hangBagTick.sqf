@@ -12,14 +12,14 @@ if ((_medic getVariable ["ACME_hang_PFH", -1]) != _pfhId
     [_pfhId] call CBA_fnc_removePerFrameHandler;
 };
 if (!alive _medic || {!(_medic getVariable ["ACME_hang_Active", false])}) exitWith {
-    [false] call ACME_fnc_hangBagStop;
+    [false, _medic] call ACME_fnc_hangBagStop;
     [_pfhId] call CBA_fnc_removePerFrameHandler;
 };
 if !(local _medic) exitWith {[_pfhId] call CBA_fnc_removePerFrameHandler;};
 // the system toggle. it is the same rule as direct pressure: disabling the system lowers the bag cleanly instead of
 // leaving the medic locked holding it.
 if !(missionNamespace getVariable ["ACME_sys_hang", true]) exitWith {
-    [false] call ACME_fnc_hangBagStop;
+    [false, _medic] call ACME_fnc_hangBagStop;
 };
 
 private _stop = false;
@@ -30,13 +30,13 @@ if (!_stop && {(_medic distance _patient) > _leash}) then {
     _stop = true;
     _why = "Out of line range. Bag lowered.";
 };
-if (!_stop && {!isNull objectParent _medic || {_medic getVariable ["ace_medical_isUnconscious", false]} || {(stance _medic) == "PRONE"}}) then {
+if (!_stop && {!isNull objectParent _medic || {_medic getVariable ["ACE_isUnconscious", false]} || {(stance _medic) == "PRONE"}}) then {
     _stop = true;
     _why = "Bag lowered.";
 };
 if (_stop) exitWith {
     if (_why != "") then { [_why, 2, _medic] call ace_common_fnc_displayTextStructured; };
-    [true] call ACME_fnc_hangBagStop;
+    [true, _medic] call ACME_fnc_hangBagStop;
 };
 
 // auto-lower when the hung bag has finished transfusing. once flow has been seen on this line and it is gone,
@@ -63,7 +63,7 @@ if (_hPart != "") then {
 };
 if (_doneTransfusing) exitWith {
     ["Transfusion complete. Bag lowered.", 2, _medic] call ace_common_fnc_displayTextStructured;
-    [true] call ACME_fnc_hangBagStop;  // this hides the hint. the exitwith here means the tick will not re-assert it.
+    [true, _medic] call ACME_fnc_hangBagStop;  // this hides the hint. the exitwith here means the tick will not re-assert it.
 };
 
 [_patient, "ACME_hang_flowMult", (missionNamespace getVariable ["ACME_hang_flowMult", 1.75])] call ACME_fnc_setVarNet;
@@ -87,6 +87,6 @@ private _graceUntil = _medic getVariable ["ACME_hang_PoseRetryAt", 0];
 if (CBA_missionTime >= _graceUntil) then {
     private _animNow = toLower animationState _medic;
     if ((_animNow find "jetscrewaidfcrouchthumbup") < 0) exitWith {
-        [true] call ACME_fnc_hangBagStop;
+        [true, _medic] call ACME_fnc_hangBagStop;
     };
 };

@@ -21,13 +21,28 @@
 
 params ["_medic", "_patient", ["_useOxygen", false], ["_portableOxygen", false]];
 
-if !(isNull (_patient getVariable [QGVAR(BVM_Medic), objNull])) exitWith {
+if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {};
+private _reserved = _patient getVariable [QGVAR(BVM_Medic), objNull];
+if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
     [LLSTRING(BVM_Already), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
 };
+
+// Recover a dead, disconnected or abandoned provider reservation before a new start.
+private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
+[_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);
 
 [[_medic, _patient, "head", [_useOxygen, _portableOxygen]], { // On Start
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
     _extraArgs params ["_useOxygen", "_portableOxygen"];
+
+    private _epoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
+    _extraArgs set [2, _epoch];
+    GVAR(BVM_LocalSession) = [_medic, _patient, _epoch];
+    _medic setVariable [QGVAR(BVM_patient), _patient, true];
+    _medic setVariable [QGVAR(BVM_epoch), _epoch, true];
+    _medic setVariable [QGVAR(BVM_lastSeen), CBA_missionTime, true];
+    _patient setVariable [QGVAR(BVM_session), [_medic, _epoch], true];
+    [QGVAR(bvmTrack), [_medic, _patient, _epoch]] call CBA_fnc_serverEvent;
 
     "ACM_UseBVM" cutRsc ["RscUseBVM", "PLAIN", 0, false];
 
@@ -54,16 +69,15 @@ if !(isNull (_patient getVariable [QGVAR(BVM_Medic), objNull])) exitWith {
     // controller has assigned this session's epoch, and make every handler generation-aware.
     {
         private _oldID = missionNamespace getVariable [_x, -1];
-        if (_oldID >= 0) then {[_oldID, "keydown"] call CBA_fnc_removeKeyHandler;};
+        if (!(_oldID isEqualTo -1) && {!(_oldID isEqualTo "")}) then {[_oldID, "keydown"] call CBA_fnc_removeKeyHandler;};
     } forEach [
         "ACM_breathing_BVMCancel_MouseID",
         "ACM_breathing_BVMToggle_MouseID",
         "ACM_breathing_BVMSwap_MouseID"
     ];
 
-    private _epoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
     private _cancelCode = compile format [
-        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (!isNull _t) then {_t setVariable ['ACM_breathing_BVM_provider', objNull, true]; _t setVariable ['ACM_breathing_BVM_Medic', objNull, true];}; missionNamespace setVariable ['ACM_core_ContinuousAction_Active', false]; false",
+        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; missionNamespace setVariable ['ACM_core_ContinuousAction_Active', false]; false",
         _epoch
     ];
     GVAR(BVMCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
@@ -127,40 +141,22 @@ if !(isNull (_patient getVariable [QGVAR(BVM_Medic), objNull])) exitWith {
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
     _extraArgs params ["_useOxygen", "_portableOxygen"];
 
-    private _cancelID = missionNamespace getVariable ["ACM_breathing_BVMCancel_MouseID", -1];
-    if (_cancelID >= 0) then {[_cancelID, "keydown"] call CBA_fnc_removeKeyHandler;};
-    private _toggleID = missionNamespace getVariable ["ACM_breathing_BVMToggle_MouseID", -1];
-    if (_toggleID >= 0) then {[_toggleID, "keydown"] call CBA_fnc_removeKeyHandler;};
-    private _swapID = missionNamespace getVariable ["ACM_breathing_BVMSwap_MouseID", -1];
-    if (_swapID >= 0) then {[_swapID, "keydown"] call CBA_fnc_removeKeyHandler;};
-    GVAR(BVMCancel_MouseID) = -1;
-    GVAR(BVMToggle_MouseID) = -1;
-    GVAR(BVMSwap_MouseID) = -1;
-
-    [] call ACEFUNC(interaction,hideMouseHint);
-
-    if ((_patient getVariable [QGVAR(BVM_provider), objNull]) isNotEqualTo objNull) then {
-        _patient setVariable [QGVAR(BVM_provider), objNull, true];
-    };
-
-    _patient setVariable [QGVAR(BVM_Medic), objNull, true];
-
-    _medic setVariable [QGVAR(isUsingBVM), false, true];
-
-    _patient setVariable [QGVAR(BVM_ConnectedOxygen), false, true];
-
-    "ACM_UseBVM" cutText ["","PLAIN", 0, false];
+    private _epoch = _extraArgs param [2, -1];
+    private _swapToCPR = missionNamespace getVariable [QGVAR(SwapToCPR), false];
+    if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
+    // Death/respawn/locality loss releases ownership without reopening menus on the replacement player.
+    if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
+        || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {};
 
     [_patient, "activity", LLSTRING(BVM_ActionLog_Stop), [[_medic, false, true] call ACEFUNC(common,getName), GVAR(BVM_BreathCount)]] call ACEFUNC(medical_treatment,addToLog);
 
     closeDialog 0;
 
-    if (GVAR(SwapToCPR)) then {
+    if (_swapToCPR) then {
         EGVAR(core,ContinuousAction_ForceOpenMenu) = false;
         // B128: this handoff used to fire unconditionally 0.1 s after BVM teardown. If another continuous action
         // started in that gap, the old BVM callback could inject CPR into the new maneuver. Carry the generation
         // which actually owned this BVM and abandon the handoff if anything newer has taken the controller.
-        private _epoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
         [{
             params ["_medic", "_patient", "_epoch"];
             if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -2]) != _epoch
@@ -171,13 +167,22 @@ if !(isNull (_patient getVariable [QGVAR(BVM_Medic), objNull])) exitWith {
         }, [_medic, _patient, _epoch], 0.1] call CBA_fnc_waitAndExecute;
     } else {
         [LLSTRING(BVM_Stopped), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
-        [QEGVAR(core,openMedicalMenu), GVAR(BVMTarget)] call CBA_fnc_localEvent;
+        [QEGVAR(core,openMedicalMenu), _patient] call CBA_fnc_localEvent;
     };
 
     GVAR(BVMTarget) = objNull;
 }, { // PerFrame
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
     _extraArgs params ["_useOxygen", "_portableOxygen"];
+
+    private _epoch = _extraArgs param [2, -1];
+    if !((_patient getVariable [QGVAR(BVM_session), []]) isEqualTo [_medic, _epoch]) exitWith {
+        EGVAR(core,ContinuousAction_Active) = false;
+    };
+    // Include paused sessions. The server can release a reservation if this controller stops running.
+    if (CBA_missionTime - (_medic getVariable [QGVAR(BVM_lastSeen), -100]) >= 2) then {
+        _medic setVariable [QGVAR(BVM_lastSeen), CBA_missionTime, true];
+    };
 
     private _updateMouseHint = false;
     private _updateText = false;

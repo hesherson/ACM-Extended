@@ -1,5 +1,7 @@
 #include "script_component.hpp"
 
+call FUNC(registerBVMRuntime);
+
 [QGVAR(handleChestInjury), LINKFUNC(handleChestInjury)] call CBA_fnc_addEventHandler;
 
 [QGVAR(inspectChestLocal), LINKFUNC(inspectChestLocal)] call CBA_fnc_addEventHandler;

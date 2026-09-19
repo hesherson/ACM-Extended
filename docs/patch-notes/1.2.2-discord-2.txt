@@ -4,6 +4,12 @@
 
 -# Part 2 of 3
 
+## SERVER FIXES
+
+- Other players can now see the held IV bag and its matching custom line, including players joining during a hold. Both remain visible through lowering and are removed when the session ends.
+- Fixed BVM input handler cleanup leaving providers stuck and patients permanently marked as being ventilated by someone else.
+- Added BVM recovery after respawn, death, disconnect or an abandoned session. Pausing still reserves the patient, and delayed cleanup cannot cancel a newer session.
+
 ## SEIZURES AND THE PATIENT SPAWNER
 
 - Added Head > Debug > Induce Seizure for living patients who are not in cardiac arrest. It requires the provider's debug setting and runs on the patient owner without the normal treatment stance/weapon preparation.

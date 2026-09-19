@@ -25,11 +25,17 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### Transfusions and access selection
 
+- Fixed held IV bag and custom line visibility for other players, including players joining during a hold. Observer props follow the existing lowering and cleanup lifecycle.
 - Removed the separate Hardcore Transfusion setting. Bag preparation, Y lines, flushing, infusion and access site management are now the standard workflow.
 - Removed the 250 mL saline bag minimum. Y lines still require compatible saline and retain the configured flush volume rule.
 - Retained the standard calcium/citrate and hypothermic coagulation values. Old exported Hardcore Transfusion values no longer select an alternate model.
 - Fixed IV/IO access selection so clicking a site updates the selected access, top left name, artwork and bag lists together.
 - Added the normal button sound to access site clicks and removed the top left IV/IO toggle. The inventory source switch remains available.
+
+### BVM on servers
+
+- Fixed string input handler IDs interrupting BVM startup or cleanup and leaving providers stuck or patients permanently reserved.
+- Release the captured BVM session on cancellation or respawn. Server recovery clears abandoned sessions after death, disconnect, ownership changes or loss of the controller heartbeat. Pausing ventilation still reserves the patient, and old cleanup cannot cancel a newer session.
 
 ### Field Blood Transfusion Kit
 
@@ -101,8 +107,11 @@ The release build followup produced 14 PBOs from each branch with HEMTT 1.21.0 u
 
 The provider hold followup passed 18 checks on each branch, including SQF execution of observer recovery and packet ordering, strict HEMTT diagnostics and full addon config compilation. Two-client Arma verification remains outstanding.
 
+The server bag and BVM followup passed 33 checks on each branch, with one optional development package check skipped. Both branches built 14 PBOs with HEMTT 1.21.0 using `--no-bin --no-sign --no-archive`; targeted package inspection confirmed the new runtime is included. Dedicated server gameplay remains unverified. Update the server and every client, then restart the mission.
+
 ### Detailed patch records
 
+- [Server bag visibility and BVM recovery](docs/patch-notes/2026-09-19-server-bag-bvm.md)
 - [Provider hold synchronization](docs/patch-notes/2026-09-19-provider-hold-observers.md)
 - [Release build drag handle exclusion](docs/patch-notes/2026-09-19-release-drag-build-gate.md)
 

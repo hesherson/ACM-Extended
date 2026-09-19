@@ -19,7 +19,7 @@ assert '0.05, [_medic, _patient]' in start
 for bad in ['_medic setPosASL', '_medic setDir _lockDir', '_medic setVelocity [0,0,0]', '_medic setVelocityModelSpace']:
     assert bad not in tick
 assert 'call ACME_fnc_doAnim;' not in tick
-assert '[true] call ACME_fnc_hangBagStop' in tick
+assert '[true, _medic] call ACME_fnc_hangBagStop' in tick
 assert '[_medic, ""] call ACME_fnc_doAnimHeld' in stop
 assert stop.index('[_medic, ""] call ACME_fnc_doAnimHeld') < stop.index('[_medic, _outAnim, 1] call ACME_fnc_doAnim')
 assert 'ACME_hang_ropeClass = "ACME_IVLine_Rope";' in init

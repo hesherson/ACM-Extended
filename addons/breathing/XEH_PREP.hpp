@@ -38,3 +38,8 @@ PREP(updateRespirationRate);
 PREP(useBVM);
 PREP(useOxygenTankReserve);
 PREP(useStethoscope);PREP(setRuntimeState);
+
+PREP(bvmSessionValid);
+PREP(bvmRelease);
+PREP(bvmCleanupLocal);
+PREP(registerBVMRuntime);

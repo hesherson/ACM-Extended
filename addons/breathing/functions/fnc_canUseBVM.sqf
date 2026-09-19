@@ -19,7 +19,7 @@
 
 params ["_medic", "_patient", ["_inProgress", false]];
 
-if (!_inProgress && (alive (_patient getVariable [QGVAR(BVM_Medic), objNull]))) exitWith {
+if (!_inProgress && {[_patient getVariable [QGVAR(BVM_Medic), objNull], _patient] call FUNC(bvmSessionValid)}) exitWith {
     false;
 };
 
