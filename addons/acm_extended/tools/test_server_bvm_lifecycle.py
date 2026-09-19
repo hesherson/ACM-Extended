@@ -182,3 +182,23 @@ def test_startup_removal_accepts_existing_string_handlers():
     s = source('useBVM')
     block = s[s.index('    {\n        private _oldID'):s.index('    private _cancelCode')]
     execute(block + '\n[count _removedKeys == 3, "startup failed on string handler IDs"] call _check;')
+
+
+def test_status_update_uses_boolean_safe_cpr_and_bvm_comparison():
+    s = source('useBVM')
+    s = s.replace('EFUNC(core,cprActive)', 'ACM_core_fnc_cprActive').replace('EFUNC(core,bvmActive)', 'ACM_core_fnc_bvmActive')
+    block = s[s.index('    private _updateMouseHint = false;'):s.index('    if (_updateMouseHint)', s.index('    private _updateMouseHint = false;'))]
+    execute('''
+        ACM_breathing_BVM_OxygenActive = true;
+        ACM_core_fnc_cprActive = {_testCPR};
+        ACM_core_fnc_bvmActive = {_testBVM};
+        {
+            _x params ["_testCPR", "_testBVM", "_lastCPR", "_lastBVM", "_expectUpdate"];
+            ACM_breathing_CPRActive = _lastCPR;
+            ACM_breathing_BVMActive = _lastBVM;
+    ''' + block + '''
+            [_updateMouseHint isEqualTo _expectUpdate, "incorrect CPR/BVM status change"] call _check;
+            [ACM_breathing_BVM_OxygenActive, "oxygen state was not synchronized"] call _check;
+        } forEach [[true,true,true,true,false], [false,false,false,false,false],
+            [true,false,false,false,true], [false,true,false,false,true], [false,false,true,true,true]];
+    ''')

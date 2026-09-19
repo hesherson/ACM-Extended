@@ -187,12 +187,13 @@ private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
     private _updateMouseHint = false;
     private _updateText = false;
 
-    if ([_patient] call EFUNC(core,cprActive) != GVAR(CPRActive) || [_patient] call EFUNC(core,bvmActive) != GVAR(BVMActive)) then {
+    if ((([_patient] call EFUNC(core,cprActive)) isNotEqualTo GVAR(CPRActive))
+        || {([_patient] call EFUNC(core,bvmActive)) isNotEqualTo GVAR(BVMActive)}) then {
         _updateMouseHint = true;
         _updateText = true;
     };
 
-    if ((_patient getVariable [QGVAR(BVM_ConnectedOxygen), false]) != GVAR(BVM_OxygenActive)) then {
+    if ((_patient getVariable [QGVAR(BVM_ConnectedOxygen), false]) isNotEqualTo GVAR(BVM_OxygenActive)) then {
         GVAR(BVM_OxygenActive) = (_patient getVariable [QGVAR(BVM_ConnectedOxygen), false]);
         _updateText = true;
     };

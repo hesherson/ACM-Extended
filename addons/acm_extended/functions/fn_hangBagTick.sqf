@@ -15,7 +15,10 @@ if (!alive _medic || {!(_medic getVariable ["ACME_hang_Active", false])}) exitWi
     [false, _medic] call ACME_fnc_hangBagStop;
     [_pfhId] call CBA_fnc_removePerFrameHandler;
 };
-if !(local _medic) exitWith {[_pfhId] call CBA_fnc_removePerFrameHandler;};
+if !(local _medic) exitWith {
+    [true, _medic] call ACME_fnc_hangBagStop;
+    [_pfhId] call CBA_fnc_removePerFrameHandler;
+};
 // the system toggle. it is the same rule as direct pressure: disabling the system lowers the bag cleanly instead of
 // leaving the medic locked holding it.
 if !(missionNamespace getVariable ["ACME_sys_hang", true]) exitWith {

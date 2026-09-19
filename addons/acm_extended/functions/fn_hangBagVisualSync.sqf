@@ -15,9 +15,11 @@ if (_operation == "show") then {
 };
 // The wait above only exits its block. Unknown/stale episodes must not fall through to object creation.
 if (_operation == "show" && {!((_medic getVariable ["ACME_hang_VisualEpisode", []]) isEqualTo [_epoch, true])}) exitWith {};
-if (_operation == "show" && {local _medic} && {owner _medic == _owner}) exitWith {};
+if (_operation == "show" && {local _medic} && {clientOwner == _owner}) exitWith {};
 if (_operation == "show" && {(_record select 0) == _epoch} && {(_record select 1) == "show"}) exitWith {};
 
+// Only the server can resolve remote object owners. Clients use local plus the sender's clientOwner.
+private _ownerChanged = if (isServer) then {owner _medic != _owner} else {local _medic && {clientOwner != _owner}};
 private _oldObjects = _record select 2;
 if !(_oldObjects isEqualTo []) then {
     _oldObjects params ["_bag", "_anchor", "_bagHelper", "_rope"];
@@ -27,7 +29,7 @@ if !(_oldObjects isEqualTo []) then {
 if ((_record select 3) >= 0) then {[(_record select 3)] call CBA_fnc_removePerFrameHandler;};
 _medic setVariable ["ACME_hang_RemoteVisual", [_epoch, "hide", [], -1]];
 if (_operation != "show" || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
-    || {!isNull objectParent _medic} || {owner _medic != _owner}) exitWith {};
+    || {!isNull objectParent _medic} || {_ownerChanged}) exitWith {};
 _data params ["_patient", "_bagModel", "_bagTexture", "_handOffset", "_handSel", "_bagEuler",
     "_anchorClass", "_lineEnd", "_lineRot", "_lineTip", "_bagOut", "_ropeClass", "_lineLength", "_segments", "_useRope"];
 if (isNull _patient || {_bagModel == ""}) exitWith {};
@@ -71,8 +73,9 @@ private _pfh = [{
         {if (!isNull _x) then {detach _x; deleteVehicle _x;};} forEach (_objects select [0, 3]);
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };
+    private _ownerChanged = if (isServer) then {owner _medic != _owner} else {local _medic && {clientOwner != _owner}};
     if (!alive _medic || {isNull _patient} || {_medic getVariable ["ACE_isUnconscious", false]}
-        || {!isNull objectParent _medic} || {owner _medic != _owner}
+        || {!isNull objectParent _medic} || {_ownerChanged}
         || {!((_medic getVariable ["ACME_hang_VisualEpisode", []]) isEqualTo [_epoch, true])}) then {
         [_medic, _epoch, "hide"] call ACME_fnc_hangBagVisualSync;
     };

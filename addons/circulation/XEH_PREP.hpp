@@ -125,3 +125,8 @@ PREP(TransfusionMenu_UpdateSelection);
 PREP(updateActiveFluidBags);
 PREP(updateCirculationState);PREP(setRuntimeState);
 PREP(setLocalUiState);
+
+PREP(cprSessionValid);
+PREP(cprRelease);
+PREP(cprCleanupLocal);
+PREP(registerCPRRuntime);

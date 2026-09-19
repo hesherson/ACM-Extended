@@ -174,7 +174,7 @@ private _visualData = [_patient, _bagModel, _bagTexture, _handOffset,
     missionNamespace getVariable ["ACME_hang_lineLength", 3],
     missionNamespace getVariable ["ACME_hang_lineSagSegs", 24],
     missionNamespace getVariable ["ACME_hang_useRope", true]];
-["ACME_hangBagVisualSync", [_medic, _visualEpoch, "show", _visualData, owner _medic], _visualJip] call CBA_fnc_globalEventJIP;
+["ACME_hangBagVisualSync", [_medic, _visualEpoch, "show", _visualData, clientOwner], _visualJip] call CBA_fnc_globalEventJIP;
 [_visualJip, _medic] call CBA_fnc_removeGlobalEventJIP;
 
 // the manual release and the placement tuner.

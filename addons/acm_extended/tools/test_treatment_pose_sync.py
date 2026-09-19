@@ -23,7 +23,9 @@ def execute(scenario):
         "isNull objectParent _medic": "(!_testVehicle)",
         "isNull _medic": "_testNull",
         "local _medic": "_testLocal",
-        "owner _medic": "_testOwner",
+        "owner _medic": "(if (_testServer) then {_testOwner} else {0})",
+        "clientOwner": "_testClient",
+        "isServer": "_testServer",
         "alive _medic": "_testAlive",
         "getAnimSpeedCoef _medic": "_testSpeed",
         "animationState _medic": "_testMove",
@@ -42,6 +44,8 @@ def execute(scenario):
         private _testNull = false;
         private _testLocal = false;
         private _testOwner = 7;
+        private _testClient = 8;
+        private _testServer = false;
         private _testAlive = true;
         private _testVehicle = false;
         private _testSpeed = 1;
@@ -122,7 +126,7 @@ def test_release_restores_speed_and_rejects_late_hold():
 
 def test_cancelled_owner_and_newer_episode_reject_delayed_old_hold():
     execute('''
-        _testLocal = true;
+        _testLocal = true; _testClient = 7;
         _medic setVariable ["ACME_treatmentPoseEpisode", [1, false]];
         call _hold;
         [_testSpeed == 1 && {_seeks == 0}, "cancelled owner refrozen"] call _check;
@@ -134,7 +138,7 @@ def test_cancelled_owner_and_newer_episode_reject_delayed_old_hold():
 
 def test_active_owner_echo_never_seeks_or_installs_observer_handler():
     execute('''
-        _testLocal = true;
+        _testLocal = true; _testClient = 7;
         call _hold;
         [_testSpeed == 0 && {_seeks == 0} && {count _handlers == 0}, "owner echo restarted animation"] call _check;
     ''')
@@ -156,7 +160,7 @@ def test_old_release_cannot_stop_new_remote_hold():
     '_medic setVariable ["ACE_isUnconscious", true];',
     "_testVehicle = true;",
     '_medic setVariable ["ACME_treatmentPoseEpisode", [1, false]];',
-    "_testOwner = 8;",
+    "_testOwner = 8; _testServer = true;",
 ])
 def test_hard_end_releases_observer(ending):
     execute('call _hold; ' + ending + '''
@@ -209,8 +213,7 @@ def test_deleted_provider_retires_observer_handler():
 def test_new_owner_aborts_old_episode_and_releases_to_crouch():
     execute("""
         call _hold;
-        _testLocal = true;
-        _testOwner = 8;
+        _testLocal = true; _testClient = 8;
         [] call _tick;
         [_testSpeed == 1 && {_removedJIP == 1} && {_exitMoves == 1}, "new owner retained old hold"] call _check;
         [(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [1, false], "old episode still active"] call _check;

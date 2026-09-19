@@ -1,5 +1,7 @@
 # ACM Extended 1.2.2: server bag visibility and BVM recovery
 
+The [bag visibility and CPR followup](2026-09-19-bag-visibility-cpr-stop.md) corrects the remaining client ownership check from this initial patch and extends cleanup to CPR.
+
 ## Problems
 
 Hang Bag created its hand prop and rope endpoints only on the provider's client. Broadcasting a local object handle did not create those objects for other players.

@@ -19,7 +19,9 @@ def execute(scenario):
         'isNull _medic': '_nullMedic',
         'isNull _patient': '_nullPatient',
         'local _medic': '_local',
-        'owner _medic': '_testOwner',
+        'owner _medic': '(if (_server) then {_testOwner} else {0})',
+        'clientOwner': '_client',
+        'isServer': '_server',
         'alive _medic': '_alive',
         'hasInterface': '_interface',
         'createSimpleObject [_bagModel, [0,0,0], true]': '([_bagModel] call _create)',
@@ -40,6 +42,8 @@ def execute(scenario):
         private _interface = true;
         private _local = false;
         private _testOwner = 7;
+        private _client = 8;
+        private _server = false;
         private _alive = true;
         private _vehicle = false;
         private _nullMedic = false;
@@ -89,7 +93,7 @@ def test_observer_creates_matching_bag_and_custom_line_only_once():
     ''')
 
 
-@pytest.mark.parametrize('context',['_local = true;','_interface = false;'])
+@pytest.mark.parametrize('context',['_local = true; _client = 7;','_interface = false;'])
 def test_holder_and_dedicated_server_do_not_create_duplicate_replicas(context):
     execute(context+' call _show; [count _created == 0, "unwanted replica"] call _check;')
 
@@ -138,10 +142,18 @@ def test_release_wins_over_pending_jip_show():
     ''')
 
 
-@pytest.mark.parametrize('end',['_alive = false;','_testOwner = 8;','_vehicle = true;','_nullPatient = true;','_nullMedic = true;'])
+@pytest.mark.parametrize('end',['_alive = false;','_server = true; _testOwner = 8;','_local = true;','_vehicle = true;','_nullPatient = true;','_nullMedic = true;'])
 def test_abandoned_or_deleted_session_destroys_all_local_objects(end):
     execute('call _show; '+end+'''
         [] call _tick;
         [count _deleted == 3 && {count _destroyedRopes == 1}, "orphaned props"] call _check;
         [!((_handlers select 0) select 2), "orphaned handler"] call _check;
     ''')
+
+
+def test_listen_server_observer_uses_server_owner_query():
+    execute('_server = true; _client = 2; call _show; [count _created == 4, "listen server lost remote bag"] call _check;')
+
+
+def test_locality_transfer_never_duplicates_the_original_holder_bag():
+    execute('_local = true; call _show; [count _created == 0, "new owner created an abandoned bag"] call _check;')

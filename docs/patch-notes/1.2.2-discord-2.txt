@@ -6,6 +6,9 @@
 
 ## SERVER FIXES
 
+- Corrected the remaining ownership check that kept hung IV bags and lines invisible to other clients after the initial fix. The same correction applies to frozen Feel Pulse and Auscultate Chest poses.
+- CPR now releases the provider and patient when stopped and plays the existing exit animation. Pause and resume no longer let the old animation loop restart compressions.
+- Added CPR cleanup for respawn, disconnect and abandoned sessions. Corrected boolean status checks in CPR and BVM, including oxygen updates.
 - Other players can now see the held IV bag and its matching custom line, including players joining during a hold. Both remain visible through lowering and are removed when the session ends.
 - Fixed BVM input handler cleanup leaving providers stuck and patients permanently marked as being ventilated by someone else.
 - Added BVM recovery after respawn, death, disconnect or an abandoned session. Pausing still reserves the patient, and delayed cleanup cannot cancel a newer session.

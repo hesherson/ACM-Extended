@@ -25,15 +25,18 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### Transfusions and access selection
 
-- Fixed held IV bag and custom line visibility for other players, including players joining during a hold. Observer props follow the existing lowering and cleanup lifecycle.
+- Fixed held IV bag and custom line visibility for other players, including players joining during a hold. Observer props follow the existing lowering and cleanup lifecycle. Corrected a remaining client ownership check that rejected observer visuals after the initial patch.
 - Removed the separate Hardcore Transfusion setting. Bag preparation, Y lines, flushing, infusion and access site management are now the standard workflow.
 - Removed the 250 mL saline bag minimum. Y lines still require compatible saline and retain the configured flush volume rule.
 - Retained the standard calcium/citrate and hypothermic coagulation values. Old exported Hardcore Transfusion values no longer select an alternate model.
 - Fixed IV/IO access selection so clicking a site updates the selected access, top left name, artwork and bag lists together.
 - Added the normal button sound to access site clicks and removed the top left IV/IO toggle. The inventory source switch remains available.
 
-### BVM on servers
+### CPR and BVM on servers
 
+- Fixed CPR cancellation leaving the provider in the compression animation. Cancellation disables animation re-entry and releases the patient before removing input handlers, then plays the existing exit animation.
+- Pausing CPR disables the compression loop before changing pose. Repeated starts, respawn, disconnect and abandoned CPR sessions now receive session cleanup without stopping another provider's BVM.
+- Corrected boolean status comparisons that interrupted CPR and BVM updates, including BVM oxygen status.
 - Fixed string input handler IDs interrupting BVM startup or cleanup and leaving providers stuck or patients permanently reserved.
 - Release the captured BVM session on cancellation or respawn. Server recovery clears abandoned sessions after death, disconnect, ownership changes or loss of the controller heartbeat. Pausing ventilation still reserves the patient, and old cleanup cannot cancel a newer session.
 
@@ -77,7 +80,7 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### Auscultation controls, sound and posterior view
 
-- Fixed remote observers seeing Feel Pulse and Auscultate Chest continue animating after the provider reached the frozen pose.
+- Fixed remote observers seeing Feel Pulse and Auscultate Chest continue animating after the provider reached the frozen pose. The followup corrects the same client ownership check used by bag visuals.
 - The bell opens at the cursor and is 19% larger. Hold left mouse to listen and move it with drag resistance; it shrinks by 12% while pressed. Releasing lifts it and stops contact sound.
 - Left lung, right lung and cardiac sounds mix continuously as the bell moves, without restarting their phase at each listening point.
 - Reduced all 21 stethoscope sound variants by another 6 dB, including cardiac, normal, shallow, dull and crackling sounds.
@@ -109,8 +112,11 @@ The provider hold followup passed 18 checks on each branch, including SQF execut
 
 The server bag and BVM followup passed 33 checks on each branch, with one optional development package check skipped. Both branches built 14 PBOs with HEMTT 1.21.0 using `--no-bin --no-sign --no-archive`; targeted package inspection confirmed the new runtime is included. Dedicated server gameplay remains unverified. Update the server and every client, then restart the mission.
 
+The bag visibility and CPR stop followup passed 72 focused checks on each branch, with one optional development package check skipped. Both produced 14 release PBOs. Revised client/server tests reproduce the earlier failures and verify the corrected paths. Actual multiplayer rendering and animation still need verification.
+
 ### Detailed patch records
 
+- [Bag visibility and CPR stop followup](docs/patch-notes/2026-09-19-bag-visibility-cpr-stop.md)
 - [Server bag visibility and BVM recovery](docs/patch-notes/2026-09-19-server-bag-bvm.md)
 - [Provider hold synchronization](docs/patch-notes/2026-09-19-provider-hold-observers.md)
 - [Release build drag handle exclusion](docs/patch-notes/2026-09-19-release-drag-build-gate.md)

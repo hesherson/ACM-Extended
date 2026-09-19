@@ -111,7 +111,7 @@ private _prepUntil = _actionStarted + (_prepDelay max 0);
 //  13 lastHoldAssert, 14 holdStarted, 15 stopAfterHold, 16 upright (standing medicUp state in use)
 // Stages: -1 waiting for the one weapon stow, -2 playing the BI stance transition into the crouch,
 //          0 legacy immediate start, 1 requested state entering, 2 running, 3 frozen hold.
-private _state = [_epoch, _mode, _main, -1, _actionStarted, -1, owner _medic, _exclusion,
+private _state = [_epoch, _mode, _main, -1, _actionStarted, -1, clientOwner, _exclusion,
     _prepUntil, _window, _actionStarted, _holdAt, -1, -1, -1, _stopAfterHold, _upright];
 _medic setVariable ["ACME_treatmentPoseState", _state];
 
@@ -260,7 +260,7 @@ private _pfh = [{
             if (_phase >= 0) then {_medic switchMove [_main, _phase, 1, false];};
             _medic setAnimSpeedCoef 0;
             private _jip = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
-            ["ACME_treatmentPoseSync", [_medic, _epoch, "hold", _main, _phase, owner _medic], _jip] call CBA_fnc_globalEventJIP;
+            ["ACME_treatmentPoseSync", [_medic, _epoch, "hold", _main, _phase, clientOwner], _jip] call CBA_fnc_globalEventJIP;
             [_jip, _medic] call CBA_fnc_removeGlobalEventJIP;
             _state set [12, _phase];
             _state set [13, _now];
@@ -286,7 +286,7 @@ private _pfh = [{
                 if (_stateDrift && {_phase >= 0}) then {_medic switchMove [_main, _phase, 1, false];};
                 _medic setAnimSpeedCoef 0;
                 private _jip = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
-                ["ACME_treatmentPoseSync", [_medic, _epoch, "hold", _main, _phase, owner _medic], _jip] call CBA_fnc_globalEventJIP;
+                ["ACME_treatmentPoseSync", [_medic, _epoch, "hold", _main, _phase, clientOwner], _jip] call CBA_fnc_globalEventJIP;
                 [_jip, _medic] call CBA_fnc_removeGlobalEventJIP;
                 _state set [13, _now];
             };

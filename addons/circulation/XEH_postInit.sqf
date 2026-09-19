@@ -1,5 +1,7 @@
 #include "script_component.hpp"
 
+call FUNC(registerCPRRuntime);
+
 [QGVAR(handleCardiacArrest), LINKFUNC(handleCardiacArrest)] call CBA_fnc_addEventHandler;
 [QGVAR(handleReversibleCardiacArrest), LINKFUNC(handleReversibleCardiacArrest)] call CBA_fnc_addEventHandler;
 
