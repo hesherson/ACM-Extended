@@ -19,6 +19,11 @@ if !(local _medic) exitWith {
     [true, _medic] call ACME_fnc_hangBagStop;
     [_pfhId] call CBA_fnc_removePerFrameHandler;
 };
+// Resolve the cross-client race that remains possible if two providers commit during the same replication window.
+// The patient's replicated holder is authoritative: whichever provider does not own it immediately tears down.
+if ((_patient getVariable ["ACME_hang_Medic", objNull]) isNotEqualTo _medic) exitWith {
+    [true, _medic] call ACME_fnc_hangBagStop;
+};
 // the system toggle. it is the same rule as direct pressure: disabling the system lowers the bag cleanly instead of
 // leaving the medic locked holding it.
 if !(missionNamespace getVariable ["ACME_sys_hang", true]) exitWith {
