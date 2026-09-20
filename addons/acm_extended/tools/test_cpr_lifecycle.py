@@ -54,6 +54,8 @@ def source(name):
         s = s.replace('        }];\n        _medic setVariable ["ACM_circulation_CPR_AnimEH", _animEH', '        }] call _addAnim);\n        _medic setVariable ["ACM_circulation_CPR_AnimEH", _animEH')
     if name == 'registerCPRRuntime':
         s = s.replace('        false\n    }];', '        false\n    }] select 1);')
+        # Server watchdog age must use the dedicated server's receive clock, not the provider's client clock.
+        s = s.replace('CBA_missionTime', '_serverClock')
     return s
 
 
@@ -97,6 +99,7 @@ def execute(scenario, runtime=False):
         private _duringSwitch = false;
         private _fireAnimOnSwitch = false;
         CBA_missionTime = 20;
+        private _serverClock = 1000;
         ACE_player = _medic;
         ace_medical_gui_maxDistance = 3;
         ACM_breathing_SwapToCPR = false;
@@ -291,12 +294,56 @@ def test_respawn_cleans_old_session_without_animating_or_reopening_on_new_player
     ''', runtime=True)
 
 
-@pytest.mark.parametrize('ending', ['[_medic] call _disconnectHandler;', '_testOwner = 8;', 'CBA_missionTime = 40;'])
+@pytest.mark.parametrize('ending', ['[_medic] call _disconnectHandler;', '_testOwner = 8;'])
 def test_server_release_is_followed_by_local_animation_cleanup(ending):
     execute('call _start; call _enter; '+ending+'''
         [[], 0] call ((_handlers select 0) select 0);
         call _tick; call _freed;
         [count _removedAnims == 1, "server release stranded local loop"] call _check;
+    ''', runtime=True)
+
+
+def test_server_heartbeat_uses_receive_time_not_client_clock_value():
+    execute('''
+        call _start; call _enter;
+
+        // Provider/client time is 22 while the dedicated-server clock is 1000.
+        // First server observation records the current heartbeat token on the server clock.
+        _serverClock = 1000;
+        [[], 0] call ((_handlers select 0) select 0);
+        [[_medic, _patient] call ACM_circulation_fnc_cprSessionValid, "clock offset invalidated CPR"] call _check;
+
+        _serverClock = 1009.9;
+        [[], 0] call ((_handlers select 0) select 0);
+        [(_patient getVariable ["ACM_circulation_CPR_Medic", objNull]) isEqualTo _medic, "heartbeat expired early"] call _check;
+
+        _serverClock = 1010;
+        [[], 0] call ((_handlers select 0) select 0);
+        call _tick; call _freed;
+    ''', runtime=True)
+
+
+def test_changed_client_heartbeat_resets_server_receive_age_even_with_clock_offset():
+    execute('''
+        call _start; call _enter;
+        _serverClock = 1000;
+        [[], 0] call ((_handlers select 0) select 0);
+
+        CBA_missionTime = 24; call _tick;
+        _serverClock = 1009.9;
+        [[], 0] call ((_handlers select 0) select 0);
+
+        _serverClock = 1019.8;
+        [[], 0] call ((_handlers select 0) select 0);
+        [(_patient getVariable ["ACM_circulation_CPR_Medic", objNull]) isEqualTo _medic, "new heartbeat did not refresh server receive age"] call _check;
+    ''', runtime=True)
+
+
+def test_server_tracks_only_latest_cpr_episode_for_each_provider():
+    execute('''
+        call _start;
+        ["ACM_circulation_cprTrack", [_medic, profileNamespace, ACM_circulation_CPR_Epoch + 1]] call CBA_fnc_serverEvent;
+        [count ACM_circulation_CPR_Sessions == 1, "duplicate server watchdog records for one provider"] call _check;
     ''', runtime=True)
 
 
