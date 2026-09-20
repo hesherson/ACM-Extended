@@ -12,7 +12,7 @@ Each file below is one complete post under 4,000 characters. Copy the contents o
 
 - [Post 1 of 3](1.2.2-discord-1.txt) (3,942 characters)
 - [Post 2 of 3](1.2.2-discord-2.txt) (3,855 characters)
-- [Post 3 of 3](1.2.2-discord-3.txt) (3,962 characters)
+- [Post 3 of 3](1.2.2-discord-3.txt) (3,891 characters)
 
 The latest medication duration followup passed 36 focused checks on this branch. See the [input patch record](2026-09-19-push-duration-input.md) for scope and the remaining in-game checks.
 
@@ -36,6 +36,7 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [Chest seal burping without a timer](2026-09-20-burp-no-timer.md)
 - [Repeat seal burping and Carry Assist release](2026-09-19-burp-carry-release.md)
 - [Shared menus and death cleanup](2026-09-19-shared-menus-death-cleanup.md)
 - [Bag visibility and CPR stop followup](2026-09-19-bag-visibility-cpr-stop.md)
@@ -52,4 +53,4 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 - [PEA morphology](2026-09-19-pea-morphology.md)
 - [Release check corrections](2026-09-19-release-warnings.md)
 
-The current source passed 124 focused tests, including strict HEMTT checks and config compilation; one optional development package test was skipped. Both branches built 14 release PBOs without binarization, signing or archiving. Rebuild after pulling these corrections and verify gameplay in Arma. See the validation section in the main notes and the detailed checks in each patch record.
+The previous seal burping and Carry Assist patch passed 124 focused tests, including strict HEMTT checks and config compilation; one optional development package test was skipped. Both branches built 14 release PBOs without binarization, signing or archiving. The subsequent removal of the burping timer passed 25 focused checks on each branch, including strict HEMTT checks and config compilation. Rebuild after pulling these corrections and verify gameplay in Arma. See the validation section in the main notes and the detailed checks in each patch record.

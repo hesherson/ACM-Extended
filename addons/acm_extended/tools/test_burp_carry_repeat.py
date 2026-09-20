@@ -1,7 +1,7 @@
 """Run repeated seal burps and real Carry Assist input callbacks in SQF-VM.
 
 The engine clock, display events, animation and physiology effects are simulated.
-The production wheel handlers, cooldown, transactions and cancellation paths run.
+The production wheel handlers, ownership checks, transactions and cancellation paths run.
 """
 import re
 
@@ -65,62 +65,53 @@ def burp_setup(kind):
 
 @pytest.mark.parametrize('kind', ['trauma', 'thora'])
 @pytest.mark.parametrize('direction', [-1, 1])
-def test_same_corner_can_burp_repeatedly_at_six_seconds(kind, direction):
+def test_same_corner_can_burp_repeatedly_without_advancing_time(kind, direction):
     execute(burp_setup(kind) + f'private _direction = {direction};' + '''
         [_direction] call _lift;
         [_logs == 1 && {_effects == 1} && {_gestures == 1},"first burp failed"] call _check;
-        _serverNow = 105.999;
+        for "_i" from 1 to 4 do {[_direction] call _wheel;};
+        [_logs == 1 && {_burpRequests == 1},"partial peel repeated treatment"] call _check;
+        [_direction] call _wheel;
+        [_logs == 2 && {_effects == 2} && {_gestures == 2},"immediate second burp remained blocked"] call _check;
         [_direction] call _lift;
-        [_burpRequests == 1,"wheel spam sent another burp during cooldown"] call _check;
-        _serverNow = 106;
-        [_direction] call _lift;
-        [_logs == 2 && {_effects == 2} && {_gestures == 2},"second burp remained latched"] call _check;
-        _serverNow = 112;
-        [_direction] call _lift;
-        [_logs == 3 && {_burpRequests == 3},"third cycle failed"] call _check;
+        [_logs == 3 && {_burpRequests == 3},"immediate third cycle failed"] call _check;
     ''')
 
 
 @pytest.mark.parametrize('kind', ['trauma', 'thora'])
-def test_can_lower_seal_during_cooldown_then_burp_again(kind):
+def test_can_lower_seal_then_immediately_burp_again(kind):
     frame = '(uiNamespace getVariable ["ACME_CS_BurpFrame",-1])' if kind == 'trauma' else '((uiNamespace getVariable ["ACME_Thora_Burp",[]]) select 1)'
     execute(burp_setup(kind) + '''
         [1] call _lift;
-        _serverNow = 101;
         [-1] call _lift;
-    ''' + f'[{frame} == 0,"cooldown prevented laying seal flat"] call _check;' + '''
+    ''' + f'[{frame} == 0,"could not lay seal flat"] call _check;' + '''
+        [_logs == 1,"lowering repeated treatment"] call _check;
         [1] call _lift;
-        [_logs == 1,"flat seal bypassed cooldown"] call _check;
-        _serverNow = 106;
-        [1] call _lift;
-        [_logs == 2,"flat seal could not burp again"] call _check;
+        [_logs == 2 && {_effects == 2},"flat seal could not burp immediately"] call _check;
     ''')
 
 
-def test_both_seal_types_and_providers_share_one_cooldown():
+def test_both_seal_types_and_providers_can_burp_without_waiting():
     execute(burp_setup('trauma') + '''
         [_medic,_patient] call ACME_fnc_chestSealBurp;
         [_patient,missionNamespace,"right","burp",1] call ACME_fnc_thoraAftercareLocal;
-        [_logs == 1 && {_effects == 1},"other seal/provider bypassed cooldown"] call _check;
-        _serverNow = 106;
+        [_logs == 2 && {_effects == 2},"other seal/provider was blocked"] call _check;
         [_patient,missionNamespace,"right","burp",1] call ACME_fnc_thoraAftercareLocal;
         [_medic,_patient] call ACME_fnc_chestSealBurp;
-        [_logs == 2 && {_effects == 2},"shared cooldown failed after repeat"] call _check;
+        [_logs == 4 && {_effects == 4},"repeated treatment was blocked"] call _check;
     ''')
 
 
-def test_shared_clock_ignores_client_mission_clock_and_checks_owner_before_commit():
+def test_readiness_ignores_clocks_but_still_requires_owner_for_treatment():
     execute(burp_setup('trauma') + '''
         CBA_missionTime = -500;
         [_medic,_patient] call ACME_fnc_chestSealBurp;
         _patientLocal = false;
         CBA_missionTime = 800;
-        [!([_patient] call ACME_fnc_chestSealBurpReady),"client clock bypassed cooldown"] call _check;
-        _serverNow = 106;
-        [[_patient] call ACME_fnc_chestSealBurpReady,"client clock blocked ready seal"] call _check;
-        [!([_patient,true] call ACME_fnc_chestSealBurpReady),"non-owner committed cooldown"] call _check;
+        [[_patient] call ACME_fnc_chestSealBurpReady,"client could not peel seal"] call _check;
+        [!([_patient,true] call ACME_fnc_chestSealBurpReady),"non-owner could apply treatment"] call _check;
         _patientLocal = true;
-        [[_patient,true] call ACME_fnc_chestSealBurpReady,"owner could not commit repeat"] call _check;
+        [[_patient,true] call ACME_fnc_chestSealBurpReady,"owner could not repeat immediately"] call _check;
     ''')
 
 
@@ -129,18 +120,18 @@ def test_corpse_seals_remain_reusable_without_restarting_physiology(kind):
     execute(burp_setup(kind) + '''
         _patientAlive = false;
         [1] call _lift;
-        _serverNow = 106;
         [1] call _lift;
         [_logs == 2 && {_gestures == 2},"corpse seal became unusable"] call _check;
         [_effects == 0,"burp restarted corpse physiology"] call _check;
     ''')
 
 
-def test_new_clinical_episode_does_not_inherit_old_cooldown():
+def test_existing_cooldown_record_cannot_block_repeated_burps():
     execute(burp_setup('trauma') + '''
-        [_medic,_patient] call ACME_fnc_chestSealBurp;
-        _epoch = 2;
-        [[_patient] call ACME_fnc_chestSealBurpReady,"new episode retained old cooldown"] call _check;
+        _patient setVariable ["ACME_CS_burpCooldown", [1, 10000, "serverTime"]];
+        [1] call _lift;
+        [1] call _lift;
+        [_logs == 2 && {_effects == 2},"old cooldown record blocked a burp"] call _check;
     ''')
 
 

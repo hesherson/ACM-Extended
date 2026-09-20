@@ -14,7 +14,7 @@
 // the lock is released by MOVING OFF THE SEAL, in fn_chestSealTick, which also lays it flat. that is the only
 // release, and it is an input rather than a timer.
 //
-// The peel remains frame by frame. Only accepting another burp is timed.
+// The peel remains frame by frame, with no timer between burps.
 // each notch moves exactly one frame, 0 to 5, and the seal sits at that frame until the medic moves the wheel
 // again. fn_chestSealRender is EVENT DRIVEN and never runs per frame, so a frame chosen from elapsed time was
 // written once and never advanced, which is why earlier versions drew nothing. a notch IS an event, so this
@@ -74,9 +74,9 @@ if (!(_fr isEqualType 0) || {!finite _fr}) then { _fr = 0; };
 if (_fr <= 0 && {!([uiNamespace getVariable ["ACME_CS_Patient",objNull]] call ACME_fnc_chestSealBurpReady)}) exitWith {false};
 private _openDir = uiNamespace getVariable ["ACME_CS_BurpDir", 0];
 
-// A completed burp must not latch this seal forever at full lift. After the shared
-// cooldown, a new opening scroll starts a fresh peel cycle without moving off the seal.
-// Reversing the wheel still lays the corner down immediately, including during cooldown.
+// A completed burp must not latch this seal forever at full lift. A new opening
+// scroll immediately starts a fresh peel cycle without moving off the seal.
+// Reversing the wheel still lays the corner down immediately.
 if (_fr >= _maxFrame && {uiNamespace getVariable ["ACME_CS_BurpFired", false]}
     && {_dir isEqualTo _openDir}
     && {[uiNamespace getVariable ["ACME_CS_Patient", objNull]] call ACME_fnc_chestSealBurpReady}) then {

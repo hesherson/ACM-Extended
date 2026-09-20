@@ -10,7 +10,7 @@ private _burp = uiNamespace getVariable ["ACME_Thora_Burp", ["", 0, 0, false]];
 _burp params ["_burpSide", "_frame", "_openDir", "_fired"];
 if (_burpSide != _side) then {_frame = 0; _openDir = _dir; _fired = false;};
 if (_frame == 0 && {!([_patient] call ACME_fnc_chestSealBurpReady)}) exitWith {false};
-// Start another peel after cooldown even when the cursor stayed on the fully lifted corner.
+// Immediately start another peel even when the cursor stayed on the fully lifted corner.
 if (_frame >= 5 && {_fired} && {_dir == _openDir}
     && {[_patient] call ACME_fnc_chestSealBurpReady}) then {
     _frame = 0;

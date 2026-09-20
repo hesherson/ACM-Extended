@@ -8,7 +8,7 @@
 
 - Added removal and burping of a seal over a finger thoracostomy tract. After removing the seal, the existing tract can be swept again without consuming another kit, then used for a chest tube.
 - In Adjust Thoracostomy, put down the held tool. Right click the surgical seal to remove it; scroll five notches to lift and burp a corner, and reverse the wheel to lay it flat. Select the finger and click the open tract to repeat the sweep.
-- Traumatic and surgical chest seal burps share a cooldown of 6 seconds per patient, including between providers. Rejected repeats do not repeat the treatment, activity log entry or animation. The lifted corner can still be laid flat during cooldown. After cooldown, scroll again to start another peel without moving off the seal.
+- Traumatic and surgical chest seal burping has no timer or cooldown. Each completed five-notch peel triggers one treatment, activity log entry and animation request. Scroll again to start another peel immediately, or reverse the wheel to lay the corner flat.
 - Accepted burps request the corresponding chest seal treatment animation on the provider.
 - Chest seal Flip waits for the actual provider roll animation before physically rolling the patient. Entry transitions no longer trigger the flip; closing, cancelling or timing out the panel cancels a pending roll.
 - Aftercare acts on the selected side and preserves unrelated seals and a chest tube on the opposite side.
