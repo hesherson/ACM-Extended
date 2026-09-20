@@ -15,7 +15,7 @@
 - CPR now releases the provider and patient when stopped and plays the release animation before returning to a movable crouch. Pause and resume no longer let the old animation loop restart compressions.
 - Added CPR cleanup for respawn, disconnect and abandoned sessions. Corrected boolean status checks in CPR and BVM, including oxygen updates.
 - Other players can now see the held IV bag and its matching custom line, including players joining during a hold. Both remain visible through lowering and are removed when the session ends.
-- Fixed BVM input handler cleanup leaving providers stuck and patients permanently marked as being ventilated by someone else.
+- Fixed BVM input cleanup leaving providers stuck and patients reserved. Fixed immediate cancellation from Direct Pressure menu reopening and incorrect server heartbeat expiry.
 - Added BVM recovery after respawn, death, disconnect or an abandoned session. Pausing still reserves the patient, and delayed cleanup cannot cancel a newer session.
 
 ## SEIZURES AND THE PATIENT SPAWNER

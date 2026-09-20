@@ -11,10 +11,12 @@ Version 1.2.2 includes the release check corrections and the complete RC1 patch 
 Each file below is one complete post under 4,000 characters. Copy the contents of each file as a separate message, in order. The @everyone mention appears in the first post.
 
 - [Post 1 of 3](1.2.2-discord-1.txt) (3,942 characters)
-- [Post 2 of 3](1.2.2-discord-2.txt) (3,855 characters)
+- [Post 2 of 3](1.2.2-discord-2.txt) (3,905 characters)
 - [Post 3 of 3](1.2.2-discord-3.txt) (3,891 characters)
 
 The latest medication duration followup passed 36 focused checks on this branch. See the [input patch record](2026-09-19-push-duration-input.md) for scope and the remaining in-game checks.
+
+The latest [BVM startup followup](2026-09-20-bvm-startup.md) passed 95 focused checks on each branch and built 14 release PBOs per branch without binarization, signing or archiving. Live Arma multiplayer verification remains necessary.
 
 ## Discord format
 
@@ -36,6 +38,7 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [BVM startup cancellation](2026-09-20-bvm-startup.md)
 - [Chest seal burping without a timer](2026-09-20-burp-no-timer.md)
 - [Repeat seal burping and Carry Assist release](2026-09-19-burp-carry-release.md)
 - [Shared menus and death cleanup](2026-09-19-shared-menus-death-cleanup.md)

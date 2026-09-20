@@ -44,6 +44,8 @@ These notes describe the combined current behavior. Later corrections take prece
 
 ### CPR and BVM on servers
 
+- Fixed early BVM cancellation when Direct Pressure completion reopened the medical menu over the new maneuver. Earlier queued menu and stance callbacks also yield to an active continuous action.
+- BVM heartbeat expiry now uses the server receive time. Client and server clock differences no longer cause a live or paused session to expire immediately after startup.
 - Fixed CPR cancellation leaving the provider in the compression animation. Cancellation disables animation re-entry and releases the patient before removing input handlers, then plays the existing exit animation and queues a normal movable crouch. CPR loop states now include native exit connections, and stale assessment holds are retired before a new maneuver starts.
 - Pausing CPR disables the compression loop before changing pose. Repeated starts, respawn, disconnect and abandoned CPR sessions now receive session cleanup without stopping another provider's BVM.
 - Corrected boolean status comparisons that interrupted CPR and BVM updates, including BVM oxygen status.
@@ -128,8 +130,11 @@ The seal burping and Carry Assist followup passed 124 focused checks on each bra
 
 The removal of the burping timer passed 25 focused checks on each branch, including immediate repeat peels, strict HEMTT diagnostics and config compilation.
 
+The BVM startup followup passed 95 focused checks on each branch, including complete startup, pause/resume, cancellation, CPR, Carry Assist, shared menus, strict HEMTT diagnostics and config compilation. Both branches built 14 release PBOs using `hemtt release --no-bin --no-sign --no-archive`. Windows asset binarization, signing and live multiplayer playback were not tested here.
+
 ### Detailed patch records
 
+- [BVM startup cancellation](docs/patch-notes/2026-09-20-bvm-startup.md)
 - [Chest seal burping without a timer](docs/patch-notes/2026-09-20-burp-no-timer.md)
 - [Repeat seal burping and Carry Assist release](docs/patch-notes/2026-09-19-burp-carry-release.md)
 - [Shared menus and death cleanup](docs/patch-notes/2026-09-19-shared-menus-death-cleanup.md)

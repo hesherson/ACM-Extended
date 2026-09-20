@@ -31,6 +31,12 @@
         params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
         if (isNull _medic || {!local _medic} || {!alive _medic} || {!isNull objectParent _medic}) exitWith {};
 
+        // ACE reports setup success after BVM has taken over the provider. Completing
+        // that short setup must not resume pressure or reopen a menu over the maneuver.
+        // Its real cancellation emits a later treatment event after releasing the controller.
+        if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+            && {_medic isEqualTo ACE_player}) exitWith {};
+
         private _classKey = toLowerANSI _classname;
         private _headOwned = _classname in ["ACME_ElevateHead", "ACME_LowerHead"];
         // CheckPulse is intentionally a near-instant ACE treatment whose success callback opens ACME's longer-lived
@@ -79,6 +85,10 @@
                         || {!(_m getVariable ["ACME_DP_Active", false])}
                         || {!((_m getVariable ["ACME_DP_Patient", objNull]) isEqualTo _p)}
                         || {(_m getVariable ["ACME_DP_PoseToken", -2]) != _tok}) exitWith {};
+                    // A completion callback queued by an earlier treatment can run
+                    // after BVM starts. It no longer owns the provider's interface.
+                    if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+                        && {_m isEqualTo ACE_player}) exitWith {};
                     private _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
                     private _progress = uiNamespace getVariable ["ace_common_dlgProgress", displayNull];
                     // Do not replace a purpose-built minigame/dialog which a treatment callback intentionally opened.
@@ -95,6 +105,8 @@
         [{
             params ["_m"];
             if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}) exitWith {};
+            if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+                && {_m isEqualTo ACE_player}) exitWith {};
             if ((_m getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []
                 || {_m getVariable ["ACME_rollProviderActive", false]}
                 || {_m getVariable ["ACME_headElev_seqActive", false]}) exitWith {};
@@ -117,4 +129,3 @@
         _patient setVariable ["ACME_AAJT_treatmentGraceUntil", CBA_missionTime + 0.9, true];
     }] call CBA_fnc_addEventHandler;
 } forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];
-
