@@ -79,6 +79,13 @@ ACME_hang_lineTipOffset = [0, 0.04, 0.06];  // oriented local tip. it gives the 
 
 // Register on every client; dedicated servers do not create presentation objects.
 ["ACME_hangBagVisualSync", {_this call ACME_fnc_hangBagVisualSync}] call CBA_fnc_addEventHandler;
+// One-shot owner-routed gear recovery. This is deliberately valid for dead units and non-player local owners.
+["ACME_hangRestoreWeapons", {
+    params [["_medic", objNull, [objNull]], ["_episodeStart", -1, [0]]];
+    if (!isNull _medic && {local _medic}) then {
+        [_medic, _episodeStart] call ACME_fnc_hangBagRestoreWeapons;
+    };
+}] call CBA_fnc_addEventHandler;
 if (hasInterface) then {
     ["unit", {
         params ["_unit", "_previous"];
@@ -101,7 +108,26 @@ if (isServer) then {
             _patient setVariable ["ACME_hang_Medic", objNull, true];
             _patient setVariable ["ACME_hang_flowMult", 1, true];
         };
+        private _episodeStart = _unit getVariable ["ACME_hang_Start", -1];
         _unit setVariable ["ACME_hang_Active", false, true];
+
+        // The two weapon slots were published at prep time. Ownership normally transfers to the server immediately
+        // after disconnect; wait for that handoff, then restore the exact loadout. If another owner receives the unit,
+        // fall back to an object-targeted event instead of dropping the gear snapshot.
+        if !((_unit getVariable ["ACME_hang_savedWeaponSlots", []]) isEqualTo []) then {
+            [{
+                params ["_u"];
+                isNull _u || {local _u}
+            }, {
+                params ["_u", "_ep"];
+                if (!isNull _u) then {[_u, _ep] call ACME_fnc_hangBagRestoreWeapons;};
+            }, [_unit, _episodeStart], 2, {
+                params ["_u", "_ep"];
+                if (!isNull _u) then {
+                    ["ACME_hangRestoreWeapons", [_u, _ep], _u] call CBA_fnc_targetEvent;
+                };
+            }] call CBA_fnc_waitUntilAndExecute;
+        };
         false
     }];
 };
