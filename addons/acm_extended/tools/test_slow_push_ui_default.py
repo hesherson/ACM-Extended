@@ -116,6 +116,33 @@ def test_carousel_shortcuts_yield_to_every_edit_control_before_processing_keys()
         assert '["ACME_SK_CarouselRepeatAt",0]' in handler
 
 
+def test_push_duration_is_provider_owned_and_persists_per_syringe():
+    body = read("functions/fn_skBodyActionRender.sqf")
+    assert 'ACME_SK_PushDurationDrafts' in body
+    assert 'ACME_SK_PushDurationFor' in body
+    assert 'ACME_HCMedPushDefaultFor' not in body
+
+    keyup = body.split('ctrlAddEventHandler ["KeyUp", {', 1)[1].split('}];', 1)[0]
+    assert '_drafts set [_draftId,_clean];' in keyup
+
+    # Routine pending-injection rendering may update only the grey recommendation, never the edit value.
+    pending = body.split('if (_pending isEqualType [] && {count _pending >= 3}) then {', 1)[1]
+    pending = pending.split('private _total =', 1)[0]
+    assert '_durHint ctrlSetText _suggested;' in pending
+    assert '_durEdit ctrlSetText' not in pending
+
+    # An active Hardcore transaction must not overwrite the draft with its running/default duration.
+    hc = body.split('if (_hcOwns) exitWith {', 1)[1].split('if (_pending isEqualType []', 1)[0]
+    assert '_runningDuration' not in hc
+    assert '_durEdit ctrlSetText' not in hc
+
+    # The only post-creation text replacement is the one-time restore when the stable syringe ID changes.
+    after_create = body.split('private _entry = _store select _idx;', 1)[1]
+    assert 'private _restoredDuration = _durationDrafts getOrDefault [_id,""];' in after_create
+    assert 'if (_durationFor != _id) then {' in after_create
+    assert '_durationDrafts set [_durationFor,ctrlText _durEdit];' in after_create
+
+
 def test_duration_row_is_reserved_before_carousel_hit_areas_are_measured():
     source = read("functions/fn_skCarouselRender.sqf")
     assert source.index("call ACME_fnc_skBodyActionRender;") < source.index("private _hoverBottom")
