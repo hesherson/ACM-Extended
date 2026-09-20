@@ -96,7 +96,7 @@ These notes describe the combined current behavior. Later corrections take prece
 - Fixed remote observers seeing Feel Pulse and Auscultate Chest continue animating after the provider reached the frozen pose. The followup corrects the same client ownership check used by bag visuals.
 - The bell opens at the cursor and is 19% larger. Hold left mouse to listen and move it with drag resistance; it shrinks by 12% while pressed. Releasing lifts it and stops contact sound.
 - Left lung, right lung and cardiac sounds mix continuously as the bell moves, without restarting their phase at each listening point.
-- Reduced all 21 stethoscope sound variants by another 6 dB, including cardiac, normal, shallow, dull and crackling sounds.
+- Restored all 21 stethoscope sounds to their original levels. Outside audio now drops to 10% while listening, with chest sounds kept separate from that reduction.
 - Added a Front/Back view button using the existing body textures at matching scale. Anatomical left/right mapping follows the selected view. Switching views lifts the bell and changes the diagram without physically rolling the patient.
 - Added basal crackles on the affected lung when hemothorax fluid exceeds 0.3 L, increasing to full contribution at 1.1 L. Draining fluid reduces the finding; findings in the upper zones and opposite lung remain.
 - Hemothorax listening uses ACM's pooled pleural fluid and finding for the affected lung, rather than introducing separate left/right fluid volumes.
@@ -135,8 +135,11 @@ The BVM startup followup passed 95 focused checks on each branch, including comp
 
 The native BVM restoration passed 108 focused checks on each branch, including repeated Direct Pressure to BVM transitions, native breath delivery, pause/resume, cancellation, rejected starts, provider lifecycle cleanup, CPR, Carry Assist, shared menus, strict HEMTT diagnostics and config compilation. Both branches built 14 release PBOs with `hemtt release --no-bin --no-sign --no-archive`. Windows asset binarization, signing and live Arma multiplayer behavior were not tested here.
 
+The stethoscope audio correction passed 37 focused checks on each branch, including chest interaction contracts, treatment cleanup, strict HEMTT diagnostics and complete config compilation. All 21 diagnostic gains were compared with the original source and match exactly. Both branches built 14 release PBOs without binarization, signing or archiving. In-game listening remains unverified.
+
 ### Detailed patch records
 
+- [Stethoscope audio correction](docs/patch-notes/2026-09-20-stethoscope-audio.md)
 - [Restore ACM BVM flow](docs/patch-notes/2026-09-20-bvm-native-flow.md)
 - [BVM startup cancellation](docs/patch-notes/2026-09-20-bvm-startup.md)
 - [Chest seal burping without a timer](docs/patch-notes/2026-09-20-burp-no-timer.md)

@@ -88,7 +88,8 @@ private _play = {
     private _channel = _channels select _index;
     _channel params ["_emitter","_oldSound"];
     if (!isNull _oldSound) then {deleteVehicle _oldSound;};
-    private _sound = _emitter say3D [_class,20,_pitch];
+    // Speech routing bypasses ACE's environmental fadeSound while retaining distance crossfades.
+    private _sound = _emitter say3D [_class,20,_pitch,true];
     _channel set [1,_sound];
 };
 if (alive _patient && {_hr > 0} && {!(_patient getVariable ["ace_medical_inCardiacArrest",false])}

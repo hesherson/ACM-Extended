@@ -68,7 +68,8 @@ if ((missionNamespace getVariable ["ACME_flightNoise_enable", true])
         _medic setVariable ["ACME_stethPatientAnimLease", [], false];
     };
 
-    ace_hearing_volumeAttenuation = 0.2;
+    // Reduce surrounding audio while the scope is in use. Diagnostic channels bypass this mix.
+    ace_hearing_volumeAttenuation = 0.1;
     [(localize "STR_ACE_Volume_Lowered"), 1.5, _medic] call ace_common_fnc_displayTextStructured;
 
     createDialog "ACM_breathing_Stethoscope_Dialog";

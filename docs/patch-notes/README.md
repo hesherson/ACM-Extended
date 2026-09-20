@@ -12,13 +12,15 @@ Each file below is one complete post under 4,000 characters. Copy the contents o
 
 - [Post 1 of 3](1.2.2-discord-1.txt) (3,942 characters)
 - [Post 2 of 3](1.2.2-discord-2.txt) (3,903 characters)
-- [Post 3 of 3](1.2.2-discord-3.txt) (3,891 characters)
+- [Post 3 of 3](1.2.2-discord-3.txt) (3,931 characters)
 
 The latest medication duration followup passed 36 focused checks on this branch. See the [input patch record](2026-09-19-push-duration-input.md) for scope and the remaining in-game checks.
 
 The earlier [BVM startup followup](2026-09-20-bvm-startup.md) passed 95 focused checks on each branch and built 14 release PBOs per branch without binarization, signing or archiving. Live Arma multiplayer verification remains necessary.
 
 The latest [native BVM restoration](2026-09-20-bvm-native-flow.md) passed 108 focused checks on each branch. Both branches built 14 release PBOs without binarization, signing or archiving. Live Arma multiplayer verification remains necessary.
+
+The [stethoscope audio correction](2026-09-20-stethoscope-audio.md) passed 37 focused checks on each branch and restored all 21 original diagnostic gains. Both branches built 14 release PBOs without binarization, signing or archiving. In-game listening remains unverified.
 
 ## Discord format
 
@@ -40,6 +42,7 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [Stethoscope audio correction](2026-09-20-stethoscope-audio.md)
 - [Restore ACM BVM flow](2026-09-20-bvm-native-flow.md)
 - [BVM startup cancellation](2026-09-20-bvm-startup.md)
 - [Chest seal burping without a timer](2026-09-20-burp-no-timer.md)
