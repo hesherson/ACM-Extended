@@ -42,11 +42,22 @@ if (isNull _durEdit) then {
         uiNamespace setVariable ["ACME_SK_CarouselRepeatAt",0];
         ((ctrlParent _ctrl) displayCtrl 84832) ctrlShow false;
     }];
+    _durEdit setVariable ["ACME_SK_PushDurationFor",""];
     _durEdit ctrlAddEventHandler ["KeyUp", {
         params ["_ctrl"];
         private _raw = ctrlText _ctrl;
         private _clean = toString ((toArray _raw) select {_x >= 48 && {_x <= 57}});
         if (_clean != _raw) then {_ctrl ctrlSetText _clean;};
+        // The edit owns the provider's draft. Rendering may read it, but routine UI refreshes must never
+        // replace it with a default or recommendation. Store by stable syringe ID so carousel changes and
+        // closing/reopening the Narc Box restore the exact value that was typed for that prepared syringe.
+        private _draftId = _ctrl getVariable ["ACME_SK_PushDurationFor",""];
+        if (_draftId != "") then {
+            private _drafts = uiNamespace getVariable ["ACME_SK_PushDurationDrafts",createHashMap];
+            if !(_drafts isEqualType createHashMap) then {_drafts = createHashMap;};
+            _drafts set [_draftId,_clean];
+            uiNamespace setVariable ["ACME_SK_PushDurationDrafts",_drafts];
+        };
         false
     }];
 };
@@ -108,6 +119,23 @@ _durHint ctrlCommit 0;
 
 private _entry = _store select _idx;
 private _id = _entry param [11,"",[""]];
+
+// Keep a local draft per physical prepared syringe. A redraw is presentation-only and must never reset the
+// provider's chosen time. On a real syringe change, save the previous field before restoring the new syringe's
+// draft. This also preserves the entry through page changes and closing/reopening the Narc Box.
+private _durationDrafts = uiNamespace getVariable ["ACME_SK_PushDurationDrafts",createHashMap];
+if !(_durationDrafts isEqualType createHashMap) then {_durationDrafts = createHashMap;};
+private _durationFor = _durEdit getVariable ["ACME_SK_PushDurationFor",""];
+if (_durationFor != _id) then {
+    if (_durationFor != "") then {_durationDrafts set [_durationFor,ctrlText _durEdit];};
+    private _restoredDuration = _durationDrafts getOrDefault [_id,""];
+    if ((ctrlText _durEdit) != _restoredDuration) then {_durEdit ctrlSetText _restoredDuration;};
+    _durEdit setVariable ["ACME_SK_PushDurationFor",_id];
+} else {
+    if (_id != "") then {_durationDrafts set [_id,ctrlText _durEdit];};
+};
+uiNamespace setVariable ["ACME_SK_PushDurationDrafts",_durationDrafts];
+
 private _pending = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
 // B121: an active Hardcore push owns this exact stable syringe. The normal green confirmation becomes a red
 // Stop Push control. It remains clickable even though carousel/site controls are deliberately locked.
@@ -124,8 +152,8 @@ if (_hcOwns) exitWith {
         _durLabel ctrlShow true;
         if !(ctrlShown _durEdit) then {_durEdit ctrlShow true;};
         if (ctrlEnabled _durEdit) then {_durEdit ctrlEnable false;};
-        private _runningDuration = str (round (_hcJob getOrDefault ["duration",3]));
-        if ((ctrlText _durEdit) != _runningDuration) then {_durEdit ctrlSetText _runningDuration;};
+        // Keep the provider's draft visible while disabled. The running transaction already owns its
+        // authoritative duration; writing that value back into the edit would destroy the draft on redraw.
     };
     _back ctrlShow true;
     _btn ctrlShow true;
@@ -134,13 +162,9 @@ if (_hcOwns) exitWith {
 if (_pending isEqualType [] && {count _pending >= 3}) then {
     _pending params ["_part","_site","_route"];
     if (_route != "im") then {
-        private _defaultFor = _d getVariable ["ACME_HCMedPushDefaultFor",""];
-        if (!_durFocused && {_defaultFor != _id}) then {
-            private _suggested = str (round ([_entry] call ACME_fnc_medicationSuggestedPushSec));
-            _durHint ctrlSetText _suggested;
-            _durEdit ctrlSetText "";
-            _d setVariable ["ACME_HCMedPushDefaultFor",_id];
-        };
+        // Recommendation is display-only. Never write it, blank, or the 3 s fallback into the editable value.
+        private _suggested = str (round ([_entry] call ACME_fnc_medicationSuggestedPushSec));
+        _durHint ctrlSetText _suggested;
     };
     private _total = ((_entry param [2,0,[0]]) + (_entry param [4,0,[0]])) max 0;
     private _ml = _total;
