@@ -87,15 +87,13 @@ if (_fan isEqualTo []) then {
 };
 private _plus = _fan param [4,controlNull];
 
-// Approximate the opaque catheter's center inside the source canvas. fn_ivMinigameInit uses the complementary
-// 0.34 tray-icon bias because the art mass sits around 0.66 of the source height. With the tray rotation that
-// vertical texture bias becomes a screen-space right bias. We solve every fan pose around this VISUAL centroid
-// instead of around the transparent control midpoint.
-private _iconBias = missionNamespace getVariable ['ACME_iv_trayIconBias',0.34];
-if !(_iconBias isEqualType 0 && {finite _iconBias}) then {_iconBias = 0.34;};
-_iconBias = (_iconBias max 0) min 1;
+// Approximate the opaque catheter's center inside the SOURCE canvas. This is intentionally independent from
+// ACME_iv_trayIconBias, which only moves the resting tray control. Coupling those two values made a placement tune
+// change the hover geometry and could make the fan appear stretched or drift away from the real catheter.
 private _artU = 0.5;
-private _artV = 1 - _iconBias;
+private _artV = missionNamespace getVariable ['ACME_iv_trayArtV',0.66];
+if !(_artV isEqualType 0 && {finite _artV}) then {_artV = 0.66;};
+_artV = (_artV max 0) min 1;
 
 private _artOffset = {
     params ['_w','_h','_ang','_u','_v'];
@@ -129,11 +127,13 @@ _slot params ['_sx','_sy','_sw','_sh'];
 // Keep the deck tight. The offsets are deliberately measured from the real catheter's visible midpoint, not the
 // tray box or the transparent PAA canvas. Every clone uses the same aspect-preserving canvas dimensions as the
 // live logo, so changing angle no longer stretches the artwork or throws it toward the right edge of the screen.
+// UI Y increases downward. Every clone therefore uses a NEGATIVE Y offset so inventory only splays upward
+// from the slightly lowered resting catheter. No copy is allowed to fan below the tray's front needle.
 private _poses = [
-    [-0.030, 0.045, -100],
-    [-0.012, 0.020,  -95],
-    [ 0.012, 0.020,  -85],
-    [ 0.030, 0.045,  -80]
+    [-0.024, -0.060, -99],
+    [-0.010, -0.034, -94],
+    [ 0.010, -0.034, -86],
+    [ 0.024, -0.060, -81]
 ];
 private _cloneCount = ((_shown - 1) max 0) min 4;
 private _fanMul = 1.03;
