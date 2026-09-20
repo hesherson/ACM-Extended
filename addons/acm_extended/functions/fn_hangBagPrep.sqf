@@ -23,11 +23,11 @@ _medic setUnitPos "MIDDLE";
 // collision-audio smacking sound. fully removing the back weapons, the primary and the launcher, for the duration
 // kills that collider, and they are restored with their full state in fn_hangbagstop, which the watchdog of the
 // hold also calls on death, unconsciousness, a leash break or lowering.
-// it falls back to the old on-back stow if removal is disabled. a hard disconnect mid-hold is the only path that
-// would not restore, so toggle the setting off if that matters for your server.
+// it falls back to the old on-back stow if removal is disabled. Publish the two removed slots once so death,
+// disconnect or a locality transfer can restore the corpse/provider on whichever machine owns it afterward.
 if ((missionNamespace getVariable ["ACME_hang_removeWeapon", true]) && {(primaryWeapon _medic != "") || {secondaryWeapon _medic != ""}}) then {
     private _ld = getUnitLoadout _medic;
-    _medic setVariable ["ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1]];
+    _medic setVariable ["ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true];
     _ld set [0, []];
     _ld set [1, []];
     _medic setUnitLoadout _ld;
