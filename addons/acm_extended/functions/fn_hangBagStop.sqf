@@ -68,6 +68,17 @@ private _teardown = {
     private _sameEpisode = (_medic getVariable ["ACME_hang_Start", -2]) == _episodeStart;
     private _providerCanRestore = _sameEpisode && {!(_medic getVariable ["ACME_hang_Active", false])};
 
+    // Gear restoration is separate from presentation recovery. A dead provider is still a lootable/interactable
+    // unit and must get the temporarily removed primary/launcher back. If locality moved, route the one-shot restore
+    // to the new owner; the published snapshot and episode fingerprint make stale callbacks harmless.
+    if (_providerCanRestore) then {
+        if (local _medic) then {
+            [_medic, _episodeStart] call ACME_fnc_hangBagRestoreWeapons;
+        } else {
+            ["ACME_hangRestoreWeapons", [_medic, _episodeStart], _medic] call CBA_fnc_targetEvent;
+        };
+    };
+
     if (_providerCanRestore && {local _medic} && {alive _medic} && {_medic isEqualTo ACE_player}) then {
         _medic enableAI "ANIM";
         // Normal path: the authored out move has already connected itself to crouch. Fallback path: if the move
@@ -76,14 +87,6 @@ private _teardown = {
         private _state = toLower animationState _medic;
         if (!_playedOut || {(_state find "jetscrewaidfcrouchthumbup") >= 0}) then {
             [_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;
-        };
-        private _savedSlots = _medic getVariable ["ACME_hang_savedWeaponSlots", []];
-        if !(_savedSlots isEqualTo []) then {
-            private _ld = getUnitLoadout _medic;
-            _ld set [0, _savedSlots select 0];
-            _ld set [1, _savedSlots select 1];
-            _medic setUnitLoadout _ld;
-            _medic setVariable ["ACME_hang_savedWeaponSlots", nil];
         };
         _medic selectWeapon "";
         _medic setUnitPos "MIDDLE";
