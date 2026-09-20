@@ -16,6 +16,9 @@ assert 'ACME_IVLine_Rope_Plasma' in start
 assert 'ACME_hang_ropeClass' in start
 assert '_ropeClass\n    ] call ACME_fnc_ivLineCreate' in start
 assert '0.05, [_medic, _patient]' in start
+assert 'private _desiredFlowMult' in tick
+assert 'getVariable ["ACME_hang_flowMult", 1]) isNotEqualTo _desiredFlowMult' in tick
+assert tick.count('call ACME_fnc_setVarNet') == 1
 for bad in ['_medic setPosASL', '_medic setDir _lockDir', '_medic setVelocity [0,0,0]', '_medic setVelocityModelSpace']:
     assert bad not in tick
 assert 'call ACME_fnc_doAnim;' not in tick
