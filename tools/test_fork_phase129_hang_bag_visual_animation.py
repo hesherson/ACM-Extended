@@ -8,6 +8,7 @@ tick=(F/'fn_hangBagTick.sqf').read_text()
 stop=(F/'fn_hangBagStop.sqf').read_text()
 prep=(F/'fn_hangBagPrep.sqf').read_text()
 restore=(F/'fn_hangBagRestoreWeapons.sqf').read_text()
+canstart=(F/'fn_hangBagCanStart.sqf').read_text()
 line=(F/'fn_ivLineCreate.sqf').read_text()
 init=(F/'fn_initHangBagRuntime.sqf').read_text()
 assert 'createSimpleObject [_bagModel' in start
@@ -32,6 +33,9 @@ assert '!local _medic' in restore
 assert 'setUnitLoadout _ld' in restore
 assert 'ACME_hang_savedWeaponSlots", nil, true' in restore
 assert 'ACME_hangRestoreWeapons' in stop
+assert 'ACME_hang_Medic' in canstart and 'ACME_hang_Active' in canstart
+assert 'That bag is already being held up.' in start
+assert 'getVariable ["ACME_hang_Medic", objNull]) isNotEqualTo _medic' in tick
 assert '[_medic, _episodeStart] call ACME_fnc_hangBagRestoreWeapons' in stop
 assert stop.index('[_medic, ""] call ACME_fnc_doAnimHeld') < stop.index('[_medic, _outAnim, 1] call ACME_fnc_doAnim')
 assert 'ACME_hang_ropeClass = "ACME_IVLine_Rope";' in init
