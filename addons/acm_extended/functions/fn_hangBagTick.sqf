@@ -69,7 +69,14 @@ if (_doneTransfusing) exitWith {
     [true, _medic] call ACME_fnc_hangBagStop;  // this hides the hint. the exitwith here means the tick will not re-assert it.
 };
 
-[_patient, "ACME_hang_flowMult", (missionNamespace getVariable ["ACME_hang_flowMult", 1.75])] call ACME_fnc_setVarNet;
+// The start path already publishes this scalar. Most held bags target another player's casualty, so the patient is
+// remote on the provider client and ACME_fnc_setVarNet intentionally cannot use its owner-only scalar cache here.
+// Do not turn this 20 Hz presentation/validity tick into a 20 Hz public-variable stream. Re-publish only if another
+// system actually changed the multiplier while this exact hold is still active.
+private _desiredFlowMult = missionNamespace getVariable ["ACME_hang_flowMult", 1.75];
+if ((_patient getVariable ["ACME_hang_flowMult", 1]) isNotEqualTo _desiredFlowMult) then {
+    [_patient, "ACME_hang_flowMult", _desiredFlowMult] call ACME_fnc_setVarNet;
+};
 
 // keep the cancel prompt up: recreate it if a HUD refresh cleared the control, and only while the hang is genuinely
 // still active. during teardown, from a completed transfusion, RMB or esc, hangBagStop has already cleared
