@@ -13,6 +13,15 @@ if (!isNull objectParent _medic) exitWith {
     ["Can't hold a bag up from inside a vehicle.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
+// Re-check after the raise/progress phase. The action condition is advisory only; another medic may have acquired
+// this patient while our animation was running. If so, restore our temporarily removed weapons/DP state and abort.
+private _holder = _patient getVariable ["ACME_hang_Medic", objNull];
+if (!isNull _holder && {!(_holder isEqualTo _medic)}
+    && {alive _holder} && {_holder getVariable ["ACME_hang_Active", false]}) exitWith {
+    [_medic] call ACME_fnc_hangBagPrepStop;
+    ["That bag is already being held up.", 2, _medic] call ace_common_fnc_displayTextStructured;
+};
+
 _medic setVariable ["ACME_hang_Raising", false];
 _medic setVariable ["ACME_hang_sawFlow", false];  // the auto-lower latch, only after flow is first seen.
 _medic setVariable ["ACME_hang_Active", true, true];
