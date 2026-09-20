@@ -21,7 +21,10 @@
 
 params ["_medic", "_patient", ["_useOxygen", false], ["_portableOxygen", false]];
 
-if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {};
+if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
+    || {!([_medic] call ACEFUNC(common,isAwake))}
+    || {missionNamespace getVariable [QEGVAR(core,ContinuousAction_Active), false]}
+    || {!([_medic, _patient, true] call FUNC(canUseBVM))}) exitWith {};
 private _reserved = _patient getVariable [QGVAR(BVM_Medic), objNull];
 if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
     [LLSTRING(BVM_Already), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
@@ -30,6 +33,12 @@ if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
 // Recover a dead, disconnected or abandoned provider reservation before a new start.
 private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
 [_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);
+
+// BVM needs both hands. End this provider's Direct Pressure before ACM takes over the
+// controls and animation; a paused pressure worker must not keep its own input handlers.
+if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPressureStop"}) then {
+    [true, _medic, false] call ACME_fnc_directPressureStop;
+};
 
 [[_medic, _patient, "head", [_useOxygen, _portableOxygen]], { // On Start
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
@@ -40,7 +49,6 @@ private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
     GVAR(BVM_LocalSession) = [_medic, _patient, _epoch];
     _medic setVariable [QGVAR(BVM_patient), _patient, true];
     _medic setVariable [QGVAR(BVM_epoch), _epoch, true];
-    _medic setVariable [QGVAR(BVM_lastSeen), CBA_missionTime, true];
     _patient setVariable [QGVAR(BVM_session), [_medic, _epoch], true];
     [QGVAR(bvmTrack), [_medic, _patient, _epoch]] call CBA_fnc_serverEvent;
 
@@ -174,15 +182,6 @@ private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
 }, { // PerFrame
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
     _extraArgs params ["_useOxygen", "_portableOxygen"];
-
-    private _epoch = _extraArgs param [2, -1];
-    if !((_patient getVariable [QGVAR(BVM_session), []]) isEqualTo [_medic, _epoch]) exitWith {
-        EGVAR(core,ContinuousAction_Active) = false;
-    };
-    // Include paused sessions. The server can release a reservation if this controller stops running.
-    if (CBA_missionTime - (_medic getVariable [QGVAR(BVM_lastSeen), -100]) >= 2) then {
-        _medic setVariable [QGVAR(BVM_lastSeen), CBA_missionTime, true];
-    };
 
     private _updateMouseHint = false;
     private _updateText = false;

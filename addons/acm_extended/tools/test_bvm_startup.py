@@ -13,8 +13,6 @@ def breathing(name):
     source = re.sub(r'alive (\(_patient getVariable \[[^;\n]+?\]\))', r'(\1 isNotEqualTo objNull)', source)
     source = re.sub(r'playSound3D \[[^;]+;', '_squeezes = _squeezes + 1;', source)
     source = adapt(source, 'breathing')
-    if name == 'registerBVMRuntime':
-        source = source.replace('        false\n    }];', '        false\n    }] select 1);')
     return source
 
 
@@ -51,41 +49,6 @@ def test_startup_survives_first_frames_and_delivers_breaths(oxygen, portable, cp
         CBA_missionTime = 20; call _tick;
         [_squeezes == 2,"BVM did not deliver breaths"] call _check;
         [(_patient getVariable ["ACM_breathing_BVM_lastBreath",-1]) == 20,"breath was not recorded"] call _check;
-    ''')
-
-
-def server_setup():
-    return '''
-        private _serverClock = 1000;
-        CBA_fnc_addPlayerEventHandler = {};
-        CBA_fnc_serverEvent = {
-            private _clientClock = CBA_missionTime;
-            CBA_missionTime = _serverClock;
-            (_this select 1) call _track;
-            CBA_missionTime = _clientClock;
-        };
-    ''' + 'call {' + breathing('registerBVMRuntime') + '};' + '''
-        private _serverTick = {
-            private _clientClock = CBA_missionTime;
-            CBA_missionTime = _serverClock;
-            private _h = _handlers select 0;
-            [_h select 1,0] call (_h select 0);
-            CBA_missionTime = _clientClock;
-        };
-    '''
-
-
-@pytest.mark.parametrize("server_start", [1000, -1000])
-def test_server_clock_offset_does_not_cancel_new_bvm(server_start):
-    execute(setup() + server_setup() + f"private _serverStart = {server_start}; _serverClock = _serverStart;" + '''
-        [_medic,_patient] call ACM_breathing_fnc_useBVM;
-        for "_elapsed" from 0 to 14 step 2 do {
-            CBA_missionTime = 10 + _elapsed;
-            _serverClock = _serverStart + _elapsed;
-            call _tick; call _serverTick; call _tick;
-        };
-        [ACM_core_ContinuousAction_Active,"server cancelled live BVM due to client clock offset"] call _check;
-        [_squeezes >= 2,"server stopped BVM before sustained breaths"] call _check;
     ''')
 
 
@@ -157,34 +120,4 @@ def test_bvm_cancel_releases_direct_pressure_completion_and_allows_restart():
         [!(_medic getVariable ["ACME_DP_TreatmentBusy",true]),"real BVM completion retained pressure busy state"] call _check;
         [_medic,_patient] call ACM_breathing_fnc_useBVM; call _tick;
         [ACM_core_ContinuousAction_Active,"BVM could not restart after cancellation"] call _check;
-    ''')
-
-
-def test_pause_and_resume_keep_session_live_across_different_clocks():
-    execute(setup() + server_setup() + '''
-        [_medic,_patient] call ACM_breathing_fnc_useBVM;
-        private _toggle = (_keys select {(_x select 0) == ACM_breathing_BVMToggle_MouseID}) select 0;
-        call (_toggle select 1);
-        for "_elapsed" from 0 to 14 step 2 do {
-            CBA_missionTime = 10 + _elapsed;
-            _serverClock = 1000 + _elapsed;
-            call _tick; call _serverTick; call _tick;
-        };
-        [ACM_core_ContinuousAction_Active && {_squeezes == 0},"pause stopped session or delivered breaths"] call _check;
-        [[_medic,_patient] call ACM_breathing_fnc_bvmSessionValid,"paused reservation was lost"] call _check;
-        call (_toggle select 1); call _tick;
-        [_squeezes == 1,"resume did not deliver a breath"] call _check;
-    ''')
-
-
-def test_server_still_releases_a_stalled_provider_using_receive_time():
-    execute(setup() + server_setup() + '''
-        [_medic,_patient] call ACM_breathing_fnc_useBVM;
-        call _serverTick;
-        _serverClock = 1009.9; call _serverTick;
-        [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo _medic,"heartbeat expired early"] call _check;
-        _serverClock = 1010; call _serverTick;
-        [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo objNull,"stalled provider retained reservation"] call _check;
-        call _tick; call _tick;
-        [!ACM_core_ContinuousAction_Active,"server release did not stop local controller"] call _check;
     ''')

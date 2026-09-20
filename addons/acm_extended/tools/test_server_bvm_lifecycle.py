@@ -31,10 +31,12 @@ def source(name):
         '"ACM_UseBVM" cutText ["", "PLAIN", 0, false];': '_cuts = _cuts + 1;',
         'hasInterface': '_hasInterface',
         'isServer': '_isServer',
+        'addMissionEventHandler ["EntityKilled",': '_killedHandler = (["EntityKilled",',
         'addMissionEventHandler ["HandleDisconnect",': '_disconnectHandler = (["HandleDisconnect",',
     }.items():
         s = s.replace(a, b)
     if name == 'registerBVMRuntime':
+        s = s.replace('    }];\n    _disconnectHandler', '    }] select 1);\n    _disconnectHandler')
         s = s.replace('        false\n    }];', '        false\n    }] select 1);')
     return s
 
@@ -60,6 +62,7 @@ def execute(scenario, runtime=False):
         private _handlers = [];
         private _unitHandler = {};
         private _disconnectHandler = {};
+        private _killedHandler = {};
         private _trackHandler = {};
         private _hasInterface = true;
         private _isServer = true;
@@ -141,12 +144,26 @@ def test_paused_session_remains_reserved_and_live():
     ''')
 
 
-@pytest.mark.parametrize('invalid', ['_testOwner = 8;', '_alive = false;', '_awake = false;', '_distance = 10;', 'CBA_missionTime = 31;', '_medicVehicle = uiNamespace;'])
-def test_server_releases_invalid_session(invalid):
-    execute('CBA_missionTime = 24; ' + invalid + '''
-        [[], 0] call ((_handlers select 0) select 0);
-        [(_patient getVariable "ACM_breathing_BVM_Medic") isEqualTo objNull, "server retained stale reservation"] call _check;
-        [count ACM_breathing_BVM_Sessions == 0, "server retained stale session"] call _check;
+@pytest.mark.parametrize('invalid', ['_alive = false;', '_awake = false;', '_distance = 10;', '_medicVehicle = uiNamespace;'])
+def test_unavailable_reservation_can_be_recovered(invalid):
+    execute(invalid + '''
+        [!([_medic,_patient] call ACM_breathing_fnc_bvmSessionValid),"unavailable provider retained reservation"] call _check;
+    ''')
+
+
+def test_provider_death_releases_patient_without_provider_callback():
+    execute('''
+        _alive = false;
+        [_medic] call _killedHandler;
+        [(_patient getVariable "ACM_breathing_BVM_Medic") isEqualTo objNull,"dead provider retained patient"] call _check;
+        [count ACM_breathing_BVM_Sessions == 0,"dead provider retained cleanup entry"] call _check;
+    ''', runtime=True)
+
+
+def test_patient_death_does_not_cancel_provider_bvm():
+    execute('''
+        [_patient] call _killedHandler;
+        [(_patient getVariable "ACM_breathing_BVM_Medic") isEqualTo _medic,"patient death cancelled BVM"] call _check;
     ''', runtime=True)
 
 
@@ -166,15 +183,14 @@ def test_respawn_cleans_captured_old_provider_and_local_gate():
     ''', runtime=True)
 
 
-def test_server_waits_for_session_publication_then_reaps_timeout():
+def test_native_reservation_does_not_depend_on_clock_or_cleanup_token():
     execute('''
         _patient setVariable ["ACM_breathing_BVM_session", []];
-        [[], 0] call ((_handlers select 0) select 0);
-        [count ACM_breathing_BVM_Sessions == 1, "early track event lost"] call _check;
-        _patient setVariable ["ACM_breathing_BVM_session", [_medic, 4]];
-        CBA_missionTime = 31;
-        [[], 0] call ((_handlers select 0) select 0);
-        [(_patient getVariable "ACM_breathing_BVM_Medic") isEqualTo objNull, "late publication not monitored"] call _check;
+        _medic setVariable ["ACM_breathing_BVM_patient", objNull];
+        _medic setVariable ["ACM_breathing_BVM_epoch", -1];
+        CBA_missionTime = 100000;
+        [[_medic,_patient] call ACM_breathing_fnc_bvmSessionValid,"native reservation depended on extra replicated state"] call _check;
+        [count _handlers == 0,"server installed an expiry watchdog"] call _check;
     ''', runtime=True)
 
 

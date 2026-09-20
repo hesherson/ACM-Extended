@@ -5,18 +5,18 @@ params ["_medic", "_patient", ["_bodyPart", ""]];
 _bodyPart = toLower _bodyPart;
 if (isNull _medic || {isNull _patient}) exitWith {};
 
+// Every region needs this provider's hands. Reject before cleanup can touch the
+// input hints or animation of BVM or another continuous maneuver.
+if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) exitWith {
+    ["Another active maneuver is already in progress.", 2, _medic] call ace_common_fnc_displayTextStructured;
+};
+
 if (_medic getVariable ["ACME_DP_Active", false]) exitWith {
     ["You're already holding direct pressure.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
 // Clear any stale PFH/key/patient markers left by an interrupted prior hold before starting a new one.
 [true, _medic] call ACME_fnc_directPressureStop;
-
-// Do not begin a new torso hold while another true ACM maneuver owns the provider. This check happens before the
-// patient pressure marker is written so a rejected start can never leave a phantom hemorrhage-control state.
-if (_bodyPart == "body" && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) exitWith {
-    ["Another active maneuver is already in progress.", 2, _medic] call ace_common_fnc_displayTextStructured;
-};
 
 // This synchronized marker is read by bleeding systems on the casualty owner. It is temporarily cleared by the
 // tick whenever movement or another maneuver means the provider is no longer physically maintaining pressure.

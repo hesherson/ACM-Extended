@@ -101,10 +101,15 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         _m setVariable ["ACME_DP_LastPoseAssert", 0, false];
     };
 
-    // Continuous ACM actions own their complete animation/cancellation lifecycle.  They are real physical
-    // maneuvers, so Direct Pressure yields clinically for their duration and resumes when the global maneuver ends.
+    // BVM uses ACM's treatment path. Its accepted start releases this provider's
+    // Direct Pressure hold before taking over input and animation.
     private _nativeContinuousClass = toLowerANSI _classname;
-    if (_nativeContinuousClass in ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]) exitWith {
+    if (_nativeContinuousClass in ["usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]) exitWith {
+        _this call ACM_core_fnc_treatmentNative
+    };
+
+    // Preserve the existing Direct Pressure handoff for CPR.
+    if (_nativeContinuousClass == "cpr") exitWith {
         if (_dpSamePatient) then {[_medic, _nativeContinuousClass] call _fnc_dpPauseForManeuver;};
         private _startedContinuous = _this call ACM_core_fnc_treatmentNative;
         if (!_startedContinuous && {_dpSamePatient} && {(_medic getVariable ["ACME_DP_PauseTreatmentClass", ""]) == _nativeContinuousClass}) then {
