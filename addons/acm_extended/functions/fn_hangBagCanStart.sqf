@@ -7,6 +7,12 @@ if !(missionNamespace getVariable ["ACME_sys_hang", true]) exitWith { false };
 if (_medic getVariable ["ACME_hang_Active", false]) exitWith { false };
 if (!isNull objectParent _medic) exitWith { false };
 
+// The patient has one elevated bag workspace. Do not let a second provider enter the prep sequence while a live
+// active holder owns it. Stale reservations from an ended/dead holder are ignored and replaced at commit time.
+private _holder = _patient getVariable ["ACME_hang_Medic", objNull];
+if (!isNull _holder && {!(_holder isEqualTo _medic)}
+    && {alive _holder} && {_holder getVariable ["ACME_hang_Active", false]}) exitWith { false };
+
 private _ivBags = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
 if !(_ivBags isEqualType createHashMap) exitWith { false };
 ((values _ivBags) findIf { _x isEqualType [] && {count _x > 0} }) > -1
