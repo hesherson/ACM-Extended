@@ -60,7 +60,7 @@ jobs:
           root=pathlib.Path('/tmp/acme-lifecycle-candidate')
           def git(*args): return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
           base='c3dd15f41a56a253461d876b478f91849d23551f'
-          tree='6149f6e098fb4d2334cfec4587dda9c4ee0a8436'
+          tree='d01ae33c9fe24073ea6a590f044b41aa0efeb23f'
           branch='fix/20260922-verified-lifecycle-issues'
           assert git('rev-parse','HEAD') == base
           assert git('write-tree') == tree

@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 BASE = 'c3dd15f41a56a253461d876b478f91849d23551f'
-EXPECTED_TREE = '6149f6e098fb4d2334cfec4587dda9c4ee0a8436'
+EXPECTED_TREE = 'd01ae33c9fe24073ea6a590f044b41aa0efeb23f'
 STAGING = Path(__file__).resolve().parent
 DEST = Path(sys.argv[1]).resolve()
 
@@ -77,6 +77,12 @@ for entry in entries:
         lines[edit['start']:edit['end']] = text.splitlines(keepends=True)
     result = ''.join(lines).encode()
     assert blob(result) == entry['expected_sha'], ('result mismatch', path, blob(result), entry['expected_sha'])
+    if path == 'addons/acm_extended/functions/fn_hangBagActivate.sqf':
+        # The extracted presentation ended in a separator blank line. Keep one final
+        # newline in the new function; the copied executable code remains identical.
+        assert result.endswith(b'\n\n')
+        result = result[:-1]
+        assert blob(result) == 'f7d10c1c852dff4f3a3308ae13c277076ffca819'
     staged[path] = result
 
 new_test = 'addons/acm_extended/tools/test_confirmed_lifecycle_20260922.py'
