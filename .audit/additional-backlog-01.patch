@@ -1,0 +1,194 @@
++        _patientLocal=true;
++        [_patient,_medic,"thoraSeal",["left",5]] call _effect;
++        [_treat isEqualTo ["thoraSeal"],"valid tract seal not committed"] call _check;
++        [(_patient getVariable "ACME_thora_open_left")=="sealed","finger outlet remained patent"] call _check;
++        [_patient getVariable "ACME_thora_sealed_left","sealed flag absent"] call _check;
++        [_patient getVariable "ACME_thora_closed_left","closed flag absent"] call _check;
++        [!(_patient getVariable "ACM_breathing_ChestSeal_State"),"tract sealed unrelated chest wounds"] call _check;
++        [(_patient getVariable "ACME_CS_holeData") isEqualTo ["external wound"],"external wounds changed"] call _check;
++        _patient setVariable ["ACME_thora_open_right","finger"];
++        _patient setVariable ["ACME_thora_tube_right",true];
++        [_patient,_medic,"thoraSeal",["right",5]] call _effect;
++        [count _treat==1,"installed tube was sealed over"] call _check;
++        _patient setVariable ["ACME_CS_blockedEffectEpoch","old"];
++        [_patient,_medic,"peel",[],"old",1,1] call _effect;
++        [count _treat==1,"blocked epoch applied peel"] call _check;
++        [_patient,_medic,"peel",[],"new",1,2] call _effect;
++        [_treat isEqualTo ["thoraSeal","peel"],"fresh peel not accepted"] call _check;
++        [_patient,_medic,"peel",[],"new",1,2] call _effect;
++        [_patient,_medic,"peel",[],"new",1,1] call _effect;
++        [count _treat==2 && {_globalSeal==0},"duplicate peel/new injury or blanket seal"] call _check;
++    ''')
++
++
++def compound_save_probe():
++    source=function('skCompoundSave').replace('findDisplay 84000','_dialogHandle')
++    source=re.sub(r'_dlg displayCtrl 84004','objNull',source)
++    execute('private _dialogHandle=uiNamespace; private _save={'+adapt(source)+'};'+'''
++        private _steps=[];
++        private _accepted=true;
++        ACME_fnc_skPendingTagCommit={_steps pushBack "tag";};
++        ACME_fnc_skCompoundCommit={_steps pushBack "commit"; _accepted};
++        ACME_fnc_skRefreshDrawn={_steps pushBack "drawn";};
++        ACME_fnc_skPendingTagReset={_steps pushBack "reset";};
++        ACME_fnc_skCompoundBegin={_steps pushBack "begin";};
++        ACME_fnc_skListRefresh={_steps pushBack "list";};
++        ACME_fnc_skPendingTagRender={_steps pushBack "render";};
++        uiNamespace setVariable ["ACME_SK_WasteStage","compound"];
++        uiNamespace setVariable ["ACME_SK_CompoundComponents",["sample"]];
++        _dialog=true;
++        call _save;
++        [_steps isEqualTo ["tag","commit","drawn","reset","begin","list","render"],"save commit/reset order"] call _check;
++        [_dialog && {count _waits==0},"save required deferred dialog reconstruction"] call _check;
++        _steps=[]; _accepted=false;
++        call _save;
++        [_steps isEqualTo ["tag","commit"],"failed save erased draft"] call _check;
++        _steps=[]; uiNamespace setVariable ["ACME_SK_CompoundComponents",[]];
++        call _save;
++        [_steps isEqualTo [],"empty draft committed"] call _check;
++    ''')
++
++
++diff --git a/addons/acm_extended/tools/backlog_contract_expression.py b/addons/acm_extended/tools/backlog_contract_expression.py
++new file mode 100644
++index 0000000000000000000000000000000000000000..4c54dcfb9378963c85d979a889f3d605bf493789
++--- /dev/null
+++++ b/addons/acm_extended/tools/backlog_contract_expression.py
++@@ -0,0 +1,40 @@
+++"""Fail-closed extraction of one shipped SQF assignment for arithmetic probes.
+++
+++This does not compile SQF or establish clinical correctness. It only identifies
+++an unambiguous expression while ignoring commented and quoted examples.
+++"""
+++from source_scan import lex
+++
+++def assignment_expression(text, name):
+++    """Extract one actual private assignment, including multiline/nested expressions.
+++
+++    Comments and quoted examples cannot become candidates. Missing, duplicated or
+++    unterminated assignments fail closed instead of silently selecting old text.
+++    """
+++    from source_scan import matching
+++    tokens = lex(text)
+++    pairs = matching(tokens)
+++    candidates = []
+++    for i in range(len(tokens) - 3):
+++        if not (tokens[i].kind == 'ident' and tokens[i].value == 'private'
+++                and tokens[i+1].kind == 'ident' and tokens[i+1].value == name
+++                and tokens[i+2].value == '='):
+++            continue
+++        j = i + 3
+++        while j < len(tokens):
+++            t = tokens[j]
+++            if t.kind == 'symbol' and t.value in ('[', '(', '{'):
+++                if j not in pairs:
+++                    raise AssertionError(f'Unbalanced assignment: {name}')
+++                j = pairs[j] + 1
+++                continue
+++            if t.kind == 'symbol' and t.value == ';':
+++                candidates.append(text[tokens[i+3].offset:t.offset].strip())
+++                break
+++            j += 1
+++        else:
+++            raise AssertionError(f'Unterminated assignment: {name}')
+++    if len(candidates) != 1:
+++        raise AssertionError(f'Expected one private assignment for {name}; found {len(candidates)}')
+++    return candidates[0]
+++
++diff --git a/addons/acm_extended/tools/test_b17_release.py b/addons/acm_extended/tools/test_b17_release.py
++index e01708c16b6f719993299988ab6ed49c938337e5..5cb11eeaf88e6e58e3f73c18da8c12e7dffc7795 100644
++--- a/addons/acm_extended/tools/test_b17_release.py
+++++ b/addons/acm_extended/tools/test_b17_release.py
++@@ -1,3 +1,4 @@
+++from backlog_clinical_probes import io_modes_probe
++ from historical_source import read_source, assert_release_identity
++ from pathlib import Path
++ import re, unittest
++@@ -26,11 +27,13 @@ class B17Release(unittest.TestCase):
++     def test_custom_rhythm_does_not_override_cpr_postshock(self):
++         s=read('overrides/fn_genEKG.sqf')
++         self.assertIn('!(_rhythm in [-1,1,2])',s)
++-        self.assertIn('ACME_monitorRhythmSwitchMaxWait',s)
++-    def test_procedure_no_forced_unconsciousness(self):
++-        io=read('functions/fn_ioPainResponse.sqf'); th=read('functions/fn_thoraMouseUp.sqf')
++-        self.assertNotIn('setUnconscious',io)
++-        # surgical callback can contain unrelated text elsewhere; ensure the incision block uses pain not setUnconscious
+++        # Current generator uses the actual audible beat clock, not a second switch-delay timer.
+++        for key in ('ACM_circulation_AED_Pads_LastBeep','ACME_AED_PreviousRR','ACME_AED_NextRR'):
+++            self.assertIn(key,s)
+++        self.assertNotIn('ACME_monitorRhythmSwitchMaxWait',s)
+++    def test_placement_and_incision_do_not_force_unconsciousness(self):
+++        io_modes_probe()
+++        th=read('functions/fn_thoraMouseUp.sqf')
++         block=th[th.index('// Incision pain is real'):th.index('// the score:')]
++         self.assertNotIn('setUnconscious',block)
++         self.assertIn('adjustPainLevel',block)
++diff --git a/addons/acm_extended/tools/test_b18_ventway.py b/addons/acm_extended/tools/test_b18_ventway.py
++index 8c1daebc368cce84d46f63861d55d7cb202f3cd1..15ffa14c1950f9bc0303998d6ef069dce9ccb116 100644
++--- a/addons/acm_extended/tools/test_b18_ventway.py
+++++ b/addons/acm_extended/tools/test_b18_ventway.py
++@@ -1,3 +1,4 @@
+++from backlog_clinical_probes import rosc_stress_probe
++ from historical_source import read_source, assert_release_identity
++ from pathlib import Path
++ import re, unittest
++@@ -50,12 +51,11 @@ class B18Source(unittest.TestCase):
++             self.assertNotIn(forbidden,s[a:b])
++     def test_rocuronium_cannot_bank_arrest_stress(self):
++         s=read('functions/fn_rocuroniumTick.sqf')
++-        self.assertIn('ace_medical_inCardiacArrest',s)
++-        self.assertIn('ACME_roc_postROSCGraceUntil',s)
++-        self.assertIn('ACME_roc_awakeHRMax',s)
++-        post=read('functions/fn_postInit.sqf')
++-        self.assertIn('ACME_roc_postROSCStressDelay = 15',post)
++-        self.assertIn('ACME_roc_awakeResistAdd", 0, true',post)
+++        for key in ('ace_medical_inCardiacArrest','ACME_roc_postROSCGraceUntil','ACME_roc_awakeHRMax'):
+++            self.assertIn(key,s)
+++        self.assertIn('ACME_roc_postROSCStressDelay = 15',read('functions/fn_postInit.sqf'))
+++        # The real registered ROSC callback delegates the reset to its actual single writer.
+++        rosc_stress_probe()
++     def test_vitals_stress_is_bounded_additive(self):
++         s=read('overrides/fn_handleUnitVitals.sqf')
++         self.assertIn('ACME_vent_fightHRAdjust',s)
++diff --git a/addons/acm_extended/tools/test_b19_vials_pea_artifact.py b/addons/acm_extended/tools/test_b19_vials_pea_artifact.py
++index 24174ad9f54d7183cc4b32eab419242bb0a5851f..0f4de0d6bd98da208b71b26cb91aacc72ff59550 100644
++--- a/addons/acm_extended/tools/test_b19_vials_pea_artifact.py
+++++ b/addons/acm_extended/tools/test_b19_vials_pea_artifact.py
++@@ -1,3 +1,6 @@
+++from test_menu_death_lifecycle import execute
+++from backlog_contract_expression import assignment_expression
+++from backlog_clinical_probes import compound_save_probe
++ from historical_source import read_source, assert_release_identity
++ from pathlib import Path
++ import unittest, re
++@@ -12,8 +15,10 @@ class B19Source(unittest.TestCase):
++         c=read('config.cpp')
++         for fn in ('vialHolder','vialItemCount','vialTake','vialRefund'):
++             self.assertIn(f'class {fn} {{}};',c)
+++        prep=read('../circulation/XEH_PREP.hpp')
++         for fn in ('Syringe_PrepareFinish','Syringe_GetMedicationList','Syringe_UpdateMedicationList'):
++-            self.assertIn(f'class {fn} ',c)
+++            self.assertEqual(prep.count(f'PREP({fn});'),1)
+++            self.assertTrue((ROOT.parent/'circulation/functions'/f'fnc_{fn}.sqf').is_file())
++     def test_native_syringe_debits_exact_ml(self):
++         s=read('overrides/fn_syringePrepareFinish.sqf')
++         self.assertIn('ACME_fnc_vialTake',s)
++@@ -38,12 +43,14 @@ class B19Source(unittest.TestCase):
++         self.assertIn('ACM_circulation_SyringeDraw_MaxDose',s)
++         # The hard stop is ledger-backed through vialSession; B41 removed a second redundant stock scan.
++         self.assertIn('ACME_fnc_vialSession',s); self.assertIn('private _hardMax',s)
++-    def test_compound_save_keeps_original_save_label_and_reopens_draw_dialog(self):
+++    def test_compound_save_keeps_label_and_resets_in_place(self):
++         begin=read('functions/fn_skCompoundBegin.sqf')
++         self.assertIn('ctrlSetText "Save"',begin)
++         self.assertNotIn('Save & New Syringe',begin)
++         s=read('functions/fn_skCompoundSave.sqf')
++-        self.assertIn('ACME_fnc_skOpenDraw',s); self.assertIn('closeDialog 0',s)
+++        self.assertNotIn('call ACME_fnc_skOpenDraw',s)
+++        self.assertNotIn('closeDialog',s)
+++        compound_save_probe()
++     def test_infusion_done_explicitly_returns(self):
++         d=read('functions/fn_infusionDone.sqf'); c=read('functions/fn_skClose.sqf')
++         self.assertIn('ACME_SK_suppressReturn',d); self.assertIn('ACME_fnc_reopenTransfusion',d)
++@@ -53,14 +60,23 @@ class B19Source(unittest.TestCase):
++         self.assertRegex(s,r'rhythmGet\) == 5\) exitWith \{\[0, 0\]\}')
