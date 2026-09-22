@@ -1,0 +1,220 @@
+-        self.assertIn('ACME_thora_open_%1', branch)
+-        self.assertIn('ACME_thora_tube_%1', branch)
+-        self.assertIn('[_patient, "thoraSeal"] call ACME_fnc_ptxTreat', branch)
+-        self.assertNotIn('ACME_ptx_nativeSealCount', branch)
+-        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal', branch)
++        click=read_source(ROOT/'functions/fn_thoraMouseDown.sqf')
++        seal=click.split('if (_held == "seal") exitWith {',1)[1].split('private _tubeMedic',1)[0]
++        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal',seal)
++        self.assertIn('"chestEffect", [_patient, _medS, "thoraSeal"',seal)
++        self.assertIn('call ACME_fnc_clinicalEpoch',seal)
++        effect=read_source(ROOT/'functions/fn_chestSealEffectLocal.sqf')
++        branch=effect.split('case "thoraSeal":',1)[1].split('case "peel":',1)[0]
++        self.assertIn('_clinicalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)',branch)
++        self.assertIn('ACME_thora_tube_%1',branch)
++        self.assertIn('[_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit',branch)
++        self.assertIn('[_patient, _side, "open", "sealed"] call ACME_fnc_thoraSideStateCommit',branch)
++        self.assertIn('[_patient, "thoraSeal"] call ACME_fnc_ptxTreat',branch)
++        self.assertNotIn('ACME_ptx_nativeSealCount',branch)
++        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal',branch)
++        tract_and_peel_probe()
+ 
+     def test_closing_tract_removes_its_outlet_but_never_an_installed_tube(self):
+         text = override("Thoracostomy_closeLocal")
+@@ -114,12 +117,17 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertIn('_message = "NAR SPEAR placed.";', edit)
+ 
+     def test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them(self):
+-        config = read_source(ROOT / 'config.cpp')
+-        post = read_source(ROOT / 'functions/fn_postInit.sqf')
+-        for name in LOCAL + ("handlePneumothorax",):
+-            self.assertTrue(f'class {name} {{ file = "\\acm_extended\\overrides\\fn_{name}.sqf"; }};' in config, f"Missing override: {name}")
+-        self.assertNotIn('ACM_breathing_fnc_performNCDLocal =', post)
+-        self.assertNotIn('ACME_ncdReTensionState =', post)
++        prep=read_source(ROOT.parent/'breathing/XEH_PREP.hpp')
++        post=read_source(ROOT/'functions/fn_postInit.sqf')
++        events=read_source(ROOT.parent/'breathing/XEH_postInit.sqf')
++        for name in LOCAL + ('handlePneumothorax',):
++            self.assertIn(f'PREP({name});',prep)
++            self.assertTrue((ROOT.parent/'breathing/functions'/f'fnc_{name}.sqf').is_file())
++        for name in LOCAL:
++            self.assertIn(f'QGVAR({name})',events)
++            self.assertIn(f'LINKFUNC({name})',events)
++        self.assertNotIn('ACM_breathing_fnc_performNCDLocal =',post)
++        self.assertNotIn('ACME_ncdReTensionState =',post)
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/addons/acm_extended/tools/test_backlog_contract_expression.py b/addons/acm_extended/tools/test_backlog_contract_expression.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d41f144e75f3902bed40f3e5794c26b1cd5fa3a
+--- /dev/null
++++ b/addons/acm_extended/tools/test_backlog_contract_expression.py
+@@ -0,0 +1,19 @@
++"""Negative fixtures prevent historical expression probes from reading old examples."""
++import pytest
++from backlog_contract_expression import assignment_expression
++
++
++def test_multiline_assignment_ignores_comments_and_quotes():
++    text = '// private _value = 100;\nprivate _quote = "private _value = 200;";\nprivate _value =\n    (_x + 1) max (if (_flag) then {2} else {3});'
++    assert assignment_expression(text, '_value') == '(_x + 1) max (if (_flag) then {2} else {3})'
++
++
++@pytest.mark.parametrize('text', [
++    'private _other = 1;',
++    'private _value = 1; private _value = 2;',
++    'private _value = (1;',
++    'private _value = 1',
++])
++def test_missing_ambiguous_or_incomplete_assignment_fails(text):
++    with pytest.raises(AssertionError):
++        assignment_expression(text, '_value')
+diff --git a/docs/audits/2026-09-22-historical-backlog-batch2.json b/docs/audits/2026-09-22-historical-backlog-batch2.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..00f2c6244f422c60ed982dd7bf4e5aad82dd3a46
+--- /dev/null
++++ b/docs/audits/2026-09-22-historical-backlog-batch2.json
+@@ -0,0 +1,182 @@
++{
++  "base_commit": "5e134975242f182ebbed1225c96709eb7b2cce96",
++  "production_changes": 0,
++  "asset_changes": 0,
++  "deleted_files": 0,
++  "previous_main_historical_result": {
++    "failed": 299,
++    "passed": 2505,
++    "errors": 0,
++    "skipped": 4,
++    "subtests_passed": 5518
++  },
++  "local_candidate_historical_result": {
++    "failed": 286,
++    "passed": 2523,
++    "errors": 0,
++    "skipped": 4,
++    "subtests_passed": 5518
++  },
++  "local_focused_result": {
++    "passed": 527,
++    "subtests_passed": 419,
++    "failed": 0,
++    "errors": 0,
++    "skipped": 0
++  },
++  "previously_passing_outcomes_newly_failed": [],
++  "remaining_source_contracts_before": 249,
++  "remaining_source_contracts_after": 238,
++  "resolved_source_contracts": [
++    {
++      "id": "H008",
++      "original_nodeid": "addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock",
++      "verified_nodeid": "addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H012",
++      "original_nodeid": "addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress",
++      "verified_nodeid": "addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H015",
++      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact",
++      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H017",
++      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered",
++      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H018",
++      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact",
++      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H021",
++      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_pea_morphology_distinct_from_sinus",
++      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_pea_subtype_and_mechanical_pressure_keep_native_authority",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H040",
++      "original_nodeid": "addons/acm_extended/tools/test_b21_rhythm_sync.py::B21RhythmRegression::test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
++      "verified_nodeid": "addons/acm_extended/tools/test_b21_rhythm_sync.py::B21RhythmRegression::test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H095",
++      "original_nodeid": "addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment",
++      "verified_nodeid": "addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H099",
++      "original_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
++      "verified_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H116",
++      "original_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury",
++      "verified_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    },
++    {
++      "id": "H117",
++      "original_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
++      "verified_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
++      "result": "PASSED_REVIEWED_CONTRACT",
++      "production_change": false
++    }
++  ],
++  "reviewed_test_changes": [
++    {
++      "file": "test_b17_release.py",
++      "old": "test_custom_rhythm_does_not_override_cpr_postshock",
++      "new": "test_custom_rhythm_does_not_override_cpr_postshock"
++    },
++    {
++      "file": "test_b17_release.py",
++      "old": "test_procedure_no_forced_unconsciousness",
++      "new": "test_placement_and_incision_do_not_force_unconsciousness"
++    },
++    {
++      "file": "test_b18_ventway.py",
++      "old": "test_rocuronium_cannot_bank_arrest_stress",
++      "new": "test_rocuronium_cannot_bank_arrest_stress"
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_ace_timer_events_drive_artifact",
++      "new": "test_ace_timer_events_drive_artifact"
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_exact_vial_ledger_registered",
++      "new": "test_exact_vial_ledger_registered"
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_monitor_generators_apply_artifact",
++      "new": "test_monitor_generators_apply_artifact"
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_pea_morphology_distinct_from_sinus",
