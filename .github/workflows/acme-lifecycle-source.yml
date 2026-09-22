@@ -1,0 +1,30 @@
+name: ACME lifecycle source
+on:
+  push:
+    branches: [audit/2026-09-22-preserve-regressions]
+    paths: [.github/workflows/acme-lifecycle-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c3dd15f41a56a253461d876b478f91849d23551f
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Archive exact tracked source
+        run: |
+          git archive --format=zip HEAD -o /tmp/acme-lifecycle-source.zip
+          git ls-tree -r HEAD > /tmp/acme-lifecycle-manifest.txt
+          git rev-parse HEAD HEAD^{tree} > /tmp/acme-lifecycle-ref.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acme-lifecycle-source
+          path: |
+            /tmp/acme-lifecycle-source.zip
+            /tmp/acme-lifecycle-manifest.txt
+            /tmp/acme-lifecycle-ref.txt
+          retention-days: 7
