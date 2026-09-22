@@ -1,0 +1,232 @@
++        _medic setVariable ["ACME_narcStore",[["EpinephrineCardiac",10,1,"label",9,[],"epiMixB12"],["unrelated"]]];
++    '''
++
++
++@pytest.mark.parametrize('push',[1,2,10])
++@pytest.mark.parametrize('alive',[True,False])
++def test_measured_epinephrine_debits_before_request_and_conserves_remainder_and_refund(push,alive):
++    execute(epi_setup()+f'_patientAlive={str(alive).lower()}; private _push={push};'+'''
++        private _result=[_medic,_patient,"leftarm",0,_push,3,3] call ACME_fnc_epinephrinePushStored;
++        [_result && {count _requests==1},"valid measured push rejected"] call _check;
++        private _request=_requests select 0;
++        private _dose=((_request select 3) select 0) select 1;
++        [abs (_dose-(_push*0.01))<0.000001,"measured dose changed"] call _check;
++        private _remaining=_medic getVariable ["ACME_narcStore",[]];
++        [(_storeAtDispatch select 0) isEqualTo _remaining,"medication sent before inventory debit"] call _check;
++        private _refund=((_request select 6) select 1) select 0;
++        [abs (((_refund select 2)+(_refund select 4))-_push)<0.000001,"refund differs from removed volume"] call _check;
++        if (_push==10) then {[_remaining isEqualTo [["unrelated"]],"full push removed wrong row"] call _check;} else {
++            [abs ((((_remaining select 0) select 2)+((_remaining select 0) select 4))-(10-_push))<0.000001,"remainder not conserved"] call _check;
++        };
++    ''')
++
++
++@pytest.mark.parametrize('push,site,change',[
++    (-1,3,''),(0,3,''),(11,3,''),(1,2,''),(1,-1,''),
++    (1,3,'_hasIV=false;'),(1,3,'_distance=6;'),
++])
++def test_invalid_epinephrine_push_changes_neither_inventory_nor_dispatch(push,site,change):
++    execute(epi_setup()+change+'''
++        private _before=+(_medic getVariable ["ACME_narcStore",[]]);
++    '''+f'private _result=[_medic,_patient,"leftarm",0,{push},{site},3] call ACME_fnc_epinephrinePushStored;'+'''
++        [!_result && {count _requests==0},"invalid push dispatched"] call _check;
++        [(_medic getVariable ["ACME_narcStore",[]]) isEqualTo _before,"invalid push consumed inventory"] call _check;
++    ''')
++
++
++def aftercare_setup():
++    return setup()+function('thoraAftercareLocal',extended=True)+'''
++        private _effects=0; private _logs=0; private _writes=[]; private _permitted=true;
++        ACME_fnc_procedureAllowed={_permitted};
++        ACME_fnc_chestSealBurpReady={true};
++        ACME_fnc_thoraSideStateCommit={params ["_p","_side","_field","_value"]; _writes pushBack _this; _p setVariable [format ["ACME_thora_%1_%2",_field,_side],_value];};
++        ACME_fnc_thoraBumpVer={};
++        ACME_fnc_ptxTreat={_effects=_effects+1;};
++        ACM_breathing_fnc_updateLungState={};
++        ACME_fnc_chestSealLogOnce={_logs=_logs+1;true};
++        ace_medical_treatment_fnc_addToLog={_logs=_logs+1;};
++        _patient setVariable ["ACME_thora_incision_left",[1,2,3]];
++        _patient setVariable ["ACME_thora_open_left","sealed"];
++        _patient setVariable ["ACME_thora_sealed_left",true];
++        _patient setVariable ["ACME_thora_closed_left",true];
++        _patient setVariable ["ACME_thora_tube_right",true];
++        _patient setVariable ["ACME_CS_holeData",["external wound evidence"]];
++    '''
++
++
++@pytest.mark.parametrize('alive',[True,False])
++@pytest.mark.parametrize('operation',['peel','burp','sweep'])
++def test_aftercare_remains_available_on_dead_patients_without_resuming_physiology(alive,operation):
++    prepare=''
++    if operation=='sweep':prepare='_patient setVariable ["ACME_thora_open_left","finger"]; _patient setVariable ["ACME_thora_sealed_left",false]; _patient setVariable ["ACME_thora_closed_left",false];'
++    execute(aftercare_setup()+prepare+f'_patientAlive={str(alive).lower()};'+
++        f'[_patient,_medic,"left","{operation}",1] call ACME_fnc_thoraAftercareLocal;'+
++        f'[_effects=={int(alive)} && {{_logs==1}},"aftercare availability/physiology mismatch"] call _check;'+
++        f'[count _writes=={3 if operation=="peel" else 0},"wrong tract mutation"] call _check;'+'''
++        [_patient getVariable ["ACME_thora_tube_right",false],"opposite-side tube cleared"] call _check;
++        [(_patient getVariable ["ACME_CS_holeData",[]]) isEqualTo ["external wound evidence"],"aftercare modified unrelated wound seals"] call _check;
++    ''')
++
++
++@pytest.mark.parametrize('change',[
++    '_patientLocal=false;', '_patient setVariable ["ACME_clinicalEpoch",2];',
++    '_alive=false;', '_medic setVariable ["ACE_isUnconscious",true];',
++    '_distance=6;', '_permitted=false;',
++    '_patient setVariable ["ACME_thora_tube_left",true];',
++    '_patient setVariable ["ACME_thora_incision_left",[]];',
++])
++def test_aftercare_rejects_invalid_owner_episode_provider_or_tract(change):
++    execute(aftercare_setup()+change+'''
++        [_patient,_medic,"left","peel",1] call ACME_fnc_thoraAftercareLocal;
++        [_effects==0 && {_logs==0} && {count _writes==0},"invalid aftercare changed patient"] call _check;
++    ''')
++
++
++def chest_effect_setup():
++    # Localization and triage rendering are presentation boundaries only.
++    effect=function('chestSealEffectLocal',extended=True).replace('localize "STR_ACM_Breathing_ChestSeal"','"ChestSeal"')
++    return aftercare_setup()+effect+'''
++        private _injuries=0; private _wholeChestSeals=0; private _nativeChanges=[];
++        ACME_fnc_ptxInjury={_injuries=_injuries+1;};
++        ACME_fnc_ptxEnsure={};
++        ACM_breathing_fnc_applyChestSealLocal={_wholeChestSeals=_wholeChestSeals+1;};
++        ACM_breathing_fnc_setRuntimeState={_nativeChanges append (_this select 1);};
++        ace_medical_treatment_fnc_addToTriageCard={};
++    '''
++
++
++@pytest.mark.parametrize('blocked,revision,accepted',[(False,4,True),(False,3,False),(False,2,False),(True,4,False)])
++def test_seal_peel_rejects_stale_effects_and_never_creates_a_new_injury(blocked,revision,accepted):
++    execute(chest_effect_setup()+'''
++        _patient setVariable ["ACME_CS_lastSealEffectRev",3];
++    '''+('_patient setVariable ["ACME_CS_blockedEffectEpoch","workspace"];' if blocked else '')+
++        f'[_patient,_medic,"peel",[false],"workspace",0,{revision}] call ACME_fnc_chestSealEffectLocal;'+
++        f'[_effects=={int(accepted)} && {{_injuries==0}},"peel created injury or accepted stale effect"] call _check;'+
++        f'[count _nativeChanges=={int(accepted)},"wrong native seal change"] call _check;')
++
++
++@pytest.mark.parametrize('epoch,tube,tract,accepted',[(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)])
++def test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds(epoch,tube,tract,accepted):
++    execute(chest_effect_setup()+f'_patient setVariable ["ACME_thora_open_left","{tract}"]; _patient setVariable ["ACME_thora_tube_left",{str(tube).lower()}];'+
++        f'[_patient,_medic,"thoraSeal",["left",{epoch}]] call ACME_fnc_chestSealEffectLocal;'+
++        f'[count _writes=={3 if accepted else 0} && {{_effects=={int(accepted)}}},"surgical seal accepted invalid tract/epoch"] call _check;'+'''
++        [_wholeChestSeals==0 && {count _nativeChanges==0},"surgical seal changed whole-chest coverage"] call _check;
++        [_patient getVariable ["ACME_thora_tube_right",false],"surgical seal changed opposite tube"] call _check;
++        [(_patient getVariable ["ACME_CS_holeData",[]]) isEqualTo ["external wound evidence"],"external wounds changed"] call _check;
++    ''')
++
++
++def test_instructor_chest_clear_removes_episode_and_worker_but_retains_equipment():
++    execute(setup()+function('megacodeChestInjury',extended=True)+'''
++        private _nativeChanges=[]; private _ended=[];
++        ACM_breathing_fnc_setRuntimeState={_nativeChanges append (_this select 1);};
++        ACM_breathing_fnc_setChestInjuryState={}; ACM_breathing_fnc_updateLungState={};
++        CBA_fnc_removePerFrameHandler={_ended pushBack (_this select 0);};
++        _patient setVariable ["ACM_breathing_Pneumothorax_PFH",12];
++        _patient setVariable ["ACME_ptx_state",[1,4,1]];
++        _patient setVariable ["ACME_ptx_tensionSeverity",1];
++        _patient setVariable ["ACME_ptx_tensionProgress",8];
++        _patient setVariable ["ACME_CS_holeData",["wound"]];
++        _patient setVariable ["ACME_thora_tube_left",true];
++        _patient setVariable ["ACME_ncd_placed",["catheter"]];
++        [_patient,"ncd"] call ACME_fnc_megacodeChestInjury;
++        [_ended isEqualTo [12],"old native worker not retired"] call _check;
++        { [isNil {_patient getVariable _x},"old chest episode survived"] call _check; }
++            forEach ["ACME_ptx_state","ACME_ptx_tensionSeverity","ACME_ptx_tensionProgress"];
++        [(["pneumothoraxPFH",-1] in _nativeChanges) && {["hardcorePneumothorax",false] in _nativeChanges},"native clear request missing"] call _check;
++        [_patient getVariable ["ACME_thora_tube_left",false],"clear removed tube"] call _check;
++        [(_patient getVariable ["ACME_ncd_placed",[]]) isEqualTo ["catheter"],"clear removed catheter"] call _check;
++        [(_patient getVariable ["ACME_CS_holeData",[]]) isEqualTo ["wound"],"clear removed wound evidence"] call _check;
++    ''')
+diff --git a/addons/acm_extended/tools/test_historical_cardiac_execution.py b/addons/acm_extended/tools/test_historical_cardiac_execution.py
+new file mode 100644
+index 0000000..90673ba
+--- /dev/null
++++ b/addons/acm_extended/tools/test_historical_cardiac_execution.py
+@@ -0,0 +1,361 @@
++"""Batch 2: execute the current cardiac boundaries, not obsolete inline text.
++
++Actual SQF is retained. Arma objects/network/UI, CBA callbacks and unsupported
++finite-input/linearConversion primitives are explicit stand-ins. This is not a
++live monitor, physiology calibration or dedicated-server simulation.
++"""
++from pathlib import Path
++import re
++import pytest
++from source_scan import lex, matching
++from test_menu_death_lifecycle import ROOT, adapt, execute
++
++F = ROOT / 'addons/acm_extended/functions'
++C = ROOT / 'addons/circulation/functions'
++
++
++def code(text, component='circulation'):
++    fields = {
++        'IN_CRDC_ARRST': ('ace_medical_inCardiacArrest', 'false'),
++        'GET_CIRCULATIONSTATE': ('ACM_circulation_CirculationState', 'true'),
++        'GET_BLOOD_VOLUME': ('ace_medical_bloodVolume', '6'),
++        'GET_OXYGEN': ('ace_medical_spo2', '99'),
++        'IN_CRITICAL_STATE': ('ACM_core_CriticalVitals_State', 'false'),
++    }
++    for macro, (field, default) in fields.items():
++        text = re.sub(r'\b'+macro+r'\((\w+)\)', lambda m: f'({m[1]} getVariable ["{field}",{default}])', text)
++    text = re.sub(r'GET_BLOOD_PRESSURE\((\w+)\)', r'([\1] call ace_medical_status_fnc_getBloodPressure)', text)
++    text = text.replace('local _patient', '_patientLocal')
++    text = text.replace('owner _patient', '_ownerNum')
++    text = text.replace(', _public]', ']')
++    # Only finite numeric inputs are used; nonfinite rejection is not claimed.
++    text = re.sub(r'\bfinite (_\w+)', r'(\1 call _finite)', text)
++    ts = lex(text); pairs = matching(ts); edits = []
++    for i, t in enumerate(ts[:-1]):
++        if t.kind == 'ident' and t.value == 'linearConversion':
++            assert ts[i+1].value == '[' and i+1 in pairs
++            j = pairs[i+1]
++            edits.append((t.offset, ts[j].offset+1, '('+text[ts[i+1].offset:ts[j].offset+1]+' call _linear)'))
++    for a,b,v in reversed(edits): text = text[:a]+v+text[b:]
++    return adapt(text, component)
++
++
++def function(name, component='circulation', extended=False):
++    path = (F / ('fn_'+name+'.sqf')) if extended else (ROOT/'addons'/component/'functions'/('fnc_'+name+'.sqf'))
++    namespace = 'ACME' if extended else 'ACM_'+component
++    return namespace+'_fnc_'+name+' = {'+code(path.read_text(),component)+'};\n'
++
++
++def setup():
++    # Pin the constants to their checked-in definitions rather than inventing
++    # test thresholds. Complex macros are field reads adapted explicitly above.
++    headers = (ROOT/'addons/main/script_macros.hpp').read_text() + (ROOT/'include/z/ace/addons/medical_engine/script_macros_medical.hpp').read_text()
++    constants = ''
++    for name in ['ACM_REVERSIBLE_CA_BLOODVOLUME','ACM_OXYGEN_HYPOXIA','ACM_TENSIONHEMOTHORAX_THRESHOLD','BLOOD_VOLUME_CLASS_4_HEMORRHAGE']:
++        values = re.findall(r'^#define\s+'+name+r'\s+([0-9.]+)\b', headers, re.M)
++        assert len(values)==1, (name, values)
++        constants += name+' = '+values[0]+';\n'
++    return constants + '''
++        private _patientLocal=true;
++        private _linear={params ["_lo","_hi","_x","_a","_b","_clamp"];
++            private _f=(_x-_lo)/(_hi-_lo); if (_clamp) then {_f=(_f max 0) min 1;}; _a+(_f*(_b-_a))};
++        private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
++        private _pressure=[80,120];
++        private _recentShock=false;
++        private _rhythm=0;
++        private _tourniquet=false;
++        ACME_fnc_clinicalEpoch={(_this select 0) getVariable ["ACME_clinicalEpoch",1]};
++        ace_medical_status_fnc_getBloodPressure={_pressure};
++        ACM_circulation_fnc_recentAEDShock={_recentShock};
++        ACME_fnc_rhythmGet={_rhythm};
++        ace_medical_treatment_fnc_hasTourniquetAppliedTo={_tourniquet};
++        _patient setVariable ["ace_medical_heartRate",80];
++        _patient setVariable ["ace_medical_bloodVolume",6];
++        _patient setVariable ["ace_medical_spo2",99];
++        _patient setVariable ["ACM_circulation_CirculationState",true];
++    '''
++
++
++def pulse_setup():
++    return setup()+function('hasPulse')+function('aajtOccludes',extended=True)+function('pulsePerfusionProfile',extended=True)
++
++
++# The AAJT helper deliberately accepts numeric body indices. The public pulse
++# profile accepts names and must convert at its own API boundary.
++@pytest.mark.parametrize('placement,side,occluded',[
++    ('none','',[]),('zone3','',['leftleg','rightleg']),
