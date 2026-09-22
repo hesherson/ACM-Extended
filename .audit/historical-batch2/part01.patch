@@ -1,0 +1,232 @@
+-        "addons/acm_extended/functions/fn_yFlushTick.sqf",
+-    }
++    hooks={'addons/core/overrides/fnc_updateWoundBloodLoss.sqf',
++           'addons/circulation/functions/fnc_getIVFlowRate.sqf',
++           'addons/circulation/functions/fnc_getBloodVolumeChange.sqf',
++           'addons/core/overrides/fnc_medicationLocal.sqf',
++           'addons/acm_extended/functions/fn_yFlushTick.sqf'}
+     for path in hooks:
+-        src = text(path)
+-        assert "ACME_fnc_aajtOccludes" in src, f"AAJT limb occlusion missing from {path}"
++        assert 'ACME_fnc_aajtOccludes' in text(path),path
++    assert '[_unit, _deltaT, _syncValues] call ACM_circulation_fnc_getBloodVolumeChange' in text('addons/core/overrides/fnc_getBloodVolumeChange.sqf')
++    assert 'ACME_fnc_pulsePerfusionProfile' in text('addons/core/overrides/fnc_checkPulseLocal.sqf')
++    from test_historical_cardiac_execution import test_aajt_pulse_occlusion_is_site_specific
++    for placement,side,limbs in [('zone3','',['leftleg','rightleg']),('inguinal','leftleg',['leftleg']),
++                                  ('inguinal','rightleg',['rightleg']),('axillaleft','',['leftarm']),('axillaright','',['rightarm'])]:
++        test_aajt_pulse_occlusion_is_site_specific(placement,side,limbs)
+ 
+ 
+ def test_zone3_conscious_patient_is_collapsed_back_to_prone_without_network_loop():
+diff --git a/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py b/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py
+index d4448c0..b2bfb7f 100644
+--- a/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py
++++ b/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py
+@@ -7,54 +7,59 @@ def txt(rel):
+     return read_source(ROOT / rel, encoding="utf-8")
+ 
+ def test_b67_build_stamp_and_single_rosc_registration():
+-    cfg = txt("config.cpp")
+-    post = txt("functions/fn_postInit.sqf")
+-    assert_release_identity()
+     assert_release_identity()
+-    assert_release_identity()
+-    assert 'class roscEligibility {};' in cfg
+-    assert 'class attemptROSC { file = "\acm_extended\overrides\fn_attemptROSC.sqf"; };' in cfg
++    # These are native functions now, compiled once by their owning addon.
++    prep=(ROOT.parent/'circulation/XEH_PREP.hpp').read_text()
++    for name in ('roscEligibility','attemptROSC'):
++        assert prep.count('PREP('+name+');')==1
++        assert (ROOT.parent/'circulation/functions'/('fnc_'+name+'.sqf')).is_file()
++    assert 'class roscEligibility {};' not in txt('config.cpp')
+ 
+ 
+ def test_all_rosc_paths_share_one_eligibility_gate():
+-    attempt = txt("overrides/fn_attemptROSC.sqf")
+-    reversible = txt("overrides/fn_handleReversibleCardiacArrest.sqf")
+-    shock = txt("functions/fn_shockROSC.sqf")
+-    gate = txt("functions/fn_roscEligibility.sqf")
+-    assert 'call ACME_fnc_roscEligibility' in attempt
+-    assert 'call ACME_fnc_roscEligibility' in reversible
+-    assert 'call ACM_circulation_fnc_attemptROSC' in shock
++    attempt=txt('overrides/fn_attemptROSC.sqf')
++    reversible=txt('overrides/fn_handleReversibleCardiacArrest.sqf')
++    gate=(ROOT.parent/'circulation/functions/fnc_roscEligibility.sqf').read_text()
++    assert 'call FUNC(roscEligibility)' in attempt
++    assert 'call FUNC(roscEligibility)' in reversible
++    assert 'call ACM_circulation_fnc_attemptROSC' in txt('functions/fn_shockROSC.sqf')
+     assert 'GET_BLOOD_VOLUME(_patient) > ACM_REVERSIBLE_CA_BLOODVOLUME' not in reversible
+     assert 'GET_CIRCULATIONSTATE(_patient)' in gate
+     assert '_volume <= ACM_REVERSIBLE_CA_BLOODVOLUME' in gate
+     assert 'CPRSucceeded' in attempt
++    from test_historical_cardiac_execution import test_rosc_requires_strict_native_blood_volume_gate, test_shock_rosc_consumes_same_gate_and_rejects_old_episode
++    for volume,expected in [(4.19,False),(4.2,False),(4.2001,True)]:
++        test_rosc_requires_strict_native_blood_volume_gate(volume,expected)
++    for allowed,epoch in [(False,1),(True,1),(True,2)]:
++        test_shock_rosc_consumes_same_gate_and_rejects_old_episode(allowed,epoch)
+ 
+ 
+ def test_acme_no_longer_has_second_native_rate_arrest_authority():
+-    threshold = txt("functions/fn_rhythmThresholdTick.sqf")
++    threshold=txt('functions/fn_rhythmThresholdTick.sqf')
+     assert 'call ACME_fnc_arrestLocal' not in threshold
+-    assert 'ACME no longer creates VT/asystole or enters cardiac arrest' in threshold
+-    # The authoritative ACM fatal-rate checks remain in the ACM-compatible vitals override.
+-    vitals = txt("overrides/fn_handleUnitVitals.sqf")
++    vitals=txt('overrides/fn_handleUnitVitals.sqf')
+     assert '_heartRate < 40 || {_heartRate > 220}' in vitals
+     assert 'GET_MAP(_BPSystolic,_BPDiastolic) < 55' in vitals
++    from test_historical_cardiac_execution import test_threshold_observer_never_clears_native_critical_rhythm_without_treatment
++    for native in [-1,1,2,3,4]:
++        test_threshold_observer_never_clears_native_critical_rhythm_without_treatment(native)
+ 
+ 
+ def test_direct_arrest_call_sites_are_intentional_only():
+-    allowed = {
+-        "functions/fn_lidoToxTick.sqf",
+-        "functions/fn_megacodeArrest.sqf",
+-        "functions/fn_ownerDispatch.sqf",
+-        "functions/fn_rhythmSet.sqf",
+-        "functions/fn_shockLocal.sqf",
+-        "functions/fn_tbiApplyVitals.sqf",
+-    }
+-    found = set()
+-    for base in (ROOT / "functions", ROOT / "overrides"):
+-        for f in base.glob("*.sqf"):
+-            if "call ACME_fnc_arrestLocal" in read_source(f, encoding="utf-8", errors="ignore"):
+-                found.add(str(f.relative_to(ROOT)).replace("\\", "/"))
+-    assert found == allowed
++    from source_scan import lex
++    allowed={'functions/fn_lidoToxTick.sqf','functions/fn_megacodeArrest.sqf',
++             'functions/fn_ownerDispatch.sqf','functions/fn_rhythmTick.sqf',
++             'functions/fn_shockLocal.sqf','functions/fn_tbiApplyVitals.sqf'}
++    found=set()
++    for base in (ROOT/'functions',ROOT/'overrides'):
++        for f in base.glob('*.sqf'):
++            tokens=lex(f.read_text())
++            if any(a.kind=='ident' and a.value=='call' and b.kind=='ident' and b.value=='ACME_fnc_arrestLocal' for a,b in zip(tokens,tokens[1:])):
++                found.add(f.relative_to(ROOT).as_posix())
++    assert found==allowed
++    # Torsades moved from immediate induction to its mature conversion tick.
++    from test_historical_cardiac_execution import test_mature_torsades_arrest_request_is_rate_limited_and_stops_after_acknowledgement
++    test_mature_torsades_arrest_request_is_rate_limited_and_stops_after_acknowledgement()
+ 
+ 
+ def test_nonterminal_tbi_cannot_be_sole_native_fatal_hr_or_map_trigger():
+@@ -86,14 +91,12 @@ def test_tbi_cpp_acid_does_not_double_count_arrest_or_early_reperfusion():
+ 
+ 
+ def test_monitor_rhythm_change_is_forced_into_active_sweep():
+-    gen = txt("overrides/fn_genEKG.sqf")
+-    rset = txt("functions/fn_rhythmSet.sqf")
+-    post = txt("functions/fn_postInit.sqf")
+-    assert 'ACME_monitorRhythmSwitchMaxWait", 0.18' in gen
+-    assert 'ACME_monitorRhythmSwitchMaxWait = 0.18' in post
+-    assert 'ACM_circulation_AED_EKGRhythm", -99' in rset
+-    assert 'ACM_circulation_AED_Pads_LastSync", -1' in rset
+-    assert 'forceMonitorRefresh' in rset
++    from test_historical_cardiac_execution import test_rhythm_write_invalidates_both_monitor_caches
++    test_rhythm_write_invalidates_both_monitor_caches()
++    monitor=(ROOT.parent/'circulation/functions/fnc_displayAEDMonitor.sqf').read_text()
++    assert 'private _rhythmChangeEKG = _EKGRhythm != _oldEKGRhythm || {_peaFormChanged};' in monitor
++    assert 'private _oldEKGRhythm = _patient getVariable [QGVAR(AED_EKGRhythm), -2];' in monitor
++    # No demand for the old generator's 0.18-second delay or repeated sweep restarts.
+ 
+ 
+ def test_native_and_extended_reversible_causes_are_composed_once():
+diff --git a/addons/acm_extended/tools/test_historical_airway_execution.py b/addons/acm_extended/tools/test_historical_airway_execution.py
+new file mode 100644
+index 0000000..b8275e2
+--- /dev/null
++++ b/addons/acm_extended/tools/test_historical_airway_execution.py
+@@ -0,0 +1,230 @@
++"""Batch 2 source-derived airway/aftercare and stored-medication execution.
++
++The reviewed SQF runs with explicit owner, item, transport and presentation
++stand-ins. Volume arithmetic, epoch/receipt/session checks and branch ordering
++are not substituted. Does not execute Arma networking or dose kinetics.
++"""
++import pytest
++from test_historical_cardiac_execution import F, code, function, setup
++from test_menu_death_lifecycle import execute
++
++
++def suction_setup():
++    # Object identity uses namespace stand-ins in SQF-VM, where == is not
++    # defined for namespaces. isEqualTo preserves the tested identity relation.
++    drain=function('laryngoFluidDrainLocal',extended=True).replace('(_x select 1) == _medic','(_x select 1) isEqualTo _medic')
++    return setup()+function('laryngoFluidState',extended=True)+function('setAirwayState','airway')+drain+'''
++        ACM_airway_fnc_clearAirwayCheckedTime={};
++        _patient setVariable ["ACM_airway_AirwayObstructionVomit_State",2];
++        _patient setVariable ["ACM_airway_AirwayObstructionBlood_State",1];
++        _patient setVariable ["ACME_laryngo_secretions",["secretions-1",2]];
++        _patient setVariable ["ACME_suctionSessions",[["session",_medic,100,"electric"]]];
++        private _stamp=([_patient] call ACME_fnc_laryngoFluidState) select 0;
++    '''
++
++
++def test_suction_debits_once_and_clears_only_the_current_compartment():
++    execute(suction_setup()+'''
++        [_patient,_medic,1,"a",_stamp,3,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [(([_patient] call ACME_fnc_laryngoFluidState) select 2)==1,"partial suction amount wrong"] call _check;
++        [_patient,_medic,1,"a",_stamp,3,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [(([_patient] call ACME_fnc_laryngoFluidState) select 2)==1,"duplicate suction debited again"] call _check;
++        [_patient,_medic,1,"b",_stamp,1,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [(_patient getVariable ["ACM_airway_AirwayObstructionVomit_State",-1])==0,"vomit not cleared"] call _check;
++        [(_patient getVariable ["ACM_airway_AirwayObstructionBlood_State",-1])==1,"vomit suction cleared blood"] call _check;
++        private _blood=[_patient] call ACME_fnc_laryngoFluidState;
++        [(_blood select 1)=="b" && {(_blood select 2)==2},"blood compartment not preserved"] call _check;
++        [_patient,_medic,1,"c",_blood select 0,2,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [(_patient getVariable ["ACM_airway_AirwayObstructionBlood_State",-1])==0,"blood not cleared"] call _check;
++        private _secretions=[_patient] call ACME_fnc_laryngoFluidState;
++        [(_secretions select 1)=="s" && {(_secretions select 2)==2},"blood suction cleared secretions"] call _check;
++        private _total=(_patient getVariable ["ACME_suctionTotals",[]]) select 0;
++        [(_total select 1)==300,"suction total did not conserve volume"] call _check;
++    ''')
++
++
++@pytest.mark.parametrize('change',[
++    '_patient setVariable ["ACME_clinicalEpoch",2];',
++    '_patient setVariable ["ACME_suctionSessions",[]];',
++    '_patient setVariable ["ACME_suctionSessions",[["session",_medic,9,"electric"]]];',
++    '_patient setVariable ["ACM_airway_AirwayObstructionVomit_State",3];',
++    '_patientAlive=false;', '_alive=false;', '_distance=6;',
++    '_medic setVariable ["ACE_isUnconscious",true];',
++])
++def test_stale_or_invalid_suction_has_no_receipt_debit_or_native_clear(change):
++    execute(suction_setup()+change+'''
++        private _before=[_patient] call ACME_fnc_laryngoFluidState;
++        [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [([_patient] call ACME_fnc_laryngoFluidState) isEqualTo _before,"invalid suction changed volume"] call _check;
++        [(_patient getVariable ["ACME_laryngoEventReceipts",[]]) isEqualTo [],"invalid suction created receipt"] call _check;
++        [(_patient getVariable ["ACME_suctionTotals",[]]) isEqualTo [],"invalid suction debited"] call _check;
++    ''')
++
++
++@pytest.mark.parametrize('amount',[-1,0,10.01])
++def test_suction_rejects_invalid_amounts(amount):
++    execute(suction_setup()+f'[_patient,_medic,1,"a",_stamp,{amount},"session"] call ACME_fnc_laryngoFluidDrainLocal;'+'''
++        [(_patient getVariable ["ACME_suctionTotals",[]]) isEqualTo [],"invalid amount debited"] call _check;
++    ''')
++
++
++def test_manual_suction_caps_at_available_capacity_without_double_debit():
++    execute(suction_setup()+'''
++        _patient setVariable ["ACME_suctionSessions",[["session",_medic,100,"manual"]]];
++        _medic setVariable ["ACME_suctionManualSession",[0,0,975]];
++        [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [(([_patient] call ACME_fnc_laryngoFluidState) select 2)==3.5,"manual capacity overdraw"] call _check;
++        [_patient,_medic,1,"b",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
++        [(([_patient] call ACME_fnc_laryngoFluidState) select 2)==3.5,"full suction container kept draining"] call _check;
++        private _total=(_patient getVariable ["ACME_suctionTotals",[]]) select 0;
++        [(_total select 1)==25 && {(_total select 2)==25},"manual totals wrong"] call _check;
++    ''')
++
++
++def epi_setup():
++    return setup()+function('narcStoreCommit',extended=True)+function('epinephrinePushStored',extended=True)+'''
++        private _hasIV=true; private _hasIO=false;
++        private _requests=[]; private _storeAtDispatch=[];
++        ACM_circulation_fnc_hasIV={_hasIV && {count _this<4 || {(_this select 3)==3}}};
++        ACM_circulation_fnc_hasIO={_hasIO};
++        ACME_fnc_medicationRequest={_storeAtDispatch pushBack (+(_medic getVariable ["ACME_narcStore",[]])); _requests pushBack _this;};
