@@ -1,0 +1,53 @@
+name: Historical backlog preparation
+on:
+  push:
+    branches: [audit/historical-backlog-batch1-20260922]
+    paths: [.github/workflows/historical-backlog-prep.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 19d01b8b27fd53bb9d3c381c7445add589336159
+      - name: Snapshot tracked text and binary inventory
+        run: |
+          mkdir -p /tmp/backlog-source
+          python3 - <<'PY'
+          import json,pathlib,subprocess,zipfile
+          root=pathlib.Path.cwd()
+          entries={}
+          for rec in subprocess.check_output(['git','ls-tree','-rz','HEAD']).split(b'\0'):
+              if not rec: continue
+              meta,path=rec.split(b'\t',1)
+              mode,kind,sha=meta.decode().split()
+              if kind=='blob': entries[path.decode()]={'sha':sha,'mode':mode}
+          with zipfile.ZipFile('/tmp/backlog-source/source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              z.writestr('manifest.json',json.dumps({'commit':subprocess.check_output(['git','rev-parse','HEAD']).decode().strip(),'tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}']).decode().strip(),'files':entries},indent=2))
+              for p in entries:
+                  data=(root/p).read_bytes()
+                  # Source, all includes, tests and small fixtures. Binary assets are in a separate archive.
+                  try: data.decode('utf-8')
+                  except UnicodeDecodeError: continue
+                  z.writestr('source/'+p,data)
+          with zipfile.ZipFile('/tmp/backlog-source/assets.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for p in entries:
+                  data=(root/p).read_bytes()
+                  try: data.decode('utf-8')
+                  except UnicodeDecodeError: z.writestr(p,data)
+          print('Tracked files:',len(entries))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backlog-source
+          path: /tmp/backlog-source/source.zip
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backlog-assets
+          path: /tmp/backlog-source/assets.zip
+          compression-level: 0
+          retention-days: 3
