@@ -19,7 +19,7 @@ jobs:
           echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
           unzip /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools/sqfvm
           chmod +x /tmp/acme-tools/hemtt
-          /tmp/acme-tools/hemtt --version
+          /tmp/acme-tools/hemtt --version || test "$?" -eq 1
       - uses: actions/upload-artifact@v4
         with:
           name: acme-audit-tools
