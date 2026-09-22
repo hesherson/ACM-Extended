@@ -21,17 +21,16 @@ private _timeSinceLastUse = CBA_missionTime - (_patient getVariable [QGVAR(Ammon
 
 _patient setVariable [QGVAR(AmmoniaInhalant_LastUse), CBA_missionTime, true];
 
-_patient setVariable [QEGVAR(core,KnockOut_State), false];
-
 if (_timeSinceLastUse < 10) exitWith {};
 
-if (!([_patient] call ACEFUNC(medical_status,hasStableVitals)) || [_patient] call EFUNC(core,isForcedUnconscious)) exitWith {};
+if !([_patient, true] call EFUNC(core,canWake)) exitWith {};
 
 private _oxygenSaturationChance = linearConversion [80, 99, GET_OXYGEN(_patient), 0.5, 1, true] ;
 
 if (random 1 < _oxygenSaturationChance) then {
     if (IS_UNCONSCIOUS(_patient)) then {
-        [QEGVAR(core,playWakeUpSound), _patient] call CBA_fnc_localEvent;
-        [QACEGVAR(medical,WakeUp), _patient] call CBA_fnc_localEvent;
+        if ([_patient, true, "ammonia"] call EFUNC(core,requestWake)) then {
+            [QEGVAR(core,playWakeUpSound), _patient] call CBA_fnc_localEvent;
+        };
     };
 };

@@ -57,7 +57,7 @@ if (!_useAdvanced) exitWith {
             _patient setVariable [VAR_PAIN_SUPP, (_painSuppress + MORPHINE_PAIN_SUPPRESSION) min 1, true];
         };
         case "Epinephrine": {
-            [QACEGVAR(medical,WakeUp), _patient] call CBA_fnc_localEvent;
+            [_patient, false, "epinephrine"] call FUNC(requestWake);
         };
         case "Painkillers": {
             private _painSuppress = GET_PAIN_SUPPRESS(_patient);

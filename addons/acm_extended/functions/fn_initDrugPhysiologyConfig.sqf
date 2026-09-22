@@ -64,6 +64,22 @@ ACME_lido_benzoClassnames        = ["Midazolam", "Midazolam_IV"];  // classnames
 ACME_lido_seizureBenzoBase       = 1;  // midazolam administrations, as an effective count, that control a seizure right at the threshold.
 ACME_lido_seizureBenzoRefractory = 0.1;  // extra administrations needed per mcg/ml above the seizure threshold.
 
+// Shared seizure control. These are internal physiology tunables, not separate medication exceptions.
+// Midazolam preserves the old 1-effective-count baseline. Propofol reaches baseline control at roughly
+// induction-scale native effect. Ketamine receives no control credit at low analgesic exposure and ramps
+// into anticonvulsant effect as anesthetic exposure is reached.
+ACME_seizure_driveBase = 1.0;
+ACME_seizure_driveTBI = 1.0;
+ACME_seizure_driveSarin = 1.0;
+ACME_seizure_driveDebug = 1.0;
+ACME_seizure_midazolamControlWeight = 1.0;
+ACME_seizure_propofolControlWeight = 1.0;
+ACME_seizure_ketamineControlFloor = 0.30;
+ACME_seizure_ketamineControlWeight = 1.0;
+ACME_seizure_ketamineExtraWeight = 0.35;
+ACME_seizure_controlHysteresis = 0.10;
+ACME_seizure_controlCap = 4.0;
+
 // seizure body motion. BI GestureSpasm3-6 are played as ACME-only gesture aliases at 1.35x and chained on
 // GestureDone, so each spasm completes before the next one begins. The old setDir tremor, random yaw jitter,
 // burst/pause oscillator, repeated ragdoll flops and seizure camera shake are retired.

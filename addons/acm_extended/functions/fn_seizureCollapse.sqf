@@ -17,8 +17,9 @@ private _headElevated = _patient getVariable ["ACME_headElevated", false];
 // abolishes consciousness. it is almost always a no-op here, because a lidocaine-toxic patient on a running drip
 // is already down.
 private _wasUncon = _patient getVariable ["ACE_isUnconscious", false];
-if (!_wasUncon && {!isNil "ace_medical_status_fnc_setUnconsciousState"}) then {
-    [_patient, true] call ace_medical_status_fnc_setUnconsciousState;  // it knocks out and ragdolls from conscious.
+if (!_wasUncon) then {
+    // Use ACE's canonical transition so seizure onset cannot split the raw flag from the medical state machine.
+    [_patient, true, 0, false] call ace_medical_fnc_setUnconscious;
 };
 
 if (_headElevated) then {
@@ -39,6 +40,6 @@ if (_headElevated) then {
 // an OPA cannot stay seated against a clenching, convulsing jaw, so it is expelled at seizure onset. an i-gel or
 // SGA, at the oral slot value "SGA", and a nasal NPA are more secure and stay put, so only an actual OPA is
 // cleared.
-if ((_patient getVariable ["ACM_airway_AirwayItem_Oral", ""]) == "OPA") then {
+if (!(_patient getVariable ["ACME_roc_paralyzed", false]) && {(_patient getVariable ["ACM_airway_AirwayItem_Oral", ""]) == "OPA"}) then {
     [_patient, "", true] call ACM_airway_fnc_setOralAirwayItem;
 };

@@ -76,6 +76,21 @@ private _etco2 = if (!isNil "ACM_breathing_fnc_getEtCO2") then {[_patient] call 
     _patient getVariable ["ACM_core_Lying_State", false],
     _patient getVariable ["ACM_core_Sitting_State", false]
 ]] call _out;
+private _stableWake = [_patient] call ace_medical_status_fnc_hasStableVitals;
+private _forcedWake = [_patient] call ACM_core_fnc_isForcedUnconscious;
+private _canWake = [_patient, false] call ACM_core_fnc_canWake;
+private _sedLoadDbg = [_patient] call ACME_fnc_sedationOnBoard;
+private _sedActiveDbg = [_patient] call ACME_fnc_sedationActive;
+[format ["WakeGate Stable=%1 Forced=%2 CanWake=%3 SedLoad=%4 SedActive=%5 RocParalyzed=%6 RepairCount=%7 LastRepair=%8",
+    _stableWake,
+    _forcedWake,
+    _canWake,
+    _sedLoadDbg toFixed 3,
+    _sedActiveDbg,
+    _patient getVariable ["ACME_roc_paralyzed", false],
+    _patient getVariable ["ACME_consciousRepairCount", 0],
+    _patient getVariable ["ACME_consciousRepairLast", []]
+]] call _out;
 [format ["AirwayReflex=%1 Collapse=%2 VomitObs=%3 BloodObs=%4 Recovery=%5 HeadTilt=%6 OPA=%7 NPA=%8",
     _patient getVariable ["ACM_airway_AirwayReflex_State", true],
     _patient getVariable ["ACM_airway_AirwayCollapse_State", 0],

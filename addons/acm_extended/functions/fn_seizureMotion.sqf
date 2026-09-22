@@ -10,6 +10,7 @@ if (_legacyPFH isEqualType 0 && {_legacyPFH >= 0}) then {
 };
 
 private _enabled = _on && {alive _patient}
+    && {!(_patient getVariable ["ACME_roc_paralyzed", false])}
     && {missionNamespace getVariable ["ACME_seizure_animEnabled",true]}
     && {(missionNamespace getVariable ["ACME_seizure_motionEnabled",1]) != 0};
 if (!_enabled) exitWith {
