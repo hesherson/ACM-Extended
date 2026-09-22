@@ -1,0 +1,244 @@
+             code = '\n'.join(line.split('//', 1)[0] for line in data.splitlines())
+             if '\\z\\acm\\' in code:
+diff --git a/addons/acm_extended/tools/test_b44_requested_fixes.py b/addons/acm_extended/tools/test_b44_requested_fixes.py
+index 4205e20fc39c66c3d94d8282b5ae82b83ef9a9c9..29e6890634cf3e24cfe5a9f8c393e465f3960c9e 100644
+--- a/addons/acm_extended/tools/test_b44_requested_fixes.py
++++ b/addons/acm_extended/tools/test_b44_requested_fixes.py
+@@ -1,7 +1,8 @@
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ ROOT=Path(__file__).resolve().parents[1]
+-def txt(rel): return (ROOT/rel).read_text(errors='ignore')
++def txt(rel): return read_source(ROOT/rel, errors='ignore')
+ 
+ def test_b44_version():
+     s=txt('config.cpp')+txt('functions/fn_postInit.sqf')
+diff --git a/addons/acm_extended/tools/test_b45_medication_steth_io_logs.py b/addons/acm_extended/tools/test_b45_medication_steth_io_logs.py
+index 0a9ed944aed5578625b2e47663e7bd128f41b65b..157bcb81bacf63a983b83e1548c14265eda7ae65 100644
+--- a/addons/acm_extended/tools/test_b45_medication_steth_io_logs.py
++++ b/addons/acm_extended/tools/test_b45_medication_steth_io_logs.py
+@@ -1,9 +1,10 @@
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ def text(rel):
+-    return (ROOT / rel).read_text(errors="ignore")
++    return read_source(ROOT / rel, errors="ignore")
+ 
+ 
+ def test_b45_version_stamp():
+diff --git a/addons/acm_extended/tools/test_b47_animation_contracts.py b/addons/acm_extended/tools/test_b47_animation_contracts.py
+index 474bfb66ada17e9b275ce5bd02352adfc04abbd7..30ec259e9779d32142ee8e8c79cb32786e0cba67 100644
+--- a/addons/acm_extended/tools/test_b47_animation_contracts.py
++++ b/addons/acm_extended/tools/test_b47_animation_contracts.py
+@@ -1,8 +1,9 @@
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-def txt(rel): return (ROOT / rel).read_text(errors='ignore')
++def txt(rel): return read_source(ROOT / rel, errors='ignore')
+ 
+ def block(src, name):
+     m = re.search(r'class\s+' + re.escape(name) + r'\b[^\{]*\{', src)
+diff --git a/addons/acm_extended/tools/test_b48_medication_animation_orientation.py b/addons/acm_extended/tools/test_b48_medication_animation_orientation.py
+index 87b2641d43456d51ba1667cfae9150f4a8737547..03d58f7c1a7e34985f494be47f06e99f0c2224f5 100644
+--- a/addons/acm_extended/tools/test_b48_medication_animation_orientation.py
++++ b/addons/acm_extended/tools/test_b48_medication_animation_orientation.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8-sig', errors='ignore')
++    return read_source(ROOT / rel, encoding='utf-8-sig', errors='ignore')
+ 
+ def block(src, name):
+     m = re.search(r'class\s+' + re.escape(name) + r'\b[^\{]*\{', src)
+diff --git a/addons/acm_extended/tools/test_b49_intubation_obtunded.py b/addons/acm_extended/tools/test_b49_intubation_obtunded.py
+index df067a8c280f977f3ceec9eb8541c044f6ac4743..ffecf19383f33cef0f499328e7590ae18473fae5 100644
+--- a/addons/acm_extended/tools/test_b49_intubation_obtunded.py
++++ b/addons/acm_extended/tools/test_b49_intubation_obtunded.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ import hashlib
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8-sig', errors='ignore')
++    return read_source(ROOT / rel, encoding='utf-8-sig', errors='ignore')
+ 
+ 
+ def test_version_batch():
+diff --git a/addons/acm_extended/tools/test_b50_animation_medication_prepared.py b/addons/acm_extended/tools/test_b50_animation_medication_prepared.py
+index 2bbfb8bdd67320bf6492b8603eb3bd074c3e0e98..9a13d720e73c013f5b39fe438ef1fd5dde42453f 100644
+--- a/addons/acm_extended/tools/test_b50_animation_medication_prepared.py
++++ b/addons/acm_extended/tools/test_b50_animation_medication_prepared.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8-sig', errors='ignore')
++    return read_source(ROOT / rel, encoding='utf-8-sig', errors='ignore')
+ 
+ def test_version_batch():
+     assert 'version = "1.0.100-r14";' in txt('config.cpp')
+diff --git a/addons/acm_extended/tools/test_b57_pose_rules_narcbox_cohesion.py b/addons/acm_extended/tools/test_b57_pose_rules_narcbox_cohesion.py
+index 5137007d7500fb268616e0908af047bf992aea35..69325508c2747b5cce9b82ce05bf271b5aebf5d9 100644
+--- a/addons/acm_extended/tools/test_b57_pose_rules_narcbox_cohesion.py
++++ b/addons/acm_extended/tools/test_b57_pose_rules_narcbox_cohesion.py
+@@ -1,10 +1,11 @@
+ """B57 static contracts for the requested animation/menu/reset/Narc Box changes.
+ Static only: Arma runtime validation is still required for RTM timing/camera behavior."""
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-def txt(rel): return (ROOT / rel).read_text(encoding="utf-8")
++def txt(rel): return read_source(ROOT / rel, encoding="utf-8")
+ 
+ def _if_not_precedence_traps(source):
+     hits=[]
+@@ -31,7 +32,7 @@ def test_version_is_r21_b57():
+ def test_no_if_not_precedence_trap_anywhere():
+     for folder in ('functions','overrides'):
+         for p in (ROOT/folder).glob('*.sqf'):
+-            src=p.read_text(encoding='utf-8', errors='replace')
++            src=read_source(p, encoding='utf-8', errors='replace')
+             code='\n'.join(l for l in src.splitlines() if not l.lstrip().startswith(('*','//','/*')))
+             assert not _if_not_precedence_traps(code), p.name
+ 
+diff --git a/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py b/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py
+index 2bca7d5473267286c698de9e890595bfc078b109..0a08f301e512a6e1126b40ad95b6b49860ff43ae 100644
+--- a/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py
++++ b/addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py
+@@ -1,9 +1,10 @@
++from historical_source import read_source
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding="utf-8")
++    return read_source(ROOT / rel, encoding="utf-8")
+ 
+ def test_b67_build_stamp_and_single_rosc_registration():
+     cfg = txt("config.cpp")
+@@ -51,7 +52,7 @@ def test_direct_arrest_call_sites_are_intentional_only():
+     found = set()
+     for base in (ROOT / "functions", ROOT / "overrides"):
+         for f in base.glob("*.sqf"):
+-            if "call ACME_fnc_arrestLocal" in f.read_text(encoding="utf-8", errors="ignore"):
++            if "call ACME_fnc_arrestLocal" in read_source(f, encoding="utf-8", errors="ignore"):
+                 found.add(str(f.relative_to(ROOT)).replace("\\", "/"))
+     assert found == allowed
+ 
+diff --git a/addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py b/addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py
+index 4822e73f8a5ed66f0d5eaa0f93b2726e64b34bcb..4a8226e25a770fa6e9a1d2601cec73ff8b6c2a36 100644
+--- a/addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py
++++ b/addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ import soundfile as sf
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8', errors='replace')
++    return read_source(ROOT / rel, encoding='utf-8', errors='replace')
+ 
+ 
+ def test_b68_version_stamp():
+diff --git a/addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py b/addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py
+index 0ecb94c37b8680dec48645e1a52e47f278eb3256..20fe14c32451db79fe352e1d6fbafc7a6571b1ed 100644
+--- a/addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py
++++ b/addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding="utf-8", errors="replace")
++    return read_source(ROOT / rel, encoding="utf-8", errors="replace")
+ 
+ 
+ def test_b69_version_stamp():
+diff --git a/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py b/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py
+index 1ce0af7ef7c47afb0ea7af07e04c7f9e9baffad7..03af7fefb60a7f2fb195f1831e792c7b9ac9d2a9 100644
+--- a/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py
++++ b/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py
+@@ -1,9 +1,10 @@
++from historical_source import read_source
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8', errors='replace')
++    return read_source(ROOT / rel, encoding='utf-8', errors='replace')
+ 
+ 
+ def test_b70_version_stamp():
+diff --git a/addons/acm_extended/tools/test_b72_chest_tag_head_provider.py b/addons/acm_extended/tools/test_b72_chest_tag_head_provider.py
+index afa7df4a0aa019374ddb2556d326e050305fb853..d1450185d2ce52f39ff206539ce4a6c077a1e843 100644
+--- a/addons/acm_extended/tools/test_b72_chest_tag_head_provider.py
++++ b/addons/acm_extended/tools/test_b72_chest_tag_head_provider.py
+@@ -1,9 +1,10 @@
++from historical_source import read_source
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8', errors='replace')
++    return read_source(ROOT / rel, encoding='utf-8', errors='replace')
+ 
+ 
+ def test_version_batch():
+diff --git a/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py b/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py
+index c88c0efd5e0b3bc15fe97d4eb243f435084dcce8..6103580fccf4d2511cfda608613d29a9cbdac823 100644
+--- a/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py
++++ b/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+ def txt(rel):
+-    return (ROOT / rel).read_text(encoding="utf-8", errors="replace")
++    return read_source(ROOT / rel, encoding="utf-8", errors="replace')
+ 
+ 
+ def test_version_batch():
+@@ -212,7 +213,7 @@ def test_no_acme_medical_animation_entry_uses_priority_two_switchmove_fallback()
+     offenders = []
+     for base in (ROOT / 'functions', ROOT / 'overrides'):
+         for path in base.glob('fn_*.sqf'):
+-            src = path.read_text(encoding='utf-8', errors='replace')
++            src = read_source(path, encoding='utf-8', errors='replace')
+             if '] call ACME_fnc_doAnim;' in src:
+                 for line_no, line in enumerate(src.splitlines(), 1):
+                     if 'call ACME_fnc_doAnim;' in line and ', 2]' in line:
+diff --git a/addons/acm_extended/tools/test_b77_branding_authors.py b/addons/acm_extended/tools/test_b77_branding_authors.py
+index d67a39186c09013d9ae8457a70d9a178e4bd36d1..c3193d7d333c1da67dc2aa61f9c5e9882fa0488f 100644
+--- a/addons/acm_extended/tools/test_b77_branding_authors.py
