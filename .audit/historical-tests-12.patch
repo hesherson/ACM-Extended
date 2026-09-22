@@ -1,0 +1,173 @@
+diff --git a/addons/acm_extended/tools/test_na8_5_batch12.py b/addons/acm_extended/tools/test_na8_5_batch12.py
+index 242dd39a49fef04bbd720d26b5cfade9e1e8806b..5f3b3be445aa535911fc69c3067ea1a7d1c64b62 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch12.py
++++ b/addons/acm_extended/tools/test_na8_5_batch12.py
+@@ -1,6 +1,7 @@
+ """B12 source contracts and independent game-math reference models.
+ These are Python tests, NOT compilation/execution of SQF or Arma multiplayer tests.
+ """
++from historical_source import read_source
+ from pathlib import Path
+ import math
+ import re
+@@ -8,7 +9,7 @@ import unittest
+ import xml.etree.ElementTree as ET
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-def read(p): return (ROOT/p).read_text(encoding='utf-8')
++def read(p): return read_source(ROOT/p, encoding='utf-8')
+ def src(n): return read('functions/fn_'+n+'.sqf')
+ def code(s): return re.sub(r'/\*.*?\*/|//[^\n]*', '', s, flags=re.S)
+ def envelope(t, initial=1, live=1):
+diff --git a/addons/acm_extended/tools/test_na8_5_batch13.py b/addons/acm_extended/tools/test_na8_5_batch13.py
+index 0f2bb12940686b319182dd97cbc1332566ec1225..c24532a3e812f8dd42571ee3e45ff6f963d4d4d7 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch13.py
++++ b/addons/acm_extended/tools/test_na8_5_batch13.py
+@@ -7,12 +7,15 @@ Run with PYTHONDONTWRITEBYTECODE=1 to keep an exact-source patch tree clean.
+ from __future__ import annotations
+ import json, math, re, unittest
+ from pathlib import Path
++from historical_source import read_source
+ ROOT=Path(__file__).resolve().parents[1]
+-MATRIX=json.loads((ROOT/'audit/MEDICATION_MATRIX.json').read_text())
++# Read-only current-source fixture; unresolved macro expressions stay symbolic.
++from medication_inventory import inventory
++MATRIX=inventory(ROOT.parent/'core/ACM_Medication.hpp', ROOT/'config.cpp')
+ MEDS={r['classname']:r for r in MATRIX['medication_classes']}
+ SOURCES={r['source']:r for r in MATRIX['concentrations']}
+ def src(n):return (ROOT/'functions'/('fn_'+n+'.sqf')).read_text()
+-def ov(n):return (ROOT/'overrides'/('fn_'+n+'.sqf')).read_text()
++def ov(n):return read_source(ROOT/'overrides'/('fn_'+n+'.sqf'))
+ def clamp(x,a=0.,b=1.):return max(a,min(b,x))
+ def envelope(route,t,peak,life,plateau):
+     # Caller excludes expired/future records. Matches supplied native route functions.
+diff --git a/addons/acm_extended/tools/test_na8_5_batch4.py b/addons/acm_extended/tools/test_na8_5_batch4.py
+index bbe20995ab5b75a3ab515be6f7b3749b45698443..bb84487fbb49d8ec6f21deb104beea9e0e0431be 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch4.py
++++ b/addons/acm_extended/tools/test_na8_5_batch4.py
+@@ -1,5 +1,6 @@
+ #!/usr/bin/env python3
+ """B4 source contracts and protocol reference models. No test executes Arma SQF."""
++from historical_source import read_source
+ from pathlib import Path
+ import copy
+ import hashlib
+@@ -7,7 +8,7 @@ import re
+ import unittest
+ from source_scan import lex
+ R=Path(__file__).resolve().parents[1]
+-def src(name):return (R/'functions'/('fn_'+name+'.sqf')).read_text(encoding='utf-8-sig')
++def src(name):return read_source(R/'functions'/('fn_'+name+'.sqf'), encoding='utf-8-sig')
+ def tokens(name):return [t.value for t in lex(src(name))]
+ 
+ def sedation(ket_im=0,ket_iv=0,mid=0,prop=0):
+@@ -57,7 +58,7 @@ class BandOwner:
+ 
+ class ManualInfusionSource(unittest.TestCase):
+     def test_no_preset_functions_or_registrations(self):
+-        c=(R/'config.cpp').read_text()
++        c=read_source(R/'config.cpp')
+         for name in ('infusionPresets','infusionPresetRate','infusionPresetApply','infusionPresetCommit','infusionPresetResult'):
+             self.assertFalse((R/'functions'/('fn_'+name+'.sqf')).exists());self.assertNotIn('class '+name,c)
+     def test_no_preset_transport_events(self):self.assertNotIn('ACME_infusionPreset',src('postInit'))
+@@ -69,7 +70,7 @@ class ManualInfusionSource(unittest.TestCase):
+         s=re.search(r'ACME_infusion_allowedMedications\s*=\s*(\[[^;]+)',src('postInit')).group(1)
+         for drug in ('Ketamine','Propofol'):self.assertIn('"'+drug+'"',s)
+     def test_native_propofol_class_preserved(self):
+-        s=(R/'config.cpp').read_text();c=s[s.index('class Propofol_IV:'):s.index('class Norepinephrine_IV:')]
++        s=read_source(R/'config.cpp');c=s[s.index('class Propofol_IV:'):s.index('class Norepinephrine_IV:')]
+         for term in ('timeInSystem = 480','timeTillMaxEffect = 90','maxEffectTime = 180','maxEffectDose = 100','weightEffect = 1','painReduce = 0'):self.assertIn(term,c)
+     def test_delivery_still_native_already_admitted(self):
+         s=src('infusionDeliver')
+@@ -200,7 +201,7 @@ class BandSource(unittest.TestCase):
+     def test_only_deliberate_band_operations_publish(self):
+         calls=[]
+         for p in (R/'functions').glob('*.sqf'):
+-            if 'ACME_fnc_ivMinigameBandFlag' in [t.value for t in lex(p.read_text(encoding='utf-8-sig'))]:calls.append(p.stem)
++            if 'ACME_fnc_ivMinigameBandFlag' in [t.value for t in lex(read_source(p, encoding='utf-8-sig'))]:calls.append(p.stem)
+         self.assertEqual(set(calls),{'fn_ivMinigameClick','fn_ivMinigameRemoveBand'})
+     def test_owner_requires_current_local_epoch(self):
+         s=src('ivStateLocal');self.assertIn('!local _patient',s);self.assertIn('_epoch !=',s)
+diff --git a/addons/acm_extended/tools/test_na8_5_batch5.py b/addons/acm_extended/tools/test_na8_5_batch5.py
+index 8b4a5a2064d5c650836e3dba86e091b376f77e55..8f7a6571845edec9d971cd92a3d91411542a8fc3 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch5.py
++++ b/addons/acm_extended/tools/test_na8_5_batch5.py
+@@ -1,9 +1,10 @@
+ """Source contracts and independent arithmetic models. These tests do not execute SQF."""
++from historical_source import read_source
+ from pathlib import Path
+ from dataclasses import dataclass, field
+ import random, unittest
+ ROOT=Path(__file__).resolve().parents[1]
+-def src(n): return (ROOT/'functions'/('fn_'+n+'.sqf')).read_text()
++def src(n): return read_source(ROOT/'functions'/('fn_'+n+'.sqf'))
+ @dataclass
+ class Mixture:
+     volume: float
+@@ -137,7 +138,7 @@ class SourceContracts(unittest.TestCase):
+     def test_actual_admission_drives_all_effects(self):
+         s=src('fluidCommit');self.assertIn('_admitted / _drained',s);self.assertIn('param [26',s)
+     def test_no_sedation_presets_return(self):
+-        s=(ROOT/'config.cpp').read_text();self.assertNotIn('class infusionPresets',s);self.assertNotIn('class infusionApplyPreset',s)
++        s=read_source(ROOT/'config.cpp');self.assertNotIn('class infusionPresets',s);self.assertNotIn('class infusionApplyPreset',s)
+     def test_b14_ketamine_route_weights(self):
+         s=src('ketamineOnBoard')
+         self.assertIn('0.8',s);self.assertIn('1.75',s)
+@@ -149,7 +150,7 @@ class SourceContracts(unittest.TestCase):
+     def test_pulseless_stimulus_gated(self):self.assertIn('ace_medical_inCardiacArrest',src('laryngoStimulusEffect'))
+     def test_bp_and_hr_read_same_stimulus(self):
+         self.assertIn('ACME_fnc_laryngoStimulusEffect',src('bpCompute'))
+-        self.assertIn('ACME_fnc_laryngoStimulusEffect',(ROOT/'overrides/fn_updateHeartRate.sqf').read_text())
++        self.assertIn('ACME_fnc_laryngoStimulusEffect',read_source(ROOT/'overrides/fn_updateHeartRate.sqf'))
+     def test_debug_propofol_separate(self):
+         s=src('debugMenu');self.assertIn('ACME_fnc_sedationComponents',s);self.assertIn('["Ketamine"',s);self.assertIn('["Propofol"',s);self.assertIn('["Fentanyl"',s)
+     def test_mixed_bag_not_single_drug_epi_source(self):
+diff --git a/addons/acm_extended/tools/test_na8_5_batch8.py b/addons/acm_extended/tools/test_na8_5_batch8.py
+index e35f1edcd90dbb6d346ed927680958682b20578e..4493eb804aa284f5a1289da18e3b75f98c40e456 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch8.py
++++ b/addons/acm_extended/tools/test_na8_5_batch8.py
+@@ -1,11 +1,12 @@
+ #!/usr/bin/env python3
+ """B8 source contracts and independent route/placement examples. Does not execute SQF."""
++from historical_source import read_source
+ from pathlib import Path
+ import json,math,re,unittest
+ from source_scan import lex
+ ROOT=Path(__file__).resolve().parents[1]
+-FIXTURE=json.loads((ROOT/'tools/na8_5_b8_medication_routes.json').read_text())
+-def source(name):return (ROOT/'functions'/f'fn_{name}.sqf').read_text(encoding='utf-8-sig')
++FIXTURE=json.loads(read_source(ROOT/'tools/na8_5_b8_medication_routes.json'))
++def source(name):return read_source(ROOT/'functions'/f'fn_{name}.sqf', encoding='utf-8-sig')
+ def code(name):return [t.value for t in lex(source(name))]
+ 
+ def route_model(name,via=None):
+@@ -47,10 +48,10 @@ class SourceContracts(unittest.TestCase):
+     def test_real_iv_flag_required_when_supplied(self):self.assertIn('_viaIV isEqualTo true',source('vesicantRouteAllows'))
+     def test_legacy_is_only_null_object_sentinel(self):self.assertIn('if (_viaIV isEqualType objNull) exitWith {isNull _viaIV}',source('vesicantRouteAllows'))
+     def test_event_retains_first_four_fields(self):
+-        s=(ROOT/'overrides/fn_medicationLocal.sqf').read_text()
++        s=read_source(ROOT/'overrides/fn_medicationLocal.sqf')
+         self.assertIn('[QEGVAR(circulation,handleMedicationEffects), [_patient, _bodyPart, _classname, _dose, _iv, _delivery]] call CBA_fnc_localEvent;',s)
+     def test_systemic_medication_is_recorded_before_event(self):
+-        s=(ROOT/'overrides/fn_medicationLocal.sqf').read_text()
++        s=read_source(ROOT/'overrides/fn_medicationLocal.sqf')
+         self.assertLess(s.index('call ACEFUNC(medical_status,addMedicationAdjustment)'),s.index('[QEGVAR(circulation,handleMedicationEffects)'))
+         self.assertLess(s.index('call ACEFUNC(medical_treatment,onMedicationUsage)'),s.index('[QEGVAR(circulation,handleMedicationEffects)'))
+     def test_postinit_receives_metadata(self):self.assertIn('["_viaIV", objNull]',source('postInit'))
+@@ -62,7 +63,7 @@ class SourceContracts(unittest.TestCase):
+     def test_b14_credit_and_local_antidote_hooks_preserved(self):
+         s=source('postInit');s=s[s.index('["ACM_circulation_handleMedicationEffects"'):]
+         self.assertIn('call ACME_fnc_applyCalciumCredit',s)
+-        self.assertIn('call ACME_fnc_vesicantReverse',(ROOT/'overrides/fn_medicationLocal.sqf').read_text())
++        self.assertIn('call ACME_fnc_vesicantReverse',read_source(ROOT/'overrides/fn_medicationLocal.sqf'))
+         self.assertNotIn('call ACME_fnc_vesicantInjure',s.split('}] call CBA_fnc_addEventHandler;',1)[0])
+     def test_direct_injury_caller_is_also_guarded(self):
+         s=source('vesicantInjure');self.assertLess(s.index('call ACME_fnc_vesicantRouteAllows'),s.index('ACME_vesExposure_'))
+@@ -79,7 +80,7 @@ class SourceContracts(unittest.TestCase):
+     def test_wrist_tight_14g_tolerance(self):self.assertEqual(TOL,0.15)
+     def test_caliber_depth_roll_unchanged(self):self.assertRegex(CATALOG,r'"lateral forearm", 16, 0\.35, 0\.10, 0\.75')
+     def test_item_no_longer_claims_20g_only(self):
+-        s=(ROOT/'config.cpp').read_text();self.assertNotIn('only catheter a wrist vein will take',s);self.assertNotIn('only one that fits a wrist',s)
++        s=read_source(ROOT/'config.cpp');self.assertNotIn('only catheter a wrist vein will take',s);self.assertNotIn('only one that fits a wrist',s)
+         self.assertIn('Wrist placement requires an extremely accurate central stick',s)
+     def test_gauge_availability_is_inventory_only(self):
