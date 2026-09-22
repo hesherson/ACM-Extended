@@ -1,0 +1,88 @@
+[
+  {
+    "path": "addons/airway/functions/fnc_establishSurgicalAirway.sqf",
+    "base_sha": "7ccd86a1cfa1e43498899a2abf47ff8147cc7740",
+    "expected_sha": "dc70b5a6d73f13b75d10af2ad5ec0928ccd754f6",
+    "edits": [
+      {
+        "start": 25,
+        "end": 26,
+        "text": "[[_medic, _patient, \"head\"], { // On Start\n    params [\"_medic\", \"_patient\"];\n"
+      },
+      {
+        "start": 27,
+        "end": 29,
+        "text": "    // Acquire only after the continuous controller accepts this episode. A rejected\n    // startup has no cancellation callback and must not reserve the patient.\n    _patient setVariable [QGVAR(SurgicalAirway_InProgress), true, true];\n"
+      }
+    ]
+  },
+  {
+    "path": "addons/core/functions/fnc_beginContinuousAction.sqf",
+    "base_sha": "748c6ba0801f3d1a86e3395b0227236a6211995b",
+    "expected_sha": "77994b538aa5193352f49599b2177a1c1338054e",
+    "edits": [
+      {
+        "start": 30,
+        "end": 30,
+        "text": "\n// Bind only a session started by the local controlled unit. AI/local scripted\n// providers retain their existing behavior when the player changes units.\nprivate _playerBound = hasInterface && {!isNil \"ACE_player\"} && {_medic isEqualTo ACE_player};\n"
+      },
+      {
+        "start": 101,
+        "end": 103,
+        "text": "                params [\"_medic\", \"_epoch\", \"_playerBound\"];\n                if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}\n                    && {!_playerBound || {_medic isEqualTo ACE_player}}) then {\n"
+      },
+      {
+        "start": 105,
+        "end": 106,
+        "text": "            }, [_medic, _epoch, _playerBound], 0.65] call CBA_fnc_waitAndExecute;\n"
+      },
+      {
+        "start": 114,
+        "end": 116,
+        "text": "                    params [\"_medic\", \"_epoch\", \"_playerBound\"];\n                    if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}\n                    && {!_playerBound || {_medic isEqualTo ACE_player}}) then {\n"
+      },
+      {
+        "start": 118,
+        "end": 119,
+        "text": "                }, [_medic, _epoch, _playerBound], 1.116] call CBA_fnc_waitAndExecute;\n"
+      },
+      {
+        "start": 134,
+        "end": 135,
+        "text": "    _args params [\"_medic\", \"_patient\", \"_bodyPart\", \"_extraArgs\", \"_notInVehicle\", \"_isProne\", \"_perFrame\", \"_onCancel\", \"_dialogID\", \"_epoch\", \"_keyID\", \"_isDialog\", \"_dialogStartupUntil\", \"_playerBound\"];\n"
+      },
+      {
+        "start": 144,
+        "end": 144,
+        "text": "    private _identityChanged = _playerBound && {!(_medic isEqualTo ACE_player)};\n"
+      },
+      {
+        "start": 165,
+        "end": 166,
+        "text": "    if (_patientCondition || _medicCondition || _identityChanged || _enteredVehicle || !GVAR(ContinuousAction_Active) || _dialogCondition || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {\n"
+      },
+      {
+        "start": 198,
+        "end": 199,
+        "text": "        if (GVAR(ContinuousAction_ShouldReopen) && {!isNull _patient} && {!_medicCondition} && {!_identityChanged}) then {\n"
+      },
+      {
+        "start": 207,
+        "end": 208,
+        "text": "}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound]] call CBA_fnc_addPerFrameHandler;\n"
+      }
+    ]
+  },
+  {
+    "path": "tools/test_self_audit_20260922.py",
+    "base_sha": "f33f1d6a53b916f7dfaa68ec1ba5ff4ac65eee56",
+    "expected_sha": "1d5148b50e397ccb5a7499af6a7b10ce6b870f48",
+    "edits": [
+      {
+        "start": 16,
+        "end": 16,
+        "text": "\n# Reviewed updates to the six affected snapshots only. The original hashes above\n# remain as audit provenance; executable regression cases cover each F01-F04 change.\nREVIEWED_LIFECYCLE_UPDATES = {\n    'addons/acm_extended/functions/fn_initHangBagRuntime.sqf': '177a105a3ff96c73e5999d77ba760eacaad9b36e59a66abffabc3b3a8bd9f61f',  # F04 ACK registration and token-scoped disconnect release\n    'addons/acm_extended/functions/fn_ownerDispatch.sqf': '4c25ddb79f17419375bf8891c25d617976cffdc812e705a61ad8ecf0bb7720be',  # F04 reuse explicit owner operations for atomic lease arbitration\n    'addons/acm_extended/functions/fn_stethoscopeClose.sqf': 'fc64695c2cbabe4ff5be23b3738ac365f9d939d1120dd7040e750c56d325ee46',  # F03 capture flip state before reset\n    'addons/acm_extended/functions/fn_transientStateReconcile.sqf': '33162edbc565e192dbc431e5d992c1f1183920fcfeec21ed388ab316c9fc6df0',  # F04 protect unexpired claim before Active replicates\n    'addons/airway/functions/fnc_establishSurgicalAirway.sqf': '20ac5b962ac042cb11d3da59ce86456af02e15f2677ae21750ba3efbdcb3e2da',  # F01 acquire surgical reservation only after accepted startup\n    'addons/core/functions/fnc_beginContinuousAction.sqf': '9a93184b753ba68755847774e3a06ffaa553556d919bb42f887639b3749ac2f8',  # F02 player-bound cancellation; AI policy and dialog grace preserved\n}\nPROTECTED.update(REVIEWED_LIFECYCLE_UPDATES)\n"
+      }
+    ]
+  }
+]
