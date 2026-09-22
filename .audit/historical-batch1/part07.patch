@@ -106,4 +106,43 @@ index ef8ea0d4233a4382865f9125c40b7fa950c67ec8..9dce52921e527dcbd2551c39ee4e323d
 --- a/addons/acm_extended/tools/test_na8_5_batch8.py
 +++ b/addons/acm_extended/tools/test_na8_5_batch8.py
 @@ -86,14 +86,25 @@ class SourceContracts(unittest.TestCase):
-         s=source('ivMinigameGrabNeedle');self.assertIn('_gauge',source('ivSiteDifficulty'))
+         s=source('ivMinigameGrabNeedle');self.assertIn('getCountOfItem',s);self.assertNotIn('maxG',code('ivMinigameGrabNeedle'))
+     def test_puncture_uses_actual_site_margin(self):
+         s=source('ivMinigameClick');self.assertIn('_gauge',source('ivSiteDifficulty'))
+-        self.assertIn('"ACME_IV_Gauge", 16], _stickSite] call ACME_fnc_ivSiteDifficulty',s)
+-        self.assertLess(s.index('_hit = _punctureDifficulty select 2'),s.index('"ACME_IV_StickAcc", (if'))
+-    def test_ej_retains_existing_click_margin(self):self.assertIn('if (!_isEJc && {_stickSite in',source('ivMinigameClick'))
++        self.assertIn('[_patientStick, _bpStick, _gaugeStick, _diffSite] call ACME_fnc_ivSiteDifficulty',s)
++        self.assertLess(s.index('_punctureDifficulty params ["_patStick", "_feelStick", "_hit", "_hotStick"]'),s.index('"ACME_IV_StickAcc", (if'))
++    def test_ej_retains_existing_click_margin(self):
++        # EJ now intentionally shares the pressure-sensitive difficulty API rather than a hardcoded margin.
++        # Check that the selected EJ anatomical side and the returned margin are actually consumed.
++        s=source('ivMinigameClick')
++        self.assertIn('private _diffSite = if (_isEJc) then {uiNamespace getVariable ["ACME_IV_EJAnatomicalSide", "left"]} else {_stickSite};',s)
++        self.assertIn('[_patientStick, _bpStick, _gaugeStick, _diffSite] call ACME_fnc_ivSiteDifficulty',s)
++        self.assertIn('_punctureDifficulty params ["_patStick", "_feelStick", "_hit", "_hotStick"];',s)
+     def test_blow_has_no_blood_volume_veto_or_rng(self):
+         for n in ('ivStickBlows','ivMinigameStickSuccess'):
+             s=source(n);self.assertNotIn('5.99',s);self.assertNotIn('ace_medical_bloodVolume',s);self.assertNotIn('random',code(n))
+     def test_hypotension_still_affects_difficulty(self):
+-        self.assertIn('linearConversion [70, 90, _sys, 0, 1, true]',source('ivSiteDifficulty'))
++        s=source('ivSiteDifficulty')
++        self.assertIn('private _map = _dia + ((_sys - _dia) / 3);',s)
++        self.assertIn('_sysScore',s);self.assertIn('_mapScore',s)
++        self.assertIn('private _patency = _pressure ^',s)
++        from test_historical_clinical_execution import verify_pressure_difficulty
++        verify_pressure_difficulty()
+     def test_blow_uses_frozen_puncture(self):
+         s=source('ivMinigameStickSuccess')
+         for term in ('ACME_IV_InsGauge','ACME_IV_InsHit','ACME_IV_StickAcc','ACME_IV_InsSite'):self.assertIn(term,s)
+@@ -168,7 +179,8 @@ class PlacementExamples(unittest.TestCase):
+     def test_ej_tolerance_unchanged(self):
+         self.assertFalse(outcome_model('ej','left',14,True,.6));self.assertTrue(outcome_model('ej','right',14,True,.6001))
+     def test_18g_and_20g_still_distinct_gauge_multipliers(self):
+-        s=source('ivSiteDifficulty');self.assertIn('case 18: { 1.15 }',s);self.assertIn('case 20: { 1.35 }',s)
++        from test_historical_clinical_execution import verify_gauge_precision
++        verify_gauge_precision()
+     def test_bad_accuracy_never_grants_success(self):
+         for a in (float('nan'),float('inf'),-1,1.01):self.assertTrue(outcome_model('leftarm',2,14,True,a))
+     def test_repeated_outcome_does_not_reroll(self):
+diff --git a/addons/acm_extended/tools/test_native_bvm_dp.py b/addons/acm_extended/tools/test_native_bvm_dp.py
