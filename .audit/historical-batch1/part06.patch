@@ -1,0 +1,180 @@
++        uiNamespace setVariable ["ACME_IV_BandOn",false];
++        uiNamespace setVariable ["ACME_IV_Site",""];
++    ''' + 'private _difficulty={'+adapt(body)+'};'
++
++
++def verify_pressure_difficulty():
++    execute(difficulty_setup()+'''
++        {
++            private _part = _x;
++            _pressure=[80,120]; private _normal=[_patient,_part,18,"middle"] call _difficulty;
++            _pressure=[55,85]; private _low=[_patient,_part,18,"middle"] call _difficulty;
++            _pressure=[25,45]; private _severe=[_patient,_part,18,"middle"] call _difficulty;
++            {[_severe select _x < (_low select _x) && {(_low select _x) < (_normal select _x)},"pressure no longer reduces patency/feel/hit"] call _check;} forEach [0,1,2,3];
++            [(_severe select 2)>0,"severe shock removed all placement tolerance"] call _check;
++        } forEach ["leftarm","rightarm","leftleg","rightleg","ej"];
++    ''')
++
++
++def verify_gauge_precision():
++    execute(difficulty_setup()+'''
++        private _g18=[_patient,"leftarm",18,"middle"] call _difficulty;
++        private _g20=[_patient,"leftarm",20,"middle"] call _difficulty;
++        [abs (((_g20 select 2)/(_g18 select 2))-(1.35/1.15))<0.00001,"18G/20G precision relationship lost"] call _check;
++        [(_g18 select 0)==(_g20 select 0) && {(_g18 select 1)==(_g20 select 1)},"gauge changed venous filling or palpation"] call _check;
++    ''')
++
++
++def test_boa_improves_same_or_distal_sites_but_never_creates_absent_perfusion():
++    execute(difficulty_setup()+'''
++        _pressure=[60,90];
++        private _bare=[_patient,"leftarm",18,"middle"] call _difficulty;
++        uiNamespace setVariable ["ACME_IV_BandOn",true];
++        uiNamespace setVariable ["ACME_IV_Site","middle"];
++        private _same=[_patient,"leftarm",18,"middle"] call _difficulty;
++        private _distal=[_patient,"leftarm",18,"lower"] call _difficulty;
++        private _proximal=[_patient,"leftarm",18,"upper"] call _difficulty;
++        [(_same select 0)>(_distal select 0) && {(_distal select 0)>(_bare select 0)},"BOA distal ordering wrong"] call _check;
++        [(_proximal select 0)==(_bare select 0),"distal band created proximal benefit"] call _check;
++        _pressure=[0,0];
++        private _empty=[_patient,"leftarm",18,"middle"] call _difficulty;
++        [(_empty select 0)==0,"BOA manufactured perfusion"] call _check;
++    ''')
+diff --git a/addons/acm_extended/tools/test_historical_source.py b/addons/acm_extended/tools/test_historical_source.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..ccb78c6d4df141cb3b9ba692fa1cafbb4a6b5ce6
+--- /dev/null
++++ b/addons/acm_extended/tools/test_historical_source.py
+@@ -0,0 +1,113 @@
++"""Verify the test infrastructure fails closed instead of hiding source changes."""
++from pathlib import Path
++import pytest
++import historical_source as h
++
++
++@pytest.mark.parametrize('old,new', sorted(h.MOVED.items()))
++def test_relocations_are_explicit_and_resolve_to_real_native_source(old,new):
++    assert not (h.ROOT/old).exists()
++    assert (h.ROOT/new).is_file()
++    assert h.canonical_path(h.ROOT/old) == h.ROOT/new
++    assert h.read_source(h.ROOT/old) == (h.ROOT/new).read_text()
++
++
++def test_unknown_file_is_not_redirected_or_synthesized(tmp_path):
++    missing=tmp_path/'fn_unknown.sqf'
++    with pytest.raises(FileNotFoundError):h.read_source(missing)
++    assert not missing.exists()
++
++
++def test_global_path_reader_is_not_modified():
++    assert Path.read_text.__module__.split('.')[0] == 'pathlib'
++
++
++def test_startup_follows_real_calls_once_and_ignores_comments_and_strings(tmp_path):
++    (tmp_path/'fn_postInit.sqf').write_text('call ACME_fnc_initOne; call ACME_fnc_initOne; // call ACME_fnc_initMissing;\n"call ACME_fnc_registerMissing;";')
++    (tmp_path/'fn_initOne.sqf').write_text('call ACME_fnc_registerTwo; A = 1;')
++    (tmp_path/'fn_registerTwo.sqf').write_text('call ACME_fnc_initOne; B = 2;')
++    result=h.source_bundle(tmp_path/'fn_postInit.sqf')
++    assert [p.name for p,t in result] == ['fn_postInit.sqf','fn_initOne.sqf','fn_registerTwo.sqf']
++    assert len([t for _,t in result if 'B = 2' in t]) == 1
++
++
++def test_missing_called_module_fails_instead_of_skipping_it(tmp_path):
++    entry=tmp_path/'fn_postInit.sqf';entry.write_text('call ACME_fnc_initMissing;')
++    with pytest.raises(FileNotFoundError):h.source_bundle(entry)
++
++
++def test_non_startup_reader_does_not_expand_unrelated_gameplay_helpers(tmp_path):
++    entry=tmp_path/'fn_anAction.sqf';entry.write_text('call ACME_fnc_initMissing;')
++    assert h.read_source(entry) == entry.read_text()
++
++
++def release_fixture(root,version='1.2.3.4',fallback='1.2.3.4',batch='B144'):
++    addon=root/'addons/acm_extended';(addon/'functions').mkdir(parents=True)
++    (addon/'config.cpp').write_text('class CfgPatches {class ACM_Extended {version = "'+version+'";};};')
++    (addon/'functions/fn_postInit.sqf').write_text('call ACME_fnc_initVersion;')
++    (addon/'functions/fn_initVersion.sqf').write_text(
++        'ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");\n'
++        'if (ACME_infusion_version == "") then { ACME_infusion_version = "'+fallback+'"; };\n'
++        'ACME_buildBatch = "'+batch+'";')
++
++
++def test_release_identity_tracks_agreement_not_one_retired_version(tmp_path):
++    release_fixture(tmp_path,version='2.4.6-r1',fallback='2.4.6-r1',batch='B900')
++    h.assert_release_identity(tmp_path)
++
++
++@pytest.mark.parametrize('version,fallback,batch',[
++    ('1.2.3.4','1.2.3.5','B144'),('not-a-version','not-a-version','B144'),('1.2.3','1.2.3','oops')])
++def test_release_identity_detects_inconsistency(tmp_path,version,fallback,batch):
++    release_fixture(tmp_path,version,fallback,batch)
++    with pytest.raises(AssertionError):h.assert_release_identity(tmp_path)
++
++
++def test_generated_matrix_uses_only_the_checked_out_definitions():
++    m=h.medication_matrix()
++    assert m['method'].endswith('not Arma preprocessor/engine execution')
++    names=[r['classname'] for r in m['medication_classes']]
++    assert names and len(names) == len(set(names))
++    assert {'Ketamine_IV','Rocuronium_IV','Propofol_IV'} <= set(names)
++    assert not (h.ROOT/'addons/acm_extended/audit/MEDICATION_MATRIX.json').exists()
++
++
++@pytest.mark.parametrize('original,expected',[
++    ('_p setVariable ["name",true,true];','_p setVariable ["name",true];'),
++    ('_p setVariable ["name",[1,2,false]];','_p setVariable ["name",[1,2,false]];'),
++    ('_p setVariable ["name",[1,2,false],true];','_p setVariable ["name",[1,2,false]];'),
++    ('_p setVariable ["name",[1,2,false],\n false];','_p setVariable ["name",[1,2,false]];'),
++    ('// _p setVariable ["name",1,true];','// _p setVariable ["name",1,true];'),
++    ('"setVariable [x,y,true]"','"setVariable [x,y,true]"'),
++    ('_p setVariable ["name",2,_public];','_p setVariable ["name",2,_public];'),
++    ('_p setVariable ["name",false];','_p setVariable ["name",false];'),
++])
++def test_namespace_adapter_preserves_values_and_strips_only_actual_public_argument(original,expected):
++    from test_menu_death_lifecycle import namespace_public_arguments
++    assert namespace_public_arguments(original)==expected
++
++
++def test_case_extractor_reads_code_not_quoted_or_commented_case_text():
++    src='switch (_op) do { /* case "foo": { nope } */ case "foo": {if (true) then {1};};};'
++    assert h.switch_case_body(src,'foo') == 'if (true) then {1};'
++    with pytest.raises(AssertionError):h.switch_case_body(src,'missing')
++    with pytest.raises(AssertionError):h.switch_case_body(src+'case "foo": {};','foo')
++
++
++def test_namespace_adapter_handles_only_explicitly_compiled_strings():
++    from test_menu_death_lifecycle import namespace_public_arguments
++    source = "compile format [\"_p setVariable ['n',[1,true],true];\",7];"
++    assert namespace_public_arguments(source) == "compile format [\"_p setVariable ['n',[1,true]];\",7];"
++
++
++@pytest.mark.parametrize('scope',[0,1,2])
++def test_client_setting_oracle_checks_actual_scope_position_not_a_nested_zero(scope):
++    source='["pref","LIST","Title","Category",[[0,1],["A","B"],0],'+str(scope)+',{}] call CBA_fnc_addSetting;'
++    if scope==2:h.assert_client_only_setting(source,'pref')
++    else:
++        with pytest.raises(AssertionError):h.assert_client_only_setting(source,'pref')
++
++def test_client_setting_oracle_rejects_missing_or_duplicate_declarations():
++    declaration='["pref","CHECKBOX","Title","Category",true,2,{}]'
++    with pytest.raises(AssertionError):h.assert_client_only_setting('// '+declaration,'pref')
++    with pytest.raises(AssertionError):h.assert_client_only_setting(declaration+';'+declaration,'pref')
+diff --git a/addons/acm_extended/tools/test_menu_death_lifecycle.py b/addons/acm_extended/tools/test_menu_death_lifecycle.py
+index ccced4ff4ccc125d85513dac5ea403eafe5fe478..e9afeac805656fc0d150d98e04631be95ce6b1f4 100644
+--- a/addons/acm_extended/tools/test_menu_death_lifecycle.py
++++ b/addons/acm_extended/tools/test_menu_death_lifecycle.py
+@@ -10,6 +10,7 @@ import shutil
+ import subprocess
+ 
+ import pytest
++from source_scan import lex, matching, split_args
+ 
+ ROOT = Path(__file__).resolve().parents[3]
+ F = ROOT / 'addons/acm_extended/functions'
+@@ -19,6 +20,48 @@ def read(name):
+     return (F / f'fn_{name}.sqf').read_text()
+ 
+ 
++def namespace_public_arguments(source):
++    """Strip only a top-level literal public flag for namespace engine stand-ins.
++
