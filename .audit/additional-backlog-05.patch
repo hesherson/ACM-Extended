@@ -1,0 +1,4 @@
+-H117 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds
+ H120 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_both_posture_actions_remain_on_head_and_chest
+ H121 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors
+ H127 addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py::B39RuntimeStampAndSpawn::test_obtunded_weapon_path_does_not_delete_projectiles
