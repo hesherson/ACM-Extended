@@ -1,0 +1,107 @@
+diff --git a/addons/acm_extended/tools/historical_source.py b/addons/acm_extended/tools/historical_source.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b544d69bbbdfdb722810676a6a6459b50f31b3cc
+--- /dev/null
++++ b/addons/acm_extended/tools/historical_source.py
+@@ -0,0 +1,115 @@
++"""Explicit, read-only source locators for historical regression tests.
++
++Relocations do not recreate retired overrides or change production sources. Startup
++expansion follows only real call tokens into init/register modules (not comments or
++arbitrary gameplay helpers). These are source-presence checks, not execution proof.
++No Path method, import hook, pytest outcome or assertion is patched globally.
++"""
++from __future__ import annotations
++from functools import lru_cache
++from pathlib import Path
++from source_scan import lex, matching, split_args
++
++ROOT = Path(__file__).resolve().parents[3]
++MOVED = {'addons/acm_extended/overrides/fn_Syringe_Inject.sqf': 'addons/circulation/functions/fnc_Syringe_Inject.sqf', 'addons/acm_extended/overrides/fn_attemptROSC.sqf': 'addons/circulation/functions/fnc_attemptROSC.sqf', 'addons/acm_extended/overrides/fn_beginCPR.sqf': 'addons/circulation/functions/fnc_beginCPR.sqf', 'addons/acm_extended/overrides/fn_canOpenMenu.sqf': 'addons/gui/overrides/fnc_canOpenMenu.sqf', 'addons/acm_extended/overrides/fn_canTreatCached.sqf': 'addons/core/overrides/fnc_canTreatCached.sqf', 'addons/acm_extended/overrides/fn_canUseBVM.sqf': 'addons/breathing/functions/fnc_canUseBVM.sqf', 'addons/acm_extended/overrides/fn_checkBreathingLocal.sqf': 'addons/breathing/functions/fnc_checkBreathingLocal.sqf', 'addons/acm_extended/overrides/fn_collectActions.sqf': 'addons/gui/overrides/fnc_collectActions.sqf', 'addons/acm_extended/overrides/fn_deserializeState.sqf': 'addons/core/overrides/fnc_deserializeState.sqf', 'addons/acm_extended/overrides/fn_feelPulse.sqf': 'addons/circulation/functions/fnc_feelPulse.sqf', 'addons/acm_extended/overrides/fn_getCardiacOutput.sqf': 'addons/core/overrides/fnc_getCardiacOutput.sqf', 'addons/acm_extended/overrides/fn_getDogtagData.sqf': 'addons/core/overrides/fnc_getDogtagData.sqf', 'addons/acm_extended/overrides/fn_getUp.sqf': 'addons/core/functions/fnc_getUp.sqf', 'addons/acm_extended/overrides/fn_handleAirwayObstruction_Vomit.sqf': 'addons/airway/functions/fnc_handleAirwayObstruction_Vomit.sqf', 'addons/acm_extended/overrides/fn_handleEffects.sqf': 'addons/core/overrides/fnc_handleEffects.sqf', 'addons/acm_extended/overrides/fn_handleMed_NaloxoneLocal.sqf': 'addons/circulation/functions/fnc_handleMed_NaloxoneLocal.sqf', 'addons/acm_extended/overrides/fn_handleReversibleCardiacArrest.sqf': 'addons/circulation/functions/fnc_handleReversibleCardiacArrest.sqf', 'addons/acm_extended/overrides/fn_handleUnitVitals.sqf': 'addons/core/overrides/fnc_handleUnitVitals.sqf', 'addons/acm_extended/overrides/fn_inspectChestLocal.sqf': 'addons/breathing/functions/fnc_inspectChestLocal.sqf', 'addons/acm_extended/overrides/fn_medicationLocal.sqf': 'addons/core/overrides/fnc_medicationLocal.sqf', 'addons/acm_extended/overrides/fn_tourniquetRemove.sqf': 'addons/core/overrides/fnc_tourniquetRemove.sqf', 'addons/acm_extended/overrides/fn_treatment.sqf': 'addons/core/overrides/fnc_treatment.sqf', 'addons/acm_extended/overrides/fn_updateActions.sqf': 'addons/gui/overrides/fnc_updateActions.sqf', 'addons/acm_extended/overrides/fn_updateCirculationState.sqf': 'addons/circulation/functions/fnc_updateCirculationState.sqf', 'addons/acm_extended/overrides/fn_updateHeartRate.sqf': 'addons/core/overrides/fnc_updateHeartRate.sqf', 'addons/acm_extended/overrides/fn_useBVM.sqf': 'addons/breathing/functions/fnc_useBVM.sqf', 'addons/acm_extended/overrides/fn_useStethoscope.sqf': 'addons/breathing/functions/fnc_useStethoscope.sqf', 'addons/acm_extended/overrides/fn_aedAnalyzeRhythm.sqf': 'addons/circulation/functions/fnc_AED_AnalyzeRhythm.sqf', 'addons/acm_extended/overrides/fn_genEKG.sqf': 'addons/circulation/functions/fnc_displayAEDMonitor_generateEKG.sqf', 'addons/acm_extended/overrides/fn_syringeDrawButton.sqf': 'addons/circulation/functions/fnc_Syringe_Draw_Button.sqf', 'addons/acm_extended/overrides/fn_syringeGetMedicationList.sqf': 'addons/circulation/functions/fnc_Syringe_GetMedicationList.sqf', 'addons/acm_extended/overrides/fn_syringePrepareFinish.sqf': 'addons/circulation/functions/fnc_Syringe_PrepareFinish.sqf', 'addons/acm_extended/overrides/fn_syringeUpdateMedicationList.sqf': 'addons/circulation/functions/fnc_Syringe_UpdateMedicationList.sqf', 'addons/acm_extended/overrides/fn_getBloodVolumeChange.sqf': 'addons/core/overrides/fnc_getBloodVolumeChange.sqf', 'addons/acm_extended/overrides/fn_resetVariables.sqf': 'addons/core/functions/fnc_resetVariables.sqf', 'addons/acm_extended/overrides/fn_Thoracostomy_closeLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_closeLocal.sqf', 'addons/acm_extended/overrides/fn_performNCDLocal.sqf': 'addons/breathing/functions/fnc_performNCDLocal.sqf', 'addons/acm_extended/overrides/fn_Thoracostomy_startLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_startLocal.sqf', 'addons/acm_extended/overrides/fn_applyChestSealLocal.sqf': 'addons/breathing/functions/fnc_applyChestSealLocal.sqf', 'addons/acm_extended/overrides/fn_Thoracostomy_insertChestTubeLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_insertChestTubeLocal.sqf', 'addons/acm_extended/overrides/fn_Thoracostomy_resealChestTubeLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_resealChestTubeLocal.sqf', 'addons/acm_extended/overrides/fn_handlePneumothorax.sqf': 'addons/breathing/functions/fnc_handlePneumothorax.sqf'}
++
++
++def canonical_path(path: Path) -> Path:
++    path = Path(path).resolve()
++    if path.exists():
++        return path
++    try:
++        relative = path.relative_to(ROOT).as_posix()
++    except ValueError:
++        return path
++    return ROOT / MOVED[relative] if relative in MOVED else path
++
++
++def _modules(path: Path, visited: set[Path], *, startup: bool) -> list[tuple[Path, str]]:
++    if path in visited:
++        return []
++    visited.add(path)
++    text = path.read_text(encoding="utf-8-sig")
++    result = [(path, text)]
++    tokens = lex(text)
++    for index, token in enumerate(tokens[:-1]):
++        target = tokens[index + 1]
++        if token.kind != "ident" or token.value != "call" or target.kind != "ident":
++            continue
++        prefixes = ("ACME_fnc_init", "ACME_fnc_register") if startup else ("ACME_fnc_debugMenu",)
++        if not target.value.startswith(prefixes):
++            continue
++        name = target.value.removeprefix("ACME_fnc_")
++        child = path.parent / ("fn_" + name + ".sqf")
++        # Fail closed when a called source is missing; never silently omit a dependency.
++        result.extend(_modules(child, visited, startup=startup))
++    return result
++
++
++def source_bundle(path: Path) -> list[tuple[Path, str]]:
++    path = canonical_path(path)
++    if path.name not in ("fn_postInit.sqf", "fn_debugMenu.sqf"):
++        return [(path, path.read_text(encoding="utf-8-sig"))]
++    return _modules(path, set(), startup=path.name == "fn_postInit.sqf")
++
++
++def read_source(path: Path, *args, **kwargs) -> str:
++    path = canonical_path(path)
++    if path.name in ("fn_postInit.sqf", "fn_debugMenu.sqf"):
++        return "\n".join(text for _, text in source_bundle(path))
++    return path.read_text(*args, **kwargs)
++
++
++@lru_cache(maxsize=1)
++def medication_matrix() -> dict:
++    """Source-derived inventory; no generated JSON prerequisite or engine claim."""
++    from medication_inventory import inventory
++    return inventory(ROOT / "addons/core/ACM_Medication.hpp",
++                     ROOT / "addons/acm_extended/config.cpp")
++
++
++def assert_release_identity(root: Path = ROOT) -> None:
++    """Check the shipped config/runtime identity, not a retired batch's literal."""
++    import re
++    from medication_inventory import subtree
++    addon = root / "addons/acm_extended"
++    cfg = subtree((addon / "config.cpp").read_text(encoding="utf-8-sig"), "CfgPatches")
++    version = cfg["classes"]["ACM_Extended"]["props"]["version"]
++    assert re.fullmatch(r"[0-9]+(?:\.[0-9]+){2,3}(?:[-+][A-Za-z0-9.-]+)?", version), version
++    startup = read_source(addon / "functions/fn_postInit.sqf")
++    assert 'ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");' in startup
++    fallbacks = re.findall(r'ACME_infusion_version\s*=\s*"([^"]+)"', startup)
++    assert fallbacks == [version], (version, fallbacks)
++    batches = re.findall(r'ACME_buildBatch\s*=\s*"([^"]+)"', startup)
++    assert len(batches) == 1 and re.fullmatch(r"B[0-9]+(?:[-+][A-Za-z0-9.-]+)?", batches[0]), batches
++
++
++def switch_case_body(text: str, name: str) -> str:
++    """Extract one actual named switch branch, rejecting missing/ambiguous cases."""
++    tokens=lex(text); pairs=matching(tokens)
++    starts=[i+3 for i in range(len(tokens)-3)
++            if tokens[i].value=='case' and tokens[i+1].kind=='string'
++            and tokens[i+1].value==name and tokens[i+2].value==':' and tokens[i+3].value=='{']
++    assert len(starts)==1, (name,starts)
++    i=starts[0]
++    assert i in pairs, name
++    return text[tokens[i].offset+1:tokens[pairs[i]].offset]
++
++
++def assert_client_only_setting(text: str, name: str) -> None:
++    """CBA scope 2 cannot be overwritten; inspect argument 5, not any nested zero.
++
