@@ -1,0 +1,41 @@
+name: Additional historical backlog validation
+on:
+  push:
+    branches: [audit/historical-backlog-20260922]
+    paths: [.github/workflows/additional-backlog-validation.yml]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install pinned execution tools
+        run: |
+          mkdir -p /tmp/additional-tools /tmp/additional-backlog-results
+          curl -fL --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/additional-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/additional-tools/hemtt' | sha256sum -c
+          curl -fL --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/additional-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/additional-tools/sqfvm.zip' | sha256sum -c
+          unzip /tmp/additional-tools/sqfvm.zip -d /tmp/additional-tools
+          chmod +x /tmp/additional-tools/hemtt /tmp/additional-tools/sqfvm_linux_x64_gcc/sqfvm
+          python3 -m pip install 'pytest==9.0.2' numpy pillow soundfile
+      - name: Validate exact test-only tree, all preserved passes and broad failure counts
+        env:
+          HEMTT: /tmp/additional-tools/hemtt
+          SQFVM: /tmp/additional-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: |
+          set -o pipefail
+          python3 .audit/validate_additional_backlog.py | tee /tmp/additional-backlog-results/validation.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: additional-historical-backlog-results
+          path: /tmp/additional-backlog-results
+          retention-days: 14
