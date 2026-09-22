@@ -1,0 +1,212 @@
++        execute('ACME_fnc_rhythmGet = {' + adapt(src) + '};' + '''
++            private _rawNative = 0;
++            ACME_fnc_rhythmNative = {_rawNative};
++            {
++                private _code = _x;
++                _patient setVariable ["ACME_rhythm_active",_code];
++                _patient setVariable ["ACME_rhythm_torsadesNonPerfusing",false];
++                {
++                    _rawNative = _x;
++                    {
++                        private _arrest = _x;
++                        _patient setVariable ["ace_medical_inCardiacArrest",_arrest];
++                        private _result = [_patient] call ACME_fnc_rhythmGet;
++                        private _expected = if (_rawNative == 0 && {!_arrest} && {_code in [100,101,102,103,104]}) then {_code} else {_rawNative};
++                        [_result == _expected,format["lookup custom=%1 native=%2 arrest=%3",_code,_rawNative,_arrest]] call _check;
++                    } forEach [false,true];
++                } forEach [-1,0,1,2,3,4,5];
++            } forEach [0,99,100,101,102,103,104,105];
++            _patient setVariable ["ACME_rhythm_active",102];
++            _patient setVariable ["ACME_rhythm_torsadesNonPerfusing",true];
++            _patient setVariable ["ace_medical_inCardiacArrest",true];
++            {
++                _rawNative = _x;
++                private _expected = if (_rawNative in [0,3]) then {102} else {_rawNative};
++                [([_patient] call ACME_fnc_rhythmGet) == _expected,"torsades morphology/native authority"] call _check;
++            } forEach [-1,0,1,2,3,4,5];
++            _rawNative = 3; _patientAlive = false;
++            [([_patient] call ACME_fnc_rhythmGet) == 3,"dead lookup retained custom overlay"] call _check;
++            [([objNull] call ACME_fnc_rhythmGet) == 0,"null lookup"] call _check;
++        ''')
++
++    def test_bradycardia_releases_custom_but_mature_torsades_keeps_morphology(self):
++        execute('''
++            private _u = _patient;
++            missionNamespace setVariable ["ACME_rhythmACMFatalLowHR",40];
++            missionNamespace setVariable ["ACME_rhythmACMFatalHighHR",220];
++            {
++                _x params ["_code","_torsadesNonPerf","_curRhythm","_arrest","_hrNow","_expected"];
++                _u setVariable ["ace_medical_inCardiacArrest",_arrest];
++        ''' + release_program() + '''
++                [_physiologyTookOver isEqualTo _expected,"torsades/native precedence"] call _check;
++            } forEach [[104,false,0,false,39,true],[102,false,0,false,0,true],
++                [102,true,3,true,0,false],[102,true,2,true,0,true],
++                [104,false,3,true,0,true],[104,false,4,false,100,true]];
++        ''')
++
++    def test_native_watchdog_remains_authoritative_with_grace(self):
++        execute('''
++            {
++                _x params ["_heartRate","_activeGracePeriod","_expected"];
++                private _fatal = ''' + fatal_condition() + ''';
++                [_fatal isEqualTo _expected,"native fatal rate/grace"] call _check;
++            } forEach [[39,false,true],[40,false,false],[220,false,false],[221,false,true],
++                [0,true,false],[240,true,false]];
++        ''')
++        vitals = read('overrides/fn_handleUnitVitals.sqf')
++        high_branch = vitals.split('TRACE_2("heartRate Fatal",_unit,_heartRate);',1)[1].split('case (GET_MAP(',1)[0]
++        self.assertRegex(high_branch, r'\};\s*\[QGVAR\(handleFatalVitals\), _unit\] call CBA_fnc_localEvent;')
++        self.assertIn('if (_heartRate > 220)',high_branch)
++        self.assertNotIn('rhythmGet',high_branch)
++        self.assertNotIn('call ACME_fnc_arrestLocal',read('functions/fn_rhythmThresholdTick.sqf'))
+ 
+     def test_only_rhythm_generated_discomfort_loses_hr_feedback(self):
+-        hr = read("overrides/fn_updateHeartRate.sqf")
+-        self.assertIn("private _painLevel = GET_PAIN_PERCEIVED(_unit);", hr)
+-        self.assertIn("_desiredHR + 50 * _painLevel", hr)
+-        self.assertIn("_desiredHR + 40 * _painLevel", hr)
+-        self.assertNotIn('getVariable ["ACME_rhythm_painContribution"', hr)
+-        # The patient's rhythm-related pain effect itself remains present.
+-        self.assertIn('getVariable ["ACME_rhythm_painContribution"',
+-                      read("overrides/fn_handleEffects.sqf"))
++        hr = read('overrides/fn_updateHeartRate.sqf')
++        self.assertIn('private _painLevel = GET_PAIN_PERCEIVED(_unit);',hr)
++        self.assertIn('_desiredHR + 50 * _painLevel',hr)
++        self.assertIn('_desiredHR + 40 * _painLevel',hr)
++        self.assertNotIn('getVariable ["ACME_rhythm_painContribution"',hr)
++        self.assertIn('getVariable ["ACME_rhythm_painContribution"',read('overrides/fn_handleEffects.sqf'))
+ 
+ 
+-if __name__ == "__main__":
++if __name__ == '__main__':
+     unittest.main()
+diff --git a/addons/acm_extended/tools/test_b31_junctional_balance.py b/addons/acm_extended/tools/test_b31_junctional_balance.py
+index 03d72fb14cb537bb4dfb6381cdc102bd2832f795..37312dcbbf911e80a853bce5ca9a5e8f33d832d5 100644
+--- a/addons/acm_extended/tools/test_b31_junctional_balance.py
++++ b/addons/acm_extended/tools/test_b31_junctional_balance.py
+@@ -1,4 +1,5 @@
+ """Offline balance/state contracts; these do not execute Arma animation or physiology."""
++from historical_source import read_source
+ from pathlib import Path
+ import math
+ import re
+@@ -9,7 +10,7 @@ PARTS = ('leftarm', 'rightarm', 'leftleg', 'rightleg')
+ 
+ 
+ def source(name):
+-    return (ROOT / 'functions' / f'fn_{name}.sqf').read_text(encoding='utf-8-sig')
++    return read_source(ROOT / 'functions' / f'fn_{name}.sqf', encoding='utf-8-sig')
+ 
+ 
+ def configured_norm(name):
+diff --git a/addons/acm_extended/tools/test_b32_airway_reflex.py b/addons/acm_extended/tools/test_b32_airway_reflex.py
+index b40a631be44b14ff8a8252bdeea811fa68403237..fd5cefc18b83c17bec5d3112482d1707b2043d1e 100644
+--- a/addons/acm_extended/tools/test_b32_airway_reflex.py
++++ b/addons/acm_extended/tools/test_b32_airway_reflex.py
+@@ -1,13 +1,14 @@
+ """B32 offline source contracts + independent math/compartment reference checks.
+ These do not execute SQF, render Arma, or prove clinical accuracy.
+ """
++from historical_source import read_source
+ from pathlib import Path
+ import math
+ import unittest
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ def source(name):
+-    return (ROOT / 'functions' / ('fn_' + name + '.sqf')).read_text(encoding='utf-8')
++    return read_source(ROOT / 'functions' / ('fn_' + name + '.sqf'), encoding='utf-8')
+ 
+ def response(ket=0, prop=0, mid=0, factor=1, stimulus=1,
+              alive=True, arrest=False, paralyzed=False, native=True, owned=False):
+@@ -161,7 +162,7 @@ class SourceContracts(unittest.TestCase):
+         self.assertNotIn('setVariable ["ACME_laryngo_gagMisses"', text)
+ 
+     def test_native_vomit_worker_pauses_before_random_sound_and_debit(self):
+-        text = (ROOT / 'overrides/fn_handleAirwayObstruction_Vomit.sqf').read_text()
++        text = read_source(ROOT / 'overrides/fn_handleAirwayObstruction_Vomit.sqf')
+         guard = text.index('if (_patient getVariable ["ace_medical_inCardiacArrest", false]')
+         self.assertIn('ACME_roc_paralyzed', text)
+         for operation in ('private _medicationEffect', 'if (random 1 <', 'playSound3D', 'setVariable ["ACM_airway_AirwayObstructionVomit_Count",'):
+diff --git a/addons/acm_extended/tools/test_b32_vomit_lifecycle.py b/addons/acm_extended/tools/test_b32_vomit_lifecycle.py
+index e6225494b84b5510e0bb98b47f0cdb237c632a1d..4824e9194af93b53bea269acffe070ed8ec90b4d 100644
+--- a/addons/acm_extended/tools/test_b32_vomit_lifecycle.py
++++ b/addons/acm_extended/tools/test_b32_vomit_lifecycle.py
+@@ -1,4 +1,5 @@
+ """Source-level lifecycle regressions; no claim of executing CBA/Arma here."""
++from historical_source import read_source
+ from pathlib import Path
+ import unittest
+ 
+@@ -6,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+ def read(relative):
+-    return (ROOT / relative).read_text(encoding='utf-8-sig')
++    return read_source(ROOT / relative, encoding='utf-8-sig')
+ 
+ 
+ class NativeVomitLifecycle(unittest.TestCase):
+diff --git a/addons/acm_extended/tools/test_b33_examine_menu.py b/addons/acm_extended/tools/test_b33_examine_menu.py
+index 0e50629642c0f9e663f000de9b76ea1e152c6a45..516b53a348e5165e7717193d47cdbdd33d13ce51 100644
+--- a/addons/acm_extended/tools/test_b33_examine_menu.py
++++ b/addons/acm_extended/tools/test_b33_examine_menu.py
+@@ -1,4 +1,5 @@
+ """Examination source-data/presentation reference tests; no Arma config/SQF runtime."""
++from historical_source import read_source
+ from pathlib import Path
+ import random
+ import unittest
+@@ -10,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+ def action_fields(name):
+-    tokens = lex((ROOT / 'config.cpp').read_text())
++    tokens = lex(read_source(ROOT / 'config.cpp'))
+     pairs = matching(tokens)
+     for i, token in enumerate(tokens[:-2]):
+         if token.value == 'class' and tokens[i + 1].value == name and tokens[i + 2].value == ':':
+@@ -77,9 +78,9 @@ class ExaminePresentation(unittest.TestCase):
+         self.assertEqual(policy('SlapAwake', 'advanced', ['slapawake', 'shakeawake', 'checkresponse']), ('examine', 'examine_response', False))
+ 
+     def test_runtime_shares_one_membership_and_order_table(self):
+-        collector = (ROOT / 'overrides/fn_collectActions.sqf').read_text()
+-        mapper = (ROOT / 'functions/fn_menuActionInfo.sqf').read_text()
+-        postinit = (ROOT / 'functions/fn_postInit.sqf').read_text()
++        collector = read_source(ROOT / 'overrides/fn_collectActions.sqf')
++        mapper = read_source(ROOT / 'functions/fn_menuActionInfo.sqf')
++        postinit = read_source(ROOT / 'functions/fn_postInit.sqf')
+         self.assertIn('ACME_fnc_menuExamineGroups', collector)
+         self.assertIn('ACME_fnc_menuExamineGroups', mapper)
+         self.assertIn('ACME_fnc_menuExamineGroups', postinit)
+@@ -101,7 +102,7 @@ class CorpseChestAssessment(unittest.TestCase):
+         self.assertEqual(fields['animationMedic'], '')
+ 
+     def test_dead_findings_survive_without_a_live_obtunded_roll(self):
+-        source = (ROOT / 'overrides/fn_inspectChestLocal.sqf').read_text()
++        source = read_source(ROOT / 'overrides/fn_inspectChestLocal.sqf')
+         self.assertIn('if (isNull _patient) exitWith {};', source)
+         self.assertIn('if (alive _patient\n', source)
+         self.assertIn('!(alive _patient)', source)
+diff --git a/addons/acm_extended/tools/test_b34_procedure_access.py b/addons/acm_extended/tools/test_b34_procedure_access.py
+index 71588a1a7d9a77a3b80b551f99a5003ab062b7b2..b16c9edb15b406135c533189c5d39af20571a26f 100644
+--- a/addons/acm_extended/tools/test_b34_procedure_access.py
++++ b/addons/acm_extended/tools/test_b34_procedure_access.py
+@@ -1,4 +1,6 @@
++from backlog_clinical_probes import thora_access_probe
+ """Offline integration contracts. These inspect shipped SQF/config, not Arma execution."""
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ import unittest
+@@ -7,12 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+ def source(name):
+-    return (ROOT / "functions" / f"fn_{name}.sqf").read_text(encoding="utf-8")
++    return read_source(ROOT / "functions" / f"fn_{name}.sqf", encoding="utf-8")
+ 
+ 
+ class ProcedureAccessContracts(unittest.TestCase):
+     def test_action_config_does_not_reimpose_old_medic_tiers(self):
+-        config = (ROOT / "config.cpp").read_text()
