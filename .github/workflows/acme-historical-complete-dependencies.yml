@@ -1,0 +1,65 @@
+name: ACME complete-dependency historical audit
+on:
+  push:
+    branches: [audit/2026-09-22-historical-verification]
+    paths: [.github/workflows/acme-historical-complete-dependencies.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c3dd15f41a56a253461d876b478f91849d23551f
+          fetch-depth: 1
+      - name: Test environment
+        run: |
+          mkdir -p /tmp/tools /tmp/results/wheels
+          python3 -m pip install 'pytest==9.1.1' 'pytest-subtests==0.15.0' 'pytest-json-report==1.5.0' numpy pillow soundfile
+          python3 -m pip download --no-deps 'pytest-subtests==0.15.0' 'pytest==9.1.1' -d /tmp/results/wheels
+          python3 -m pip freeze > /tmp/results/environment.txt
+          curl -fL --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/tools/hemtt' | sha256sum -c
+          curl -fL --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/tools/vm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/tools/vm.zip' | sha256sum -c
+          unzip /tmp/tools/vm.zip -d /tmp/tools
+          chmod +x /tmp/tools/hemtt /tmp/tools/sqfvm_linux_x64_gcc/sqfvm
+          git fetch --depth=1 origin 5dca0429d9ef211f3366cd54b4f3c95274ba7a48
+          git worktree add --detach /tmp/baseline 5dca0429d9ef211f3366cd54b4f3c95274ba7a48
+      - name: Audit unchanged tests and capture each outcome
+        run: |
+          cat > /tmp/auditrecorder.py <<'PY'
+          import json,os
+          def emit(d):
+              with open(os.environ['AUDIT_REPORT'],'a') as f:f.write(json.dumps(d,default=str)+'\n')
+          def pytest_runtest_logreport(report):
+              if report.when=='call' or report.failed:
+                  emit({'kind':'test','nodeid':report.nodeid,'when':report.when,'outcome':report.outcome,'context':str(getattr(report,'context','')),'type':type(report).__name__,'longrepr':str(report.longrepr) if report.failed else '', 'duration':report.duration})
+          def pytest_collectreport(report):
+              if report.failed:emit({'kind':'collection','nodeid':report.nodeid,'outcome':report.outcome,'longrepr':str(report.longrepr)})
+          PY
+          python3 - <<'PY'
+          import os,pathlib,subprocess,sys,json
+          root=pathlib.Path.cwd();out=pathlib.Path('/tmp/results');meta={}
+          for label,tree in [('baseline',pathlib.Path('/tmp/baseline')),('current',root)]:
+              for mode in ['plain','equipped']:
+                  name=label+'-'+mode
+                  env={**os.environ,'PYTHONPATH':'/tmp','AUDIT_REPORT':str(out/(name+'.jsonl'))}
+                  if mode=='equipped':env.update(HEMTT='/tmp/tools/hemtt',SQFVM='/tmp/tools/sqfvm_linux_x64_gcc/sqfvm')
+                  cmd=[sys.executable,'-m','pytest','addons/acm_extended/tools','-q','--continue-on-collection-errors','--ignore=addons/acm_extended/tools/test_b77_branding_authors.py','--tb=short','-p','auditrecorder','--json-report','--json-report-file='+str(out/(name+'.json'))]
+                  cp=subprocess.run(cmd,cwd=tree,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=300)
+                  (out/(name+'.log')).write_text(cp.stdout);meta[name]={'returncode':cp.returncode,'command':cmd};print(name,cp.stdout[-2000:])
+          # Independent project-root regression suite, not previously included in addon-only total.
+          env={**os.environ,'PYTHONPATH':'/tmp','AUDIT_REPORT':str(out/'root-tests.jsonl'),'HEMTT':'/tmp/tools/hemtt','SQFVM':'/tmp/tools/sqfvm_linux_x64_gcc/sqfvm'}
+          cp=subprocess.run([sys.executable,'-m','pytest','tools','-q','--continue-on-collection-errors','--tb=short','-p','auditrecorder'],cwd=root,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=180)
+          (out/'root-tests.log').write_text(cp.stdout)
+          (out/'commands.json').write_text(json.dumps(meta,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-historical-complete-dependencies
+          path: /tmp/results
+          retention-days: 14
