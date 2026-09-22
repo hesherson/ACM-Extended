@@ -1,0 +1,195 @@
++        self.assertIn('[_patient,_key,true] call ACME_fnc_ecgJostleRequest',p)
++        self.assertIn('[_patient,_key,false] call ACME_fnc_ecgJostleRequest',p)
++        self.assertIn('ACME_ecgJostleLeaseSec = 180;',p)
++        for rel in ('functions/fn_ivMinigameOpen.sqf','functions/fn_thoraOpen.sqf','functions/fn_laryngoInit.sqf'):
+             self.assertIn('ACME_fnc_ecgJostleRequest',read(rel))
++        # Chest workspace acquisition now has a separate lifecycle. Do not require a
++        # side effect on a potentially refused/pending read-only open attempt.
++        self.assertIn('call ACME_fnc_chestSealCanPhysicalRoll',read('functions/fn_chestSealPatientBegin.sqf'))
+     def test_monitor_generators_apply_artifact(self):
+-        g=read('overrides/fn_genEKG.sqf'); self.assertGreaterEqual(g.count('ACME_fnc_ecgArtifactApply'),2)
+-        self.assertIn('ACME_fnc_ecgArtifactStrength',read('functions/fn_megacodePanelTick.sqf'))
++        g=read('overrides/fn_genEKG.sqf')
++        self.assertGreaterEqual(g.count('call ACME_fnc_ecgArtifactApply'),2)
++        panel=read('functions/fn_megacodePanelTick.sqf')
++        self.assertEqual(panel.count('call ACM_circulation_fnc_displayAEDMonitor_generateEKG'),2)
++        self.assertNotIn('call ACME_fnc_ecgArtifactApply',panel)
+ 
+ class B19Reference(unittest.TestCase):
+     def test_propofol_50ml_conserves_five_ten_ml_draws(self):
+diff --git a/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py b/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py
+index 58bd94d28dcaf4629a556435a11b631ff105e9dd..30d2e5e967e6c50de39e36d73ff23404bcb43388 100644
+--- a/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py
++++ b/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py
+@@ -1,7 +1,8 @@
++from historical_source import read_source
+ from pathlib import Path
+ import unittest, re
+ ROOT=Path(__file__).resolve().parents[1]
+-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
++def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
+ 
+ class B20Ventway(unittest.TestCase):
+     def test_version_pair(self):
+diff --git a/addons/acm_extended/tools/test_b21_rhythm_sync.py b/addons/acm_extended/tools/test_b21_rhythm_sync.py
+index 829513d1dcb8a8207ecbd90bf0b3819d180e1ad7..594e689bbe5964327c57698ab65ba31072dea91f 100644
+--- a/addons/acm_extended/tools/test_b21_rhythm_sync.py
++++ b/addons/acm_extended/tools/test_b21_rhythm_sync.py
+@@ -1,12 +1,14 @@
++from backlog_clinical_probes import threshold_observer_probe
++from historical_source import assert_release_consistent
++from historical_source import read_source
+ from pathlib import Path
+ import re, unittest
+ ROOT=Path(__file__).resolve().parents[1]
+-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
++def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
+ 
+ class B21RhythmRegression(unittest.TestCase):
+     def test_version(self):
+-        self.assertRegex(read('config.cpp'), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
+-        self.assertRegex(read('functions/fn_postInit.sqf'), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
++        assert_release_consistent()
+ 
+     def test_epi_infusion_can_reach_svt_burden(self):
+         post=read('functions/fn_postInit.sqf')
+@@ -21,14 +23,13 @@ class B21RhythmRegression(unittest.TestCase):
+         self.assertGreaterEqual(score,35)
+ 
+     def test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared(self):
++        threshold_observer_probe()
+         src=read('functions/fn_rhythmThresholdTick.sqf')
+-        self.assertIn('ACME_rhythmNativeVTRecoverHR', src)
+-        self.assertIn('ACME_rhythmNativeVTRecoverSec', src)
+-        self.assertIn('== "ACM VT fallback"', src)
+-        self.assertIn('!(_u getVariable ["ace_medical_inCardiacArrest", false])', src)
+-        self.assertIn('[_u, 0] call ACME_fnc_rhythmSet;', src)
+-        # Recovery is source-tagged; no unconditional "if VT then sinus" shortcut.
+-        self.assertNotIn('if (_rhythm == 4) then { [_u, 0] call ACME_fnc_rhythmSet;', src)
++        self.assertNotIn('ACM VT fallback',src)
++        self.assertNotIn('call ACME_fnc_arrestLocal',src)
++        native=read('../core/functions/fnc_handleCriticalVitals.sqf')
++        self.assertIn('ACM_Rhythm_VT',native)
++        self.assertIn('ACM_Rhythm_Sinus',native)
+ 
+     def test_new_rhythm_tunables_are_registered(self):
+         fields=read('functions/fn_clinicalFields.sqf')
+diff --git a/addons/acm_extended/tools/test_b23_narc_route_dead.py b/addons/acm_extended/tools/test_b23_narc_route_dead.py
+index 089cb9eaae6ac108be9c771c2d1cd7d115b9114e..70016df026380e2c01b14b676b2fdf91c1a7e9f7 100644
+--- a/addons/acm_extended/tools/test_b23_narc_route_dead.py
++++ b/addons/acm_extended/tools/test_b23_narc_route_dead.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ import unittest
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def read(rel):
+-    return (ROOT / rel).read_text(encoding='utf-8-sig')
++    return read_source(ROOT / rel, encoding='utf-8-sig')
+ 
+ class B23MedicationListContracts(unittest.TestCase):
+     def test_live_selected_inventory_is_authoritative(self):
+diff --git a/addons/acm_extended/tools/test_b25_vials_epi_iv_angles.py b/addons/acm_extended/tools/test_b25_vials_epi_iv_angles.py
+index d3b0c5dff4ca6a8b987dafe15186bcaaf748578d..b00ff80d08c2b0993500a149c844c67c92d23c8d 100644
+--- a/addons/acm_extended/tools/test_b25_vials_epi_iv_angles.py
++++ b/addons/acm_extended/tools/test_b25_vials_epi_iv_angles.py
+@@ -1,7 +1,8 @@
++from historical_source import read_source
+ from pathlib import Path
+ import unittest
+ ROOT=Path(__file__).resolve().parents[1]
+-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
++def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
+ 
+ class B25Source(unittest.TestCase):
+     def test_version_pair(self):
+diff --git a/addons/acm_extended/tools/test_b26_corrected_release.py b/addons/acm_extended/tools/test_b26_corrected_release.py
+index 8439f55314084312ce2386c36ab72e3c8e3fde87..f86d5069c38973f66249b0ebb0bc433a39b5a0a5 100644
+--- a/addons/acm_extended/tools/test_b26_corrected_release.py
++++ b/addons/acm_extended/tools/test_b26_corrected_release.py
+@@ -1,7 +1,8 @@
++from historical_source import read_source
+ from pathlib import Path
+ import unittest
+ ROOT=Path(__file__).resolve().parents[1]
+-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
++def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
+ 
+ class B26Corrected(unittest.TestCase):
+     def test_version_pair(self):
+diff --git a/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py b/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py
+index 40db05dc4aaf5906e3b338445aa0736003df371e..a0098ae7c803217947d3a9718c440fc418159ed3 100644
+--- a/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py
++++ b/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py
+@@ -1,16 +1,24 @@
++from historical_source import class_body
++from backlog_clinical_probes import bvm_with_cpr_probe, reserved_roles_probe
++from historical_source import assert_release_consistent
++from historical_source import read_source
+ from pathlib import Path
+ import unittest
+ ROOT=Path(__file__).resolve().parents[1]
+-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
++def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
+ 
+ class B27JunctionalCPRBVM(unittest.TestCase):
+     def test_version_pair(self):
+-        for rel in ('config.cpp','functions/fn_postInit.sqf'):
+-            self.assertRegex(read(rel), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
++        assert_release_consistent()
+     def test_junctional_state_writers_still_broadcast(self):
+-        for rel in ('functions/fn_junctionalInflict.sqf','functions/fn_junctionalPackDone.sqf','functions/fn_junctionalWrapDone.sqf'):
+-            s=read(rel)
+-            self.assertRegex(s, r'setVariable\s*\[format\s*\["ACME_Junc_%1".*?true\]')
++        self.assertRegex(read('functions/fn_junctionalInflict.sqf'),r'setVariable\s*\[format\s*\["ACME_Junc_%1".*?true\]')
++        owner=read('functions/fn_ownerDispatch.sqf')
++        for operation,next_operation,state in [('junctionalPackDone','junctionalWrapDone','packed'),('junctionalWrapDone','junctionalInflict','wrapped')]:
++            entry=read('functions/fn_'+operation+'.sqf')
++            self.assertIn(f'[_patient, "{operation}", [_medic, _p]] call ACME_fnc_ownerDispatch;',entry)
++            block=owner.split(f'case "{operation}":',1)[1].split(f'case "{next_operation}":',1)[0]
++            self.assertIn(f'_patient setVariable [format ["ACME_Junc_%1", _part], "{state}", true];',block)
++            self.assertNotIn('_patient setVariable',entry)
+     def test_junctional_gui_sync_is_local_only(self):
+         s=read('functions/fn_junctionalGuiSyncTick.sqf')
+         self.assertIn('ace_medical_gui_menuDisplay',s)
+@@ -22,31 +30,28 @@ class B27JunctionalCPRBVM(unittest.TestCase):
+         p=read('functions/fn_postInit.sqf')
+         self.assertIn('[{call ACME_fnc_junctionalGuiSyncTick}, 0.2, []] call CBA_fnc_addPerFrameHandler;',p)
+     def test_cpr_action_no_longer_blocked_by_bvm(self):
+-        c=read('config.cpp')
+-        block=c[c.index('class CPR {'):c.index('// move all AED options',c.index('class CPR {'))]
+-        self.assertIn('condition = "[_medic, _patient] call ace_medical_treatment_fnc_canCPR";',block)
+-        self.assertNotIn('ACM_core_fnc_bvmActive',block)
++        c=read('../circulation/ACE_Medical_Treatment_Actions.hpp')
++        block=class_body(c,'CPR')
++        self.assertIn('condition = QUOTE([ARR_2(_medic,_patient)] call ACEFUNC(medical_treatment,canCPR));',block)
++        self.assertIn('callbackSuccess = QUOTE([ARR_2(_medic,_patient)] call FUNC(beginCPR));',block)
++        self.assertNotIn('bvmActive',block)
+     def test_begin_cpr_override_registered(self):
+-        c=read('config.cpp')
+-        self.assertIn('class beginCPR { file = "\\acm_extended\\overrides\\fn_beginCPR.sqf"; };',c)
++        prep=read('../circulation/XEH_PREP.hpp')
++        self.assertEqual(prep.count('PREP(beginCPR);'),1)
+         s=read('overrides/fn_beginCPR.sqf')
+-        self.assertIn('CPR and BVM are independent provider roles',s)
+-        self.assertNotIn('if !([GVAR(CPRTarget)] call EFUNC(core,bvmActive))',s)
++        preflight=s[:s.index('private _oldSession')]
++        self.assertIn('call FUNC(cprSessionValid)',preflight)
++        self.assertNotIn('bvmActive',preflight)
++        self.assertNotIn('BVM_provider',preflight)
+     def test_bvm_can_run_during_cpr(self):
+-        s=read('overrides/fn_useBVM.sqf')
+-        self.assertIn('Two-provider resuscitation',s)
+-        self.assertIn('_patient setVariable ["ACM_breathing_BVM_provider", _medic, true];',s)
+-        self.assertIn('ACM_breathing_BVMActive = true;',s)
+-        self.assertNotIn('if !([ACM_breathing_BVMTarget] call ACM_core_fnc_cprActive)',s)
++        bvm_with_cpr_probe()
+     def test_one_provider_per_role_remains(self):
+-        b=read('overrides/fn_useBVM.sqf')
+-        c=read('overrides/fn_beginCPR.sqf')
+-        self.assertIn('alive _existingBVM',b)
+-        self.assertIn('alive _existingCPR',c)
++        reserved_roles_probe()
+     def test_cross_provider_role_vars_still_networked(self):
