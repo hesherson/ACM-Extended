@@ -1,0 +1,211 @@
++        self.assertIn('ACME_thora_tube_%1',branch)
++        self.assertIn('[_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit',branch)
++        self.assertIn('[_patient, _side, "open", "sealed"] call ACME_fnc_thoraSideStateCommit',branch)
++        self.assertIn('[_patient, "thoraSeal"] call ACME_fnc_ptxTreat',branch)
++        self.assertNotIn('ACME_ptx_nativeSealCount',branch)
++        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal',branch)
++        tract_and_peel_probe()
+ 
+     def test_closing_tract_removes_its_outlet_but_never_an_installed_tube(self):
+         text = override("Thoracostomy_closeLocal")
+@@ -108,17 +112,22 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertLess(text.index('"ACME_thora_ver"'), text.index('call ACME_fnc_ptxTreat'))
+         self.assertNotIn('ACME_CS_holeData', text)
+         self.assertNotIn('ACME_CS_penetratingWounds', text)
+-        edit = (ROOT / 'functions/fn_chestSealEdit.sqf').read_text()
++        edit = read_source(ROOT / 'functions/fn_chestSealEdit.sqf')
+         self.assertNotIn('5th intercostal space', edit)
+         self.assertIn('_message = "NAR SPEAR placed.";', edit)
+ 
+     def test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them(self):
+-        config = (ROOT / 'config.cpp').read_text()
+-        post = (ROOT / 'functions/fn_postInit.sqf').read_text()
+-        for name in LOCAL + ("handlePneumothorax",):
+-            self.assertTrue(f'class {name} {{ file = "\\acm_extended\\overrides\\fn_{name}.sqf"; }};' in config, f"Missing override: {name}")
+-        self.assertNotIn('ACM_breathing_fnc_performNCDLocal =', post)
+-        self.assertNotIn('ACME_ncdReTensionState =', post)
++        prep=read_source(ROOT.parent/'breathing/XEH_PREP.hpp')
++        post=read_source(ROOT/'functions/fn_postInit.sqf')
++        events=read_source(ROOT.parent/'breathing/XEH_postInit.sqf')
++        for name in LOCAL + ('handlePneumothorax',):
++            self.assertIn(f'PREP({name});',prep)
++            self.assertTrue((ROOT.parent/'breathing/functions'/f'fnc_{name}.sqf').is_file())
++        for name in LOCAL:
++            self.assertIn(f'QGVAR({name})',events)
++            self.assertIn(f'LINKFUNC({name})',events)
++        self.assertNotIn('ACM_breathing_fnc_performNCDLocal =',post)
++        self.assertNotIn('ACME_ncdReTensionState =',post)
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/addons/acm_extended/tools/test_b37_labels_and_order.py b/addons/acm_extended/tools/test_b37_labels_and_order.py
+index 101ea234600be068b4f38c0f79ef817ee41caa84..6b6427192c0480c00aec9e7b2d738d47f5a8c7ed 100644
+--- a/addons/acm_extended/tools/test_b37_labels_and_order.py
++++ b/addons/acm_extended/tools/test_b37_labels_and_order.py
+@@ -1,10 +1,11 @@
+ """Regression contracts for indented posture labels and standalone Dog Tags."""
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ import unittest
+ 
+ ROOT=Path(__file__).resolve().parents[1]
+-def src(name):return (ROOT/'functions'/f'fn_{name}.sqf').read_text(encoding='utf-8-sig')
++def src(name):return read_source(ROOT/'functions'/f'fn_{name}.sqf', encoding='utf-8-sig')
+ 
+ def labels():
+     table=src('medDescriptor').split('case "position":',1)[1].split('// breathing.',1)[0]
+@@ -27,7 +28,7 @@ class LabelsAndOrder(unittest.TestCase):
+         self.assertIn('(_chars select _leading) in [9,32]',s)
+ 
+     def test_both_posture_actions_remain_on_head_and_chest(self):
+-        c=(ROOT/'config.cpp').read_text(encoding='utf-8-sig')
++        c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
+         for name in ('ACME_ElevateHead','ACME_LowerHead'):
+             b=c.split('class '+name+':',1)[1].split('\n    };',1)[0]
+             self.assertIn('allowedSelections[] = {"Head", "Body"};',b)
+@@ -37,10 +38,10 @@ class LabelsAndOrder(unittest.TestCase):
+     def test_dog_tags_have_no_group_and_keep_native_condition(self):
+         self.assertNotIn('"checkdogtags"',src('menuExamineGroups'))
+         self.assertIn('if (_name == "checkdogtags") exitWith {["examine", "", false]};',src('menuActionInfo'))
+-        c=(ROOT/'config.cpp').read_text(encoding='utf-8-sig')
++        c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
+         b=c.split('class CheckDogTags:',1)[1].split('};',1)[0]
+         self.assertIn('condition = "ACME_fnc_canCheckPatientDogtags";',b)
+-        collector=(ROOT/'overrides/fn_collectActions.sqf').read_text()
++        collector=read_source(ROOT/'overrides/fn_collectActions.sqf')
+         self.assertIn('_orderedExamine + _rest + _dogTags;',collector)
+         self.assertIn('!= "checkdogtags"',collector)
+ 
+@@ -49,7 +50,7 @@ class LabelsAndOrder(unittest.TestCase):
+         self.assertIn('ACME_menuHeaderColorDefault = [1, 0.96, 0.84, 1];',p)
+         self.assertIn('ACME_menuRowColorDefault = [1, 1, 1, 1];',p)
+         self.assertIn('ACME_menuRowColorAlternate = [1, 0.84, 0.84, 1];',p)
+-        settings=(ROOT/'XEH_settings.hpp').read_text()
++        settings=read_source(ROOT/'XEH_settings.hpp')
+         header=settings.split('"ACME_menuColorHeaders"',1)[1].split('call CBA_fnc_addSetting',1)[0]
+         self.assertIn('OFF (default): all dropdown headings use cream text',header)
+         self.assertRegex(header,r'\n\s*false,\n\s*0,')
+diff --git a/addons/acm_extended/tools/test_b37_menu_state.py b/addons/acm_extended/tools/test_b37_menu_state.py
+index 75eb7567d1ef2235f645edacd44ea45087643f7e..c9d2940e5ce89bb812a9a7c674cd1537c538aa13 100644
+--- a/addons/acm_extended/tools/test_b37_menu_state.py
++++ b/addons/acm_extended/tools/test_b37_menu_state.py
+@@ -5,9 +5,10 @@ from pathlib import Path
+ import unittest
+ 
+ from source_scan import lex, matching
++from historical_source import read_source
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-RENDER = (ROOT / 'overrides/fn_updateActions.sqf').read_text()
++RENDER = read_source(ROOT / 'overrides/fn_updateActions.sqf')
+ STATE = (ROOT / 'functions/fn_menuDropdownState.sqf').read_text()
+ WHITE = (1, 1, 1, 1)
+ PALE_RED = (1, .94, .94, 1)
+diff --git a/addons/acm_extended/tools/test_b38_interactions.py b/addons/acm_extended/tools/test_b38_interactions.py
+index adba9108bfe5c3e1728aa5084568c0a2a48cd32f..e2cd23303fae696d6e5fe9b020ff1641da1d80ea 100644
+--- a/addons/acm_extended/tools/test_b38_interactions.py
++++ b/addons/acm_extended/tools/test_b38_interactions.py
+@@ -1,4 +1,5 @@
+ """B38 numerical acceptance model and SQF integration contracts, not an Arma runtime"""
++from historical_source import read_source
+ import math
+ from pathlib import Path
+ import re
+@@ -8,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+ def source(name):
+-    return (ROOT / name).read_text(encoding="utf-8-sig")
++    return read_source(ROOT / name, encoding="utf-8-sig")
+ 
+ 
+ def clean(value):
+diff --git a/addons/acm_extended/tools/test_b38_mixtures.py b/addons/acm_extended/tools/test_b38_mixtures.py
+index 95061ebc3da5b570c347cef75d0d5cc550e9bfda..6811dc98be8c8e70fa39979fd00e07667f71598d 100644
+--- a/addons/acm_extended/tools/test_b38_mixtures.py
++++ b/addons/acm_extended/tools/test_b38_mixtures.py
+@@ -1,9 +1,10 @@
+ """B38 mixture regression models and source contracts, without an Arma/SQF runtime.
+ 
+-Uses the supplied native config when available; packaged tests fall back to the
+-retained medication inventory. Pair coverage checks freedom and mass, not clinical safety.
++Uses the native and Extended configuration shipped in this repository.
++The inventory is generated in memory; no audit fixture or source file is written. Pair coverage checks freedom and mass, not clinical safety.
+ """
+ from pathlib import Path
++from historical_source import read_source
+ import itertools
+ import json
+ import math
+@@ -11,12 +12,12 @@ import re
+ import unittest
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-NATIVE = ROOT.parents[1] / 'acm/ACM-main/ACM-main/addons/core/ACM_Medication.hpp'
+-if NATIVE.exists():
+-    from medication_inventory import inventory
+-    MATRIX = inventory(NATIVE, ROOT / 'config.cpp')
+-else:
+-    MATRIX = json.loads((ROOT / 'audit/MEDICATION_MATRIX.json').read_text())
++# This repository ships native ACM alongside Extended. Build the inventory in
++# memory from those exact sources; do not depend on a generated audit artifact.
++# The existing reader preserves unexpanded macros as strings, not clinical values.
++from medication_inventory import inventory
++NATIVE = ROOT.parent / 'core/ACM_Medication.hpp'
++MATRIX = inventory(NATIVE, ROOT / 'config.cpp')
+ MEDS = {row['classname']: row for row in MATRIX['medication_classes']}
+ SOURCES = {row['source']: row for row in MATRIX['concentrations']}
+ INJECTABLE = {'ACM_ROUTE_IM', 'ACM_ROUTE_IV', 0, 1}
+@@ -167,11 +168,11 @@ class B38Mixtures(unittest.TestCase):
+         route = src('medicationRouteAllowed')
+         self.assertIn('["_preparedMixture", false]', route)
+         self.assertLess(route.index('if (_preparedMixture isEqualTo true)'), route.index('"Phentolamine_IV"'))
+-        med = (ROOT / 'overrides/fn_medicationLocal.sqf').read_text()
++        med = read_source(ROOT / 'overrides/fn_medicationLocal.sqf')
+         self.assertIn('&& {!_iv} && {!_preparedMixture}) exitWith', med)
+         self.assertIn('_administrationType = if (_iv) then {ACM_ROUTE_IV} else {ACM_ROUTE_IM}', med)
+         self.assertIn('_occludedMedications pushBack [_partIndex, _classname, _dose, _iv, _delivery]', med)
+-        tq = (ROOT / 'overrides/fn_tourniquetRemove.sqf').read_text()
++        tq = read_source(ROOT / 'overrides/fn_tourniquetRemove.sqf')
+         self.assertIn('_dose,_iv,false,_delivery', tq)
+ 
+     def test_flush_state_roundtrip_accepts_old_and_new_rows(self):
+diff --git a/addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py b/addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py
+index 1bc31301a3cf072a1a7b27dbab02dee2793bd135..251d6cc7296d3fdb26bc3b95d5f2a2b166f37700 100644
+--- a/addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py
++++ b/addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py
+@@ -1,7 +1,8 @@
++from historical_source import read_source
+ import unittest
+ from pathlib import Path
+ ROOT=Path(__file__).resolve().parents[1]
+-def read(rel): return (ROOT/rel).read_text(errors="ignore")
++def read(rel): return read_source(ROOT/rel, errors="ignore")
+ class B39RuntimeStampAndSpawn(unittest.TestCase):
+     def test_config_is_r3(self):
+         self.assertIn('version = "1.0.100-r7";', read('config.cpp'))
+diff --git a/addons/acm_extended/tools/test_b41_ui_airway_medication.py b/addons/acm_extended/tools/test_b41_ui_airway_medication.py
+index a65e4dac17aa32194809c5776821585970aac8fd..f3b807ab7ad7fab17038c9fb968981703f6561b4 100644
+--- a/addons/acm_extended/tools/test_b41_ui_airway_medication.py
++++ b/addons/acm_extended/tools/test_b41_ui_airway_medication.py
+@@ -1,10 +1,11 @@
++from historical_source import read_source
+ from pathlib import Path
+ import re
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ def text(rel):
+-    return (ROOT / rel).read_text(errors='ignore')
++    return read_source(ROOT / rel, errors='ignore')
+ 
+ 
+ def test_b41_runtime_stamp():
+@@ -121,7 +122,7 @@ def test_no_live_z_acm_resource_reference_outside_compat_texture_map():
+         for f in files:
+             if f.name == 'fn_minigameVisionTextures.sqf':
+                 continue
+-            data = f.read_text(errors='ignore')
++            data = read_source(f, errors='ignore')
+             # Ignore comments; quoted live paths are what caused the popup.
