@@ -1,0 +1,164 @@
++        assert not stack, path
+diff --git a/addons/acm_extended/tools/test_burp_carry_repeat.py b/addons/acm_extended/tools/test_burp_carry_repeat.py
+index 92a84dfb40ee43481f976595ad392b09f9517c1b..a607996ef1139405a12defbb436ff526cdb33fd3 100644
+--- a/addons/acm_extended/tools/test_burp_carry_repeat.py
++++ b/addons/acm_extended/tools/test_burp_carry_repeat.py
+@@ -58,6 +58,10 @@ def burp_setup(kind):
+         private _burp = ACME_fnc_chestSealBurp;
+         ACME_fnc_chestSealBurp = {_burpRequests = _burpRequests + 1; _this call _burp;};
+     '''
++    # Traumatic-seal burping is already physically presented by its minigame;
++    # only the thoracostomy path requests this additional gesture. Keep dose,
++    # pressure, log, repeated-use and dead-patient assertions unchanged.
++    code += f'private _gesturePerBurp = {0 if kind == "trauma" else 1};'
+     code += f'private _wheel = {{[objNull, _this select 0] call ACME_fnc_{"chestSealScroll" if kind == "trauma" else "thoraSealScroll"};}};'
+     code += 'private _lift = {for "_i" from 1 to 5 do {_this call _wheel;};};'
+     return code
+@@ -68,11 +72,11 @@ def burp_setup(kind):
+ def test_same_corner_can_burp_repeatedly_without_advancing_time(kind, direction):
+     execute(burp_setup(kind) + f'private _direction = {direction};' + '''
+         [_direction] call _lift;
+-        [_logs == 1 && {_effects == 1} && {_gestures == 1},"first burp failed"] call _check;
++        [_logs == 1 && {_effects == 1} && {_gestures == _gesturePerBurp},"first burp failed"] call _check;
+         for "_i" from 1 to 4 do {[_direction] call _wheel;};
+         [_logs == 1 && {_burpRequests == 1},"partial peel repeated treatment"] call _check;
+         [_direction] call _wheel;
+-        [_logs == 2 && {_effects == 2} && {_gestures == 2},"immediate second burp remained blocked"] call _check;
++        [_logs == 2 && {_effects == 2} && {_gestures == (2 * _gesturePerBurp)},"immediate second burp remained blocked"] call _check;
+         [_direction] call _lift;
+         [_logs == 3 && {_burpRequests == 3},"immediate third cycle failed"] call _check;
+     ''')
+@@ -121,7 +125,7 @@ def test_corpse_seals_remain_reusable_without_restarting_physiology(kind):
+         _patientAlive = false;
+         [1] call _lift;
+         [1] call _lift;
+-        [_logs == 2 && {_gestures == 2},"corpse seal became unusable"] call _check;
++        [_logs == 2 && {_gestures == (2 * _gesturePerBurp)},"corpse seal became unusable"] call _check;
+         [_effects == 0,"burp restarted corpse physiology"] call _check;
+     ''')
+ 
+diff --git a/addons/acm_extended/tools/test_historical_clinical_execution.py b/addons/acm_extended/tools/test_historical_clinical_execution.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..ba46831b07d4de4c34bd2e513ff83e5eca5bd103
+--- /dev/null
++++ b/addons/acm_extended/tools/test_historical_clinical_execution.py
+@@ -0,0 +1,161 @@
++"""Current clinical contracts behind historical source-text failures.
++
++Runs actual SQF functions or exact transaction fragments. UI, item and transport
++boundaries are mocked; this does not certify Arma graphics or multiplayer delivery.
++"""
++from pathlib import Path
++import re
++import pytest
++from test_menu_death_lifecycle import adapt, execute
++from source_scan import lex, matching
++
++F=Path(__file__).resolve().parents[1]/'functions'
++
++def source(name):return (F/('fn_'+name+'.sqf')).read_text()
++
++def unique_slice(text,start,end):
++    assert text.count(start)==1,start
++    a=text.index(start); b=text.index(end,a)
++    assert b>a
++    return text[a:b]
++
++def thora_setup():
++    return '''
++        private _permission = true;
++        private _kit = "ACM_ThoracostomyKit";
++        private _writes = [];
++        private _renders = 0;
++        ACME_fnc_minigameInputMouse = {false};
++        ACME_fnc_procedureAllowed = {_permission};
++        ACME_fnc_thoraKitItem = {_kit};
++        ACME_fnc_thoraSideStateCommit = {_writes pushBack _this;};
++        ACME_fnc_thoraRender = {_renders = _renders + 1;};
++        ACME_fnc_thoraRenderOpen = {};
++        ACME_fnc_thoraBumpVer = {};
++        uiNamespace setVariable ["ACME_Thora_Medic",_medic];
++        uiNamespace setVariable ["ACME_Thora_Patient",_patient];
++        uiNamespace setVariable ["ACME_Thora_Side","right"];
++        _patient setVariable ["ACME_thora_open_right","split"];
++    '''
++
++@pytest.mark.parametrize('tool',['Cutting','KellyArmed'])
++@pytest.mark.parametrize('permission,kit',[(False,True),(True,False),(False,False)])
++def test_lost_permission_or_kit_cancels_inflight_thoracostomy_before_commit(tool,permission,kit):
++    execute(thora_setup() + f'_permission={str(permission).lower()}; _kit="'+('ACM_ThoracostomyKit' if kit else '')+'";' +
++            f'uiNamespace setVariable ["ACME_Thora_{tool}",true];' +
++            'private _release = {'+adapt(source('thoraMouseUp'))+'};' + '''
++        [objNull,0] call _release;
++        [count _writes==0,"denied release changed patient state"] call _check;
++        [!(uiNamespace getVariable ["ACME_Thora_Cutting",false]),"cutting still armed"] call _check;
++        [!(uiNamespace getVariable ["ACME_Thora_KellyArmed",false]),"clamp still armed"] call _check;
++        [_renders==1,"cancel did not repaint UI"] call _check;
++    ''')
++
++
++def test_accepted_kelly_release_still_commits_existing_tract():
++    execute(thora_setup() + 'uiNamespace setVariable ["ACME_Thora_KellyArmed",true];' +
++            'private _release = {'+adapt(source('thoraMouseUp'))+'};' + '''
++        [objNull,0] call _release;
++        [count _writes==1,"valid clamp release failed"] call _check;
++        [(_writes select 0) isEqualTo [_patient,"right","open","kelly"],"wrong side/state committed"] call _check;
++    ''')
++
++@pytest.mark.parametrize('kit,receipt,expected',[
++    ('ACM_ThoracostomyKit','ACM_ThoracostomyKit',True),
++    ('ACM_ThoracostomyKit','',False),
++    ('ACE_surgicalKit','',True),('', '',False)])
++def test_finger_tract_consumes_only_disposable_and_requires_verified_receipt(kit,receipt,expected):
++    text=source('thoraMouseDown')
++    body=unique_slice(text,'    private _kit = [_medic, _patient] call ACME_fnc_thoraKitItem;',
++                      '    [] call ACME_fnc_thoraRenderOpen;')
++    execute(thora_setup() + f'_kit="{kit}"; private _receipt="{receipt}";' + '''
++        private _uses = 0;
++        private _side = "right";
++        ace_medical_treatment_fnc_useItem = {_uses=_uses+1; [_medic,_receipt]};
++    ''' + 'private _commit = {'+adapt(body)+'}; call _commit;' +
++            f'[count _writes=={3 if expected else 0},"unverified or missing kit committed tract"] call _check;' +
++            f'[_uses=={int(kit=="ACM_ThoracostomyKit")},"reusable/absent kit was consumed"] call _check;')
++
++@pytest.mark.parametrize('allowed,consumed',[(False,False),(True,False),(True,True)])
++def test_tube_requires_permission_and_actual_inventory_debit_before_projection(allowed,consumed):
++    text=source('thoraMouseDown')
++    body=unique_slice(text,'    private _tubeMedic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];',
++                      '    // register the chest tube with ACM')
++    body=body.replace('_tubeMedic removeItem "ACM_ChestTubeKit";', '_removes=_removes+1; if (_consumed) then {_stock=_stock-1;};')
++    execute(thora_setup()+f'private _allowed={str(allowed).lower()}; private _consumed={str(consumed).lower()};' + '''
++        private _side="right"; private _stock=1; private _removes=0;
++        ACME_fnc_thoraClosureMode = {["tube","",_allowed]};
++        ace_common_fnc_getCountOfItem = {_stock};
++    '''+'private _commit={'+adapt(body)+'}; call _commit;'+
++            f'[count _writes=={3 if allowed and consumed else 0},"invalid tube projection"] call _check;'+
++            f'[_removes=={int(allowed)},"denied tube attempted debit"] call _check;')
++
++
++def difficulty_setup():
++    # Blood pressure and site catalog are engine/config boundaries. The full SQF
++    # pressure, BOA, gauge and EJ algorithms execute; generic site omits anatomy multipliers.
++    # SQF-VM does not implement finite. All pressures in these cases are finite;
++    # substitute only this engine predicate, not the pressure calculation. NaN/Inf rejection is not exercised.
++    body=source('ivSiteDifficulty').replace('finite _d','(_d call _finite)').replace('finite _s','(_s call _finite)')
++    # linearConversion is another unsupported engine primitive. Replace that
++    # call only with a bounded affine-map mock; retain all production arguments.
++    ts=lex(body); pairs=matching(ts); edits=[]
++    for i,t in enumerate(ts):
++        if t.kind=='ident' and t.value=='linearConversion':
++            assert ts[i+1].value=='[' and i+1 in pairs
++            j=pairs[i+1]; start=t.offset; end=ts[j].offset+1
++            edits.append((start,end,'('+body[ts[i+1].offset:end]+' call _linear)'))
++    for start,end,replacement in reversed(edits):body=body[:start]+replacement+body[end:]
++    return '''
++        private _linear = {
++            params ["_lo","_hi","_x","_start","_end","_clamp"];
++            private _f=(_x-_lo)/(_hi-_lo);
++            if (_clamp) then {_f=(_f max 0) min 1;};
++            _start+(_f*(_end-_start))
++        };
++        private _finite = {_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
++        private _pressure = [80,120];
++        ace_medical_status_fnc_getBloodPressure = {_pressure};
++        ACME_fnc_ivVeinCatalog = {[]};
