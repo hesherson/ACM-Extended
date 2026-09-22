@@ -1,0 +1,39 @@
+name: Historical backlog test maintenance validation
+on:
+  push:
+    branches: [audit/historical-backlog-20260922]
+    paths: [.github/workflows/historical-backlog-validation.yml]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install verified execution tools
+        run: |
+          mkdir -p /tmp/backlog-tools /tmp/backlog-validation-results
+          curl --fail --location --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/backlog-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/backlog-tools/hemtt' | sha256sum --check
+          curl --fail --location --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/backlog-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/backlog-tools/sqfvm.zip' | sha256sum --check
+          unzip /tmp/backlog-tools/sqfvm.zip -d /tmp/backlog-tools
+          chmod +x /tmp/backlog-tools/hemtt /tmp/backlog-tools/sqfvm_linux_x64_gcc/sqfvm
+          python3 -m pip install 'pytest==9.0.2' pytest-subtests numpy pillow soundfile
+      - name: Validate test-only patch, compare complete runs and preserve production
+        env:
+          HEMTT: /tmp/backlog-tools/hemtt
+          SQFVM: /tmp/backlog-tools/sqfvm_linux_x64_gcc/sqfvm
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -o pipefail
+          python3 .audit/validate_historical_tests.py | tee /tmp/backlog-validation-results/validation.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historical-backlog-validation
+          path: /tmp/backlog-validation-results
+          retention-days: 14
