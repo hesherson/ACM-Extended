@@ -1,7 +1,7 @@
 """Hash-gated, test-only reconciliation and independent validation.
 
-The complete patch is plaintext. Only twelve explicitly reviewed test/doc paths
-are allowed. This script never updates main. A validated candidate is published
+The complete patches are plaintext. Only twelve reviewed test/doc paths are
+allowed. This script never updates main. A validated candidate is published
 only to a new audit branch after both full runs and preservation checks complete.
 """
 from pathlib import Path
@@ -14,8 +14,10 @@ import xml.etree.ElementTree as ET
 
 ROOT=Path.cwd()
 BASE='5e134975242f182ebbed1225c96709eb7b2cce96'
-TREE='e5711330234b5b966557b9fb21274738623ba0e6'
+PATCH_TREE='e5711330234b5b966557b9fb21274738623ba0e6'
+TREE='27511905b44fe942efb758d80850146d86d18c81'
 PATCH_SHA='895cb85b9d4da6bdcbca189f2e08017debff4a60fc2f541818c2f0b29da7a732'
+EOF_PATCH_SHA='d73927d7fa451cd46bf045f0d92e67dd8adcff326d818289cde40986ee2953f8'
 DEST=Path('/tmp/additional-backlog-candidate')
 BEFORE=Path('/tmp/additional-backlog-base')
 OUT=Path('/tmp/additional-backlog-results'); OUT.mkdir(exist_ok=True)
@@ -84,12 +86,20 @@ subprocess.run(['git','worktree','add','--detach',str(DEST),BASE],check=True)
 subprocess.run(['git','worktree','add','--detach',str(BEFORE),BASE],check=True)
 subprocess.run(['git','apply','--check',str(patch)],cwd=DEST,check=True)
 subprocess.run(['git','apply','--index',str(patch)],cwd=DEST,check=True)
+assert git('write-tree',cwd=DEST).decode().strip()==PATCH_TREE
+# An independently reviewed tiny follow-up removes only excess EOF blank lines
+# from two NEW test helpers. Do not disable the whitespace check or alter runtime.
+eof_data=(ROOT/'.audit/additional-backlog-eof.patch').read_bytes()
+assert hashlib.sha256(eof_data).hexdigest()==EOF_PATCH_SHA
+cleanup=OUT/'eof-only.patch';cleanup.write_bytes(eof_data)
+subprocess.run(['git','apply','--check',str(cleanup)],cwd=DEST,check=True)
+subprocess.run(['git','apply','--index',str(cleanup)],cwd=DEST,check=True)
 assert git('write-tree',cwd=DEST).decode().strip()==TREE
 changed=git('diff','--cached','--name-status',cwd=DEST).decode().splitlines()
 assert {r.split('\t',1)[1] for r in changed}==ALLOWED
 assert all(r.split('\t',1)[0] in ('A','M') for r in changed)
 subprocess.run(['git','diff','--cached','--check'],cwd=DEST,check=True)
-(OUT/'preservation.json').write_text(json.dumps({'base':BASE,'tree':TREE,'production_changes':0,'asset_changes':0,'deleted_files':0,'changed_paths':changed,'patch_sha256':actual},indent=2))
+(OUT/'preservation.json').write_text(json.dumps({'base':BASE,'tree':TREE,'production_changes':0,'asset_changes':0,'deleted_files':0,'changed_paths':changed,'patch_sha256':actual,'eof_cleanup_sha256':EOF_PATCH_SHA},indent=2))
 
 modules=['test_b17_release.py','test_b18_ventway.py','test_b19_vials_pea_artifact.py',
  'test_b21_rhythm_sync.py','test_b27_junctional_cpr_bvm.py','test_b29_narc_plunger.py',
