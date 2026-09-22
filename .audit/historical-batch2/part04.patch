@@ -1,0 +1,178 @@
++        _patient setVariable ["ace_medical_inCardiacArrest",true];
++        CBA_missionTime=18; call _advance;
++        [_requests==2,"request continued after arrest acknowledgement"] call _check;
++    ''')
++
++
++@pytest.mark.parametrize('part,expected',[
++    ('Body',['leftleg','rightleg']),('LeftLeg',['leftleg']),('RightLeg',['rightleg']),
++    ('LeftArm',['leftarm']),('RightArm',['rightarm']),
++])
++def test_aajt_application_routes_only_the_selected_limbs(part,expected):
++    apply=function('aajtApply',extended=True).replace('daytime','12')
++    execute(setup()+function('aajtOccludes',extended=True)+function('aajtStateCommit',extended=True)+apply+'''
++        private _limbs=[];
++        ACME_fnc_aajtSetLegTQ={_limbs pushBack (_this select 1);};
++        ACME_fnc_aajtPainTick={}; ACME_fnc_aajtDownedTick={}; ACME_fnc_netNotice={};
++    '''+f'private _result=[_medic,_patient,"{part}"] call ACME_fnc_aajtApply;'+
++        f'private _expected={str(expected).replace(chr(39),chr(34))};'+'''
++        [_result && {_limbs isEqualTo _expected},"AAJT application targeted wrong limbs"] call _check;
++        {
++            private _name=["head","body","leftarm","rightarm","leftleg","rightleg"] select _x;
++            [([_patient,_x] call ACME_fnc_aajtOccludes) isEqualTo (_name in _expected),"placement/occlusion disagree"] call _check;
++        } forEach [0,1,2,3,4,5];
++    ''')
++
++
++@pytest.mark.parametrize('part,zone3,tourniquet,expected',[
++    ('Head',True,False,True),('LeftArm',True,False,True),
++    ('LeftLeg',True,False,False),('RightLeg',True,False,False),
++    ('LeftArm',False,True,False),('RightLeg',False,True,False),
++    ('LeftLeg',False,False,True),
++])
++def test_compression_generated_pulses_do_not_bypass_proximal_occlusion(part,zone3,tourniquet,expected):
++    text=(ROOT/'addons/core/overrides/fnc_checkPulseLocal.sqf').read_text()
++    text=text.replace('alive _cprProvider','true').replace('localize _k','_k')
++    # VM lacks triangular random; select its mode without changing the pulse gate.
++    text=text.replace('random [100,110,120]','([100,110,120] select 1)')
++    text=text.replace('localize "STR_ACE_medical_treatment_Check_Pulse_Log"','"pulse log"')
++    execute(pulse_setup()+'''
++        ACME_fnc_clinTerm={""}; ace_medical_treatment_fnc_isMedic={true};
++    '''+f'_patient setVariable ["ACME_AAJT_zone3",{str(zone3).lower()}]; _tourniquet={str(tourniquet).lower()};'+
++        'private _checkPulse={'+code(text)+'};'+f'[_medic,_patient,"{part}"] call _checkPulse;'+'''
++        private _message=(_events select 0) select 1;
++        private _rate=(_message select 0) select 2;
++    '''+f'[(_rate>0) isEqualTo {str(expected).lower()},"CPR pulse bypassed occlusion"] call _check;')
+diff --git a/addons/acm_extended/tools/test_na8_5_batch12.py b/addons/acm_extended/tools/test_na8_5_batch12.py
+index 5f3b3be..f1c73ff 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch12.py
++++ b/addons/acm_extended/tools/test_na8_5_batch12.py
+@@ -107,10 +107,10 @@ class SharedSuctionSource(unittest.TestCase):
+         for x in ('_id in _receipts','_stamp isEqualTo _expected','ACME_fnc_clinicalEpoch'):self.assertIn(x,t)
+     def test_native_clear_on_owner(self):
+         t=src('laryngoFluidDrainLocal')
+-        self.assertIn('ACM_airway_AirwayObstructionVomit_State',t)
+-        self.assertIn('ACM_airway_AirwayObstructionBlood_State',t)
+-        self.assertIn('if (_kind == "v")',t)
++        self.assertIn('call ACM_airway_fnc_setAirwayState',t)
+         self.assertNotIn('call ACM_airway_fnc_handleSuctionLocal',t)
++        from test_historical_airway_execution import test_suction_debits_once_and_clears_only_the_current_compartment
++        test_suction_debits_once_and_clears_only_the_current_compartment()
+     def test_pool_fullheal_and_save_registered(self):self.assertIn('["ACME_laryngo_pool", "", true]',src('clinicalFields'))
+     def test_no_perpetual_visual_only_bleed(self):self.assertNotIn('fluidMode',src('laryngoPersistBleed'))
+     def test_streak_not_reset_by_suction(self):self.assertNotIn('setVariable ["ACME_laryngo_gagMisses"',code(src('laryngoFluidDrainLocal')))
+@@ -155,8 +155,12 @@ class EpinephrineSource(unittest.TestCase):
+         t=src('epinephrinePushStored');self.assertIn('_drugMl * 0.1 * _fraction',t)
+         self.assertIn('_drugMl * (1 - _fraction)',t);self.assertIn('_nsMl * (1 - _fraction)',t)
+     def test_inventory_consumed_before_medication_event(self):
+-        t=src('epinephrinePushStored');self.assertLess(t.index('_medic setVariable'),t.index('ACME_fnc_medicationRequest'))
++        t=src('epinephrinePushStored')
++        self.assertLess(t.index('call ACME_fnc_narcStoreCommit'),t.index('call ACME_fnc_medicationRequest'))
+         self.assertIn('ACME_fnc_ownerDispatch',src('medicationRequest'))
++        from test_historical_airway_execution import test_measured_epinephrine_debits_before_request_and_conserves_remainder_and_refund
++        for push in [1,2,10]:
++            test_measured_epinephrine_debits_before_request_and_conserves_remainder_and_refund(push,True)
+     def test_actual_selected_vascular_site_required(self):
+         t=src('epinephrinePushStored');self.assertIn('_bodyPart, 0, _siteIdx',t);self.assertIn('ACM_circulation_fnc_hasIO',t)
+     def test_native_actual_mg_not_charge(self):
+diff --git a/addons/acm_extended/tools/test_transfusion_thoracostomy_aftercare.py b/addons/acm_extended/tools/test_transfusion_thoracostomy_aftercare.py
+index 76d39d6..197450f 100644
+--- a/addons/acm_extended/tools/test_transfusion_thoracostomy_aftercare.py
++++ b/addons/acm_extended/tools/test_transfusion_thoracostomy_aftercare.py
+@@ -95,15 +95,16 @@ def test_standard_calcium_values_survive_toggle_removal():
+ 
+ 
+ def test_aftercare_is_owner_routed_and_epoch_guarded():
+-    owner = read("functions/fn_ownerDispatch.sqf")
+-    aftercare = read("functions/fn_thoraAftercareLocal.sqf")
++    owner=read('functions/fn_ownerDispatch.sqf')
++    aftercare=read('functions/fn_thoraAftercareLocal.sqf')
+     assert 'case "thoraAftercare": {_args call ACME_fnc_thoraAftercareLocal;};' in owner
+-    for gate in ["!local _patient", "!alive _patient", "ACME_fnc_clinicalEpoch",
+-                 '["left", "right"]', "ACME_fnc_procedureAllowed",
+-                 "ACME_thora_incision_%1", "ACME_thora_tube_%1"]:
++    for gate in ['!local _patient','!alive _medic','ACME_fnc_clinicalEpoch','["left", "right"]',
++                 'ACME_fnc_procedureAllowed','ACME_thora_incision_%1','ACME_thora_tube_%1']:
+         assert gate in aftercare
+-    assert '[_patient, "thora"] call ACME_fnc_ptxTreat;' in aftercare
+-    assert "ACM_breathing_fnc_updateLungState" in aftercare
++    # Availability must not reveal death; the physiology call alone is live-only.
++    from test_historical_airway_execution import test_aftercare_remains_available_on_dead_patients_without_resuming_physiology
++    for operation in ['peel','burp','sweep']:
++        test_aftercare_remains_available_on_dead_patients_without_resuming_physiology(False,operation)
+ 
+ 
+ def test_peel_reopens_only_the_selected_surgical_tract():
+diff --git a/addons/core/overrides/fnc_checkPulseLocal.sqf b/addons/core/overrides/fnc_checkPulseLocal.sqf
+index 65e2d76..163480e 100644
+--- a/addons/core/overrides/fnc_checkPulseLocal.sqf
++++ b/addons/core/overrides/fnc_checkPulseLocal.sqf
+@@ -10,8 +10,14 @@ private _cprProvider = _patient getVariable ["ace_medical_CPR_provider", objNull
+ private _compressionsActive = alive _cprProvider;
+ 
+ if (_compressionsActive) then {
+-    _heartRate = random [100,110,120];
+-    _pulseCharacter = "bounding";
++    // Compression-generated pulses cannot pass an occluded artery either.
++    private _partIndex = ["head","body","leftarm","rightarm","leftleg","rightleg"] find toLowerANSI _bodyPart;
++    private _occluded = ([_patient, _bodyPart] call ace_medical_treatment_fnc_hasTourniquetAppliedTo)
++        || {[_patient, _partIndex] call ACME_fnc_aajtOccludes};
++    if (!_occluded) then {
++        _heartRate = random [100,110,120];
++        _pulseCharacter = "bounding";
++    };
+ } else {
+     private _profile = [_patient, _bodyPart] call ACME_fnc_pulsePerfusionProfile;
+     _profile params ["_palpable","_electricalHR","_mechanicalHR","_strength","_character"];
+diff --git a/docs/audits/2026-09-22-historical-backlog-batch2.md b/docs/audits/2026-09-22-historical-backlog-batch2.md
+new file mode 100644
+index 0000000..b40a3ea
+--- /dev/null
++++ b/docs/audits/2026-09-22-historical-backlog-batch2.md
+@@ -0,0 +1,69 @@
++# Historical backlog, batch 2: cardiac, pulse and airway contracts
++
++## Scope
++
++Starting source: `5e134975242f182ebbed1225c96709eb7b2cce96`, tree `a34ab4fc8b04985d0dcaf558359c6c1b1b6d0df2`.
++The local checkout was reconstructed from the complete pinned source/assets and the published batch-1 diff, then verified to match this complete Git tree exactly.
++
++This batch changes **two runtime files only**, both in manual pulse assessment. Everything else is tests or audit documentation. No dose/concentration, cardiac or sedation threshold, seizure weight, medication kinetics, blood-flow algorithm, animation, UI layout, network worker, or equipment inventory rule was retuned. The previous four lifecycle fixes and batch-1 work are preserved.
++
++## Confirmed defects and minimal corrections
++
++### Named pulse site passed to a numeric occlusion API
++
++`fn_pulsePerfusionProfile.sqf` accepts body-part names but passed that name directly to `ACME_fnc_aajtOccludes`, whose switch accepts numeric ACE body-part indices. This returned false for AAJT occlusion, allowing a palpable pulse to be reported on the occluded limb. AAJT no longer creates a conventional ACE tourniquet, so the separate tourniquet check did not mask this mistake.
++
++The correction converts the already-lowercased name to an index at the caller boundary. It does not change the shared occlusion API or other consumers. Six new cases failed before the correction and pass afterward. Coverage includes bilateral Zone 3 legs, unilateral inguinal and axillary placements, mixed-case caller names, unaffected sites, removal, and remaining conventional-tourniquet blockage. The electrical heart rate remains unchanged.
++
++### Compression-generated pulse bypassed the occlusion check
++
++The CPR branch of `fnc_checkPulseLocal.sqf` returned its simulated compression pulse before consulting the site's occlusion. Four additional cases reproduced pulse reports below an active Zone 3 device or conventional tourniquet. The correction consults the existing native tourniquet and AAJT authorities before generating that pulse. Patent sites retain the original compression-rate distribution and wording. Spontaneous pulse assessment continues to use the common profile.
++
++These are two manifestations of a pulse-assessment defect, not new AAJT, CPR or perfusion physiology. The tests supply explicit engine/object stand-ins and a deterministic mode for the unsupported triangular random primitive; they do not establish real-world arterial palpability or validate a live Arma render.
++
++## Backlog progress
++
++Sixteen previously failing historical identities now pass:
++
++- Cardiac/native precedence and monitoring: H008, H012, H306, H307, H308, H309, H312.
++- Chest reset, treatment registration and surgical-seal boundaries: H095, H099, H116, H117.
++- AAJT application and pulse occlusion: H293, H294.
++- Suction, measured epinephrine and aftercare: H423, H426, H457.
++
++Fifteen belong to the 249 remaining original source-contract outcomes. That subset is now **234**. H306 was the separate version-first/ROSC-registration outcome that batch 1 explicitly left open; it is now verified against native PREP registration and the current gate.
++
++Of the original 448 failed outcomes, **189 now pass and 259 remain failing**. The original 12 collection/setup errors remain resolved from batch 1 and are tracked separately, not silently deleted. The remaining-work index continues to retain original IDs.
++
++## What the refreshed contracts actually check
++
++The ROSC path executes the native eligibility and attempt functions, including the strict blood-volume boundary, native oxygen/tension/hemothorax causes, Extended hypothermia/acidosis/toxicity vetoes, live/local/arrested eligibility, single successful transition, and shock-wrapper episode rejection. Extended ROSC-only vetoes do not disable circulation outside arrest. The post-arrest state flag and arrest clock remain handled by the existing transaction.
++
++The ROSC event test verifies that acute paralytic and ventilator stress are cleared and the current grace period begins without erasing the historical awareness event. Native rhythm tests exercise the threshold observer's refusal to override an untreated critical rhythm, and the actual torsades-conversion fragment's maturity, bounded retry and acknowledgement checks. Monitor tests exercise proxy precedence and the cache-invalidation fragment and inspect the native consumer. They do not certify live waveform, sound or sweep timing.
++
++Chest tests follow native PREP/event registration instead of retired Extended overrides. Executable checks verify that instructor clearing retires its old PTX episode/worker while preserving equipment, stale seal-peel effects are rejected, and a surgical seal cannot cover unrelated external wounds or clear the opposite tube. No cross-machine time comparison was reinstated.
++
++Suction checks execute the actual compartment reader, drain transaction and native airway setter: partial debit, duplicate receipts, stale episode/session rejection, manual capacity, and vomit/blood/secretions separation. Measured epinephrine checks execute the actual stored-row debit before the mocked request boundary and verify dose/volume/remainder/refund conservation and selected-site rejection. These do not validate downstream pharmacokinetics or live inventory replication.
++
