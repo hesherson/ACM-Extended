@@ -2339,6 +2339,7 @@ class CfgFunctions {
             class seizureInjuryEntry {};
             class seizureCollapse {};
             class benzoOnBoard {};
+            class seizureControl {};
             class forceRagdoll {};
             class aajtApply {};
             class aajtRemove {};
@@ -2797,6 +2798,7 @@ class CfgFunctions {
             class laryngoPersistBleed {};
             class laryngoTubeFrames {};
             class sedationOnBoard {};
+            class sedationActive {};
             class preparedComponents {};
             class vialHolder {};
             class vialClass {};
