@@ -1,0 +1,67 @@
+name: ACME historical verification
+on:
+  push:
+    branches: [audit/2026-09-22-historical-verification]
+    paths: [.github/workflows/acme-historical-verification.yml]
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c3dd15f41a56a253461d876b478f91849d23551f
+          fetch-depth: 1
+      - name: Pinned tools and baseline
+        run: |
+          mkdir -p /tmp/tools /tmp/results
+          curl -fL --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/tools/hemtt' | sha256sum -c
+          curl -fL --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/tools/sqfvm.zip' | sha256sum -c
+          unzip /tmp/tools/sqfvm.zip -d /tmp/tools
+          chmod +x /tmp/tools/hemtt /tmp/tools/sqfvm_linux_x64_gcc/sqfvm
+          python3 -m pip install 'pytest==9.0.2' 'pytest-json-report==1.5.0'
+          git fetch --no-tags --depth=1 origin 5dca0429d9ef211f3366cd54b4f3c95274ba7a48
+          git worktree add --detach /tmp/baseline 5dca0429d9ef211f3366cd54b4f3c95274ba7a48
+      - name: Reproduce exact addon scope, with and without execution tools
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,subprocess,sys,json,zipfile
+          root=pathlib.Path.cwd(); out=pathlib.Path('/tmp/results')
+          meta={'python':sys.version,'runs':{}}
+          for label,tree in [('baseline',pathlib.Path('/tmp/baseline')),('current',root)]:
+              for mode in ['plain','equipped']:
+                  env={**os.environ,'PYTEST_DISABLE_PLUGIN_AUTOLOAD':'1'}
+                  if mode=='equipped': env.update(HEMTT='/tmp/tools/hemtt',SQFVM='/tmp/tools/sqfvm_linux_x64_gcc/sqfvm')
+                  name=label+'-'+mode
+                  cmd=[sys.executable,'-m','pytest','addons/acm_extended/tools','-q','--continue-on-collection-errors','--ignore=addons/acm_extended/tools/test_b77_branding_authors.py','--tb=short','-p','pytest_jsonreport.plugin','--json-report','--json-report-file='+str(out/(name+'.json'))]
+                  p=subprocess.run(cmd,cwd=tree,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=300)
+                  (out/(name+'.log')).write_text(p.stdout)
+                  meta['runs'][name]={'returncode':p.returncode,'command':cmd}
+                  print(name,p.returncode,p.stdout[-1800:])
+              p=subprocess.run([sys.executable,'-m','pytest','addons/acm_extended/tools/test_b77_branding_authors.py','--collect-only','-q'],cwd=tree,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=30)
+              (out/(label+'-b77.log')).write_text(p.stdout)
+          # Export every tracked text/config/test file and metadata for detailed review.
+          manifest={}
+          with zipfile.ZipFile(out/'current-sources.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for record in subprocess.check_output(['git','ls-tree','-r','-z','HEAD']).split(b'\0'):
+                  if not record: continue
+                  fields,path=record.split(b'\t',1); mode,kind,sha=fields.decode().split(); path=path.decode()
+                  if kind!='blob': continue
+                  manifest[path]={'sha':sha,'mode':mode}
+                  p=root/path
+                  if p.suffix.lower() not in {'.paa','.p3d','.rtm','.ogg','.wss','.wav','.png','.jpg','.jpeg','.ttf','.pbo','.zip','.pdf'}:
+                      z.write(p,path)
+              z.writestr('audit-tree-manifest.json',json.dumps(manifest,indent=2))
+          (out/'metadata.json').write_text(json.dumps(meta,indent=2))
+          print('No production source was changed.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-historical-reproduction
+          path: /tmp/results
+          retention-days: 14
