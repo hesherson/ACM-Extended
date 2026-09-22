@@ -1,0 +1,75 @@
++CPR/BVM tests now follow native PREP/action registrations, actual role-reservation predicates and owner-side junctional transitions. They execute ventilation while another provider's CPR marker is present, retain the other role, verify unavailable/out-of-range providers fail their reservation predicate, and exercise current packing/wrapping state writes. Source checks retain the public marker contract; simulated transport is not real networking.
++
++Thoracostomy tests verify loss of permission/kit blocks cutting or clamp release before a patient-state commit. Valid release still commits. Disposable kits require a verified inventory receipt; reusable kits are not consumed. Tube projection follows both permission and a successful debit. The current side-state writer is checked instead of demanding removed inline setVariable text.
++
++IV checks exercise the current pressure/BOA/gauge/EJ calculation and binding to the selected site. The actual algorithm runs in SQF-VM with blood-pressure/catalog boundaries mocked. SQF-VM's unsupported finite/linearConversion primitives are explicitly represented by bounded finite-input and affine-map mocks; NaN/Inf validation and actual vein-catalog anatomy are not claimed as tested by those cases. No pressure thresholds or gauge multipliers were retuned.
++
++### Existing execution-fixture repairs
++
++The BVM/Direct Pressure fixture now executes the checked-out directPressureMarker owner branch rather than silently discarding that command. The push-seconds input fixture supplies the expected control stand-in. The chest-viewer fixture supplies its actual front-side/vest-handoff state. Namespace stand-ins remove only a real top-level public flag, preserving nested values and handling explicitly compiled input-code strings. Tests cover strings/comments, nested Booleans, multiline writes and nonliteral public arguments.
++
++The burp test follows the current trauma-versus-thoracostomy presentation split. Its pressure/effect, repeatability, logging and dead-patient physiology assertions remain active; only the obsolete extra-gesture count differs.
++
++## Validation and remaining limits
++
++Local focused suite: **452 passed, 400 subtests passed**, no failures/errors/skips. This includes the previous 184-case preservation/lifecycle/consciousness/seizure/configuration suite, new helper tests, clinical cases and repaired execution fixtures. Full-project `hemtt check`: **exit 0**, with seven existing non-blocking style suggestions unchanged. The source-preservation hashes remain enforced.
++
++The candidate's production/asset bytes are verified against the complete pinned manifest. No files were deleted. No failures were mass-marked xfail, no new skip filters were added and no retired gameplay behavior was restored for a test.
++
++The remaining original 249 source-contract IDs are indexed in `historical-backlog-remaining-20260922.txt`. The full 460-outcome disposition ledger, before/after logs, newly exposed failures and test-only diff accompany the evidence archive. The 299 broad failing outcomes remain work, not a waiver. Resolving a source assertion is not the same as proving gameplay bug-free.
++
++No Arma client or dedicated server ran. Live rendering, animation integration, equipment inventory and real multiplayer transport ordering remain outside these mocked execution tests. This batch does not require a gameplay rebuild merely to obtain its test/doc changes.
+diff --git a/docs/audits/historical-backlog-remaining-20260922.txt b/docs/audits/historical-backlog-remaining-20260922.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..651a43349537ae9302e347cbb276f1184b3c64a5
+--- /dev/null
++++ b/docs/audits/historical-backlog-remaining-20260922.txt
+@@ -0,0 +1,253 @@
++Unresolved original source-contract outcomes after batch 1: 249
++Base: 19d01b8b27fd53bb9d3c381c7445add589336159
++Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
++
++H008 addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock
++H012 addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress
++H015 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact
++H017 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered
++H018 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact
++H021 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_pea_morphology_distinct_from_sinus
++H040 addons/acm_extended/tools/test_b21_rhythm_sync.py::B21RhythmRegression::test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared
++H044 addons/acm_extended/tools/test_b22_narc_revert.py::B22UIContracts::test_infusion_inherits_same_original_row_overlay
++H046 addons/acm_extended/tools/test_b22_narc_revert.py::B22UIContracts::test_partial_vial_ledger_still_persists
++H048 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23MedicationListContracts::test_normal_narc_box_rebuilds_empty_backing_list
++H049 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23VialHardStop::test_infusion_draw_max_is_limited_by_syringe_and_stock
++H050 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23VialHardStop::test_live_ui_physically_clamps_plunger_to_stock
++H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
++H055 addons/acm_extended/tools/test_b25_vials_epi_iv_angles.py::B25Source::test_vial_session_registered_and_manual_advance_only
++H067 addons/acm_extended/tools/test_b28_hpmk_acre.py::B28Regression::test_no_network_blanket_attached_to_wrapped_patient
++H068 addons/acm_extended/tools/test_b28_hpmk_acre.py::B28Regression::test_obtunded_tick_can_cleanup_when_master_off
++H070 addons/acm_extended/tools/test_b28_hpmk_acre.py::B28Regression::test_wrapped_blanket_is_local_simple_object
++H076 addons/acm_extended/tools/test_b31_junctional_balance.py::JunctionalB31::test_active_and_fallback_balance_match
++H077 addons/acm_extended/tools/test_b31_junctional_balance.py::JunctionalB31::test_compensated_two_junction_window_is_materially_longer
++H078 addons/acm_extended/tools/test_b31_junctional_balance.py::JunctionalB31::test_corpse_render_keeps_evidence_without_rebleed_progression
++H083 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::test_callbacks_and_foreign_examinations_are_retained
++H084 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::test_chest_move_does_not_capture_bvm_descendants
++H085 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::test_grouped_and_flat_keep_body_site_eligibility
++H086 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::test_known_order_survives_native_config_declaration_order
++H088 addons/acm_extended/tools/test_b33_examine_menu.py::CorpseChestAssessment::test_dead_findings_survive_without_a_live_obtunded_roll
++H093 addons/acm_extended/tools/test_b34_tray_silhouettes.py::TraySilhouetteContracts::test_existing_thoracostomy_shadow_survives_hover_and_inventory_refresh
++H095 addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment
++H099 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them
++H116 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury
++H117 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds
++H120 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_both_posture_actions_remain_on_head_and_chest
++H121 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors
++H127 addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py::B39RuntimeStampAndSpawn::test_obtunded_weapon_path_does_not_delete_projectiles
++H128 addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py::B39RuntimeStampAndSpawn::test_reset_never_calls_getup
++H131 addons/acm_extended/tools/test_b40_animation_audit.py::test_direct_pressure_entry_exit_are_priority_one
++H132 addons/acm_extended/tools/test_b40_animation_audit.py::test_movement_queues_are_explicit_priority_one
++H133 addons/acm_extended/tools/test_b40_animation_audit.py::test_hpmk_roll_uses_guarded_animation_wrapper
++H134 addons/acm_extended/tools/test_b40_animation_audit.py::test_cpr_authored_exit_blends
++H135 addons/acm_extended/tools/test_b40_animation_audit.py::test_remaining_hard_switches_are_known_state_locks_only
++H137 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_cuff_syringe_uses_real_acm_pbo_prefix
++H139 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_clinical_chest_wording
++H140 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_requested_alternating_pale_red_is_runtime_default
++H141 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_full_medication_registry_is_config_derived_and_immutable
++H142 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_medication_rows_have_single_authoritative_identity_source
