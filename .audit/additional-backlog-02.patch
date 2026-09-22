@@ -1,0 +1,170 @@
+         self.assertIn('ACM_circulation_AED_NIBP_Display", [0,0]',read('functions/fn_circHandle.sqf'))
+         co=read('overrides/fn_getCardiacOutput.sqf'); self.assertIn('rhythmGet) == 5',co); self.assertIn('exitWith {0}',co)
+-    def test_pea_morphology_distinct_from_sinus(self):
++    def test_pea_subtype_and_mechanical_pressure_keep_native_authority(self):
+         g=read('overrides/fn_genEKG.sqf')
+-        self.assertIn('case 5: {  // true PEA',g)
+-        self.assertIn('[0,-2,-8,-20,-38,-50',g)
+-        m=read('functions/fn_megacodePanelTick.sqf')
+-        self.assertIn('case (_acmRhythm == 5)',m)
+-        self.assertNotIn('case (_acmRhythm in [0, 5])',m)
+-        self.assertIn('_SBP = 0; _DBP = 0',m)
++        gate=assignment_expression(g,'_widePEA')
++        execute('private _target=_patient; private _wideSubstrate=false; ACME_fnc_peaIsWide={_wideSubstrate};'+"""
++            {
++                _x params ["_rhythm","_substrate","_expected"];
++                _wideSubstrate=_substrate;
++                private _widePEA = """+gate+""";
++                [_widePEA isEqualTo _expected,"PEA subtype overrode another rhythm"] call _check;
++            } forEach [[5,true,true],[5,false,false],[0,true,false],[-1,true,false],[1,true,false],[2,true,false],[3,true,false],[4,true,false]];
++        """)
++        pea=g.split('case 5:',1)[1].split('case 3;',1)[0]
++        self.assertIn('if (_widePEA) then {',pea)
++        self.assertIn('[0,-2,-8,-20,-38,-50',pea)
++        panel=read('functions/fn_megacodePanelTick.sqf')
++        self.assertIn('if (_arrest && {_nativeRhythm == 5}) then {_sbp=0; _dbp=0;};',panel)
++        self.assertIn('call ACM_circulation_fnc_displayAEDMonitor_generateEKG',panel)
+     def test_artifact_is_visual_only_and_network_visible(self):
+         a=read('functions/fn_ecgArtifactApply.sqf')
+         self.assertIn('_mask set [_idx, false]',a)
+@@ -69,14 +85,27 @@ class B19Source(unittest.TestCase):
+         o=read('functions/fn_ownerDispatch.sqf'); self.assertIn('case "ecgJostle"',o)
+         e=read('functions/fn_ecgJostleLocal.sqf'); self.assertIn('ACME_ecgJostleLeases',e); self.assertIn(', true]',e)
+     def test_ace_timer_events_drive_artifact(self):
+-        p=read('functions/fn_postInit.sqf')
++        p=read('functions/fn_registerEcgJostleRuntime.sqf')
+         for ev in ('ace_treatmentStarted','ace_treatmentSucceded','ace_treatmentFailed'):
+             self.assertIn(ev,p)
+-        for rel in ('functions/fn_ivMinigameOpen.sqf','functions/fn_chestSealOpen.sqf','functions/fn_thoraOpen.sqf','functions/fn_laryngoInit.sqf'):
++        self.assertIn('[_patient,_key,true] call ACME_fnc_ecgJostleRequest',p)
++        self.assertIn('[_patient,_key,false] call ACME_fnc_ecgJostleRequest',p)
++        self.assertIn('ACME_ecgJostleLeaseSec = 180;',p)
++        for rel in ('functions/fn_ivMinigameOpen.sqf','functions/fn_thoraOpen.sqf','functions/fn_laryngoInit.sqf'):
+             self.assertIn('ACME_fnc_ecgJostleRequest',read(rel))
++        # Chest artifacts begin only once the dialog actually loads, not during a
++        # potentially refused/pending open. The same viewer lease is cleared on close.
++        init=read('functions/fn_chestSealInit.sqf')
++        close=read('functions/fn_chestSealClose.sqf')
++        self.assertIn('_this call ACME_fnc_chestSealInit',read('config.cpp'))
++        self.assertIn('[_patient, "ui:chest:" + str clientOwner, true] call ACME_fnc_ecgJostleRequest',init)
++        self.assertIn('[_patient, "ui:chest:" + str clientOwner, false] call ACME_fnc_ecgJostleRequest',close)
+     def test_monitor_generators_apply_artifact(self):
+-        g=read('overrides/fn_genEKG.sqf'); self.assertGreaterEqual(g.count('ACME_fnc_ecgArtifactApply'),2)
+-        self.assertIn('ACME_fnc_ecgArtifactStrength',read('functions/fn_megacodePanelTick.sqf'))
++        g=read('overrides/fn_genEKG.sqf')
++        self.assertGreaterEqual(g.count('call ACME_fnc_ecgArtifactApply'),2)
++        panel=read('functions/fn_megacodePanelTick.sqf')
++        self.assertEqual(panel.count('call ACM_circulation_fnc_displayAEDMonitor_generateEKG'),2)
++        self.assertNotIn('call ACME_fnc_ecgArtifactApply',panel)
+ 
+ class B19Reference(unittest.TestCase):
+     def test_propofol_50ml_conserves_five_ten_ml_draws(self):
+diff --git a/addons/acm_extended/tools/test_b21_rhythm_sync.py b/addons/acm_extended/tools/test_b21_rhythm_sync.py
+index 9c3fe911539275cb7e9f7c78a04d9d7b4544f954..304590d55d00c845058094c0b201a108d8a2a86b 100644
+--- a/addons/acm_extended/tools/test_b21_rhythm_sync.py
++++ b/addons/acm_extended/tools/test_b21_rhythm_sync.py
+@@ -1,3 +1,4 @@
++from backlog_clinical_probes import threshold_observer_probe
+ from historical_source import read_source, assert_release_identity
+ from pathlib import Path
+ import re, unittest
+@@ -22,14 +23,13 @@ class B21RhythmRegression(unittest.TestCase):
+         self.assertGreaterEqual(score,35)
+ 
+     def test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared(self):
++        threshold_observer_probe()
+         src=read('functions/fn_rhythmThresholdTick.sqf')
+-        self.assertIn('ACME_rhythmNativeVTRecoverHR', src)
+-        self.assertIn('ACME_rhythmNativeVTRecoverSec', src)
+-        self.assertIn('== "ACM VT fallback"', src)
+-        self.assertIn('!(_u getVariable ["ace_medical_inCardiacArrest", false])', src)
+-        self.assertIn('[_u, 0] call ACME_fnc_rhythmSet;', src)
+-        # Recovery is source-tagged; no unconditional "if VT then sinus" shortcut.
+-        self.assertNotIn('if (_rhythm == 4) then { [_u, 0] call ACME_fnc_rhythmSet;', src)
++        self.assertNotIn('ACM VT fallback',src)
++        self.assertNotIn('call ACME_fnc_arrestLocal',src)
++        native=read('../core/functions/fnc_handleCriticalVitals.sqf')
++        self.assertIn('ACM_Rhythm_VT',native)
++        self.assertIn('ACM_Rhythm_Sinus',native)
+ 
+     def test_new_rhythm_tunables_are_registered(self):
+         fields=read('functions/fn_clinicalFields.sqf')
+diff --git a/addons/acm_extended/tools/test_b35_lifecycle.py b/addons/acm_extended/tools/test_b35_lifecycle.py
+index 26af1394ebbf01a75598a98345125146c88fe2f2..f65be7e4bdeb1f8f337532c838a4549dda087557 100644
+--- a/addons/acm_extended/tools/test_b35_lifecycle.py
++++ b/addons/acm_extended/tools/test_b35_lifecycle.py
+@@ -1,4 +1,5 @@
+-"""PTX owner/reset/save source contracts; these checks do not execute Arma or CBA."""
++from backlog_clinical_probes import chest_reset_probe
++"""PTX owner/reset/save contracts, including a mocked-engine SQF reset probe."""
+ from historical_source import read_source
+ from pathlib import Path
+ import re
+@@ -123,15 +124,8 @@ class PtxLifecycle(unittest.TestCase):
+         self.assertNotIn("Pneumothorax_PFH", breathing)
+ 
+     def test_instructor_clear_retires_model_without_touching_equipment(self):
+-        mega = source("megacodeChestInjury")
+-        clear = mega[mega.index('if (_t == "ncd")'):mega.index('switch (_t)')]
+-        for field in ("ACME_ptx_state", "ACME_ptx_tensionSeverity", "ACME_ptx_tensionProgress"):
+-            self.assertIn(field, clear)
+-        self.assertIn("CBA_fnc_removePerFrameHandler", clear)
+-        self.assertIn('["ACM_breathing_Pneumothorax_PFH", -1, false]', clear)
+-        self.assertIn('["ACM_breathing_Hardcore_Pneumothorax", false, true]', clear)
+-        for unrelated in ("ACME_CS_holeData", "ACME_thora_tube_left", "ACME_ncd_placed"):
+-            self.assertNotIn(unrelated, clear)
++        # Execute the instructor command plus actual breathing writers; check equipment and timer state.
++        chest_reset_probe()
+ 
+     def test_training_injury_seeds_model_before_native_projection(self):
+         mega = source("megacodeChestInjury")
+diff --git a/addons/acm_extended/tools/test_b35_treatments.py b/addons/acm_extended/tools/test_b35_treatments.py
+index 553a003f90127652fcb2758ae7bf27b8eae2295e..23314c657aa344f2ca6cd95796d028e3c46451ab 100644
+--- a/addons/acm_extended/tools/test_b35_treatments.py
++++ b/addons/acm_extended/tools/test_b35_treatments.py
+@@ -1,4 +1,5 @@
+-"""B35 treatment integration contracts; these inspect SQF and do not execute Arma."""
++from backlog_clinical_probes import tract_and_peel_probe
++"""B35 treatment contracts and actual SQF probes with mocked engine boundaries."""
+ from historical_source import read_source
+ from pathlib import Path
+ import re
+@@ -59,14 +60,16 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertNotRegex(effect, r'setVariable\s*\[\s*"ACM_breathing_TensionPneumothorax_State"')
+ 
+     def test_seal_removal_cannot_become_a_new_injury(self):
+-        effect = read_source(ROOT / 'functions/fn_chestSealEffectLocal.sqf')
+-        peel = effect.split('case "peel":', 1)[1].split('case "miss":', 1)[0]
+-        self.assertIn('[_patient, "peel"] call ACME_fnc_ptxTreat', peel)
+-        self.assertNotIn('call ACME_fnc_ptxInjury', peel)
+-        self.assertNotIn('call ACM_breathing_fnc_handlePneumothorax', effect)
+-        self.assertIn('ACME_NA2_resetTime', effect)
+-        self.assertIn('ACME_CS_blockedEffectEpoch', effect)
+-        self.assertIn('ACME_CS_lastSealEffectRev', effect)
++        effect=read_source(ROOT/'functions/fn_chestSealEffectLocal.sqf')
++        peel=effect.split('case "peel":',1)[1].split('case "miss":',1)[0]
++        self.assertIn('[_patient, "peel"] call ACME_fnc_ptxTreat',peel)
++        self.assertNotIn('call ACME_fnc_ptxInjury',peel)
++        self.assertNotIn('call ACM_breathing_fnc_handlePneumothorax',effect)
++        # Cross-machine clock comparison was retired; stable epochs/revisions reject old effects.
++        self.assertNotIn('ACME_NA2_resetTime',effect)
++        self.assertIn('ACME_CS_blockedEffectEpoch',effect)
++        self.assertIn('ACME_CS_lastSealEffectRev',effect)
++        tract_and_peel_probe()
+ 
+     def test_native_thoracostomy_keeps_observations_anesthesia_and_kit_semantics(self):
+         text = override("Thoracostomy_startLocal")
+@@ -83,21 +86,21 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertIn('"ACM_breathing_Thoracostomy_UsedKit", false, true', override('Thoracostomy_closeLocal'))
+ 
+     def test_sealed_surgical_tract_cannot_cover_external_chest_wounds(self):
+-        click = read_source(ROOT / 'functions/fn_thoraMouseDown.sqf')
+-        seal = click.split('if (_held == "seal") exitWith {', 1)[1].split('private _tubeMedic', 1)[0]
+-        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal', seal)
+-        self.assertIn('"chestEffect", [_patient, _medS, "thoraSeal"', seal)
+-        self.assertIn('call ACME_fnc_clinicalEpoch', seal)
+-        self.assertNotIn('They still need a tube', click)
+-        effect = read_source(ROOT / 'functions/fn_chestSealEffectLocal.sqf')
+-        branch = effect.split('case "thoraSeal":', 1)[1].split('case "peel":', 1)[0]
+-        self.assertIn('_clinicalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)', branch)
+-        self.assertIn('ACME_thora_sealed_%1', branch)
