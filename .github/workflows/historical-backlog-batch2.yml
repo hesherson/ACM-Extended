@@ -28,6 +28,34 @@ jobs:
           chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
           python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
           python -m pip freeze > /tmp/acme-backlog2-results/python-packages.txt
+      - name: Restore exact reviewed transfer bytes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          b=Path('.audit/historical-batch2')
+          fixes={
+           'part00.patch':('da688960888b9221dfaaf35dfde5ecd60dd02f8e6f159fb4640a5b125922ed37','e2ebb8e178be062fa258e8a72cee5f4a6a619f080b6e28f6fba7991ce78ce46e'),
+           'part01.patch':('9ae75951be3d9cbcad95835bae249f1daab5a0467dff9867c95b87a56c8e8b93','934a7f231dbd62534b5bbba1ddda7af22a99ba9e2f9d56535b56227a1aff19bd'),
+           'part05.patch':('da9852b4f941091b072aad2e45578aba53617528e22d2670e15dd483d037ca5f','4fc29101529cc494fcf78c47735c0a8ecce7fb0303eeedf7ba48eab61511765a')}
+          for name,(oldhash,newhash) in fixes.items():
+              data=(b/name).read_bytes();h=hashlib.sha256(data).hexdigest()
+              if h!=newhash:
+                  assert h==oldhash,(name,h)
+                  if name=='part05.patch':
+                      old=b'H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceContracts::'
+                      new=b'H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::'
+                  else:
+                      slash=bytes([92]);old=slash+b'acm_extended'+slash+b'overrides'+slash+b'fn_'
+                      new=slash*2+b'acm_extended'+slash*2+b'overrides'+slash*2+b'fn_'
+                  assert data.count(old)==1,(name,data.count(old))
+                  data=data.replace(old,new,1)
+              assert hashlib.sha256(data).hexdigest()==newhash,name
+              (b/name).write_bytes(data)
+          combined=b''.join(p.read_bytes() for p in sorted(b.glob('part??.patch')))
+          assert hashlib.sha256(combined).hexdigest()=='9b32ec89d4e40955eab8bf56af01ade3cae1767e855c59ba5c15ca8d4e81cb2f'
+          print('Exact reviewed patch restored; expected source tree remains unchanged.')
+          PY
       - name: Verify reviewed source and test results
         env:
           HEMTT: /tmp/acme-tools/hemtt
