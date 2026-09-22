@@ -27,13 +27,6 @@ private _state = _patient getVariable ["ACME_lido_seizureState", ""];
 // getMedicationCount returns [cumulativedose, effectivecount]. the second element is about 1 per fresh
 // administration and decays as it ages out, so the requirement reads in whole pushes, where 1 push controls at
 // threshold. older ACE returned a bare number, so both are handled.
-private _mida = [_patient] call ACME_fnc_benzoOnBoard;
-private _benzoBase   = missionNamespace getVariable ["ACME_lido_seizureBenzoBase", 1];
-private _benzoRefrac = missionNamespace getVariable ["ACME_lido_seizureBenzoRefractory", 0.1];
-private _seizThreshForBenzo = missionNamespace getVariable ["ACME_lido_seizureThreshold", 12];
-private _benzoNeeded = _benzoBase + (_benzoRefrac * ((_lidoLevel - _seizThreshForBenzo) max 0));
-private _benzo = _mida >= _benzoNeeded;
-
 private _inArrest = _patient getVariable ["ace_medical_inCardiacArrest", false];
 private _thresh      = missionNamespace getVariable ["ACME_lido_seizureThreshold", 12];
 private _clearThresh = missionNamespace getVariable ["ACME_lido_seizureClearThreshold", 10];
@@ -74,6 +67,9 @@ private _causePresent = (_lidoLevel >= _clearThresh) || _tbiPreHern || _sarinCau
 private _tbiChance   = missionNamespace getVariable ["ACME_tbi_seizureChancePerTick", 0.3];
 private _triggerNow  = (_lidoLevel >= _thresh) || _sarinCause || _debugCause || (_tbiPreHern && {random 1 < _tbiChance});
 
+private _seizureControl = [_patient, _lidoLevel, _tbiPreHern, _sarinCause, _debugCause] call ACME_fnc_seizureControl;
+_seizureControl params ["_seizureDrive", "_seizureSuppression", "_seizureControlled"];
+
 switch (_state) do {
     case "active": {
         // a generalized tonic-clonic seizure is apnea. the whole-body muscle contraction of the tonic phase includes the
@@ -85,7 +81,7 @@ switch (_state) do {
         // clearing, and then a forced postictal cooldown runs before any recurrence.
         [_patient, "ACME_seizure_rrDrive", 0] call ACME_fnc_setVarNet;
         [_patient, true] call ACME_fnc_seizureMotion;  // idempotent. it guards its own duplicate handler.
-        if (_benzo || {!_causePresent} || {_now >= _phaseEnd}) then {
+        if (_seizureControlled || {!_causePresent} || {_now >= _phaseEnd}) then {
             [_patient, "ACME_lido_seizureState", "postictal"] call ACME_fnc_setVarNet;
             [_patient, "ACME_lido_seizurePhaseEnd", _now + _cooldownSec] call ACME_fnc_setVarNet;
             [_patient, "ACME_seizure_rrDrive", _postRR] call ACME_fnc_setVarNet;
@@ -96,7 +92,7 @@ switch (_state) do {
         [_patient, "ACME_seizure_rrDrive", _postRR] call ACME_fnc_setVarNet;
         if (_now >= _phaseEnd) then {
             [_patient, "ACME_seizure_rrDrive", -1] call ACME_fnc_setVarNet;  // release rr back to the baseline or the TBI drive.
-            if (_causePresent && {!_benzo} && {!_inArrest}) then {
+            if (_causePresent && {!_seizureControlled} && {!_inArrest}) then {
                 // the cooldown is done and they are still toxic, so another episode runs. drop them unconscious and collapse into
                 // ragdoll first.
                 [_patient] call ACME_fnc_seizureCollapse;
@@ -111,7 +107,7 @@ switch (_state) do {
     default {
         // no seizure. trigger one if the level is in the seizure band, is not benzo-suppressed, and they are not already
         // arrested.
-        if (_triggerNow && {!_benzo} && {!_inArrest}) then {
+        if (_triggerNow && {!_seizureControlled} && {!_inArrest}) then {
             // a generalized seizure causes a loss of consciousness, so drop them unconscious and collapse into ragdoll
             // first.
             [_patient] call ACME_fnc_seizureCollapse;

@@ -3419,6 +3419,21 @@
     true
   ],
   [
+    "ACME_seizure_drive",
+    "",
+    true
+  ],
+  [
+    "ACME_seizure_suppression",
+    "",
+    true
+  ],
+  [
+    "ACME_seizure_suppressed",
+    "",
+    true
+  ],
+  [
     "ACME_seizure_settleDur",
     "",
     true

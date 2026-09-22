@@ -345,6 +345,17 @@ _right pushBack (["Ket", _ket toFixed 2, _cLabel, "Prop", _prop toFixed 2, _cLab
 _right pushBack (["Mid", _mid toFixed 2, _cLabel, "Fent", _fent toFixed 2, _cLabel] call _pair);
 _right pushBack (["Paral", [_par] call _yn, if (_par) then {_cWarn} else {_cMute}, "Aware", [_awakePar] call _yn, if (_awakePar) then {_cCrit} else {_cGood}] call _pair);
 
+// Cerebral seizure state is independent of motor expression under neuromuscular blockade.
+private _szState = _patient getVariable ["ACME_lido_seizureState", ""];
+private _szDrive = _patient getVariable ["ACME_seizure_drive", 0];
+private _szSupp = _patient getVariable ["ACME_seizure_suppression", 0];
+private _szControlled = _patient getVariable ["ACME_seizure_suppressed", false];
+private _szMasked = _par && {_szState == "active"};
+private _szMotor = if (_szState != "active") then {"none"} else {if (_szMasked) then {"MASKED"} else {"VISIBLE"}};
+_right pushBack (["SEIZURE CONTROL"] call _sect);
+_right pushBack (["Seiz", if (_szState == "") then {"none"} else {_szState}, if (_szState == "active") then {_cCrit} else {if (_szState == "postictal") then {_cWarn} else {_cMute}}, "Motor", _szMotor, if (_szMasked) then {_cWarn} else {if (_szState == "active") then {_cCrit} else {_cMute}}] call _pair);
+_right pushBack (["Drive", _szDrive toFixed 2, _cLabel, "Suppress", _szSupp toFixed 2, if (_szControlled) then {_cGood} else {if (_szSupp > 0) then {_cWarn} else {_cMute}}] call _pair);
+
 // Fluids / infusions: physical hung bags, with medication contents folded into the same line.
 private _medEntries = _patient getVariable ["ACME_infusion_BagMedications", []];
 private _ivMap = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];

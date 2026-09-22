@@ -7,6 +7,7 @@ if (_session isEqualTo []
     || {!((_patient getVariable ["ACME_seizure_motionSession",[]]) isEqualTo _session)}
     || {(_session param [0,-1]) != ([_patient] call ACME_fnc_clinicalEpoch)}
     || {!(_patient getVariable ["ACME_seizure_motionActive",false])}
+    || {_patient getVariable ["ACME_roc_paralyzed", false]}
     || {! (missionNamespace getVariable ["ACME_seizure_animEnabled",true])}) exitWith {};
 if (CBA_missionTime < (_patient getVariable ["ACME_seizure_motionReadyAt",0])) exitWith {};
 

@@ -235,6 +235,7 @@ if (alive _patient) then {
     "ACME_rhythm_epiDripEarliest", "ACME_rhythm_magTerminatedLogged", "ACME_rhythm_magSuppressUntil",
     "ACME_rhythm_magLevel", "ACME_rhythm_lidoLastTherapeutic", "ACME_rhythm_lidoEffectiveness", "ACME_lido_serumLevel",
     "ACME_lido_seizureState", "ACME_lido_seizurePhaseEnd", "ACME_seizure_rrDrive",
+    "ACME_seizure_drive", "ACME_seizure_suppression", "ACME_seizure_suppressed",
     "ACME_sarinSeizureCause", "ACME_debugSeizureUntil",
     "ACME_seizure_motionActive", "ACME_seizure_motionGestureEH", "ACME_seizure_motionCurrentGesture",
     "ACME_seizure_motionRetryPending", "ACME_seizure_motionAdvancePending",

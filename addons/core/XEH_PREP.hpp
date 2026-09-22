@@ -4,6 +4,8 @@ PREP(addVehicleUnloadCarryPatientActions);
 PREP(beginCarryAssist);
 PREP(beginContinuousAction);
 PREP(bvmActive);
+PREP(canWake);
+PREP(requestWake);
 PREP(cancelCarryingPrompt);
 PREP(canCheckDogtag);
 PREP(checkIncompatibleAddons);

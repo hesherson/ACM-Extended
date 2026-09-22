@@ -11,6 +11,10 @@ if (_on && {!isPlayer _unit}) exitWith {};
 // the debug state actually exercises the same visual stack the player sees in normal use.
 if (_on && {!_manual} && {!(missionNamespace getVariable ["ACME_sys_obtunded", false])}) exitWith {};
 
+// Obtundation is an awake state. Never bypass the central wake gate.
+if (_on && {_unit getVariable ["ACE_isUnconscious", false]}
+    && {!([_unit, false] call ACM_core_fnc_canWake)}) exitWith {};
+
 private _curOn  = _unit getVariable ["ACME_obtunded", false];
 private _curPos = _unit getVariable ["ACME_obtunded_posture", ""];
 private _newPos = if (_on) then {"free"} else {""};
