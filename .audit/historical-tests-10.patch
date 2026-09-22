@@ -1,0 +1,252 @@
++++ b/addons/acm_extended/tools/test_b77_branding_authors.py
+@@ -1,5 +1,6 @@
+ from pathlib import Path
+ import re, hashlib, sys
++import pytest
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ CFG = (ROOT / 'config.cpp').read_text(encoding='utf-8')
+@@ -83,11 +84,16 @@ para = child_body(mag, 'ACM_Paracetamol') or ''
+ check('native ACM paracetamol author preserved', 'author = "Blue";' in para)
+ check('native ACM paracetamol no ACME dlc', 'dlc = "ACM_Extended";' not in para)
+ 
+-failed=[c for c in checks if not c[1]]
+-for name,ok,detail in checks:
+-    if not ok:
+-        print('FAIL:',name,detail)
+-if failed:
++@pytest.mark.parametrize("name,ok,detail", checks, ids=[row[0] for row in checks])
++def test_historical_branding_contract(name, ok, detail):
++    # Historical checks are intentionally retained; old branding/version failures
++    # are newly visible debt, not a request to rebrand current game items.
++    assert ok, f"{name}: {detail}"
++
++if __name__ == "__main__":
++    failed = [c for c in checks if not c[1]]
++    for name, ok, detail in checks:
++        if not ok:
++            print('FAIL:', name, detail)
+     print(f'{len(checks)-len(failed)}/{len(checks)} checks passed')
+-    sys.exit(1)
+-print(f'{len(checks)}/{len(checks)} checks passed')
++    sys.exit(bool(failed))
+diff --git a/addons/acm_extended/tools/test_b80_v110_head_menu.py b/addons/acm_extended/tools/test_b80_v110_head_menu.py
+index c6a82c0a5a04a4f5910e2f56fb9b32161c2aee76..f677f95de8a1ad2d1522c26b3763f6644d068226 100644
+--- a/addons/acm_extended/tools/test_b80_v110_head_menu.py
++++ b/addons/acm_extended/tools/test_b80_v110_head_menu.py
+@@ -1,10 +1,11 @@
+ from pathlib import Path
++import pytest
++from historical_source import read_source
+ ROOT=Path(__file__).resolve().parents[1]
+-def txt(p): return (ROOT/p).read_text(encoding='utf-8',errors='ignore')
++def txt(p): return read_source(ROOT/p, encoding='utf-8', errors='strict')
+ checks=[]
+ def check(name, ok):
+     checks.append((name,bool(ok)))
+-    if not ok: raise AssertionError(name)
+ 
+ cfg=txt('config.cpp'); post=txt('functions/fn_postInit.sqf'); dbg=txt('functions/fn_debugMenu.sqf')
+ seq=txt('functions/fn_headElevMedicSeq.sqf'); tilt=txt('functions/fn_headElevApplyTilt.sqf')
+@@ -25,4 +26,13 @@ check('patient lower uses wrapper', '"ACME_HeadElevPatientRelease"' in stop)
+ check('patient suspend uses wrapper', '"ACME_HeadElevPatientRelease"' in susp)
+ check('alternate row color now white', 'ACME_menuRowColorAlternate = [1, 1, 1, 1];' in post)
+ check('renderer does not alternate ordinary rows', "select (_actionIndex mod 2)" not in menu and "ACME_menuRowColorDefault" in menu)
+-print(f'{len(checks)}/{len(checks)} B80 focused contracts passed')
++@pytest.mark.parametrize("name,ok", checks, ids=[name for name, _ in checks])
++def test_historical_contract(name, ok):
++    # Preserve the original checks as separate visible outcomes, including old IDs.
++    assert ok, name
++
++if __name__ == "__main__":
++    failed = [name for name, ok in checks if not ok]
++    if failed:
++        raise SystemExit("Failed historical B80 checks: " + ", ".join(failed))
++    print(f"{len(checks)}/{len(checks)} B80 contracts passed")
+diff --git a/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py b/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py
+index 658788dbda12ffb0b074f2109d6eeddffc80b940..4cdbe23634f71f1419a982f76cb98fe28347efba 100644
+--- a/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py
++++ b/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py
+@@ -1,31 +1,48 @@
++"""ACE interaction initialization contracts. Version and syntax checks collect normally.
++
++The subject moved out of postInit; no broad diagnostic ban is applied to unrelated
++startup modules. Structural checks are not a replacement for HEMTT compilation.
++"""
+ from pathlib import Path
+-import re
++from historical_source import read_source, assert_release_consistent
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-POST = (ROOT / "functions/fn_postInit.sqf").read_text(encoding="utf-8")
+-
+-# Public release is v1.2.0-r0; internal batch advances.
+-assert 'ACME_buildBatch = "B92";' in POST
+-assert 'ACME_infusion_version = "1.2.0-r0"' in POST
+-
+-# Regression: this sentence accidentally lost // and made the entire postInit fail to compile,
+-# which removed all ACE interaction actions in game.
+-assert '\n the flashlight filter flag must never strand ACE.' not in POST
+-assert '// the flashlight filter flag must never strand ACE.' in POST
+-
+-# The ACE notOnMap extension and close/watchdog cleanup must remain intact.
+-assert '["notOnMap", {' in POST
+-assert 'call ace_common_fnc_addCanInteractWithCondition;' in POST
+-assert '["ace_interactMenuClosed", {' in POST
+-assert 'missionNamespace setVariable ["ACME_flashlightMenuActive", false];' in POST
+-assert 'call CBA_fnc_addPerFrameHandler;' in POST
+-
+-# The retired diagnostics should stay retired.
+-for forbidden in ('diag_log', 'systemChat', 'hintSilent', 'ACME_flashlight_diag'):
+-    assert forbidden not in POST, forbidden
+-
+-# Cheap structural guard for this critical file: ignore // comments and quoted strings, then
+-# verify delimiters remain balanced. This catches the common accidental edit class that caused B90.
++
++
++def test_current_release_is_consistent():
++    assert_release_consistent()
++
++
++def interaction_source():
++    source = ROOT / "functions/fn_initMinigameInteractionRuntime.sqf"
++    direct = source.read_text(encoding="utf-8-sig")
++    called = read_source(ROOT / "functions/fn_postInit.sqf")
++    assert "called module initMinigameInteractionRuntime" in called
++    assert direct in called
++    return direct
++
++
++def test_flashlight_guard_is_a_comment_not_executable_text():
++    text = interaction_source()
++    assert '\n the flashlight filter flag must never strand ACE.' not in text
++    assert '// the flashlight filter flag must never strand ACE.' in text
++
++
++def test_interaction_extension_close_and_watchdog_remain():
++    text = interaction_source()
++    assert '["notOnMap", {' in text
++    assert 'call ace_common_fnc_addCanInteractWithCondition;' in text
++    assert '["ace_interactMenuClosed", {' in text
++    assert 'missionNamespace setVariable ["ACME_flashlightMenuActive", false];' in text
++    assert 'call CBA_fnc_addPerFrameHandler;' in text
++
++
++def test_retired_interaction_diagnostics_stay_retired():
++    text = interaction_source()
++    for forbidden in ('diag_log', 'systemChat', 'hintSilent', 'ACME_flashlight_diag'):
++        assert forbidden not in text, forbidden
++
++
+ def strip_sqf(s: str) -> str:
+     out=[]; i=0; in_str=False
+     while i < len(s):
+@@ -50,13 +67,13 @@ def strip_sqf(s: str) -> str:
+     assert not in_str, 'unterminated string'
+     return ''.join(out)
+ 
+-clean = strip_sqf(POST)
+-pairs={')':'(',']':'[','}':'{'}; stack=[]
+-for ch in clean:
+-    if ch in '([{': stack.append(ch)
+-    elif ch in ')]}':
+-        assert stack and stack[-1] == pairs[ch], (ch, stack[-5:])
+-        stack.pop()
+-assert not stack, stack[-10:]
+ 
+-print('B92 ACE interaction/postInit regression checks: PASS')
++def test_interaction_module_delimiters_are_balanced():
++    clean = strip_sqf(interaction_source())
++    pairs={')':'(',']':'[','}':'{'}; stack=[]
++    for ch in clean:
++        if ch in '([{': stack.append(ch)
++        elif ch in ')]}':
++            assert stack and stack[-1] == pairs[ch], (ch, stack[-5:])
++            stack.pop()
++    assert not stack, stack[-10:]
+diff --git a/addons/acm_extended/tools/test_historical_source.py b/addons/acm_extended/tools/test_historical_source.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..d7c3ccebce4b88c3db4dfa44cddbab16a9a644d5
+--- /dev/null
++++ b/addons/acm_extended/tools/test_historical_source.py
+@@ -0,0 +1,140 @@
++"""Fail-closed checks for the historical-test infrastructure, not game behavior."""
++from pathlib import Path
++import pytest
++import historical_source as source
++
++
++def put(root, rel, text):
++    path = root / rel
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(text)
++    return path
++
++
++@pytest.mark.parametrize("old,new", sorted(source.ALIASES.items()))
++def test_explicit_alias_reads_exact_native_source(old, new):
++    assert source.read_source(source.ROOT / old) == (source.ROOT / new).read_text(encoding="utf-8-sig")
++
++
++def test_no_fuzzy_fallback_or_outside_root_read(tmp_path, monkeypatch):
++    monkeypatch.setattr(source, "ROOT", tmp_path)
++    put(tmp_path, "elsewhere/fnc_unknown.sqf", "not a fallback")
++    with pytest.raises(FileNotFoundError):
++        source.read_source(tmp_path / "addons/acm_extended/overrides/fn_unknown.sqf")
++    with pytest.raises(ValueError):
++        source.read_source(tmp_path.parent / "outside.sqf")
++
++
++def test_static_bundle_follows_calls_not_strings_comments_or_unrelated_files(tmp_path, monkeypatch):
++    monkeypatch.setattr(source, "ROOT", tmp_path)
++    top = put(tmp_path, "functions/fn_postInit.sqf", '\n'.join([
++        '// call ACME_fnc_initComment;',
++        'private _example = "call ACME_fnc_initQuoted;";',
++        'call ACME_fnc_initOne;',
++        'call ACME_fnc_initOne;',
++        'call ACME_fnc_nonStartup;',
++    ]))
++    put(tmp_path, "functions/fn_initOne.sqf", 'firstMarker; call ACME_fnc_registerTwo;')
++    put(tmp_path, "functions/fn_registerTwo.sqf", 'secondMarker; call ACME_fnc_initOne;')
++    put(tmp_path, "functions/fn_initUncalled.sqf", 'notReachableMarker;')
++    bundled = source.read_source(top)
++    assert bundled.count('firstMarker') == 1
++    assert bundled.count('secondMarker') == 1
++    assert 'notReachableMarker' not in bundled
++    assert source.read_source(tmp_path / "functions/fn_initOne.sqf") == 'firstMarker; call ACME_fnc_registerTwo;'
++
++
++def test_missing_static_called_module_fails_closed(tmp_path, monkeypatch):
++    monkeypatch.setattr(source, "ROOT", tmp_path)
++    top=put(tmp_path, "fn_postInit.sqf", 'call ACME_fnc_initMissing;')
++    with pytest.raises(FileNotFoundError, match="called module missing"):
++        source.read_source(top)
++
++
++def test_debug_bundle_and_startup_bundle_have_separate_expansion_rules(tmp_path, monkeypatch):
++    monkeypatch.setattr(source, "ROOT", tmp_path)
++    put(tmp_path, "fn_debugMenuClinical.sqf", 'clinicalMarker;')
++    debug=put(tmp_path, "fn_debugMenu.sqf", 'call ACME_fnc_debugMenuClinical;')
++    startup=put(tmp_path, "fn_postInit.sqf", 'call ACME_fnc_debugMenuClinical;')
++    assert 'clinicalMarker' in source.read_source(debug)
++    assert 'clinicalMarker' not in source.read_source(startup)
++
++
++def test_multiline_assignment_extraction_ignores_quoted_and_comment_examples():
++    text='// private _answer = 100;\nprivate _quote = "private _answer = 200;";\nprivate _answer =\n    (_value + 1) max (if (_flag) then {2} else {3});'
++    assert source.assignment_expression(text, '_answer') == '(_value + 1) max (if (_flag) then {2} else {3})'
++
++
++@pytest.mark.parametrize("text", [
++    'private _other = 1;',
++    'private _value = 1; private _value = 2;',
++    'private _value = (1;',
++    'private _value = 1',
++])
++def test_ambiguous_or_invalid_assignment_is_not_accepted(text):
++    with pytest.raises(AssertionError):
++        source.assignment_expression(text, '_value')
++
++
++def test_command_array_does_not_depend_on_horizontal_expression():
++    text='// setMousePosition [0,0];\nprivate _q="setMousePosition [1,1];"; setMousePosition [(_mouse select 0), (_rawY + (_height / 2))];'
