@@ -1,0 +1,220 @@
++      "original_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_bradycardia_still_releases_atrial_rhythm",
++      "previous_status": "DIAGNOSED_COLLECTION_OR_SETUP_BLOCKER",
++      "candidate_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_bradycardia_releases_custom_but_mature_torsades_keeps_morphology",
++      "phase": "setup",
++      "report_type": "TestReport",
++      "subtest_context": "",
++      "result": "COLLECTION_OR_SETUP_UNBLOCKED",
++      "module_outcomes": {
++        "passed": 5
++      },
++      "reviewed_oracle_change": "Execute current bradycardia/mature-torsades distinction."
++    },
++    {
++      "id": "H073",
++      "original_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_native_rhythm_and_arrest_override_stale_custom_state",
++      "previous_status": "DIAGNOSED_COLLECTION_OR_SETUP_BLOCKER",
++      "candidate_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_native_rhythm_and_arrest_override_stale_custom_state",
++      "phase": "setup",
++      "report_type": "TestReport",
++      "subtest_context": "",
++      "result": "COLLECTION_OR_SETUP_UNBLOCKED",
++      "module_outcomes": {
++        "passed": 5
++      }
++    },
++    {
++      "id": "H074",
++      "original_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_only_rhythm_generated_discomfort_loses_hr_feedback",
++      "previous_status": "DIAGNOSED_COLLECTION_OR_SETUP_BLOCKER",
++      "candidate_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_only_rhythm_generated_discomfort_loses_hr_feedback",
++      "phase": "setup",
++      "report_type": "TestReport",
++      "subtest_context": "",
++      "result": "COLLECTION_OR_SETUP_UNBLOCKED",
++      "module_outcomes": {
++        "passed": 5
++      }
++    },
++    {
++      "id": "H075",
++      "original_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_watchdog_event_remains_outside_conditional_vt_write",
++      "previous_status": "DIAGNOSED_COLLECTION_OR_SETUP_BLOCKER",
++      "candidate_nodeid": "addons/acm_extended/tools/test_b29_svt_contract.py::SVTSourceContract::test_native_watchdog_remains_authoritative_with_grace",
++      "phase": "setup",
++      "report_type": "TestReport",
++      "subtest_context": "",
++      "result": "COLLECTION_OR_SETUP_UNBLOCKED",
++      "module_outcomes": {
++        "passed": 5
++      },
++      "reviewed_oracle_change": "Execute native fatal-rate watchdog and actual grace; no ACME emergency fallback introduced."
++    }
++  ],
++  "reviewed_oracle_changes": [
++    {
++      "file": "test_b17_release.py",
++      "old": "test_version_pair",
++      "new": "test_version_pair",
++      "reason": "Replace retired exact release IDs with header/public/runtime/fallback consistency; no runtime version changed."
++    },
++    {
++      "file": "test_b18_ventway.py",
++      "old": "test_version_pair",
++      "new": "test_version_pair",
++      "reason": "Replace retired exact release IDs with header/public/runtime/fallback consistency; no runtime version changed."
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_version_pair",
++      "new": "test_version_pair",
++      "reason": "Replace retired exact release IDs with header/public/runtime/fallback consistency; no runtime version changed."
++    },
++    {
++      "file": "test_b21_rhythm_sync.py",
++      "old": "test_version",
++      "new": "test_version",
++      "reason": "Replace retired exact release IDs with header/public/runtime/fallback consistency; no runtime version changed."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_version_pair",
++      "new": "test_version_pair",
++      "reason": "Replace retired exact release IDs with header/public/runtime/fallback consistency; no runtime version changed."
++    },
++    {
++      "file": "test_b17_release.py",
++      "old": "test_custom_rhythm_does_not_override_cpr_postshock",
++      "new": "test_custom_rhythm_does_not_override_cpr_postshock",
++      "reason": "Retired secondary switch timer replaced by shared AED beat clock; native visual precedence unchanged."
++    },
++    {
++      "file": "test_b17_release.py",
++      "old": "test_procedure_no_forced_unconsciousness",
++      "new": "test_placement_and_incision_do_not_force_unconsciousness",
++      "reason": "B115 distinguishes placement/medication pain from intentional fluid syncope; execute all three without changing physiology."
++    },
++    {
++      "file": "test_b18_ventway.py",
++      "old": "test_rocuronium_cannot_bank_arrest_stress",
++      "new": "test_rocuronium_cannot_bank_arrest_stress",
++      "reason": "Acute stress reset moved into rocStressStateCommit; execute callback and writer, including preservation of historical awareness."
++    },
++    {
++      "file": "test_b21_rhythm_sync.py",
++      "old": "test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
++      "new": "test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
++      "reason": "Native critical-vitals recovery replaced the old ACME VT latch; execute genuine VT/arrest/shock/treatment cases."
++    },
++    {
++      "file": "test_b35_lifecycle.py",
++      "old": "test_instructor_clear_retires_model_without_touching_equipment",
++      "new": "test_instructor_clear_retires_model_without_touching_equipment",
++      "reason": "Native state writes were moved behind the breathing writer, not removed."
++    },
++    {
++      "file": "test_b35_treatments.py",
++      "old": "test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
++      "new": "test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
++      "reason": "Native PREP and owner-event registration superseded Extended runtime override entries."
++    },
++    {
++      "file": "test_b35_treatments.py",
++      "old": "test_seal_removal_cannot_become_a_new_injury",
++      "new": "test_seal_removal_cannot_become_a_new_injury",
++      "reason": "Replaced remote-time comparison with current epoch/revision contract; execute stale, duplicate and fresh peel."
++    },
++    {
++      "file": "test_b35_treatments.py",
++      "old": "test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
++      "new": "test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
++      "reason": "Track per-side authoritative writer; execute resulting closure without hiding external wounds or sealing an installed tube."
++    },
++    {
++      "file": "test_b34_procedure_access.py",
++      "old": "test_shared_surgical_kit_is_optional_reusable_and_disposable_is_preferred",
++      "new": "test_shared_surgical_kit_is_optional_reusable_and_disposable_is_preferred",
++      "reason": "Preserve consumption/permission ordering assertions while following per-side thoraSideStateCommit instead of old inline writes. Executable probes added separately."
++    },
++    {
++      "file": "test_b34_procedure_access.py",
++      "old": "test_lost_kit_or_permission_blocks_inflight_surgical_commit",
++      "new": "test_lost_kit_or_permission_blocks_inflight_surgical_commit",
++      "reason": "Preserve consumption/permission ordering assertions while following per-side thoraSideStateCommit instead of old inline writes. Executable probes added separately."
++    },
++    {
++      "file": "test_b34_procedure_access.py",
++      "old": "test_tube_gate_and_verified_consumption_precede_patient_projection",
++      "new": "test_tube_gate_and_verified_consumption_precede_patient_projection",
++      "reason": "Preserve consumption/permission ordering assertions while following per-side thoraSideStateCommit instead of old inline writes. Executable probes added separately."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_junctional_state_writers_still_broadcast",
++      "new": "test_junctional_state_writers_still_broadcast",
++      "reason": "Durable pack/wrap mutations moved to patient-owner dispatch. Track the request and actual public writer; do not restore provider-local writes."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_cpr_action_no_longer_blocked_by_bvm",
++      "new": "test_cpr_action_no_longer_blocked_by_bvm",
++      "reason": "The authoritative CPR action now lives in native circulation configuration."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_begin_cpr_override_registered",
++      "new": "test_begin_cpr_override_registered",
++      "reason": "Native PREP replaces deleted runtime override registration; CPR reservation gate stays independent of BVM."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_bvm_can_run_during_cpr",
++      "new": "test_bvm_can_run_during_cpr",
++      "reason": "Execute actual BVM/controller startup and breath delivery with active CPR, rather than require an old comment."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_one_provider_per_role_remains",
++      "new": "test_one_provider_per_role_remains",
++      "reason": "Execute actual BVM/CPR reservation helpers; paused roles remain reserved and unavailable providers can be recovered."
++    },
++    {
++      "file": "test_b27_junctional_cpr_bvm.py",
++      "old": "test_cross_provider_role_vars_still_networked",
++      "new": "test_cross_provider_role_vars_still_networked",
++      "reason": "Native macros and accepted-session control code retain public provider writes; old literal locations were obsolete."
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_exact_vial_ledger_registered",
++      "new": "test_exact_vial_ledger_registered",
++      "reason": "Check actual native function registration, not the removed Extended override table."
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_compound_save_keeps_original_save_label_and_reopens_draw_dialog",
++      "new": "test_compound_save_keeps_label_and_resets_in_place",
++      "reason": "User-approved in-place Save must not regress to delayed teardown/reopen. Execute commit success/failure ordering."
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_pea_morphology_distinct_from_sinus",
++      "new": "test_pea_subtype_and_mechanical_pressure_keep_native_authority",
++      "reason": "Narrow PEA intentionally shares sinus morphology, while native rhythm still owns pulselessness. Keep broad subtype conditional."
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_ace_timer_events_drive_artifact",
++      "new": "test_ace_timer_events_drive_artifact",
++      "reason": "Keep actual treatment lease start/stop and current invasive-entry calls; do not reintroduce a side effect in deferred chest UI admission."
++    },
++    {
++      "file": "test_b19_vials_pea_artifact.py",
++      "old": "test_monitor_generators_apply_artifact",
++      "new": "test_monitor_generators_apply_artifact",
++      "reason": "Kelly monitor now consumes the same native/artifact-composited buffers; require no duplicate application in the panel."
++    },
++    {
++      "file": "test_b29_svt_contract.py",
++      "old": "test_all_supported_atrial_rhythms_keep_identity_above_220",
++      "new": "test_custom_rhythms_release_at_native_rate_boundaries",
