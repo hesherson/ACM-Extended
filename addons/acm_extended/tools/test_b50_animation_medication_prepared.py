@@ -1,10 +1,11 @@
+from historical_source import read_source
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
 def txt(rel):
-    return (ROOT / rel).read_text(encoding='utf-8-sig', errors='ignore')
+    return read_source(ROOT / rel, encoding='utf-8-sig', errors='ignore')
 
 def test_version_batch():
     assert 'version = "1.0.100-r14";' in txt('config.cpp')

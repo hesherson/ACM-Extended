@@ -1,9 +1,10 @@
+from historical_source import read_source
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
 def text(rel):
-    return (ROOT / rel).read_text(errors="ignore")
+    return read_source(ROOT / rel, errors="ignore")
 
 
 def test_b45_version_stamp():

@@ -1,31 +1,48 @@
+"""ACE interaction initialization contracts. Version and syntax checks collect normally.
+
+The subject moved out of postInit; no broad diagnostic ban is applied to unrelated
+startup modules. Structural checks are not a replacement for HEMTT compilation.
+"""
 from pathlib import Path
-import re
+from historical_source import read_source, assert_release_consistent
 
 ROOT = Path(__file__).resolve().parents[1]
-POST = (ROOT / "functions/fn_postInit.sqf").read_text(encoding="utf-8")
 
-# Public release is v1.2.0-r0; internal batch advances.
-assert 'ACME_buildBatch = "B92";' in POST
-assert 'ACME_infusion_version = "1.2.0-r0"' in POST
 
-# Regression: this sentence accidentally lost // and made the entire postInit fail to compile,
-# which removed all ACE interaction actions in game.
-assert '\n the flashlight filter flag must never strand ACE.' not in POST
-assert '// the flashlight filter flag must never strand ACE.' in POST
+def test_current_release_is_consistent():
+    assert_release_consistent()
 
-# The ACE notOnMap extension and close/watchdog cleanup must remain intact.
-assert '["notOnMap", {' in POST
-assert 'call ace_common_fnc_addCanInteractWithCondition;' in POST
-assert '["ace_interactMenuClosed", {' in POST
-assert 'missionNamespace setVariable ["ACME_flashlightMenuActive", false];' in POST
-assert 'call CBA_fnc_addPerFrameHandler;' in POST
 
-# The retired diagnostics should stay retired.
-for forbidden in ('diag_log', 'systemChat', 'hintSilent', 'ACME_flashlight_diag'):
-    assert forbidden not in POST, forbidden
+def interaction_source():
+    source = ROOT / "functions/fn_initMinigameInteractionRuntime.sqf"
+    direct = source.read_text(encoding="utf-8-sig")
+    called = read_source(ROOT / "functions/fn_postInit.sqf")
+    assert "called module initMinigameInteractionRuntime" in called
+    assert direct in called
+    return direct
 
-# Cheap structural guard for this critical file: ignore // comments and quoted strings, then
-# verify delimiters remain balanced. This catches the common accidental edit class that caused B90.
+
+def test_flashlight_guard_is_a_comment_not_executable_text():
+    text = interaction_source()
+    assert '\n the flashlight filter flag must never strand ACE.' not in text
+    assert '// the flashlight filter flag must never strand ACE.' in text
+
+
+def test_interaction_extension_close_and_watchdog_remain():
+    text = interaction_source()
+    assert '["notOnMap", {' in text
+    assert 'call ace_common_fnc_addCanInteractWithCondition;' in text
+    assert '["ace_interactMenuClosed", {' in text
+    assert 'missionNamespace setVariable ["ACME_flashlightMenuActive", false];' in text
+    assert 'call CBA_fnc_addPerFrameHandler;' in text
+
+
+def test_retired_interaction_diagnostics_stay_retired():
+    text = interaction_source()
+    for forbidden in ('diag_log', 'systemChat', 'hintSilent', 'ACME_flashlight_diag'):
+        assert forbidden not in text, forbidden
+
+
 def strip_sqf(s: str) -> str:
     out=[]; i=0; in_str=False
     while i < len(s):
@@ -50,13 +67,13 @@ def strip_sqf(s: str) -> str:
     assert not in_str, 'unterminated string'
     return ''.join(out)
 
-clean = strip_sqf(POST)
-pairs={')':'(',']':'[','}':'{'}; stack=[]
-for ch in clean:
-    if ch in '([{': stack.append(ch)
-    elif ch in ')]}':
-        assert stack and stack[-1] == pairs[ch], (ch, stack[-5:])
-        stack.pop()
-assert not stack, stack[-10:]
 
-print('B92 ACE interaction/postInit regression checks: PASS')
+def test_interaction_module_delimiters_are_balanced():
+    clean = strip_sqf(interaction_source())
+    pairs={')':'(',']':'[','}':'{'}; stack=[]
+    for ch in clean:
+        if ch in '([{': stack.append(ch)
+        elif ch in ')]}':
+            assert stack and stack[-1] == pairs[ch], (ch, stack[-5:])
+            stack.pop()
+    assert not stack, stack[-10:]

@@ -1,8 +1,9 @@
+from historical_source import read_source
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-def txt(rel): return (ROOT / rel).read_text(errors='ignore')
+def txt(rel): return read_source(ROOT / rel, errors='ignore')
 
 def block(src, name):
     m = re.search(r'class\s+' + re.escape(name) + r'\b[^\{]*\{', src)

@@ -1,13 +1,14 @@
 """B32 offline source contracts + independent math/compartment reference checks.
 These do not execute SQF, render Arma, or prove clinical accuracy.
 """
+from historical_source import read_source
 from pathlib import Path
 import math
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 def source(name):
-    return (ROOT / 'functions' / ('fn_' + name + '.sqf')).read_text(encoding='utf-8')
+    return read_source(ROOT / 'functions' / ('fn_' + name + '.sqf'), encoding='utf-8')
 
 def response(ket=0, prop=0, mid=0, factor=1, stimulus=1,
              alive=True, arrest=False, paralyzed=False, native=True, owned=False):
@@ -161,7 +162,7 @@ class SourceContracts(unittest.TestCase):
         self.assertNotIn('setVariable ["ACME_laryngo_gagMisses"', text)
 
     def test_native_vomit_worker_pauses_before_random_sound_and_debit(self):
-        text = (ROOT / 'overrides/fn_handleAirwayObstruction_Vomit.sqf').read_text()
+        text = read_source(ROOT / 'overrides/fn_handleAirwayObstruction_Vomit.sqf')
         guard = text.index('if (_patient getVariable ["ace_medical_inCardiacArrest", false]')
         self.assertIn('ACME_roc_paralyzed', text)
         for operation in ('private _medicationEffect', 'if (random 1 <', 'playSound3D', 'setVariable ["ACM_airway_AirwayObstructionVomit_Count",'):

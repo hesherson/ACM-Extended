@@ -1,9 +1,10 @@
 """B38 mixture regression models and source contracts, without an Arma/SQF runtime.
 
-Uses the supplied native config when available; packaged tests fall back to the
-retained medication inventory. Pair coverage checks freedom and mass, not clinical safety.
+Uses the native and Extended configuration shipped in this repository.
+The inventory is generated in memory; no audit fixture or source file is written. Pair coverage checks freedom and mass, not clinical safety.
 """
 from pathlib import Path
+from historical_source import read_source
 import itertools
 import json
 import math
@@ -11,12 +12,12 @@ import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE = ROOT.parents[1] / 'acm/ACM-main/ACM-main/addons/core/ACM_Medication.hpp'
-if NATIVE.exists():
-    from medication_inventory import inventory
-    MATRIX = inventory(NATIVE, ROOT / 'config.cpp')
-else:
-    MATRIX = json.loads((ROOT / 'audit/MEDICATION_MATRIX.json').read_text())
+# This repository ships native ACM alongside Extended. Build the inventory in
+# memory from those exact sources; do not depend on a generated audit artifact.
+# The existing reader preserves unexpanded macros as strings, not clinical values.
+from medication_inventory import inventory
+NATIVE = ROOT.parent / 'core/ACM_Medication.hpp'
+MATRIX = inventory(NATIVE, ROOT / 'config.cpp')
 MEDS = {row['classname']: row for row in MATRIX['medication_classes']}
 SOURCES = {row['source']: row for row in MATRIX['concentrations']}
 INJECTABLE = {'ACM_ROUTE_IM', 'ACM_ROUTE_IV', 0, 1}
@@ -167,11 +168,11 @@ class B38Mixtures(unittest.TestCase):
         route = src('medicationRouteAllowed')
         self.assertIn('["_preparedMixture", false]', route)
         self.assertLess(route.index('if (_preparedMixture isEqualTo true)'), route.index('"Phentolamine_IV"'))
-        med = (ROOT / 'overrides/fn_medicationLocal.sqf').read_text()
+        med = read_source(ROOT / 'overrides/fn_medicationLocal.sqf')
         self.assertIn('&& {!_iv} && {!_preparedMixture}) exitWith', med)
         self.assertIn('_administrationType = if (_iv) then {ACM_ROUTE_IV} else {ACM_ROUTE_IM}', med)
         self.assertIn('_occludedMedications pushBack [_partIndex, _classname, _dose, _iv, _delivery]', med)
-        tq = (ROOT / 'overrides/fn_tourniquetRemove.sqf').read_text()
+        tq = read_source(ROOT / 'overrides/fn_tourniquetRemove.sqf')
         self.assertIn('_dose,_iv,false,_delivery', tq)
 
     def test_flush_state_roundtrip_accepts_old_and_new_rows(self):

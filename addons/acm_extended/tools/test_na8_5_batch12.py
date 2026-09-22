@@ -1,6 +1,7 @@
 """B12 source contracts and independent game-math reference models.
 These are Python tests, NOT compilation/execution of SQF or Arma multiplayer tests.
 """
+from historical_source import read_source
 from pathlib import Path
 import math
 import re
@@ -8,7 +9,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-def read(p): return (ROOT/p).read_text(encoding='utf-8')
+def read(p): return read_source(ROOT/p, encoding='utf-8')
 def src(n): return read('functions/fn_'+n+'.sqf')
 def code(s): return re.sub(r'/\*.*?\*/|//[^\n]*', '', s, flags=re.S)
 def envelope(t, initial=1, live=1):

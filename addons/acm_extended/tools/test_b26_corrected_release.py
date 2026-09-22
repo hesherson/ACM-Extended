@@ -1,7 +1,8 @@
+from historical_source import read_source
 from pathlib import Path
 import unittest
 ROOT=Path(__file__).resolve().parents[1]
-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
+def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
 
 class B26Corrected(unittest.TestCase):
     def test_version_pair(self):

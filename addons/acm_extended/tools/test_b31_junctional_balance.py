@@ -1,4 +1,5 @@
 """Offline balance/state contracts; these do not execute Arma animation or physiology."""
+from historical_source import read_source
 from pathlib import Path
 import math
 import re
@@ -9,7 +10,7 @@ PARTS = ('leftarm', 'rightarm', 'leftleg', 'rightleg')
 
 
 def source(name):
-    return (ROOT / 'functions' / f'fn_{name}.sqf').read_text(encoding='utf-8-sig')
+    return read_source(ROOT / 'functions' / f'fn_{name}.sqf', encoding='utf-8-sig')
 
 
 def configured_norm(name):

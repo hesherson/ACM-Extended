@@ -1,4 +1,5 @@
 """B38 numerical acceptance model and SQF integration contracts, not an Arma runtime"""
+from historical_source import read_source
 import math
 from pathlib import Path
 import re
@@ -8,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def source(name):
-    return (ROOT / name).read_text(encoding="utf-8-sig")
+    return read_source(ROOT / name, encoding="utf-8-sig")
 
 
 def clean(value):

@@ -1,10 +1,11 @@
 """Regression contracts for indented posture labels and standalone Dog Tags."""
+from historical_source import read_source
 from pathlib import Path
 import re
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
-def src(name):return (ROOT/'functions'/f'fn_{name}.sqf').read_text(encoding='utf-8-sig')
+def src(name):return read_source(ROOT/'functions'/f'fn_{name}.sqf', encoding='utf-8-sig')
 
 def labels():
     table=src('medDescriptor').split('case "position":',1)[1].split('// breathing.',1)[0]
@@ -27,7 +28,7 @@ class LabelsAndOrder(unittest.TestCase):
         self.assertIn('(_chars select _leading) in [9,32]',s)
 
     def test_both_posture_actions_remain_on_head_and_chest(self):
-        c=(ROOT/'config.cpp').read_text(encoding='utf-8-sig')
+        c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
         for name in ('ACME_ElevateHead','ACME_LowerHead'):
             b=c.split('class '+name+':',1)[1].split('\n    };',1)[0]
             self.assertIn('allowedSelections[] = {"Head", "Body"};',b)
@@ -37,10 +38,10 @@ class LabelsAndOrder(unittest.TestCase):
     def test_dog_tags_have_no_group_and_keep_native_condition(self):
         self.assertNotIn('"checkdogtags"',src('menuExamineGroups'))
         self.assertIn('if (_name == "checkdogtags") exitWith {["examine", "", false]};',src('menuActionInfo'))
-        c=(ROOT/'config.cpp').read_text(encoding='utf-8-sig')
+        c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
         b=c.split('class CheckDogTags:',1)[1].split('};',1)[0]
         self.assertIn('condition = "ACME_fnc_canCheckPatientDogtags";',b)
-        collector=(ROOT/'overrides/fn_collectActions.sqf').read_text()
+        collector=read_source(ROOT/'overrides/fn_collectActions.sqf')
         self.assertIn('_orderedExamine + _rest + _dogTags;',collector)
         self.assertIn('!= "checkdogtags"',collector)
 
@@ -49,7 +50,7 @@ class LabelsAndOrder(unittest.TestCase):
         self.assertIn('ACME_menuHeaderColorDefault = [1, 0.96, 0.84, 1];',p)
         self.assertIn('ACME_menuRowColorDefault = [1, 1, 1, 1];',p)
         self.assertIn('ACME_menuRowColorAlternate = [1, 0.84, 0.84, 1];',p)
-        settings=(ROOT/'XEH_settings.hpp').read_text()
+        settings=read_source(ROOT/'XEH_settings.hpp')
         header=settings.split('"ACME_menuColorHeaders"',1)[1].split('call CBA_fnc_addSetting',1)[0]
         self.assertIn('OFF (default): all dropdown headings use cream text',header)
         self.assertRegex(header,r'\n\s*false,\n\s*0,')

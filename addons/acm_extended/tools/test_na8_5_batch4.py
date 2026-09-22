@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """B4 source contracts and protocol reference models. No test executes Arma SQF."""
+from historical_source import read_source
 from pathlib import Path
 import copy
 import hashlib
@@ -7,7 +8,7 @@ import re
 import unittest
 from source_scan import lex
 R=Path(__file__).resolve().parents[1]
-def src(name):return (R/'functions'/('fn_'+name+'.sqf')).read_text(encoding='utf-8-sig')
+def src(name):return read_source(R/'functions'/('fn_'+name+'.sqf'), encoding='utf-8-sig')
 def tokens(name):return [t.value for t in lex(src(name))]
 
 def sedation(ket_im=0,ket_iv=0,mid=0,prop=0):
@@ -57,7 +58,7 @@ class BandOwner:
 
 class ManualInfusionSource(unittest.TestCase):
     def test_no_preset_functions_or_registrations(self):
-        c=(R/'config.cpp').read_text()
+        c=read_source(R/'config.cpp')
         for name in ('infusionPresets','infusionPresetRate','infusionPresetApply','infusionPresetCommit','infusionPresetResult'):
             self.assertFalse((R/'functions'/('fn_'+name+'.sqf')).exists());self.assertNotIn('class '+name,c)
     def test_no_preset_transport_events(self):self.assertNotIn('ACME_infusionPreset',src('postInit'))
@@ -69,7 +70,7 @@ class ManualInfusionSource(unittest.TestCase):
         s=re.search(r'ACME_infusion_allowedMedications\s*=\s*(\[[^;]+)',src('postInit')).group(1)
         for drug in ('Ketamine','Propofol'):self.assertIn('"'+drug+'"',s)
     def test_native_propofol_class_preserved(self):
-        s=(R/'config.cpp').read_text();c=s[s.index('class Propofol_IV:'):s.index('class Norepinephrine_IV:')]
+        s=read_source(R/'config.cpp');c=s[s.index('class Propofol_IV:'):s.index('class Norepinephrine_IV:')]
         for term in ('timeInSystem = 480','timeTillMaxEffect = 90','maxEffectTime = 180','maxEffectDose = 100','weightEffect = 1','painReduce = 0'):self.assertIn(term,c)
     def test_delivery_still_native_already_admitted(self):
         s=src('infusionDeliver')
@@ -200,7 +201,7 @@ class BandSource(unittest.TestCase):
     def test_only_deliberate_band_operations_publish(self):
         calls=[]
         for p in (R/'functions').glob('*.sqf'):
-            if 'ACME_fnc_ivMinigameBandFlag' in [t.value for t in lex(p.read_text(encoding='utf-8-sig'))]:calls.append(p.stem)
+            if 'ACME_fnc_ivMinigameBandFlag' in [t.value for t in lex(read_source(p, encoding='utf-8-sig'))]:calls.append(p.stem)
         self.assertEqual(set(calls),{'fn_ivMinigameClick','fn_ivMinigameRemoveBand'})
     def test_owner_requires_current_local_epoch(self):
         s=src('ivStateLocal');self.assertIn('!local _patient',s);self.assertIn('_epoch !=',s)

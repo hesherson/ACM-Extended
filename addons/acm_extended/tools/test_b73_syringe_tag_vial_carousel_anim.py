@@ -1,10 +1,11 @@
+from historical_source import read_source
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def txt(rel):
-    return (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+    return read_source(ROOT / rel, encoding="utf-8", errors="replace")
 
 
 def test_version_batch():
@@ -212,7 +213,7 @@ def test_no_acme_medical_animation_entry_uses_priority_two_switchmove_fallback()
     offenders = []
     for base in (ROOT / 'functions', ROOT / 'overrides'):
         for path in base.glob('fn_*.sqf'):
-            src = path.read_text(encoding='utf-8', errors='replace')
+            src = read_source(path, encoding='utf-8', errors='replace')
             if '] call ACME_fnc_doAnim;' in src:
                 for line_no, line in enumerate(src.splitlines(), 1):
                     if 'call ACME_fnc_doAnim;' in line and ', 2]' in line:

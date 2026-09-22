@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """NA8.5 Batch 1 source checks and Python reference tests. These do not execute SQF."""
 from __future__ import annotations
+from historical_source import read_source
 from pathlib import Path
 import itertools
 import re
@@ -13,7 +14,7 @@ RAW = 'ACME_hc_descriptors'
 ALIAS = 'ACME_hcEff_descriptors'
 
 def read(name):
-    return (R/name).read_text(encoding='utf-8-sig')
+    return read_source(R/name, encoding='utf-8-sig')
 
 def code(name):
     return ' '.join(t.value for t in lex(read(name)))
@@ -47,7 +48,7 @@ class QuietOutput(unittest.TestCase):
         failures=[]
         emitters=[]
         for p in source_files(R):
-            if logs(p.read_text(encoding='utf-8-sig'),p.suffix.lower() in {'.cpp','.hpp','.inc'}):
+            if logs(read_source(p, encoding='utf-8-sig'),p.suffix.lower() in {'.cpp','.hpp','.inc'}):
                 rel=str(p.relative_to(R)); emitters.append(rel)
                 if rel not in approved: failures.append(rel)
         self.assertEqual(failures,[])
@@ -83,13 +84,13 @@ class DescriptorSource(unittest.TestCase):
     def test_no_cached_descriptor_flag_in_executable_sources(self):
         hits=[]
         for p in source_files(R):
-            for ts in code_streams(p.read_text(encoding='utf-8-sig'),p.suffix in {'.cpp','.hpp'}):
+            for ts in code_streams(read_source(p, encoding='utf-8-sig'),p.suffix in {'.cpp','.hpp'}):
                 if any(t.value.lower()==ALIAS.lower() for t in ts):hits.append(str(p.relative_to(R)))
         self.assertEqual(hits,[])
     def test_only_cba_owns_raw_setting(self):
         hits=[]
         for p in source_files(R):
-            ts=lex(p.read_text(encoding='utf-8-sig'))
+            ts=lex(read_source(p, encoding='utf-8-sig'))
             for i,t in enumerate(ts):
                 if t.kind=='ident' and t.value.lower()==RAW.lower() and i+1<len(ts) and ts[i+1].value=='=':
                     hits.append(str(p))

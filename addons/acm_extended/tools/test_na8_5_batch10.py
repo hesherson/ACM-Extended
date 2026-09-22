@@ -1,8 +1,9 @@
 """B10 source contracts and executable reference models. Does not execute SQF."""
+from historical_source import read_source
 from pathlib import Path
 import json,math,re,unittest
 ROOT=Path(__file__).resolve().parents[1]
-def src(n):return (ROOT/'functions'/('fn_'+n+'.sqf')).read_text()
+def src(n):return read_source(ROOT/'functions'/('fn_'+n+'.sqf'))
 def code(n):return re.sub(r'/\*.*?\*/|//[^\n]*','',src(n),flags=re.S)
 
 def smooth(target,previous,dt,tau=.12):
@@ -163,18 +164,18 @@ class FocusTests(unittest.TestCase):
     def test_texture_map_not_loaded(self):self.assertNotIn('call ACME_fnc_minigameVisionTextures',code('postInit'))
     def test_blur_is_small_and_adjustable(self):self.assertIn('"ACME_minigameNV_focusBlur", 0.35',src('minigameVisionNative'));self.assertIn('_amount max 0 min 1',src('minigameVisionNative'))
     def test_no_fake_grayscale_picture_path(self):self.assertNotIn('ACME_NV_Variant',code('minigameVisionTick'))
-    def test_limitation_explained_in_code_and_option(self):self.assertIn('not part of the scene PP pass',src('minigameVisionTick'));self.assertIn('does not blur 2D dialog text or art',(ROOT/'XEH_settings.hpp').read_text())
+    def test_limitation_explained_in_code_and_option(self):self.assertIn('not part of the scene PP pass',src('minigameVisionTick'));self.assertIn('does not blur 2D dialog text or art',read_source(ROOT/'XEH_settings.hpp'))
 
 class SourceTests(unittest.TestCase):
-    def test_versions(self):v=re.search(r'version = "([^"]+)"',(ROOT/'config.cpp').read_text()).group(1);self.assertIn('version = "'+v+'"',(ROOT/'config.cpp').read_text());self.assertIn('ACME_infusion_version = getText',src('postInit'));self.assertIn('1.0.100-r7',src('postInit'))
+    def test_versions(self):v=re.search(r'version = "([^"]+)"',read_source(ROOT/'config.cpp')).group(1);self.assertIn('version = "'+v+'"',read_source(ROOT/'config.cpp'));self.assertIn('ACME_infusion_version = getText',src('postInit'));self.assertIn('1.0.100-r7',src('postInit'))
     def test_no_separate_nvg_binding(self):self.assertNotIn('"ACME_vent_nvgToggle"',code('postInit'));self.assertNotIn('0x31',code('postInit'))
     def test_native_bindings_read(self):self.assertIn('actionKeysEx "NightVision"',src('minigameInputBindings'))
     def test_vent_bind_keeps_existing_id(self):self.assertIn('"ACME_vent_flipDevice"',src('postInit'));self.assertIn('{false}, {false}, [0x21',src('postInit'))
     def test_current_all_cba_binds(self):self.assertIn('_data param [8, [], [[]]]',src('minigameInputBindings'));self.assertIn('isNil "_data"',src('minigameInputBindings'))
-    def test_unbound_no_fallback_f(self):self.assertNotIn('0x21',code('minigameInputBindings'));self.assertNotIn('F: Flip Device',(ROOT/'config.cpp').read_text());self.assertIn('"Unbound"',src('ventFlipKeyHint'))
+    def test_unbound_no_fallback_f(self):self.assertNotIn('0x21',code('minigameInputBindings'));self.assertNotIn('F: Flip Device',read_source(ROOT/'config.cpp'));self.assertIn('"Unbound"',src('ventFlipKeyHint'))
     def test_hint_refresh_is_throttled(self):self.assertIn('diag_tickTime + 0.5',src('ventFlipKeyHint'));self.assertIn('call ACME_fnc_ventFlipKeyHint',src('ventPanelTick'))
     def test_all_ten_primary_procedures_have_input_hook(self):
-        t=(ROOT/'config.cpp').read_text()
+        t=read_source(ROOT/'config.cpp')
         for name in ('RollerClamp','ChestSeal','Thoracostomy','IVMinigame','SyringeKit','Ventilator','Laryngoscopy','BloodFridgeContents','BloodFridge'):
             m=re.search(r'class ACME_'+name+r'_Dialog\b[^\{]*\{(.*?)(?=\n\s*class )',t,re.S);self.assertIsNotNone(m,name);self.assertIn('ACME_fnc_minigameInputInstall',m[1])
         self.assertIn('ACME_fnc_minigameInputInstall',re.search(r'class ACME_CoolerManager_Dialog\b[^\{]*\{(.*?)(?=\n\s*class )',t,re.S)[1])
@@ -195,11 +196,11 @@ class SourceTests(unittest.TestCase):
         self.assertLess(t.index('ACME_fnc_laryngoSuctionPin'),t.index('ACME_fnc_minigameInputMouse'))
         self.assertIn('if ([_this,"down"] call ACME_fnc_minigameInputMouse) exitWith {true}',t)
     def test_client_local_accessibility_settings(self):
-        t=(ROOT/'XEH_settings.hpp').read_text()
+        t=read_source(ROOT/'XEH_settings.hpp')
         for setting in ('ACME_motion_interpolate','ACME_motion_interpolationTime','ACME_minigameNV_focusBlur'):
             segment=t[t.index('"'+setting+'"'):];segment=segment[:segment.index('] call CBA_fnc_addSetting;')]
             self.assertRegex(segment,r',\s*0,\s*\{\}')
     def test_no_dbg_in_new_helpers(self):
-        for p in ROOT.glob('functions/fn_minigameInput*.sqf'):self.assertNotIn('diag_log',p.read_text())
+        for p in ROOT.glob('functions/fn_minigameInput*.sqf'):self.assertNotIn('diag_log',read_source(p))
 
 if __name__=='__main__':unittest.main()

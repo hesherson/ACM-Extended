@@ -5,9 +5,10 @@ from pathlib import Path
 import unittest
 
 from source_scan import lex, matching
+from historical_source import read_source
 
 ROOT = Path(__file__).resolve().parents[1]
-RENDER = (ROOT / 'overrides/fn_updateActions.sqf').read_text()
+RENDER = read_source(ROOT / 'overrides/fn_updateActions.sqf')
 STATE = (ROOT / 'functions/fn_menuDropdownState.sqf').read_text()
 WHITE = (1, 1, 1, 1)
 PALE_RED = (1, .94, .94, 1)

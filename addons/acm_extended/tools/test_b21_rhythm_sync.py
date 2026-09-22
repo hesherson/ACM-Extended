@@ -1,12 +1,14 @@
+from backlog_clinical_probes import threshold_observer_probe
+from historical_source import assert_release_consistent
+from historical_source import read_source
 from pathlib import Path
 import re, unittest
 ROOT=Path(__file__).resolve().parents[1]
-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
+def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
 
 class B21RhythmRegression(unittest.TestCase):
     def test_version(self):
-        self.assertRegex(read('config.cpp'), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
-        self.assertRegex(read('functions/fn_postInit.sqf'), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
+        assert_release_consistent()
 
     def test_epi_infusion_can_reach_svt_burden(self):
         post=read('functions/fn_postInit.sqf')
@@ -21,14 +23,13 @@ class B21RhythmRegression(unittest.TestCase):
         self.assertGreaterEqual(score,35)
 
     def test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared(self):
+        threshold_observer_probe()
         src=read('functions/fn_rhythmThresholdTick.sqf')
-        self.assertIn('ACME_rhythmNativeVTRecoverHR', src)
-        self.assertIn('ACME_rhythmNativeVTRecoverSec', src)
-        self.assertIn('== "ACM VT fallback"', src)
-        self.assertIn('!(_u getVariable ["ace_medical_inCardiacArrest", false])', src)
-        self.assertIn('[_u, 0] call ACME_fnc_rhythmSet;', src)
-        # Recovery is source-tagged; no unconditional "if VT then sinus" shortcut.
-        self.assertNotIn('if (_rhythm == 4) then { [_u, 0] call ACME_fnc_rhythmSet;', src)
+        self.assertNotIn('ACM VT fallback',src)
+        self.assertNotIn('call ACME_fnc_arrestLocal',src)
+        native=read('../core/functions/fnc_handleCriticalVitals.sqf')
+        self.assertIn('ACM_Rhythm_VT',native)
+        self.assertIn('ACM_Rhythm_Sinus',native)
 
     def test_new_rhythm_tunables_are_registered(self):
         fields=read('functions/fn_clinicalFields.sqf')

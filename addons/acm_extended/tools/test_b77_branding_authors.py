@@ -1,5 +1,6 @@
 from pathlib import Path
 import re, hashlib, sys
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CFG = (ROOT / 'config.cpp').read_text(encoding='utf-8')
@@ -83,11 +84,16 @@ para = child_body(mag, 'ACM_Paracetamol') or ''
 check('native ACM paracetamol author preserved', 'author = "Blue";' in para)
 check('native ACM paracetamol no ACME dlc', 'dlc = "ACM_Extended";' not in para)
 
-failed=[c for c in checks if not c[1]]
-for name,ok,detail in checks:
-    if not ok:
-        print('FAIL:',name,detail)
-if failed:
+@pytest.mark.parametrize("name,ok,detail", checks, ids=[row[0] for row in checks])
+def test_historical_branding_contract(name, ok, detail):
+    # Historical checks are intentionally retained; old branding/version failures
+    # are newly visible debt, not a request to rebrand current game items.
+    assert ok, f"{name}: {detail}"
+
+if __name__ == "__main__":
+    failed = [c for c in checks if not c[1]]
+    for name, ok, detail in checks:
+        if not ok:
+            print('FAIL:', name, detail)
     print(f'{len(checks)-len(failed)}/{len(checks)} checks passed')
-    sys.exit(1)
-print(f'{len(checks)}/{len(checks)} checks passed')
+    sys.exit(bool(failed))

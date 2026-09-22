@@ -1,4 +1,5 @@
 """Examination source-data/presentation reference tests; no Arma config/SQF runtime."""
+from historical_source import read_source
 from pathlib import Path
 import random
 import unittest
@@ -10,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def action_fields(name):
-    tokens = lex((ROOT / 'config.cpp').read_text())
+    tokens = lex(read_source(ROOT / 'config.cpp'))
     pairs = matching(tokens)
     for i, token in enumerate(tokens[:-2]):
         if token.value == 'class' and tokens[i + 1].value == name and tokens[i + 2].value == ':':
@@ -77,9 +78,9 @@ class ExaminePresentation(unittest.TestCase):
         self.assertEqual(policy('SlapAwake', 'advanced', ['slapawake', 'shakeawake', 'checkresponse']), ('examine', 'examine_response', False))
 
     def test_runtime_shares_one_membership_and_order_table(self):
-        collector = (ROOT / 'overrides/fn_collectActions.sqf').read_text()
-        mapper = (ROOT / 'functions/fn_menuActionInfo.sqf').read_text()
-        postinit = (ROOT / 'functions/fn_postInit.sqf').read_text()
+        collector = read_source(ROOT / 'overrides/fn_collectActions.sqf')
+        mapper = read_source(ROOT / 'functions/fn_menuActionInfo.sqf')
+        postinit = read_source(ROOT / 'functions/fn_postInit.sqf')
         self.assertIn('ACME_fnc_menuExamineGroups', collector)
         self.assertIn('ACME_fnc_menuExamineGroups', mapper)
         self.assertIn('ACME_fnc_menuExamineGroups', postinit)
@@ -101,7 +102,7 @@ class CorpseChestAssessment(unittest.TestCase):
         self.assertEqual(fields['animationMedic'], '')
 
     def test_dead_findings_survive_without_a_live_obtunded_roll(self):
-        source = (ROOT / 'overrides/fn_inspectChestLocal.sqf').read_text()
+        source = read_source(ROOT / 'overrides/fn_inspectChestLocal.sqf')
         self.assertIn('if (isNull _patient) exitWith {};', source)
         self.assertIn('if (alive _patient\n', source)
         self.assertIn('!(alive _patient)', source)

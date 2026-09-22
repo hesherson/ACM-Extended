@@ -1,10 +1,11 @@
 """B57 static contracts for the requested animation/menu/reset/Narc Box changes.
 Static only: Arma runtime validation is still required for RTM timing/camera behavior."""
+from historical_source import read_source
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-def txt(rel): return (ROOT / rel).read_text(encoding="utf-8")
+def txt(rel): return read_source(ROOT / rel, encoding="utf-8")
 
 def _if_not_precedence_traps(source):
     hits=[]
@@ -31,7 +32,7 @@ def test_version_is_r21_b57():
 def test_no_if_not_precedence_trap_anywhere():
     for folder in ('functions','overrides'):
         for p in (ROOT/folder).glob('*.sqf'):
-            src=p.read_text(encoding='utf-8', errors='replace')
+            src=read_source(p, encoding='utf-8', errors='replace')
             code='\n'.join(l for l in src.splitlines() if not l.lstrip().startswith(('*','//','/*')))
             assert not _if_not_precedence_traps(code), p.name
 

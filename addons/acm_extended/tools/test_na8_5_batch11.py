@@ -1,13 +1,14 @@
 """B11 source contracts and independent numerical/lifecycle reference models.
 These tests do not compile or execute SQF and do not replace Arma multiplayer tests.
 """
+from historical_source import read_source
 from pathlib import Path
 import math
 import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-def read(rel): return (ROOT / rel).read_text(encoding='utf-8')
+def read(rel): return read_source(ROOT / rel, encoding='utf-8')
 def src(name): return read('functions/fn_' + name + '.sqf')
 def code(text): return re.sub(r'/\*.*?\*/|//[^\n]*', '', text, flags=re.S)
 def offset(age, strength=1):

@@ -4,6 +4,9 @@ This evaluates only the cursor/control arithmetic, not an Arma UI runtime.
 Control heights sample ACM's 0.9 GUI-grid-unit grab band across UI scales.
 """
 from pathlib import Path
+from functools import lru_cache
+from historical_source import assignment_expression, array_command_arguments
+from source_scan import lex
 import operator
 import re
 import unittest
@@ -15,7 +18,14 @@ OPS = {'+': (1, operator.add), '-': (1, operator.sub), '*': (2, operator.mul),
 
 def expression(code):
     """Compile the small scalar-arithmetic subset used by the actual mover."""
-    tokens = re.findall(r'_[A-Za-z0-9_]+|\d+(?:\.\d+)?|min|max|[()+*/-]', code)
+    scanned = lex(code)
+    for token in scanned:
+        if not (token.kind == 'number' or
+                token.kind == 'ident' and (token.value.startswith('_') or token.value in OPS) or
+                token.kind == 'symbol' and token.value in '()+*/-'):
+            raise AssertionError(f'Unsupported arithmetic token: {token.value!r}')
+    tokens = [token.value for token in scanned]
+    assert tokens, 'Empty arithmetic expression'
     index = 0
 
     def parse(level=0):
@@ -40,21 +50,23 @@ def expression(code):
     return result
 
 
-def assignment(name):
-    return expression(re.search(r'private ' + name + r' = ([^;]+);', SOURCE)[1])
-
-
-CALCULATIONS = [(name, assignment(name)) for name in ('_mouseOffset', '_bottomMouse', '_floorYMouse', '_rawY')]
-CURSORS = re.findall(r'setMousePosition\s*\[\(safeZoneX[^,]+,\s*(.*?)\];', SOURCE)
-assert len(CURSORS) == 1, 'Compound draw must clamp the incoming cursor once per frame.'
-CURSOR = expression(CURSORS[0])
+@lru_cache(maxsize=1)
+def current_cursor_program():
+    # Compile lazily so a changed UI expression fails this test, not every module
+    # importing the small scalar evaluator for another geometry check.
+    names = ('_mouseOffset', '_bottomMouse', '_floorYMouse', '_mouseYClamped', '_rawY')
+    calculations = [(name, expression(assignment_expression(SOURCE, name))) for name in names]
+    cursor_args = array_command_arguments(SOURCE, 'setMousePosition')
+    assert len(cursor_args) == 2, 'Cursor command requires X and Y'
+    return calculations, expression(cursor_args[1])
 
 
 def tick(mouse, floor, limit, height):
     env = {'_mouseY': mouse, '_floorY': floor, '_maxY': limit, '_plungerH': height}
-    for name, calculate in CALCULATIONS:
+    calculations, cursor = current_cursor_program()
+    for name, calculate in calculations:
         env[name] = calculate(env)
-    return CURSOR(env), env['_rawY']
+    return cursor(env), env['_rawY']
 
 
 class NarcPlunger(unittest.TestCase):

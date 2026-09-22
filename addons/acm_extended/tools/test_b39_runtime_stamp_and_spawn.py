@@ -1,7 +1,8 @@
+from historical_source import read_source
 import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-def read(rel): return (ROOT/rel).read_text(errors="ignore")
+def read(rel): return read_source(ROOT/rel, errors="ignore")
 class B39RuntimeStampAndSpawn(unittest.TestCase):
     def test_config_is_r3(self):
         self.assertIn('version = "1.0.100-r7";', read('config.cpp'))

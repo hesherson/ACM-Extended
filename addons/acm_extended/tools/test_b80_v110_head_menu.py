@@ -1,10 +1,11 @@
 from pathlib import Path
+import pytest
+from historical_source import read_source
 ROOT=Path(__file__).resolve().parents[1]
-def txt(p): return (ROOT/p).read_text(encoding='utf-8',errors='ignore')
+def txt(p): return read_source(ROOT/p, encoding='utf-8', errors='strict')
 checks=[]
 def check(name, ok):
     checks.append((name,bool(ok)))
-    if not ok: raise AssertionError(name)
 
 cfg=txt('config.cpp'); post=txt('functions/fn_postInit.sqf'); dbg=txt('functions/fn_debugMenu.sqf')
 seq=txt('functions/fn_headElevMedicSeq.sqf'); tilt=txt('functions/fn_headElevApplyTilt.sqf')
@@ -25,4 +26,13 @@ check('patient lower uses wrapper', '"ACME_HeadElevPatientRelease"' in stop)
 check('patient suspend uses wrapper', '"ACME_HeadElevPatientRelease"' in susp)
 check('alternate row color now white', 'ACME_menuRowColorAlternate = [1, 1, 1, 1];' in post)
 check('renderer does not alternate ordinary rows', "select (_actionIndex mod 2)" not in menu and "ACME_menuRowColorDefault" in menu)
-print(f'{len(checks)}/{len(checks)} B80 focused contracts passed')
+@pytest.mark.parametrize("name,ok", checks, ids=[name for name, _ in checks])
+def test_historical_contract(name, ok):
+    # Preserve the original checks as separate visible outcomes, including old IDs.
+    assert ok, name
+
+if __name__ == "__main__":
+    failed = [name for name, ok in checks if not ok]
+    if failed:
+        raise SystemExit("Failed historical B80 checks: " + ", ".join(failed))
+    print(f"{len(checks)}/{len(checks)} B80 contracts passed")

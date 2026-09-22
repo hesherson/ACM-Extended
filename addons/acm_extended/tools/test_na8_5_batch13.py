@@ -7,12 +7,15 @@ Run with PYTHONDONTWRITEBYTECODE=1 to keep an exact-source patch tree clean.
 from __future__ import annotations
 import json, math, re, unittest
 from pathlib import Path
+from historical_source import read_source
 ROOT=Path(__file__).resolve().parents[1]
-MATRIX=json.loads((ROOT/'audit/MEDICATION_MATRIX.json').read_text())
+# Read-only current-source fixture; unresolved macro expressions stay symbolic.
+from medication_inventory import inventory
+MATRIX=inventory(ROOT.parent/'core/ACM_Medication.hpp', ROOT/'config.cpp')
 MEDS={r['classname']:r for r in MATRIX['medication_classes']}
 SOURCES={r['source']:r for r in MATRIX['concentrations']}
 def src(n):return (ROOT/'functions'/('fn_'+n+'.sqf')).read_text()
-def ov(n):return (ROOT/'overrides'/('fn_'+n+'.sqf')).read_text()
+def ov(n):return read_source(ROOT/'overrides'/('fn_'+n+'.sqf'))
 def clamp(x,a=0.,b=1.):return max(a,min(b,x))
 def envelope(route,t,peak,life,plateau):
     # Caller excludes expired/future records. Matches supplied native route functions.

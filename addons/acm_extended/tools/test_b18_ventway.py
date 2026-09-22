@@ -1,11 +1,14 @@
+from backlog_clinical_probes import rosc_stress_probe
+from historical_source import assert_release_consistent
+from historical_source import read_source
 from pathlib import Path
 import re, unittest
 ROOT=Path(__file__).resolve().parents[1]
-def read(rel): return (ROOT/rel).read_text(encoding='utf-8-sig')
+def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
 
 class B18Source(unittest.TestCase):
     def test_no_med_transaction_chatter(self):
-        tree='\n'.join(p.read_text(encoding='utf-8-sig',errors='ignore') for p in (ROOT/'functions').glob('*.sqf'))
+        tree='\n'.join(read_source(p, encoding='utf-8-sig', errors='ignore') for p in (ROOT/'functions').glob('*.sqf'))
         for text in ('Awaiting patient-owner confirmation','submitted to %2','Medication not accepted (','Reserved syringe/solution returned'):
             self.assertNotIn(text,tree)
     def test_pc_has_real_pinsp_control(self):
@@ -49,12 +52,11 @@ class B18Source(unittest.TestCase):
             self.assertNotIn(forbidden,s[a:b])
     def test_rocuronium_cannot_bank_arrest_stress(self):
         s=read('functions/fn_rocuroniumTick.sqf')
-        self.assertIn('ace_medical_inCardiacArrest',s)
-        self.assertIn('ACME_roc_postROSCGraceUntil',s)
-        self.assertIn('ACME_roc_awakeHRMax',s)
-        post=read('functions/fn_postInit.sqf')
-        self.assertIn('ACME_roc_postROSCStressDelay = 15',post)
-        self.assertIn('ACME_roc_awakeResistAdd", 0, true',post)
+        for key in ('ace_medical_inCardiacArrest','ACME_roc_postROSCGraceUntil','ACME_roc_awakeHRMax'):
+            self.assertIn(key,s)
+        self.assertIn('ACME_roc_postROSCStressDelay = 15',read('functions/fn_postInit.sqf'))
+        # The real registered ROSC callback delegates the reset to its actual single writer.
+        rosc_stress_probe()
     def test_vitals_stress_is_bounded_additive(self):
         s=read('overrides/fn_handleUnitVitals.sqf')
         self.assertIn('ACME_vent_fightHRAdjust',s)
@@ -64,8 +66,7 @@ class B18Source(unittest.TestCase):
         for key in ('ACME_vent_pinsp','ACME_vent_mvDelivered','ACME_vent_fightHRAdjust','ACME_roc_postROSCGraceUntil'):
             self.assertRegex(s,rf'"{key}",\s*"(?:cba)?",\s*true')
     def test_version_pair(self):
-        self.assertRegex(read('config.cpp'), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
-        self.assertRegex(read('functions/fn_postInit.sqf'), r'(?:0\.9\.999r-\d+-NA8\.5-B(?:17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35)|1\.0\.100-r(?:2|3|4|5|6|7))')
+        assert_release_consistent()
 
 class B18Reference(unittest.TestCase):
     def test_pc_vt_falls_with_compliance(self):

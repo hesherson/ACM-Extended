@@ -1,9 +1,10 @@
 """Source contracts and independent arithmetic models. These tests do not execute SQF."""
+from historical_source import read_source
 from pathlib import Path
 from dataclasses import dataclass, field
 import random, unittest
 ROOT=Path(__file__).resolve().parents[1]
-def src(n): return (ROOT/'functions'/('fn_'+n+'.sqf')).read_text()
+def src(n): return read_source(ROOT/'functions'/('fn_'+n+'.sqf'))
 @dataclass
 class Mixture:
     volume: float
@@ -137,7 +138,7 @@ class SourceContracts(unittest.TestCase):
     def test_actual_admission_drives_all_effects(self):
         s=src('fluidCommit');self.assertIn('_admitted / _drained',s);self.assertIn('param [26',s)
     def test_no_sedation_presets_return(self):
-        s=(ROOT/'config.cpp').read_text();self.assertNotIn('class infusionPresets',s);self.assertNotIn('class infusionApplyPreset',s)
+        s=read_source(ROOT/'config.cpp');self.assertNotIn('class infusionPresets',s);self.assertNotIn('class infusionApplyPreset',s)
     def test_b14_ketamine_route_weights(self):
         s=src('ketamineOnBoard')
         self.assertIn('0.8',s);self.assertIn('1.75',s)
@@ -149,7 +150,7 @@ class SourceContracts(unittest.TestCase):
     def test_pulseless_stimulus_gated(self):self.assertIn('ace_medical_inCardiacArrest',src('laryngoStimulusEffect'))
     def test_bp_and_hr_read_same_stimulus(self):
         self.assertIn('ACME_fnc_laryngoStimulusEffect',src('bpCompute'))
-        self.assertIn('ACME_fnc_laryngoStimulusEffect',(ROOT/'overrides/fn_updateHeartRate.sqf').read_text())
+        self.assertIn('ACME_fnc_laryngoStimulusEffect',read_source(ROOT/'overrides/fn_updateHeartRate.sqf'))
     def test_debug_propofol_separate(self):
         s=src('debugMenu');self.assertIn('ACME_fnc_sedationComponents',s);self.assertIn('["Ketamine"',s);self.assertIn('["Propofol"',s);self.assertIn('["Fentanyl"',s)
     def test_mixed_bag_not_single_drug_epi_source(self):

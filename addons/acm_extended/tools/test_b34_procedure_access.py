@@ -1,4 +1,6 @@
+from backlog_clinical_probes import thora_access_probe
 """Offline integration contracts. These inspect shipped SQF/config, not Arma execution."""
+from historical_source import read_source
 from pathlib import Path
 import re
 import unittest
@@ -7,12 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def source(name):
-    return (ROOT / "functions" / f"fn_{name}.sqf").read_text(encoding="utf-8")
+    return read_source(ROOT / "functions" / f"fn_{name}.sqf", encoding="utf-8")
 
 
 class ProcedureAccessContracts(unittest.TestCase):
     def test_action_config_does_not_reimpose_old_medic_tiers(self):
-        config = (ROOT / "config.cpp").read_text()
+        config = read_source(ROOT / "config.cpp")
         required = {
             "ACME_PerformThoracostomy": "ACM_breathing_allowThoracostomy",
             "ACME_InsertChestTube": "ACME_skillChestTube",
@@ -36,7 +38,7 @@ class ProcedureAccessContracts(unittest.TestCase):
         self.assertIn('call ACME_fnc_thoraCanOpen', adjust)
 
     def test_new_settings_register_once_globally_and_native_tiers_are_not_duplicated(self):
-        settings = (ROOT / "XEH_preInit.sqf").read_text() + (ROOT / "XEH_settings.hpp").read_text()
+        settings = read_source(ROOT / "XEH_preInit.sqf") + read_source(ROOT / "XEH_settings.hpp")
         for key in ("ACME_skillChestTube", "ACME_skillThoracostomySeal", "ACME_skillIntubation",
                     "ACME_skillVentilator", "ACME_skillMedicationPreparation", "ACME_skillMedicationBolus"):
             blocks = re.findall(r'\["' + key + r'", "LIST"[^\n]+', settings)
@@ -78,13 +80,14 @@ class ProcedureAccessContracts(unittest.TestCase):
         self.assertNotIn('case "ACME_AdjustThoracostomy"', source("procedureActionAllowed"))
 
     def test_shared_surgical_kit_is_optional_reusable_and_disposable_is_preferred(self):
+        thora_access_probe()
         kit = source("thoraKitItem")
         self.assertLess(kit.index('exitWith {"ACM_ThoracostomyKit"}'), kit.index('ACME_thora_allowSurgicalKit'))
         self.assertIn('getVariable ["ACME_thora_allowSurgicalKit", false]', kit)
         self.assertEqual(kit.count('call ace_medical_treatment_fnc_hasItem'), 2)
         click = source("thoraMouseDown")
         begin = click.index('private _usedKit = _kit == "ACM_ThoracostomyKit"')
-        end = click.index('"finger", true]', begin)
+        end = click.index('[_patient, _side, "open", "finger"] call ACME_fnc_thoraSideStateCommit', begin)
         debit = click[begin:end]
         self.assertIn('if (_usedKit) then', debit)
         self.assertIn('call ace_medical_treatment_fnc_useItem', debit)
@@ -98,14 +101,14 @@ class ProcedureAccessContracts(unittest.TestCase):
             self.assertIn('call ACME_fnc_thoraKitItem', text)
         release = source("thoraMouseUp")
         self.assertLess(release.index('call ACME_fnc_procedureAllowed'),
-                        release.index('setVariable [format ["ACME_thora_incision_%1"'))
+                        release.index('[_patient, _side, "incision", [_start, _angle, _lenCm]] call ACME_fnc_thoraSideStateCommit'))
 
     def test_tube_gate_and_verified_consumption_precede_patient_projection(self):
         text = source("thoraMouseDown")
         start = text.index('private _tubeMedic')
         tube = text[start:]
         self.assertLess(tube.index('call ACME_fnc_thoraClosureMode'), tube.index('removeItem "ACM_ChestTubeKit"'))
-        self.assertLess(tube.index('>= _tubeBefore) exitWith'), tube.index('ACME_thora_tube_%1'))
+        self.assertLess(tube.index('>= _tubeBefore) exitWith'), tube.index('[_patient, _side, "tube", true] call ACME_fnc_thoraSideStateCommit'))
         self.assertIn('Thoracostomy_State", 0]) != 2', tube)
 
     def test_ncd_rechecks_at_authoritative_acceptance_before_snapshot_changes(self):
@@ -118,9 +121,9 @@ class ProcedureAccessContracts(unittest.TestCase):
 
     def test_stale_menu_and_dead_bypass_both_recheck_access(self):
         for name in ("treatment", "canTreatCached"):
-            text = (ROOT / "overrides" / f"fn_{name}.sqf").read_text()
+            text = read_source(ROOT / "overrides" / f"fn_{name}.sqf")
             self.assertIn('call ACME_fnc_procedureActionAllowed', text)
-        cached = (ROOT / "overrides/fn_canTreatCached.sqf").read_text()
+        cached = read_source(ROOT / "overrides/fn_canTreatCached.sqf")
         self.assertLess(cached.index('call ACME_fnc_procedureActionAllowed'), cached.index('!alive _target'))
 
     def test_intubation_enable_changes_do_not_strand_a_passed_tube(self):
@@ -153,7 +156,7 @@ class ProcedureAccessContracts(unittest.TestCase):
             self.assertLess(text.index('call ACME_fnc_procedureAllowed'), text.index(marker))
 
     def test_consumable_aftercare_and_bolus_debit_once_after_final_access_check(self):
-        config = (ROOT / "config.cpp").read_text()
+        config = read_source(ROOT / "config.cpp")
         for action in ("ACME_OsmoBolus_HTS", "ACME_DrainFluid_SuctionBag"):
             block = re.search(r'^    class ' + action + r'\s*:[^{]+\{(.*?)^    };', config, re.M | re.S)[1]
             self.assertIn('consumeItem = 0;', block)
