@@ -1,3 +1,4 @@
+from backlog_clinical_probes import threshold_observer_probe
 from historical_source import read_source, assert_release_identity
 from pathlib import Path
 import re, unittest
@@ -22,14 +23,13 @@ class B21RhythmRegression(unittest.TestCase):
         self.assertGreaterEqual(score,35)
 
     def test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared(self):
+        threshold_observer_probe()
         src=read('functions/fn_rhythmThresholdTick.sqf')
-        self.assertIn('ACME_rhythmNativeVTRecoverHR', src)
-        self.assertIn('ACME_rhythmNativeVTRecoverSec', src)
-        self.assertIn('== "ACM VT fallback"', src)
-        self.assertIn('!(_u getVariable ["ace_medical_inCardiacArrest", false])', src)
-        self.assertIn('[_u, 0] call ACME_fnc_rhythmSet;', src)
-        # Recovery is source-tagged; no unconditional "if VT then sinus" shortcut.
-        self.assertNotIn('if (_rhythm == 4) then { [_u, 0] call ACME_fnc_rhythmSet;', src)
+        self.assertNotIn('ACM VT fallback',src)
+        self.assertNotIn('call ACME_fnc_arrestLocal',src)
+        native=read('../core/functions/fnc_handleCriticalVitals.sqf')
+        self.assertIn('ACM_Rhythm_VT',native)
+        self.assertIn('ACM_Rhythm_Sinus',native)
 
     def test_new_rhythm_tunables_are_registered(self):
         fields=read('functions/fn_clinicalFields.sqf')

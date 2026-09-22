@@ -1,3 +1,4 @@
+from backlog_clinical_probes import rosc_stress_probe
 from historical_source import read_source, assert_release_identity
 from pathlib import Path
 import re, unittest
@@ -50,12 +51,11 @@ class B18Source(unittest.TestCase):
             self.assertNotIn(forbidden,s[a:b])
     def test_rocuronium_cannot_bank_arrest_stress(self):
         s=read('functions/fn_rocuroniumTick.sqf')
-        self.assertIn('ace_medical_inCardiacArrest',s)
-        self.assertIn('ACME_roc_postROSCGraceUntil',s)
-        self.assertIn('ACME_roc_awakeHRMax',s)
-        post=read('functions/fn_postInit.sqf')
-        self.assertIn('ACME_roc_postROSCStressDelay = 15',post)
-        self.assertIn('ACME_roc_awakeResistAdd", 0, true',post)
+        for key in ('ace_medical_inCardiacArrest','ACME_roc_postROSCGraceUntil','ACME_roc_awakeHRMax'):
+            self.assertIn(key,s)
+        self.assertIn('ACME_roc_postROSCStressDelay = 15',read('functions/fn_postInit.sqf'))
+        # The real registered ROSC callback delegates the reset to its actual single writer.
+        rosc_stress_probe()
     def test_vitals_stress_is_bounded_additive(self):
         s=read('overrides/fn_handleUnitVitals.sqf')
         self.assertIn('ACME_vent_fightHRAdjust',s)

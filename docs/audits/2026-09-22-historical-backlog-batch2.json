@@ -1,0 +1,182 @@
+{
+  "base_commit": "5e134975242f182ebbed1225c96709eb7b2cce96",
+  "production_changes": 0,
+  "asset_changes": 0,
+  "deleted_files": 0,
+  "previous_main_historical_result": {
+    "failed": 299,
+    "passed": 2505,
+    "errors": 0,
+    "skipped": 4,
+    "subtests_passed": 5518
+  },
+  "local_candidate_historical_result": {
+    "failed": 286,
+    "passed": 2523,
+    "errors": 0,
+    "skipped": 4,
+    "subtests_passed": 5518
+  },
+  "local_focused_result": {
+    "passed": 527,
+    "subtests_passed": 419,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "previously_passing_outcomes_newly_failed": [],
+  "remaining_source_contracts_before": 249,
+  "remaining_source_contracts_after": 238,
+  "resolved_source_contracts": [
+    {
+      "id": "H008",
+      "original_nodeid": "addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock",
+      "verified_nodeid": "addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H012",
+      "original_nodeid": "addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress",
+      "verified_nodeid": "addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H015",
+      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact",
+      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H017",
+      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered",
+      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H018",
+      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact",
+      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H021",
+      "original_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_pea_morphology_distinct_from_sinus",
+      "verified_nodeid": "addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_pea_subtype_and_mechanical_pressure_keep_native_authority",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H040",
+      "original_nodeid": "addons/acm_extended/tools/test_b21_rhythm_sync.py::B21RhythmRegression::test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
+      "verified_nodeid": "addons/acm_extended/tools/test_b21_rhythm_sync.py::B21RhythmRegression::test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H095",
+      "original_nodeid": "addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment",
+      "verified_nodeid": "addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H099",
+      "original_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
+      "verified_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H116",
+      "original_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury",
+      "verified_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    },
+    {
+      "id": "H117",
+      "original_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
+      "verified_nodeid": "addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
+      "result": "PASSED_REVIEWED_CONTRACT",
+      "production_change": false
+    }
+  ],
+  "reviewed_test_changes": [
+    {
+      "file": "test_b17_release.py",
+      "old": "test_custom_rhythm_does_not_override_cpr_postshock",
+      "new": "test_custom_rhythm_does_not_override_cpr_postshock"
+    },
+    {
+      "file": "test_b17_release.py",
+      "old": "test_procedure_no_forced_unconsciousness",
+      "new": "test_placement_and_incision_do_not_force_unconsciousness"
+    },
+    {
+      "file": "test_b18_ventway.py",
+      "old": "test_rocuronium_cannot_bank_arrest_stress",
+      "new": "test_rocuronium_cannot_bank_arrest_stress"
+    },
+    {
+      "file": "test_b19_vials_pea_artifact.py",
+      "old": "test_ace_timer_events_drive_artifact",
+      "new": "test_ace_timer_events_drive_artifact"
+    },
+    {
+      "file": "test_b19_vials_pea_artifact.py",
+      "old": "test_exact_vial_ledger_registered",
+      "new": "test_exact_vial_ledger_registered"
+    },
+    {
+      "file": "test_b19_vials_pea_artifact.py",
+      "old": "test_monitor_generators_apply_artifact",
+      "new": "test_monitor_generators_apply_artifact"
+    },
+    {
+      "file": "test_b19_vials_pea_artifact.py",
+      "old": "test_pea_morphology_distinct_from_sinus",
+      "new": "test_pea_subtype_and_mechanical_pressure_keep_native_authority"
+    },
+    {
+      "file": "test_b19_vials_pea_artifact.py",
+      "old": "test_compound_save_keeps_original_save_label_and_reopens_draw_dialog",
+      "new": "test_compound_save_keeps_label_and_resets_in_place"
+    },
+    {
+      "file": "test_b21_rhythm_sync.py",
+      "old": "test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared",
+      "new": "test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared"
+    },
+    {
+      "file": "test_b35_lifecycle.py",
+      "old": "test_instructor_clear_retires_model_without_touching_equipment",
+      "new": "test_instructor_clear_retires_model_without_touching_equipment"
+    },
+    {
+      "file": "test_b35_treatments.py",
+      "old": "test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them",
+      "new": "test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them"
+    },
+    {
+      "file": "test_b35_treatments.py",
+      "old": "test_seal_removal_cannot_become_a_new_injury",
+      "new": "test_seal_removal_cannot_become_a_new_injury"
+    },
+    {
+      "file": "test_b35_treatments.py",
+      "old": "test_sealed_surgical_tract_cannot_cover_external_chest_wounds",
+      "new": "test_sealed_surgical_tract_cannot_cover_external_chest_wounds"
+    }
+  ],
+  "limits": [
+    "Broad historical suite remains red.",
+    "Only source and offline SQF execution with explicit engine-boundary mocks were used.",
+    "No Arma client or dedicated server ran.",
+    "The 238 remaining source contracts are unresolved, not waived."
+  ]
+}

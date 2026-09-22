@@ -1,3 +1,4 @@
+from backlog_clinical_probes import io_modes_probe
 from historical_source import read_source, assert_release_identity
 from pathlib import Path
 import re, unittest
@@ -26,11 +27,13 @@ class B17Release(unittest.TestCase):
     def test_custom_rhythm_does_not_override_cpr_postshock(self):
         s=read('overrides/fn_genEKG.sqf')
         self.assertIn('!(_rhythm in [-1,1,2])',s)
-        self.assertIn('ACME_monitorRhythmSwitchMaxWait',s)
-    def test_procedure_no_forced_unconsciousness(self):
-        io=read('functions/fn_ioPainResponse.sqf'); th=read('functions/fn_thoraMouseUp.sqf')
-        self.assertNotIn('setUnconscious',io)
-        # surgical callback can contain unrelated text elsewhere; ensure the incision block uses pain not setUnconscious
+        # Current generator uses the actual audible beat clock, not a second switch-delay timer.
+        for key in ('ACM_circulation_AED_Pads_LastBeep','ACME_AED_PreviousRR','ACME_AED_NextRR'):
+            self.assertIn(key,s)
+        self.assertNotIn('ACME_monitorRhythmSwitchMaxWait',s)
+    def test_placement_and_incision_do_not_force_unconsciousness(self):
+        io_modes_probe()
+        th=read('functions/fn_thoraMouseUp.sqf')
         block=th[th.index('// Incision pain is real'):th.index('// the score:')]
         self.assertNotIn('setUnconscious',block)
         self.assertIn('adjustPainLevel',block)

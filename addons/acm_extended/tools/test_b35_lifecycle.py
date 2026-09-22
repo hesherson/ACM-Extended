@@ -1,4 +1,5 @@
-"""PTX owner/reset/save source contracts; these checks do not execute Arma or CBA."""
+from backlog_clinical_probes import chest_reset_probe
+"""PTX owner/reset/save contracts, including a mocked-engine SQF reset probe."""
 from historical_source import read_source
 from pathlib import Path
 import re
@@ -123,15 +124,8 @@ class PtxLifecycle(unittest.TestCase):
         self.assertNotIn("Pneumothorax_PFH", breathing)
 
     def test_instructor_clear_retires_model_without_touching_equipment(self):
-        mega = source("megacodeChestInjury")
-        clear = mega[mega.index('if (_t == "ncd")'):mega.index('switch (_t)')]
-        for field in ("ACME_ptx_state", "ACME_ptx_tensionSeverity", "ACME_ptx_tensionProgress"):
-            self.assertIn(field, clear)
-        self.assertIn("CBA_fnc_removePerFrameHandler", clear)
-        self.assertIn('["ACM_breathing_Pneumothorax_PFH", -1, false]', clear)
-        self.assertIn('["ACM_breathing_Hardcore_Pneumothorax", false, true]', clear)
-        for unrelated in ("ACME_CS_holeData", "ACME_thora_tube_left", "ACME_ncd_placed"):
-            self.assertNotIn(unrelated, clear)
+        # Execute the instructor command plus actual breathing writers; check equipment and timer state.
+        chest_reset_probe()
 
     def test_training_injury_seeds_model_before_native_projection(self):
         mega = source("megacodeChestInjury")

@@ -1,3 +1,6 @@
+from test_menu_death_lifecycle import execute
+from backlog_contract_expression import assignment_expression
+from backlog_clinical_probes import compound_save_probe
 from historical_source import read_source, assert_release_identity
 from pathlib import Path
 import unittest, re
@@ -12,8 +15,10 @@ class B19Source(unittest.TestCase):
         c=read('config.cpp')
         for fn in ('vialHolder','vialItemCount','vialTake','vialRefund'):
             self.assertIn(f'class {fn} {{}};',c)
+        prep=read('../circulation/XEH_PREP.hpp')
         for fn in ('Syringe_PrepareFinish','Syringe_GetMedicationList','Syringe_UpdateMedicationList'):
-            self.assertIn(f'class {fn} ',c)
+            self.assertEqual(prep.count(f'PREP({fn});'),1)
+            self.assertTrue((ROOT.parent/'circulation/functions'/f'fnc_{fn}.sqf').is_file())
     def test_native_syringe_debits_exact_ml(self):
         s=read('overrides/fn_syringePrepareFinish.sqf')
         self.assertIn('ACME_fnc_vialTake',s)
@@ -38,12 +43,14 @@ class B19Source(unittest.TestCase):
         self.assertIn('ACM_circulation_SyringeDraw_MaxDose',s)
         # The hard stop is ledger-backed through vialSession; B41 removed a second redundant stock scan.
         self.assertIn('ACME_fnc_vialSession',s); self.assertIn('private _hardMax',s)
-    def test_compound_save_keeps_original_save_label_and_reopens_draw_dialog(self):
+    def test_compound_save_keeps_label_and_resets_in_place(self):
         begin=read('functions/fn_skCompoundBegin.sqf')
         self.assertIn('ctrlSetText "Save"',begin)
         self.assertNotIn('Save & New Syringe',begin)
         s=read('functions/fn_skCompoundSave.sqf')
-        self.assertIn('ACME_fnc_skOpenDraw',s); self.assertIn('closeDialog 0',s)
+        self.assertNotIn('call ACME_fnc_skOpenDraw',s)
+        self.assertNotIn('closeDialog',s)
+        compound_save_probe()
     def test_infusion_done_explicitly_returns(self):
         d=read('functions/fn_infusionDone.sqf'); c=read('functions/fn_skClose.sqf')
         self.assertIn('ACME_SK_suppressReturn',d); self.assertIn('ACME_fnc_reopenTransfusion',d)
@@ -53,14 +60,23 @@ class B19Source(unittest.TestCase):
         self.assertRegex(s,r'rhythmGet\) == 5\) exitWith \{\[0, 0\]\}')
         self.assertIn('ACM_circulation_AED_NIBP_Display", [0,0]',read('functions/fn_circHandle.sqf'))
         co=read('overrides/fn_getCardiacOutput.sqf'); self.assertIn('rhythmGet) == 5',co); self.assertIn('exitWith {0}',co)
-    def test_pea_morphology_distinct_from_sinus(self):
+    def test_pea_subtype_and_mechanical_pressure_keep_native_authority(self):
         g=read('overrides/fn_genEKG.sqf')
-        self.assertIn('case 5: {  // true PEA',g)
-        self.assertIn('[0,-2,-8,-20,-38,-50',g)
-        m=read('functions/fn_megacodePanelTick.sqf')
-        self.assertIn('case (_acmRhythm == 5)',m)
-        self.assertNotIn('case (_acmRhythm in [0, 5])',m)
-        self.assertIn('_SBP = 0; _DBP = 0',m)
+        gate=assignment_expression(g,'_widePEA')
+        execute('private _target=_patient; private _wideSubstrate=false; ACME_fnc_peaIsWide={_wideSubstrate};'+"""
+            {
+                _x params ["_rhythm","_substrate","_expected"];
+                _wideSubstrate=_substrate;
+                private _widePEA = """+gate+""";
+                [_widePEA isEqualTo _expected,"PEA subtype overrode another rhythm"] call _check;
+            } forEach [[5,true,true],[5,false,false],[0,true,false],[-1,true,false],[1,true,false],[2,true,false],[3,true,false],[4,true,false]];
+        """)
+        pea=g.split('case 5:',1)[1].split('case 3;',1)[0]
+        self.assertIn('if (_widePEA) then {',pea)
+        self.assertIn('[0,-2,-8,-20,-38,-50',pea)
+        panel=read('functions/fn_megacodePanelTick.sqf')
+        self.assertIn('if (_arrest && {_nativeRhythm == 5}) then {_sbp=0; _dbp=0;};',panel)
+        self.assertIn('call ACM_circulation_fnc_displayAEDMonitor_generateEKG',panel)
     def test_artifact_is_visual_only_and_network_visible(self):
         a=read('functions/fn_ecgArtifactApply.sqf')
         self.assertIn('_mask set [_idx, false]',a)
@@ -69,14 +85,27 @@ class B19Source(unittest.TestCase):
         o=read('functions/fn_ownerDispatch.sqf'); self.assertIn('case "ecgJostle"',o)
         e=read('functions/fn_ecgJostleLocal.sqf'); self.assertIn('ACME_ecgJostleLeases',e); self.assertIn(', true]',e)
     def test_ace_timer_events_drive_artifact(self):
-        p=read('functions/fn_postInit.sqf')
+        p=read('functions/fn_registerEcgJostleRuntime.sqf')
         for ev in ('ace_treatmentStarted','ace_treatmentSucceded','ace_treatmentFailed'):
             self.assertIn(ev,p)
-        for rel in ('functions/fn_ivMinigameOpen.sqf','functions/fn_chestSealOpen.sqf','functions/fn_thoraOpen.sqf','functions/fn_laryngoInit.sqf'):
+        self.assertIn('[_patient,_key,true] call ACME_fnc_ecgJostleRequest',p)
+        self.assertIn('[_patient,_key,false] call ACME_fnc_ecgJostleRequest',p)
+        self.assertIn('ACME_ecgJostleLeaseSec = 180;',p)
+        for rel in ('functions/fn_ivMinigameOpen.sqf','functions/fn_thoraOpen.sqf','functions/fn_laryngoInit.sqf'):
             self.assertIn('ACME_fnc_ecgJostleRequest',read(rel))
+        # Chest artifacts begin only once the dialog actually loads, not during a
+        # potentially refused/pending open. The same viewer lease is cleared on close.
+        init=read('functions/fn_chestSealInit.sqf')
+        close=read('functions/fn_chestSealClose.sqf')
+        self.assertIn('_this call ACME_fnc_chestSealInit',read('config.cpp'))
+        self.assertIn('[_patient, "ui:chest:" + str clientOwner, true] call ACME_fnc_ecgJostleRequest',init)
+        self.assertIn('[_patient, "ui:chest:" + str clientOwner, false] call ACME_fnc_ecgJostleRequest',close)
     def test_monitor_generators_apply_artifact(self):
-        g=read('overrides/fn_genEKG.sqf'); self.assertGreaterEqual(g.count('ACME_fnc_ecgArtifactApply'),2)
-        self.assertIn('ACME_fnc_ecgArtifactStrength',read('functions/fn_megacodePanelTick.sqf'))
+        g=read('overrides/fn_genEKG.sqf')
+        self.assertGreaterEqual(g.count('call ACME_fnc_ecgArtifactApply'),2)
+        panel=read('functions/fn_megacodePanelTick.sqf')
+        self.assertEqual(panel.count('call ACM_circulation_fnc_displayAEDMonitor_generateEKG'),2)
+        self.assertNotIn('call ACME_fnc_ecgArtifactApply',panel)
 
 class B19Reference(unittest.TestCase):
     def test_propofol_50ml_conserves_five_ten_ml_draws(self):

@@ -1,14 +1,8 @@
-Unresolved original source-contract outcomes after batch 1: 249
-Base: 19d01b8b27fd53bb9d3c381c7445add589336159
+Unresolved original source-contract outcomes after batch 2: 238
+Base: 5e134975242f182ebbed1225c96709eb7b2cce96
+Previous batch 1 retained unchanged; this index removes only the 11 verified IDs in batch 2.
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
-H008 addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock
-H012 addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress
-H015 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact
-H017 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered
-H018 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact
-H021 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_pea_morphology_distinct_from_sinus
-H040 addons/acm_extended/tools/test_b21_rhythm_sync.py::B21RhythmRegression::test_threshold_forced_vt_can_recover_but_true_vt_is_not_blanket_cleared
 H044 addons/acm_extended/tools/test_b22_narc_revert.py::B22UIContracts::test_infusion_inherits_same_original_row_overlay
 H046 addons/acm_extended/tools/test_b22_narc_revert.py::B22UIContracts::test_partial_vial_ledger_still_persists
 H048 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23MedicationListContracts::test_normal_narc_box_rebuilds_empty_backing_list
@@ -28,10 +22,6 @@ H085 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::te
 H086 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::test_known_order_survives_native_config_declaration_order
 H088 addons/acm_extended/tools/test_b33_examine_menu.py::CorpseChestAssessment::test_dead_findings_survive_without_a_live_obtunded_roll
 H093 addons/acm_extended/tools/test_b34_tray_silhouettes.py::TraySilhouetteContracts::test_existing_thoracostomy_shadow_survives_hover_and_inventory_refresh
-H095 addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment
-H099 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them
-H116 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury
-H117 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds
 H120 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_both_posture_actions_remain_on_head_and_chest
 H121 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors
 H127 addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py::B39RuntimeStampAndSpawn::test_obtunded_weapon_path_does_not_delete_projectiles
