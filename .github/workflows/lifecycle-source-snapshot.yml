@@ -1,0 +1,41 @@
+name: Lifecycle source snapshot
+on:
+  push:
+    branches: [fix/2026-09-22-confirmed-lifecycle]
+    paths: [.github/workflows/lifecycle-source-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c3dd15f41a56a253461d876b478f91849d23551f
+          fetch-depth: 1
+      - name: Export tracked text and complete tree manifest
+        run: |
+          mkdir -p /tmp/acme-snapshot
+          python3 - <<'PY'
+          import json,pathlib,subprocess,zipfile
+          records=subprocess.check_output(['git','ls-tree','-r','-z','HEAD']).split(b'\0')
+          manifest={}
+          extensions={'.sqf','.hpp','.cpp','.inc','.py','.toml','.rhai','.json','.md','.txt','.yml','.yaml','.xml','.ini','.cfg','.h','.html','.css','.js','.ps1','.bat','.sh','.rvmat'}
+          with zipfile.ZipFile('/tmp/acme-snapshot/source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for rec in records:
+                  if not rec: continue
+                  meta,path=rec.split(b'\t',1)
+                  mode,kind,sha=meta.decode().split();path=path.decode()
+                  if kind!='blob': continue
+                  manifest[path]={'sha':sha,'mode':mode}
+                  p=pathlib.Path(path)
+                  if p.suffix.lower() in extensions or p.name.startswith('$') or p.name.startswith('.'):
+                      z.write(p,path)
+              z.writestr('snapshot-manifest.json',json.dumps({'commit':'c3dd15f41a56a253461d876b478f91849d23551f','files':manifest},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lifecycle-source
+          path: /tmp/acme-snapshot/source.zip
+          retention-days: 7
