@@ -226,7 +226,7 @@ index c88c0efd5e0b3bc15fe97d4eb243f435084dcce8..6103580fccf4d2511cfda608613d29a9
  
  def txt(rel):
 -    return (ROOT / rel).read_text(encoding="utf-8", errors="replace")
-+    return read_source(ROOT / rel, encoding="utf-8", errors="replace')
++    return read_source(ROOT / rel, encoding="utf-8", errors="replace")
  
  
  def test_version_batch():
