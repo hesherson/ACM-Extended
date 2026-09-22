@@ -1,0 +1,43 @@
+name: Backlog reconciliation snapshot
+on:
+  push:
+    branches: [audit/historical-backlog-20260922]
+    paths: [.github/workflows/backlog-reconciliation-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 5e134975242f182ebbed1225c96709eb7b2cce96
+          fetch-depth: 1
+      - name: Copy tracked text and full blob manifest
+        run: |
+          mkdir -p /tmp/reconciliation
+          python3 - <<'PY'
+          import subprocess,pathlib,json,zipfile
+          manifest={}
+          with zipfile.ZipFile('/tmp/reconciliation/source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for entry in subprocess.check_output(['git','ls-tree','-rz','HEAD']).split(b'\0'):
+                  if not entry: continue
+                  meta,path=entry.split(b'\t',1)
+                  mode,kind,sha=meta.decode().split(); path=path.decode()
+                  if kind!='blob': continue
+                  data=pathlib.Path(path).read_bytes()
+                  manifest[path]={'mode':mode,'sha':sha,'size':len(data)}
+                  try: data.decode('utf-8-sig')
+                  except UnicodeDecodeError: continue
+                  if b'\0' in data: continue
+                  z.writestr(path,data)
+              z.writestr('RECONCILIATION_TREE.json',json.dumps(manifest,indent=2))
+          print('Pinned commit:',subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
+          print('Tracked files:',len(manifest))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backlog-reconciliation-source
+          path: /tmp/reconciliation
+          retention-days: 7
