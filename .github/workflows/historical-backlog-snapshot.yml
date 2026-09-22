@@ -1,0 +1,69 @@
+name: Historical backlog baseline
+on:
+  push:
+    branches: [audit/historical-backlog-20260922]
+    paths: [.github/workflows/historical-backlog-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 19d01b8b27fd53bb9d3c381c7445add589336159
+          fetch-depth: 1
+      - name: Snapshot tracked files and hashes
+        run: |
+          mkdir -p /tmp/backlog-results
+          python3 - <<'PY'
+          import subprocess,pathlib,zipfile,json
+          files={}
+          with zipfile.ZipFile('/tmp/backlog-results/source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for entry in subprocess.check_output(['git','ls-tree','-rz','HEAD']).split(b'\0'):
+                  if not entry: continue
+                  meta,p=entry.split(b'\t',1); mode,kind,sha=meta.decode().split(); p=p.decode()
+                  if kind!='blob': continue
+                  data=pathlib.Path(p).read_bytes()
+                  files[p]={'mode':mode,'sha':sha,'size':len(data)}
+                  try: data.decode('utf-8-sig')
+                  except UnicodeDecodeError: continue
+                  if b'\0' in data: continue
+                  z.writestr(p,data)
+              z.writestr('BACKLOG_TRACKED_TREE.json',json.dumps(files,indent=2))
+          print('Pinned source files:',len(files))
+          PY
+      - name: Pinned execution tools
+        run: |
+          mkdir -p /tmp/backlog-tools
+          curl -fL --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/backlog-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/backlog-tools/hemtt' | sha256sum -c
+          curl -fL --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/backlog-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/backlog-tools/sqfvm.zip' | sha256sum -c
+          unzip /tmp/backlog-tools/sqfvm.zip -d /tmp/backlog-tools
+          chmod +x /tmp/backlog-tools/hemtt /tmp/backlog-tools/sqfvm_linux_x64_gcc/sqfvm
+          python3 -m pip install pytest pytest-subtests numpy pillow soundfile
+      - name: Record historical baseline, including known failures
+        env:
+          HEMTT: /tmp/backlog-tools/hemtt
+          SQFVM: /tmp/backlog-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: |
+          python3 - <<'PY'
+          import subprocess,pathlib,json
+          # B77 exits the interpreter at import; record that separately rather than silently lose collection.
+          excluded=[str(p) for p in pathlib.Path('addons/acm_extended/tools').glob('test*b77*')]
+          argv=['python3','-m','pytest','addons/acm_extended/tools','--continue-on-collection-errors','-q','--tb=short','--junitxml=/tmp/backlog-results/baseline.xml']
+          argv += ['--ignore='+p for p in excluded]
+          p=subprocess.run(argv,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=480)
+          pathlib.Path('/tmp/backlog-results/baseline.log').write_text(p.stdout)
+          pathlib.Path('/tmp/backlog-results/command.json').write_text(json.dumps({'argv':argv,'returncode':p.returncode,'excluded_import_exit':excluded},indent=2))
+          print(p.stdout[-12000:])
+          print('Capturing failing results is intentional. This is not a passing-suite declaration.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historical-backlog-baseline
+          path: /tmp/backlog-results
+          retention-days: 14
