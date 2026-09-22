@@ -1,0 +1,85 @@
+name: ACME preservation audit
+on:
+  push:
+    branches: [audit/2026-09-22-preserve-regressions]
+    paths: [.github/workflows/acme-preservation-audit.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Read exact audited snapshots
+        run: |
+          git fetch --no-tags --depth=1 origin 5dca0429d9ef211f3366cd54b4f3c95274ba7a48 cf43be2be4b9d0d741e410d688de4abae3aedbf9 d878b60bd03040aae2e2ff6674b1f6e524694339 df7c8b31d6715e8144c8948c6eb58f1088c728d9
+          python3 - <<'PY'
+          import json, pathlib, subprocess, tempfile, zipfile
+          refs = {
+              'baseline': '5dca0429d9ef211f3366cd54b4f3c95274ba7a48',
+              'common': 'cf43be2be4b9d0d741e410d688de4abae3aedbf9',
+              'approved': 'd878b60bd03040aae2e2ff6674b1f6e524694339',
+              'current': 'df7c8b31d6715e8144c8948c6eb58f1088c728d9',
+          }
+          def git(*args):
+              return subprocess.check_output(['git', *args])
+          trees = {}
+          selected = {}
+          extensions = {'.sqf','.hpp','.cpp','.py','.rhai','.toml','.json','.md','.txt','.yml','.yaml','.ini','.cfg','.xml'}
+          for label, ref in refs.items():
+              tree = {}
+              for record in git('ls-tree','-r','-z',ref).split(b'\0'):
+                  if not record: continue
+                  meta, path = record.split(b'\t',1)
+                  mode, kind, sha = meta.decode().split()
+                  path = path.decode()
+                  if kind == 'blob': tree[path] = {'mode':mode,'sha':sha}
+              trees[label] = tree
+              selected[label] = {p:v for p,v in tree.items() if pathlib.PurePosixPath(p).suffix.lower() in extensions or pathlib.PurePosixPath(p).name in ['$PBOPREFIX$','.gitattributes','.gitignore']}
+          changed = [p for p in sorted(set(trees['common']) | set(trees['approved'])) if trees['common'].get(p) != trees['approved'].get(p)]
+          conflicts = []
+          merged = {}
+          with tempfile.TemporaryDirectory() as td:
+              for p in changed:
+                  versions = {}
+                  for label in ['common','baseline','approved']:
+                      versions[label] = git('cat-file','blob',trees[label][p]['sha']) if p in trees[label] else None
+                  a,b,c = versions['common'],versions['baseline'],versions['approved']
+                  if b == a or b == c:
+                      merged[p] = c
+                  elif a is None or b is None or c is None:
+                      conflicts.append(p)
+                  else:
+                      paths = []
+                      for idx, content in enumerate([b,a,c]):
+                          f = pathlib.Path(td) / str(idx)
+                          f.write_bytes(content.replace(b'\r\n',b'\n'))
+                          paths.append(str(f))
+                      result = subprocess.run(['git','merge-file','-p','--diff3',*paths],capture_output=True)
+                      merged[p] = result.stdout
+                      if result.returncode: conflicts.append(p)
+          out = pathlib.Path('/tmp/acme-audit-sources.zip')
+          with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
+              z.writestr('metadata.json',json.dumps({'refs':refs,'trees':trees,'approved_paths':changed,'conflicts':conflicts},indent=2))
+              # Complete current text snapshot and only changed reference blobs.
+              for p,v in selected['current'].items(): z.writestr('current/'+p,git('cat-file','blob',v['sha']))
+              for label in ['common','baseline','approved']:
+                  for p,v in selected[label].items():
+                      if label == 'baseline' or p in changed:
+                          z.writestr(label+'/'+p,git('cat-file','blob',v['sha']))
+              for p,content in merged.items():
+                  if content is not None: z.writestr('merged-approved/'+p,content)
+          print('Approved change paths:',len(changed))
+          print('Three-way conflicts:',json.dumps(conflicts))
+          print('Artifact bytes:',out.stat().st_size)
+          print('No source commit or main update was performed.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acme-audit-sources
+          path: /tmp/acme-audit-sources.zip
+          retention-days: 7
