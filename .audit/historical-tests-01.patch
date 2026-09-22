@@ -1,0 +1,176 @@
++        [!(_patient getVariable "ACM_breathing_ChestSeal_State"),"tract sealed unrelated chest wounds"] call _check;
++        [(_patient getVariable "ACME_CS_holeData") isEqualTo ["external wound"],"external wounds changed"] call _check;
++        _patient setVariable ["ACME_thora_open_right","finger"];
++        _patient setVariable ["ACME_thora_tube_right",true];
++        [_patient,_medic,"thoraSeal",["right",5]] call _effect;
++        [count _treat==1,"installed tube was sealed over"] call _check;
++        _patient setVariable ["ACME_CS_blockedEffectEpoch","old"];
++        [_patient,_medic,"peel",[],"old",1,1] call _effect;
++        [count _treat==1,"blocked epoch applied peel"] call _check;
++        [_patient,_medic,"peel",[],"new",1,2] call _effect;
++        [_treat isEqualTo ["thoraSeal","peel"],"fresh peel not accepted"] call _check;
++        [_patient,_medic,"peel",[],"new",1,2] call _effect;
++        [_patient,_medic,"peel",[],"new",1,1] call _effect;
++        [count _treat==2 && {_globalSeal==0},"duplicate peel/new injury or blanket seal"] call _check;
++    ''')
++
++
++def bvm_with_cpr_probe():
++    from test_bvm_startup import setup
++    execute(setup()+'''
++        _cprActive=true;
++        [_medic,_patient,false,false] call ACM_breathing_fnc_useBVM;
++        [ACM_core_ContinuousAction_Active,"CPR blocked BVM startup"] call _check;
++        call _tick; CBA_missionTime=13; call _tick; CBA_missionTime=20; call _tick;
++        [_squeezes==2,"CPR blocked BVM delivery"] call _check;
++    ''')
++
++
++def reserved_roles_probe():
++    from test_bvm_startup import setup
++    cpr=(ROOT/'addons/circulation/functions/fnc_cprSessionValid.sqf').read_text().replace('_medic distance2D _patient','_distance')
++    execute(setup()+'ACM_circulation_fnc_cprSessionValid={'+adapt(cpr,'circulation')+'};'+'''
++        _patient setVariable ["ACM_breathing_BVM_Medic",_medic];
++        _patient setVariable ["ACM_breathing_BVM_provider",objNull];
++        _patient setVariable ["ACM_circulation_CPR_session",[_medic,4]];
++        _medic setVariable ["ACM_circulation_CPR_Patient",_patient];
++        _medic setVariable ["ACM_circulation_CPR_Epoch",4];
++        _medic setVariable ["ACM_circulation_isPerformingCPR",false];
++        [[_medic,_patient] call ACM_breathing_fnc_bvmSessionValid,"paused BVM lost reservation"] call _check;
++        [[_medic,_patient] call ACM_circulation_fnc_cprSessionValid,"paused CPR lost reservation"] call _check;
++        [!([missionNamespace,_patient] call ACM_breathing_fnc_canUseBVM),"second BVM provider admitted"] call _check;
++        {
++            _x params ["_newAlive","_newUnconscious","_newDistance"];
++            _alive=_newAlive; _unconscious=_newUnconscious; _distance=_newDistance;
++            [!([_medic,_patient] call ACM_breathing_fnc_bvmSessionValid),"unavailable BVM holder retained"] call _check;
++            [!([_medic,_patient] call ACM_circulation_fnc_cprSessionValid),"unavailable CPR holder retained"] call _check;
++        } forEach [[false,false,1],[true,true,1],[true,false,8]];
++    ''')
++
++
++def compound_save_probe():
++    source=function('skCompoundSave').replace('findDisplay 84000','_dialogHandle')
++    source=re.sub(r'_dlg displayCtrl 84004','objNull',source)
++    execute('private _dialogHandle=uiNamespace; private _save={'+adapt(source)+'};'+'''
++        private _steps=[];
++        private _accepted=true;
++        ACME_fnc_skPendingTagCommit={_steps pushBack "tag";};
++        ACME_fnc_skCompoundCommit={_steps pushBack "commit"; _accepted};
++        ACME_fnc_skRefreshDrawn={_steps pushBack "drawn";};
++        ACME_fnc_skPendingTagReset={_steps pushBack "reset";};
++        ACME_fnc_skCompoundBegin={_steps pushBack "begin";};
++        ACME_fnc_skListRefresh={_steps pushBack "list";};
++        ACME_fnc_skPendingTagRender={_steps pushBack "render";};
++        uiNamespace setVariable ["ACME_SK_WasteStage","compound"];
++        uiNamespace setVariable ["ACME_SK_CompoundComponents",["sample"]];
++        _dialog=true;
++        call _save;
++        [_steps isEqualTo ["tag","commit","drawn","reset","begin","list","render"],"save commit/reset order"] call _check;
++        [_dialog && {count _waits==0},"save required deferred dialog reconstruction"] call _check;
++        _steps=[]; _accepted=false;
++        call _save;
++        [_steps isEqualTo ["tag","commit"],"failed save erased draft"] call _check;
++        _steps=[]; uiNamespace setVariable ["ACME_SK_CompoundComponents",[]];
++        call _save;
++        [_steps isEqualTo [],"empty draft committed"] call _check;
++    ''')
++
++
++def thora_access_probe():
++    # Execute actual provider callback and item selector. Rendering and ACE inventory
++    # access are the mocked boundaries; all rejection/consumption/state ordering is real.
++    source=function('thoraMouseDown').replace('_tubeMedic removeItem "ACM_ChestTubeKit";',
++        'if (_debitAccepted) then {_tubeCount=_tubeCount-1;}; _debits=_debits+1;')
++    execute('ACME_fnc_thoraKitItem={'+adapt(function('thoraKitItem'))+'};'+
++        'ACME_fnc_thoraSideStateCommit={'+adapt(function('thoraSideStateCommit'))+'};'+
++        'ACME_fnc_thoraClosureMode={'+adapt(function('thoraClosureMode'))+'};'+
++        'private _down={'+adapt(source)+'};'+
++        'private _up={'+adapt(function('thoraMouseUp'))+'};'+'''
++        private _disposable=false; private _surgical=false; private _permitted=true;
++        private _debitAccepted=true; private _debits=0; private _tubeCount=1;
++        private _nativeStarts=0; private _nativeTubes=0;
++        ace_medical_treatment_fnc_hasItem={
++            if (((_this select 2) select 0)=="ACM_ThoracostomyKit") then {_disposable} else {_surgical}
++        };
++        ace_medical_treatment_fnc_useItem={
++            _debits=_debits+1;
++            if (_debitAccepted) then {[_medic,(_this select 2) select 0]} else {[_medic,""]}
++        };
++        ace_common_fnc_getCountOfItem={_tubeCount};
++        ACME_fnc_procedureAllowed={_permitted};
++        ACME_fnc_minigameInputMouse={false};
++        ACME_fnc_thoraCanSweep={false};
++        ACME_fnc_thoraCursorUV={[0.5,0.5]};
++        ACME_fnc_thoraBumpVer={}; ACME_fnc_thoraRender={};
++        ACME_fnc_thoraRenderOpen={}; ACME_fnc_thoraRenderTube={};
++        ACME_fnc_thoraSelectTool={}; ACME_fnc_thoraPassiveDrain={};
++        ACM_breathing_fnc_Thoracostomy_start={_nativeStarts=_nativeStarts+1;};
++        ACM_breathing_fnc_Thoracostomy_insertChestTube={_nativeTubes=_nativeTubes+1;};
++        uiNamespace setVariable ["ACME_Thora_Medic",_medic];
++        uiNamespace setVariable ["ACME_Thora_Patient",_patient];
++        uiNamespace setVariable ["ACME_Thora_Side","left"];
++        uiNamespace setVariable ["ACME_Thora_Held","finger"];
++        _patient setVariable ["ACME_thora_incision_left",[[0.5,0.5],0,2]];
++        missionNamespace setVariable ["ACME_thora_allowSurgicalKit",true];
++        {
++            _x params ["_disp","_surg","_allowed","_debit","_expectedOpen","_expectedDebit"];
++            _disposable=_disp;_surgical=_surg;_permitted=_allowed;_debitAccepted=_debit;
++            _debits=0;_nativeStarts=0;
++            _patient setVariable ["ACME_thora_open_left","kelly"];
++            [objNull,0] call _down;
++            [(_patient getVariable "ACME_thora_open_left")==_expectedOpen,"finger commit ignored kit/access"] call _check;
++            [_debits==_expectedDebit,"disposable/reusable debit"] call _check;
++            [_nativeStarts==(if(_expectedOpen=="finger")then{1}else{0}),"native start before accepted kit"] call _check;
++        } forEach [[true,true,true,true,"finger",1],[false,true,true,true,"finger",0],
++            [true,false,true,false,"kelly",1],[false,false,true,true,"kelly",0],[true,true,false,true,"kelly",0]];
++        _surgical=true;_disposable=false;
++        missionNamespace setVariable ["ACME_thora_allowSurgicalKit",false];
++        [([_medic,_patient] call ACME_fnc_thoraKitItem)=="","disabled reusable kit accepted"] call _check;
++        missionNamespace setVariable ["ACME_thora_allowSurgicalKit",true];
++        {
++            _x params ["_allowed","_hasKit"];
++            _permitted=_allowed;_surgical=_hasKit;_disposable=false;
++            uiNamespace setVariable ["ACME_Thora_Cutting",true];
++            uiNamespace setVariable ["ACME_Thora_KellyArmed",true];
++            _patient setVariable ["ACME_thora_open_left","split"];
++            [objNull,0] call _up;
++            [! (uiNamespace getVariable "ACME_Thora_Cutting"),"rejected incision remains armed"] call _check;
++            [! (uiNamespace getVariable "ACME_Thora_KellyArmed"),"rejected Kelly remains armed"] call _check;
++            [(_patient getVariable "ACME_thora_open_left")=="split","lost access committed tract"] call _check;
++        } forEach [[false,true],[true,false]];
++        uiNamespace setVariable ["ACME_Thora_Held","tube"];
++        uiNamespace setVariable ["ACME_Thora_TubeSnap",true];
++        {
++            _x params ["_allowed","_debit","_expected"];
++            _permitted=_allowed;_debitAccepted=_debit;_debits=0;_tubeCount=1;_nativeTubes=0;
++            _patient setVariable ["ACME_thora_closed_left",false];
++            _patient setVariable ["ACME_thora_tube_left",false];
++            [objNull,0] call _down;
++            [(_patient getVariable "ACME_thora_tube_left") isEqualTo _expected,"tube published before accepted debit"] call _check;
++            [_nativeTubes==(if(_expected)then{1}else{0}),"native tube registered before accepted debit"] call _check;
++        } forEach [[false,true,false],[true,false,false],[true,true,true]];
++    ''')
+diff --git a/addons/acm_extended/tools/historical_source.py b/addons/acm_extended/tools/historical_source.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..012d50d7c81ea937a17019c99b242fc74fd7c524
+--- /dev/null
++++ b/addons/acm_extended/tools/historical_source.py
+@@ -0,0 +1,211 @@
++"""Read current source for pre-fork historical contracts. No source or global patches.
++
++Aliases are exact reviewed moves, not a fuzzy filename search. Only the old startup
++and debug dispatchers expand statically named initialization/debug module calls.
++This is a structural source bundle, not proof of runtime branch reachability.
++Use plain Path.read_text for a single-file snapshot or any execution test.
++"""
++from pathlib import Path
++from source_scan import lex
++ROOT = Path(__file__).resolve().parents[3]
++ALIASES = {'addons/acm_extended/overrides/fn_Syringe_Inject.sqf': 'addons/circulation/functions/fnc_Syringe_Inject.sqf',
++ 'addons/acm_extended/overrides/fn_Thoracostomy_closeLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_closeLocal.sqf',
++ 'addons/acm_extended/overrides/fn_Thoracostomy_insertChestTubeLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_insertChestTubeLocal.sqf',
++ 'addons/acm_extended/overrides/fn_Thoracostomy_resealChestTubeLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_resealChestTubeLocal.sqf',
++ 'addons/acm_extended/overrides/fn_Thoracostomy_startLocal.sqf': 'addons/breathing/functions/fnc_Thoracostomy_startLocal.sqf',
++ 'addons/acm_extended/overrides/fn_aedAnalyzeRhythm.sqf': 'addons/circulation/functions/fnc_AED_AnalyzeRhythm.sqf',
++ 'addons/acm_extended/overrides/fn_applyChestSealLocal.sqf': 'addons/breathing/functions/fnc_applyChestSealLocal.sqf',
++ 'addons/acm_extended/overrides/fn_attemptROSC.sqf': 'addons/circulation/functions/fnc_attemptROSC.sqf',
