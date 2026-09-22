@@ -1,0 +1,109 @@
+index a54797ffb2d47f3fa6439f7fa5c93956b3cb978f..7c96c451762e378df421ec9e772ade4bf1a23472 100644
+--- a/addons/acm_extended/tools/test_native_bvm_dp.py
++++ b/addons/acm_extended/tools/test_native_bvm_dp.py
+@@ -9,6 +9,7 @@ import pytest
+ 
+ from test_bvm_startup import completion_setup, setup as bvm_setup
+ from test_menu_death_lifecycle import adapt, execute, read
++from historical_source import switch_case_body
+ 
+ 
+ def pressure_source(name):
+@@ -50,6 +51,13 @@ def setup():
+         ACM_damage_fnc_clotWoundsOnBodyPart = {};
+         CBA_fnc_execNextFrame = {_waits pushBack [_this select 0,_this select 1];};
+     '''
++    # The BVM fixture simulates only the breath command. Execute the current
++    # owner-side DP marker branch too, rather than letting the mock drop it.
++    marker=switch_case_body(read("ownerDispatch"),"directPressureMarker")
++    source += ('private _originalOwnerDispatch = ACME_fnc_ownerDispatch; '
++               'ACME_fnc_ownerDispatch = {params ["_patient","_command","_args"]; '
++               'if (_command == "directPressureMarker") exitWith {' + adapt(marker) + '}; '
++               '_this call _originalOwnerDispatch;};')
+     for name in ("doAnimHeld", "directPressureStop", "directPressurePose", "directPressureTick", "directPressureLimb", "directPressureTorso", "directPressureStart"):
+         source += f"ACME_fnc_{name} = {{" + pressure_source(name) + "};"
+     source += '''
+diff --git a/addons/acm_extended/tools/test_push_seconds_execution.py b/addons/acm_extended/tools/test_push_seconds_execution.py
+index e04b7392afb6e03df19b201c4e44e2bef1ee323f..02fb564225c3afe0215e1d7122f5625f1ee98a7f 100644
+--- a/addons/acm_extended/tools/test_push_seconds_execution.py
++++ b/addons/acm_extended/tools/test_push_seconds_execution.py
+@@ -38,7 +38,7 @@ def test_actual_edit_handler_preserves_digits_and_backspace_without_rewriting():
+         {
+             _x params ["_testInput", "_expected", "_expectedWrites"];
+             private _writes = 0;
+-            [0] call {''' + handler + '''};
++            [uiNamespace] call {''' + handler + '''};
+             if (_testInput != _expected || {_writes != _expectedWrites}) then {_ok = false;};
+         } forEach [["", "", 0], ["3", "3", 0], ["30", "30", 0], ["120", "120", 0],
+             ["300", "300", 0], ["30s", "30", 1], ["abc", "", 1]];
+diff --git a/docs/audits/2026-09-22-historical-backlog-batch1.md b/docs/audits/2026-09-22-historical-backlog-batch1.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..501848c91353292c6bf8ff2482d9cd0f100a00f2
+--- /dev/null
++++ b/docs/audits/2026-09-22-historical-backlog-batch1.md
+@@ -0,0 +1,86 @@
++# Historical backlog, batch 1: runnable tests and current clinical contracts
++
++## Scope and result
++
++Pinned starting commit: `19d01b8b27fd53bb9d3c381c7445add589336159`.
++This is a **test-infrastructure and test-contract update**, not a gameplay patch.
++No SQF, addon configuration, assets, medication values, animation timing or patient-state logic changed.
++The previously repaired four runtime defects remain unchanged.
++
++The original source-contract subset goes from **262 unresolved outcomes to 249**. The 13 resolved identities are H059, H060, H061, H062, H064, H065 (CPR/BVM/junctional), H089, H090, H092 (thoracostomy access/inventory), and H441, H443, H445, H448 (IV difficulty/selection/gauge). This does not clear the remaining 249 or make the broad suite green.
++
++## Reproduced broad addon-suite results
++
++HEMTT 1.22.0 and SQF-VM v2026.04.03-ed9f5f5 were available for both runs; Python/pytest versions are recorded in the evidence. Only the historical addon tools directory is counted here. The repository-root historical tools are a different scope.
++
++| Source | Failed outcomes | Passed | Skipped | Collection/setup errors | Passing subtests |
++| --- | ---: | ---: | ---: | ---: | ---: |
++| Unmodified 19d01b8b | 460 | 1,796 | 4 | 12 | 2,747 |
++| Batch 1 candidate | 299 | 2,505 | 4 | 0 | 5,518 |
++
++Before: seven collection errors and five shared SVT setup errors. After: zero collection or setup errors. The unchanged four skips include unavailable packaged-release fixtures and an existing retired check, not newly suppressed failures.
++
++The baseline consistently excludes B77 because its module-level sys.exit prevents collection. The candidate refactors B77 to collect every retained check, without excluding it. Collection repairs also expose additional tests and subtests in other modules. Therefore the total test populations differ; a simple raw subtraction is not an adequate accounting of fixed defects.
++
++Identity-based comparison found **183 previously failing outcomes now passing** (160 parent-test reports and 23 subtest reports), **22 newly exposed failing identities**, and **zero previously passing comparable outcomes regressing**. The 22 new failures are five animation assertions in B31 treatment animations, one B37 menu-state assertion, two B38 mixture assertions, four B80 head-menu assertions and ten batch13 medication assertions. These remain visible and unclassified, rather than being bypassed. These are newly executable failures, not proof of 22 new runtime regressions.
++
++Of the original quoted 448 failed outcomes, **173 now pass and 275 still fail**. The 173 include one Hang Bag outcome already fixed before this batch. Thus this batch makes **172** additional original failures pass, plus eleven activated execution failures outside that original count. The 12 original error identities are tracked separately: their modules now collect or their obsolete setup has been replaced by current contracts.
++
++Original outcomes now passing comprise:
++- 100 source-location repairs with original assertions retained;
++- 47 previously version-blocked tests now passing their complete remaining assertions;
++- 12 client-setting outcomes (including subtest identities);
++- 13 clinical/source-contract outcomes from the previously unresolved 262;
++- one pre-existing Hang Bag fix in the pinned baseline.
++
++The 48th version-first test, H306, now gets beyond its old version assertion but still fails on a removed ROSC helper/registration assumption. It remains open; no old ROSC gate was reintroduced to satisfy it.
++
++## Changes and supporting checks
++
++### Read-only source locators
++
++A new opt-in `historical_source.py` maps 42 explicitly known retired Extended override paths to their native implementations. Unknown/missing paths still fail. No Path method, pytest report, assertion, import hook or production file is monkeypatched.
++
++Startup/debug aggregation follows actual init/register/debugMenu call tokens into the called modules. Comments and quoted sample calls are ignored; missing called files fail; repeated calls/cycles are bounded. This is source-presence evidence, not proof that every branch executes in the game.
++
++The mechanical locator pass updates explicit source-read call sites in 78 historical modules without changing their assertion AST counts. Hand-reviewed changes are separated in the evidence diff.
++
++### Release and CBA setting contracts
++
++111 obsolete release-literal assertions across 47 modules now check valid, consistent shipped config/runtime version and build identity, rather than requiring old r7/r28/r42 or 1.2.0-r0 stamps. Later non-version assertions remain active. The release helper has negative tests for mismatched fallback, invalid format and invalid build stamp.
++
++The client-setting assertions inspect the actual sixth CBA setting argument, not an arbitrary zero in a nested array. CBA's own settings init source documents scope 2 as not overwritable and scope 1 as shared. The current accessibility/debug declarations use 2. Tests reject both 0 and 1 for the stronger current client-only contract, reject missing/duplicate declarations, and do not change the settings themselves.
++
++### Collection and fixtures
++
++The compound-plunger parser includes the actual mouse clamp step and defers its regression checks until the plunger test runs. Importing its expression parser no longer prevents unrelated animation tests from collecting.
++
++Medication matrix consumers use the repository's existing source inventory generator in memory from the checked-out native medication definitions plus Extended overrides. No external sibling checkout, fabricated medication definitions or committed generated matrix is required. This source inventory is not an Arma preprocessor or a clinical dosing reference.
++
++B77, B80 and B91 no longer throw assertions/exit during module import. Their retained contracts become individual tests. The B91 flashlight filter check inspects its actual module rather than unrelated startup modules.
++
++The SVT setup was requiring a retired exception preserving atrial rhythms above the native fatal high-rate boundary. Its replacement exercises the actual native-rate/overlay gates, including exact threshold boundaries, native rhythm/arrest takeover, torsades ownership, watchdog event scope and pain-feedback separation. It does not change the game's thresholds or restore that exception. Nineteen cases pass.
++
++### Actual clinical execution coverage
++
