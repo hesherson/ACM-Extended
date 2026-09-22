@@ -1,0 +1,211 @@
+diff --git a/addons/acm_extended/functions/fn_pulsePerfusionProfile.sqf b/addons/acm_extended/functions/fn_pulsePerfusionProfile.sqf
+index 68ad6ea..72d636f 100644
+--- a/addons/acm_extended/functions/fn_pulsePerfusionProfile.sqf
++++ b/addons/acm_extended/functions/fn_pulsePerfusionProfile.sqf
+@@ -41,7 +41,9 @@ private _torsadesMature = _rhythm == 102 && {
+ private _tourniqueted = if (!isNil "ace_medical_treatment_fnc_hasTourniquetAppliedTo") then {
+     [_patient, _bodyPart] call ace_medical_treatment_fnc_hasTourniquetAppliedTo
+ } else {false};
+-private _aajt = if (!isNil "ACME_fnc_aajtOccludes") then {[_patient,_bodyPart] call ACME_fnc_aajtOccludes} else {false};
++// Pulse assessment accepts names; the shared occlusion API accepts ACE body-part indices.
++private _partIndex = ["head","body","leftarm","rightarm","leftleg","rightleg"] find _part;
++private _aajt = if (!isNil "ACME_fnc_aajtOccludes") then {[_patient,_partIndex] call ACME_fnc_aajtOccludes} else {false};
+ private _mechanicalPulse = alive _patient
+     && {!(_patient getVariable ["ace_medical_inCardiacArrest", false])}
+     && {!_torsadesMature}
+diff --git a/addons/acm_extended/tools/test_b17_release.py b/addons/acm_extended/tools/test_b17_release.py
+index e01708c..80845d1 100644
+--- a/addons/acm_extended/tools/test_b17_release.py
++++ b/addons/acm_extended/tools/test_b17_release.py
+@@ -24,9 +24,11 @@ class B17Release(unittest.TestCase):
+         self.assertIn('(_elapsed + _sampleAhead) / (_entryWindow max 0.1)',s)
+         self.assertNotIn('_entryLeadIn',s)
+     def test_custom_rhythm_does_not_override_cpr_postshock(self):
+-        s=read('overrides/fn_genEKG.sqf')
+-        self.assertIn('!(_rhythm in [-1,1,2])',s)
+-        self.assertIn('ACME_monitorRhythmSwitchMaxWait',s)
++        # Current monitor uses its native cache invalidation/beat clock, not the retired max-wait splice.
++        from test_historical_cardiac_execution import test_custom_ecg_proxy_respects_native_visual_precedence, test_rhythm_write_invalidates_both_monitor_caches
++        for visual in [-1,0,1,2,3,4,5]:
++            test_custom_ecg_proxy_respects_native_visual_precedence(visual)
++        test_rhythm_write_invalidates_both_monitor_caches()
+     def test_procedure_no_forced_unconsciousness(self):
+         io=read('functions/fn_ioPainResponse.sqf'); th=read('functions/fn_thoraMouseUp.sqf')
+         self.assertNotIn('setUnconscious',io)
+diff --git a/addons/acm_extended/tools/test_b18_ventway.py b/addons/acm_extended/tools/test_b18_ventway.py
+index 8c1daeb..c2c4733 100644
+--- a/addons/acm_extended/tools/test_b18_ventway.py
++++ b/addons/acm_extended/tools/test_b18_ventway.py
+@@ -50,12 +50,11 @@ class B18Source(unittest.TestCase):
+             self.assertNotIn(forbidden,s[a:b])
+     def test_rocuronium_cannot_bank_arrest_stress(self):
+         s=read('functions/fn_rocuroniumTick.sqf')
+-        self.assertIn('ace_medical_inCardiacArrest',s)
+-        self.assertIn('ACME_roc_postROSCGraceUntil',s)
+-        self.assertIn('ACME_roc_awakeHRMax',s)
+-        post=read('functions/fn_postInit.sqf')
+-        self.assertIn('ACME_roc_postROSCStressDelay = 15',post)
+-        self.assertIn('ACME_roc_awakeResistAdd", 0, true',post)
++        for key in ('ace_medical_inCardiacArrest','ACME_roc_postROSCGraceUntil','ACME_roc_awakeHRMax'):
++            self.assertIn(key,s)
++        self.assertIn('ACME_roc_postROSCStressDelay = 15',read('functions/fn_postInit.sqf'))
++        from test_historical_cardiac_execution import test_rosc_event_clears_banked_paralytic_and_ventilator_stress
++        test_rosc_event_clears_banked_paralytic_and_ventilator_stress()
+     def test_vitals_stress_is_bounded_additive(self):
+         s=read('overrides/fn_handleUnitVitals.sqf')
+         self.assertIn('ACME_vent_fightHRAdjust',s)
+diff --git a/addons/acm_extended/tools/test_b35_lifecycle.py b/addons/acm_extended/tools/test_b35_lifecycle.py
+index 26af139..05045fd 100644
+--- a/addons/acm_extended/tools/test_b35_lifecycle.py
++++ b/addons/acm_extended/tools/test_b35_lifecycle.py
+@@ -123,15 +123,17 @@ class PtxLifecycle(unittest.TestCase):
+         self.assertNotIn("Pneumothorax_PFH", breathing)
+ 
+     def test_instructor_clear_retires_model_without_touching_equipment(self):
+-        mega = source("megacodeChestInjury")
+-        clear = mega[mega.index('if (_t == "ncd")'):mega.index('switch (_t)')]
+-        for field in ("ACME_ptx_state", "ACME_ptx_tensionSeverity", "ACME_ptx_tensionProgress"):
+-            self.assertIn(field, clear)
+-        self.assertIn("CBA_fnc_removePerFrameHandler", clear)
+-        self.assertIn('["ACM_breathing_Pneumothorax_PFH", -1, false]', clear)
+-        self.assertIn('["ACM_breathing_Hardcore_Pneumothorax", false, true]', clear)
+-        for unrelated in ("ACME_CS_holeData", "ACME_thora_tube_left", "ACME_ncd_placed"):
+-            self.assertNotIn(unrelated, clear)
++        mega=source('megacodeChestInjury')
++        clear=mega[mega.index('if (_t == "ncd")'):mega.index('switch (_t)')]
++        for field in ('ACME_ptx_state','ACME_ptx_tensionSeverity','ACME_ptx_tensionProgress'):
++            self.assertIn(field,clear)
++        self.assertIn('CBA_fnc_removePerFrameHandler',clear)
++        self.assertIn('["pneumothoraxPFH", -1]',clear)
++        self.assertIn('["hardcorePneumothorax", false]',clear)
++        for unrelated in ('ACME_CS_holeData','ACME_thora_tube_left','ACME_ncd_placed'):
++            self.assertNotIn(unrelated,clear)
++        from test_historical_airway_execution import test_instructor_chest_clear_removes_episode_and_worker_but_retains_equipment
++        test_instructor_chest_clear_removes_episode_and_worker_but_retains_equipment()
+ 
+     def test_training_injury_seeds_model_before_native_projection(self):
+         mega = source("megacodeChestInjury")
+diff --git a/addons/acm_extended/tools/test_b35_treatments.py b/addons/acm_extended/tools/test_b35_treatments.py
+index 553a003..d9e0d13 100644
+--- a/addons/acm_extended/tools/test_b35_treatments.py
++++ b/addons/acm_extended/tools/test_b35_treatments.py
+@@ -59,14 +59,17 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertNotRegex(effect, r'setVariable\s*\[\s*"ACM_breathing_TensionPneumothorax_State"')
+ 
+     def test_seal_removal_cannot_become_a_new_injury(self):
+-        effect = read_source(ROOT / 'functions/fn_chestSealEffectLocal.sqf')
+-        peel = effect.split('case "peel":', 1)[1].split('case "miss":', 1)[0]
+-        self.assertIn('[_patient, "peel"] call ACME_fnc_ptxTreat', peel)
+-        self.assertNotIn('call ACME_fnc_ptxInjury', peel)
+-        self.assertNotIn('call ACM_breathing_fnc_handlePneumothorax', effect)
+-        self.assertIn('ACME_NA2_resetTime', effect)
+-        self.assertIn('ACME_CS_blockedEffectEpoch', effect)
+-        self.assertIn('ACME_CS_lastSealEffectRev', effect)
++        effect=read_source(ROOT/'functions/fn_chestSealEffectLocal.sqf')
++        peel=effect.split('case "peel":',1)[1].split('case "miss":',1)[0]
++        self.assertIn('[_patient, "peel"] call ACME_fnc_ptxTreat',peel)
++        self.assertNotIn('call ACME_fnc_ptxInjury',peel)
++        self.assertNotIn('call ACM_breathing_fnc_handlePneumothorax',effect)
++        self.assertIn('ACME_CS_blockedEffectEpoch',effect)
++        self.assertIn('ACME_CS_lastSealEffectRev',effect)
++        # The old cross-machine reset-time comparison was deliberately replaced by epoch/revision identity.
++        from test_historical_airway_execution import test_seal_peel_rejects_stale_effects_and_never_creates_a_new_injury
++        for blocked,rev,accepted in [(False,4,True),(False,3,False),(False,2,False),(True,4,False)]:
++            test_seal_peel_rejects_stale_effects_and_never_creates_a_new_injury(blocked,rev,accepted)
+ 
+     def test_native_thoracostomy_keeps_observations_anesthesia_and_kit_semantics(self):
+         text = override("Thoracostomy_startLocal")
+@@ -83,21 +86,15 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertIn('"ACM_breathing_Thoracostomy_UsedKit", false, true', override('Thoracostomy_closeLocal'))
+ 
+     def test_sealed_surgical_tract_cannot_cover_external_chest_wounds(self):
+-        click = read_source(ROOT / 'functions/fn_thoraMouseDown.sqf')
+-        seal = click.split('if (_held == "seal") exitWith {', 1)[1].split('private _tubeMedic', 1)[0]
+-        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal', seal)
+-        self.assertIn('"chestEffect", [_patient, _medS, "thoraSeal"', seal)
+-        self.assertIn('call ACME_fnc_clinicalEpoch', seal)
+-        self.assertNotIn('They still need a tube', click)
+-        effect = read_source(ROOT / 'functions/fn_chestSealEffectLocal.sqf')
+-        branch = effect.split('case "thoraSeal":', 1)[1].split('case "peel":', 1)[0]
+-        self.assertIn('_clinicalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)', branch)
+-        self.assertIn('ACME_thora_sealed_%1', branch)
+-        self.assertIn('ACME_thora_open_%1', branch)
+-        self.assertIn('ACME_thora_tube_%1', branch)
+-        self.assertIn('[_patient, "thoraSeal"] call ACME_fnc_ptxTreat', branch)
+-        self.assertNotIn('ACME_ptx_nativeSealCount', branch)
+-        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal', branch)
++        click=read_source(ROOT/'functions/fn_thoraMouseDown.sqf')
++        seal=click.split('if (_held == "seal") exitWith {',1)[1].split('private _tubeMedic',1)[0]
++        self.assertNotIn('call ACM_breathing_fnc_applyChestSeal',seal)
++        self.assertIn('"chestEffect", [_patient, _medS, "thoraSeal"',seal)
++        self.assertIn('call ACME_fnc_clinicalEpoch',seal)
++        self.assertNotIn('They still need a tube',click)
++        from test_historical_airway_execution import test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds
++        for epoch,tube,tract,accepted in [(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)]:
++            test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds(epoch,tube,tract,accepted)
+ 
+     def test_closing_tract_removes_its_outlet_but_never_an_installed_tube(self):
+         text = override("Thoracostomy_closeLocal")
+@@ -114,12 +111,16 @@ class TreatmentProgressionContracts(unittest.TestCase):
+         self.assertIn('_message = "NAR SPEAR placed.";', edit)
+ 
+     def test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them(self):
+-        config = read_source(ROOT / 'config.cpp')
+-        post = read_source(ROOT / 'functions/fn_postInit.sqf')
+-        for name in LOCAL + ("handlePneumothorax",):
+-            self.assertTrue(f'class {name} {{ file = "\acm_extended\overrides\fn_{name}.sqf"; }};' in config, f"Missing override: {name}")
+-        self.assertNotIn('ACM_breathing_fnc_performNCDLocal =', post)
+-        self.assertNotIn('ACME_ncdReTensionState =', post)
++        prep=(ROOT.parent/'breathing/XEH_PREP.hpp').read_text()
++        events=(ROOT.parent/'breathing/XEH_postInit.sqf').read_text()
++        post=read_source(ROOT/'functions/fn_postInit.sqf')
++        for name in LOCAL+('handlePneumothorax',):
++            self.assertEqual(prep.count('PREP('+name+');'),1)
++            self.assertTrue((ROOT.parent/'breathing/functions'/('fnc_'+name+'.sqf')).is_file())
++            if name in LOCAL:
++                self.assertIn('LINKFUNC('+name+')',events)
++        self.assertNotIn('ACM_breathing_fnc_performNCDLocal =',post)
++        self.assertNotIn('ACME_ncdReTensionState =',post)
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/addons/acm_extended/tools/test_b65_zone3_reboa_smart_bandage.py b/addons/acm_extended/tools/test_b65_zone3_reboa_smart_bandage.py
+index 72b1cda..3751039 100644
+--- a/addons/acm_extended/tools/test_b65_zone3_reboa_smart_bandage.py
++++ b/addons/acm_extended/tools/test_b65_zone3_reboa_smart_bandage.py
+@@ -44,38 +44,27 @@ def test_zone3_action_and_all_aajt_applications_are_twenty_seconds():
+ 
+ 
+ def test_aajt_occlusion_is_anatomically_scoped():
+-    occ = acme("aajtOccludes")
+-    assert 'case 2: {_patient getVariable ["ACME_AAJT_axillaleft", false]};' in occ
+-    assert 'case 3: {_patient getVariable ["ACME_AAJT_axillaright", false]};' in occ
+-    assert 'ACME_AAJT_inguinalSide' in occ
+-    assert '== "leftleg"' in occ and '== "rightleg"' in occ
+-    assert occ.count('ACME_AAJT_zone3') >= 2
+-
+-    apply = acme("aajtApply")
+-    body = apply[apply.index('case "body"'):apply.index('case "leftleg"')]
+-    assert '[true, _atStr]' in body and '"zone3"' in body
+-    assert '[ _patient, "leftleg", true]' not in body  # formatting guard below uses exact source spelling
+-    assert '[_patient, "leftleg", true] call ACME_fnc_aajtSetLegTQ;' in body
+-    assert '[_patient, "rightleg", true] call ACME_fnc_aajtSetLegTQ;' in body
+-    legs = apply[apply.index('case "leftleg"'):apply.index('case "leftarm"')]
+-    assert '[_patient, "inguinal", [true, _atStr, _p]]' in legs
+-    assert '[_patient, _p, true] call ACME_fnc_aajtSetLegTQ;' in legs
+-    left_arm = apply[apply.index('case "leftarm"'):apply.index('case "rightarm"')]
+-    assert '[_patient, "leftarm", true] call ACME_fnc_aajtSetLegTQ;' in left_arm
++    from test_historical_cardiac_execution import test_aajt_application_routes_only_the_selected_limbs
++    # The old first-substring slice read the duplicate-placement switch, not application.
++    for part,expected in [('Body',['leftleg','rightleg']),('LeftLeg',['leftleg']),
++                          ('RightLeg',['rightleg']),('LeftArm',['leftarm']),('RightArm',['rightarm'])]:
++        test_aajt_application_routes_only_the_selected_limbs(part,expected)
+ 
+ 
+ def test_whole_limb_physiology_uses_single_occlusion_authority():
+-    hooks = {
+-        "addons/core/overrides/fnc_updateWoundBloodLoss.sqf",
+-        "addons/circulation/functions/fnc_getIVFlowRate.sqf",
+-        "addons/core/overrides/fnc_getBloodVolumeChange.sqf",
+-        "addons/core/overrides/fnc_medicationLocal.sqf",
+-        "addons/core/overrides/fnc_checkPulseLocal.sqf",
