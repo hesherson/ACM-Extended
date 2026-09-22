@@ -1,0 +1,158 @@
++    CBA settings/fnc_init.sqf documents 1 as shared and 2 as not overwritable.
++    Both direct addSetting declarations and preInit's settings array use this shape.
++    """
++    tokens=lex(text); pairs=matching(tokens); declarations=[]
++    for i,t in enumerate(tokens[:-1]):
++        if t.kind!='symbol' or t.value!='[' or i not in pairs:continue
++        args=split_args(tokens,i+1,pairs[i],pairs)
++        if (len(args)>=6 and len(args[0])==1 and args[0][0].kind=='string'
++            and args[0][0].value==name and len(args[1])==1
++            and args[1][0].value in ('CHECKBOX','LIST','SLIDER','COLOR','EDITBOX','TIME')):
++            declarations.append(args)
++    assert len(declarations)==1,(name,len(declarations))
++    scope=declarations[0][5]
++    assert len(scope)==1 and scope[0].kind=='number' and scope[0].value=='2', (name,scope)
+diff --git a/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py b/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py
+index 7a751182fbb909e7e45f19296b1266dbc9f6b3fb..007f559ca4ba69e410563d0f8123a666b97fc58c 100644
+--- a/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py
++++ b/addons/acm_extended/tools/test_b20_vent_debug_narcbox.py
+@@ -1,4 +1,4 @@
+-from historical_source import read_source, assert_release_identity
++from historical_source import read_source, assert_release_identity, assert_client_only_setting
+ from pathlib import Path
+ import unittest, re
+ ROOT=Path(__file__).resolve().parents[1]
+@@ -115,13 +115,9 @@ class B20Accessibility(unittest.TestCase):
+         ids=('ACME_a11y_colorblindMode','ACME_a11y_colorblindStrength','ACME_a11y_bvmVentCircle','ACME_a11y_bvmVentInflateSec','ACME_a11y_menuLeftAlign','ACME_menuNestEnabled','ACME_menuColorHeaders','ACME_motion_interpolate','ACME_motion_interpolationTime','ACME_minigameNV_focusBlur')
+         for setting in ids:
+             with self.subTest(setting=setting):
+-                i=s.index(f'"{setting}"')
+-                end=s.index('] call CBA_fnc_addSetting;',i)
+-                block=s[i:end]
+-                self.assertRegex(block,r'(?s),\s*0\s*,\s*(?:\{|\[)')
++                assert_client_only_setting(s,setting)
+         pre=read('XEH_preInit.sqf')
+-        i=pre.index('"ACME_debug_enabled"'); block=pre[i:i+700]
+-        self.assertIn('false, 0, {',block)
++        assert_client_only_setting(pre,'ACME_debug_enabled')
+     def test_all_colorblind_modes_are_handled(self):
+         s=read('functions/fn_cbColor.sqf')
+         for mode in ('protanomaly','protanopia','deuteranomaly','deuteranopia','tritanomaly','tritanopia','achromatopsia'):
+diff --git a/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py b/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py
+index e3750fa796d939635d0b5cc6dc3de48af8e99dc9..32dee13edf15e9fffed0182246b9e8c34a051b3f 100644
+--- a/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py
++++ b/addons/acm_extended/tools/test_b27_junctional_cpr_bvm.py
+@@ -1,17 +1,52 @@
+-from historical_source import read_source, assert_release_identity
++"""B27 contracts at their current native/owner boundaries; no gameplay retuning.
++
++The previous tests required comments and removed Extended overrides. These tests
++retain the actual contracts: independent roles, one valid provider per role,
++networked role markers, owner-written junctional state, and local-only UI refresh.
++Engine object/network boundaries are mocked for the execution cases.
++"""
++from historical_source import read_source, assert_release_identity, switch_case_body as case_body
+ from pathlib import Path
+ import unittest
++from test_menu_death_lifecycle import adapt, execute
++from test_bvm_startup import setup as bvm_setup
++
+ ROOT=Path(__file__).resolve().parents[1]
++ADDONS=ROOT.parent
++
+ def read(rel): return read_source(ROOT/rel, encoding='utf-8-sig')
+ 
+ class B27JunctionalCPRBVM(unittest.TestCase):
+     def test_version_pair(self):
+-        for rel in ('config.cpp','functions/fn_postInit.sqf'):
+-            assert_release_identity()
++        assert_release_identity()
++
+     def test_junctional_state_writers_still_broadcast(self):
+-        for rel in ('functions/fn_junctionalInflict.sqf','functions/fn_junctionalPackDone.sqf','functions/fn_junctionalWrapDone.sqf'):
+-            s=read(rel)
+-            self.assertRegex(s, r'setVariable\s*\[format\s*\["ACME_Junc_%1".*?true\]')
++        inflict=read('functions/fn_junctionalInflict.sqf')
++        self.assertRegex(inflict,r'setVariable\s*\[format\s*\["ACME_Junc_%1".*?true\]')
++        owner=read('functions/fn_ownerDispatch.sqf')
++        self.assertIn('local _patient',owner)
++        for event,state in [('junctionalPackDone','packed'),('junctionalWrapDone','wrapped')]:
++            sender=read('functions/fn_'+event+'.sqf')
++            self.assertIn('"'+event+'"',sender)
++            self.assertIn('call ACME_fnc_ownerDispatch',sender)
++            body=case_body(owner,event)
++            self.assertIn('setVariable [format ["ACME_Junc_%1", _part], "'+state+'", true]',body)
++        pack=adapt(case_body(owner,'junctionalPackDone'))
++        wrap=adapt(case_body(owner,'junctionalWrapDone'))
++        execute('ace_common_fnc_isAwake = {false}; private _clots = []; ACM_damage_fnc_clotWoundsOnBodyPart = {_clots pushBack _this;};' +
++                'private _pack = {'+pack+'}; private _wrap = {'+wrap+'};' + '''
++            {
++                private _key = format ["ACME_Junc_%1",_x];
++                private _args = [_medic,_x];
++                _patient setVariable [_key,"open"];
++                call _pack;
++                [(_patient getVariable [_key,""]) == "packed","packing state not written"] call _check;
++                call _wrap;
++                [(_patient getVariable [_key,""]) == "wrapped","wrap state not written"] call _check;
++            } forEach ["leftarm","rightarm","leftleg","rightleg"];
++            [count _clots == 4,"wrap did not route clotting for every body part"] call _check;
++        ''')
++
+     def test_junctional_gui_sync_is_local_only(self):
+         s=read('functions/fn_junctionalGuiSyncTick.sqf')
+         self.assertIn('ace_medical_gui_menuDisplay',s)
+@@ -19,35 +54,71 @@ class B27JunctionalCPRBVM(unittest.TestCase):
+         self.assertIn('ace_medical_gui_fnc_updateInjuryList',s)
+         for bad in ('targetEvent','globalEvent','serverEvent','remoteExec','publicVariable','_target setVariable','_patient setVariable'):
+             self.assertNotIn(bad,s)
++
+     def test_junctional_gui_sync_is_bounded(self):
+         p=read('functions/fn_postInit.sqf')
+         self.assertIn('[{call ACME_fnc_junctionalGuiSyncTick}, 0.2, []] call CBA_fnc_addPerFrameHandler;',p)
++
+     def test_cpr_action_no_longer_blocked_by_bvm(self):
+-        c=read('config.cpp')
+-        block=c[c.index('class CPR {'):c.index('// move all AED options',c.index('class CPR {'))]
+-        self.assertIn('condition = "[_medic, _patient] call ace_medical_treatment_fnc_canCPR";',block)
+-        self.assertNotIn('ACM_core_fnc_bvmActive',block)
++        c=(ADDONS/'circulation/ACE_Medical_Treatment_Actions.hpp').read_text()
++        # The CPR class is native now. Require its actual callback and eligibility expression.
++        from medication_inventory import subtree
++        block=subtree(c,'CPR')['props']
++        self.assertEqual(''.join(block['condition'].split()),'QUOTE([ARR_2(_medic,_patient)]callACEFUNC(medical_treatment,canCPR))')
++        self.assertEqual(''.join(block['callbackSuccess'].split()),'QUOTE([ARR_2(_medic,_patient)]callFUNC(beginCPR))')
++        self.assertNotIn('bvmActive',str(block))
++
+     def test_begin_cpr_override_registered(self):
+-        c=read('config.cpp')
+-        self.assertIn('class beginCPR { file = "\\acm_extended\\overrides\\fn_beginCPR.sqf"; };',c)
+-        s=read('overrides/fn_beginCPR.sqf')
+-        self.assertIn('CPR and BVM are independent provider roles',s)
++        self.assertIn('PREP(beginCPR);',(ADDONS/'circulation/XEH_PREP.hpp').read_text())
++        s=(ADDONS/'circulation/functions/fnc_beginCPR.sqf').read_text()
+         self.assertNotIn('if !([GVAR(CPRTarget)] call EFUNC(core,bvmActive))',s)
++        self.assertIn('call FUNC(cprSessionValid)',s)
++        self.assertIn('call CBA_fnc_addPerFrameHandler',s)
++        self.assertIn('GVAR(CPR_ControllerPFH) = _controller;',s)
++
+     def test_bvm_can_run_during_cpr(self):
+-        s=read('overrides/fn_useBVM.sqf')
+-        self.assertIn('Two-provider resuscitation',s)
+-        self.assertIn('_patient setVariable ["ACM_breathing_BVM_provider", _medic, true];',s)
+-        self.assertIn('ACM_breathing_BVMActive = true;',s)
+-        self.assertNotIn('if !([ACM_breathing_BVMTarget] call ACM_core_fnc_cprActive)',s)
++        execute(bvm_setup() + '''
++            _cprActive = true;
++            _patient setVariable ["ace_medical_CPR_provider",missionNamespace];
++            [_medic,_patient,false,false] call ACM_breathing_fnc_useBVM;
++            [ACM_core_ContinuousAction_Active,"CPR blocked BVM start"] call _check;
++            CBA_missionTime=13; call _tick;
++            CBA_missionTime=20; call _tick;
++            [_squeezes==2,"CPR blocked ventilation"] call _check;
++            [(_patient getVariable ["ace_medical_CPR_provider",objNull]) isEqualTo missionNamespace,"BVM cleared another CPR provider"] call _check;
++        ''')
++
+     def test_one_provider_per_role_remains(self):
+-        b=read('overrides/fn_useBVM.sqf')
+-        c=read('overrides/fn_beginCPR.sqf')
+-        self.assertIn('alive _existingBVM',b)
