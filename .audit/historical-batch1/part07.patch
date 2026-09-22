@@ -1,0 +1,109 @@
++    Tokenization ignores comments/strings and preserves nested values, including
++    two-argument setVariable calls whose value ends with a Boolean.
++    """
++    ts=lex(source); pairs=matching(ts); edits=[]
++    for i,t in enumerate(ts[:-1]):
++        if t.kind!='ident' or t.value!='setVariable' or ts[i+1].value!='[':continue
++        opening=i+1
++        assert opening in pairs, 'unclosed setVariable in test input'
++        closing=pairs[opening]; args=split_args(ts,opening+1,closing,pairs)
++        if len(args)!=3 or len(args[-1])!=1 or args[-1][0].value not in ('true','false'):continue
++        commas=[]; j=opening+1
++        while j<closing:
++            if ts[j].value in ('[','{','(') and j in pairs:j=pairs[j]+1;continue
++            if ts[j].value==',':commas.append(j)
++            j+=1
++        assert len(commas)==2
++        edits.append((ts[commas[-1]].offset,ts[closing].offset))
++    # CBA input handlers also compile literal/format code. Adapt only those
++    # executable strings, never ordinary UI labels or diagnostics.
++    for i,t in enumerate(ts):
++        if t.kind!='string':continue
++        direct=i>=1 and ts[i-1].value in ('compile','compileFinal')
++        formatted=i>=3 and [v.value for v in ts[i-3:i]] in (
++            ['compile','format','['],['compileFinal','format','['])
++        if not (direct or formatted):continue
++        q=source[t.offset]; end=t.offset+1
++        while end<len(source):
++            if source[end]==q:
++                if end+1<len(source) and source[end+1]==q:end+=2;continue
++                end+=1;break
++            end+=1
++        replacement=namespace_public_arguments(t.value)
++        if replacement!=t.value:edits.append((t.offset,end,q+replacement.replace(q,q+q)+q))
++    for change in sorted(edits,reverse=True):
++        start,end=change[:2]; replacement=change[2] if len(change)==3 else ''
++        source=source[:start]+replacement+source[end:]
++    return source
++
++
+ def adapt(s, component='core'):
+     s = re.sub(r'^#include.*$', '', s, flags=re.M)
+     for macro, prefix, quote in [('QACEGVAR', 'ace', True), ('QEGVAR', 'ACM', True), ('EGVAR', 'ACM', False), ('ACEGVAR', 'ace', False)]:
+@@ -51,14 +94,13 @@ def adapt(s, component='core'):
+     s = s.replace('ACME_CS_sessions set ', 'ACME_CS_sessions setVariable ')
+     s = re.sub(r'\bisNull (\(uiNamespace getVariable \[[^\n]*?\]\))', r'(\1 isEqualTo objNull)', s)
+     s = re.sub(r'\bisNull (_\w+)', r'(\1 isEqualTo objNull)', s)
+-    s = re.sub(r'(setVariable \[[^;\n]*,[^;\n]*), (?:true|false)(\])', r'\1\2', s)
+     s = re.sub(r'"ACM_[^"]+" cut(?:Rsc|Text) \[[^;]*;', '', s)
+     s = re.sub(r'private (_ctrl\w+) = _display displayCtrl \w+;', r'private \1 = objNull;', s)
+     s = re.sub(r'_ctrl\w+ ctrlSetText [^;]*;', '', s)
+     s = s.replace('_medic setUnitPos "AUTO";', '_stanceFreed = true;')
+     s = re.sub(r'\bdialog\b', '_dialog', s)
+     s = s.replace('    false\n}];', '    false\n}] select 1);')
+-    return s
++    return namespace_public_arguments(s)
+ 
+ 
+ PREAMBLE = r'''
+@@ -180,7 +222,8 @@ def test_last_viewer_restore_cannot_clear_reopened_workspace():
+         [_patient,"second"] call _end;
+         [(_patient getVariable "ACME_CS_ProcedureTokens") isEqualTo ["first","third"],"other viewers released"] call _check;
+         [_patient,"third"] call _end;
+-        _patient setVariable ["ACME_CS_rollUntil",12];
++        private _actualSide = "front";
++        _patient setVariable ["ACME_CS_vestBusy","park:existing"];
+         [_patient,"first"] call _end;
+         [count _waits == 1,"last viewer did not schedule restore"] call _check;
+         [_patient,"new"] call _begin;
+diff --git a/addons/acm_extended/tools/test_na8_5_batch10.py b/addons/acm_extended/tools/test_na8_5_batch10.py
+index 544a018fa84529eff02985aec3bbb499b14fc123..da36665cc7dfde86c4aa761ae3371c4c0adaadb1 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch10.py
++++ b/addons/acm_extended/tools/test_na8_5_batch10.py
+@@ -1,5 +1,5 @@
+ """B10 source contracts and executable reference models. Does not execute SQF."""
+-from historical_source import read_source, assert_release_identity
++from historical_source import read_source, assert_release_identity, assert_client_only_setting
+ from pathlib import Path
+ import json,math,re,unittest
+ ROOT=Path(__file__).resolve().parents[1]
+@@ -198,8 +198,7 @@ class SourceTests(unittest.TestCase):
+     def test_client_local_accessibility_settings(self):
+         t=read_source(ROOT/'XEH_settings.hpp')
+         for setting in ('ACME_motion_interpolate','ACME_motion_interpolationTime','ACME_minigameNV_focusBlur'):
+-            segment=t[t.index('"'+setting+'"'):];segment=segment[:segment.index('] call CBA_fnc_addSetting;')]
+-            self.assertRegex(segment,r',\s*0,\s*\{\}')
++            assert_client_only_setting(t,setting)
+     def test_no_dbg_in_new_helpers(self):
+         for p in ROOT.glob('functions/fn_minigameInput*.sqf'):self.assertNotIn('diag_log',read_source(p))
+ 
+diff --git a/addons/acm_extended/tools/test_na8_5_batch13.py b/addons/acm_extended/tools/test_na8_5_batch13.py
+index 8e7a98ae1789430de9570f42e5225bc6464e84db..27cd3cac969d26535748444fdb4fa37c02be13b3 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch13.py
++++ b/addons/acm_extended/tools/test_na8_5_batch13.py
+@@ -9,7 +9,8 @@ from historical_source import read_source
+ import json, math, re, unittest
+ from pathlib import Path
+ ROOT=Path(__file__).resolve().parents[1]
+-MATRIX=json.loads(read_source(ROOT/'audit/MEDICATION_MATRIX.json'))
++from historical_source import medication_matrix
++MATRIX=medication_matrix()
+ MEDS={r['classname']:r for r in MATRIX['medication_classes']}
+ SOURCES={r['source']:r for r in MATRIX['concentrations']}
+ def src(n):return read_source(ROOT/'functions'/('fn_'+n+'.sqf'))
+diff --git a/addons/acm_extended/tools/test_na8_5_batch8.py b/addons/acm_extended/tools/test_na8_5_batch8.py
+index ef8ea0d4233a4382865f9125c40b7fa950c67ec8..9dce52921e527dcbd2551c39ee4e323d90802615 100644
+--- a/addons/acm_extended/tools/test_na8_5_batch8.py
++++ b/addons/acm_extended/tools/test_na8_5_batch8.py
+@@ -86,14 +86,25 @@ class SourceContracts(unittest.TestCase):
+         s=source('ivMinigameGrabNeedle');self.assertIn('_gauge',source('ivSiteDifficulty'))
