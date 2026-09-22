@@ -1,0 +1,19 @@
+diff --git a/addons/acm_extended/tools/backlog_clinical_probes.py b/addons/acm_extended/tools/backlog_clinical_probes.py
+index d454db563e978eb567e199589c15129e7212bf46..ba026e87e287d18118eb361e5402644c167c55a9 100644
+--- a/addons/acm_extended/tools/backlog_clinical_probes.py
++++ b/addons/acm_extended/tools/backlog_clinical_probes.py
+@@ -234,5 +234,3 @@ def compound_save_probe():
+         call _save;
+         [_steps isEqualTo [],"empty draft committed"] call _check;
+     ''')
+-
+-
+diff --git a/addons/acm_extended/tools/backlog_contract_expression.py b/addons/acm_extended/tools/backlog_contract_expression.py
+index 4c54dcfb9378963c85d979a889f3d605bf493789..7c3cc99a1554af595d161077e0a0012f37d7d07c 100644
+--- a/addons/acm_extended/tools/backlog_contract_expression.py
++++ b/addons/acm_extended/tools/backlog_contract_expression.py
+@@ -37,4 +37,3 @@ def assignment_expression(text, name):
+     if len(candidates) != 1:
+         raise AssertionError(f'Expected one private assignment for {name}; found {len(candidates)}')
+     return candidates[0]
+-
