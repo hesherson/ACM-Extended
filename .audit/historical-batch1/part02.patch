@@ -1,0 +1,172 @@
+-        self.assertIn('alive _existingCPR',c)
++        # Evaluate the actual reservation predicates, including a paused-but-valid role.
++        b=(ADDONS/'breathing/functions/fnc_bvmSessionValid.sqf').read_text()
++        c=(ADDONS/'circulation/functions/fnc_cprSessionValid.sqf').read_text()
++        for name,component,text in [('bvm','breathing',b),('cpr','circulation',c)]:
++            text=text.replace('_medic distance2D _patient','_distance')
++            body=adapt(text,component)
++            setup='''
++                ace_common_fnc_isAwake = {!_unconscious};
++                _patient setVariable ["ACM_breathing_BVM_Medic",_medic];
++                _patient setVariable ["ACM_circulation_CPR_session",[_medic,42]];
++                _medic setVariable ["ACM_circulation_CPR_Patient",_patient];
++                _medic setVariable ["ACM_circulation_CPR_Epoch",42];
++            '''
++            execute(setup+'private _valid = {'+body+'};'+'''
++                [[_medic,_patient] call _valid,"paused role lost reservation"] call _check;
++                [!([missionNamespace,_patient] call _valid),"different provider accepted"] call _check;
++                _alive=false;
++                [!([_medic,_patient] call _valid),"dead provider retained role"] call _check;
++                _alive=true; _unconscious=true;
++                [!([_medic,_patient] call _valid),"unconscious provider retained role"] call _check;
++                _unconscious=false; _distance=4;
++                [!([_medic,_patient] call _valid),"out-of-range provider retained role"] call _check;
++            ''')
++
+     def test_cross_provider_role_vars_still_networked(self):
+-        b=read('overrides/fn_useBVM.sqf')
+-        c=read('overrides/fn_beginCPR.sqf')
+-        self.assertIn('"ACM_breathing_BVM_provider", _medic, true',b)
++        b=(ADDONS/'breathing/functions/fnc_useBVM.sqf').read_text()
++        c=(ADDONS/'circulation/functions/fnc_beginCPR.sqf').read_text()
++        self.assertIn('QGVAR(BVM_provider), _medic, true',b)
++        self.assertIn('QGVAR(BVM_Medic), _medic, true',b)
+         self.assertIn('QACEGVAR(medical,CPR_provider), _medic, true',c)
++        self.assertIn('QGVAR(CPR_Medic), _medic, true',c)
+ 
+ if __name__=='__main__': unittest.main()
+diff --git a/addons/acm_extended/tools/test_b29_narc_plunger.py b/addons/acm_extended/tools/test_b29_narc_plunger.py
+index 5acfa206b5f18b865e543afcc6c9fd303649d6f0..62e20553ab15094db1e4c6493c5969417791ad02 100644
+--- a/addons/acm_extended/tools/test_b29_narc_plunger.py
++++ b/addons/acm_extended/tools/test_b29_narc_plunger.py
+@@ -4,6 +4,7 @@ This evaluates only the cursor/control arithmetic, not an Arma UI runtime.
+ Control heights sample ACM's 0.9 GUI-grid-unit grab band across UI scales.
+ """
+ from pathlib import Path
++from functools import lru_cache
+ import operator
+ import re
+ import unittest
+@@ -44,17 +45,21 @@ def assignment(name):
+     return expression(re.search(r'private ' + name + r' = ([^;]+);', SOURCE)[1])
+ 
+ 
+-CALCULATIONS = [(name, assignment(name)) for name in ('_mouseOffset', '_bottomMouse', '_floorYMouse', '_rawY')]
+-CURSORS = re.findall(r'setMousePosition\s*\[\(safeZoneX[^,]+,\s*(.*?)\];', SOURCE)
+-assert len(CURSORS) == 1, 'Compound draw must clamp the incoming cursor once per frame.'
+-CURSOR = expression(CURSORS[0])
++@lru_cache(maxsize=1)
++def calculations():
++    names = ('_mouseOffset', '_bottomMouse', '_floorYMouse', '_mouseYClamped', '_rawY')
++    steps = [(name, assignment(name)) for name in names]
++    cursors = re.findall(r'setMousePosition\s*\[[^,]+,\s*(.*?)\];', SOURCE)
++    assert len(cursors) == 1, 'Compound draw must clamp the incoming cursor once per frame.'
++    return steps, expression(cursors[0])
+ 
+ 
+ def tick(mouse, floor, limit, height):
++    steps, cursor = calculations()
+     env = {'_mouseY': mouse, '_floorY': floor, '_maxY': limit, '_plungerH': height}
+-    for name, calculate in CALCULATIONS:
++    for name, calculate in steps:
+         env[name] = calculate(env)
+-    return CURSOR(env), env['_rawY']
++    return cursor(env), env['_rawY']
+ 
+ 
+ class NarcPlunger(unittest.TestCase):
+diff --git a/addons/acm_extended/tools/test_b29_svt_contract.py b/addons/acm_extended/tools/test_b29_svt_contract.py
+index 3ca0acc8c0bbf41e6dca8c1f5a29ff2890def770..507b85e2e46b86599b056dc1aec61ca7a831ca39 100644
+--- a/addons/acm_extended/tools/test_b29_svt_contract.py
++++ b/addons/acm_extended/tools/test_b29_svt_contract.py
+@@ -1,108 +1,99 @@
+-"""Evaluate the actual SQF boolean gates against rhythm/rate scenarios.
++"""Current native-rate precedence, replacing retired B29 SVT exceptions.
+ 
+-This checks the cross-function source contract; it does not execute the Arma engine.
++The old setup demanded an inline exception that the current native vitals path
++explicitly removed. Evaluate the actual production gates in SQF-VM, not a
++handwritten Python physiological model. No medication/rhythm rules are changed.
+ """
+-from historical_source import read_source
+ from pathlib import Path
+ import re
+-import unittest
++import pytest
++from historical_source import read_source
++from source_scan import lex, matching
++from test_menu_death_lifecycle import execute, adapt
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+ 
+-def read(name):
+-    return read_source(ROOT / name, encoding="utf-8-sig")
+-
+-
+-def predicate(expression, **values):
+-    """Translate only the SQF boolean subset used by the selected source gates."""
+-    expression = expression.replace("&&", " and ").replace("||", " or ")
+-    expression = re.sub(r"!(?!=)", " not ", expression)
+-    expression = expression.replace("{", "(").replace("}", ")")
+-    return bool(eval(expression.strip(), {"__builtins__": {}}, values))
+-
+-
+-class SVTSourceContract(unittest.TestCase):
+-    @classmethod
+-    def setUpClass(cls):
+-        getter = read("functions/fn_rhythmGet.sqf")
+-        cls.atrial_gate = re.search(r"if \((_custom in .*?)\) exitWith", getter).group(1)
+-        tick = read("functions/fn_rhythmTick.sqf")
+-        cls.release_gate = re.search(r"private _hrReleases = (.*?);", tick).group(1)
+-        cls.release_gate = cls.release_gate.replace(
+-            '(missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 220])', "220"
+-        )
+-        threshold = read("functions/fn_rhythmThresholdTick.sqf")
+-        # B67 retired ACME's independent fatal-rate fallback. ACM handleUnitVitals is now the only
+-        # native HR-threshold arrest authority; keep compatibility with older source only when that gate exists.
+-        _fallback = re.search(r"if \((_hr > _acmHighHR.*?)\) then", threshold)
+-        cls.fallback_gate = _fallback.group(1) if _fallback else None
+-        cls.threshold_has_arrest = "call ACME_fnc_arrestLocal" in threshold
+-        cls.vitals = read("overrides/fn_handleUnitVitals.sqf")
+-        cls.vt_gate = re.search(r"if (!\(\(\[_unit\] call ACME_fnc_rhythmGet\).*?) then", cls.vitals).group(1)
+-        cls.vt_gate = cls.vt_gate.replace("([_unit] call ACME_fnc_rhythmGet)", "_rhythm")
+-        cls.fatal_gate = re.search(r"case \((!_activeGracePeriod.*?)\):", cls.vitals).group(1)
+-
+-    def test_all_supported_atrial_rhythms_keep_identity_above_220(self):
+-        for code in (100, 101, 103, 104):
+-            for rate in (221, 235, 240, 246):
+-                with self.subTest(code=code, rate=rate):
+-                    valid = predicate(self.atrial_gate, _custom=code, _raw=0, _arrest=False)
+-                    self.assertTrue(valid)
+-                    self.assertFalse(predicate(self.release_gate, _isTorsades=False,
+-                                               _hrNow=rate, _isPerfusingAtrial=valid))
+-                    if self.fallback_gate is not None:
+-                        self.assertFalse(predicate(self.fallback_gate, _hr=rate, _acmHighHR=220,
+-                                                   _rhythm=code))
+-                    else:
+-                        self.assertFalse(self.threshold_has_arrest)
+-                    self.assertFalse(predicate(self.vt_gate, _rhythm=code))
+-                    # Native instability monitoring must still run even at extreme SVT rates.
+-                    self.assertTrue(predicate(self.fatal_gate, _activeGracePeriod=False,
+-                                              _heartRate=rate))
+-
+-    def test_native_rhythm_and_arrest_override_stale_custom_state(self):
+-        for raw in (-1, 1, 2, 3, 4, 5):
+-            for arrest in (False, True):
+-                with self.subTest(raw=raw, arrest=arrest):
+-                    self.assertFalse(predicate(self.atrial_gate, _custom=104, _raw=raw,
+-                                               _arrest=arrest))
+-        self.assertFalse(predicate(self.atrial_gate, _custom=104, _raw=0, _arrest=True))
+-        self.assertFalse(predicate(self.atrial_gate, _custom=102, _raw=0, _arrest=False))
+-        if self.fallback_gate is not None:
+-            self.assertTrue(predicate(self.fallback_gate, _hr=230, _acmHighHR=220, _rhythm=0))
+-        else:
+-            # B67: ACM's fatal-vitals watchdog owns this transition; ACME does not race it.
+-            self.assertFalse(self.threshold_has_arrest)
+-        self.assertTrue(predicate(self.vt_gate, _rhythm=0))
+-
+-    def test_bradycardia_still_releases_atrial_rhythm(self):
+-        for rate in (0, 10, 30, 39):
+-            self.assertTrue(predicate(self.release_gate, _isTorsades=False, _hrNow=rate,
+-                                      _isPerfusingAtrial=True))
