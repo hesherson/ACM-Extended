@@ -1,0 +1,58 @@
+name: ACME verified source audit
+on:
+  push:
+    branches: [audit/2026-09-22-preserve-regressions]
+    paths: [.github/workflows/acme-verified-source.yml]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 691bfd10f44c8616673fce3af75f15d97eef145b
+          fetch-depth: 1
+      - name: Verify complete source and pinned toolchain
+        run: |
+          test "$(git rev-parse HEAD^{tree})" = '3e81602e3a4ddb16ed60d14d3c2ba6f38e82397e'
+          mkdir -p /tmp/acme-tools /tmp/acme-results
+          curl --fail --location --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          curl --fail --location --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+          python3 -m pip install pytest pytest-subtests
+      - name: Run focused preservation and execution tests
+        env:
+          HEMTT: /tmp/acme-tools/hemtt
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: |
+          set -o pipefail
+          python3 -m pytest tools/test_self_audit_20260922.py addons/acm_extended/tools/test_consciousness_wake_latch_20260921.py addons/acm_extended/tools/test_seizure_paralysis_suppression.py addons/acm_extended/tools/test_seizure_gesture_unification.py addons/acm_extended/tools/test_debug_seizure_action.py addons/acm_extended/tools/test_bvm_startup.py addons/acm_extended/tools/test_iv_ui_followup_patch.py addons/acm_extended/tools/test_wake_execution_20260922.py addons/acm_extended/tools/test_config_compile.py -q --junitxml=/tmp/acme-results/focused.xml | tee /tmp/acme-results/focused.log
+      - name: Full project check and baseline comparison
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          output={}
+          def check(label,root):
+              p=subprocess.run(['/tmp/acme-tools/hemtt','check'],cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=240)
+              pathlib.Path('/tmp/acme-results/'+label+'-hemtt.log').write_text(p.stdout)
+              output[label]={'returncode':p.returncode}
+              print(label,'HEMTT return code:',p.returncode)
+              print(p.stdout[-7000:])
+              return p.returncode
+          if check('candidate','.') != 0:
+              subprocess.run(['git','fetch','--no-tags','--depth=1','origin','5dca0429d9ef211f3366cd54b4f3c95274ba7a48'],check=True)
+              subprocess.run(['git','worktree','add','--detach','/tmp/acme-baseline','5dca0429d9ef211f3366cd54b4f3c95274ba7a48'],check=True)
+              check('baseline','/tmp/acme-baseline')
+          pathlib.Path('/tmp/acme-results/hemtt-status.json').write_text(json.dumps(output,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-verified-source-results
+          path: /tmp/acme-results
+          retention-days: 14
