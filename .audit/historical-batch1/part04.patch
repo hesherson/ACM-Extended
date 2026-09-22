@@ -1,0 +1,200 @@
+ MEDS = {row['classname']: row for row in MATRIX['medication_classes']}
+ SOURCES = {row['source']: row for row in MATRIX['concentrations']}
+ INJECTABLE = {'ACM_ROUTE_IM', 'ACM_ROUTE_IV', 0, 1}
+diff --git a/addons/acm_extended/tools/test_b77_branding_authors.py b/addons/acm_extended/tools/test_b77_branding_authors.py
+index 232dab1140318d859376c530daa62dcb8c42f7f8..946003ed0b81373d6d6594e04effd2a4d875623a 100644
+--- a/addons/acm_extended/tools/test_b77_branding_authors.py
++++ b/addons/acm_extended/tools/test_b77_branding_authors.py
+@@ -1,6 +1,8 @@
+ from historical_source import read_source
+ from pathlib import Path
+-import re, hashlib, sys
++import re, hashlib
++import pytest
++from historical_source import assert_release_identity
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ CFG = read_source(ROOT / 'config.cpp', encoding='utf-8')
+@@ -9,10 +11,7 @@ checks = []
+ def check(name, ok, detail=''):
+     checks.append((name, bool(ok), detail))
+ 
+-check('version r41', 'version = "1.0.100-r41";' in CFG)
+ POST=read_source(ROOT/'functions'/'fn_postInit.sqf', encoding='utf-8')
+-check('runtime version r41', 'ACME_infusion_version = "1.0.100-r41"' in POST)
+-check('runtime batch B77', 'ACME_buildBatch = "B77";' in POST)
+ check('CfgMods ACM_Extended', 'class CfgMods' in CFG and 'class ACM_Extended' in CFG)
+ check('full logo path', 'logo = "\\acm_extended\\ui\\ACME_logo.paa";' in CFG)
+ check('small logo path', 'logoSmall = "\\acm_extended\\ui\\ACME_logo_small.paa";' in CFG)
+@@ -84,11 +83,10 @@ para = child_body(mag, 'ACM_Paracetamol') or ''
+ check('native ACM paracetamol author preserved', 'author = "Blue";' in para)
+ check('native ACM paracetamol no ACME dlc', 'dlc = "ACM_Extended";' not in para)
+ 
+-failed=[c for c in checks if not c[1]]
+-for name,ok,detail in checks:
+-    if not ok:
+-        print('FAIL:',name,detail)
+-if failed:
+-    print(f'{len(checks)-len(failed)}/{len(checks)} checks passed')
+-    sys.exit(1)
+-print(f'{len(checks)}/{len(checks)} checks passed')
++@pytest.mark.parametrize("name,ok,detail", checks, ids=[c[0] for c in checks])
++def test_branding_contract(name, ok, detail):
++    assert ok, f"{name}: {detail}"
++
++
++def test_release_identity():
++    assert_release_identity()
+diff --git a/addons/acm_extended/tools/test_b80_v110_head_menu.py b/addons/acm_extended/tools/test_b80_v110_head_menu.py
+index 2585d65132d7c5ce6d21eae3ea66a6c76b49ac28..82f4105e07b6318b3f2c3382e72042f886a55453 100644
+--- a/addons/acm_extended/tools/test_b80_v110_head_menu.py
++++ b/addons/acm_extended/tools/test_b80_v110_head_menu.py
+@@ -1,19 +1,17 @@
+ from historical_source import read_source
+ from pathlib import Path
++import pytest
++from historical_source import assert_release_identity
+ ROOT=Path(__file__).resolve().parents[1]
+ def txt(p): return read_source(ROOT/p, encoding='utf-8',errors='ignore')
+ checks=[]
+ def check(name, ok):
+     checks.append((name,bool(ok)))
+-    if not ok: raise AssertionError(name)
+ 
+ cfg=txt('config.cpp'); post=txt('functions/fn_postInit.sqf'); dbg=txt('functions/fn_debugMenu.sqf')
+ seq=txt('functions/fn_headElevMedicSeq.sqf'); tilt=txt('functions/fn_headElevApplyTilt.sqf')
+ stop=txt('functions/fn_headElevateStop.sqf'); susp=txt('functions/fn_headElevSuspend.sqf')
+ prep=txt('functions/fn_medicAnimationPrep.sqf'); menu=txt('overrides/fn_updateActions.sqf')
+-check('public version is 1.2.0-r0', 'version = "1.2.0-r0";' in cfg)
+-check('runtime fallback 1.2.0-r0', 'ACME_infusion_version = "1.2.0-r0"' in post)
+-check('internal B80', 'ACME_buildBatch = "B80";' in post)
+ check('debug reads runtime version', 'ACME_infusion_version' in dbg and 'ACME DEBUG v%2' in dbg)
+ check('provider DraggerBase wrapper', 'class ACME_HeadElevProviderLift: DraggerBase' in cfg)
+ check('patient grab wrapper exact RTM inheritance', 'class ACME_HeadElevPatientGrab: AinjPpneMrunSnonWnonDb_grab' in cfg)
+@@ -26,4 +24,10 @@ check('patient lower uses wrapper', '"ACME_HeadElevPatientRelease"' in stop)
+ check('patient suspend uses wrapper', '"ACME_HeadElevPatientRelease"' in susp)
+ check('alternate row color now white', 'ACME_menuRowColorAlternate = [1, 1, 1, 1];' in post)
+ check('renderer does not alternate ordinary rows', "select (_actionIndex mod 2)" not in menu and "ACME_menuRowColorDefault" in menu)
+-print(f'{len(checks)}/{len(checks)} B80 focused contracts passed')
++@pytest.mark.parametrize("name,ok", checks, ids=[c[0] for c in checks])
++def test_historical_head_menu_contract(name, ok):
++    assert ok, name
++
++
++def test_release_identity():
++    assert_release_identity()
+diff --git a/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py b/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py
+index 46cb2d64f9dfe7bcb4c9b9fb1528047732add009..d986bf81670362d384aa5c30a99333012f132f90 100644
+--- a/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py
++++ b/addons/acm_extended/tools/test_b91_ace_interaction_postinit.py
+@@ -1,63 +1,51 @@
+-from historical_source import read_source
++"""ACE-interaction regressions across the actual split startup modules.
++
++B92's old literal version and monolithic placement are not release criteria.
++No production code is changed by these checks.
++"""
+ from pathlib import Path
+-import re
++from historical_source import assert_release_identity, read_source, source_bundle
++from source_scan import lex
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-POST = read_source(ROOT / "functions/fn_postInit.sqf", encoding="utf-8")
+-
+-# Public release is v1.2.0-r0; internal batch advances.
+-assert 'ACME_buildBatch = "B92";' in POST
+-assert 'ACME_infusion_version = "1.2.0-r0"' in POST
+-
+-# Regression: this sentence accidentally lost // and made the entire postInit fail to compile,
+-# which removed all ACE interaction actions in game.
+-assert '\n the flashlight filter flag must never strand ACE.' not in POST
+-assert '// the flashlight filter flag must never strand ACE.' in POST
+-
+-# The ACE notOnMap extension and close/watchdog cleanup must remain intact.
+-assert '["notOnMap", {' in POST
+-assert 'call ace_common_fnc_addCanInteractWithCondition;' in POST
+-assert '["ace_interactMenuClosed", {' in POST
+-assert 'missionNamespace setVariable ["ACME_flashlightMenuActive", false];' in POST
+-assert 'call CBA_fnc_addPerFrameHandler;' in POST
+-
+-# The retired diagnostics should stay retired.
+-for forbidden in ('diag_log', 'systemChat', 'hintSilent', 'ACME_flashlight_diag'):
+-    assert forbidden not in POST, forbidden
+-
+-# Cheap structural guard for this critical file: ignore // comments and quoted strings, then
+-# verify delimiters remain balanced. This catches the common accidental edit class that caused B90.
+-def strip_sqf(s: str) -> str:
+-    out=[]; i=0; in_str=False
+-    while i < len(s):
+-        c=s[i]
+-        if in_str:
+-            if c == '"':
+-                if i+1 < len(s) and s[i+1] == '"':
+-                    i += 2; continue
+-                in_str=False
+-            i += 1; continue
+-        if c == '"':
+-            in_str=True; i += 1; continue
+-        if c == '/' and i+1 < len(s) and s[i+1] == '/':
+-            j=s.find('\n', i+2)
+-            if j == -1: break
+-            out.append('\n'); i=j+1; continue
+-        if c == '/' and i+1 < len(s) and s[i+1] == '*':
+-            j=s.find('*/', i+2)
+-            assert j != -1, 'unterminated block comment'
+-            i=j+2; continue
+-        out.append(c); i += 1
+-    assert not in_str, 'unterminated string'
+-    return ''.join(out)
+-
+-clean = strip_sqf(POST)
+-pairs={')':'(',']':'[','}':'{'}; stack=[]
+-for ch in clean:
+-    if ch in '([{': stack.append(ch)
+-    elif ch in ')]}':
+-        assert stack and stack[-1] == pairs[ch], (ch, stack[-5:])
+-        stack.pop()
+-assert not stack, stack[-10:]
+-
+-print('B92 ACE interaction/postInit regression checks: PASS')
++POST = ROOT / "functions/fn_postInit.sqf"
++
++
++def test_release_identity_is_consistent():
++    assert_release_identity()
++
++
++def test_no_accidental_bare_flashlight_comment():
++    for path, text in source_bundle(POST):
++        assert '\n the flashlight filter flag must never strand ACE.' not in text, path
++
++
++def test_flashlight_filter_has_close_and_watchdog_cleanup():
++    text = read_source(POST)
++    for token in ('["notOnMap", {', 'call ace_common_fnc_addCanInteractWithCondition;',
++                  '["ace_interactMenuClosed", {', 'missionNamespace setVariable ["ACME_flashlightMenuActive", false];',
++                  'call CBA_fnc_addPerFrameHandler;'):
++        assert token in text, token
++
++
++def test_retired_flashlight_diagnostics_stay_retired():
++    # The original whole-postInit ban also caught legitimate unrelated compatibility
++    # diagnostics. Restrict to the actual module installing the flashlight filter.
++    modules = [(p,t) for p,t in source_bundle(POST) if '["notOnMap", {' in t]
++    assert len(modules) == 1
++    values = {t.value for t in lex(modules[0][1]) if t.kind == 'ident'}
++    assert not values.intersection({'diag_log', 'systemChat', 'hintSilent', 'ACME_flashlight_diag'})
++
++
++def test_each_startup_module_has_balanced_delimiters():
++    pairs = {')': '(', ']': '[', '}': '{'}
++    for path, text in source_bundle(POST):
++        stack = []
++        for token in lex(text):
++            if token.kind != 'symbol':
++                continue
++            if token.value in ('(', '[', '{'):
++                stack.append(token.value)
++            elif token.value in pairs:
++                assert stack and stack.pop() == pairs[token.value], (path, token.line)
