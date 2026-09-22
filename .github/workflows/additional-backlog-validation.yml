@@ -2,7 +2,10 @@ name: Additional historical backlog validation
 on:
   push:
     branches: [audit/historical-backlog-20260922]
-    paths: [.github/workflows/additional-backlog-validation.yml]
+    paths:
+      - .github/workflows/additional-backlog-validation.yml
+      - .audit/validate_additional_backlog.py
+      - .audit/additional-backlog-eof.patch
 permissions:
   contents: write
 jobs:
