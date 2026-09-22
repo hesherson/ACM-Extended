@@ -1,0 +1,84 @@
++Aftercare remains usable on a dead patient without restarting physiology. The historical demand for an alive-patient rejection was replaced with tests of the existing live-provider/owner/episode/permission guards and dead-patient availability. No production aftercare change was needed.
++
++## Verification
++
++| Broad addon suite | Before | After |
++| --- | ---: | ---: |
++| Failing outcomes | 299 | 283 |
++| Passing tests | 2,505 | 2,628 |
++| Passing subtests | 5,518 | 5,518 |
++| Collection/setup errors | 0 | 0 |
++| Skips | 4 | 4 |
++
++Individual-outcome comparison: **16 old failures now pass, zero newly failing identities, and zero comparable passing outcomes regress**. The four existing skips are unchanged. The broad suite still returns failure; 283 is not a clean result or a waiver.
++
++The focused preservation/lifecycle/clinical suite passed **575 tests and 400 subtests**, with no failures, errors or skips. It includes 107 new executable cases and the 16 retained historical identities alongside the prior 452-case focused set. The new cases include negative input/owner/episode/session conditions; this is not simply a rewrite of expected strings. Full-project `hemtt check` passed with exit code 0; its seven existing non-blocking style suggestions were left unchanged.
++
++Execution uses HEMTT 1.22.0 and SQF-VM v2026.04.03-ed9f5f5. The harness explicitly adapts engine object/publication boundaries and finite-input/linearConversion primitives. The single-patient threshold test maps unsupported `continue` to an equivalent named-scope exit; it does not claim to exercise multi-patient loop scheduling. Callback transport, inventory request delivery, localization and monitor UI are mocked. No Arma client or dedicated server was run.
++
++## Release scope and next work
++
++Only the two pulse runtime files need a gameplay rebuild. A live check should compare selected/unaffected limbs before and after AAJT placement/removal, repeat with conventional tourniquets, and repeat during CPR. Electrical monitor rate must not be changed by the pulse-assessment fix.
++
++The remaining 234 original source contracts, the separate unresolved historical outcomes and the 22 failures exposed in batch 1 remain visible. Unrelated animation, medication and UI assertions were not skipped, marked expected-failure or rewritten in this batch. Do not apply the superseded local patch scripts or pop the old stash over this source.
+diff --git a/docs/audits/historical-backlog-remaining-20260922.txt b/docs/audits/historical-backlog-remaining-20260922.txt
+index 651a433..3bc409e 100644
+--- a/docs/audits/historical-backlog-remaining-20260922.txt
++++ b/docs/audits/historical-backlog-remaining-20260922.txt
+@@ -1,9 +1,7 @@
+-Unresolved original source-contract outcomes after batch 1: 249
+-Base: 19d01b8b27fd53bb9d3c381c7445add589336159
++Unresolved original source-contract outcomes after batch 2: 234
++Base: 5e134975242f182ebbed1225c96709eb7b2cce96
+ Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
+ 
+-H008 addons/acm_extended/tools/test_b17_release.py::B17Release::test_custom_rhythm_does_not_override_cpr_postshock
+-H012 addons/acm_extended/tools/test_b18_ventway.py::B18Source::test_rocuronium_cannot_bank_arrest_stress
+ H015 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_ace_timer_events_drive_artifact
+ H017 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_exact_vial_ledger_registered
+ H018 addons/acm_extended/tools/test_b19_vials_pea_artifact.py::B19Source::test_monitor_generators_apply_artifact
+@@ -28,10 +26,6 @@ H085 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::te
+ H086 addons/acm_extended/tools/test_b33_examine_menu.py::ExaminePresentation::test_known_order_survives_native_config_declaration_order
+ H088 addons/acm_extended/tools/test_b33_examine_menu.py::CorpseChestAssessment::test_dead_findings_survive_without_a_live_obtunded_roll
+ H093 addons/acm_extended/tools/test_b34_tray_silhouettes.py::TraySilhouetteContracts::test_existing_thoracostomy_shadow_survives_hover_and_inventory_refresh
+-H095 addons/acm_extended/tools/test_b35_lifecycle.py::PtxLifecycle::test_instructor_clear_retires_model_without_touching_equipment
+-H099 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_callbacks_are_registered_and_old_ncd_wrapper_cannot_override_them
+-H116 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_seal_removal_cannot_become_a_new_injury
+-H117 addons/acm_extended/tools/test_b35_treatments.py::TreatmentProgressionContracts::test_sealed_surgical_tract_cannot_cover_external_chest_wounds
+ H120 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_both_posture_actions_remain_on_head_and_chest
+ H121 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors
+ H127 addons/acm_extended/tools/test_b39_runtime_stamp_and_spawn.py::B39RuntimeStampAndSpawn::test_obtunded_weapon_path_does_not_delete_projectiles
+@@ -157,8 +151,6 @@ H287 addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test
+ H288 addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_ad_arrow_key_hints_exist_scale_and_hide_in_editor
+ H289 addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_patient_name_uses_actual_screen_to_head_gap
+ H292 addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_body_map_current_syringe_remains_immediate_administration_source
+-H293 addons/acm_extended/tools/test_b65_zone3_reboa_smart_bandage.py::test_aajt_occlusion_is_anatomically_scoped
+-H294 addons/acm_extended/tools/test_b65_zone3_reboa_smart_bandage.py::test_whole_limb_physiology_uses_single_occlusion_authority
+ H297 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_main_select_syringe_tag_is_persistent_and_left_of_native_syringe
+ H298 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_main_tag_dropdown_always_opens_below_and_is_wide
+ H299 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_runtime_font_fallback_prevents_invisible_tag_typing
+@@ -167,10 +159,6 @@ H301 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_promo
+ H302 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_carousel_hit_regions_end_above_draw_syringe
+ H303 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_untagged_hover_uses_last_two_simple_medication_pulls_only
+ H305 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_patient_name_is_raised_farther_in_screen_to_head_gap
+-H307 addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py::test_all_rosc_paths_share_one_eligibility_gate
+-H308 addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py::test_acme_no_longer_has_second_native_rate_arrest_authority
+-H309 addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py::test_direct_arrest_call_sites_are_intentional_only
+-H312 addons/acm_extended/tools/test_b67_cardiac_rosc_audit.py::test_monitor_rhythm_change_is_forced_into_active_sweep
+ H316 addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_main_draw_select_syringe_tag_is_unconditionally_present_and_below_dropdown
+ H317 addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow
+ H318 addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_tag_text_is_lower_larger_and_edit_mode_uses_native_draw_position_without_body
+@@ -237,8 +225,6 @@ H416 addons/acm_extended/tools/test_na8_5_batch11.py::DistanceTests::test_helper
+ H420 addons/acm_extended/tools/test_na8_5_batch12.py::AirwaySource::test_delayed_callbacks_check_display_patient
+ H421 addons/acm_extended/tools/test_na8_5_batch12.py::AirwaySource::test_no_two_way_mouth_dissolve
+ H422 addons/acm_extended/tools/test_na8_5_batch12.py::AirwaySource::test_success_resets_streak
+-H423 addons/acm_extended/tools/test_na8_5_batch12.py::SharedSuctionSource::test_native_clear_on_owner
+-H426 addons/acm_extended/tools/test_na8_5_batch12.py::EpinephrineSource::test_inventory_consumed_before_medication_event
+ H428 addons/acm_extended/tools/test_na8_5_batch2.py::EmmaSource::test_existing_state_keys_are_retained
+ H429 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_layout_ratios_match_source
+ H430 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_old_headers_and_lists_hidden
+@@ -250,4 +236,3 @@ H438 addons/acm_extended/tools/test_na8_5_batch5.py::SourceContracts::test_plung
+ H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceContracts::test_all_visual_passes_after_procedure
+ H452 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_old_pose_callback_owns_token
+ H453 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_stop_death_branch_before_pose
+-H457 addons/acm_extended/tools/test_transfusion_thoracostomy_aftercare.py::test_aftercare_is_owner_routed_and_epoch_guarded
