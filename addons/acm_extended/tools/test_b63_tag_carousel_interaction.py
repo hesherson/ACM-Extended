@@ -86,13 +86,15 @@ def test_patient_header_is_name_only_and_raised_in_body_view():
     assert 'format ["%1 %2",_pn' not in car
 
 def test_access_click_is_immediate_selected_syringe_administration():
-    site = txt('functions/fn_skSiteClick.sqf')
-    inject = txt('functions/fn_skInjectSite.sqf')
-    hot = txt('functions/fn_skBuildHotspots.sqf')
-    assert '[_part] call ACME_fnc_skInjectSite;' in site
-    assert 'ACME_fnc_skSelectedIndex' in inject
-    assert 'ACME_SK_CarouselBusy' in hot
-    assert '!_carouselBusy' in hot
+    from test_bounded_site_click_handoff import assert_site_contract
+    from test_bounded_staged_push_contracts import assert_staged_contract
+    # The historical name remains an identity, not a request to restore immediate delivery.
+    assert_site_contract(txt('functions/fn_skSiteClick.sqf'),
+                         txt('functions/fn_skInjectSite.sqf'),
+                         txt('functions/fn_skBuildHotspots.sqf'))
+    assert_staged_contract(txt('functions/fn_skBeginInjection.sqf'),
+                           txt('functions/fn_skConfirmInjection.sqf'))
+
 
 def test_carousel_motion_has_two_phase_scroll_and_clicks_use_it():
     from test_historical_carousel_input import test_click_selects_its_final_visible_record_once_without_a_deferred_second_step

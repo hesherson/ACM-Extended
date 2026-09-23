@@ -135,7 +135,11 @@ def test_single_syringe_still_only_nudges_then_recenters():
 
 
 def test_body_map_current_syringe_remains_immediate_administration_source():
-    site = txt('functions/fn_skSiteClick.sqf')
-    inject = txt('functions/fn_skInjectSite.sqf')
-    assert '[_part] call ACME_fnc_skInjectSite;' in site
-    assert 'ACME_fnc_skSelectedIndex' in inject
+    from test_bounded_site_click_handoff import assert_site_contract
+    from test_bounded_staged_push_contracts import assert_staged_contract
+    # The historical name remains an identity, not a request to restore immediate delivery.
+    assert_site_contract(txt('functions/fn_skSiteClick.sqf'),
+                         txt('functions/fn_skInjectSite.sqf'),
+                         txt('functions/fn_skBuildHotspots.sqf'))
+    assert_staged_contract(txt('functions/fn_skBeginInjection.sqf'),
+                           txt('functions/fn_skConfirmInjection.sqf'))
