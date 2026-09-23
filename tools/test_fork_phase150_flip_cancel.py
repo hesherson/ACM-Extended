@@ -43,7 +43,8 @@ assert 'ACME_stethFlipPFH' in steth_flip
 assert 'ACME_stethFlipPFH' in steth_tick
 assert 'ACME_stethFlipPFH' in steth_close
 assert '[_medic,"stethoscopeFlip"] call ACME_fnc_rollProviderCancel;' in steth_close
-assert '[_patient] call ACME_fnc_patientRollCancel;' in steth_close
+# Supine is explicit on close; the retired one-argument assertion rejected this fix.
+assert '[_patient,"front"] call ACME_fnc_patientRollCancel;' in steth_close
 
 # Chest-seal patient teardown invalidates a live patient roll immediately before reverse restoration.
 assert 'private _rollActive' in patient_end

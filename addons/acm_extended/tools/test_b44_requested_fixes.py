@@ -9,16 +9,18 @@ def test_b44_version():
     assert_release_identity()
 
 def test_roll_provider_emptyhand_wrapper():
-    c=txt('config.cpp'); f=txt('functions/fn_rollProviderStart.sqf')
-    assert 'class ACME_RollProviderWork: AinvPknlMstpSnonWrflDr_medic2_old' in c
-    block=c.split('class ACME_RollProviderWork:',1)[1].split('};',1)[0]
-    for x in ['disableWeapons = 1','disableWeaponsLong = 1','disableWeaponsShort = 1','disableReload = 1','canPullTrigger = 0']:
-        assert x in block
-    assert '"AmovPknlMstpSnonWnonDnon", 0.15' in block
-    assert '"ACME_RollProviderWork"' in f
-    assert 'selectWeapon ""' in f
-    assert 'setUnitPos "MIDDLE"' in f
-    assert '2.5' in f
+    # Preserve the historical identity, not the superseded medic2 wrapper mapping.
+    from test_historical_roll_cancellation import test_roll_enters_shared_empty_hand_medic4_with_current_timeline
+    from test_historical_pose_lifecycle import test_work_wrappers_keep_authored_entry_exit_and_weapon_restrictions
+    for stance in ('CROUCH','STAND','PRONE'):
+        test_roll_enters_shared_empty_hand_medic4_with_current_timeline(stance)
+    test_work_wrappers_keep_authored_entry_exit_and_weapon_restrictions('ACME_RollProviderWork','AinvPknlMstpSnonWnonDnon_medic4',0)
+    # Keep the still-applicable weapon and crouch-link checks from the old test.
+    cfg = txt('config.cpp')
+    wrapper = cfg.split('class ACME_RollProviderWork:',1)[1].split('};',1)[0]
+    for property in ('disableWeapons = 1','disableWeaponsLong = 1','disableWeaponsShort = 1','disableReload = 1','canPullTrigger = 0'):
+        assert property in wrapper
+    assert 'connectFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.15' in wrapper
 
 def test_chest_seal_flip_patient_roll():
     # Route through the patient owner and preserve a priority-one lease, with the

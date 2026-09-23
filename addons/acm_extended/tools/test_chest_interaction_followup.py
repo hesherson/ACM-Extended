@@ -13,18 +13,16 @@ def fn(name):
 
 
 def test_patient_flip_cannot_dispatch_from_the_button_or_prep_state():
-    request = fn("chestSealFlip")
-    wait = fn("chestSealFlipTick")
-    assert "call ACME_fnc_chestSealRoll" not in request
-    assert wait.count("call ACME_fnc_chestSealRoll") == 1
-    dispatch = wait.index("call ACME_fnc_chestSealRoll")
-    assert wait.index("(toLowerANSI animationState _provider) == _work") < dispatch
-    assert wait.index('(_pose param [3,-2]) >= 1') < dispatch
-    assert wait.index("_args set [9,diag_tickTime]") < dispatch
-    for guard in ("ACME_CS_SessionToken", "ACME_CS_FlipPendingToken",
-                  "ACME_rollProviderToken", '(_pose param [0,-2]) != _epoch',
-                  "diag_tickTime >= _deadline"):
-        assert guard in wait[:dispatch]
+    # Successful provider acquisition waits for observed medic4; unavailable
+    # presentation has a deliberate, eligibility-checked one-shot fallback.
+    from test_historical_roll_cancellation import test_physical_roll_waits_for_observed_work_and_dispatches_only_once, test_presentation_acquisition_failure_retains_one_physical_roll_and_scoped_completion, test_ineligible_flip_changes_only_virtual_view
+    for stage in (-2,-1,0,1,2):
+        for observed in ('prep','ainvpknlmstpsnonwnondnon_medic4'):
+            test_physical_roll_waits_for_observed_work_and_dispatches_only_once(stage,observed)
+    for change in ('none','session','token'):
+        test_presentation_acquisition_failure_retains_one_physical_roll_and_scoped_completion(change)
+    for change in ('_patient setVariable ["ACE_isUnconscious",false];','_patientAlive=false;','_parent=missionNamespace;'):
+        test_ineligible_flip_changes_only_virtual_view(change)
 
 
 def test_closing_a_panel_invalidates_pending_roll_before_restoration():

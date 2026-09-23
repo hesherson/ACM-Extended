@@ -77,12 +77,15 @@ def test_tsp_animate_rewrite_optional_sling_support():
     test_engine_fallback_has_same_provider_and_switchweapon_contract()
 
 def test_roll_uses_shared_medic4_pose_for_2_5_seconds():
-    r = txt('functions/fn_rollProviderStart.sqf')
-    assert '["ACME_rollProviderDuration", 2.5]' in r
-    assert '[_medic, "roll", _duration] call ACME_fnc_treatmentPoseStart' in r
-    assert '[_unit, "roll", _epoch] call ACME_fnc_treatmentPoseStop' in r
-    f = txt('functions/fn_chestSealFlip.sqf')
-    assert 'ACME_fnc_rollProviderStart' in f
+    # The retained name predates the current 2.2-second authored hold. The 2.5
+    # seconds in rollProviderStart is now a fail-safe margin, not the work duration.
+    from test_historical_roll_cancellation import test_roll_enters_shared_empty_hand_medic4_with_current_timeline, test_old_roll_completion_cannot_retire_replacement_provider_episode
+    from test_historical_pose_lifecycle import test_owner_freeze_uses_current_mode_timeline_despite_frame_overshoot
+    test_roll_enters_shared_empty_hand_medic4_with_current_timeline('CROUCH')
+    for duration in (3,12):
+        test_owner_freeze_uses_current_mode_timeline_despite_frame_overshoot('roll',2.2,duration)
+    for delivery in ('timer','worker'):
+        test_old_roll_completion_cannot_retire_replacement_provider_episode(delivery)
 
 def test_specific_pose_wins_over_generic_roll():
     p = txt('functions/fn_postInit.sqf')

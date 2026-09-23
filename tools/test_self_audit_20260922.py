@@ -27,6 +27,14 @@ REVIEWED_LIFECYCLE_UPDATES = {
 }
 PROTECTED.update(REVIEWED_LIFECYCLE_UPDATES)
 
+# Batch 16: only the obsolete one-argument test assertion changes. The patient
+# cancellation code and the explicit supine target remain unchanged.
+REVIEWED_BACKLOG_16_UPDATES = {
+    'tools/test_fork_phase150_flip_cancel.py': '1ab81aaec24415c6314f36c037ee382704cb6061e4ea9462c76aaac2ed180981',
+}
+PROTECTED.update(REVIEWED_BACKLOG_16_UPDATES)
+
+
 @pytest.mark.parametrize("path,expected", sorted(PROTECTED.items()))
 def test_prior_fix_restored_without_rewrite(path, expected):
     data = (ROOT / path).read_bytes().replace(b"\r\n", b"\n")

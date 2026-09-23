@@ -144,15 +144,15 @@ def test_selected_carousel_syringe_has_only_one_live_hitbox():
 
 
 def test_provider_roll_uses_crouch_connected_wrapper_and_no_switchmove_fallback():
-    cfg = txt('config.cpp')
-    pose = txt('functions/fn_treatmentPoseStart.sqf')
-    flip = txt('functions/fn_chestSealFlip.sqf')
-    assert 'class ACME_RollProviderWork: AinvPknlMstpSnonWnonDnon_medic4' in cfg
-    assert 'connectFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.15};' in cfg
-    assert 'case "roll": {"ACME_RollProviderWork"};' in pose
-    assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
-    assert '[_medic, _main, 2] call ACME_fnc_doAnim;' not in pose
-    assert 'ACME_fnc_rollProviderStart' in flip
+    # Normal roll entry still uses the authored crouch controller. An explicit
+    # mid-roll Cancel is intentionally immediate, not a normal entry fallback.
+    from test_historical_roll_cancellation import test_roll_enters_shared_empty_hand_medic4_with_current_timeline, test_wrong_source_cancel_is_a_noop_and_matching_cancel_retires_immediately
+    from test_historical_pose_lifecycle import test_work_wrappers_keep_authored_entry_exit_and_weapon_restrictions
+    for stance in ('CROUCH','STAND','PRONE'):
+        test_roll_enters_shared_empty_hand_medic4_with_current_timeline(stance)
+    for source in ('chestSealFlip','stethoscopeFlip','headElevFrontRoll'):
+        test_wrong_source_cancel_is_a_noop_and_matching_cancel_retires_immediately(source)
+    test_work_wrappers_keep_authored_entry_exit_and_weapon_restrictions('ACME_RollProviderWork','AinvPknlMstpSnonWnonDnon_medic4',0)
 
 
 def test_chest_seal_patient_roll_interpolates_without_priority_two():

@@ -77,15 +77,11 @@ def test_native_selection_binds_exact_physical_vial():
     assert 'ACME_SK_MedicationRows' in ses and '_physicalClass' in ses
 
 def test_exact_chest_roll_provider_animation_is_forced():
-    s = txt('functions/fn_treatmentPoseStart.sqf')
-    r = txt('functions/fn_rollProviderStart.sqf')
-    f = txt('functions/fn_chestSealFlip.sqf')
-    assert 'case "roll": {"AinvPknlMstpSnonWrflDnon_medic4"};' in s
-    assert '[_medic, _main, 2] call ACME_fnc_doAnim;' in s
-    assert '[_medic, "roll", _duration] call ACME_fnc_treatmentPoseStart' in r
-    assert 'ACME_fnc_rollProviderStart' in f
-    # Reassertion prevents a framework generic medic animation from owning the roll episode.
-    assert s.count('[_medic, _main, 2] call ACME_fnc_doAnim;') >= 4
+    # Current empty-hand medic4 enters through the shared priority-one controller.
+    # Do not restore the older rifle-state/priority-two reassertion loop.
+    from test_historical_roll_cancellation import test_roll_enters_shared_empty_hand_medic4_with_current_timeline
+    for stance in ('CROUCH','STAND','PRONE'):
+        test_roll_enters_shared_empty_hand_medic4_with_current_timeline(stance)
     launch = block(txt('config.cpp'), 'ACME_ApplyChestSeal')
     for key in ['animationMedic = "";', 'animationMedicProne = "";', 'animationMedicSelf = "";', 'animationMedicSelfProne = "";']:
         assert key in launch
