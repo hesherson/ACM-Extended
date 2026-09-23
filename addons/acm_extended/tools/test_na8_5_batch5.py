@@ -128,10 +128,17 @@ class SourceContracts(unittest.TestCase):
     def test_open_vials_visible_and_selectable(self):
         # B20's row renderer uses a non-mutating vial preview for partial/open stock; the actual draw paths still
         # use infusionVialVolume for authoritative availability and debit.
-        self.assertIn('ACME_fnc_vialPreview',src('skListRefresh'))
-        for f in ('infusionDrawStock','openPrepFromInventoryMenu'):
-            self.assertIn('ACME_fnc_infusionVialVolume',src(f))
-        self.assertIn('ACME_fnc_infusionVialVolume',src('skListSelect'))
+        # Follow actual preview/selection delegates. A stock repaint must not debit or relabel a draw.
+        from test_bounded_medication_presentation import require, source, test_prep_stock_refresh_preserves_partial_draw_identity_and_button_gate
+        from test_historical_medication_rows import test_open_partial_survives_consumed_physical_item_without_zero_volume_ghosts, test_stock_preview_uses_reserved_volume_and_the_rows_exact_physical_class
+        for amount, visible in ((0, False), (0.000001, False), (0.01, True), (2, True)):
+            test_open_partial_survives_consumed_physical_item_without_zero_volume_ghosts(amount, visible)
+        test_stock_preview_uses_reserved_volume_and_the_rows_exact_physical_class()
+        test_prep_stock_refresh_preserves_partial_draw_identity_and_button_gate(2, False, False, True, True, False)
+        require(source('infusionDrawStock'), '[_display] call ACME_fnc_skMedicationStockRefresh;')
+        require(source('skListSelect'), '[_holder, _data, 0, _item] call ACME_fnc_vialPreview;')
+        require(source('skListSelect'), '["select", _data, _reserved, _d] call ACME_fnc_vialSession;')
+        require(source('openPrepFromInventoryMenu'), 'call ACME_fnc_infusionVialVolume')
     def test_all_drugs_tallied(self):
         self.assertIn('ACME_fnc_preparedComponents',src('infusionRefreshTally'))
         self.assertIn('forEach _rows',src('infusionRefreshTally'))

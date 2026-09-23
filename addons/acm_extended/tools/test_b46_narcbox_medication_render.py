@@ -15,28 +15,27 @@ def test_b46_version_stamp():
 
 
 def test_b38_runtime_title_bar_is_removed_from_renderer():
-    s = text('functions/fn_skListRefresh.sqf')
-    assert 'ACME_SK_ColumnHeader' not in s
-    assert '_headerBack' not in s
-    assert '_headerContents' not in s
-    assert '_headerCount' not in s
-    assert 'forEach [84007,84008]' not in s
-    # Source selector controls must stay at ACM's original dialog geometry.
-    assert '_pos set [1, (_pos select 1) - _headerH]' not in s
+    # The later three-column header supersedes B46's removal. Preserve one header per group.
+    from test_bounded_stock_columns import header_contract, test_headers_are_created_once_and_source_captions_only_move_once
+    header_contract()
+    for visible in (False, True):
+        test_headers_are_created_once_and_source_captions_only_move_once(1, visible)
 
 
 def test_separate_count_child_control_is_removed():
-    s = text('functions/fn_skListRefresh.sqf')
-    assert '_countText' not in s
-    assert 'ctrlCreate ["ACME_SK_RightText"' not in s
-    assert '["%1 mL  x%2", _curMl toFixed 2, _count]' in s
-    assert '_stock ctrlSetPosition [_innerW - _stockW, _cursorY, _stockW, _rowH];' in s
+    # The current renderer owns separate Contents and Vials controls, not the retired combined label.
+    from test_bounded_stock_columns import split_column_contract, test_stock_info_formats_two_columns_without_mutating_bound_or_open_stock
+    split_column_contract()
+    for bound in (False, True):
+        test_stock_info_formats_two_columns_without_mutating_bound_or_open_stock(bound, 0.25, 1)
 
 
 def test_tick_updates_one_combined_stock_control():
-    s = text('functions/fn_skUiTick.sqf')
-    assert '_countText' not in s
-    assert '_stock ctrlSetText format ["%1 mL  x%2", _curMl toFixed 2, _cnt];' in s
+    from test_bounded_stock_columns import tick_contract, test_selected_row_refresh_keeps_contents_count_and_reserved_amount_separate
+    tick_contract()
+    for stage, reserved in (('', 1.5), ('compound', 3.5), ('draw', 3.5), ('waste', 0)):
+        test_selected_row_refresh_keeps_contents_count_and_reserved_amount_separate(stage, reserved, True, True)
+        test_selected_row_refresh_keeps_contents_count_and_reserved_amount_separate(stage, reserved, False, True)
 
 
 def test_medication_label_has_nonblank_config_and_key_fallback():

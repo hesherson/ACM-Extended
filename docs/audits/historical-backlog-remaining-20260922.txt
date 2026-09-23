@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after bounded F: 132
-Base: 390820d37fbb477451b720aa2f7c91214d3519f3
+Unresolved original source-contract outcomes after bounded G: 127
+Base: 99da8584547c083c8a882c7786558885d6b8a5f7
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
@@ -14,9 +14,6 @@ H139 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_clinical_c
 H140 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_requested_alternating_pale_red_is_runtime_default
 H148 addons/acm_extended/tools/test_b42_medication_menu_dp.py::test_auscultate_chest_keeps_group_child_indent
 H156 addons/acm_extended/tools/test_b44_requested_fixes.py::test_roll_provider_emptyhand_wrapper
-H170 addons/acm_extended/tools/test_b46_narcbox_medication_render.py::test_b38_runtime_title_bar_is_removed_from_renderer
-H171 addons/acm_extended/tools/test_b46_narcbox_medication_render.py::test_separate_count_child_control_is_removed
-H172 addons/acm_extended/tools/test_b46_narcbox_medication_render.py::test_tick_updates_one_combined_stock_control
 H179 addons/acm_extended/tools/test_b47_animation_contracts.py::test_stethoscope_hold_is_minigame_owned
 H181 addons/acm_extended/tools/test_b47_animation_contracts.py::test_roll_uses_shared_medic4_pose_for_2_5_seconds
 H189 addons/acm_extended/tools/test_b48_medication_animation_orientation.py::test_exact_chest_roll_provider_animation_is_forced
@@ -129,8 +126,6 @@ H390 addons/acm_extended/tools/test_chest_interaction_followup.py::test_both_bur
 H415 addons/acm_extended/tools/test_na8_5_batch11.py::DistanceTests::test_floor_restore_uses_asl
 H416 addons/acm_extended/tools/test_na8_5_batch11.py::DistanceTests::test_helper_created_at_patient
 H429 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_layout_ratios_match_source
-H430 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_old_headers_and_lists_hidden
-H437 addons/acm_extended/tools/test_na8_5_batch5.py::SourceContracts::test_open_vials_visible_and_selectable
 H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::test_all_visual_passes_after_procedure
 H452 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_old_pose_callback_owns_token
 H453 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_stop_death_branch_before_pose

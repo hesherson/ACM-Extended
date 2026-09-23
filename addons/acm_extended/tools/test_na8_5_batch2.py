@@ -229,11 +229,11 @@ class TallySourceAndModel(unittest.TestCase):
         self.assertIn('_sizeY + _sizeH + _gap',s)
         self.assertNotIn('safeZoneH / 1.72',s)
     def test_old_headers_and_lists_hidden(self):
-        self.assertIn('[84131, 84132, 84133, 84134, 84301, 84302]',sqf('patchDrawDialog'))
-        s=sqf('skListRefresh')
-        self.assertIn('84131',s)
-        self.assertIn('84134',s)
-        self.assertIn('ctrlShow _visible',s)
+        from test_bounded_stock_columns import test_preparation_hides_only_existing_flush_sources_and_keeps_tally_wiring
+        from test_bounded_medication_presentation import test_actual_view_and_refresh_keep_preparation_sources_off_body_map
+        test_preparation_hides_only_existing_flush_sources_and_keeps_tally_wiring()
+        for kind in ('flush', 'medication'):
+            test_actual_view_and_refresh_keep_preparation_sources_off_body_map('syringe', True, kind)
     def test_text_lives_in_scrolling_group(self):
         s=sqf('patchDrawDialog')
         self.assertIn('["RscControlsGroup", 84362]',s)
