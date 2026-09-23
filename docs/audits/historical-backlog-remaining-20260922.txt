@@ -1,4 +1,4 @@
-Unresolved original source-contract outcomes after bounded C: 143
+Unresolved original source-contract outcomes after bounded D: 141
 Continuation base: 7c031508124ea1b431207faf3bda0eeb7e2fbbdf
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
@@ -137,10 +137,8 @@ H389 addons/acm_extended/tools/test_chest_interaction_followup.py::test_patient_
 H390 addons/acm_extended/tools/test_chest_interaction_followup.py::test_both_burp_paths_check_patient_ownership_without_a_timer
 H415 addons/acm_extended/tools/test_na8_5_batch11.py::DistanceTests::test_floor_restore_uses_asl
 H416 addons/acm_extended/tools/test_na8_5_batch11.py::DistanceTests::test_helper_created_at_patient
-H428 addons/acm_extended/tools/test_na8_5_batch2.py::EmmaSource::test_existing_state_keys_are_retained
 H429 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_layout_ratios_match_source
 H430 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_old_headers_and_lists_hidden
-H436 addons/acm_extended/tools/test_na8_5_batch5.py::SourceContracts::test_debug_propofol_separate
 H437 addons/acm_extended/tools/test_na8_5_batch5.py::SourceContracts::test_open_vials_visible_and_selectable
 H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::test_all_visual_passes_after_procedure
 H452 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_old_pose_callback_owns_token

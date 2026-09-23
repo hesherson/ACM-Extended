@@ -196,8 +196,9 @@ class EmmaSource(unittest.TestCase):
         s=read('config.cpp').split('class ACME_RemoveEMMAETT:',1)[1].split('class ACME_AttachEMMAIGel:',1)[0]
         self.assertIn('ACME_EMMA_Detach',s)
     def test_existing_state_keys_are_retained(self):
-        for f in ['emmaCanAttachIGel','emmaAttachIGel','emmaTick']:
-            self.assertIn('ACME_emma_igelAttached',sqf(f))
+        from test_bounded_assessment_contracts import assert_emma_identity_contract
+        # Attachment keys belong to the current shared writer, not every caller.
+        assert_emma_identity_contract()
 
 class EmmaModel(unittest.TestCase):
     def test_ett_and_igel_supported(self):

@@ -158,7 +158,9 @@ class SourceContracts(unittest.TestCase):
         self.assertIn('ACME_fnc_laryngoStimulusEffect',src('bpCompute'))
         self.assertIn('ACME_fnc_laryngoStimulusEffect',read_source(ROOT/'overrides/fn_updateHeartRate.sqf'))
     def test_debug_propofol_separate(self):
-        s=src('debugMenu');self.assertIn('ACME_fnc_sedationComponents',s);self.assertIn('["Ketamine"',s);self.assertIn('["Propofol"',s);self.assertIn('["Fentanyl"',s)
+        from test_bounded_assessment_contracts import assert_debug_component_contract
+        # Current compact clinical rows use Ket/Prop/Mid/Fent, with distinct values.
+        assert_debug_component_contract()
     def test_mixed_bag_not_single_drug_epi_source(self):
         # B13 retires all bag-derived pressor shortcuts, not just mixed bags.
         self.assertIn('Bag-derived push-dose shortcuts are retired',src('salineFlush'))
