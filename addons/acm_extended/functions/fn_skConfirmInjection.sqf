@@ -72,6 +72,42 @@ if ((_entry param [6,""]) == "epiMixB12") then {
     _remainingFrac = ((((_total - _pushMl) max 0) / (_size max 0.01)) max 0) min 1;
 };
 
+// A normal push belongs to this display/provider/patient, not to whichever dialog opens later.
+private _epoch = (_d getVariable ["ACME_SK_InjectionEpoch",0]) + 1;
+_d setVariable ["ACME_SK_InjectionEpoch",_epoch];
+private _job = [_d,ACE_player,_patient,_stableId,_epoch];
+uiNamespace setVariable ["ACME_SK_NormalPush",_job];
+private _validContext = {
+    params ["_job"];
+    _job params ["_display","_medic","_patient"];
+    if (isNull _display || {!(_display isEqualTo findDisplay 84000)} || {!(ACE_player isEqualTo _medic)}) exitWith {false};
+    if (!(uiNamespace getVariable ["ACME_SK_InjectionBusy",false])
+        || {(uiNamespace getVariable ["ACME_SK_View",""]) != "body"}
+        || {uiNamespace getVariable ["ACME_SK_TagEditMode",false]}) exitWith {false};
+    private _currentPatient = uiNamespace getVariable ["ACME_SK_Patient",objNull];
+    if (isNull _currentPatient) then {_currentPatient = _display getVariable ["ACME_SK_ReturnPatient",objNull];};
+    private _hc = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+    !isNull _patient && {_currentPatient isEqualTo _patient} && {!(_hc isEqualType createHashMap && {count _hc > 0})}
+};
+private _retire = {
+    params ["_job"];
+    if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
+    uiNamespace setVariable ["ACME_SK_NormalPush",[]];
+    // A persistent push has its own lifecycle and must retain its shared UI locks.
+    private _hc = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+    if (_hc isEqualType createHashMap && {count _hc > 0}) exitWith {};
+    uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
+    uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
+    uiNamespace setVariable ["ACME_SK_PendingInjection",[]];
+    private _display = _job select 0;
+    if (!isNull _display && {_display isEqualTo findDisplay 84000} && {ACE_player isEqualTo (_job select 1)}) then {
+        {private _c=_display displayCtrl _x; if (!isNull _c) then {_c ctrlEnable true;};} forEach [84150,84152,84151,84154,84470,84820,84831];
+        [0.10] call ACME_fnc_skCarouselRender;
+        call ACME_fnc_skBuildHotspots;
+        call ACME_fnc_skBodyActionRender;
+    };
+};
+
 uiNamespace setVariable ["ACME_SK_InjectionBusy",true];
 uiNamespace setVariable ["ACME_SK_CarouselBusy",true];
 uiNamespace setVariable ["ACME_SK_CarouselExpanded",true];
@@ -88,20 +124,14 @@ call ACME_fnc_skBuildHotspots;
 {private _c=_d displayCtrl _x; if (!isNull _c) then {_c ctrlEnable false;};} forEach [84150,84152,84151,84154,84470,84820,84831];
 
 [{
-    params ["_stableId","_size","_remainingFrac","_bodyPart","_siteIdx","_route","_pushSec"];
+    params ["_stableId","_size","_remainingFrac","_bodyPart","_siteIdx","_route","_pushSec","_job","_validContext","_retire"];
     disableSerialization;
-    private _d = findDisplay 84000;
-    if (isNull _d || {!(uiNamespace getVariable ["ACME_SK_InjectionBusy",false])}) exitWith {
-        uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
-        uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
-    };
+    if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
+    if !([_job] call _validContext) exitWith {[_job] call _retire;};
+    private _d = _job select 0;
     private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
     if (([_stableId,_store] call ACME_fnc_skSelectStored) < 0) exitWith {
-        uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
-        uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
-        uiNamespace setVariable ["ACME_SK_PendingInjection",[]];
-        [0.10] call ACME_fnc_skCarouselRender;
-        call ACME_fnc_skBodyActionRender;
+        [_job] call _retire;
     };
 
     playSound "ACME_SyringePush";
@@ -118,10 +148,11 @@ call ACME_fnc_skBuildHotspots;
         if (_oldAnim isEqualType 0 && {_oldAnim >= 0}) then {[_oldAnim] call CBA_fnc_removePerFrameHandler;};
         private _anim = [{
             params ["_args","_hid"];
-            _args params ["_display","_ctrl","_x","_startY","_targetY","_w","_h","_started","_duration"];
-            if (isNull _display || {isNull _ctrl} || {!(uiNamespace getVariable ["ACME_SK_InjectionBusy",false])}) exitWith {
+            _args params ["_display","_ctrl","_x","_startY","_targetY","_w","_h","_started","_duration","_job","_validContext"];
+            if (!((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job)
+                || {isNull _ctrl} || {!([_job] call _validContext)}) exitWith {
                 [_hid] call CBA_fnc_removePerFrameHandler;
-                uiNamespace setVariable ["ACME_SK_PushAnimPFH",-1];
+                if ((uiNamespace getVariable ["ACME_SK_PushAnimPFH",-1]) == _hid) then {uiNamespace setVariable ["ACME_SK_PushAnimPFH",-1];};
             };
             private _t = (((diag_tickTime - _started) / (_duration max 0.05)) max 0) min 1;
             // Smoothstep gives a continuous physical plunger stroke without the slideshow-like large-control commit.
@@ -131,20 +162,20 @@ call ACME_fnc_skBuildHotspots;
             _ctrl ctrlCommit 0;
             if (_t >= 1) then {
                 [_hid] call CBA_fnc_removePerFrameHandler;
-                uiNamespace setVariable ["ACME_SK_PushAnimPFH",-1];
+                if ((uiNamespace getVariable ["ACME_SK_PushAnimPFH",-1]) == _hid) then {uiNamespace setVariable ["ACME_SK_PushAnimPFH",-1];};
             };
-        },0,[_d,_pl,_br select 0,_startY,_targetY,_br select 2,_br select 3,diag_tickTime,_pushSec]] call CBA_fnc_addPerFrameHandler;
+        },0,[_d,_pl,_br select 0,_startY,_targetY,_br select 2,_br select 3,diag_tickTime,_pushSec,_job,_validContext]] call CBA_fnc_addPerFrameHandler;
         uiNamespace setVariable ["ACME_SK_PushAnimPFH",_anim];
     };
 
     [{
-        params ["_stableId","_bodyPart","_siteIdx","_route","_pushSec"];
+        params ["_stableId","_bodyPart","_siteIdx","_route","_pushSec","_job","_validContext","_retire"];
         disableSerialization;
-        private _d = findDisplay 84000;
-        if (isNull _d) exitWith {
-            uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
-            uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
-        };
+        if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
+        if !([_job] call _validContext) exitWith {[_job] call _retire;};
+        private _d = _job select 0;
+        // Retire before the medication handoff so duplicate delivery cannot administer twice.
+        uiNamespace setVariable ["ACME_SK_NormalPush",[]];
         private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
         if (([_stableId,_store] call ACME_fnc_skSelectStored) >= 0) then {
             uiNamespace setVariable ["ACME_SK_SiteIdx",_siteIdx];
@@ -153,6 +184,7 @@ call ACME_fnc_skBuildHotspots;
             uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
             uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
             uiNamespace setVariable ["ACME_SK_PendingInjection",[]];
+            uiNamespace setVariable ["ACME_SK_Patient",_job select 2];
             [_bodyPart,_pushSec] call ACME_fnc_skInjectSite;
         } else {
             uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
@@ -164,6 +196,6 @@ call ACME_fnc_skBuildHotspots;
         [0.10] call ACME_fnc_skCarouselRender;
         call ACME_fnc_skBuildHotspots;
         call ACME_fnc_skBodyActionRender;
-    },[_stableId,_bodyPart,_siteIdx,_route,_pushSec],_pushSec] call CBA_fnc_waitAndExecute;
-},[_stableId,_size,_remainingFrac,_bodyPart,_siteIdx,_route,_pushSec],0.14] call CBA_fnc_waitAndExecute;
+    },[_stableId,_bodyPart,_siteIdx,_route,_pushSec,_job,_validContext,_retire],_pushSec] call CBA_fnc_waitAndExecute;
+},[_stableId,_size,_remainingFrac,_bodyPart,_siteIdx,_route,_pushSec,_job,_validContext,_retire],0.14] call CBA_fnc_waitAndExecute;
 true
