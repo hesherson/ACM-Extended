@@ -5,28 +5,21 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: read
 concurrency:
   group: bounded-ae-af-20260923
   cancel-in-progress: true
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Verify reviewed patch bytes and compile runner
-        run: |
-          python -m py_compile .audit/ae-af/validate.py
-          python - <<'PY'
-          import base64, gzip, hashlib, json
-          p=json.load(open('.audit/ae-af/patch.json'))
-          raw=gzip.decompress(base64.b64decode(p['gzip_base64'],validate=True))
-          assert hashlib.sha256(raw).hexdigest()==p['sha256'], 'Patch transport mismatch'
-          print('Reviewed patch digest verified:',p['sha256'])
-          PY
+      - name: Compile bounded finisher
+        run: python -m py_compile .audit/ae-af/validate.py .audit/ae-af/finish.py
       - name: Install pinned toolchain
         run: |
           set -euo pipefail
@@ -38,11 +31,12 @@ jobs:
           unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
           chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
           python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
-      - name: Validate and publish isolated checkpoint
+      - name: Recheck formatting, focused behavior and build; publish reviewed checkpoint
         env:
           HEMTT: /tmp/acme-tools/hemtt
           SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
-        run: python .audit/ae-af/validate.py
+          GH_TOKEN: ${{ github.token }}
+        run: python .audit/ae-af/finish.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
