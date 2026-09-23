@@ -1,0 +1,91 @@
+diff --git a/addons/acm_extended/functions/fn_skConfirmInjection.sqf b/addons/acm_extended/functions/fn_skConfirmInjection.sqf
+index 23af21e..84f3f79 100644
+--- a/addons/acm_extended/functions/fn_skConfirmInjection.sqf
++++ b/addons/acm_extended/functions/fn_skConfirmInjection.sqf
+@@ -72,15 +72,23 @@ if ((_entry param [6,""]) == "epiMixB12") then {
+     _remainingFrac = ((((_total - _pushMl) max 0) / (_size max 0.01)) max 0) min 1;
+ };
+ 
++// A normal push must retain the injected workspace as well as the display handle.
++// A replacement workspace can exist before it has a replacement normal-push job.
++private _closeEpoch = _d getVariable ["ACME_SK_CloseEpoch",-1];
++if (_closeEpoch < 0 || {(uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != _closeEpoch}) exitWith {false};
++
+ // A normal push belongs to this display/provider/patient, not to whichever dialog opens later.
+ private _epoch = (_d getVariable ["ACME_SK_InjectionEpoch",0]) + 1;
+ _d setVariable ["ACME_SK_InjectionEpoch",_epoch];
+-private _job = [_d,ACE_player,_patient,_stableId,_epoch];
++private _job = [_d,ACE_player,_patient,_stableId,_epoch,_closeEpoch];
+ uiNamespace setVariable ["ACME_SK_NormalPush",_job];
+ private _validContext = {
+     params ["_job"];
+     _job params ["_display","_medic","_patient"];
+     if (isNull _display || {!(_display isEqualTo findDisplay 84000)} || {!(ACE_player isEqualTo _medic)}) exitWith {false};
++    private _closeEpoch = _job select 5;
++    if ((uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != _closeEpoch
++        || {(_display getVariable ["ACME_SK_CloseEpoch",-1]) != _closeEpoch}) exitWith {false};
+     if (!(uiNamespace getVariable ["ACME_SK_InjectionBusy",false])
+         || {(uiNamespace getVariable ["ACME_SK_View",""]) != "body"}
+         || {uiNamespace getVariable ["ACME_SK_TagEditMode",false]}) exitWith {false};
+@@ -93,6 +101,9 @@ private _retire = {
+     params ["_job"];
+     if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
+     uiNamespace setVariable ["ACME_SK_NormalPush",[]];
++    // Retire this job record, but never unlock or clear the target of a successor workspace/provider.
++    if ((uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != (_job select 5)
++        || {!(ACE_player isEqualTo (_job select 1))}) exitWith {};
+     // A persistent push has its own lifecycle and must retain its shared UI locks.
+     private _hc = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+     if (_hc isEqualType createHashMap && {count _hc > 0}) exitWith {};
+diff --git a/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py b/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py
+index 3c4e983..8beb637 100644
+--- a/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py
++++ b/addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py
+@@ -90,8 +90,9 @@ def test_syringe_can_return_last_hundredth_to_exact_endpoint():
+     assert '(_fill - _floorMl) <= 0.015' in compound
+     assert '_fill = _floorMl;' in compound
+     assert '_newY = _floorY;' in compound
+-    assert '_drawnNow <= 0.015' in tick
+-    assert 'ACM_circulation_SyringeDraw_DrawnAmount = 0;' in tick
++    from test_bounded_draw_endpoints import NATIVE, assert_native_endpoints
++    # Native drag owns exact numeric endpoints; the UI tick only repairs staged stock overage.
++    assert_native_endpoints(NATIVE.read_text(), tick)
+ 
+ 
+ def test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel():
+diff --git a/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py b/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py
+index e7cfbb1..3249ba4 100644
+--- a/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py
++++ b/addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py
+@@ -79,9 +79,9 @@ def test_compound_plunger_snaps_final_hundredth_to_current_vial_limit():
+ 
+ def test_plain_draw_snaps_final_hundredth_to_hard_max():
+     tick = txt('functions/fn_skUiTick.sqf')
+-    assert '(_hardMax - _drawnNow) <= 0.015' in tick
+-    assert '_my >= _maxMouse - (2 * pixelH)' in tick
+-    assert 'ACM_circulation_SyringeDraw_DrawnAmount = _hardMax;' in tick
++    from test_bounded_draw_endpoints import NATIVE, assert_native_endpoints
++    # Same-frame native drag applies the vial ceiling. Do not restore a competing UI-tick writer.
++    assert_native_endpoints(NATIVE.read_text(), tick)
+ 
+ 
+ def test_micro_vial_residue_is_safely_discardable_and_not_regranted():
+diff --git a/addons/acm_extended/tools/test_bounded_normal_push_lifetime.py b/addons/acm_extended/tools/test_bounded_normal_push_lifetime.py
+index 55d6afc..c3cd0f4 100644
+--- a/addons/acm_extended/tools/test_bounded_normal_push_lifetime.py
++++ b/addons/acm_extended/tools/test_bounded_normal_push_lifetime.py
+@@ -100,7 +100,13 @@ def test_old_callback_cannot_unlock_or_retarget_a_new_normal_push(boundary,reope
+         call ACME_fnc_skConfirmInjection;
+     '''+('0 call _runWait;' if boundary=='commit' else '')+'''
+         uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
+-    '''+('_drawDisplay=parsingNamespace;' if reopen else '')+'''
++    '''+('''
++        _drawDisplay=parsingNamespace;
++        // The replacement is an injected display, with its own registration epoch.
++        private _nextCloseEpoch=(uiNamespace getVariable ["ACME_SK_CloseEpoch",0])+1;
++        uiNamespace setVariable ["ACME_SK_CloseEpoch",_nextCloseEpoch];
++        _drawDisplay setVariable ["ACME_SK_CloseEpoch",_nextCloseEpoch];
++    ''' if reopen else '')+'''
+         uiNamespace setVariable ["ACME_SK_PendingInjection",["rightarm",2,"vascular"]];
+         [call ACME_fnc_skConfirmInjection,"new push rejected"] call _check;
+         private _newJob=+(uiNamespace getVariable ["ACME_SK_NormalPush",[]]);
