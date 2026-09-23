@@ -9,6 +9,12 @@ private _display = findDisplay 84000;
 if (isNull _display) exitWith {};
 if (!isNull (_display displayCtrl 84130)) exitWith {};  // already injected on this instance.
 
+// Each injected display owns one teardown generation. Older/repeated Unload events
+// must not mutate the shared preparation state of a replacement display.
+private _closeEpoch = (uiNamespace getVariable ["ACME_SK_CloseEpoch", 0]) + 1;
+uiNamespace setVariable ["ACME_SK_CloseEpoch", _closeEpoch];
+_display setVariable ["ACME_SK_CloseEpoch", _closeEpoch];
+
 // Return routing belongs to this display, even if a completion clears the global context.
 private _ctx = missionNamespace getVariable ["ACME_infusion_pendingContext", []];
 private _return = [];

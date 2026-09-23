@@ -1,0 +1,11 @@
+# Bounded AE: Narc Box teardown generation ownership
+
+Parent: `a0f065f64952143015341bf818eb8061994f2e37` (AC-AD).
+
+The normal-push cleanup already recognized its own display, but the remaining skClose body still changed global preparation state, released the current vial lease, removed the current Waste/Pulse handlers and routed menus even when called for an older display. Repeated Unload could also repeat compound-save and return-menu delegates.
+
+Only skInject and skClose change runtime. Each injected display receives a UI-local teardown generation after the existing duplicate-injection guard. Unload checks and consumes that generation before its first shared mutation or delegate call. A newer injected display invalidates earlier close handlers; repeated and unregistered closes do nothing. Existing current-session compound, infusion, size-switch, suppressed-return, Hardcore and normal-push routing is unchanged. No new delay, PFH, event handler, network call, inventory transaction or patient-life restriction is added. One global UI counter and its display-local copy are new.
+
+Twenty-two new tests execute the actual registration prefix and complete Unload function, with recorded engine-boundary delegates. Against original AC-AD runtime, 16 fail and 6 pass. All 22 pass with this correction. Cases cover current routing, old-close delivery before and after a successor closes, duplicate/reentrant closes, uninitialized/duplicate injection, and a newer normal push retaining its target, handlers and successful completion. The existing 37 normal-push cases remain; their shared fixture now explicitly supplies the registration epoch for its already-injected display. No existing assertion is weakened.
+
+These tests record cleanup, save, lease and return requests. They do not perform real inventory commits, leases, drug delivery, engine display destruction, rendering or network transport. This guard does not solve stale open/readiness callbacks, provider changes within a still-owned display, a new display created inside an already-running cleanup delegate, arbitrary counter resets/precision exhaustion, or older normal-push retirement callbacks before a replacement job exists. Live Unload ordering and full-heal/ownership transitions remain unverified. No original H entry is closed by AE alone. No stable-release approval.

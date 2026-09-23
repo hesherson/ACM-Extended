@@ -33,6 +33,9 @@ def setup():
     return '''
         private _lookup={params ["_map","_key","_default"]; if (_key in _map) then {_map get _key} else {_default}};
         private _drawDisplay=missionNamespace;
+        // These push fixtures enter an already-injected draw display.
+        uiNamespace setVariable ["ACME_SK_CloseEpoch",1];
+        _drawDisplay setVariable ["ACME_SK_CloseEpoch",1];
         private _durationText=""; private _ghost=false;
         private _enables=[]; private _writes=[]; private _commits=[]; private _sounds=[];
         private _delivered=[]; private _hcStarts=0; private _hasAccess=true;

@@ -2,6 +2,11 @@
    The return snapshot is stored by fn_skInject on this exact display. */
 disableSerialization;
 params ["_display"];
+// Consume this display's teardown before any global cleanup or delegate call.
+// A newer injected display, a repeated Unload or an unregistered display owns none of it.
+private _closeEpoch = _display getVariable ["ACME_SK_CloseEpoch", -1];
+if (_closeEpoch < 0 || {(uiNamespace getVariable ["ACME_SK_CloseEpoch", -2]) != _closeEpoch}) exitWith {};
+uiNamespace setVariable ["ACME_SK_CloseEpoch", _closeEpoch + 1];
 // Cancel only this display's normal, display-bound push. Hardcore flow survives Unload.
 private _normalPush = uiNamespace getVariable ["ACME_SK_NormalPush",[]];
 if (count _normalPush >= 5 && {(_normalPush select 0) isEqualTo _display}) then {
