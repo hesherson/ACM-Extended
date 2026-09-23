@@ -57,7 +57,8 @@ def test_staged_push():
     c=txt('functions/fn_skBodyActionClick.sqf')
     assert 'call ACME_fnc_skConfirmInjection' in c
     q=txt('functions/fn_skConfirmInjection.sqf')
-    assert 'ctrlCommit 3.0' in q and 'ACME_SyringePush' in q
+    from test_bounded_staged_push_contracts import assert_staged_contract
+    assert_staged_contract(s, q)
     assert 'ACME_SK_PendingInjection",[]' in q
 
 def test_feedback_lingers():

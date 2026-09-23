@@ -80,17 +80,19 @@ def test_saving_syringe_stays_on_main_draw_page():
 
 
 def test_body_map_site_click_runs_locked_three_second_visual_push_before_commit():
+    # Historical identity retained. Site click stages; explicit confirmation owns the timed push.
+    from test_bounded_staged_push_contracts import assert_staged_contract, contains
     site = txt('functions/fn_skSiteClick.sqf')
     begin = txt('functions/fn_skBeginInjection.sqf')
+    confirm = txt('functions/fn_skConfirmInjection.sqf')
     inject = txt('functions/fn_skInjectSite.sqf')
+    click = txt('functions/fn_skBodyActionClick.sqf')
     cfg = txt('config.cpp')
-    assert '[_part] call ACME_fnc_skBeginInjection;' in site
-    assert 'uiNamespace setVariable ["ACME_SK_CarouselExpanded",true];' in begin
-    assert 'uiNamespace setVariable ["ACME_SK_InjectionBusy",true];' in begin
-    assert '_pl ctrlCommit 3.0;' in begin
-    assert 'playSound "ACME_SyringePush";' in begin
-    assert '[_bodyPart] call ACME_fnc_skInjectSite;' in begin
-    assert 'private _pushSec = 3;' in inject
+    assert contains(site, '[_part] call ACME_fnc_skBeginInjection;')
+    assert contains(begin, 'uiNamespace setVariable ["ACME_SK_CarouselExpanded",true];')
+    assert contains(click, 'call ACME_fnc_skConfirmInjection')
+    assert_staged_contract(begin, confirm)
+    assert contains(inject, 'params ["_bodyPart", ["_pushSec", 3]];')
     assert 'class ACME_SyringePush' in cfg
     assert 'acm_extended\\sound\\syringe_push.ogg' in cfg
 
