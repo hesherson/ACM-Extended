@@ -2,7 +2,7 @@
 // which is vascular iv or io, or im. _this is [bodypart]. it consumes both the filled syringe magazine, because
 // syringe_inject removes the ACM_Syringe_<size>_<med> the draw created, and the matching ACME_narcStore record
 // kept here.
-params ["_bodyPart", ["_pushSec", 3]];
+params ["_bodyPart", ["_pushSec", 3], ["_confirmedEpiMl", -1, [0]]];
 if !(_pushSec isEqualType 0 && {finite _pushSec} && {_pushSec > 0}) then {_pushSec = 3;};
 _pushSec = (_pushSec max 1) min 300;
 private _display = findDisplay 84000;
@@ -42,8 +42,13 @@ if (_med == "EpinephrineCardiac" && {!_iv} && {!_virtual}) exitWith {
 };
 if (((_store select _storeIdx) param [6, ""]) == "epiMixB12") exitWith {
     private _total = _amt + _nsMl;
-    private _choice = uiNamespace getVariable ["ACME_SK_EpiDoseChoice", 0];
-    private _ml = ([1, 2, _total] select _choice) min _total;
+    // Normal timed confirmation supplies its captured amount. Legacy direct calls
+    // retain the live selector; the measured worker still rejects insufficient solution.
+    private _ml = _confirmedEpiMl;
+    if (_ml == -1) then {
+        private _choice = uiNamespace getVariable ["ACME_SK_EpiDoseChoice", 0];
+        _ml = ([1, 2, _total] select _choice) min _total;
+    };
     if ([ACE_player, _patient, _bodyPart, _storeIdx, _ml, _siteIdx, _pushSec] call ACME_fnc_epinephrinePushStored) then {
         if (_ml >= _total - 0.001) then {
             [_storeIdx] call ACME_fnc_skAfterStoredRemoval;

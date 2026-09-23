@@ -66,9 +66,11 @@ if (_total <= 0) exitWith {
 
 // Push-dose epinephrine can intentionally leave solution behind. Every other prepared syringe empties to zero.
 private _remainingFrac = 0;
+private _confirmedEpiMl = -1;
 if ((_entry param [6,""]) == "epiMixB12") then {
     private _choice = uiNamespace getVariable ["ACME_SK_EpiDoseChoice",0];
     private _pushMl = ([1,2,_total] select (((_choice max 0) min 2))) min _total;
+    _confirmedEpiMl = _pushMl;
     _remainingFrac = ((((_total - _pushMl) max 0) / (_size max 0.01)) max 0) min 1;
 };
 
@@ -135,7 +137,7 @@ call ACME_fnc_skBuildHotspots;
 {private _c=_d displayCtrl _x; if (!isNull _c) then {_c ctrlEnable false;};} forEach [84150,84152,84151,84154,84470,84820,84831];
 
 [{
-    params ["_stableId","_size","_remainingFrac","_bodyPart","_siteIdx","_route","_pushSec","_job","_validContext","_retire"];
+    params ["_stableId","_size","_remainingFrac","_bodyPart","_siteIdx","_route","_pushSec","_job","_validContext","_retire","_confirmedEpiMl"];
     disableSerialization;
     if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
     if !([_job] call _validContext) exitWith {[_job] call _retire;};
@@ -180,7 +182,7 @@ call ACME_fnc_skBuildHotspots;
     };
 
     [{
-        params ["_stableId","_bodyPart","_siteIdx","_route","_pushSec","_job","_validContext","_retire"];
+        params ["_stableId","_bodyPart","_siteIdx","_route","_pushSec","_job","_validContext","_retire","_confirmedEpiMl"];
         disableSerialization;
         if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
         if !([_job] call _validContext) exitWith {[_job] call _retire;};
@@ -196,7 +198,12 @@ call ACME_fnc_skBuildHotspots;
             uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
             uiNamespace setVariable ["ACME_SK_PendingInjection",[]];
             uiNamespace setVariable ["ACME_SK_Patient",_job select 2];
-            [_bodyPart,_pushSec] call ACME_fnc_skInjectSite;
+            // Use the same measured aliquot as the stroke, not a later dose-selector value.
+            if (_confirmedEpiMl >= 0) then {
+                [_bodyPart,_pushSec,_confirmedEpiMl] call ACME_fnc_skInjectSite;
+            } else {
+                [_bodyPart,_pushSec] call ACME_fnc_skInjectSite;
+            };
         } else {
             uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
             uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
@@ -207,6 +214,6 @@ call ACME_fnc_skBuildHotspots;
         [0.10] call ACME_fnc_skCarouselRender;
         call ACME_fnc_skBuildHotspots;
         call ACME_fnc_skBodyActionRender;
-    },[_stableId,_bodyPart,_siteIdx,_route,_pushSec,_job,_validContext,_retire],_pushSec] call CBA_fnc_waitAndExecute;
-},[_stableId,_size,_remainingFrac,_bodyPart,_siteIdx,_route,_pushSec,_job,_validContext,_retire],0.14] call CBA_fnc_waitAndExecute;
+    },[_stableId,_bodyPart,_siteIdx,_route,_pushSec,_job,_validContext,_retire,_confirmedEpiMl],_pushSec] call CBA_fnc_waitAndExecute;
+},[_stableId,_size,_remainingFrac,_bodyPart,_siteIdx,_route,_pushSec,_job,_validContext,_retire,_confirmedEpiMl],0.14] call CBA_fnc_waitAndExecute;
 true

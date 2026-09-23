@@ -92,7 +92,7 @@ def test_body_map_site_click_runs_locked_three_second_visual_push_before_commit(
     assert contains(begin, 'uiNamespace setVariable ["ACME_SK_CarouselExpanded",true];')
     assert contains(click, 'call ACME_fnc_skConfirmInjection')
     assert_staged_contract(begin, confirm)
-    assert contains(inject, 'params ["_bodyPart", ["_pushSec", 3]];')
+    assert contains(inject, 'params ["_bodyPart", ["_pushSec", 3], ["_confirmedEpiMl", -1, [0]]];')
     assert 'class ACME_SyringePush' in cfg
     assert 'acm_extended\\sound\\syringe_push.ogg' in cfg
 
