@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after batch 16: 138
-Base: bc79769a1c83d1e027deb4d2e7cf8f9ed54f7441
+Unresolved original source-contract outcomes after batch 17: 135
+Base: 9bc73aa7cb7f9c8a7a394fc9114b4ee5b2bf8f2c
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H044 addons/acm_extended/tools/test_b22_narc_revert.py::B22UIContracts::test_infusion_inherits_same_original_row_overlay
@@ -113,8 +113,6 @@ H344 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_one_time_we
 H346 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_main_tag_button_is_compact_and_anchored_left_of_barrel
 H347 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_main_tag_dropdown_is_directly_below_and_full_description_width
 H349 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_new_qedavemergens_font_replaces_old_runtime_wiring
-H350 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_head_patient_grab_uses_priority_two_and_startup_grace
-H351 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_head_patient_release_is_priority_two_and_never_setpos
 H352 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_head_provider_stands_only_for_draggerbase_then_returns_crouched
 H353 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_head_elevation_only_rolls_patient_when_actually_prone
 H360 addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py::test_main_tag_selector_is_native_syringe_anchored_and_aspect_independent
@@ -139,4 +137,3 @@ H436 addons/acm_extended/tools/test_na8_5_batch5.py::SourceContracts::test_debug
 H437 addons/acm_extended/tools/test_na8_5_batch5.py::SourceContracts::test_open_vials_visible_and_selectable
 H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::test_all_visual_passes_after_procedure
 H452 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_old_pose_callback_owns_token
-H453 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_stop_death_branch_before_pose

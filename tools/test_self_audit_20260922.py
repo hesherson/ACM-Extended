@@ -34,6 +34,12 @@ REVIEWED_BACKLOG_16_UPDATES = {
 }
 PROTECTED.update(REVIEWED_BACKLOG_16_UPDATES)
 
+# Batch 17: existing re-elevation guard now precedes collision restoration.
+# No timing, animation, equipment or other state-transition rule changes.
+REVIEWED_BACKLOG_17_UPDATES = {
+    'addons/acm_extended/functions/fn_headElevateStop.sqf': '1e6566f583c43ebe00f9144dd560d741158f49a3f294eba08a67221831950755',
+}
+PROTECTED.update(REVIEWED_BACKLOG_17_UPDATES)
 
 @pytest.mark.parametrize("path,expected", sorted(PROTECTED.items()))
 def test_prior_fix_restored_without_rewrite(path, expected):

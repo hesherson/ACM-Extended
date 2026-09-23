@@ -104,23 +104,30 @@ def test_chest_reveal_keeps_epoch_revision_idempotence_guards():
 
 
 def test_head_patient_grab_uses_priority_two_and_startup_grace():
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
+    # Current ACME patient wrappers retain pickup priority and startup grace;
+    # do not restore the obsolete raw BI grab-state spelling.
+    from test_historical_head_lowering import test_lift_uses_authored_grab_priority_and_current_startup_grace, test_lift_completion_rejects_changed_token_suspension_death_or_owner_loss, test_current_lift_completion_does_not_replay_an_already_observed_hold
+    for replay in (False,True):
+        test_lift_uses_authored_grab_priority_and_current_startup_grace(replay)
+    for change in ('_patient setVariable ["ACME_headElev_poseToken","placement:2"];',
+                   '_patient setVariable ["ACME_headElev_Suspended",true];',
+                   '_patientAlive=false;', '_patientLocal=false;'):
+        test_lift_completion_rejects_changed_token_suspension_death_or_owner_loss(change)
+    for observed in ('ACME_HeadElevPatientHold','other-state'):
+        test_current_lift_completion_does_not_replay_an_already_observed_hold(observed)
     guard = txt('functions/fn_headElevAnimGuard.sqf')
-    assert 'ACME_headElev_animGraceUntil' in apply
-    assert 'CBA_missionTime + 2.5' in apply
-    assert '[_patient, "AinjPpneMrunSnonWnonDb_grab", 2]' in apply
     assert 'ACME_headElev_animGraceUntil' in guard
     assert '_anim == _restAnim' in guard
     assert 'CBA_missionTime <= _graceUntil' in guard
 
 
 def test_head_patient_release_is_priority_two_and_never_setpos():
-    stop = txt('functions/fn_headElevateStop.sqf')
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    assert '[_patient, "AinjPpneMrunSnonWnonDb_release", 2]' in stop
-    assert '_patient setPos' not in stop
-    assert '_patient setPos' not in apply
-    assert '_patient attachTo' not in apply
+    from test_historical_head_lowering import test_living_lower_preserves_authored_release_and_defers_gear_until_completion, test_lift_and_lower_do_not_teleport_patient_to_cached_world_coordinates, test_old_lower_completion_cannot_reenable_collision_during_new_elevation
+    for quiet in (False,True):
+        test_living_lower_preserves_authored_release_and_defers_gear_until_completion(quiet)
+    for suspended in (False,True):
+        test_old_lower_completion_cannot_reenable_collision_during_new_elevation(suspended)
+    test_lift_and_lower_do_not_teleport_patient_to_cached_world_coordinates()
 
 
 def test_head_provider_stands_only_for_draggerbase_then_returns_crouched():

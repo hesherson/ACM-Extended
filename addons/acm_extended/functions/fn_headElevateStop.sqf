@@ -85,8 +85,10 @@ if (_visibleLower) then {
     [{
         params ["_patient", "_rest"];
         if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
-        [_patient, true] call ACME_fnc_headElevCollision;
+        // A new elevation owns its collision window as well as its gear and pose.
+        // Reject this old lower completion before restoring collision underneath the new lift.
         if (_patient getVariable ["ACME_headElevated", false]) exitWith {};
+        [_patient, true] call ACME_fnc_headElevCollision;
         // This is a true Lower Head action: the support carrier may finally return to the body. A separate
         // backpack-supported chest-access carrier still waits for its own action lease to end.
         [_patient] call ACME_fnc_headElevVestRestore;
