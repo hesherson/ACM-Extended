@@ -20,7 +20,7 @@ PROTECTED = {'addons/acm_extended/functions/fn_beginStethoscopeAction.sqf': '474
 REVIEWED_LIFECYCLE_UPDATES = {
     'addons/acm_extended/functions/fn_initHangBagRuntime.sqf': '177a105a3ff96c73e5999d77ba760eacaad9b36e59a66abffabc3b3a8bd9f61f',  # F04 ACK registration and token-scoped disconnect release
     'addons/acm_extended/functions/fn_ownerDispatch.sqf': '4c25ddb79f17419375bf8891c25d617976cffdc812e705a61ad8ecf0bb7720be',  # F04 reuse explicit owner operations for atomic lease arbitration
-    'addons/acm_extended/functions/fn_stethoscopeClose.sqf': 'fc64695c2cbabe4ff5be23b3738ac365f9d939d1120dd7040e750c56d325ee46',  # F03 capture flip state before reset
+    'addons/acm_extended/functions/fn_stethoscopeClose.sqf': '66c50d484cdc6391191b90a6cb710a8fea846c26b780dc1f6cf1c7402d3705ae',  # F03 capture flip state before reset
     'addons/acm_extended/functions/fn_transientStateReconcile.sqf': '33162edbc565e192dbc431e5d992c1f1183920fcfeec21ed388ab316c9fc6df0',  # F04 protect unexpired claim before Active replicates
     'addons/airway/functions/fnc_establishSurgicalAirway.sqf': '20ac5b962ac042cb11d3da59ce86456af02e15f2677ae21750ba3efbdcb3e2da',  # F01 acquire surgical reservation only after accepted startup
     'addons/core/functions/fnc_beginContinuousAction.sqf': '9a93184b753ba68755847774e3a06ffaa553556d919bb42f887639b3749ac2f8',  # F02 player-bound cancellation; AI policy and dialog grace preserved
