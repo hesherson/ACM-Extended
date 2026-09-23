@@ -33,13 +33,8 @@ def test_main_draw_select_tag_is_under_live_tag_and_has_wide_clickable_dropdown(
     selector_contract()
 
 def test_pending_tag_live_preview_remains_available_to_saline_flush_flow():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    waste = txt('functions/fn_skWasteDraw.sqf')
-    pick = txt('functions/fn_skPickFlush.sqf')
-    assert '(_view == "syringe") && {!_infusion}' in pending
-    assert 'tag_overlay_%1mL_%2.paa' in pending
-    assert 'ACME_fnc_skApplyPendingTag' in waste
-    assert '[10, _patient, _bodyPart, _flushClass]' in pick
+    from test_bounded_flush_preview_contracts import tag_save_contract
+    tag_save_contract()
 
 def test_draw_and_save_have_physical_press_feedback():
     inj = txt('functions/fn_skInject.sqf')

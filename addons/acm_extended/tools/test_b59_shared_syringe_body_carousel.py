@@ -72,14 +72,8 @@ def test_body_preview_renders_real_fill_tag_and_summary():
     assert 'displayCtrl 84001' in body and 'displayCtrl 84002' in body
 
 def test_flush_body_map_path_is_not_broken_by_syringe_preview():
-    body = txt('functions/fn_skBodySyringeRender.sqf')
-    move = txt('functions/fn_skBodySyringeMove.sqf')
-    hot = txt('functions/fn_skBuildHotspots.sqf')
-    assert 'ACME_SK_SelFlush' in body
-    assert 'Saline Flush 10 mL' in body
-    assert 'syringe_flush_10_barrel_ca.paa' in body
-    assert 'ACME_SK_SelFlush' in move
-    assert 'private _deliveryReady = (_flush != "") || {_syringeIndex >= 0};' in hot
+    from test_bounded_flush_preview_contracts import preview_contract
+    preview_contract()
 
 def test_consumption_keeps_nearest_syringe_and_clears_target_state():
     after = txt('functions/fn_skAfterStoredRemoval.sqf')
