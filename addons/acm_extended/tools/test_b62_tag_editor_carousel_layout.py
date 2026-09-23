@@ -25,17 +25,12 @@ def test_main_draw_select_tag_is_beside_native_syringe_not_left_list():
     assert 'safeZoneW * 0.30' in pending
 
 def test_both_tag_dropdowns_have_single_click_fallback_and_none():
-    inj = txt('functions/fn_skInject.sqf')
-    assert inj.count('"MouseButtonUp"') >= 2
-    assert inj.count('["none","None - No syringe tag"]') >= 2
-    assert '[_ctrl,_row] call ACME_fnc_skTagColor' in inj
-    assert '[_ctrl,_row] call ACME_fnc_skPendingTagColor' in inj
+    from test_bounded_tag_dropdowns import dropdown_contract
+    dropdown_contract()
 
 def test_carousel_button_is_edit_tag_and_editor_button_is_select_tag():
-    render = txt('functions/fn_skCarouselRender.sqf')
-    assert 'if (_editMode) then {"Select Tag"} else {"Edit Tag"}' in render
-    assert 'Select Color' not in render
-    assert 'Select Color' not in txt('functions/fn_skInject.sqf')
+    from test_bounded_tag_dropdowns import captions_contract
+    captions_contract()
 
 def test_dedicated_edit_tag_mode_uses_native_draw_size_and_auto_focuses_first_line():
     from test_bounded_tag_focus import assert_native_editor_contract

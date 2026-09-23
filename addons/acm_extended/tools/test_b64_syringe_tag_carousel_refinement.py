@@ -54,14 +54,9 @@ def test_main_draw_always_has_select_syringe_tag_left_of_native_syringe():
 
 
 def test_tag_dropdowns_remain_wide_clickable_and_same_color_reselectable():
-    inj = txt('functions/fn_skInject.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    stored = txt('functions/fn_skCarouselRender.sqf')
-    assert inj.count('"MouseButtonUp"') >= 2
-    assert inj.count('lbSetCurSel -1') >= 4
-    assert '(safeZoneH * 1.02) min (safeZoneW * 0.36)' in pending
-    assert '(safeZoneH*0.95) min (safeZoneW*0.34)' in stored
-    assert '_list ctrlEnable true;' in pending
+    from test_bounded_tag_dropdowns import dropdown_contract, geometry_contract
+    dropdown_contract()
+    geometry_contract()
 
 
 def test_edit_syringe_tag_is_attached_to_full_route_row():

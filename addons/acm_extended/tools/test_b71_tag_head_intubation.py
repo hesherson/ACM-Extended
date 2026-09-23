@@ -21,18 +21,12 @@ def test_main_tag_button_copies_carousel_tag_face_anchor():
     assert 'private _by0 = (_r0 select 1) + (_r0 select 3)*0.575;' in ensure
 
 def test_pending_tag_dropdown_is_hover_open_clickable_dark_and_topmost():
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    cfg = txt('config.cpp')
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'ctrlCreate ["ACME_SK_TagList", 84611]' in ensure
-    assert 'ctrlAddEventHandler ["MouseEnter"' in ensure
-    assert 'ctrlAddEventHandler ["LBSelChanged"' in ensure
-    assert 'ctrlAddEventHandler ["MouseButtonUp"' in ensure
-    assert ensure.index('ctrlCreate ["RscPicture", 84600]') < ensure.index('ctrlCreate ["ACME_SK_TagList", 84611]')
-    assert 'class ACME_SK_TagList: ACME_SK_StyledList' in cfg
-    assert 'colorBackground[] = {0.04,0.04,0.04,0.96};' in cfg
-    assert 'safeZoneH * 1.20' in render
-    assert 'safeZoneH * 0.52' in render
+    from test_bounded_tag_dropdowns import dropdown_contract, geometry_contract
+    from test_bounded_tag_contracts import require
+    dropdown_contract()
+    geometry_contract()
+    require(txt("config.cpp"), "class ACME_SK_TagList: ACME_SK_StyledList")
+    require(txt("config.cpp"), "colorBackground[] = {0.04,0.04,0.04,0.96};")
 
 def test_pending_tag_gives_immediate_feedback_and_only_exists_in_draw_view():
     render = txt('functions/fn_skPendingTagRender.sqf')
