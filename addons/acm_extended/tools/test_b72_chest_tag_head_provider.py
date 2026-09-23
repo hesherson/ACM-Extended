@@ -104,23 +104,14 @@ def test_chest_reveal_keeps_epoch_revision_idempotence_guards():
 
 
 def test_head_patient_grab_uses_priority_two_and_startup_grace():
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    guard = txt('functions/fn_headElevAnimGuard.sqf')
-    assert 'ACME_headElev_animGraceUntil' in apply
-    assert 'CBA_missionTime + 2.5' in apply
-    assert '[_patient, "AinjPpneMrunSnonWnonDb_grab", 2]' in apply
-    assert 'ACME_headElev_animGraceUntil' in guard
-    assert '_anim == _restAnim' in guard
-    assert 'CBA_missionTime <= _graceUntil' in guard
+    from test_bounded_head_pose_contracts import assert_startup_grace
+    assert_startup_grace()
 
 
 def test_head_patient_release_is_priority_two_and_never_setpos():
-    stop = txt('functions/fn_headElevateStop.sqf')
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    assert '[_patient, "AinjPpneMrunSnonWnonDb_release", 2]' in stop
-    assert '_patient setPos' not in stop
-    assert '_patient setPos' not in apply
-    assert '_patient attachTo' not in apply
+    from test_bounded_head_pose_contracts import assert_connected_patient_states, assert_no_patient_teleport
+    assert_connected_patient_states()
+    assert_no_patient_teleport()
 
 
 def test_head_provider_stands_only_for_draggerbase_then_returns_crouched():

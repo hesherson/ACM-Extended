@@ -82,9 +82,10 @@ class SourceContracts(unittest.TestCase):
         self.assertIn("ACME_fnc_headElevVestRestore",t)
         for s in ("setVectorUp","setPos","switchMove","doAnim","setDamage"):self.assertNotIn(s,t)
     def test_stop_death_branch_before_pose(self):
-        t=src("headElevateStop")
-        self.assertLess(t.index("if (!alive _patient)"),t.index("ACME_fnc_animQueue"))
-        self.assertIn("ACME_fnc_headElevVestRestore",t)
+        from test_bounded_head_pose_contracts import assert_dead_stop_delegates_first
+        from test_bounded_head_completion import test_dead_lower_delegates_before_living_animation_and_restore
+        assert_dead_stop_delegates_first()
+        test_dead_lower_delegates_before_living_animation_and_restore()
     def test_clear_all_does_not_discard_pending_snapshot(self):
         t=src("clearAllAilments")
         self.assertIn("headElevDeathRelease",t);self.assertIn("headElevVestRestore",t)

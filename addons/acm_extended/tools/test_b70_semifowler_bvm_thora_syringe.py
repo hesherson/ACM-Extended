@@ -15,19 +15,9 @@ def test_b70_version_stamp():
 
 
 def test_semifowler_patient_uses_exact_grab_release_without_helper_positioning():
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    start = txt('functions/fn_headElevateStart.sqf')
-    stop = txt('functions/fn_headElevateStop.sqf')
-    suspend = txt('functions/fn_headElevSuspend.sqf')
-    assert 'AinjPpneMrunSnonWnonDb_grab' in apply
-    assert 'AinjPpneMrunSnonWnonDb_release' in stop
-    assert 'AinjPpneMrunSnonWnonDb_release' in suspend
-    assert '[_patient] call ACME_fnc_headElevApplyTilt;' in start
-    # No B70 casualty placement/tilt helper may be introduced for the pose.
-    assert '_patient attachTo' not in apply
-    assert '_patient setPos' not in apply
-    assert '_patient setPos' not in stop
-    assert '_patient setPos' not in suspend
+    from test_bounded_head_pose_contracts import assert_connected_patient_states, assert_no_patient_teleport
+    assert_connected_patient_states()
+    assert_no_patient_teleport()
 
 
 def test_semifowler_provider_runs_requested_full_duration_sequence_and_finishes_unarmed():
