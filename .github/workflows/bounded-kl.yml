@@ -18,7 +18,9 @@ jobs:
         with:
           python-version: '3.13'
       - name: Verify patch transport
-        run: python .audit/kl/validate.py --transport-only
+        run: |
+          python .audit/kl/recover_transport.py
+          python .audit/kl/validate.py --transport-only
       - name: Install pinned toolchain
         run: |
           set -euo pipefail
