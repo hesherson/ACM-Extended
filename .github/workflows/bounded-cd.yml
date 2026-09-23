@@ -1,0 +1,41 @@
+name: Bounded C-D audit
+on:
+  push:
+    branches: [audit/bounded-backlog-cd-20260923]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 7c031508124ea1b431207faf3bda0eeb7e2fbbdf
+          persist-credentials: false
+      - name: Export tracked text and pinned tools
+        run: |
+          mkdir -p /tmp/acme-review
+          python - <<'PY'
+          import pathlib, subprocess, hashlib, json, zipfile
+          manifest={}
+          with zipfile.ZipFile('/tmp/acme-review/source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for p in subprocess.check_output(['git','ls-files','-z']).decode().split('\0'):
+                  if not p: continue
+                  b=pathlib.Path(p).read_bytes()
+                  manifest[p]=hashlib.sha256(b).hexdigest()
+                  try: b.decode('utf-8')
+                  except UnicodeDecodeError: continue
+                  if b'\0' not in b: z.writestr(p,b)
+          pathlib.Path('/tmp/acme-review/manifest.json').write_text(json.dumps(manifest,indent=2))
+          PY
+          curl -fLsS --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-review/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-review/hemtt' | sha256sum --check
+          curl -fLsS --retry 1 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-review/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-review/sqfvm.zip' | sha256sum --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acme-cd-review-source
+          path: /tmp/acme-review
+          retention-days: 3
