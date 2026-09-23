@@ -21,16 +21,8 @@ def test_semifowler_patient_uses_exact_grab_release_without_helper_positioning()
 
 
 def test_semifowler_provider_runs_requested_full_duration_sequence_and_finishes_unarmed():
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    assert 'private _dragger = "DraggerBase";' in seq
-    assert 'private _toUnarmed = "AcinPknlMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon";' in seq
-    assert 'private _unarmed = "AmovPknlMstpSnonWnonDnon";' in seq
-    assert 'addEventHandler ["AnimDone"' in seq
-    assert 'private _doneEH' in seq
-    assert '[_u, _toUnarmed, 0] call ACME_fnc_doAnim;' in seq
-    assert '[_u, _unarmed, 0] call ACME_fnc_doAnim;' in seq
-    assert 'ACME_fnc_doAnimHeld' not in seq
-    assert 'ACME_fnc_animQueue' not in seq
+    from test_bounded_head_provider_sequence import provider_contract
+    provider_contract()
 
 
 def test_provider_weapon_preflight_is_one_clear_only_and_never_tsp_or_auto_redraw():

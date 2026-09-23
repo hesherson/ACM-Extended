@@ -115,13 +115,8 @@ def test_head_patient_release_is_priority_two_and_never_setpos():
 
 
 def test_head_provider_stands_only_for_draggerbase_then_returns_crouched():
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    assert 'private _dragger = "DraggerBase";' in seq
-    assert '_medic setUnitPos "AUTO";' in seq
-    stage0 = seq[seq.index('if (_stage == 0) exitWith {'):]
-    assert '_u setUnitPos "MIDDLE";' in stage0
-    assert 'AcinPknlMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon' in seq
-    assert 'private _unarmed = "AmovPknlMstpSnonWnonDnon";' in seq
+    from test_bounded_head_provider_sequence import provider_contract
+    provider_contract()
 
 
 def test_head_elevation_only_rolls_patient_when_actually_prone():

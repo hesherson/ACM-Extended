@@ -74,14 +74,10 @@ def test_native_acm_treatment_cannot_invent_head_position_roll():
     assert 'private _started = _nativeArgs call ACME_native_fnc_treatment;' in override
 
 def test_exact_semifowler_patient_and_provider_animations_retained():
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    stop = txt('functions/fn_headElevateStop.sqf')
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    assert 'AinjPpneMrunSnonWnonDb_grab' in apply
-    assert 'AinjPpneMrunSnonWnonDb_release' in stop
-    assert 'private _dragger = "DraggerBase";' in seq
-    assert 'AcinPknlMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon' in seq
-    assert 'private _unarmed = "AmovPknlMstpSnonWnonDnon";' in seq
+    from test_bounded_head_provider_sequence import provider_contract
+    from test_bounded_head_pose_contracts import assert_connected_patient_states
+    provider_contract()
+    assert_connected_patient_states()
 
 def test_provider_sequence_releases_on_finish_movement_or_menu_exit_without_lowering_head():
     seq = txt('functions/fn_headElevMedicSeq.sqf')
