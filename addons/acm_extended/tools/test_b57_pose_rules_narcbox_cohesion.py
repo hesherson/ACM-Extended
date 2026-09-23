@@ -122,20 +122,10 @@ def test_obsolete_medication_background_diagnostic_is_removed():
     assert 'medicationDiagTick' not in txt('functions/fn_skUiTick.sqf')
 
 def test_final_syringe_name_is_25_char_unicode_metadata():
-    cfg=txt('config.cpp')
-    assert 'class ACME_SK_NameEdit: RscEdit' in cfg
-    assert 'maxChars = 25;' in cfg
-    assert 'class skFinalName {};' in cfg
-    fn=txt('functions/fn_skFinalName.sqf')
-    assert 'ctrlText _ctrl' in fn
-    assert '_name select [0, 25]' in fn
-    for bad in ('toLowerANSI','toUpperANSI','regex','splitString'):
-        assert bad not in fn
-    inject=txt('functions/fn_skInject.sqf')
-    assert 'Final Syringe Name (25 max)' in inject
-    assert 'ctrlCreate ["ACME_SK_NameEdit", 84161]' in inject
-    for rel in ('overrides/fn_syringeDrawButton.sqf','functions/fn_skWasteDraw.sqf','functions/fn_skCompoundCommit.sqf','functions/fn_epinephrineDrawCardiac.sqf','functions/fn_epinephrinePrepare.sqf'):
-        assert 'customName' in txt(rel), rel
+    # Final-name UI is retired. Three 25-character tag lines carry clinical metadata.
+    from test_bounded_tag_contracts import test_retired_final_name_shim_does_not_change_prepared_metadata, test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes
+    test_retired_final_name_shim_does_not_change_prepared_metadata()
+    test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes(26, True)
 
 def test_narcbox_cohesive_section_and_selection_fix_retained():
     r=txt('functions/fn_skListRefresh.sqf')

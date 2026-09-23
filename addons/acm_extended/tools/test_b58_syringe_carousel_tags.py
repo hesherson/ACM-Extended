@@ -37,13 +37,12 @@ def test_carousel_infinite_wrap_and_measured_plunger():
     assert 'syringe_%1_plunger_ca.paa' in txt('functions/fn_skCarouselRender.sqf')
 
 def test_tags_have_three_editors_and_all_colors():
-    s=txt('functions/fn_skInject.sqf')
-    assert '84460 + _line' in s
-    assert 'for "_line" from 0 to 2' in s
-    colors=['yellow_induction','orange_benzodiazepine','blue_opioid','blue_stripe_reversal','red_paralytic','red_stripe_reversal','violet_vasopressor','violet_stripe_hypotensive','green_anticholinergic','gray_local_anesthetic','salmon_antiemetic','white_saline_flush']
-    for c in colors: assert c in s
-    assert 'Select Color' in s
-    assert 'KillFocus' in s and 'KeyUp' in s
+    # The same three editors and 12 colors remain, with optional None and Edit Syringe Tag.
+    from test_bounded_tag_contracts import editor_wiring
+    from test_historical_syringe_identity import test_tag_color_uses_selected_identity_without_changing_text_or_dose
+    editor_wiring()
+    for color in ('none','yellow_induction','blue_opioid','red_paralytic'):
+        test_tag_color_uses_selected_identity_without_changing_text_or_dose(color)
 
 def test_tag_assets_are_paa_and_all_sizes_present():
     base=ROOT/'ui/syringe_tags'

@@ -40,12 +40,15 @@ def test_direct_pressure_floating_indicator_is_not_installed():
     assert 'no-op' in helper
 
 def test_tag_limit_is_exactly_17_and_commits_are_defensive():
-    cfg = txt('config.cpp')
-    tag_class = cfg[cfg.index('class ACME_SK_TagEdit'):cfg.index('class ACME_SK_TagText')]
-    assert 'maxChars = 17;' in tag_class
-    for rel in ['functions/fn_skPendingTagCommit.sqf','functions/fn_skTagCommit.sqf','functions/fn_skApplyPendingTag.sqf']:
-        src = txt(rel)
-        assert 'select [0,17]' in src or 'select [0, 17]' in src
+    # The later 25-character contract supersedes 17; retain the old test identity.
+    from test_bounded_tag_contracts import tag_limits, test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes
+    tag_limits()
+    for length in (0,17,25,26,80):
+        test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes(length, True)
+    from test_historical_syringe_identity import test_pending_tag_rejects_wrong_metadata_types_without_altering_drug, test_tag_commit_cannot_write_when_display_or_selected_record_is_gone
+    test_pending_tag_rejects_wrong_metadata_types_without_altering_drug(5, '"bad"', '["none","","",""]')
+    for absent in ('display','selection'):
+        test_tag_commit_cannot_write_when_display_or_selected_record_is_gone(absent)
 
 def test_tag_edit_boxes_are_tall_enough_for_ascenders_and_descenders():
     pending = txt('functions/fn_skPendingTagRender.sqf')
