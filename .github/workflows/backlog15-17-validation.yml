@@ -1,0 +1,119 @@
+name: Backlog batches 15-17 exact validation
+on:
+  push:
+    branches: [audit/backlog-batches15-17-20260923]
+    paths: [.github/workflows/backlog15-17-validation.yml]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a488723656d8a370184df56209e55a17bc3901ef
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconstruct reviewed commits without modifying main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import os,base64,gzip,json,hashlib,subprocess,urllib.request
+          payload=b''
+          for sha in ['f4c7776283b4ab769774a00c739cd0b86c55d887','fc64647bc9af44e97e5467aa887c197c7564c03c','e0bdaa3718ddc2b1df1850d11baf5c472ed69cac']:
+              req=urllib.request.Request('https://api.github.com/repos/hesherson/ACM-Extended/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(req,timeout=60) as response:
+                  part=base64.b64decode(json.load(response)['content'])
+              assert hashlib.sha1(b'blob '+str(len(part)).encode()+b'\0'+part).hexdigest()==sha
+              payload+=part
+          raw=gzip.decompress(base64.b64decode(payload))
+          assert hashlib.sha256(raw).hexdigest()=='de19370b6d9998a6c88837092cf65e17e5bc5b53e67e9895dd51f9eb508a8bd3'
+          def git(*args,data=None):
+              return subprocess.check_output(['git',*args],input=data,text=True).strip()
+          for item in json.loads(raw):
+              commit=item['raw_commit']
+              assert commit.splitlines()[1]=='parent '+git('rev-parse','HEAD')
+              git('apply','--index','--whitespace=error-all','-',data=item['patch'])
+              assert commit.splitlines()[0]=='tree '+git('write-tree')
+              assert git('hash-object','-w','-t','commit','--stdin',data=commit)==item['sha']
+              git('reset','--hard',item['sha'])
+          assert git('rev-parse','HEAD')=='6e74777238c56058285c91753ce5c879a55350d0'
+          assert git('rev-parse','HEAD^{tree}')=='de4c3bdbabbefe168585698e1d2836ec736395f1'
+          PY
+      - name: Install pinned verification tools
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-tools/sqfvm /tmp/acme-results
+          python -m pip install pytest==9.0.2
+          curl --fail --location --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          curl --fail --location --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools/sqfvm
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm/sqfvm_linux_x64_gcc/sqfvm
+      - name: Check exact outcome identities, roots, and old-source control
+        run: |
+          cat > /tmp/acme-validate.py <<'PY'
+          import os,subprocess,json,hashlib,collections,shutil,time
+          from pathlib import Path
+          root=Path.cwd();out=Path('/tmp/acme-results');out.mkdir(exist_ok=True)
+          env=os.environ.copy();env['PYTHONPATH']=str(out);env['PATH']='/tmp/acme-tools:'+env['PATH'];env['SQFVM']='/tmp/acme-tools/sqfvm/sqfvm_linux_x64_gcc/sqfvm'
+          plugin="import os,json\nfrom pathlib import Path\nOUT=Path(os.environ['AUDIT_OUT'])\ndef emit(data):\n with OUT.open('a') as f:f.write(json.dumps(data,ensure_ascii=False)+'\\n')\ndef pytest_runtest_logreport(report):\n emit({'nodeid':report.nodeid,'when':report.when,'outcome':report.outcome,'duration':report.duration,'context':str(getattr(report,'context','')),'longrepr':str(report.longrepr) if report.failed else ''})\ndef pytest_collectreport(report):\n if report.failed:emit({'nodeid':report.nodeid,'when':'collect','outcome':'failed','longrepr':str(report.longrepr)})\n"
+          (out/'auditrecorder.py').write_text(plugin)
+          def run(name,args,cwd=root):
+              e=env.copy();e['AUDIT_OUT']=str(out/(name+'.jsonl'))
+              start=time.monotonic()
+              with (out/(name+'.log')).open('w') as f:
+                  r=subprocess.run(args,cwd=cwd,env=e,stdout=f,stderr=subprocess.STDOUT)
+              (out/(name+'.command.json')).write_text(json.dumps({'command':args,'returncode':r.returncode,'seconds':time.monotonic()-start},indent=2))
+              print(name,'exit',r.returncode,flush=True)
+              print('\n'.join((out/(name+'.log')).read_text().splitlines()[-4:]),flush=True)
+              return r.returncode
+          def pytest(name,paths,cwd=root):
+              return run(name,['python','-m','pytest','-q','--tb=short','--continue-on-collection-errors','-p','auditrecorder','--junitxml='+str(out/(name+'.xml'))]+paths,cwd)
+          assert run('hemtt',['hemtt','check'])==0
+          assert pytest('after',['addons/acm_extended/tools'])==1
+          rows=[json.loads(l) for l in (out/'after.jsonl').read_text().splitlines()]
+          counts=collections.Counter();normalized=[]
+          for r in rows:
+              key=(r['nodeid'],r['when'],r.get('context',''))
+              n=counts[key];counts[key]+=1;normalized.append(list(key)+[n,r['outcome']])
+          digest=hashlib.sha256(json.dumps(sorted(normalized),separators=(',',':')).encode()).hexdigest()
+          (out/'outcomes-sha256.txt').write_text(digest+'\n')
+          assert digest=='5e3bc787dfe16761e67f0180aae686e60259e156a6ab8a37dd94b3b42254fdc1',(digest,'5e3bc787dfe16761e67f0180aae686e60259e156a6ab8a37dd94b3b42254fdc1')
+          assert pytest('root',['tools/test_self_audit_20260922.py', 'tools/test_fork_phase164_chest_access_animation_flow.py', 'tools/test_fork_phase164_chest_animation_contract.py', 'tools/test_fork_phase166_chest_wait_payload_regressions.py', 'tools/test_fork_phase167_chest_minigame_animation_contract.py', 'tools/test_fork_phase168_supine_patient_invariant.py', 'tools/test_fork_phase150_flip_cancel.py'])==0
+          new=[f'addons/acm_extended/tools/test_historical_{name}.py' for name in ('pressure_ownership','roll_cancellation','head_lowering')]
+          assert pytest('new-green',new)==0
+          base=Path('/tmp/acme-unchanged')
+          subprocess.run(['git','worktree','add','--detach',str(base),'a488723656d8a370184df56209e55a17bc3901ef'],check=True)
+          for p in new:shutil.copy2(root/p,base/p)
+          assert pytest('unchanged-control',new,base)==1
+          old=[json.loads(l) for l in (out/'unchanged-control.jsonl').read_text().splitlines()]
+          failed=[r['nodeid'] for r in old if r['outcome']=='failed']
+          assert len(failed)==2 and all('test_old_lower_completion_cannot_reenable_collision_during_new_elevation' in p for p in failed),failed
+          assert sum(r['when']=='call' and r['outcome']=='passed' for r in old)==80
+          # Preserve exact final candidate identity; the audit workflow itself is not included.
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          tree=subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip()
+          assert sha=='6e74777238c56058285c91753ce5c879a55350d0'
+          assert tree=='de4c3bdbabbefe168585698e1d2836ec736395f1'
+          assert subprocess.check_output(['git','status','--porcelain'],text=True)==''
+          (out/'verified-candidate.json').write_text(json.dumps({'commit':sha,'tree':tree,'base':'a488723656d8a370184df56209e55a17bc3901ef','full_outcome_identity_sha256':digest,'main_written':False},indent=2))
+          PY
+          python /tmp/acme-validate.py
+      - name: Publish only the verified feature branch
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 6e74777238c56058285c91753ce5c879a55350d0
+          git push origin HEAD:refs/heads/fix/backlog-batches15-17-20260923
+          git ls-remote origin refs/heads/main refs/heads/fix/backlog-batches15-17-20260923 > /tmp/acme-results/published-refs.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backlog-batches15-17-evidence
+          path: /tmp/acme-results
+          retention-days: 14
