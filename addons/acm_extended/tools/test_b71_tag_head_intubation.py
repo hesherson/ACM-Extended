@@ -98,11 +98,8 @@ def test_exact_head_elevation_log_wording():
     assert '"%1 laid them supine"' in stop
 
 def test_one_time_weapon_stow_no_restore_retained():
-    prep = txt('functions/fn_medicAnimationPrep.sqf')
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    assert 'selectWeapon "";' in prep
-    assert 'selectWeapon' not in seq
-    assert 'currentWeapon' not in seq
+    from test_bounded_head_weapon_contract import weapon_contract
+    weapon_contract()
 
 if __name__ == '__main__':
     import inspect

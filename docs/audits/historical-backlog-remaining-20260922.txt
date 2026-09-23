@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after bounded R: 103
-Base: ee3f54143c5be163727f4c8b575c520be180f640
+Unresolved original source-contract outcomes after bounded T: 102
+Base: fce7d83f742b51b037a7d252bda3d132950580e8
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
@@ -85,7 +85,6 @@ H337 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_main_tag_bu
 H339 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_intubate_hidden_for_conscious_patient
 H341 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_native_acm_treatment_cannot_invent_head_position_roll
 H343 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_provider_sequence_releases_on_finish_movement_or_menu_exit_without_lowering_head
-H344 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_one_time_weapon_stow_no_restore_retained
 H346 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_main_tag_button_is_compact_and_anchored_left_of_barrel
 H347 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_main_tag_dropdown_is_directly_below_and_full_description_width
 H349 addons/acm_extended/tools/test_b72_chest_tag_head_provider.py::test_new_qedavemergens_font_replaces_old_runtime_wiring

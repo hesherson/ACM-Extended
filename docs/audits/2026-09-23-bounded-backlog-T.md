@@ -1,0 +1,11 @@
+# Bounded T: one-shot head-provider weapon contract
+
+Builds on S from Q-R. H344 retains its original pytest identity. Its assertions demanded selectWeapon in the shared preflight and prohibited weapon reads in the provider sequence. The current helper deliberately uses ACE putWeaponAway or the engine SwitchWeapon action once, shares its pending reservation, and waits for logical/visible readiness. The provider retains its existing bounded logical-empty fallback and empty final selection; no weapon is automatically redrawn. These are distinct contracts, not a reason to restore the old helper shortcut.
+
+15 new cases pass on unchanged Q-R runtime. Twelve execute the actual preflight together with the full provider controller for both modes, three weapon types and both ACE/engine holster paths. They verify the original settle grace, one holster request, unchanged reservation, adoption of an already-running exit and final unarmed crouch/stance release. Three source mutations reject repeated prep, missing reservation or weapon redraw despite comment decoys. Existing comprehensive preflight and provider tests remain included.
+
+Only H344 is reconciled here. Index 103 to 102; every other H entry and historical test body remains unchanged. H343 movement/menu cancellation remains open. These fixtures do not render a weapon model, prove visible holster completion for this provider's logical fallback, or simulate live engine input. No runtime change in T, no new skips/xfails and no stable-release approval.
+
+## Complete-checkout validation
+
+Focused: {'passed': 198}. S controls on unchanged Q-R: {'failed': 18, 'passed': 6}; T controls: {'passed': 15}. Full addon before: {'passed': 4177, 'failed': 131, 'skipped': 4}; after: {'passed': 4217, 'failed': 130, 'skipped': 4}. Exactly H344 changes from failing to passing and all 39 new cases pass. No previous identity is missing or newly failing. Both full addon commands still fail overall with four unchanged skips and no collection/setup errors. Whole root before: {'error': 46, 'passed': 137}; after: {'error': 46, 'passed': 137}, with identical raw identities/outcomes. HEMTT check returns 0. Only the two documented provider runtime files change. All 4078 other existing tracked files retain their SHA256, including every protected snapshot. No live Arma or stable-release approval.
