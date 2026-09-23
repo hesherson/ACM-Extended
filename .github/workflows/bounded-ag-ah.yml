@@ -17,20 +17,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Compile runner and verify reviewed test transport
+      - name: Verify reviewed source and takeover transition
         run: |
-          python -m py_compile .audit/ag-ah/validate.py .audit/ag-ah/workspace.py .audit/ag-ah/endpoints.py
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib
-          root=Path('.audit/ag-ah')
-          for name,expected in {
-            'reviewed.patch':'7e05bb3297bfebc0645c438ff5cbfad7660077e99e92b5ea88e3dd6f52704b98',
-            'workspace.py':'75434a2483b75a09661722ea744d73f07590ea45fcb8d608ea28a1e83a4b27bd',
-            'endpoints.py':'817b96111da13ec9475c75aaf65cabf825fc979005a453b467ee28e0a90017b7'
-          }.items():
-              assert hashlib.sha256((root/name).read_bytes()).hexdigest()==expected,name
-          PY
+          python -m py_compile .audit/ag-ah/validate.py .audit/ag-ah/workspace.py .audit/ag-ah/endpoints.py .audit/ag-ah/takeover_review.py
+          python .audit/ag-ah/takeover_review.py
+          python -m py_compile .audit/ag-ah/validate.py .audit/ag-ah/workspace.py
       - name: Install pinned toolchain
         run: |
           set -euo pipefail
