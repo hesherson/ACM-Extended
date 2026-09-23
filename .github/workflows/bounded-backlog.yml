@@ -1,0 +1,40 @@
+name: Bounded backlog verification
+on:
+  push:
+    branches: [audit/bounded-backlog-20260923]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Environment
+        run: |
+          python --version
+          python -m pip install pytest pytest-subtests
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+      - name: Source inventory and bounded failure reproduction
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess, json
+          root = pathlib.Path('.')
+          paths = sorted(str(p) for p in root.rglob('*') if p.is_file() and '.git' not in p.parts and ('historical' in p.name.lower() or 'sqfvm' in p.name.lower() or 'preserv' in p.name.lower()))
+          print('=== RELEVANT PATHS ===', json.dumps(paths), flush=True)
+          for scope in ['tools', 'addons/acm_extended/tools']:
+              try:
+                  run = subprocess.run(['python','-m','pytest',scope,'--continue-on-collection-errors','-q','--tb=short'], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=150)
+                  text=run.stdout
+                  print('\n=== SCOPE',scope,'EXIT',run.returncode,'===',flush=True)
+                  print(text[-100000:],flush=True)
+              except subprocess.TimeoutExpired as exc:
+                  print('TIMEOUT',scope,flush=True)
+                  out = exc.stdout or b''
+                  print(out.decode(errors='replace')[-4000:] if isinstance(out,bytes) else out[-4000:],flush=True)
+          PY
