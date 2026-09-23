@@ -1,0 +1,39 @@
+name: Backlog 15 pinned source and tools
+on:
+  push:
+    branches: [audit/backlog-batches15-17-20260923]
+    paths: [.github/workflows/backlog15-source.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a488723656d8a370184df56209e55a17bc3901ef
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Export exact source and pinned verification tools
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/backlog15/source /tmp/backlog15/tools
+          git archive HEAD | tar -x -C /tmp/backlog15/source
+          git cat-file commit HEAD > /tmp/backlog15/commit.raw
+          git ls-tree -r -z HEAD > /tmp/backlog15/tree.raw
+          git rev-parse HEAD HEAD^{tree} > /tmp/backlog15/identity.txt
+          curl --fail --location --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/backlog15/tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/backlog15/tools/hemtt' | sha256sum --check
+          curl --fail --location --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/backlog15/tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/backlog15/tools/sqfvm.zip' | sha256sum --check
+          tar -czf /tmp/backlog15-snapshot.tar.gz -C /tmp/backlog15 .
+          sha256sum /tmp/backlog15-snapshot.tar.gz > /tmp/backlog15-snapshot.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backlog15-source-tools
+          path: |
+            /tmp/backlog15-snapshot.tar.gz
+            /tmp/backlog15-snapshot.sha256
+          compression-level: 0
+          retention-days: 7
