@@ -51,17 +51,8 @@ def test_tag_limit_is_exactly_17_and_commits_are_defensive():
         test_tag_commit_cannot_write_when_display_or_selected_record_is_gone(absent)
 
 def test_tag_edit_boxes_are_tall_enough_for_ascenders_and_descenders():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    carousel = txt('functions/fn_skCarouselRender.sqf')
-    move = txt('functions/fn_skCarouselMove.sqf')
-    for src in (pending, carousel):
-        assert 'private _lineH = 0.030;' in src
-        assert 'private _lineFontH = 0.024;' in src
-    assert '_h*_lineH' in pending
-    assert '_ah*_lineH' in carousel
-    assert '[0.450,0.482,0.514]' in move
-    assert '_h*0.030' in move
-    assert '_h*0.024' in move
+    from test_bounded_tag_line_layout import layout_contract
+    layout_contract()
 
 def test_main_tag_selector_moves_right_in_pixel_scaled_units():
     pending = txt('functions/fn_skPendingTagRender.sqf')

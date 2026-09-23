@@ -59,17 +59,8 @@ def test_clicking_visible_syringe_selects_stable_record_and_expands():
     test_navigation_clears_existing_site_dose_and_discard_transients_without_touching_contents()
 
 def test_preparation_has_optional_none_tag_and_three_invisible_editors():
-    inj = txt('functions/fn_skInject.sqf')
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    cfg = txt('config.cpp')
-    assert 'Tag: None' in inj
-    assert '["none","None - No syringe tag"]' in inj
-    for idc in ('84600','84601','84602','84603','84610','84611'):
-        assert idc in inj
-    assert 'for "_line" from 0 to 2' in inj
-    assert 'colorBackground[] = {0,0,0,0};' in cfg
-    assert '_e ctrlShow _hasTag' in render
-    assert 'tag_overlay_%1mL_%2.paa' in render
+    from test_bounded_tag_line_layout import pending_contract
+    pending_contract()
 
 def test_all_requested_tag_colors_are_available_during_preparation():
     inj = txt('functions/fn_skInject.sqf')

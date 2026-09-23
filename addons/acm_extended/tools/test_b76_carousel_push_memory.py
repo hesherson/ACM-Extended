@@ -11,14 +11,10 @@ def test_version():
     assert_release_identity()
 
 def test_tag_25():
-    c=txt('config.cpp')
-    tag=c[c.index('class ACME_SK_TagEdit'):c.index('class ACME_SK_TagText')]
-    assert 'maxChars = 25;' in tag
-    for f in ['fn_skPendingTagCommit.sqf','fn_skApplyPendingTag.sqf','fn_skTagCommit.sqf','fn_skPendingTagRender.sqf','fn_skCarouselRender.sqf']:
-        s=txt('functions/'+f)
-        assert 'select [0,17]' not in s and 'select [0, 17]' not in s
-    s=txt('functions/fn_skPendingTagRender.sqf')
-    assert '_lineH = 0.038' in s and '_lineFontH = 0.0185' in s and '_w*0.230' in s
+    from test_bounded_tag_contracts import tag_limits
+    from test_bounded_tag_line_layout import layout_contract
+    tag_limits()
+    layout_contract()
 
 def test_hover_and_opacity():
     from test_historical_carousel_input import test_hover_is_presentation_only_and_keeps_selection_and_expansion, test_actual_slot_hover_alpha_changes_without_changing_its_geometry
