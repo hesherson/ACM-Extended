@@ -125,10 +125,8 @@ def test_head_provider_stands_only_for_draggerbase_then_returns_crouched():
 
 
 def test_head_elevation_only_rolls_patient_when_actually_prone():
-    start = txt('functions/fn_headElevateStart.sqf')
-    assert 'call ACME_fnc_chestSealActualSide) == "back"' in start
-    assert 'if (_mustRollSupine) exitWith {' in start
-    assert '[_patient, "front"] call ACME_fnc_chestSealRoll;' in start
+    from test_bounded_head_start_contracts import start_contract
+    start_contract()
 
 
 def test_generic_provider_work_preflights_to_empty_hands_and_crouch_once():

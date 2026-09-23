@@ -57,12 +57,8 @@ def test_intubate_hidden_for_conscious_patient():
     assert "ACME_Laryngoscope" in block and "ACME_ETTube" in block
 
 def test_head_elevation_rolls_only_actual_prone_patient_to_supine():
-    start = txt('functions/fn_headElevateStart.sqf')
-    assert 'private _mustRollSupine = false;' in start
-    assert 'call ACME_fnc_chestSealActualSide) == "back"' in start
-    assert 'if (_mustRollSupine) exitWith {' in start
-    assert '[_patient, "front"] call ACME_fnc_chestSealRoll;' in start
-    assert '[_medic,_patient,_bodyPart,_auto,true] call ACME_fnc_headElevateStart;' in start
+    from test_bounded_head_start_contracts import start_contract
+    start_contract()
 
 def test_native_acm_treatment_cannot_invent_head_position_roll():
     cfg = txt('config.cpp')
