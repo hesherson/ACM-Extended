@@ -76,14 +76,9 @@ def test_exact_semifowler_patient_and_provider_animations_retained():
     assert_connected_patient_states()
 
 def test_provider_sequence_releases_on_finish_movement_or_menu_exit_without_lowering_head():
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    cancel = txt('functions/fn_headElevateCancelSeq.sqf')
-    assert '_u setUnitPos "AUTO";' in seq
-    assert 'inputAction _x' in seq
-    assert 'ace_medical_gui_menuDisplay' in seq
-    assert '[_u,_pfh,true] call _finish;' in seq
-    assert 'headElevateStop' not in cancel
-    assert '_medic setUnitPos "AUTO";' in cancel
+    from test_bounded_head_movement_menu import movement_menu_contract
+    movement_menu_contract()
+
 
 def test_exact_head_elevation_log_wording():
     start = txt('functions/fn_headElevMedicStart.sqf')

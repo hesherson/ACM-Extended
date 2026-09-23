@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after bounded Z: 77
-Base: 40efb4b6871844dd30aea56da96096b336ba9d23
+Unresolved original source-contract outcomes after bounded AA: 76
+Base: 436075c2c93d6f808993f6ad24e55e0328a617dd
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
@@ -67,7 +67,6 @@ H334 addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py::test_sy
 H335 addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py::test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel
 H339 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_intubate_hidden_for_conscious_patient
 H341 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_native_acm_treatment_cannot_invent_head_position_roll
-H343 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_provider_sequence_releases_on_finish_movement_or_menu_exit_without_lowering_head
 H361 addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py::test_draw_button_has_success_flash_and_successful_draw_counter
 H363 addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py::test_plain_draw_snaps_final_hundredth_to_hard_max
 H366 addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py::test_provider_roll_uses_crouch_connected_wrapper_and_no_switchmove_fallback

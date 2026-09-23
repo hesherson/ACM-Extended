@@ -48,9 +48,20 @@ private _prepDelay = [_medic] call ACME_fnc_medicAnimationPrep;
 if !(_prepDelay isEqualType 0) then {_prepDelay = 0;};
 private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
 
+// Bind cancellation only to this local player's input and the menu present at entry.
+// Chest-minigame exits also call this controller without a medical menu; do not make
+// those menu-less sequences depend on a later, unrelated display.
+disableSerialization;
+private _menu = displayNull;
+if (hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+    _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+};
+private _watchMenu = !isNull _menu;
+
 [{
     params ["_args", "_pfh"];
-    _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest", "_stage", "_seen", "_stageAt", "_prepUntil"];
+    _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest", "_stage", "_seen", "_stageAt", "_prepUntil", "_menu", "_watchMenu"];
+    disableSerialization;
 
     private _finalize = {
         params ["_u", "_pfh", "_rest", "_token"];
@@ -100,6 +111,22 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
     if (!alive _u || {!local _u} || {_u getVariable ["ACE_isUnconscious", false]}
         || {[_u] call ACME_fnc_animBlocked}) exitWith {
         [_u, _pfh, _rest, _token] call _finalize;
+    };
+
+    // Check token/life/locality above before cancellation can retire any controller.
+    // Input from the player must never cancel another locally owned (AI) provider.
+    private _cancel = false;
+    if (hasInterface && {!isNil "ACE_player"} && {_u isEqualTo ACE_player}) then {
+        _cancel = ["MoveForward", "MoveBack", "TurnLeft", "TurnRight", "MoveLeft", "MoveRight", "MoveFastForward", "MoveSlowForward"] findIf {
+            (inputAction _x) > 0.05
+        } >= 0;
+        if (_watchMenu && {isNull _menu || {!(_menu isEqualTo (uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull]))}}) then {
+            _cancel = true;
+        };
+    };
+    if (_cancel) exitWith {
+        call ACME_fnc_headElevateCancelSeq;
+        [_pfh] call CBA_fnc_removePerFrameHandler;
     };
 
     private _now = CBA_missionTime;
@@ -166,4 +193,4 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
         if (!_finished && {!_seen} && {_now - _stageAt > 4}) then {_finished = true;};
         if (_finished) then {[_u, _pfh, _rest, _token] call _finalize;};
     };
-}, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false, CBA_missionTime, _prepUntil]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false, CBA_missionTime, _prepUntil, _menu, _watchMenu]] call CBA_fnc_addPerFrameHandler;

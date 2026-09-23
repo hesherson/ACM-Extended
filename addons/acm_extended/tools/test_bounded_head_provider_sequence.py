@@ -50,7 +50,9 @@ def setup():
             s=re.sub(re.escape(old)+(r'\b' if old[-1].isalnum() else ''),lambda _:new,s)
         s=s.replace(name+' setUnitPos "MIDDLE";', '_stances pushBack "MIDDLE";')
         s=s.replace(name+' setUnitPos "AUTO";', '_stances pushBack "AUTO";')
+    s=s.replace('hasInterface', '_interfacePresent').replace('inputAction _x', '(_input getVariable [_x,0])')
     return r'''
+        private _interfacePresent=true; private _input=missionNamespace;
         private _local=true; private _parent=objNull; private _blocked=false;
         private _weapon="rifle"; private _anim="idle"; private _stances=[];
         private _jobs=[]; private _prep=0; private _stanceOwned=false;
