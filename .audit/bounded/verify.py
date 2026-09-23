@@ -3,7 +3,6 @@ from pathlib import Path
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -17,115 +16,8 @@ EXISTING = Path('addons/acm_extended/tools/test_stethoscope_exit_recovery_202609
 NEW = Path('addons/acm_extended/tools/test_bounded_stethoscope_exit_generation.py')
 ROOT_TEST = Path('tools/test_fork_phase150_flip_cancel.py')
 BRANCH = 'audit/bounded-backlog-validated-20260923'
-
-TEST = r'''"""Execute the complete stethoscope Unload function with explicit engine stand-ins.
-
-This verifies requested handoffs and callback ownership, not rendered animation,
-real displays, networking, hearing gain or the contents of inventory restores.
-"""
-import re
-import pytest
-from test_menu_death_lifecycle import ROOT, adapt, execute
-
-
-def setup():
-    text = (ROOT / 'addons/acm_extended/functions/fn_stethoscopeClose.sqf').read_text()
-    for old, new in [
-        ('local _medic', '_medicLocal'),
-        ('objectParent _medic', '_medicParent'),
-        ('getAnimSpeedCoef _medic', '_speed'),
-        ('_medic setAnimSpeedCoef 1;', '_speed = 1;'),
-    ]:
-        text = text.replace(old, new)
-    return r"""
-        private _display = missionNamespace;
-        private _medicLocal = true; private _medicParent = objNull;
-        private _speed = 0; private _lower = []; private _stops = [];
-        private _restore = []; private _vestEvents = []; private _released = [];
-        private _providerCancels = []; private _patientCancels = [];
-        CBA_fnc_removePerFrameHandler = {_removed pushBack (_this select 0);};
-        ACME_fnc_treatmentPoseStop = {_stops pushBack _this;};
-        ACME_fnc_headElevMedicSeq = {_lower pushBack _this;};
-        ACME_fnc_chestAccessVestRestore = {_restore pushBack _this;};
-        ACME_fnc_chestAccessVestEvent = {_vestEvents pushBack _this;};
-        ACME_fnc_patientAnimRelease = {_released pushBack _this;};
-        ACME_fnc_rollProviderCancel = {_providerCancels pushBack _this;};
-        ACME_fnc_patientRollCancel = {_patientCancels pushBack _this;};
-        ace_hearing_fnc_updateHearingProtection = {};
-        _display setVariable ["ACME_stethMedic", _medic];
-        _display setVariable ["ACME_stethPatient", _patient];
-        _display setVariable ["ACME_stethPoseEpoch", 5];
-        _display setVariable ["ACME_continuousEpoch", 10];
-        _display setVariable ["ACME_stethTickPFH", 21];
-        _display setVariable ["ACME_stethFlipPFH", 22];
-        _display setVariable ["ACME_stethFlipActive", false];
-        _display setVariable ["ACME_stethChannels", []];
-        _medic setVariable ["ACME_treatmentPoseEpoch", 5];
-        _medic setVariable ["ACM_core_ContinuousAction_Session", [_patient, 10]];
-        missionNamespace setVariable ["ACM_core_ContinuousAction_Epoch", 10];
-        ACM_core_ContinuousAction_Active = true;
-        ACM_core_ContinuousAction_IsDialog = true;
-        uiNamespace setVariable ["ACM_breathing_Stethoscope_DLG", _display];
-    """ + 'private _close = {' + adapt(text) + '};\n'
-
-
-@pytest.mark.parametrize('current', [10, 11, 0])
-@pytest.mark.parametrize('captured', [10, -1])
-@pytest.mark.parametrize('pose', [5, 6])
-def test_final_provider_handoff_requires_the_display_continuous_generation(current, captured, pose):
-    owns = captured >= 0 and captured == current
-    execute(setup() + f'''
-        missionNamespace setVariable ["ACM_core_ContinuousAction_Epoch", {current}];
-        _display setVariable ["ACME_continuousEpoch", {captured}];
-        _medic setVariable ["ACME_treatmentPoseEpoch", {pose}];
-        [_display] call _close;
-        [count _lower == {int(owns)}, "wrong-generation provider exit"] call _check;
-        [ACM_core_ContinuousAction_Active isEqualTo {str(not owns).lower()}, "wrong controller retirement"] call _check;
-        [(_removed isEqualTo [21,22]), "display PFHs not retired"] call _check;
-    ''')
-
-
-@pytest.mark.parametrize('state', [
-    '_alive = false;',
-    '_medic setVariable ["ACE_isUnconscious", true];',
-    '_medicParent = profileNamespace;',
-    '_medicLocal = false;',
-    '_medic setVariable ["ACME_headElev_seqActive", true];',
-])
-def test_matching_generation_keeps_existing_exit_eligibility(state):
-    execute(setup() + state + '''
-        [_display] call _close;
-        [count _lower == 0, "ineligible provider received lower sequence"] call _check;
-        [!ACM_core_ContinuousAction_Active, "own controller left active"] call _check;
-    ''')
-
-
-@pytest.mark.parametrize('flip', [False, True])
-@pytest.mark.parametrize('carrier', [False, True])
-@pytest.mark.parametrize('patient_alive', [False, True])
-def test_ordinary_exit_and_active_flip_keep_supine_and_carrier_handoffs(flip, carrier, patient_alive):
-    execute(setup() + f'''
-        _patientAlive = {str(patient_alive).lower()};
-        _display setVariable ["ACME_stethFlipActive", {str(flip).lower()}];
-        // A live Flip legitimately advances the pose epoch without changing the scope generation.
-        _medic setVariable ["ACME_treatmentPoseEpoch", {6 if flip else 5}];
-    ''' + ('''
-        _medic setVariable ["ACME_chestAccess_treatment", [_patient, "usestethoscope", "carrier:one"]];
-    ''' if carrier else '') + '''
-        [_display] call _close;
-        [count _lower == 1 && {(_lower select 0) isEqualTo [_medic,"lower"]}, "authored exit lost"] call _check;
-        [!ACM_core_ContinuousAction_Active, "scope reservation survived"] call _check;
-    ''' + f'''
-        [count _patientCancels == {int(flip)}, "wrong physical flip cancellation"] call _check;
-        [count _providerCancels == {int(flip)}, "wrong provider flip cancellation"] call _check;
-        [count _vestEvents == {int(carrier)} && {{count _restore == {int(not carrier)}}}, "carrier handoff changed"] call _check;
-    ''' + ('''
-        [(_patientCancels select 0) isEqualTo [_patient,"front"], "cancel no longer requests anterior up"] call _check;
-    ''' if flip else '''
-        [(_stops select 0) isEqualTo [_medic,"stethoscope",5,true], "pose handoff changed"] call _check;
-        [_speed == 1, "frozen provider not released"] call _check;
-    '''))
-'''
+TEST = Path(__file__).with_name('stethoscope_execution.txt').read_text()
+compile(TEST, str(NEW), 'exec')
 
 
 def command(args, cwd=None, timeout=120, check=True):
@@ -179,8 +71,6 @@ command(['git','worktree','add','--detach',str(REPO),BASE])
 assert command(['git','rev-parse','HEAD'],REPO).stdout.strip() == BASE
 original = tracked_manifest()
 (OUT / 'baseline-manifest.json').write_text(json.dumps(original, indent=2))
-
-# Every existing selected identity is retained. Root tools are a separate accounting surface.
 focused = [EXISTING, 'addons/acm_extended/tools/test_historical_chest_workspace.py',
            'addons/acm_extended/tools/test_menu_death_lifecycle.py']
 before_rc, before, before_counts = pytest('focused-before', focused)
@@ -188,7 +78,7 @@ expected_failure = next(k for k in before if k[1] == 'test_unload_clears_matchin
 assert before_rc == 1 and {k for k,v in before.items() if v != 'passed'} == {expected_failure}
 root_before_rc, root_before, root_before_counts = pytest('root-before', ['tools'])
 
-# New execution tests first run against unchanged runtime. A failure must be the intended regression.
+# Execute new cases on unchanged runtime before modifying production source.
 (REPO / NEW).write_text(TEST)
 old_rc, old_control, old_counts = pytest('unchanged-source-control', [NEW])
 assert old_rc == 1 and old_counts == {'passed':15,'failed':10,'error':0,'skipped':0}, old_counts
@@ -196,7 +86,7 @@ old_log = (OUT / 'unchanged-source-control.log').read_text()
 assert 'wrong-generation provider exit' in old_log
 assert '[ERR]' not in old_log and '[FAT]' not in old_log
 
-# Batch A: generation-scope the final presentation handoff without changing Flip or carrier choreography.
+# Batch A: generation-scope only the final provider presentation handoff.
 replace_once(SOURCE,
     'if (!isNull _medic && {local _medic} && {alive _medic}\n',
     '// A superseded display must not start its exit over a newer continuous action.\n'
@@ -212,7 +102,7 @@ assert after_rc == 0 and set(after.values()) == {'passed'}, after_counts
 assert set(before).issubset(after) and all(after[k] == 'passed' for k in before)
 assert record('hemtt', [os.environ['HEMTT'], 'check'], 150) == 0
 
-# Batch B: retain every root assertion but use the existing explicit supine-cancel signature.
+# Batch B: retain the root assertions but match the existing explicit supine signature.
 replace_once(ROOT_TEST,
     "assert '[_patient] call ACME_fnc_patientRollCancel;' in steth_close",
     "assert '[_patient,\"front\"] call ACME_fnc_patientRollCancel;' in steth_close")
@@ -224,7 +114,7 @@ assert set(root_after).issubset(root_before)
 assert all(root_after[k] == root_before[k] for k in root_after), 'root outcome regression'
 assert root_after_rc == root_before_rc == 1, 'root suite unexpectedly changed exit status'
 
-# Preserve all other tracked bytes, including every protected snapshot and backlog ledger.
+# Exact preservation includes the untouched original backlog and snapshot manifests.
 allowed = {str(SOURCE),str(EXISTING),str(ROOT_TEST)}
 current = tracked_manifest()
 changed = {p for p in original if original[p] != current.get(p)}
@@ -234,8 +124,7 @@ assert set(current) == set(original), 'deleted or unexpected tracked files'
 report = {'baseline':BASE,'focused_before':before_counts,'focused_after':after_counts,
           'old_source_control':old_counts,'root_before':root_before_counts,'root_after':root_after_counts,
           'hemtt_exit':0,'full_addon_suite_rerun':False,
-          'original_unresolved_source_contract_index':146,
-          'release_approved':False}
+          'original_unresolved_source_contract_index':146,'release_approved':False}
 
 DOC_A = Path('docs/audits/2026-09-23-bounded-backlog-A.md')
 DOC_B = Path('docs/audits/2026-09-23-bounded-backlog-B.md')
