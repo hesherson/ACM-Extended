@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after bounded P: 107
-Base: df076b8b136ebf011f594d1c9529ea89de0e79ac
+Unresolved original source-contract outcomes after bounded Q: 106
+Base: ee3f54143c5be163727f4c8b575c520be180f640
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
@@ -108,4 +108,3 @@ H389 addons/acm_extended/tools/test_chest_interaction_followup.py::test_patient_
 H390 addons/acm_extended/tools/test_chest_interaction_followup.py::test_both_burp_paths_check_patient_ownership_without_a_timer
 H429 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_layout_ratios_match_source
 H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::test_all_visual_passes_after_procedure
-H452 addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_old_pose_callback_owns_token

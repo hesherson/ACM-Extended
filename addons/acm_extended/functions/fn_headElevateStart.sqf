@@ -29,6 +29,8 @@ private _actualBeforeElevate = [_patient, _patient getVariable ["ACME_CS_facing"
 private _needFrontFirst = !_afterProneRoll && {_actualBeforeElevate != "front"};
 
 if (_needFrontFirst) exitWith {
+    // A delayed normalization belongs to the placement state that accepted this request.
+    private _startPoseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
     private _delay = 0.08;
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
@@ -51,12 +53,13 @@ if (_needFrontFirst) exitWith {
     };
 
     [{
-        params ["_m","_p","_body","_auto"];
+        params ["_m","_p","_body","_auto","_startPoseToken"];
         if (!isNull _p && {local _p} && {alive _p}) then {
-            _p setVariable ["ACME_CS_facing","front",true];
+            if ((_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken) exitWith {};
+            // Startup revalidates eligibility before setting facing or touching gear. Do not write ahead of it.
             [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
         };
-    }, [_medic,_patient,_bodyPart,_auto], _delay] call CBA_fnc_waitAndExecute;
+    }, [_medic,_patient,_bodyPart,_auto,_startPoseToken], _delay] call CBA_fnc_waitAndExecute;
 };
 
 // At this point the patient is definitively anterior-up. All Semi-Fowler patient/provider animations start from it.

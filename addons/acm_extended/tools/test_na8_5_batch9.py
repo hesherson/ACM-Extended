@@ -101,9 +101,14 @@ class SourceContracts(unittest.TestCase):
         t=src("ownerInit");self.assertIn("ACME_headElev_pfh",t);self.assertIn('removeEventHandler ["Killed"',t)
         self.assertIn("ACME_fnc_headElevWatch",src("ownerRegister"))
     def test_old_pose_callback_owns_token(self):
+        from test_bounded_head_start_retry import retry_contract
+        from test_bounded_head_pose_contracts import contains
+        retry_contract()
         t=src("headElevateStart")
-        self.assertGreaterEqual(t.count('getVariable ["ACME_headElev_poseToken", ""]'),2)
-        self.assertGreaterEqual(t.count("!alive _patient"),3)
+        # The carrier-creation callback also keeps its existing placement/life gate.
+        self.assertTrue(contains(t, 'params ["_patient", "_vestClass", "_poseToken"];'))
+        self.assertTrue(contains(t, '|| {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}'))
+        self.assertTrue(contains(t, 'if (isNull _patient || {!local _patient} || {!alive _patient}'))
     def test_watchdog_is_one_half_second_local_worker(self):
         t=code(src("headElevWatch"))
         self.assertIn("}, 0.5, [_patient]]",t)
