@@ -21,18 +21,8 @@ def test_qephillips_is_wired_as_the_tag_font_without_redistributing_font_files()
 
 
 def test_tag_edit_fields_have_no_black_rect_and_text_is_larger():
-    cfg = txt('config.cpp')
-    car = txt('functions/fn_skCarouselRender.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    block = cfg[cfg.index('class ACME_SK_TagEdit'):cfg.index('class ACME_SK_TagText')]
-    assert 'style = 0x200;' in block
-    assert 'colorBackground[] = {0,0,0,0};' in block
-    assert 'colorBorder[] = {0,0,0,0};' in block
-    assert 'borderSize = 0;' in block
-    assert '[0.446,0.476,0.498]' in car
-    assert '[0.446,0.476,0.498]' in pending
-    assert '*0.015' in car and '*0.024' in car
-    assert '*0.015' in pending and '*0.024' in pending
+    from test_bounded_editor_presentation import frame_contract, native_editor_contract
+    frame_contract(); native_editor_contract()
 
 
 def test_main_draw_always_has_select_syringe_tag_left_of_native_syringe():

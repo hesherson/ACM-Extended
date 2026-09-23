@@ -12,23 +12,12 @@ def test_b63_version_stamp():
     assert_release_identity()
 
 def test_tag_editors_are_frameless_short_and_raised():
-    cfg = txt('config.cpp')
-    car = txt('functions/fn_skCarouselRender.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'style = 0x00;' in cfg
-    assert 'colorBorder[] = {0,0,0,0};' in cfg
-    assert 'borderSize = 0;' in cfg
-    assert 'private _lineY = [0.452,0.482,0.504];' in car
-    assert '_ah*0.020' in car
-    assert 'private _lineY = [0.452,0.482,0.504];' in pending
-    assert '_h * 0.020' in pending
+    from test_bounded_editor_presentation import frame_contract, native_editor_contract
+    frame_contract(); native_editor_contract()
 
 def test_stored_tag_editor_raises_native_syringe_and_places_select_tag_under_tag():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    assert 'safeZoneH*0.285' in car
-    assert 'private _tagCenterX = _ax + _aw*0.36;' in car
-    assert '_btnY = _ay + _ah*0.575;' in car
-    assert 'if (_editMode) then {"Select Tag"} else {"Edit Tag"}' in car
+    from test_bounded_editor_presentation import frame_contract, native_editor_contract
+    frame_contract(); native_editor_contract()
 
 def test_body_map_edit_tag_is_above_syringe_below_route():
     car = txt('functions/fn_skCarouselRender.sqf')

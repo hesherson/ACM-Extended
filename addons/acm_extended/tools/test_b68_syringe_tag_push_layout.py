@@ -59,18 +59,8 @@ def test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow():
 
 
 def test_tag_text_is_lower_larger_and_edit_mode_uses_native_draw_position_without_body():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
-    for src in (car, pending):
-        assert '[0.458,0.488,0.510]' in src
-        assert '*0.016' in src
-        assert '*0.031' in src
-    assert 'private _editNativeCtrl = _d displayCtrl' in car
-    assert 'private _editX = _editNative select 0;' in car
-    assert 'private _editY = _editNative select 1;' in car
-    assert '_group ctrlShow (!_editMode);' in layout
-    assert '_patientHeader ctrlShow (!_editMode);' in layout
+    from test_bounded_editor_presentation import frame_contract, native_editor_contract
+    frame_contract(); native_editor_contract()
 
 
 def test_done_pulses_green_only_when_tag_has_text_but_is_not_required():
