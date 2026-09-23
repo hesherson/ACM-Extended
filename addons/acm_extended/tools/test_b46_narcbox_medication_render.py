@@ -54,7 +54,11 @@ def test_b45_backend_registry_fix_is_retained():
 
 
 def test_medication_group_stays_visible_in_body_and_infusion_paths():
-    s = text('functions/fn_skListRefresh.sqf')
-    assert 'private _visible = true;' in s
-    assert '!(_kind == "medication" && {_body})' not in s
-    assert 'if (_infusion && {_kind in ["flush", "drawn"]}) then {_visible = false;};' in s
+    # Preserve the current shared prep group, not obsolete always-visible Body Map sources.
+    from test_bounded_medication_presentation import renderer_contract, test_actual_view_and_refresh_keep_preparation_sources_off_body_map, require, source
+    renderer_contract()
+    for view in ('body','syringe'):
+        for infusion in (False,True):
+            test_actual_view_and_refresh_keep_preparation_sources_off_body_map(view,infusion,'medication')
+    require(source('skListRefresh'), '_backdropB54 ctrlShow _visible;')
+    require(source('skListRefresh'), '{_x ctrlShow _visible; _x ctrlCommit 0;} forEach _header;')

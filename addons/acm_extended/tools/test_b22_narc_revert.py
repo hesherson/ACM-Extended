@@ -45,10 +45,11 @@ class B22VialReference(unittest.TestCase):
 
 class B22UIContracts(unittest.TestCase):
     def test_infusion_inherits_same_original_row_overlay(self):
-        rows=read('functions/fn_skListRefresh.sqf')
-        self.assertIn('private _infusion = !((_d getVariable ["ACME_SK_Return", []]) isEqualTo [])',rows)
-        self.assertIn('if (_infusion && {_kind in ["flush", "drawn"]}) then {_visible = false;}',rows)
-        self.assertIn('[84006,84303,"medication"]',rows)
+        from test_bounded_medication_presentation import renderer_contract, test_actual_view_and_refresh_keep_preparation_sources_off_body_map
+        renderer_contract()
+        for infusion in (False,True):
+            for kind in ('size','flush','medication'):
+                test_actual_view_and_refresh_keep_preparation_sources_off_body_map('syringe',infusion,kind)
     def test_no_b20_meter_or_relayout(self):
         inject=read('functions/fn_skInject.sqf')
         rows=read('functions/fn_skListRefresh.sqf')

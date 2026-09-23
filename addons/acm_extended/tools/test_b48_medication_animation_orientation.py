@@ -35,21 +35,13 @@ def test_real_acm_registry_not_fake_literal_key():
     assert 'setVariable ["ACM_MEDICATION_VIALS"' not in behavior
 
 def test_native_medication_list_is_the_only_renderer():
-    r = txt('functions/fn_skListRefresh.sqf')
-    s = txt('functions/fn_skMedicationSync.sqf')
-    stock = txt('functions/fn_skMedicationStockRefresh.sqf')
-    assert 'displayCtrl 84006' in s
-    assert 'lbAdd _label' in s
-    assert 'if (_label == "") then {_label = _med;};' in s
-    assert 'lbSetPicture' in s and 'lbSetData' in s
-    assert 'lbSetTextRight' in stock
-    # B38/B46 custom medication child renderer is completely absent from the active row loop.
-    assert 'forEach [[84130,84300,"size"],[84132,84301,"flush"],[84133,84302,"drawn"]]' in r
-    assert '[84006,84303,"medication"]' not in r
-    assert 'ACME_SK_ColumnHeader' not in r
-    assert '_countText' not in r
-    assert 'ctrlCreate ["ACME_SK_RowGroup", 84303' not in r
-    assert '_nativeMedList ctrlShow true' in r
+    # Native list owns backing data; the current custom group is the sole visible renderer.
+    from test_bounded_medication_presentation import test_rendering_remains_one_custom_group_with_a_hidden_native_selector
+    from test_historical_medication_rows import test_visible_rows_bind_metadata_by_key_and_recover_missing_backing_entries, test_visible_rows_keep_native_labels_but_recover_blank_labels_from_metadata
+    test_rendering_remains_one_custom_group_with_a_hidden_native_selector()
+    for native in ('[]','[["Fentanyl native","Fentanyl",""],["duplicate","Fentanyl","bad.paa"],["","Ketamine",""]]'):
+        test_visible_rows_bind_metadata_by_key_and_recover_missing_backing_entries(native)
+    test_visible_rows_keep_native_labels_but_recover_blank_labels_from_metadata()
 
 def test_medication_membership_is_inventory_backed_and_nonblank():
     from test_historical_medication_rows import test_rows_follow_selected_inventory_and_never_manufacture_stock, test_blank_label_and_unknown_open_vial_use_medication_key_fallback, test_open_partial_survives_consumed_physical_item_without_zero_volume_ghosts
@@ -59,11 +51,12 @@ def test_medication_membership_is_inventory_backed_and_nonblank():
         test_open_partial_survives_consumed_physical_item_without_zero_volume_ghosts(amount,visible)
 
 def test_prep_infusion_uses_same_medication_list():
-    s = txt('functions/fn_infusionDrawStock.sqf')
-    assert 'displayCtrl 84006' in s
-    assert 'call ACME_fnc_skMedicationSync' in s
-    assert '_list ctrlShow true' in s
-    assert 'call ACME_fnc_skMedicationStockRefresh' in s
+    from test_bounded_medication_presentation import test_rendering_remains_one_custom_group_with_a_hidden_native_selector, test_prep_stock_refresh_preserves_partial_draw_identity_and_button_gate
+    test_rendering_remains_one_custom_group_with_a_hidden_native_selector()
+    for case in ((0,False,False,True,False,True),(2,False,False,True,True,False),
+                 (2,True,False,True,False,False),(2,False,True,True,False,False),
+                 (2,False,False,False,False,False)):
+        test_prep_stock_refresh_preserves_partial_draw_identity_and_button_gate(*case)
 
 def test_native_selection_binds_exact_physical_vial():
     c = txt('config.cpp')
