@@ -104,8 +104,7 @@ def test_edit_mode_disables_neighbor_selection_and_injection_hotspots():
     assert 'ACME_SK_TagEditMode",false]) exitWith {};' in pick
 
 def test_hover_tooltip_remains_exact_three_written_tag_lines():
-    render = txt('functions/fn_skCarouselRender.sqf')
-    assert '_e param [8,"",[""]]' in render
-    assert '_e param [9,"",[""]]' in render
-    assert '_e param [10,"",[""]]' in render
-    assert 'joinString (toString [10])' in render
+    from test_bounded_syringe_tooltips import tooltip_contract, test_tagged_active_tooltip_is_exactly_three_written_lines_not_a_medication_summary
+    tooltip_contract()
+    for lines in (['First', 'Second', 'Third'], ['', '', 'Only third'], ['', '', '']):
+        test_tagged_active_tooltip_is_exactly_three_written_lines_not_a_medication_summary(lines, 4)

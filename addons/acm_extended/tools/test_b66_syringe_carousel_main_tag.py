@@ -79,13 +79,11 @@ def test_carousel_hit_regions_end_above_draw_syringe():
     assert 'private _activeH = (_activeHitBottom-_activeHitY) max 0;' in car
 
 def test_untagged_hover_uses_last_two_simple_medication_pulls_only():
-    car = txt("functions/fn_skCarouselRender.sqf")
-    assert 'private _fnc_noTagTip' in car
-    assert 'private _start = ((count _components) - 2) max 0;' in car
-    assert 'format ["%1mL of %2"' in car
-    assert 'if (_hasTag) then' in car
-    assert '[_e] call _fnc_noTagTip' in car
-    assert '[_cur] call _fnc_noTagTip' in car
+    from test_bounded_syringe_tooltips import tooltip_contract, test_untagged_tooltip_only_reveals_recent_or_written_marked_syringes, test_unlabelled_summary_uses_last_two_positions_and_localization_fallback
+    tooltip_contract()
+    for index, known in ((1, False), (2, True)):
+        test_untagged_tooltip_only_reveals_recent_or_written_marked_syringes(5, index, known, False)
+    test_unlabelled_summary_uses_last_two_positions_and_localization_fallback([['Old secret', 9], ['Other', 1.5], ['Ketamine', 2]], 'Unknown', 9, ['1.5mL of Other', '2mL of Ketamine label'])
 
 def test_expanded_view_lingers_and_motion_is_smooth_longer_slide():
     move = txt("functions/fn_skCarouselMove.sqf")

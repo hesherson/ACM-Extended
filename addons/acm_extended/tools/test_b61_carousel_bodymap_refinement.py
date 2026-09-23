@@ -55,13 +55,11 @@ def test_active_hover_target_is_larger_and_above_neighbor_targets():
     assert '_w * 0.08' in car and '_h * 0.06' in car
 
 def test_hover_tooltip_is_exact_three_tag_lines():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    assert '_e param [8,"",[""]]' in car
-    assert '_e param [9,"",[""]]' in car
-    assert '_e param [10,"",[""]]' in car
-    assert 'joinString (toString [10])' in car
-    assert '_hit ctrlSetTooltip _tagTip;' in car
-    assert '_activeHit ctrlSetTooltip _activeTip;' in car
+    # Only the dedicated active hitbox owns text; neighboring click targets stay silent.
+    from test_bounded_syringe_tooltips import tooltip_contract, test_tagged_active_tooltip_is_exactly_three_written_lines_not_a_medication_summary, test_neighbor_tooltip_clearing_is_separate_from_active_content
+    tooltip_contract()
+    test_tagged_active_tooltip_is_exactly_three_written_lines_not_a_medication_summary(['First', 'Mixed Case', 'Third'], 0)
+    test_neighbor_tooltip_clearing_is_separate_from_active_content()
 
 def test_color_dropdown_can_reselect_same_row_for_multiple_syringes():
     inj = txt('functions/fn_skInject.sqf')
