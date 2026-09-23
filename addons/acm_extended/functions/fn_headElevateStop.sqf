@@ -38,13 +38,16 @@ if (_needFrontFirst) exitWith {
         ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
     };
 
+    // The roll belongs to this placement. A later elevation or a completed lower
+    // must not be retired by this old retry, even when the patient is local again.
+    private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
     [{
-        params ["_m","_p","_quiet"];
-        if (!isNull _p && {local _p}) then {
-            _p setVariable ["ACME_CS_facing","front",true];
-            [_m,_p,_quiet,true] call ACME_fnc_headElevateStop;
-        };
-    }, [_medic,_patient,_quiet], _delay] call CBA_fnc_waitAndExecute;
+        params ["_m","_p","_quiet","_poseToken"];
+        if (isNull _p || {!local _p}) exitWith {};
+        if ((_p getVariable ["ACME_headElev_poseToken", ""]) != _poseToken) exitWith {};
+        _p setVariable ["ACME_CS_facing","front",true];
+        [_m,_p,_quiet,true] call ACME_fnc_headElevateStop;
+    }, [_medic,_patient,_quiet,_poseToken], _delay] call CBA_fnc_waitAndExecute;
 };
 
 _patient setVariable ["ACME_CS_facing","front",true];
