@@ -23,28 +23,17 @@ def test_rpt_confirmed_pending_tag_renderer_compile_bug_is_removed():
 
 
 def test_main_tag_button_is_compact_and_anchored_left_of_barrel():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    assert 'safeZoneH * 0.165' in render
-    assert 'private _btnRight = _x + _w*0.20;' in render
-    assert 'private _btnX = _btnRight - _btnW;' in render
-    assert 'safeZoneH * 0.165' in ensure
-    assert 'private _btnRight0 = (_r0 select 0) + (_r0 select 2)*0.20;' in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 
 def test_main_tag_dropdown_is_directly_below_and_full_description_width():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    cfg = txt('config.cpp')
-    assert 'private _menuX = _btnX max' in render
-    assert 'private _menuY = _btnY + _btnH + 2*pixelH;' in render
-    assert 'safeZoneW * 0.24' in render
-    assert 'safeZoneH * 0.58' in render
-    assert 'ctrlAddEventHandler ["MouseEnter"' in ensure
-    assert 'ctrlAddEventHandler ["LBSelChanged"' in ensure
-    assert 'ctrlAddEventHandler ["MouseButtonUp"' in ensure
-    assert 'class ACME_SK_TagList: ACME_SK_StyledList' in cfg
-    assert 'colorBackground[] = {0.04,0.04,0.04,0.96};' in cfg
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 
 def test_selected_main_tag_immediately_renders_real_overlay_and_edit_lines():

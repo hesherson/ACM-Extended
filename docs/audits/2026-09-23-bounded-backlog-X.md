@@ -1,0 +1,13 @@
+# Bounded X: current native-tag anchor and canvas geometry
+
+Builds on W from U-V. Test-only changes. H256, H270, H298, H316, H323, H337, H346, H347, H360, H376 and H383 retain their original identities.
+
+The later B78 selector uses the native tag-face center (0.36 of barrel width), vertical 0.575 anchor, measured-caption padding and 0.090-0.145 safe-zone-height width limits. Older offsets, fixed widths, global safeZoneW menu sizing and hover-opening requirements are obsolete. Initial/pending selectors retain their two-pixel canvas margins; the stored editor deliberately retains its larger existing gap. The test does not force those edge rules to be identical. Dropdowns use the constrained canvas width and remain below the selector. Click-only registration, None and current caption checks are retained where the historical contract also covered those behaviors.
+
+Sixty new cases execute the actual initial creation path or exact pending/stored selector and dropdown arithmetic blocks, and mutation-check wrong anchors, width caps, bounds and above-selector menus with comment decoys. They cover interior and both horizontal boundaries, several canvas/UI scales, short/long measured captions, and all four barrel sizes using native/captured rectangles. Each expected value is calculated independently of the extracted SQF expressions. New cases pass on unchanged runtime, so these are stale-test reconciliations, not eleven new gameplay fixes.
+
+Numeric fixtures record layout requests, not pixels, text fitting, font availability, accessibility, actual screen clipping or modal lifetimes. Stored geometry is exercised in editing mode, not all ordinary Body Map behavior. Missing or malformed initial cached-rectangle handling and vertical extreme-screen clipping remain outside this review. No runtime/configuration/assets/protected snapshot change. Index 96 to 85; all unreviewed H entries remain verbatim. No skip/xfail introduced. No live Arma or stable-release approval.
+
+## Complete-checkout validation
+
+New cases on unchanged runtime: {'passed': 81}. Focused: {'passed': 273}. Full addon before: {'passed': 4266, 'failed': 127, 'skipped': 4}; after: {'passed': 4361, 'failed': 113, 'skipped': 4}. Exactly fourteen retained historical identities now pass and all 81 new cases pass. No prior identity is missing or newly failing. Both addon commands still fail overall with four unchanged skips and zero collection/setup errors. Root before: {'error': 46, 'passed': 137}; after: {'error': 46, 'passed': 137}, with identical raw identities and outcomes. HEMTT check returns 0. No runtime/configuration/asset/snapshot edits; 4078 other existing tracked files retain their complete-checkout SHA256. No live Arma or stable-release approval.

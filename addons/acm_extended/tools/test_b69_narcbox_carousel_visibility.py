@@ -22,10 +22,9 @@ def test_main_select_syringe_tag_is_created_after_runtime_source_panels_for_top_
 
 
 def test_main_select_syringe_tag_is_narrower_and_has_real_art_clearance():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'private _gap = safeZoneH * 0.018;' in pending
-    assert 'private _btnW = (safeZoneH * 0.155) min (safeZoneW * 0.082);' in pending
-    assert 'private _btnX = (_x - _btnW - _gap)' in pending
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 
 def test_tag_text_controls_require_an_actual_tag_color():

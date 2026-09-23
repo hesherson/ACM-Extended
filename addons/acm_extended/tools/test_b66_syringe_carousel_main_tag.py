@@ -20,11 +20,9 @@ def test_main_select_syringe_tag_is_persistent_and_left_of_native_syringe():
     require(txt("functions/fn_skPendingTagRender.sqf"), "private _tagCenterX = _x + _w*0.36;")
 
 def test_main_tag_dropdown_always_opens_below_and_is_wide():
-    pending = txt("functions/fn_skPendingTagRender.sqf")
-    assert 'private _menuY = _btnY + _btnH + 2*pixelH;' in pending
-    assert '(safeZoneH * 1.05) min (safeZoneW * 0.38)' in pending
-    # No branch that flips the pending menu above the button.
-    assert '_menuY = _btnY - _menuH' not in pending
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 def test_runtime_font_fallback_prevents_invisible_tag_typing():
     pending = txt("functions/fn_skPendingTagRender.sqf")

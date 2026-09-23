@@ -12,13 +12,9 @@ def test_version_batch():
     assert_release_identity()
 
 def test_main_tag_button_copies_carousel_tag_face_anchor():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    assert 'private _tagCenterX = _x + _w*0.36;' in render
-    assert 'private _btnY = _y + _h*0.575;' in render
-    assert 'safeZoneH * 0.20' in render
-    assert 'private _tagCenter0 = (_r0 select 0) + (_r0 select 2)*0.36;' in ensure
-    assert 'private _by0 = (_r0 select 1) + (_r0 select 3)*0.575;' in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 def test_pending_tag_dropdown_is_hover_open_clickable_dark_and_topmost():
     from test_bounded_tag_dropdowns import dropdown_contract, geometry_contract

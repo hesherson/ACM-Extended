@@ -24,18 +24,9 @@ def test_tag_font_and_capacity():
     assert '_w*0.245' in p and '_w*0.245' in r and '_aw*0.245' in r
 
 def test_selector_geometry_unified():
-    p=txt('functions/fn_skPendingTagRender.sqf')
-    e=txt('functions/fn_skPendingTagEnsure.sqf')
-    r=txt('functions/fn_skCarouselRender.sqf')
-    compact='((_textW + 12*pixelW) max (safeZoneH*0.090)) min (safeZoneH*0.145)'
-    assert compact in p and compact in r
-    assert '_tagCenterX = _x + _w*0.36' in p
-    assert '_tagCenterX0 = (_r0 select 0) + (_r0 select 2)*0.36' in e
-    assert '_tagCenterX = _ax + _aw*0.36' in r
-    for s in (p,r):
-        assert 'private _menuW = (safeZoneW * 0.24) min (safeZoneH * 0.78);' in s
-        assert 'private _menuY = _btnY + _btnH + 2*pixelH;' in s
-        assert 'ctrlSetBackgroundColor [0.04,0.04,0.04,0.96]' in s
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 def test_click_only_dropdowns():
     pend=txt('functions/fn_skPendingTagEnsure.sqf')

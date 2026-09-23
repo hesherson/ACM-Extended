@@ -37,16 +37,11 @@ def test_body_map_edit_tag_is_above_syringe_below_route():
     assert '_btnY = (_ay - _btnH - _gap) max (_routeBottom + safeZoneH*0.004);' in car
 
 def test_main_draw_select_tag_is_under_live_tag_and_has_wide_clickable_dropdown():
-    inj = txt('functions/fn_skInject.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'private _pendingTagPic = _display ctrlCreate ["RscPicture", 84600];' in inj
-    # z-order: live art/editors before list, list before button
-    assert inj.index('private _pendingTagPic') < inj.index('private _pendingTagList') < inj.index('private _pendingTagBtn')
-    assert 'private _tagCenterX = _x + _w * 0.36;' in pending
-    assert 'private _btnY = _y + _h * 0.575;' in pending
-    assert '(safeZoneH * 0.95) min (safeZoneW * 0.34)' in pending
-    assert 'ctrlSetFocus _l' in inj
-    assert 'LBSelChanged' in inj and 'MouseButtonUp' in inj
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 def test_pending_tag_live_preview_remains_available_to_saline_flush_flow():
     pending = txt('functions/fn_skPendingTagRender.sqf')

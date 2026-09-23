@@ -16,18 +16,9 @@ def test_version_batch():
 
 
 def test_main_tag_selector_is_native_syringe_anchored_and_aspect_independent():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    for src in (render, ensure):
-        assert 'ctrlTextWidth' in src
-        assert 'pixelW' in src
-        assert '*0.254' in src
-    assert 'private _btnRight = _tagLeft - _gap;' in render
-    assert 'private _btnRight0 = _tagLeft0 - _gap0;' in ensure
-    assert 'safeZoneW * 0.070' not in render
-    assert 'safeZoneW * 0.070' not in ensure
-    assert '_x + _w*0.20' not in render
-    assert '(_r0 select 0) + (_r0 select 2)*0.20' not in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 
 def test_selector_right_edge_tracks_tag_face_across_common_aspects():

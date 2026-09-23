@@ -55,13 +55,9 @@ def test_tag_edit_boxes_are_tall_enough_for_ascenders_and_descenders():
     layout_contract()
 
 def test_main_tag_selector_moves_right_in_pixel_scaled_units():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    assert '_tagLeft - _gap + (20 * pixelW)' in pending
-    assert '_tagLeft0 - _gap0 + (20 * pixelW)' in ensure
-    # Still native-syringe anchored, not ultrawide safe-zone positioning.
-    assert '_x + _w*0.254' in pending
-    assert '(_r0 select 0) + (_r0 select 2)*0.254' in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 def test_flush_draw_stage_is_multicomponent_and_repeatable():
     commit = txt('functions/fn_skWasteCommit.sqf')

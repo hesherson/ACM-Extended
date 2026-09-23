@@ -15,14 +15,11 @@ def test_b62_version_stamp_and_functions():
     assert 'class skTagEditDone {};' in cfg
 
 def test_main_draw_select_tag_is_beside_native_syringe_not_left_list():
-    inj = txt('functions/fn_skInject.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert '_pendingTagBtn ctrlSetPosition [0,0,0,0];' in inj
-    assert '_btnX = _x + _w + _gap' in pending
-    assert '_button ctrlSetText "Select Tag";' in pending
-    assert 'Select Tag:' not in pending
-    assert 'safeZoneH * 0.78' in pending
-    assert 'safeZoneW * 0.30' in pending
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 def test_both_tag_dropdowns_have_single_click_fallback_and_none():
     from test_bounded_tag_dropdowns import dropdown_contract

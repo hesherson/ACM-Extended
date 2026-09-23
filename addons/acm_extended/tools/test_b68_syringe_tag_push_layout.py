@@ -16,15 +16,11 @@ def test_b68_version_stamp():
 
 
 def test_main_draw_select_syringe_tag_is_unconditionally_present_and_below_dropdown():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    tick = txt('functions/fn_skUiTick.sqf')
-    assert 'private _showSetup = (_view == "syringe");' in pending
-    assert '_button ctrlSetText "Select Syringe Tag";' in pending
-    assert '_button ctrlShow true;' in pending and '_button ctrlEnable true;' in pending
-    assert 'private _btnX = (_x - _btnW - _gap)' in pending
-    assert 'private _menuY = _btnY + _btnH + 2*pixelH;' in pending
-    assert '_menuY = _btnY - _menuH' not in pending
-    assert 'if (_now >= (_d getVariable ["ACME_SK_NextPendingTag",0])) then {' in tick
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 
 def test_compact_track_and_hints_stay_inside_toolbar_but_promoted_track_widens():
