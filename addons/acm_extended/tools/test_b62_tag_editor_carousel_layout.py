@@ -38,16 +38,9 @@ def test_carousel_button_is_edit_tag_and_editor_button_is_select_tag():
     assert 'Select Color' not in txt('functions/fn_skInject.sqf')
 
 def test_dedicated_edit_tag_mode_uses_native_draw_size_and_auto_focuses_first_line():
-    render = txt('functions/fn_skCarouselRender.sqf')
-    opn = txt('functions/fn_skTagEditOpen.sqf')
-    done = txt('functions/fn_skTagEditDone.sqf')
-    assert '_fullW = _native select 2;' in render
-    assert '_fullH = _native select 3;' in render
-    assert 'ctrlSetFocus _e' in opn
-    assert 'ACME_SK_TagEditMode", true' in opn
+    from test_bounded_tag_focus import assert_native_editor_contract
+    assert_native_editor_contract()
     assert 'ctrlSetText "Done"' in txt('functions/fn_skInject.sqf')
-    assert 'ACME_SK_CarouselExpanded", false' in done
-    assert 'ACME_SK_TagEditMode", false' in done
 
 def test_tag_edits_do_not_repaint_on_every_keypress_and_fields_are_transparent():
     commit = txt('functions/fn_skTagCommit.sqf')

@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after bounded H: 124
-Base: 99da8584547c083c8a882c7786558885d6b8a5f7
+Unresolved original source-contract outcomes after bounded I: 123
+Base: 29ed91cf1239b6bccb6c946d2b177b007cdd7318
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
@@ -45,7 +45,6 @@ H253 addons/acm_extended/tools/test_b61_carousel_bodymap_refinement.py::test_mai
 H256 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_main_draw_select_tag_is_beside_native_syringe_not_left_list
 H257 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_both_tag_dropdowns_have_single_click_fallback_and_none
 H258 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_carousel_button_is_edit_tag_and_editor_button_is_select_tag
-H259 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_dedicated_edit_tag_mode_uses_native_draw_size_and_auto_focuses_first_line
 H260 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_wide_carousel_retention_zone_spans_route_to_draw_workspace
 H261 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_compact_syringes_are_larger_and_carousel_is_tighter_on_ultrawide
 H262 addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_body_moves_down_and_shrinks_more_during_promoted_carousel
