@@ -13,25 +13,20 @@ def test_version_batch():
     assert_release_identity()
 
 def test_only_torso_direct_pressure_owns_continuous_action():
-    start = txt('functions/fn_directPressureStart.sqf')
-    torso = txt('functions/fn_directPressureTorso.sqf')
-    limb = txt('functions/fn_directPressureLimb.sqf')
-    selfp = txt('functions/fn_directPressureSelf.sqf')
-    assert 'if (_bodyPart == "body") then' in start
-    assert 'ACME_fnc_directPressureTorso' in start
-    assert 'ACM_core_ContinuousAction_Active", true' in torso
-    assert 'ACM_core_ContinuousAction_Active", true' not in limb
-    assert 'ACM_core_ContinuousAction_Active", true' not in selfp
+    from test_bounded_pressure_contracts import assert_nonexclusive_contract
+    # The historical identity is retained; torso now shares nonexclusive ownership.
+    assert_nonexclusive_contract(txt('functions/fn_directPressureStart.sqf'), [
+        txt('functions/fn_directPressureTorso.sqf'),
+        txt('functions/fn_directPressureLimb.sqf'),
+        txt('functions/fn_directPressureSelf.sqf'),
+    ])
 
 def test_non_torso_pressure_is_not_cancelled_by_other_maneuvers():
-    tick = txt('functions/fn_directPressureTick.sqf')
-    assert 'Head/limb/self pressure intentionally coexists' in tick
-    assert '_stop = "maneuver"' not in tick
-    hang = txt('functions/fn_hangBagCanStart.sqf')
-    assert 'ACME_DP_Mode' in hang and '== "torso"' in hang
-    bp = txt('functions/fn_measureBPWrap.sqf')
-    assert 'private _releasedTorso' in bp
-    assert '== "torso"' in bp
+    from test_bounded_pressure_contracts import assert_compatible_work_contract
+    # Compatible work yields/resumes; accepted BVM deliberately releases this DP episode.
+    assert_compatible_work_contract(txt('functions/fn_directPressureTick.sqf'),
+                                    txt('functions/fn_hangBagCanStart.sqf'),
+                                    txt('functions/fn_measureBPWrap.sqf'))
 
 def test_direct_pressure_floating_indicator_is_not_installed():
     limb = txt('functions/fn_directPressureLimb.sqf')

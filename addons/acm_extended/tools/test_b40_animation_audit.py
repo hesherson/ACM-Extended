@@ -25,11 +25,10 @@ def test_direct_pressure_no_hard_switchmove():
         assert 'ACM_CPR_Stop' not in src or name == 'fn_directPressureTorso.sqf' and False
 
 def test_direct_pressure_entry_exit_are_priority_one():
-    start = text('functions/fn_directPressureTorso.sqf')
-    stop = text('functions/fn_directPressureStop.sqf')
-    assert 'AinvPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_medic", 1]' in start
-    assert 'ACME_DirectPressureHold", 1]' in start
-    assert 'AinvPknlMstpSnonWnonDnon_medicEnd", 1]' in stop
+    from test_bounded_pressure_contracts import assert_entry_exit_contract
+    # Current connected hold entry and narrowly guarded stuck-hold exit fallback.
+    assert_entry_exit_contract(text('functions/fn_directPressureTorso.sqf'),
+                               text('functions/fn_directPressureStop.sqf'))
 
 def test_movement_queues_are_explicit_priority_one():
     expected = {
