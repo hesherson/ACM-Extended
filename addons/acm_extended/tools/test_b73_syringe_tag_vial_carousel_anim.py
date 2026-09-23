@@ -79,9 +79,9 @@ def test_compound_plunger_snaps_final_hundredth_to_current_vial_limit():
 
 def test_plain_draw_snaps_final_hundredth_to_hard_max():
     tick = txt('functions/fn_skUiTick.sqf')
-    assert '(_hardMax - _drawnNow) <= 0.015' in tick
-    assert '_my >= _maxMouse - (2 * pixelH)' in tick
-    assert 'ACM_circulation_SyringeDraw_DrawnAmount = _hardMax;' in tick
+    from test_bounded_draw_endpoints import NATIVE, assert_native_endpoints
+    # Same-frame native drag applies the vial ceiling. Do not restore a competing UI-tick writer.
+    assert_native_endpoints(NATIVE.read_text(), tick)
 
 
 def test_micro_vial_residue_is_safely_discardable_and_not_regranted():

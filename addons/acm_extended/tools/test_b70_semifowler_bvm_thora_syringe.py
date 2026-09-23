@@ -90,8 +90,9 @@ def test_syringe_can_return_last_hundredth_to_exact_endpoint():
     assert '(_fill - _floorMl) <= 0.015' in compound
     assert '_fill = _floorMl;' in compound
     assert '_newY = _floorY;' in compound
-    assert '_drawnNow <= 0.015' in tick
-    assert 'ACM_circulation_SyringeDraw_DrawnAmount = 0;' in tick
+    from test_bounded_draw_endpoints import NATIVE, assert_native_endpoints
+    # Native drag owns exact numeric endpoints; the UI tick only repairs staged stock overage.
+    assert_native_endpoints(NATIVE.read_text(), tick)
 
 
 def test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel():
