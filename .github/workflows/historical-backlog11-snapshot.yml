@@ -1,0 +1,41 @@
+name: Historical backlog 11 source snapshot
+on:
+  push:
+    branches: [audit/historical-backlog-batch11-20260922]
+    paths: [.github/workflows/historical-backlog11-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 215d5187e6c8caaf57681edc0707e93e5f6abd98
+      - name: Capture complete tracked text with manifest and raw commit
+        run: |
+          python3 - <<'PY'
+          import pathlib,subprocess,json,zipfile
+          git=lambda *a:subprocess.check_output(['git',*a])
+          entries={}
+          for rec in git('ls-tree','-rz','HEAD').split(b'\0'):
+              if not rec:continue
+              meta,p=rec.split(b'\t',1); mode,kind,sha=meta.decode().split()
+              assert kind=='blob',(p,kind)
+              entries[p.decode()]={'mode':mode,'sha':sha}
+          with zipfile.ZipFile('/tmp/backlog11-source.zip','w',zipfile.ZIP_DEFLATED) as z:
+              z.writestr('manifest.json',json.dumps({'commit':git('rev-parse','HEAD').decode().strip(),'tree':git('rev-parse','HEAD^{tree}').decode().strip(),'files':entries},indent=2))
+              z.writestr('commit.raw',git('cat-file','commit','HEAD'))
+              for p in entries:
+                  data=pathlib.Path(p).read_bytes()
+                  try:data.decode('utf-8')
+                  except UnicodeDecodeError:continue
+                  z.writestr('source/'+p,data)
+          print('Tracked files',len(entries))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backlog11-source
+          path: /tmp/backlog11-source.zip
+          retention-days: 7
