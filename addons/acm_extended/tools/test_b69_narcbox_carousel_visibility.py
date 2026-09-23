@@ -99,13 +99,9 @@ def test_chest_holes_use_nonzero_seal_aware_spacing_and_more_rejection_attempts(
 
 
 def test_b68_three_second_push_and_b67_cardiac_safety_still_present():
-    begin = txt('functions/fn_skBeginInjection.sqf')
-    rate = txt('functions/fn_rhythmThresholdTick.sqf')
-    post = txt('functions/fn_postInit.sqf')
-    assert '_pl ctrlCommit 3.0;' in begin
-    assert 'playSound "ACME_SyringePush";' in begin
-    assert 'ACME_tbi_nonterminalMinHR    = 42' in post
-    assert 'call ACME_fnc_arrestLocal' not in rate
+    # Current timed confirmation and native ACM rhythm authority supersede the old inline push/floor.
+    from test_bounded_push_native_contract import historical_combined_check
+    historical_combined_check()
 
 
 def test_deterministic_thorax_lattice_can_pack_four_seal_safe_centers():

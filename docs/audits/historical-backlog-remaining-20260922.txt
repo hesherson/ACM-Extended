@@ -1,5 +1,5 @@
-Unresolved original source-contract outcomes after bounded AH: 70
-Base: dd294e53c7fb850c31dde42454adbbd92c4e1bb3
+Unresolved original source-contract outcomes after bounded AJ: 69
+Base: f611ac7cf346da659534b47f34d79cdb3eab4bd2
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
 H051 addons/acm_extended/tools/test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing
@@ -59,7 +59,6 @@ H302 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_carou
 H305 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_patient_name_is_raised_farther_in_screen_to_head_gap
 H317 addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow
 H325 addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py::test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill
-H327 addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py::test_b68_three_second_push_and_b67_cardiac_safety_still_present
 H335 addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py::test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel
 H339 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_intubate_hidden_for_conscious_patient
 H341 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_native_acm_treatment_cannot_invent_head_position_roll
