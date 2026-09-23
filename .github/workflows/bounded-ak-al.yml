@@ -1,0 +1,43 @@
+name: Bounded AK-AL audit
+on:
+  push:
+    branches: [audit/bounded-backlog-ak-al-20260923]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: acme-bounded-ak-al-20260923
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Compile reviewed audit sources
+        run: python -m py_compile .audit/ak-al/patient.py .audit/ak-al/preview.py .audit/ak-al/validate.py
+      - name: Install pinned toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-tools
+          curl -fLsS --connect-timeout 15 --max-time 60 --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          curl -fLsS --connect-timeout 15 --max-time 60 --retry 1 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+          python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
+      - name: Compare full suites and publish isolated checkpoint
+        env:
+          HEMTT: /tmp/acme-tools/hemtt
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: python .audit/ak-al/validate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-bounded-AK-AL-evidence
+          path: /tmp/acme-ak-al-results
+          retention-days: 30
