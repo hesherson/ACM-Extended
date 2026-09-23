@@ -13,25 +13,23 @@ def test_version_batch():
     assert_release_identity()
 
 def test_only_torso_direct_pressure_owns_continuous_action():
-    start = txt('functions/fn_directPressureStart.sqf')
-    torso = txt('functions/fn_directPressureTorso.sqf')
-    limb = txt('functions/fn_directPressureLimb.sqf')
-    selfp = txt('functions/fn_directPressureSelf.sqf')
-    assert 'if (_bodyPart == "body") then' in start
-    assert 'ACME_fnc_directPressureTorso' in start
-    assert 'ACM_core_ContinuousAction_Active", true' in torso
-    assert 'ACM_core_ContinuousAction_Active", true' not in limb
-    assert 'ACM_core_ContinuousAction_Active", true' not in selfp
+    # B75's torso-exclusive controller was superseded by persistent DP in all
+    # regions. Execute the current ownership contract, including self pressure.
+    from test_historical_pressure_ownership import CASES, test_every_region_is_persistent_without_claiming_the_native_continuous_controller
+    for args in CASES:
+        test_every_region_is_persistent_without_claiming_the_native_continuous_controller(*args)
 
 def test_non_torso_pressure_is_not_cancelled_by_other_maneuvers():
-    tick = txt('functions/fn_directPressureTick.sqf')
-    assert 'Head/limb/self pressure intentionally coexists' in tick
-    assert '_stop = "maneuver"' not in tick
-    hang = txt('functions/fn_hangBagCanStart.sqf')
-    assert 'ACME_DP_Mode' in hang and '== "torso"' in hang
-    bp = txt('functions/fn_measureBPWrap.sqf')
-    assert 'private _releasedTorso' in bp
-    assert '== "torso"' in bp
+    # Incompatible maneuvers temporarily yield clinical pressure. Accepted BVM
+    # explicitly releases this provider's pressure, but rejected BVM preserves it.
+    from test_historical_pressure_ownership import CASES, test_an_incompatible_maneuver_yields_marker_once_and_excludes_paused_time
+    from test_native_bvm_dp import test_pressure_to_bvm_breath_pause_resume_stop_and_repeat, test_rejected_bvm_start_preserves_direct_pressure, test_another_providers_pressure_is_untouched
+    for args in CASES:
+        test_an_incompatible_maneuver_yields_marker_once_and_excludes_paused_time(*args)
+    for part in ('body','leftarm','head'):
+        test_pressure_to_bvm_breath_pause_resume_stop_and_repeat(part)
+    test_rejected_bvm_start_preserves_direct_pressure('_patientAwake = true;')
+    test_another_providers_pressure_is_untouched()
 
 def test_direct_pressure_floating_indicator_is_not_installed():
     limb = txt('functions/fn_directPressureLimb.sqf')
