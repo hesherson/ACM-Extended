@@ -17,13 +17,9 @@ def test_final_name_ui_removed_and_drawn_body_only():
     assert '_c ctrlShow _body' in v
 
 def test_dedicated_syringe_menu_button_and_keys():
-    s=txt('functions/fn_skInject.sqf')
-    assert 'Open Syringe Menu' in s
-    assert 'safeZoneH / 46' in s
-    assert '_key == 30' in s and '_key == 32' in s
-    v=txt('functions/fn_skSetView.sqf')
-    assert 'Close Syringe Menu' in v
-    assert '_carousel = _view == "carousel"' in v
+    from test_bounded_page_navigation import bindings_contract, labels_contract
+    bindings_contract()
+    labels_contract()
 
 def test_carousel_infinite_wrap_and_measured_plunger():
     from test_historical_carousel_input import test_keyboard_steps_keep_wraparound_and_never_mutate_the_store, test_actual_plunger_fraction_uses_total_solution_and_clamps_to_the_barrel
@@ -83,12 +79,12 @@ def test_font_binary_not_redistributed_and_handwriting_fallback_is_runtime_safe(
     assert 'font = "Caveat";' in cfg
 
 def test_tag_static_text_matches_editor_font_and_ad_keys_do_not_steal_typing():
+    from test_bounded_page_navigation import typing_contract
     cfg=txt('config.cpp')
     inj=txt('functions/fn_skInject.sqf')
     assert 'class ACME_SK_TagText: RscText' in cfg
     assert 'private _t = _display ctrlCreate ["ACME_SK_TagText", _baseId + _x];' in inj
-    assert '(ctrlIDC _focus) in [84460,84461,84462]' in inj
-    assert 'exitWith {false}' in inj
+    typing_contract(inj)
 
 
 def test_self_action_opens_native_size_before_entering_carousel():

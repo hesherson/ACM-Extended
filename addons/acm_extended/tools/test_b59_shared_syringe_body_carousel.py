@@ -57,14 +57,9 @@ def test_ad_keys_drive_both_views_without_stealing_tag_typing():
         test_any_edit_control_keeps_ad_typing_and_cancels_an_existing_hold(84460,key)
 
 def test_view_buttons_make_carousel_to_body_workflow_explicit():
-    view = txt('functions/fn_skSetView.sqf')
-    toggle = txt('functions/fn_skToggleView.sqf')
-    assert 'Choose Injection Site' in view
-    assert '< Back to Syringes' in view
-    assert 'Open Syringe Menu' in view and 'Close Syringe Menu' in view
-    assert '_menuButton ctrlShow (!_body)' in view
-    assert 'case "carousel": {"body"}' in toggle
-    assert 'case "body": {if (_store isEqualTo []) then {"syringe"} else {"carousel"}}' in toggle
+    from test_bounded_page_navigation import bindings_contract, labels_contract
+    bindings_contract()
+    labels_contract()
 
 def test_body_preview_renders_real_fill_tag_and_summary():
     body = txt('functions/fn_skBodySyringeRender.sqf')

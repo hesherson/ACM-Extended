@@ -20,14 +20,8 @@ def test_ultrawide_carousel_width_is_capped_and_moved_lower():
     assert 'safeZoneW*0.84' not in inj
 
 def test_open_close_syringe_menu_button_is_removed_and_draw_button_restored_low():
-    inj = txt('functions/fn_skInject.sqf')
-    setview = txt('functions/fn_skSetView.sqf')
-    render = txt('functions/fn_skCarouselRender.sqf')
-    assert 'ctrlCreate ["ACME_SK_StyledButton", 84170]' not in inj
-    assert 'displayCtrl 84170' not in setview
-    assert 'displayCtrl 84170' not in render
-    assert 'safeZoneH / 1.08' in inj
-    assert '< Draw Syringe' in setview
+    from test_bounded_page_navigation import retired_toggle_contract
+    retired_toggle_contract()
 
 def test_body_shrink_is_stronger_and_route_row_clears_body():
     inj = txt('functions/fn_skInject.sqf')
