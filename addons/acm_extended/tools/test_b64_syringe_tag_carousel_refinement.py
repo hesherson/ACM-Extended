@@ -15,14 +15,9 @@ def test_b64_version_stamp():
 
 
 def test_qephillips_is_wired_as_the_tag_font_without_redistributing_font_files():
-    cfg = txt('config.cpp')
-    assert 'class ACME_QEPhillips' in cfg
-    assert 'fonts[] = {"\\acm_extended\\ui\\fonts\\QEPhillips\\QEPhillips96"};' in cfg
-    assert cfg.count('font = "ACME_QEPhillips";') >= 2
-    tag_block = cfg[cfg.index('class ACME_SK_TagEdit'):cfg.index('class ACME_SK_StyledLabel')]
-    assert 'Caveat' not in tag_block
-    assert (ROOT / 'B64_QEPHILLIPS_LOCAL_SETUP.txt').is_file()
-    assert not list(ROOT.rglob('*.ttf'))
+    from test_bounded_tag_font_fallback import font_contract, no_outline_fonts
+    from test_bounded_tag_line_layout import layout_contract
+    font_contract(); no_outline_fonts(); layout_contract()
 
 
 def test_tag_edit_fields_have_no_black_rect_and_text_is_larger():

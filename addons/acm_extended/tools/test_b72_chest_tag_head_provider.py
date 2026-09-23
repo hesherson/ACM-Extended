@@ -55,19 +55,9 @@ def test_draw_save_commits_tag_color_and_three_lines_to_syringe():
 
 
 def test_new_qedavemergens_font_replaces_old_runtime_wiring():
-    cfg = txt('config.cpp')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    carousel = txt('functions/fn_skCarouselRender.sqf')
-    assert 'class ACME_QEDaveMergens' in cfg
-    assert r'\acm_extended\ui\fonts\QEDaveMergens\QEDaveMergens96' in cfg
-    assert 'font = "ACME_QEDaveMergens";' in cfg
-    assert 'QEDaveMergens96.fxy' in pending and 'ACME_QEDaveMergens' in pending
-    assert 'QEDaveMergens96.fxy' in carousel and 'ACME_QEDaveMergens' in carousel
-    for src in (cfg, pending, carousel):
-        assert 'ACME_QEPhillips' not in src
-        assert r'ui\fonts\QEPhillips' not in src
-    assert (ROOT / 'B72_QEDAVEMERGENS_LOCAL_SETUP.txt').exists()
-    assert not (ROOT / 'B64_QEPHILLIPS_LOCAL_SETUP.txt').exists()
+    from test_bounded_tag_font_fallback import font_contract, no_outline_fonts
+    from test_bounded_tag_line_layout import layout_contract
+    font_contract(); no_outline_fonts(); layout_contract()
 
 
 def test_chest_reveal_is_not_expired_by_cross_machine_mission_clock():

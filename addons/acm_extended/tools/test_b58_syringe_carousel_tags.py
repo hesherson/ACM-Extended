@@ -72,11 +72,9 @@ def test_carousel_headers_summary_and_patient_location():
     assert 'Concentration' in s and ' in %4 mL' in s
 
 def test_font_binary_not_redistributed_and_handwriting_fallback_is_runtime_safe():
-    # Font file is intentionally not shipped; Arma custom fonts require generated PAA/FXY families.
-    assert not list(ROOT.rglob('*.ttf'))
-    cfg=txt('config.cpp')
-    assert 'class ACME_SK_TagEdit: RscEdit' in cfg
-    assert 'font = "Caveat";' in cfg
+    from test_bounded_tag_font_fallback import font_contract, no_outline_fonts
+    from test_bounded_tag_line_layout import layout_contract
+    font_contract(); no_outline_fonts(); layout_contract()
 
 def test_tag_static_text_matches_editor_font_and_ad_keys_do_not_steal_typing():
     from test_bounded_page_navigation import typing_contract

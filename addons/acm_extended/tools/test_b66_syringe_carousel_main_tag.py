@@ -25,15 +25,9 @@ def test_main_tag_dropdown_always_opens_below_and_is_wide():
     geometry_source_contract()
 
 def test_runtime_font_fallback_prevents_invisible_tag_typing():
-    pending = txt("functions/fn_skPendingTagRender.sqf")
-    car = txt("functions/fn_skCarouselRender.sqf")
-    for src in (pending, car):
-        assert 'fileExists "\\acm_extended\\ui\\fonts\\QEPhillips\\QEPhillips96.fxy"' in src
-        assert '"ACME_QEPhillips"' in src
-        assert '"Caveat"' in src
-        assert 'ctrlSetFont _tagFont;' in src
-    assert '*0.027' in pending
-    assert '*0.027' in car
+    from test_bounded_tag_font_fallback import font_contract, no_outline_fonts
+    from test_bounded_tag_line_layout import layout_contract
+    font_contract(); no_outline_fonts(); layout_contract()
 
 def test_compact_and_promoted_tracks_are_distinct_and_promoted_is_wider():
     inject = txt("functions/fn_skInject.sqf")
