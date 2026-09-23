@@ -16,17 +16,9 @@ def test_b69_version_stamp():
 
 
 def test_main_select_syringe_tag_is_created_after_runtime_source_panels_for_top_z_order():
-    inj = txt('functions/fn_skInject.sqf')
-    last_initial_refresh = inj.rfind('call ACME_fnc_skListRefresh;\n\n// B69: runtime row groups/backdrops')
-    create_button = inj.find('private _pendingTagBtn = _display ctrlCreate ["ACME_SK_StyledButton", 84610];')
-    set_view = inj.rfind('call ACME_fnc_skSetView;')
-    assert last_initial_refresh >= 0
-    assert last_initial_refresh < create_button < set_view
-    # The selector is instantiated exactly once and then continuously repainted from the native syringe rect.
-    assert inj.count('ctrlCreate ["ACME_SK_StyledButton", 84610]') == 1
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'private _showSetup = (_view == "syringe");' in pending
-    assert '_button ctrlShow true;' in pending
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 
 def test_main_select_syringe_tag_is_narrower_and_has_real_art_clearance():

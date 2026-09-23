@@ -65,13 +65,9 @@ def test_color_dropdown_can_reselect_same_row_for_multiple_syringes():
     assert '_ctrl lbSetCurSel -1' in pending
 
 def test_main_draw_page_has_changeable_tag_selector():
-    inj = txt('functions/fn_skInject.sqf')
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'Select Tag: None' in inj
-    assert 'Select Tag: %1' in render
-    assert 'Select or change' in inj
-    assert 'None - No syringe tag' in inj
-    assert 'ACME_SK_PendingTagColor' in render
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 def test_body_map_no_longer_prints_current_medication_details_at_top():
     car = txt('functions/fn_skCarouselRender.sqf')

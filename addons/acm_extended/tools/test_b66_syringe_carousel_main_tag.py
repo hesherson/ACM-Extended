@@ -13,16 +13,11 @@ def test_b66_version_stamp():
     assert_release_identity()
 
 def test_main_select_syringe_tag_is_persistent_and_left_of_native_syringe():
-    pending = txt("functions/fn_skPendingTagRender.sqf")
-    inject = txt("functions/fn_skInject.sqf")
-    tick = txt("functions/fn_skUiTick.sqf")
-    assert '_button ctrlSetText "Select Syringe Tag";' in pending
-    assert 'private _btnX = (_x - _btnW - _gap)' in pending
-    assert 'private _btnY = _y + _h*0.425 - _btnH/2;' in pending
-    assert '_button ctrlShow true;' in pending
-    assert 'ACME_SK_NextPendingTag' in inject
-    assert 'call ACME_fnc_skPendingTagRender;' in tick
-    assert '0.03] call CBA_fnc_waitAndExecute' in inject
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
+    from test_bounded_tag_contracts import require
+    require(txt("functions/fn_skPendingTagRender.sqf"), "private _tagCenterX = _x + _w*0.36;")
 
 def test_main_tag_dropdown_always_opens_below_and_is_wide():
     pending = txt("functions/fn_skPendingTagRender.sqf")
