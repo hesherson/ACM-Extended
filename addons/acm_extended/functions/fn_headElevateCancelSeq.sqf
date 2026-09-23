@@ -6,7 +6,9 @@ if !(_medic getVariable ["ACME_headElev_seqActive", false]) exitWith {};
 
 _medic setVariable ["ACME_headElev_seqActive", false, false];
 _medic setVariable ["ACME_headElev_seqToken", -1, false];
-_medic setVariable ["ACME_headElev_medicAnimToken", -1, false];
+// Advance the existing generation; resetting it would let a later restart reuse an old PFH token.
+private _cancelToken = (_medic getVariable ["ACME_headElev_medicAnimToken", 0]) + 1;
+_medic setVariable ["ACME_headElev_medicAnimToken", _cancelToken, false];
 _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
 _medic setVariable ["ACME_headElev_seqMode", "", false];
 
@@ -36,11 +38,12 @@ if (alive _medic && {isNull objectParent _medic}
     _medic setUnitPos "MIDDLE";
     [_medic, "AmovPknlMstpSnonWnonDnon", 2] call ACME_fnc_doAnim;
     [{
-        params ["_m"];
+        params ["_m", "_cancelToken"];
         if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}
             || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {};
+        if ((_m getVariable ["ACME_headElev_medicAnimToken", -1]) != _cancelToken) exitWith {};
         if (_m getVariable ["ACME_headElev_seqActive", false]) exitWith {};
         if ([_m] call ACME_fnc_providerStanceOwned) exitWith {};
         _m setUnitPos "AUTO";
-    }, [_medic], 0.25] call CBA_fnc_waitAndExecute;
+    }, [_medic, _cancelToken], 0.25] call CBA_fnc_waitAndExecute;
 };
