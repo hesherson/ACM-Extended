@@ -72,15 +72,23 @@ if ((_entry param [6,""]) == "epiMixB12") then {
     _remainingFrac = ((((_total - _pushMl) max 0) / (_size max 0.01)) max 0) min 1;
 };
 
+// A normal push must retain the injected workspace as well as the display handle.
+// A replacement workspace can exist before it has a replacement normal-push job.
+private _closeEpoch = _d getVariable ["ACME_SK_CloseEpoch",-1];
+if (_closeEpoch < 0 || {(uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != _closeEpoch}) exitWith {false};
+
 // A normal push belongs to this display/provider/patient, not to whichever dialog opens later.
 private _epoch = (_d getVariable ["ACME_SK_InjectionEpoch",0]) + 1;
 _d setVariable ["ACME_SK_InjectionEpoch",_epoch];
-private _job = [_d,ACE_player,_patient,_stableId,_epoch];
+private _job = [_d,ACE_player,_patient,_stableId,_epoch,_closeEpoch];
 uiNamespace setVariable ["ACME_SK_NormalPush",_job];
 private _validContext = {
     params ["_job"];
     _job params ["_display","_medic","_patient"];
     if (isNull _display || {!(_display isEqualTo findDisplay 84000)} || {!(ACE_player isEqualTo _medic)}) exitWith {false};
+    private _closeEpoch = _job select 5;
+    if ((uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != _closeEpoch
+        || {(_display getVariable ["ACME_SK_CloseEpoch",-1]) != _closeEpoch}) exitWith {false};
     if (!(uiNamespace getVariable ["ACME_SK_InjectionBusy",false])
         || {(uiNamespace getVariable ["ACME_SK_View",""]) != "body"}
         || {uiNamespace getVariable ["ACME_SK_TagEditMode",false]}) exitWith {false};
@@ -93,6 +101,9 @@ private _retire = {
     params ["_job"];
     if !((uiNamespace getVariable ["ACME_SK_NormalPush",[]]) isEqualTo _job) exitWith {};
     uiNamespace setVariable ["ACME_SK_NormalPush",[]];
+    // Retire this job record, but never unlock or clear the target of a successor workspace/provider.
+    if ((uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != (_job select 5)
+        || {!(ACE_player isEqualTo (_job select 1))}) exitWith {};
     // A persistent push has its own lifecycle and must retain its shared UI locks.
     private _hc = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
     if (_hc isEqualType createHashMap && {count _hc > 0}) exitWith {};

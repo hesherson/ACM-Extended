@@ -100,7 +100,13 @@ def test_old_callback_cannot_unlock_or_retarget_a_new_normal_push(boundary,reope
         call ACME_fnc_skConfirmInjection;
     '''+('0 call _runWait;' if boundary=='commit' else '')+'''
         uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
-    '''+('_drawDisplay=parsingNamespace;' if reopen else '')+'''
+    '''+('''
+        _drawDisplay=parsingNamespace;
+        // The replacement is an injected display, with its own registration epoch.
+        private _nextCloseEpoch=(uiNamespace getVariable ["ACME_SK_CloseEpoch",0])+1;
+        uiNamespace setVariable ["ACME_SK_CloseEpoch",_nextCloseEpoch];
+        _drawDisplay setVariable ["ACME_SK_CloseEpoch",_nextCloseEpoch];
+    ''' if reopen else '')+'''
         uiNamespace setVariable ["ACME_SK_PendingInjection",["rightarm",2,"vascular"]];
         [call ACME_fnc_skConfirmInjection,"new push rejected"] call _check;
         private _newJob=+(uiNamespace getVariable ["ACME_SK_NormalPush",[]]);
