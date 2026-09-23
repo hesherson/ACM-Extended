@@ -81,6 +81,9 @@ private _watchMenu = !isNull _menu;
             _u setVariable ["ACME_DP_LastPoseAssert", 0, false];
         };
         _u setVariable ["ACME_headElev_pinToken", (_u getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
+        // Local-only bookkeeping above must retire even after locality is lost, so it cannot
+        // strand this machine on a later return. Only the current owner may publish animation cleanup.
+        if (!local _u) exitWith {};
         ["ace_common_setAnimSpeedCoef", [_u, 1]] call CBA_fnc_globalEvent;
 
         if (alive _u && {local _u} && {isNull objectParent _u}
