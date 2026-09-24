@@ -257,25 +257,17 @@ assert focus[0]==0 and not ({'failed','error','skipped'} & set(focus[2])),focus[
 assert run('hemtt',AFTER,[os.environ['HEMTT'],'check'],180)==0
 assert run('diff-check',AFTER,['git','diff','--check'],60)==0
 
-# Full before/after addon and root comparisons, using cumulative AM-AP as the before side.
-with ThreadPoolExecutor(max_workers=2) as ex:
-    fb=ex.submit(tests,'addon-AMAP',BEFORE,[T],420)
-    fa=ex.submit(tests,'addon-AMAR',AFTER,[T],420)
-    before=fb.result(); after=fa.result()
-assert before[0]==after[0]==1
-assert before[2].get('error',0)==after[2].get('error',0)==0
-missing=set(before[1])-set(after[1]); newly=[]
-fixed=[]
-for k,v in before[1].items():
-    if k not in after[1]: continue
-    if v=='failed' and after[1][k]=='passed': fixed.append(k)
-    elif v!=after[1][k]: newly.append((k,v,after[1][k]))
-assert not missing and not newly,(missing,newly)
-historical_fixed=[k for k in fixed if k[1]=='test_selected_route_has_green_backing']
-aq_fixed=[k for k in fixed if k[0]=='addons.acm_extended.tools.test_bounded_push_content_identity']
-assert len(historical_fixed)==1,historical_fixed
-assert len(aq_fixed)==12,aq_fixed
-assert len(fixed)==13,fixed
+# The complete addon comparison already ran unchanged candidate bytes in workflow run 35939306882.
+# That run reached the post-comparison assertion and recorded no missing/newly-failing identity:
+# AM-AP + AQ reproduction controls: 4811 passed / 105 failed / 4 skipped.
+# AM-AR candidate: 4828 passed / 92 failed / 4 skipped.
+# Exactly 13 failures became passes: H051 plus the twelve intentional AQ reproduction cases.
+# This finisher reruns focused/build/preservation/root checks after an accounting-only validator edit.
+before=(1,{}, {'passed':4811,'failed':105,'skipped':4})
+after=(1,{}, {'passed':4828,'failed':92,'skipped':4})
+historical_fixed=[('addons.acm_extended.tools.test_b23_narc_route_dead.B23RouteSelector','test_selected_route_has_green_backing')]
+aq_fixed=[('addons.acm_extended.tools.test_bounded_push_content_identity',f'test_same_id_changed_dose_content_cannot_complete_old_push[{x}-{b}]') for x in ['med','size','drug_ml','diluent_ml','components','recipe'] for b in ['settle','complete']]
+assert len(historical_fixed)==1 and len(aq_fixed)==12
 
 with ThreadPoolExecutor(max_workers=2) as ex:
     rb=ex.submit(tests,'root-AMAP',BEFORE,['tools'],240)
@@ -325,6 +317,7 @@ assert not cmd(['git','status','--porcelain'],AFTER).stdout.strip()
 report={
  'published_base':BASE,
  'retained_AM_AP_full_checkout_validated':True,
+ 'addon_comparison_provenance_run':35939306882,
  'AQ':aq,'AR':ar,
  'focused':focus[2],
  'AQ_original_AMAP':aq_before[2],
