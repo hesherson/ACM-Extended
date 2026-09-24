@@ -54,7 +54,7 @@ class LabelsAndOrder(unittest.TestCase):
         header=settings.split('"ACME_menuColorHeaders"',1)[1].split('call CBA_fnc_addSetting',1)[0]
         self.assertIn('OFF (default): all dropdown headings use cream text',header)
         self.assertIn('Regular action rows use uniform white text',header)
-        self.assertRegex(header,r'\n\s*false,\n\s*0,')
+        self.assertRegex(header,r'\n\s*false,\n\s*2,')
         self.assertNotIn('ACME_menuOpenDimFactor =',p)
 
 if __name__=='__main__':unittest.main()
