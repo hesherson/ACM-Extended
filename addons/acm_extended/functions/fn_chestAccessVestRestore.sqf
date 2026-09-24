@@ -169,10 +169,10 @@ if (!_canAnimate) exitWith {
 if (_context == "chestseal") then {[_patient] call ACME_fnc_chestSealParkCarrier}
 else {[_patient] call ACME_fnc_chestAccessVestPark};
 
-private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLiftTime", 0.50];
-if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 0.50;};
-private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLowerTime", 0.55];
-if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 0.55;};
+private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLiftTime", 0.75];
+if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 0.75;};
+private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLowerTime", 0.88];
+if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 0.88;};
 private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreHold", 0.02];
 if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.02;};
 private _animSpeed = missionNamespace getVariable ["ACME_chestAccess_vestRestoreAnimSpeed", 1.60];
