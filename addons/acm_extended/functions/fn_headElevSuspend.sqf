@@ -113,7 +113,9 @@ _patient setVariable ["ACME_headElev_suspendVestLoadout", _suspendVest, false];
 private _patientAnimToken = "";
 if (isNull objectParent _patient) then {
     [_patient, false] call ACME_fnc_headElevCollision;
-    _patientAnimToken = [_patient, "ACME_HeadElevPatientRelease", 2, "head-elev-lower", objNull, _lowerTime + 0.3, 3] call ACME_fnc_patientAnimRequest;
+    // Semi-Fowler yields to any already-owned intervention animation. Priority 1 lets chest/airway/treatment
+    // patient choreography win instead of a late suspension request canceling the intervention.
+    _patientAnimToken = [_patient, "ACME_HeadElevPatientRelease", 2, "head-elev-lower", objNull, _lowerTime + 0.3, 1] call ACME_fnc_patientAnimRequest;
     [_patient, _lowerTime] call ACME_fnc_headElevPinPose;
 };
 private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
@@ -132,6 +134,6 @@ private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
 
     private _rest = [_patient] call ACME_fnc_headElevRestAnim;
     if (isNull objectParent _patient && {_rest != ""} && {_patientAnimToken != ""}) then {
-        [_patient, _rest, 2, "head-elev-flat", objNull, 0.8, 3, _patientAnimToken] call ACME_fnc_patientAnimRequest;
+        [_patient, _rest, 2, "head-elev-flat", objNull, 0.8, 1, _patientAnimToken] call ACME_fnc_patientAnimRequest;
     };
 }, [_patient, _poseToken, _patientAnimToken, _parkSupport], _lowerTime] call CBA_fnc_waitAndExecute;
