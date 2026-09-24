@@ -87,13 +87,13 @@ def test_save_returns_to_large_body_and_compact_carousel():
     save_contract()
     after = txt('functions/fn_skAfterSaveOpenBody.sqf')
     compound = txt('functions/fn_skCompoundSave.sqf')
-    waste = txt('functions/fn_skWasteDraw.sqf')
-    direct = txt('overrides/fn_syringeDrawButton.sqf')
-    # Saving now stays on Draw Syringe; it must not force Body Map open.
+    flush = txt('functions/fn_skFlushSave.sqf')
+    # Saving never forces Body Map. Compound Save resets the existing Draw Syringe page in place;
+    # flush Save may close/reopen, but the shared helper still restores the syringe page.
     assert 'ACME_SK_View", "body"' not in after
-    assert '[true] call ACME_fnc_skAfterSaveOpenBody' in compound
-    assert '[true] call ACME_fnc_skAfterSaveOpenBody' in waste
-    assert 'call ACME_fnc_skAfterSaveOpenBody' in direct
+    assert '[] call ACME_fnc_skCompoundBegin;' in compound
+    assert 'call ACME_fnc_skPendingTagRender;' in compound
+    assert '[true] call ACME_fnc_skAfterSaveOpenBody;' in flush
 
 def test_total_solution_volume_drives_stored_plunger_position():
     car = txt('functions/fn_skCarouselRender.sqf')
