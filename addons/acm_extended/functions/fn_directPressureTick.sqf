@@ -60,7 +60,10 @@ if (_moving) exitWith {
 // Higher-priority interventions win BEFORE Direct Pressure gets any chance to reassert its decorative hold.
 // This includes chest-access preparation and head-position/provider choreography, not just an already-active
 // continuous action. DP remains clinically alive and resumes later; it never cancels or overwrites the maneuver.
-private _maneuverActive = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
+private _nativeCpr = [_patient] call ACM_core_fnc_cprActive;
+private _nativeBvm = [_patient] call ACM_core_fnc_bvmActive;
+private _maneuverActive = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+    || {_nativeCpr} || {_nativeBvm};
 private _manualPause = _medic getVariable ["ACME_DP_Paused", false];
 private _pauseClass = _medic getVariable ["ACME_DP_PauseTreatmentClass", ""];
 private _chestPrep = _medic getVariable ["ACME_chestAccessPreflightActive", false]
@@ -69,10 +72,17 @@ private _headProvider = _medic getVariable ["ACME_headElev_seqActive", false];
 private _treatmentBusy = _medic getVariable ["ACME_DP_TreatmentBusy", false]
     || {_medic getVariable ["ACME_treatmentPreflightActive", false]};
 
-if (_manualPause && {_maneuverActive} && {_pauseClass in ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]}) then {
+private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
+// CPR's launcher treatment ends long before compressions do. Keep the DP pause through the real native role and
+// clear it from this long-lived PFH only after both CPR/BVM have actually ended.
+if (!_maneuverActive && {_pauseClass in _maneuverClasses}) then {
     _medic setVariable ["ACME_DP_Paused", false, false];
     _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
+    _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
+    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
     _manualPause = false;
+    _pauseClass = "";
+    _treatmentBusy = _medic getVariable ["ACME_treatmentPreflightActive", false];
 };
 private _mustYieldClinical = _maneuverActive || {_manualPause} || {_chestPrep} || {_headProvider} || {_treatmentBusy};
 private _yieldedClinical = _medic getVariable ["ACME_DP_ClinicalYield", false];
