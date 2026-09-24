@@ -27,7 +27,7 @@ class LabelsAndOrder(unittest.TestCase):
         self.assertIn('(_text select [0,_leading]) + (["position", _positionKey]',s)
         self.assertIn('(_chars select _leading) in [9,32]',s)
 
-    def test_posture_actions_are_head_only_and_stay_in_examine(self):
+    def test_both_posture_actions_remain_on_head_and_chest(self):
         c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
         for name in ('ACME_ElevateHead','ACME_LowerHead'):
             b=c.split('class '+name+':',1)[1].split('\n    };',1)[0]
