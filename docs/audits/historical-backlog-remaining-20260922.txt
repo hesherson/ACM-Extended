@@ -1,12 +1,7 @@
-Unresolved original source-contract outcomes after bounded AX: 42
+Unresolved original source-contract outcomes after bounded AZ: 35
 Base: 8df66dfb5f9701c960bf352ba1f41d16dcd77fc8
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
-H137 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_cuff_syringe_uses_real_acm_pbo_prefix
-H194 addons/acm_extended/tools/test_b49_intubation_obtunded.py::test_replacement_ten_ml_barrel_is_used_in_both_views
-H195 addons/acm_extended/tools/test_b49_intubation_obtunded.py::test_cuff_syringe_tip_anchor_target_and_one_second_push
-H209 addons/acm_extended/tools/test_b57_pose_rules_narcbox_cohesion.py::test_menu_open_is_only_empty_hands_and_crouch_transition
-H214 addons/acm_extended/tools/test_b57_pose_rules_narcbox_cohesion.py::test_narcbox_cohesive_section_and_selection_fix_retained
 H217 addons/acm_extended/tools/test_b58_syringe_carousel_tags.py::test_final_name_ui_removed_and_drawn_body_only
 H223 addons/acm_extended/tools/test_b58_syringe_carousel_tags.py::test_carousel_headers_summary_and_patient_location
 H228 addons/acm_extended/tools/test_b59_shared_syringe_body_carousel.py::test_body_map_has_compact_three_slot_mini_carousel
@@ -42,5 +37,3 @@ H305 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_patie
 H317 addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow
 H325 addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py::test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill
 H335 addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py::test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel
-H429 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_layout_ratios_match_source
-H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::test_all_visual_passes_after_procedure
