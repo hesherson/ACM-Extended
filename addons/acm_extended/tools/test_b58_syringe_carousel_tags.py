@@ -9,12 +9,13 @@ def test_version_b58():
     assert_release_identity()
 
 def test_final_name_ui_removed_and_drawn_body_only():
+
+    from test_bounded_current_carousel_contract import body_visibility_contract, retired_contract
     s=txt('functions/fn_skInject.sqf')
     assert 'Final Syringe Name (25 max)' not in s
     assert 'ctrlCreate ["ACME_SK_NameEdit", 84161]' not in s
-    v=txt('functions/fn_skSetView.sqf')
-    assert 'forEach [84133,84134,84302]' in v
-    assert '_c ctrlShow _body' in v
+    body_visibility_contract()
+    retired_contract()
 
 def test_dedicated_syringe_menu_button_and_keys():
     from test_bounded_page_navigation import bindings_contract, labels_contract
@@ -65,11 +66,14 @@ def test_store_lifetime_current_life_only():
     test_headless_machine_does_not_install_personal_kit_handlers()
 
 def test_carousel_headers_summary_and_patient_location():
+
+    from test_bounded_current_carousel_contract import header_contract
+    header_contract()
     r=txt('functions/fn_skCarouselRender.sqf')
-    assert 'ACME_fnc_skSyringeSummary' in r
-    assert 'displayCtrl 84001' in r and 'displayCtrl 84002' in r
     s=txt('functions/fn_skSyringeSummary.sqf')
-    assert 'Concentration' in s and ' in %4 mL' in s
+    # Body Map no longer duplicates the selected syringe as a header summary.
+    assert 'ACME_fnc_skSyringeSummary' not in r
+    assert 'format["%1 %2 %3 in %4 mL"' in s
 
 def test_font_binary_not_redistributed_and_handwriting_fallback_is_runtime_safe():
     from test_bounded_tag_font_fallback import font_contract, no_outline_fonts
