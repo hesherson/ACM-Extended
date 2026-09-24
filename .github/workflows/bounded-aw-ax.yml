@@ -1,0 +1,130 @@
+name: Bounded AW-AX audit
+on:
+  push:
+    branches: [audit/bounded-backlog-aw-ax-20260923]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bounded-aw-ax-20260923
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/bounded-backlog-aw-ax-20260923
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-tools
+          curl -fLsS --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          curl -fLsS --retry 1 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+          python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
+      - name: Validate AW-AX
+        env:
+          HEMTT: /tmp/acme-tools/hemtt
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: |
+          python - <<'PY'
+          import subprocess,pathlib,xml.etree.ElementTree as ET,json,os
+          from concurrent.futures import ThreadPoolExecutor
+          from collections import Counter
+
+          BASE='0a138fc5a2212f4507b77d6c8028cccc168d251e'
+          root=pathlib.Path.cwd()
+          CAND=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          before=pathlib.Path('/tmp/acme-awax-before')
+          out=pathlib.Path('/tmp/acme-aw-ax-results'); out.mkdir(exist_ok=True)
+
+          def cmd(a,cwd=root,t=480,check=True):
+              r=subprocess.run(a,cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=t)
+              if check and r.returncode: raise RuntimeError(str(a)+'\n'+r.stdout[-12000:])
+              return r
+
+          cmd(['git','fetch','--depth=1','origin',BASE])
+          cmd(['git','worktree','add','--detach',str(before),BASE])
+
+          focused=[
+            'addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_intubate_hidden_for_conscious_patient',
+            'addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_native_acm_treatment_cannot_invent_head_position_roll',
+            'addons/acm_extended/tools/test_b90_critical_provider_cpr_bvm.py::test_cpr_and_bvm_are_native_acm_owned',
+            'addons/acm_extended/tools/test_chest_interaction_followup.py::test_patient_flip_cannot_dispatch_from_the_button_or_prep_state',
+            'addons/acm_extended/tools/test_chest_interaction_followup.py::test_both_burp_paths_check_patient_ownership_without_a_timer',
+            'addons/acm_extended/tools/test_bounded_flip_provider_gate.py',
+          ]
+          r=cmd(['python','-m','pytest',*focused,'-q'],root,240,False)
+          (out/'focused.log').write_text(r.stdout)
+          assert r.returncode==0,r.stdout[-10000:]
+
+          h=cmd([os.environ['HEMTT'],'check'],root,180,False)
+          (out/'hemtt.log').write_text(h.stdout)
+          assert h.returncode==0,h.stdout[-10000:]
+          assert cmd(['git','diff','--check',BASE,CAND],root,60,False).returncode==0
+
+          def suite(label,cwd,paths):
+              x=out/(label+'.xml')
+              r=cmd(['python','-m','pytest',*paths,'-q','--tb=no','--continue-on-collection-errors','--junitxml='+str(x)],cwd,430,False)
+              d={}
+              for c in ET.parse(x).iter('testcase'):
+                  k=(c.get('classname',''),c.get('name',''))
+                  d[k]='error' if c.find('error') is not None else 'failed' if c.find('failure') is not None else 'skipped' if c.find('skipped') is not None else 'passed'
+              (out/(label+'.log')).write_text(r.stdout)
+              return r.returncode,d,Counter(d.values())
+
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              fb=ex.submit(suite,'addon-before',before,['addons/acm_extended/tools'])
+              fa=ex.submit(suite,'addon-after',root,['addons/acm_extended/tools'])
+              rb,db,cb=fb.result(); ra,da,ca=fa.result()
+
+          missing=set(db)-set(da); regress=[]; fixed=[]
+          for k,v in db.items():
+              if k not in da: continue
+              if v=='failed' and da[k]=='passed': fixed.append(k)
+              elif v!=da[k]: regress.append((k,v,da[k]))
+          expected={
+            'test_intubate_hidden_for_conscious_patient',
+            'test_native_acm_treatment_cannot_invent_head_position_roll',
+            'test_cpr_and_bvm_are_native_acm_owned',
+            'test_patient_flip_cannot_dispatch_from_the_button_or_prep_state',
+            'test_both_burp_paths_check_patient_ownership_without_a_timer',
+          }
+          assert not missing and not regress,(missing,regress)
+          assert {k[1] for k in fixed}==expected,fixed
+
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              rb2=ex.submit(suite,'root-before',before,['tools'])
+              ra2=ex.submit(suite,'root-after',root,['tools'])
+              _,db2,cb2=rb2.result(); _,da2,ca2=ra2.result()
+          assert db2==da2 and cb2==ca2,(cb2,ca2)
+
+          report={
+            'base':BASE,'candidate':CAND,
+            'focused':dict(Counter(da[k] for k in da if k[1] in expected)),
+            'addon_before':dict(cb),'addon_after':dict(ca),
+            'fixed_original_ids':['H339','H341','H386','H389','H390'],
+            'remaining_original_entries':42,
+            'root_before':dict(cb2),'root_after':dict(ca2),
+            'runtime_files_changed':['addons/acm_extended/functions/fn_chestSealFlip.sqf'],
+            'hemtt_exit':0,'live_arma_tested':False,'stable_release_approved':False
+          }
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-bounded-AW-AX-evidence
+          path: /tmp/acme-aw-ax-results
+          retention-days: 30
