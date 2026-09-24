@@ -45,9 +45,13 @@ class B20NarcBox(unittest.TestCase):
         self.assertIn('private _rowH = safeZoneH / 20',rows)
         self.assertIn('_group ctrlSetPosition (ctrlPosition _list)',rows)
         self.assertNotIn('ACME_SK_MedMeterH',inject+rows)
-        # B57 intentionally uses 84160/84161 for the optional 25-character final syringe name.
-        self.assertIn('84160',inject)
-        self.assertIn('84161',inject)
+        # The retired single final-name field was replaced by the three-line clinical tag editor.
+        # Keep the current 25-character tag metadata/wiring contract instead of reviving 84160/84161.
+        from test_bounded_tag_contracts import tag_limits, editor_wiring
+        tag_limits()
+        editor_wiring(inject)
+        self.assertNotIn('84160',inject)
+        self.assertNotIn('84161',inject)
     def test_existing_rows_gain_smart_text_and_live_vial_stock(self):
         rows=read('functions/fn_skListRefresh.sqf')
         tick=read('functions/fn_skUiTick.sqf')
