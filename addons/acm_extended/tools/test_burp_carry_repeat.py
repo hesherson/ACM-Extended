@@ -58,10 +58,9 @@ def burp_setup(kind):
         private _burp = ACME_fnc_chestSealBurp;
         ACME_fnc_chestSealBurp = {_burpRequests = _burpRequests + 1; _this call _burp;};
     '''
-    # Traumatic-seal burping is already physically presented by its minigame;
-    # only the thoracostomy path requests this additional gesture. Keep dose,
-    # pressure, log, repeated-use and dead-patient assertions unchanged.
-    code += f'private _gesturePerBurp = {0 if kind == "trauma" else 1};'
+    # Burping remains inside the existing chest workspace/aftercare theatre. medic3 is reserved
+    # for actual seal placement, so neither burp path requests a separate placement gesture.
+    code += 'private _gesturePerBurp = 0;'
     code += f'private _wheel = {{[objNull, _this select 0] call ACME_fnc_{"chestSealScroll" if kind == "trauma" else "thoraSealScroll"};}};'
     code += 'private _lift = {for "_i" from 1 to 5 do {_this call _wheel;};};'
     return code
