@@ -66,7 +66,9 @@ def test_feedback_lingers():
     assert 'Drawn! (%1)' in txt('functions/fn_skWasteDraw.sqf')
     assert '],1.00] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundDraw.sqf')
     assert '],1.00] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skWasteDraw.sqf')
-    assert '],1.10] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundSave.sqf')
+    # Compound Save resets immediately and leaves only a short nonblocking acknowledgement.
+    assert '],0.45] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundSave.sqf')
+    # Flush Save still owns a physical close/reopen handoff and retains its longer confirmation beat.
     assert '],1.10] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skFlushSave.sqf')
 
 if __name__=='__main__':
