@@ -90,8 +90,11 @@
                         || {(_m getVariable ["ACME_DP_PoseToken", -2]) != _tok}) exitWith {};
                     // A completion callback queued by an earlier treatment can run
                     // after BVM starts. It no longer owns the provider's interface.
-                    if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
-                        && {_m isEqualTo ACE_player}) exitWith {};
+                    if (_m isEqualTo ACE_player && {
+                        (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+                        || {[_p] call ACM_core_fnc_cprActive}
+                        || {[_p] call ACM_core_fnc_bvmActive}
+                    }) exitWith {};
                     private _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
                     private _progress = uiNamespace getVariable ["ace_common_dlgProgress", displayNull];
                     // Do not replace a purpose-built minigame/dialog which a treatment callback intentionally opened.
