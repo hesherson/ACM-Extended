@@ -58,3 +58,17 @@ class B22UIContracts(unittest.TestCase):
         self.assertIn('private _listW = _uiW / 5.25',inject)
         self.assertIn('private _columnInner = _uiW / 3.3',inject)
         self.assertIn('safeZoneH / 20',rows)
+    def test_partial_vial_ledger_still_persists(self):
+        for name in ('vialTake','vialRefund'):
+            text=read('functions/fn_'+name+'.sqf')
+            self.assertIn('ACME_infusion_openVials',text)
+            self.assertIn('call ACME_fnc_openVialStoreCommit',text)
+        writer=read('functions/fn_openVialStoreCommit.sqf')
+        self.assertIn('_holder setVariable ["ACME_infusion_openVials", _map, true]',writer)
+        self.assertIn('ACME_fnc_skMedicationSync',read('overrides/fn_syringeUpdateMedicationList.sqf'))
+        self.assertIn('ACME_fnc_medicationSourceRows',read('functions/fn_skMedicationSync.sqf'))
+        self.assertIn('ACME_infusion_openVials',read('functions/fn_medicationSourceRows.sqf'))
+        from test_historical_vial_execution import test_partial_vial_is_used_first_and_explicit_multivial_transaction_conserves_solution
+        test_partial_vial_is_used_first_and_explicit_multivial_transaction_conserves_solution()
+
+if __name__=='__main__': unittest.main()
