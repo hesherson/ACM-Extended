@@ -19,7 +19,6 @@ if (_operation in ["peel", "burp"] && {!_sealed || {!(_tract in ["sealed", "fing
 if (_operation == "burp" && {!([_patient,true] call ACME_fnc_chestSealBurpReady)}) exitWith {};
 if (_operation == "burp") then {
     _patient setVariable ["ACME_CS_lastBurp",CBA_missionTime,true];
-    [_medic,"chestSealBurpGesture",[_medic,_patient]] call ACME_fnc_ownerDispatch;
 };
 
 if (_operation == "peel") then {
