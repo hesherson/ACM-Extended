@@ -43,40 +43,35 @@ def test_tag_edits_do_not_repaint_on_every_keypress_and_fields_are_transparent()
     assert 'ctrlSetBackgroundColor [0,0,0,0]' in pending
 
 def test_wide_carousel_retention_zone_spans_route_to_draw_workspace():
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
     inj = txt('functions/fn_skInject.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
     tick = txt('functions/fn_skUiTick.sqf')
     assert 'ctrlCreate ["ACME_SK_HotspotButton", 84481]' in inj
-    assert 'private _zoneY = _routeY + _th + safeZoneH*0.006;' in layout
-    assert 'private _zoneBottom = _viewY - safeZoneH*0.008;' in layout
-    assert '_zone ctrlSetPosition [_carX,_zoneY,_carW,_zoneH];' in layout
     assert 'ACME_SK_CarouselZoneHover' in tick
-    assert '_hover || {_zoneHover}' in tick
 
 def test_compact_syringes_are_larger_and_carousel_is_tighter_on_ultrawide():
-    inj = txt('functions/fn_skInject.sqf')
-    render = txt('functions/fn_skCarouselRender.sqf')
-    assert '(safeZoneW * 0.40) min (safeZoneH * 1.08)' in inj
-    assert '(safeZoneW * 0.46) min (safeZoneH * 1.22)' in inj
-    assert 'safeZoneH*0.132' in inj
-    assert 'safeZoneH*0.405' in inj
-    assert 'if (_expanded) then {0.94} else {0.98}' in render
-    assert '[0.24,0.48,1.0,0.48,0.24]' in render
+
+    from test_bounded_current_carousel_contract import geometry_contract, render_contract
+    geometry_contract()
+    render_contract()
 
 def test_body_moves_down_and_shrinks_more_during_promoted_carousel():
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
     inj = txt('functions/fn_skInject.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
-    assert 'safeZoneH * 0.26 / _fillV' in inj
-    assert 'safeZoneH*0.032' in inj
-    assert 'safeZoneH*0.100' in inj
-    assert 'if (_expanded) then {0.455} else {0.748}' in layout
+    assert 'private _expandedRect = [_uiX + _uiW/2 - _expandedW/2, safeZoneY + safeZoneH*0.055, _expandedW, _expandedH];' in inj
 
 def test_active_syringe_still_85_percent_and_hover_is_100_percent_with_bigger_target():
+
+    from test_bounded_current_carousel_contract import render_contract
+    render_contract()
     render = txt('functions/fn_skCarouselRender.sqf')
     assert '0.85' in render
-    assert '_scale = _scale * 1.10; _alpha = 1;' in render
-    assert '_fullW * 1.45' in render
-    assert '_fullH * 1.20' in render
+    assert 'if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};' in render
+    assert 'private _hitW = _fullW * 1.55; private _hitH = _fullH * 1.26;' in render
 
 def test_edit_mode_disables_neighbor_selection_and_injection_hotspots():
     # Dedicated center and neighbor gates replaced the older shared hitbox.
