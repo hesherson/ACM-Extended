@@ -62,15 +62,13 @@ def test_untagged_hover_uses_last_two_simple_medication_pulls_only():
         test_untagged_tooltip_only_reveals_recent_or_written_marked_syringes(5, index, known, False)
     test_unlabelled_summary_uses_last_two_positions_and_localization_fallback([['Old secret', 9], ['Other', 1.5], ['Ketamine', 2]], 'Unknown', 9, ['1.5mL of Other', '2mL of Ketamine label'])
 
-def test_expanded_view_lingers_and_motion_is_smooth_longer_slide():
+def test_expanded_view_lingers_with_immediate_navigation():
+    from test_bounded_current_carousel_contract import navigation_contract
+    navigation_contract()
     move = txt("functions/fn_skCarouselMove.sqf")
-    pick = txt("functions/fn_skCarouselPick.sqf")
-    tick = txt("functions/fn_skUiTick.sqf")
-    assert 'diag_tickTime + 0.95' in move
-    assert 'diag_tickTime + 0.90' in pick
-    assert 'private _motion = 0.180;' in move
-    assert '_c ctrlCommit _motion;' in move
-    assert '_now + 0.65' in tick
+    assert 'diag_tickTime + 1.35' in move
+    assert '_motion' not in move
+    assert 'ctrlCommit' not in move
 
 def test_patient_name_is_raised_farther_in_screen_to_head_gap():
 
