@@ -20,10 +20,10 @@ def test_stored_tag_editor_raises_native_syringe_and_places_select_tag_under_tag
     frame_contract(); native_editor_contract()
 
 def test_body_map_edit_tag_is_above_syringe_below_route():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    assert 'private _routeRect = ctrlPosition (_d displayCtrl 84151);' in car
-    assert 'private _routeBottom' in car
-    assert '_btnY = (_ay - _btnH - _gap) max (_routeBottom + safeZoneH*0.004);' in car
+
+    from test_bounded_current_carousel_contract import tag_geometry_contract, geometry_contract
+    tag_geometry_contract()
+    geometry_contract()
 
 def test_main_draw_select_tag_is_under_live_tag_and_has_wide_clickable_dropdown():
     # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
@@ -46,39 +46,25 @@ def test_draw_and_save_have_physical_press_feedback():
     assert '2*pixelW' in inj and '2*pixelH' in inj
 
 def test_carousel_is_toolbar_width_and_body_contracts_more():
-    inj = txt('functions/fn_skInject.sqf')
-    assert 'private _toolbarW = safeZoneW / 11;' in inj
-    assert 'private _carCompactW = _toolbarW;' in inj
-    assert 'private _carExpandedW = _toolbarW;' in inj
-    assert 'safeZoneH * 0.22 / _fillV' in inj
-    assert 'safeZoneH*0.145' in inj
-    assert 'safeZoneH*0.390' in inj
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
 
 def test_carousel_art_is_larger_inside_tighter_footprint():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    assert 'if (_expanded) then {1.04} else {1.08}' in car
-    assert 'if (_expanded) then {0.42} else {0.38}' in car
-    assert '[0.34,0.66,1.0,0.66,0.34]' in car
-    assert '[0.28,0.55,1.0,0.55,0.28]' in car
-    assert 'if (_expanded) then {0.160} else {0.165}' in car
+
+    from test_bounded_current_carousel_contract import render_contract
+    render_contract()
 
 def test_carousel_has_fading_gray_underlay():
-    inj = txt('functions/fn_skInject.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
-    assert 'for "_g" from 0 to 14' in inj
-    assert '84482 + _g' in inj
-    assert 'for "_i" from 0 to 14' in layout
-    assert '[0.12,0.12,0.12,_a]' in layout
-    assert '0.04 + 0.22 * (1 - _dist)' in layout
+
+    from test_bounded_current_carousel_contract import retired_contract
+    # The decorative fading-gray underlay was retired; the bounded retention zone carries interaction state.
+    retired_contract()
 
 def test_patient_header_is_name_only_and_raised_in_body_view():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
-    setview = txt('functions/fn_skSetView.sqf')
-    assert 'ctrlSetText (if (isNull _p) then {"Patient"} else {name _p})' in car
-    assert 'safeZoneY + safeZoneH*0.010' in layout
-    assert 'ACME_SK_PatientHeaderNativeRect' in setview
-    assert 'format ["%1 %2",_pn' not in car
+
+    from test_bounded_current_carousel_contract import header_contract
+    header_contract()
 
 def test_access_click_is_immediate_selected_syringe_administration():
     from test_bounded_site_click_handoff import assert_site_contract
