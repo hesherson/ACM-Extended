@@ -65,7 +65,7 @@ def test_stethoscope_hold_is_minigame_owned():
         test_owner_freeze_uses_current_mode_timeline_despite_frame_overshoot('stethoscope',.421,duration)
     test_duplicate_hold_reuses_one_observer_worker_and_release_is_idempotent()
     b = txt('functions/fn_beginStethoscopeAction.sqf')
-    assert '[_medic, "stethoscope", _poseEpoch] call ACME_fnc_treatmentPoseStop' in b
+    assert '[_medic, "stethoscope", _poseEpoch, true] call ACME_fnc_treatmentPoseStop' in b
 
 def test_tsp_animate_rewrite_optional_sling_support():
     # The current preflight deliberately uses ACE/engine holstering, not TSP sling callbacks.
