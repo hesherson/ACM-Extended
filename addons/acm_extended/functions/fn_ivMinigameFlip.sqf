@@ -8,7 +8,7 @@ private _siteList = uiNamespace getVariable ["ACME_IV_SiteList", []];
 if (_siteList isEqualTo []) exitWith {};
 
 private _views = [];
-{ _x params ["_s", "_vTex"]; if !(_vTex in _views) then { _views pushBack _vTex; }; } forEach _siteList;
+{ _x params ["_s", "_vTex"]; _views pushBackUnique _vTex; } forEach _siteList;
 if (count _views < 2) exitWith {};
 
 private _cur = uiNamespace getVariable ["ACME_IV_View", _views select 0];
