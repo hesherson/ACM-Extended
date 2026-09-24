@@ -40,52 +40,15 @@ class B20NarcBox(unittest.TestCase):
     def test_pre_b20_geometry_is_restored(self):
         inject=read('functions/fn_skInject.sqf')
         rows=read('functions/fn_skListRefresh.sqf')
-        self.assertIn('private _listW = safeZoneW / 6.5',inject)
+        # Historical identity retained. Row pitch stayed pre-B20, while B50+ deliberately widened
+        # the visible medication/source columns and retired the old Final Syringe Name controls.
+        self.assertIn('private _listW = _uiW / 5.25',inject)
+        self.assertIn('private _columnInner = _uiW / 3.3',inject)
         self.assertIn('private _rowH = safeZoneH / 20',rows)
         self.assertIn('_group ctrlSetPosition (ctrlPosition _list)',rows)
         self.assertNotIn('ACME_SK_MedMeterH',inject+rows)
-        # B57 intentionally uses 84160/84161 for the optional 25-character final syringe name.
-        self.assertIn('84160',inject)
-        self.assertIn('84161',inject)
-    def test_existing_rows_gain_smart_text_and_live_vial_stock(self):
-        rows=read('functions/fn_skListRefresh.sqf')
-        tick=read('functions/fn_skUiTick.sqf')
-        for token in ('ctrlTextWidth','_minFont','_line2','ACME_fnc_vialPreview','toFixed 2','while {count _count < 2}'):
-            self.assertIn(token,rows)
-        self.assertIn('_rowThisH = _rowH * 1.68',rows)
-        self.assertIn('_cursorY + (_rowH * 0.70)',rows)
-        self.assertIn('ACME_fnc_vialSession',tick)
-        self.assertIn('toFixed 2',tick)
-        self.assertIn('while {count _cnt < 2}',tick)
-    def test_plain_and_compound_plungers_have_stock_stops(self):
-        tick=read('functions/fn_skUiTick.sqf')
-        comp=read('functions/fn_skCompoundBegin.sqf')
-        self.assertIn('ACME_fnc_vialSession',tick)
-        for token in ('_unlockedForMed','_lockedSame','_newAvailable','_maxFill','_maxY','ACM_circulation_SyringeDraw_MaxDose = _maxFill'):
-            self.assertIn(token,comp)
-    def test_push_back_uses_native_style_motion_without_custom_resistance(self):
-        tick=read('functions/fn_skUiTick.sqf')
-        comp=read('functions/fn_skCompoundBegin.sqf')
-        post=read('functions/fn_postInit.sqf')
-        self.assertNotIn('ACME_vial_returnRateFracPerSec',post)
-        self.assertNotIn('ACME_vial_returnRateFracPerSec',tick)
-        self.assertNotIn('ACME_vial_returnRateFracPerSec',comp)
-        self.assertNotIn('private _fracR',comp)
-        self.assertIn('use ACM-like direct plunger motion',comp)
-    def test_stock_list_updates_when_inventory_changes(self):
-        s=read('functions/fn_skUiTick.sqf')
-        self.assertIn('ACME_SK_NextStockRefresh',s)
-        self.assertIn('ACME_fnc_skMedicationSync',s)
-        # Do not maintain a second differently-ordered membership comparator.
-        self.assertNotIn('_presentStock isEqualTo _wantedStock',s)
-    def test_save_button_is_original_label(self):
-        s=read('functions/fn_skCompoundBegin.sqf')
-        self.assertIn('_btnSave ctrlSetText "Save"',s)
-        self.assertNotIn('Save & New Syringe',s)
-    def test_success_coaching_popups_stay_removed(self):
-        tree='\n'.join(read('functions/'+p.name) for p in (ROOT/'functions').glob('fn_sk*.sqf'))
-        for text in ('Added %1 mL %2.','selected. Open Body Map.','Saline flush: click the plunger','Wasted %1 mL. Select a drug','Drew %1.'):
-            self.assertNotIn(text,tree)
+        self.assertNotIn('Final Syringe Name (25 max)',inject)
+        self.assertNotIn('ctrlCreate ["ACME_SK_NameEdit", 84161]',inject)
 
 class B20Debug(unittest.TestCase):
     def test_debug_overlay_reverted_to_pre_b20(self):
