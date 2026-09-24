@@ -1,0 +1,4 @@
+# Python dependencies required to collect and run addons/acm_extended/tools tests.
+# Keep runtime/build dependencies out of this file.
+numpy
+soundfile
