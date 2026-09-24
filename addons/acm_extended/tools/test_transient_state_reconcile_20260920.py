@@ -26,7 +26,6 @@ def test_reconciler_covers_high_risk_transient_state():
         "ACM_circulation_IV_Bags_Active",
         "ACM_circulation_FluidBagsFlow_IV",
         "ACME_IV_BandState_%1",
-        "ACM_airway_SurgicalAirway_InProgress_Session",
         "ACME_patientAnimLock",
     ]:
         assert needle in src
@@ -55,10 +54,18 @@ def test_progressive_bandage_and_junctional_clocks_are_shared():
 
 def test_surgical_airway_reserves_only_after_controller_accepts():
     src = read(ADDONS / "airway/functions/fnc_establishSurgicalAirway.sqf")
-    start_i = src.index("[[_medic, _patient], { // On Start")
+    start_i = src.index("[[_medic, _patient, \"head\"], { // On Start")
     reserve_i = src.index("SurgicalAirway_InProgress), true, true")
     assert reserve_i > start_i
-    assert "SurgicalAirway_InProgress_Session" in src
+    # The live continuous-action controller owns the reservation lifetime. Replicated
+    # session metadata was retired because UI clicks are not treatment-lifetime events.
+    assert "SurgicalAirway_InProgress_Session" not in src
+
+
+def test_reconciler_does_not_guess_surgical_airway_session_lifetime():
+    src = acme("fn_transientStateReconcile.sqf")
+    assert "Do not clear SurgicalAirway_InProgress" in src
+    assert "SurgicalAirway_InProgress_Session" not in src
 
 def test_direct_pressure_part_is_replicated():
     for name in ["fn_directPressureLimb.sqf","fn_directPressureTorso.sqf","fn_directPressureSelf.sqf"]:
