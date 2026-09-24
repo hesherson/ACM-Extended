@@ -1,0 +1,37 @@
+name: Release gate BC-BD
+on:
+  push:
+    branches: [audit/release-gate-bc-bd-20260923]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-gate-bc-bd
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/release-gate-bc-bd-20260923
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-tools
+          curl -fLsS --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          chmod +x /tmp/acme-tools/hemtt
+          python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
+      - name: Validate stale-contract cleanup
+        env:
+          HEMTT: /tmp/acme-tools/hemtt
+        run: |
+          python -m pytest             addons/acm_extended/tools/test_b20_vent_debug_narcbox.py::B20NarcBox::test_pre_b20_geometry_is_restored             addons/acm_extended/tools/test_b22_narc_revert.py::B22UIContracts::test_no_b20_meter_or_relayout             addons/acm_extended/tools/test_b31_treatment_animations.py::TreatmentAnimationContracts::test_stethoscope_lifecycle_has_one_pose_owner_and_native_cleanup             addons/acm_extended/tools/test_b37_menu_state.py::RuntimeSourceContracts::test_callbacks_item_counts_and_pending_reopen_are_retained             addons/acm_extended/tools/test_b40_animation_audit.py::test_hang_bag_normal_entry_and_exit_blend             addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_carousel_motion_is_one_physical_slide_then_zero_duration_rebind             addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_single_syringe_still_only_nudges_then_recenters             addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_expanded_view_lingers_and_motion_is_smooth_longer_slide             addons/acm_extended/tools/test_b73_syringe_tag_vial_carousel_anim.py::test_save_button_has_success_flash_then_fresh_reset             addons/acm_extended/tools/test_b76_carousel_push_memory.py::test_feedback_lingers             addons/acm_extended/tools/test_b80_v110_head_menu.py::test_historical_head_menu_contract             addons/acm_extended/tools/test_na6.py::SettingsTests::test_turning_one_off_preserves_others             addons/acm_extended/tools/test_na8_5_batch1.py::DescriptorSource::test_all_previous_consumer_surfaces_read_effective_checkbox             addons/acm_extended/tools/test_na8_5_batch9.py::SourceContracts::test_darkness_runs_after_procedure_for_all_views             -q
+          /tmp/acme-tools/hemtt check
