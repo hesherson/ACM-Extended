@@ -37,10 +37,11 @@ class B20NarcBox(unittest.TestCase):
         self.assertIn('_reservedMl',v)
         for chatter in ('displayText','hint','systemChat'):
             self.assertNotIn(chatter,v)
-    def test_pre_b20_geometry_is_restored(self):
+    def test_current_widened_narcbox_geometry_is_retained(self):
         inject=read('functions/fn_skInject.sqf')
         rows=read('functions/fn_skListRefresh.sqf')
-        self.assertIn('private _listW = safeZoneW / 6.5',inject)
+        self.assertIn('private _listW = _uiW / 5.25;',inject)
+        self.assertIn('private _columnInner = _uiW / 3.3;',inject)
         self.assertIn('private _rowH = safeZoneH / 20',rows)
         self.assertIn('_group ctrlSetPosition (ctrlPosition _list)',rows)
         self.assertNotIn('ACME_SK_MedMeterH',inject+rows)
