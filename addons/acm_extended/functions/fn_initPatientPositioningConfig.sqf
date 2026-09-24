@@ -31,6 +31,12 @@ ACME_headElev_providerAnimSpeed = 1.5;  // how much faster the provider lift pla
 ACME_headElev_providerPinTime = 1.6;  // seconds the provider is held on the spot during the lift. 0 disables it.
 ACME_headElev_pinTime     = 2.5;  // seconds the casualty is held on the spot while a grab or release RTM plays.
 ACME_headElev_lowerAnimTime = 1.4;  // release-animation window used only for prop grounding; patient RTM is not cut off.
+// 1.2.3 chest-access choreography is intentionally faster than Semi-Fowler positioning.
+// The complete carrier-off transaction now finishes before medic4 reaches its 2.2 s held frame, eliminating the
+// visible hands-on-chest pause before CPR/BVM/assessment launch without changing head-elevation timing.
+ACME_chestAccess_vestLiftTime = 0.70;
+ACME_chestAccess_vestLowerTime = 0.78;
+ACME_chestAccess_vestLiftHold = 0.04;
 ACME_headElev_faceDownInvert = false;  // set true if face-down detection ever reads backwards in-game
 ACME_headElev_restAnim    = "ACM_LyingState";  // on-back default state. the ACM lying pose, lower head and suspend all settle into it.
 ACME_uncon_faceUp        = "ACM_LyingState";  // on-back default state, for the chest-seal front and the head-elevate release.
