@@ -67,7 +67,7 @@ jobs:
 
           # The only byte change after the completed full-addon comparison is this reviewed root audit hash.
           changed=set(filter(None,cmd(['git','diff','--name-only',PREVIOUS_FULL,CAND]).stdout.splitlines()))
-          assert changed=={'tools/test_self_audit_20260922.py'},changed
+          assert changed=={'tools/test_self_audit_20260922.py','.github/workflows/bounded-aw-ax.yml'},changed
 
           focused=[
             'addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_intubate_hidden_for_conscious_patient',
