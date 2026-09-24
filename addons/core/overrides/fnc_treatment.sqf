@@ -110,12 +110,20 @@ if (_classname != "ACME_ConnectETVent") exitWith {
     // native ACM treatment ONCE. It never reserves or edits ContinuousAction state and never recursively calls
     // the generic treatment wrapper, so presentation failure cannot consume the clinical click.
     private _chestClasses = missionNamespace getVariable ["ACME_chestAccess_classes", []];
+    private _maneuverClasses = missionNamespace getVariable [
+        "ACME_chestAccess_maneuverClasses",
+        ["cpr","usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]
+    ];
     private _needsChestAccess = _nativeContinuousClass in _chestClasses;
     private _chestSaved = +(_patient getVariable ["ACME_chestAccess_vestLoadout", []]);
     private _existingChest = _medic getVariable ["ACME_chestAccess_treatment", []];
+    private _existingChestClass = _existingChest param [1,""];
+    private _existingChestId = _existingChest param [2,""];
+    private _sameManeuverFamily = (_nativeContinuousClass in _maneuverClasses)
+        && {_existingChestClass in _maneuverClasses};
     private _alreadyPrepared = ((_existingChest param [0,objNull]) isEqualTo _patient)
-        && {(_existingChest param [1,""]) == _nativeContinuousClass}
-        && {(_existingChest param [2,""]) != ""};
+        && {_existingChestId != ""}
+        && {_existingChestClass == _nativeContinuousClass || {_sameManeuverFamily}};
     private _actualChestSide = [_patient, _patient getVariable ["ACME_CS_facing","front"]] call ACME_fnc_chestSealActualSide;
     private _needsFrontNormalize = alive _patient
         && {isNull objectParent _patient}
@@ -131,26 +139,111 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
         if !([_medic, _patient, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith) exitWith {false};
         if ((_medic distance _patient) > ace_medical_gui_maxDistance) exitWith {false};
+        // One accepted click owns this preparation generation. A closed menu plus this flag makes repeated clicks no-ops.
         if (_medic getVariable ["ACME_chestAccessPreflightActive", false]) exitWith {false};
 
         private _serial = (missionNamespace getVariable ["ACME_chestAccess_serial", 0]) + 1;
         missionNamespace setVariable ["ACME_chestAccess_serial", _serial];
-        private _leaseId = format ["%1:%2:%3", clientOwner, netId _medic, _serial];
+
+        // CPR/BVM swaps reuse one maneuver-family lease instead of tearing down/reacquiring carrier custody.
+        private _leaseId = if (_sameManeuverFamily && {_existingChestId != ""}) then {
+            _existingChestId
+        } else {
+            format ["%1:%2:%3", clientOwner, netId _medic, _serial]
+        };
         private _token = format ["chestprep:%1:%2:%3", clientOwner, netId _medic, _serial];
         private _args = +_this;
 
+        // Direct Pressure remains clinically alive but becomes animation-passive before the first carrier frame.
+        if (_dpSamePatient) then {[_medic, _nativeContinuousClass] call _fnc_dpPauseForManeuver;};
+
         _medic setVariable ["ACME_chestAccessPreflightActive", true, false];
         _medic setVariable ["ACME_chestAccessPreflightToken", _token, false];
+        _medic setVariable ["ACME_chestAccessPreflightCancel", false, false];
         _medic setVariable ["ACME_chestAccess_treatment", [_patient, _nativeContinuousClass, _leaseId]];
+
+        // The medical menu closes on the accepted click. Its normal pending-reopen handler is suppressed by the
+        // renderer while this flag is active; only an explicit abort/failure reopens it.
+        ace_medical_gui_pendingReopen = false;
+        if (dialog) then {closeDialog 0;};
+        [true, _medic, _patient, _token] call ACME_fnc_chestAccessPreparing;
+
+        // Escape and F0 cancel preparation, not the next intervention. Handler IDs are generation-local strings.
+        private _cancelCode = compile format [
+            "private _m=ACE_player; if (!isNull _m && {(_m getVariable ['ACME_chestAccessPreflightToken','']) == '%1'}) then {_m setVariable ['ACME_chestAccessPreflightCancel',true,false];}; false",
+            _token
+        ];
+        private _prepKeys = [];
+        _prepKeys pushBack ([0x01, [false,false,false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler);
+        _prepKeys pushBack ([0xF0, [false,false,false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler);
+        _medic setVariable ["ACME_chestAccessPreflightKeyIDs", _prepKeys, false];
+
         [_patient, _medic, _leaseId, true, _nativeContinuousClass] call ACME_fnc_chestAccessVestEvent;
 
-        private _launch = {
-            params ["_m","_p","_args","_tok","_leaseId","_classKey","_timedOut"];
-            if (isNull _m || {isNull _p} || {!local _m}
-                || {(_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok}) exitWith {};
+        private _finishPrepUi = {
+            params ["_m","_p","_tok"];
+            if (isNull _m) exitWith {};
+            {
+                if (!(_x isEqualTo -1) && {!(_x isEqualTo "")}) then {[_x, "keydown"] call CBA_fnc_removeKeyHandler;};
+            } forEach (_m getVariable ["ACME_chestAccessPreflightKeyIDs", []]);
+            _m setVariable ["ACME_chestAccessPreflightKeyIDs", [], false];
+            [false, _m, _p, _tok] call ACME_fnc_chestAccessPreparing;
+        };
+
+        private _abortPrep = {
+            params ["_m","_p","_leaseId","_classKey","_tok","_finish",["_reopen",true]];
+            if (isNull _m || {!local _m}) exitWith {};
+            if ((_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok) exitWith {};
+
+            // Retire the provider theatre locally. Never wait for a casualty-owner packet to end this pose.
+            [_m, _p, "stop", true, _tok] call ACME_fnc_chestAccessVestProvider;
+            [_m,_p,_tok] call _finish;
 
             _m setVariable ["ACME_chestAccessPreflightActive", false, false];
             _m setVariable ["ACME_chestAccessPreflightToken", "", false];
+            _m setVariable ["ACME_chestAccessPreflightCancel", false, false];
+
+            private _cur = _m getVariable ["ACME_chestAccess_treatment", []];
+            if ((_cur param [2,""]) == _leaseId) then {_m setVariable ["ACME_chestAccess_treatment", []];};
+            if (!isNull _p) then {[_p,_m,_leaseId,false,_classKey] call ACME_fnc_chestAccessVestEvent;};
+
+            // A canceled preparation never consumes Direct Pressure. It may visibly resume after its normal quiet window.
+            if ((_m getVariable ["ACME_DP_PauseTreatmentClass",""]) == _classKey
+                && {!(missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])}) then {
+                _m setVariable ["ACME_DP_Paused", false, false];
+                _m setVariable ["ACME_DP_PauseTreatmentClass", "", false];
+                _m setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+            };
+
+            if (_reopen && {!isNull _p} && {alive _m} && {!(_m getVariable ["ACE_isUnconscious",false])}
+                && {_m isEqualTo ACE_player}) then {
+                ace_medical_gui_pendingReopen = false;
+                ["ACM_core_openMedicalMenu", _p] call CBA_fnc_localEvent;
+            };
+        };
+
+        private _launch = {
+            params ["_m","_p","_args","_tok","_leaseId","_classKey","_timedOut","_finish","_abort"];
+            if (isNull _m || {isNull _p} || {!local _m}
+                || {(_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok}) exitWith {};
+
+            private _cancelled = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
+                || {!alive _m}
+                || {_m getVariable ["ACE_isUnconscious", false]}
+                || {(_m distance _p) > ace_medical_gui_maxDistance}
+                || {objectParent _m isNotEqualTo objectParent _p};
+            if (_cancelled) exitWith {
+                [_m,_p,_leaseId,_classKey,_tok,_finish,true] call _abort;
+            };
+
+            // Critical ownership boundary: retire medic4 synchronously on the provider machine BEFORE native CPR/BVM
+            // or another queued treatment acquires animation. This removes the dedicated-server late-stop race.
+            [_m, _p, "stop", true, _tok] call ACME_fnc_chestAccessVestProvider;
+            [_m,_p,_tok] call _finish;
+
+            _m setVariable ["ACME_chestAccessPreflightActive", false, false];
+            _m setVariable ["ACME_chestAccessPreflightToken", "", false];
+            _m setVariable ["ACME_chestAccessPreflightCancel", false, false];
 
             if (_timedOut) then {
                 diag_log format ["[ACME CHEST ACCESS] Prep timeout for %1 on %2; launching clinical action fail-open.",
@@ -162,16 +255,31 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 private _cur = _m getVariable ["ACME_chestAccess_treatment", []];
                 if ((_cur param [2,""]) == _leaseId) then {_m setVariable ["ACME_chestAccess_treatment", []];};
                 [_p,_m,_leaseId,false,_classKey] call ACME_fnc_chestAccessVestEvent;
+
+                if ((_m getVariable ["ACME_DP_PauseTreatmentClass",""]) == _classKey
+                    && {!(missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])}) then {
+                    _m setVariable ["ACME_DP_Paused", false, false];
+                    _m setVariable ["ACME_DP_PauseTreatmentClass", "", false];
+                    _m setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+                };
+
+                if (alive _m && {!(_m getVariable ["ACE_isUnconscious",false])} && {_m isEqualTo ACE_player}) then {
+                    ace_medical_gui_pendingReopen = false;
+                    ["ACM_core_openMedicalMenu", _p] call CBA_fnc_localEvent;
+                };
             };
         };
 
         [{
-            // CBA passes the ENTIRE _args payload to the condition. Keep this signature identical to the
-            // success/timeout callbacks. The old three-param signature read the treatment-args ARRAY as _tok,
-            // producing "Type Array" on every frame and guaranteeing a 12 s timeout.
-            params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch"];
-            if (isNull _m || {isNull _p} || {!local _m} || {!alive _m}
-                || {(_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok}) exitWith {true};
+            params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch","_finish","_abort"];
+            if (isNull _m || {isNull _p} || {!local _m}
+                || {(_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok}
+                || {_m getVariable ["ACME_chestAccessPreflightCancel", false]}
+                || {!alive _m}
+                || {_m getVariable ["ACE_isUnconscious", false]}
+                || {(_m distance _p) > ace_medical_gui_maxDistance}
+                || {objectParent _m isNotEqualTo objectParent _p}) exitWith {true};
+
             private _readyLease = _p getVariable ["ACME_chestAccess_readyLease", ""];
             private _ready = _p getVariable ["ACME_chestAccess_readyServer", -1];
             private _lease = _m getVariable ["ACME_chestAccess_treatment", []];
@@ -180,11 +288,11 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 && {_ready >= 0}
                 && {serverTime >= _ready}
         }, {
-            params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch"];
-            [_m,_p,_args,_tok,_leaseId,_classKey,false] call _launch;
-        }, [_medic,_patient,_args,_token,_leaseId,_nativeContinuousClass,_launch], 12, {
-            params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch"];
-            [_m,_p,_args,_tok,_leaseId,_classKey,true] call _launch;
+            params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch","_finish","_abort"];
+            [_m,_p,_args,_tok,_leaseId,_classKey,false,_finish,_abort] call _launch;
+        }, [_medic,_patient,_args,_token,_leaseId,_nativeContinuousClass,_launch,_finishPrepUi,_abortPrep], 12, {
+            params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch","_finish","_abort"];
+            [_m,_p,_args,_tok,_leaseId,_classKey,true,_finish,_abort] call _launch;
         }] call CBA_fnc_waitUntilAndExecute;
         true
     };
