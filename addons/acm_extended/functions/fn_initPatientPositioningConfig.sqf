@@ -37,11 +37,13 @@ ACME_headElev_lowerAnimTime = 1.4;  // release-animation window used only for pr
 ACME_chestAccess_vestLiftTime = 0.70;
 ACME_chestAccess_vestLowerTime = 0.78;
 ACME_chestAccess_vestLiftHold = 0.04;
+ACME_chestAccess_vestRemoveAnimSpeed = 1.80;  // actual casualty grab/release RTMs during carrier removal.
+ACME_chestAccess_providerAnimSpeed = 1.50;    // access-only provider medic4 theatre; reset before intervention launch.
 
-// Putting the carrier back on is intentionally quicker than removal. The patient RTMs themselves receive a
-// short token-scoped speed coefficient so this is a real animation-speed change, not just an earlier callback.
-ACME_chestAccess_vestRestoreLiftTime = 0.50;
-ACME_chestAccess_vestRestoreLowerTime = 0.55;
+// Putting the carrier back on is intentionally much faster than the old 1.2/1.4 second sequence. Match callback
+// windows to the actual 1.60x patient animation instead of cutting the grab/release RTMs short.
+ACME_chestAccess_vestRestoreLiftTime = 0.75;
+ACME_chestAccess_vestRestoreLowerTime = 0.88;
 ACME_chestAccess_vestRestoreHold = 0.02;
 ACME_chestAccess_vestRestoreAnimSpeed = 1.60;
 ACME_headElev_faceDownInvert = false;  // set true if face-down detection ever reads backwards in-game
