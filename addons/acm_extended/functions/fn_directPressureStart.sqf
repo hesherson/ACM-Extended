@@ -5,9 +5,14 @@ params ["_medic", "_patient", ["_bodyPart", ""]];
 _bodyPart = toLower _bodyPart;
 if (isNull _medic || {isNull _patient}) exitWith {};
 
-// Every region needs this provider's hands. Reject before cleanup can touch the
-// input hints or animation of BVM or another continuous maneuver.
-if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) exitWith {
+// Every region needs this provider's hands. Reject before cleanup can touch the input hints or animation of
+// BVM, CPR or another continuous maneuver. CPR is native and does not use ContinuousAction_Active.
+private _providerManeuver = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+    || {_medic getVariable ["ACM_circulation_isPerformingCPR", false]}
+    || {_medic getVariable ["ACM_breathing_isUsingBVM", false]}
+    || {[_patient] call ACM_core_fnc_cprActive}
+    || {[_patient] call ACM_core_fnc_bvmActive};
+if (_providerManeuver) exitWith {
     ["Another active maneuver is already in progress.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
