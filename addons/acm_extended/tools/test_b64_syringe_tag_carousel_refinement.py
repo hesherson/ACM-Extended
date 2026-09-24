@@ -99,12 +99,15 @@ def test_carousel_motion_is_one_physical_slide_then_zero_duration_rebind():
     assert 'ACME_fnc_skCarouselMove' in pick
 
 def test_single_syringe_still_only_nudges_then_recenters():
+    from test_bounded_current_carousel_contract import navigation_contract, render_contract
+    navigation_contract(); render_contract()
     move = txt('functions/fn_skCarouselMove.sqf')
     car = txt('functions/fn_skCarouselRender.sqf')
-    assert 'if (_n == 1) exitWith' in move
-    assert 'private _shift=_dir*_rw*0.075;' in move
+    # A one-syringe store simply remains centered; the decorative nudge was removed with interpolation.
+    assert 'private _n = count _store;' in move
+    assert 'if (_n > 1) then {' in move
+    assert '_shift' not in move
     assert '_n == 1 && {_slot != 2}' in car
-
 
 def test_body_map_current_syringe_remains_immediate_administration_source():
     from test_bounded_site_click_handoff import assert_site_contract
