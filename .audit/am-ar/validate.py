@@ -65,7 +65,7 @@ assert len(ledger(BEFORE))==65 and 'H264' not in ledger(BEFORE) and 'H361' not i
 
 # AQ regression tests: same stable identity must not authorize changed dosing contents.
 AQ=AFTER/(T+'test_bounded_push_content_identity.py')
-AQ.write_text(r'''"""A timed normal push owns dosing-relevant syringe contents captured at confirmation."""
+AQ.write_text(r""""""A timed normal push owns dosing-relevant syringe contents captured at confirmation."""
 import pytest
 from test_bounded_normal_push_lifetime import setup
 from test_menu_death_lifecycle import execute
@@ -107,7 +107,7 @@ def test_cosmetic_label_change_does_not_cancel_confirmed_dose(boundary):
     ''' if boundary=="settle" else '')+'''
         [count _delivered==1,"cosmetic label incorrectly cancelled dose"] call _check;
     ''')
-''')
+""")
 
 # Show the defect on the cumulative AM-AP runtime before changing production source.
 (BEFORE/(T+'test_bounded_push_content_identity.py')).write_text(AQ.read_text())
