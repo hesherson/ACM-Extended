@@ -1,6 +1,6 @@
 # ACM Extended — Upcoming Release Candidate Patch Notes
 
-These notes cover the cumulative backlog/stability work from the validated batch series through AU-AV. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative backlog/stability work from the validated batch series through AW-AX. This is still an RC/testing build until live multiplayer acceptance is completed.
 
 ## Stability and multiplayer ownership
 
@@ -66,9 +66,19 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - CPR and BVM remain native ACM-owned continuous actions rather than ACME animation replacements.
 - Priority-two/switchMove usage is limited to exact held-frame synchronization, explicit resting-state locks, and scoped state-graph recovery rather than ordinary treatment entry.
 
+## Airway and Chest Interaction Ownership
+
+- Laryngoscopy remains available for a perfusing/awake casualty when the required equipment and airway conditions are met; reflex, gagging, sedation, paralysis and bucking remain procedure-owned rather than being hidden behind an unconscious-only menu gate.
+- Elevate Head and Lower Head remain Head-only actions and do not invoke ACM's generic roll-to-back behavior; ACME owns actual-prone-to-supine normalization.
+- CPR and BVM remain routed directly through ACM's native continuous-treatment bridge before generic ACME provider preflight.
+- Fixed chest-seal Flip so a failed provider-animation acquisition can no longer roll the casualty directly from the button handler.
+- Physical chest Flip now remains gated behind the current provider token/episode and observed medic4 work state.
+- A failed Flip acquisition cleanly unlocks the UI, restores the hands-on-chest hold when possible, and resumes a Direct Pressure handoff without moving the patient.
+- Chest-seal and thoracostomy burp paths remain patient-owner authoritative with no gameplay timer between valid burps.
+
 ## Internal QA
 
-- Historical backlog reduced from 146 original unresolved entries to 47 after AU-AV.
+- Historical backlog reduced from 146 original unresolved entries to 42 after AW-AX.
 - Full-suite comparisons are used to ensure previously passing identities do not regress.
 - Root-level legacy collection failures are tracked separately from the historical addon backlog.
 - Live dedicated-server and multi-client acceptance testing is still required before stable-release sign-off.
