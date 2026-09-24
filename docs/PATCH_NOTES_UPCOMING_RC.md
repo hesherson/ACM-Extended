@@ -1,6 +1,6 @@
 # ACM Extended — Upcoming Release Candidate Patch Notes
 
-These notes cover the cumulative backlog/stability work from the validated batch series through AY-AZ. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative backlog/stability work from the validated batch series through BA-BB. This is still an RC/testing build until live multiplayer acceptance is completed.
 
 ## Stability and multiplayer ownership
 
@@ -87,9 +87,25 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - Prep Infusion tally layout reads the actual syringe-size list bounds and follows the widened current Narc Box source-column geometry.
 - Roller Clamp darkness/NV refresh remains owned by its independent runtime rather than the dialog update function, preventing transition-frame normal-vision sampling from latching an opaque shade over NVGs.
 
+## Body Map and Prepared Syringe Carousel
+
+- Consolidated historical carousel expectations around the current single adaptive five-slot Body Map carousel.
+- Retired three-slot mini-carousel and fading-gray underlay remain removed.
+- Carousel selection/promotion commits immediately instead of interpolating dozens of controls over 220 ms, reducing client-side UI hitch risk.
+- Hover now changes opacity only and cannot resize or shift the syringe under the pointer.
+- Compact and promoted carousel tracks use separate toolbar-relative widths, while syringe art keeps the current larger promoted presentation.
+- Carousel hit regions are clipped between Edit Syringe Tag and the current Body Map action/duration row so invisible controls cannot cover clinical buttons.
+- A/D navigation hints remain noninteractive and move outward when the carousel is promoted.
+- Patient-name placement is calculated from the real screen-to-head gap rather than a fixed Y offset.
+- Saving a prepared syringe remains on Draw Syringe instead of automatically opening Body Map.
+- Body Map uses a patient-name-only header; the selected syringe itself provides medication/tag information.
+- Draw Syringe and stored-syringe tag selectors use the syringe's physical tag-face anchor.
+- Medicated-flush tag metadata is committed at Save rather than each Draw.
+- Dedicated tag editing owns input: A/D navigation and center-toggle are blocked while text/tag editing is active.
+
 ## Internal QA
 
-- Historical backlog reduced from 146 original unresolved entries to 35 after AY-AZ.
+- All 146 original historical backlog entries have now been reconciled or fixed; the original H-ledger is at 0 unresolved after BA-BB.
 - Full-suite comparisons are used to ensure previously passing identities do not regress.
 - Root-level legacy collection failures are tracked separately from the historical addon backlog.
 - Live dedicated-server and multi-client acceptance testing is still required before stable-release sign-off.
