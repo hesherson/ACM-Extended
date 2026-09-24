@@ -12,11 +12,11 @@ def test_b61_version_stamp():
     assert_release_identity()
 
 def test_ultrawide_carousel_width_is_capped_and_moved_lower():
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
     inj = txt('functions/fn_skInject.sqf')
-    assert '(safeZoneW * 0.48) min (safeZoneH * 1.30)' in inj
-    assert '(safeZoneW * 0.62) min (safeZoneH * 1.55)' in inj
-    assert 'safeZoneH*0.795' in inj
-    assert 'safeZoneH*0.515' in inj
+    assert 'private _carExpandedW = (_toolbarW * 1.72) min (safeZoneH * 0.64);' in inj
     assert 'safeZoneW*0.84' not in inj
 
 def test_open_close_syringe_menu_button_is_removed_and_draw_button_restored_low():
@@ -24,29 +24,31 @@ def test_open_close_syringe_menu_button_is_removed_and_draw_button_restored_low(
     retired_toggle_contract()
 
 def test_body_shrink_is_stronger_and_route_row_clears_body():
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
     inj = txt('functions/fn_skInject.sqf')
     layout = txt('functions/fn_skDynamicLayout.sqf')
-    assert 'safeZoneH * 0.32 / _fillV' in inj
-    assert 'if (_expanded) then {0.472} else {0.748}' in layout
-    assert 'safeZoneH*0.36' in inj
+    assert 'private _expandedH = safeZoneH * 0.14 / _fillV;' in inj
+    assert 'if (_expanded) then {0.228} else {0.630}' in layout
 
 def test_carousel_zoom_falloff_is_more_pronounced_but_active_remains_85_percent():
+
+    from test_bounded_current_carousel_contract import render_contract, navigation_contract
+    render_contract()
+    navigation_contract()
     car = txt('functions/fn_skCarouselRender.sqf')
-    move = txt('functions/fn_skCarouselMove.sqf')
-    assert '[0.38,0.66,1.0,0.66,0.38]' in car
-    assert '[0.32,0.56,1.0,0.56,0.32]' in car
-    assert '[0.12,0.38,0.85,0.38,0.12]' in car
-    assert '_scale = _scale * 1.075; _alpha = 1;' in car
-    assert 'private _activeScale = if (_hover) then {1.075} else {1};' in car
-    assert '_rw*0.17' in move
+    assert '[0.34,0.66,1.0,0.66,0.34]' in car
+    assert '[0.28,0.55,1.0,0.55,0.28]' in car
+    assert '[0.06,0.24,0.85,0.24,0.06]' in car
 
 def test_active_hover_target_is_larger_and_above_neighbor_targets():
-    inj = txt('functions/fn_skInject.sqf')
+
+    from test_bounded_current_carousel_contract import render_contract
+    render_contract()
     car = txt('functions/fn_skCarouselRender.sqf')
-    assert 'ctrlCreate ["ACME_SK_HotspotButton", 84480]' in inj
-    assert '_fullW * 1.25' in car
-    assert '_fullH * 1.10' in car
-    assert '_w * 0.08' in car and '_h * 0.06' in car
+    assert 'private _hitW = _fullW * 1.55; private _hitH = _fullH * 1.26;' in car
+    assert 'private _padX = _w * 0.20; private _padY = _h * 0.11;' in car
 
 def test_hover_tooltip_is_exact_three_tag_lines():
     # Only the dedicated active hitbox owns text; neighboring click targets stay silent.
