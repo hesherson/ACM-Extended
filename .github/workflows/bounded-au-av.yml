@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: d6a5b07e1ec809966ec65398933fbce13e4c6bcb
+          ref: 11ce5791f7276598592004a32edd757a4ed796ce
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -38,7 +38,7 @@ jobs:
           import subprocess,pathlib,xml.etree.ElementTree as ET,json,os
           from concurrent.futures import ThreadPoolExecutor
           from collections import Counter
-          BASE='6f4324e0eebf6c55b498c68cedbdc94491b02b10'; CAND='d6a5b07e1ec809966ec65398933fbce13e4c6bcb'
+          BASE='6f4324e0eebf6c55b498c68cedbdc94491b02b10'; CAND='11ce5791f7276598592004a32edd757a4ed796ce'
           root=pathlib.Path.cwd(); before=pathlib.Path('/tmp/before'); after=pathlib.Path('/tmp/after'); out=pathlib.Path('/tmp/out'); out.mkdir(exist_ok=True)
           def cmd(a,cwd=root,t=480,check=True):
               r=subprocess.run(a,cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=t)
