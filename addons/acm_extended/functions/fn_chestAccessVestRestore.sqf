@@ -29,14 +29,19 @@ if (!_force) then {
         } else {
             private _workspaceBusy = (_patient getVariable ["ACME_CS_ProcedureActive", false])
                 || {_patient getVariable ["ACME_Thora_ChestAccessActive", false]};
-            if (_workspaceBusy) then {
+            private _maneuverBusy = ([_patient] call ACM_core_fnc_cprActive)
+                || {[_patient] call ACM_core_fnc_bvmActive};
+
+            if (_workspaceBusy || {_maneuverBusy}) then {
                 _restoreBlocked = true;
-                // A final ordinary chest lease may end while a chest-seal/thoracostomy workspace still owns the
-                // open chest. Retry after that workspace closes; do not fall through and restore underneath it.
+                // A final lease can disappear during provider cleanup, but active CPR/BVM still owns an open chest.
+                // Defer restoration until every workspace/maneuver has genuinely ended and no replacement lease exists.
                 [{
                     params ["_p"];
                     !(_p getVariable ["ACME_CS_ProcedureActive", false])
                         && {!(_p getVariable ["ACME_Thora_ChestAccessActive", false])}
+                        && {!([_p] call ACM_core_fnc_cprActive)}
+                        && {!([_p] call ACM_core_fnc_bvmActive)}
                         && {(count (_p getVariable ["ACME_chestAccess_leases", createHashMap])) == 0}
                 }, {
                     _this call ACME_fnc_chestAccessVestRestore;
