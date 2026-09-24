@@ -162,7 +162,8 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
     // Preserve the open-chest lease across the deliberate 0.1 s BVM -> CPR handoff. The bounded token lets the
     // existing lease watchdog restore the carrier if CPR fails to take ownership.
     if (_swapToCPR && {!isNull _medic} && {!isNull _patient}) then {
-        _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 0.75], false];
+        _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 1.00], false];
+        [_patient, "chestAccessManeuverHandoff", [1.00]] call ACME_fnc_ownerDispatch;
     };
 
     if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
