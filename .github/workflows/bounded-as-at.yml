@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: b5cdb5b0b6c322df37f8b50143bb38b4197b606c
+          ref: 6f4324e0eebf6c55b498c68cedbdc94491b02b10
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -42,7 +42,7 @@ jobs:
           from concurrent.futures import ThreadPoolExecutor
           from collections import Counter
           BASE='6b84cc4024d394a4c31523fd7c4d386bb14680ef'
-          CAND='b5cdb5b0b6c322df37f8b50143bb38b4197b606c'
+          CAND='6f4324e0eebf6c55b498c68cedbdc94491b02b10'
           root=pathlib.Path.cwd()
           before=pathlib.Path('/tmp/acme-asat-before')
           after=pathlib.Path('/tmp/acme-asat-after')
@@ -56,11 +56,11 @@ jobs:
           cmd(['git','worktree','add','--detach',str(before),BASE])
           cmd(['git','worktree','add','--detach',str(after),CAND])
           focused=[
-            'addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_posture_actions_are_head_only_and_stay_in_examine',
+            'addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_both_posture_actions_remain_on_head_and_chest',
             'addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors',
             'addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_clinical_chest_wording',
-            'addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_uniform_white_action_rows_are_runtime_default',
-            'addons/acm_extended/tools/test_b42_medication_menu_dp.py::test_auscultate_chest_preserves_existing_child_indent_without_forcing_a_group',
+            'addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_requested_alternating_pale_red_is_runtime_default',
+            'addons/acm_extended/tools/test_b42_medication_menu_dp.py::test_auscultate_chest_keeps_group_child_indent',
           ]
           r=cmd(['python','-m','pytest',*focused,'-q'],after,180,False)
           (out/'focused.log').write_text(r.stdout)
