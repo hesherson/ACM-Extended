@@ -27,6 +27,7 @@ def code(name):
                           '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
     text=text.replace('serverTime','CBA_missionTime')
     text=text.replace('finite _rollTime','(_rollTime call _finite)')
+    text=text.replace('finite _animSpeed','(_animSpeed call _finite)')
     for key in ('ace_medical_engine_uncon_anim_faceup','ace_medical_engine_uncon_anim_facedown'):
         text=text.replace('_animMap getOrDefault ["'+key+'", []]', '[_animMap,"'+key+'",[]] call _getDefault')
     for var in ('_prop','_headProp'):
