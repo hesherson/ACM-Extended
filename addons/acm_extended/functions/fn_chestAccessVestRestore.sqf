@@ -169,13 +169,15 @@ if (!_canAnimate) exitWith {
 if (_context == "chestseal") then {[_patient] call ACME_fnc_chestSealParkCarrier}
 else {[_patient] call ACME_fnc_chestAccessVestPark};
 
-private _liftTime = missionNamespace getVariable ["ACME_headElev_liftAnimTime", 1.2];
-if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2;};
-private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 1.4;};
-private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftHold", 0.18];
-if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.18;};
-private _total = _liftTime + _holdTime + _lowerTime + 0.08;
+private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLiftTime", 0.50];
+if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 0.50;};
+private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLowerTime", 0.55];
+if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 0.55;};
+private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreHold", 0.02];
+if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.02;};
+private _animSpeed = missionNamespace getVariable ["ACME_chestAccess_vestRestoreAnimSpeed", 1.60];
+if (!(_animSpeed isEqualType 0) || {!finite _animSpeed} || {_animSpeed < 1}) then {_animSpeed = 1.60;};
+private _total = _liftTime + _holdTime + _lowerTime;
 
 private _serial = (_patient getVariable ["ACME_chestAccess_restoreSerial",0]) + 1;
 _patient setVariable ["ACME_chestAccess_restoreSerial",_serial,false];
@@ -186,11 +188,16 @@ _patient setVariable [_readyVar,-1,true];
 private _beginRestore = {
     params [
         "_p","_medic","_ctx","_saved","_savedVar","_propVar","_busyVar","_readyVar","_pfhVar","_token",
-        "_liftTime","_holdTime","_lowerTime","_total","_finish"
+        "_liftTime","_holdTime","_lowerTime","_animSpeed","_total","_finish"
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
     _p setVariable [_readyVar,serverTime + _total,true];
+
+    // Speed only this restoration episode. A failsafe below resets the coefficient even if a newer patient owner
+    // invalidates the restore token before the normal completion callback runs.
+    _p setVariable ["ACME_chestAccess_restoreSpeedToken", _token, false];
+    ["ace_common_setAnimSpeedCoef", [_p, _animSpeed]] call CBA_fnc_globalEvent;
 
     [_p,false] call ACME_fnc_headElevCollision;
     [_p,"ACME_HeadElevPatientGrab",2,"chest-access-vest-restore",_medic,_total + 0.5,4,_token]
@@ -247,9 +254,23 @@ private _beginRestore = {
             _p setVariable ["ACME_CS_facing","front",true];
         };
 
+        if ((_p getVariable ["ACME_chestAccess_restoreSpeedToken",""]) == _token) then {
+            _p setVariable ["ACME_chestAccess_restoreSpeedToken", "", false];
+            ["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;
+        };
+
         [_p,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar] call _finish;
     }, [_p,_medic,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar,_token,_finish], _total]
         call CBA_fnc_waitAndExecute;
+
+    [{
+        params ["_p","_tok"];
+        if (isNull _p || {!local _p}) exitWith {};
+        if ((_p getVariable ["ACME_chestAccess_restoreSpeedToken",""]) == _tok) then {
+            _p setVariable ["ACME_chestAccess_restoreSpeedToken", "", false];
+            ["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;
+        };
+    }, [_p,_token], _total + 0.25] call CBA_fnc_waitAndExecute;
 };
 
 // Provider exit is owned by the minigame/action that is closing. Chest Seal and Auscultation both use the
@@ -257,7 +278,7 @@ private _beginRestore = {
 // starting another medic4 episode here was the unwanted extra animation seen after closing the panels.
 [
     _patient,_medic,_context,_saved,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar,_token,
-    _liftTime,_holdTime,_lowerTime,_total,_finishBookkeeping
+    _liftTime,_holdTime,_lowerTime,_animSpeed,_total,_finishBookkeeping
 ] call _beginRestore;
 
 true
