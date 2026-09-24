@@ -22,6 +22,6 @@ A dedicated mutation contract rejects restoration of either direct fail-open rol
 - H339: B120 intentionally allows laryngoscopy on perfusing/awake casualties. Reflex, sedation, paralysis, gagging and bucking are handled by the procedure rather than hiding the menu action.
 - H341: Elevate/Lower Head are Head-only, set `ACM_rollToBack = 0`, and the current core treatment bridge passes the selected body part through unchanged. ACME's own head-position start owns actual-prone-to-supine normalization.
 - H386: CPR and BVM are routed through `addons/core/overrides/fnc_treatment.sqf` into `ACM_core_fnc_treatmentNative` before generic provider preflight. No ACME CPR/BVM continuous-action replacement is restored.
-- H390: both traumatic-seal and thoracostomy burp paths are patient-owner gated and use the no-timer `chestSealBurpReady` predicate. Traumatic seal burp remains in the persistent workspace hold; thoracostomy aftercare retains its separate provider gesture.
+- H390: both traumatic-seal and thoracostomy burp paths are patient-owner gated and use the no-timer `chestSealBurpReady` predicate. Neither path reuses the seal-placement medic3 theatre. A dead legacy thoracostomy `chestSealBurpGesture` dispatch was removed.
 
 Live multiplayer, RTM rendering and PhysX behavior remain outside source validation.
