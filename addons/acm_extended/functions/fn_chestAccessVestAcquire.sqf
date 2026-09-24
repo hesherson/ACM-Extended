@@ -305,12 +305,11 @@ private _beginPatient = {
         _p setVariable [_busyVar, "", false];
         _p setVariable [_readyVar, serverTime, true];
 
-        if (!isNull _medic && {!(_medic isEqualTo _p)} && {_ctx != "chestseal"}) then {
-            // Auscultation/ordinary chest actions take provider ownership next. Chest Seal is different: leave
-            // medic4 frozen here so chestSealOpen can hand that exact frame directly into hands-on-chest.
-            [_medic, "chestAccessVestProvider", [_medic, _p, "stop", true, _token]]
-                call ACME_fnc_ownerDispatch;
-        };
+        // Do NOT remotely stop the provider pose from the casualty owner here. On dedicated servers the ready
+        // timestamp can reach the medic before this separate owner-dispatch packet, allowing CPR/BVM to start and
+        // then be overwritten by the late chestAccess pose-stop. The provider client now retires this exact pose
+        // synchronously in fnc_treatment immediately before launching the queued intervention.
+        // Chest Seal continues to own its separate chestseal context/hand-off path.
     }, [_p,_medic,_ctx,_busyVar,_readyVar,_token], _sequenceTime] call CBA_fnc_waitAndExecute;
 };
 
