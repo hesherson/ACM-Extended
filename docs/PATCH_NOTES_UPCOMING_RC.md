@@ -75,6 +75,7 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - Physical chest Flip now remains gated behind the current provider token/episode and observed medic4 work state.
 - A failed Flip acquisition cleanly unlocks the UI, restores the hands-on-chest hold when possible, and resumes a Direct Pressure handoff without moving the patient.
 - Chest-seal and thoracostomy burp paths remain patient-owner authoritative with no gameplay timer between valid burps.
+- Removed a dead thoracostomy burp gesture dispatch so burping cannot reuse the medic3 animation reserved for actual chest-seal placement.
 
 ## Internal QA
 
