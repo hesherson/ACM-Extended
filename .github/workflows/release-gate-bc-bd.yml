@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 647692d436a7a592e1755cae66c4d64486879db9
+          ref: 8e0d42b37eef4ca2cdec4219ec33e666a925cbee
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -38,7 +38,7 @@ jobs:
           from concurrent.futures import ThreadPoolExecutor
           from collections import Counter
           BASE='586271f324d74cace5f8d845065ee6e4499f1774'
-          CAND='647692d436a7a592e1755cae66c4d64486879db9'
+          CAND='8e0d42b37eef4ca2cdec4219ec33e666a925cbee'
           root=pathlib.Path.cwd(); before=pathlib.Path('/tmp/bcbd-before'); out=pathlib.Path('/tmp/bcbd-out'); out.mkdir(exist_ok=True)
           def cmd(a,cwd=root,t=480,check=True):
               r=subprocess.run(a,cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=t)
