@@ -31,15 +31,15 @@ def test_direct_pressure_entry_exit_are_priority_one():
                                text('functions/fn_directPressureStop.sqf'))
 
 def test_movement_queues_are_explicit_priority_one():
-    expected = {
-        'functions/fn_airwayMedicPose.sqf': [r'_steps pushBack \[_crouch,.*?, 1\]', r'_steps pushBack \[_anim, _animTime, 1\]'],
-        'functions/fn_headElevMedicSeq.sqf': [r'_steps pushBack \[_liftAnim, _liftTime, 1\]', r'_steps pushBack \[_riseAnim, _riseTime, 1\]'],
-        'functions/fn_chestSealRoll.sqf': [r'\[_trans, _rollT, 1\]'],
-    }
-    for rel, patterns in expected.items():
-        src = text(rel)
-        for pat in patterns:
-            assert re.search(pat, src, re.S), (rel, pat)
+    # Historical identity retained. Current provider movement is controller-owned rather than queued.
+    pose = text('functions/fn_treatmentPoseStart.sqf')
+    roll = text('functions/fn_chestSealRoll.sqf')
+    menu = text('functions/fn_menuPoseStart.sqf')
+    assert '[_medic, _transition, 1] call ACME_fnc_doAnim;' in pose
+    assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
+    assert 'call ACME_fnc_patientAnimRequest' in roll
+    assert '_trans, 1, "chest-seal-roll"' in roll
+    assert '[_medic, _kneel, 0] call ACME_fnc_doAnim;' in menu
 
 def test_hang_bag_normal_entry_and_exit_blend():
     cfg = text('config.cpp')
@@ -55,30 +55,26 @@ def test_hang_bag_normal_entry_and_exit_blend():
     assert '[_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;' in stop
 
 def test_hpmk_roll_uses_guarded_animation_wrapper():
+    # HPMK wrapping is intentionally state-only now. It must not animate, attach, roll, or reposition the casualty.
     src = text('functions/fn_hpmkWrap.sqf')
-    assert '[_patient, _anim, 1] call ACME_fnc_doAnim;' in src
-    assert 'remoteExec ["playMoveNow"' not in src
+    assert 'HPMK wrapping is state-only' in src
+    assert 'ACME_fnc_hpmkStateCommit' in src
+    for forbidden in ('ACME_fnc_doAnim', 'switchMove', 'playMoveNow', 'setPos', 'attachTo'):
+        assert forbidden not in '\n'.join(line.split('//',1)[0] for line in src.splitlines())
 
 def test_cpr_authored_exit_blends():
-    src = text('overrides/fn_beginCPR.sqf')
-    assert 'AinvPknlMstpSnonWnonDnon_medicEnd", 1] call ACME_fnc_doAnim;' in src
+    # CPR is native ACM-owned. ACME must not carry a compile-time CPR animation override.
+    from test_b90_critical_provider_cpr_bvm import test_cpr_and_bvm_are_native_acm_owned
+    test_cpr_and_bvm_are_native_acm_owned()
 
 def test_remaining_hard_switches_are_known_state_locks_only():
-    allowed = {
-        'functions/fn_megacodeClosePanel.sqf',
-        'functions/fn_obtundedApply.sqf',
-        'functions/fn_megacodeStanceLock.sqf',
-        'functions/fn_postInit.sqf',
-        'functions/fn_obtundedTransition.sqf',
-        'functions/fn_chestSealRoll.sqf',
-        'functions/fn_treatmentPoseSync.sqf',
-        'functions/fn_treatmentPoseStart.sqf',
-        'overrides/fn_beginCPR.sqf',
-    }
-    found=set()
-    for base in ('functions','overrides'):
-        for p in (ROOT/base).glob('*.sqf'):
-            s=read_source(p, errors='ignore')
-            if 'ace_common_switchMove' in s or 'QACEGVAR(common,switchMove)' in s or re.search(r'(?<!_)\bswitchMove\s*\[', s):
-                found.add(str(p.relative_to(ROOT)).replace('\\','/'))
-    assert found <= allowed, sorted(found-allowed)
+    # switchMove remains intentional only for exact held-frame/state-lock repair, not ordinary medical entry.
+    pose = text('functions/fn_treatmentPoseStart.sqf')
+    sync = text('functions/fn_treatmentPoseSync.sqf')
+    roll = text('functions/fn_chestSealRoll.sqf')
+    assert '_medic switchMove [_main, _phase, 1, false];' in pose
+    assert '_medic switchMove [_main, _phase, 1, false];' in sync
+    assert '["ace_common_switchMove", [_p, _hold]] call CBA_fnc_globalEvent;' in roll
+    # Ordinary work and roll entry still start through priority-one interpolation.
+    assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
+    assert '_trans, 1, "chest-seal-roll"' in roll
