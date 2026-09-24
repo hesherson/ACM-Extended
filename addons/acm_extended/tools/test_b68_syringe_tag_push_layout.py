@@ -46,17 +46,16 @@ def test_body_route_edit_stack_and_carousel_are_lifted_clear_of_draw_row():
 
 
 def test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    move = txt('functions/fn_skCarouselMove.sqf')
-    assert 'then {0.470} else {0.150}' in car
-    assert 'private _fullH = safeZoneH*0.470;' in move
-    assert 'then {0.185} else {0.155}' in car
-    assert 'private _dx=_rw*0.185;' in move
-    assert 'private _motion = 0.220;' in move
-    assert 'private _scale = if (_to>=0' in move
-    assert '_c ctrlCommit _motion;' in move
-    assert 'diag_tickTime + 1.35' in move
 
+    from test_bounded_current_carousel_contract import render_contract, navigation_contract
+    render_contract()
+    navigation_contract()
+    move = txt('functions/fn_skCarouselMove.sqf')
+    # Decorative slide/grow interpolation was removed for client performance; selection/layout commit immediately.
+    assert '_motion' not in move
+    assert 'ctrlCommit' not in move
+    assert '[0] call ACME_fnc_skDynamicLayout;' in move
+    assert '[0] call ACME_fnc_skCarouselRender;' in move
 
 def test_tag_text_is_lower_larger_and_edit_mode_uses_native_draw_position_without_body():
     from test_bounded_editor_presentation import frame_contract, native_editor_contract
