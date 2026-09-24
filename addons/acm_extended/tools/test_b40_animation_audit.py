@@ -44,13 +44,17 @@ def test_movement_queues_are_explicit_priority_one():
 def test_hang_bag_normal_entry_and_exit_blend():
     cfg = text('config.cpp')
     start = text('functions/fn_hangBagStart.sqf')
+    activate = text('functions/fn_hangBagActivate.sqf')
     stop = text('functions/fn_hangBagStop.sqf')
     assert 'class ACM_GenericContinuous;' in cfg
     begin = cfg.index('class ACME_Acts_JetsCrewaidFCrouchThumbup_in')
     end = cfg.index('class Acts_LyingWounded_loop3')
     block = cfg[begin:end]
     assert 'interpolateFrom[]' in block and 'ACM_GenericContinuous' in block
-    assert '[_medic, _inAnim, 1.4, 1] call ACME_fnc_doAnimHeld;' in start
+    # Start owns only the patient-owner lease request. Provider presentation begins after acceptance.
+    assert '"hangBagClaim"' in start
+    assert 'ACME_fnc_doAnimHeld' not in start
+    assert '[_medic, _inAnim, 1.4, 1] call ACME_fnc_doAnimHeld;' in activate
     assert '[_medic, _outAnim, 1] call ACME_fnc_doAnim;' in stop
     assert '[_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;' in stop
 
