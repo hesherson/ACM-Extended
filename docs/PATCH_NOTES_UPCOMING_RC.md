@@ -112,6 +112,14 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - Medication Draw feedback remains one second; medicated-flush Save retains its longer physical close/reopen confirmation.
 - Roller Clamp vision/darkness refresh remains in the independent clamp runtime so the dialog transition frame cannot reintroduce the NV blackout.
 
+## Controller Lifecycle Cleanup
+
+- Stethoscope lifetime remains dialog/controller-owned; a provider pose ending cannot close a healthy auscultation session.
+- Medical-menu callbacks retain native treatment/item-count behavior while Direct Pressure Apply/Stop remain immediate in-place actions without pending menu reopen.
+- Hang Bag animation and props begin only after the patient owner accepts the provider's lease; renewals cannot replay the activation animation.
+- Head-position provider sequences use the current authored Putdown pair rather than the retired DraggerBase lift wrapper.
+- Head-position empty-hands preflight is one-shot and keeps a longer reservation so slow sidearm/launcher holsters cannot enqueue duplicate put-away transitions.
+
 ## Internal QA
 
 - All 146 original historical backlog entries have now been reconciled or fixed; the original H-ledger is at 0 unresolved after BA-BB.
