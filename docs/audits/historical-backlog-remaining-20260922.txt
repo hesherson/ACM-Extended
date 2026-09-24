@@ -1,4 +1,4 @@
-Unresolved original source-contract outcomes after bounded AV: 47
+Unresolved original source-contract outcomes after bounded AX: 42
 Base: 8df66dfb5f9701c960bf352ba1f41d16dcd77fc8
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
@@ -42,10 +42,5 @@ H305 addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_patie
 H317 addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow
 H325 addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py::test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill
 H335 addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py::test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel
-H339 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_intubate_hidden_for_conscious_patient
-H341 addons/acm_extended/tools/test_b71_tag_head_intubation.py::test_native_acm_treatment_cannot_invent_head_position_roll
-H386 addons/acm_extended/tools/test_b90_critical_provider_cpr_bvm.py::test_cpr_and_bvm_are_native_acm_owned
-H389 addons/acm_extended/tools/test_chest_interaction_followup.py::test_patient_flip_cannot_dispatch_from_the_button_or_prep_state
-H390 addons/acm_extended/tools/test_chest_interaction_followup.py::test_both_burp_paths_check_patient_ownership_without_a_timer
 H429 addons/acm_extended/tools/test_na8_5_batch2.py::TallySourceAndModel::test_layout_ratios_match_source
 H439 addons/acm_extended/tools/test_na8_5_batch6.py::SourceTests::test_all_visual_passes_after_procedure
