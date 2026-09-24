@@ -99,9 +99,16 @@ def test_patient_owner_blocks_restore_during_roles_and_transfer_window():
 
 
 def test_direct_pressure_yields_before_pose_for_native_cpr_bvm_and_chest_prep():
+    start = acme("functions/fn_directPressureStart.sqf")
+    stop = acme("functions/fn_directPressureStop.sqf")
     tick = acme("functions/fn_directPressureTick.sqf")
     pose = acme("functions/fn_directPressurePose.sqf")
     stance = acme("functions/fn_registerProviderStanceReleaseRuntime.sqf")
+    for source in (start, stop):
+        assert 'ACM_circulation_isPerformingCPR' in source
+        assert 'ACM_breathing_isUsingBVM' in source
+        assert 'ACM_core_fnc_cprActive' in source
+        assert 'ACM_core_fnc_bvmActive' in source
     assert 'private _nativeCpr = [_patient] call ACM_core_fnc_cprActive;' in tick
     assert 'private _nativeBvm = [_patient] call ACM_core_fnc_bvmActive;' in tick
     assert 'ACME_chestAccessPreflightActive' in tick
@@ -131,6 +138,14 @@ def test_cancelled_prep_invalidates_patient_callbacks_and_can_resume_semifowler(
     assert '_patient setVariable ["ACME_chestAccess_vestBusy", "", false];' in event
     assert 'ACME_headElev_ResumePending' in event
     assert 'ACME_fnc_headElevTryResume' in event
+
+
+def test_new_intervention_queues_behind_inflight_carrier_return():
+    event = acme("functions/fn_chestAccessVestEvent.sqf")
+    assert '(_busyBefore find "restore:access:") == 0' in event
+    assert 'ACME_chestAccess_leases' in event
+    assert 'call ACME_fnc_chestAccessVestAcquire' in event
+    assert 'CBA_fnc_waitUntilAndExecute' in event
 
 
 def test_carrier_off_choreography_finishes_before_medic4_freeze():
