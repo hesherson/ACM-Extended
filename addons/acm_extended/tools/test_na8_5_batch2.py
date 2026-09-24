@@ -258,16 +258,19 @@ class TallySourceAndModel(unittest.TestCase):
                 self.assertEqual(size[0],header[0])
                 self.assertEqual(size[2],body[2])
     def test_layout_ratios_match_source(self):
-        self.assertIn('safeZoneH / 1.19',sqf('patchDrawDialog'))
-        self.assertIn('safeZoneH / 40',sqf('patchDrawDialog'))
-        self.assertIn('safeZoneH / 28',sqf('patchDrawDialog'))
-        # B22 restores the established pre-B20 Narc Box geometry; vial status is appended inside the
-        # original rows rather than replacing/reflowing the whole dialog.
+        patch=sqf('patchDrawDialog')
+        self.assertIn('safeZoneH / 1.19',patch)
+        self.assertIn('safeZoneH / 40',patch)
+        self.assertIn('safeZoneH / 28',patch)
+        self.assertIn('ctrlPosition (_display displayCtrl 84130)',patch)
+        # Current Narc Box geometry deliberately widens the two source columns while preserving
+        # their inner edges. The tally then reads the actual size-list bounds rather than duplicating ratios.
         inj=sqf('skInject')
-        self.assertIn('private _listW = safeZoneW / 6.5',inj)
-        self.assertIn('private _leftX = (safeZoneX + (safeZoneW / 2) - (safeZoneW / 3.3)) - _listW',inj)
+        self.assertIn('private _listW = _uiW / 5.25',inj)
+        self.assertIn('private _columnInner = _uiW / 3.3',inj)
+        self.assertIn('private _leftX = (_uiX + (_uiW / 2) - _columnInner) - _listW',inj)
         self.assertIn('private _sizeListH = safeZoneH / 5',inj)
-        self.assertNotIn('ctrlPosition _nativeMed',inj)
+        self.assertIn('private _nativeMedGeometry = _display displayCtrl 84006',inj)
         self.assertNotIn('ACME_SK_MedMeterH',inj)
 
 if __name__ == '__main__':
