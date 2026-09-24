@@ -63,6 +63,12 @@ switch (_operation) do {
     case "headElevTreatment": {_args call ACME_fnc_headElevTreatmentEvent;};
     case "chestAccessVestEvent": {_args call ACME_fnc_chestAccessVestEvent;};
     case "chestAccessVestProvider": {_args call ACME_fnc_chestAccessVestProvider;};
+    case "chestAccessManeuverHandoff": {
+        _args params [["_duration", 1.0, [0]]];
+        if (!(_duration isEqualType 0) || {!finite _duration}) then {_duration = 1.0;};
+        _duration = (_duration max 0) min 3;
+        _patient setVariable ["ACME_chestAccess_maneuverHandoffUntil", serverTime + _duration, true];
+    };
     case "chestAccessFrontRoll": {
         _args params [["_medic",objNull,[objNull]],["_casualty",objNull,[objNull]]];
         if (!isNull _medic && {local _medic} && {alive _medic} && {!isNull _casualty}) then {
