@@ -235,14 +235,16 @@ if (!_canAnimate) exitWith {
     true
 };
 
-private _liftTime = missionNamespace getVariable ["ACME_headElev_liftAnimTime", 1.2];
-if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2;};
-private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 1.4;};
-private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftHold", 0.18];
-if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.18;};
+private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftTime", 0.70];
+if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 0.70;};
+private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestLowerTime", 0.78];
+if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 0.78;};
+private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftHold", 0.04];
+if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.04;};
 
-private _sequenceTime = _liftTime + _holdTime + _lowerTime + 0.08;
+// No synthetic settle gap after the casualty is back down. The queued intervention may launch on the first
+// readiness frame instead of waiting while the provider is frozen with hands on the chest.
+private _sequenceTime = _liftTime + _holdTime + _lowerTime;
 
 private _serial = (_patient getVariable ["ACME_chestAccess_vestSerial", 0]) + 1;
 _patient setVariable ["ACME_chestAccess_vestSerial", _serial, false];
