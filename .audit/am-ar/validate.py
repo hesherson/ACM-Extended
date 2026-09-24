@@ -132,12 +132,12 @@ if (_stableId == "") exitWith {''')
 replace_once(CONF,
 'private _job = [_d,ACE_player,_patient,_stableId,_epoch,_closeEpoch];',
 'private _job = [_d,ACE_player,_patient,_stableId,_epoch,_closeEpoch,_doseSignature];')
-needle='''    private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
+settle_old='''    private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
     if (([_stableId,_store] call ACME_fnc_skSelectStored) < 0) exitWith {
         [_job] call _retire;
     };
 '''
-replacement='''    private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
+settle_new='''    private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
     private _selectedIdx = [_stableId,_store] call ACME_fnc_skSelectStored;
     if (_selectedIdx < 0) exitWith {[_job] call _retire;};
     private _currentEntry = _store select _selectedIdx;
@@ -151,9 +151,28 @@ replacement='''    private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
     ];
     if !(_currentDoseSignature isEqualTo (_job select 6)) exitWith {[_job] call _retire;};
 '''
-s=(AFTER/CONF).read_text()
-assert s.count(needle)==2,s.count(needle)
-(AFTER/CONF).write_text(s.replace(needle,replacement))
+replace_once(CONF,settle_old,settle_new)
+
+complete_old='''        private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
+        if (([_stableId,_store] call ACME_fnc_skSelectStored) >= 0) then {
+'''
+complete_new='''        private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
+        private _selectedIdx = [_stableId,_store] call ACME_fnc_skSelectStored;
+        if (_selectedIdx >= 0) then {
+            private _currentEntry = _store select _selectedIdx;
+            private _currentDoseSignature = [
+                _currentEntry param [0,"",[""]],
+                _currentEntry param [1,10,[0]],
+                _currentEntry param [2,0,[0]],
+                _currentEntry param [4,0,[0]],
+                +(_currentEntry param [5,[],[[]]]),
+                _currentEntry param [6,"",[""]]
+            ];
+            if !(_currentDoseSignature isEqualTo (_job select 6)) then {_selectedIdx = -1;};
+        };
+        if (_selectedIdx >= 0) then {
+'''
+replace_once(CONF,complete_old,complete_new)
 
 # AR reconciles H051 with the current circulation-green selector backing.
 H051=Path(T+'test_b23_narc_route_dead.py')
