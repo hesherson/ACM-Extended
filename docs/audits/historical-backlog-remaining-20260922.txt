@@ -1,17 +1,12 @@
-Unresolved original source-contract outcomes after bounded AR: 64
+Unresolved original source-contract outcomes after bounded AT: 59
 Base: 8df66dfb5f9701c960bf352ba1f41d16dcd77fc8
 Not a waiver, skip list, or expected-failure list. Each ID retains its original identity.
 
-H120 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_both_posture_actions_remain_on_head_and_chest
-H121 addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors
 H132 addons/acm_extended/tools/test_b40_animation_audit.py::test_movement_queues_are_explicit_priority_one
 H133 addons/acm_extended/tools/test_b40_animation_audit.py::test_hpmk_roll_uses_guarded_animation_wrapper
 H134 addons/acm_extended/tools/test_b40_animation_audit.py::test_cpr_authored_exit_blends
 H135 addons/acm_extended/tools/test_b40_animation_audit.py::test_remaining_hard_switches_are_known_state_locks_only
 H137 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_cuff_syringe_uses_real_acm_pbo_prefix
-H139 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_clinical_chest_wording
-H140 addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_requested_alternating_pale_red_is_runtime_default
-H148 addons/acm_extended/tools/test_b42_medication_menu_dp.py::test_auscultate_chest_keeps_group_child_indent
 H156 addons/acm_extended/tools/test_b44_requested_fixes.py::test_roll_provider_emptyhand_wrapper
 H179 addons/acm_extended/tools/test_b47_animation_contracts.py::test_stethoscope_hold_is_minigame_owned
 H181 addons/acm_extended/tools/test_b47_animation_contracts.py::test_roll_uses_shared_medic4_pose_for_2_5_seconds
