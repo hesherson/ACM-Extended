@@ -23,6 +23,12 @@ if (_op == "stop") exitWith {
     private _token = _entry param [2, ""];
     private _pose = _medic getVariable ["ACME_treatmentPoseState", []];
 
+    private _speedToken = _medic getVariable ["ACME_chestAccessProviderSpeedToken", ""];
+    if (_speedToken != "" && {_speedToken == _token}) then {
+        _medic setVariable ["ACME_chestAccessProviderSpeedToken", "", false];
+        ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+    };
+
     if ((_entryPatient isEqualTo _patient)
         && {_epoch >= 0}
         && {(_pose param [0, -2]) == _epoch}
@@ -91,6 +97,12 @@ if ((_existingPatient isEqualTo _patient)
     && {(_pose param [1, ""]) == "chestAccess"}) exitWith {
     if (_episodeToken != "") then {
         _medic setVariable ["ACME_chestAccessProvider", [_patient, _existingEpoch, _episodeToken], false];
+        if ((_episodeToken find "vest:access:") == 0) then {
+            private _speed = missionNamespace getVariable ["ACME_chestAccess_providerAnimSpeed", 1.50];
+            if (!(_speed isEqualType 0) || {!finite _speed} || {_speed < 1}) then {_speed = 1.50;};
+            _medic setVariable ["ACME_chestAccessProviderSpeedToken", _episodeToken, false];
+            ["ace_common_setAnimSpeedCoef", [_medic, _speed]] call CBA_fnc_globalEvent;
+        };
         [_medic,_existingEpoch,_episodeToken] call _armReadyProbe;
     };
     _existingEpoch
@@ -109,6 +121,24 @@ if (_priorMode in ["stethoscope","inspect","chestSealWorkspace","roll"]
 private _epoch = [_medic, "chestAccess", -1, _patient] call ACME_fnc_treatmentPoseStart;
 if (_epoch >= 0) then {
     _medic setVariable ["ACME_chestAccessProvider", [_patient, _epoch, _episodeToken], false];
+
+    // Only ordinary chest-access preparation is accelerated here. Chest Seal owns its own workspace handoff.
+    if ((_episodeToken find "vest:access:") == 0) then {
+        private _speed = missionNamespace getVariable ["ACME_chestAccess_providerAnimSpeed", 1.50];
+        if (!(_speed isEqualType 0) || {!finite _speed} || {_speed < 1}) then {_speed = 1.50;};
+        _medic setVariable ["ACME_chestAccessProviderSpeedToken", _episodeToken, false];
+        ["ace_common_setAnimSpeedCoef", [_medic, _speed]] call CBA_fnc_globalEvent;
+
+        [{
+            params ["_m","_tok"];
+            if (isNull _m || {!local _m}) exitWith {};
+            if ((_m getVariable ["ACME_chestAccessProviderSpeedToken",""]) == _tok) then {
+                _m setVariable ["ACME_chestAccessProviderSpeedToken", "", false];
+                ["ace_common_setAnimSpeedCoef", [_m, 1]] call CBA_fnc_globalEvent;
+            };
+        }, [_medic,_episodeToken], 8] call CBA_fnc_waitAndExecute;
+    };
+
     [_medic,_epoch,_episodeToken] call _armReadyProbe;
 };
 _epoch
