@@ -113,7 +113,14 @@ class DescriptorSource(unittest.TestCase):
                'junctionalInflict','ivSiteRelabel','ivLogRelabel','updateEJTransfusionMenu','skSiteName',
                'junctionalInjuryEntry','inspectForFracture','ivLogSite']
         for f in files:
-            with self.subTest(f=f):self.assertIn('getVariable ["ACME_hc_descriptors", false]',read('functions/fn_'+f+'.sqf'))
+            with self.subTest(f=f):
+                body=read('functions/fn_'+f+'.sqf')
+                if 'getVariable ["ACME_hc_descriptors", false]' not in body and f=='updateEJTransfusionMenu':
+                    # The EJ entry point is now a one-line compatibility wrapper; the live hotspot renderer owns
+                    # descriptor-sensitive site names and retains the same client-local checkbox gate.
+                    self.assertIn('call ACME_fnc_updateTransfusionAccessHotspots',body)
+                    body=read('functions/fn_updateTransfusionAccessHotspots.sqf')
+                self.assertIn('getVariable ["ACME_hc_descriptors", false]',body)
     def test_map_gate_precedes_cached_lookup(self):
         s=read('functions/fn_clinTerm.sqf')
         self.assertLess(s.index('getVariable ["ACME_hc_descriptors"'),s.index('getVariable ["ACME_clinTermMap"'))
