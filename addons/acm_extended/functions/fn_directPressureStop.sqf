@@ -9,8 +9,12 @@ private _patient = _medic getVariable ["ACME_DP_Patient", objNull];
 private _part = _medic getVariable ["ACME_DP_Part", ""];
 private _wasInPose = _medic getVariable ["ACME_DP_InPose", false];
 private _stateBefore = toLower animationState _medic;
-private _otherManeuver = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
-// An already dispatched DP cancel can arrive after BVM has taken over.
+private _otherManeuver = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+    || {_medic getVariable ["ACM_circulation_isPerformingCPR", false]}
+    || {_medic getVariable ["ACM_breathing_isUsingBVM", false]}
+    || {!isNull _patient && {[_patient] call ACM_core_fnc_cprActive}}
+    || {!isNull _patient && {[_patient] call ACM_core_fnc_bvmActive}};
+// An already dispatched DP cancel can arrive after CPR/BVM has taken over. It no longer owns hints, stance or pose.
 if (!_wasActive && {_otherManeuver}) exitWith {};
 
 // Retire every delayed Direct Pressure pose request first. ACME_DP_PoseToken belongs to the DP layer itself;
