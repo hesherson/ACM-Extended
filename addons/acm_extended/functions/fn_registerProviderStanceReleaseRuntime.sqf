@@ -34,8 +34,11 @@
         // ACE reports setup success after BVM has taken over the provider. Completing
         // that short setup must not resume pressure or reopen a menu over the maneuver.
         // Its real cancellation emits a later treatment event after releasing the controller.
-        if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
-            && {_medic isEqualTo ACE_player}) exitWith {};
+        if (_medic isEqualTo ACE_player && {
+            (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+            || {!isNull _patient && {[_patient] call ACM_core_fnc_cprActive}}
+            || {!isNull _patient && {[_patient] call ACM_core_fnc_bvmActive}}
+        }) exitWith {};
 
         private _classKey = toLowerANSI _classname;
         private _headOwned = _classname in ["ACME_ElevateHead", "ACME_LowerHead"];
