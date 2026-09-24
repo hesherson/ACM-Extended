@@ -1,5 +1,24 @@
 # ACM Extended patch notes
 
+## 1.2.3
+
+Updated 24 September 2026.
+
+### CPR / BVM chest access
+
+- CPR and all BVM variants now use the same plate-carrier chest-access preflight.
+- Plate-carrier custody remains active while either CPR or BVM is active, including repeated middle-mouse swaps between the two interventions.
+- CPR -> BVM and BVM -> CPR handoffs use a bounded provider-local transfer token so the carrier cannot be restored during the transition gap. If the replacement maneuver fails to start, normal restoration resumes automatically.
+- Patient-owner restoration also refuses to put the carrier back while live CPR or BVM is present, providing a second guard against stale provider cleanup.
+- Carrier-off choreography now uses dedicated faster chest-access timing: 0.70 s lift, 0.04 s top hold and 0.78 s lower. These values do not change Semi-Fowler/head-elevation timing.
+- Removed the extra synthetic settle delay after carrier removal/lowering. The queued intervention may launch on the first readiness frame, before the medic4 provider pose reaches its 2.2 s frozen hold.
+
+### Version identity
+
+- Public/debug version advanced to 1.2.3.
+- HEMTT package version advanced to 1.2.3.0.
+- Internal build batch advanced to B144 and the release-candidate debug revision reset to rc1.
+
 ## 1.2.2 cumulative update
 
 Updated 19 September 2026. Version 1.2.2 incorporates the complete 1.2.1-rc1 patch series and aligns the release metadata. Consolidates all subsequent patches from 18–19 September, through [8fd12c0](https://github.com/hesherson/ACM-Extended/commit/8fd12c016f17504b05781925f095d75f0fbe9424). The [covered commit range](https://github.com/hesherson/ACM-Extended/compare/f2b6c482123aff1a60234e4d2b737e44de33767c...8fd12c016f17504b05781925f095d75f0fbe9424) includes 132 commits. The release check corrections and removal of the experimental drag handle are also included.
