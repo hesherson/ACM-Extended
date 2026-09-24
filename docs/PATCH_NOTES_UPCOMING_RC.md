@@ -1,6 +1,6 @@
 # ACM Extended — Upcoming Release Candidate Patch Notes
 
-These notes cover the cumulative backlog/stability work from the validated batch series through BA-BB. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative backlog/stability work from the validated batch series through residual backlog BF. This is still an RC/testing build until live multiplayer acceptance is completed.
 
 ## Stability and multiplayer ownership
 
@@ -106,6 +106,8 @@ These notes cover the cumulative backlog/stability work from the validated batch
 ## Internal QA
 
 - All 146 original historical backlog entries have now been reconciled or fixed; the original H-ledger is at 0 unresolved after BA-BB.
-- Full-suite comparisons are used to ensure previously passing identities do not regress.
-- Root-level legacy collection failures are tracked separately from the historical addon backlog.
+- The original 146-entry historical H-ledger is at 0 unresolved.
+- The post-ledger residual source-contract backlog is also at 0 unresolved after BF.
+- Final BF validation completed with 326 focused tests passed, 16 skipped, and 232 subtests passed.
+- The complete addon suite completed with 2,582 tests passed, 2,355 skipped, 5,519 subtests passed, and 0 failures.
 - Live dedicated-server and multi-client acceptance testing is still required before stable-release sign-off.
