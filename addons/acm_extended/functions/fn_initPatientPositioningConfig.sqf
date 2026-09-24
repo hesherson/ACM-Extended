@@ -37,6 +37,13 @@ ACME_headElev_lowerAnimTime = 1.4;  // release-animation window used only for pr
 ACME_chestAccess_vestLiftTime = 0.70;
 ACME_chestAccess_vestLowerTime = 0.78;
 ACME_chestAccess_vestLiftHold = 0.04;
+
+// Putting the carrier back on is intentionally quicker than removal. The patient RTMs themselves receive a
+// short token-scoped speed coefficient so this is a real animation-speed change, not just an earlier callback.
+ACME_chestAccess_vestRestoreLiftTime = 0.50;
+ACME_chestAccess_vestRestoreLowerTime = 0.55;
+ACME_chestAccess_vestRestoreHold = 0.02;
+ACME_chestAccess_vestRestoreAnimSpeed = 1.60;
 ACME_headElev_faceDownInvert = false;  // set true if face-down detection ever reads backwards in-game
 ACME_headElev_restAnim    = "ACM_LyingState";  // on-back default state. the ACM lying pose, lower head and suspend all settle into it.
 ACME_uncon_faceUp        = "ACM_LyingState";  // on-back default state, for the chest-seal front and the head-elevate release.
