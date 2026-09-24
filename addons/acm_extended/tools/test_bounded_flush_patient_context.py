@@ -29,6 +29,11 @@ def setup():
         private _sounds=[]; private _access=[]; private _refreshes=0; private _staged=[];
         private _iv=true; private _io=true; private _exactIV=true;
         private _isLocal=true; private _medicVehicle=objNull; private _patientVehicle=objNull;
+        // This fixture represents an injected and settled Body Map.
+        uiNamespace setVariable ["ACME_SK_CloseEpoch",1];
+        _drawDisplay setVariable ["ACME_SK_CloseEpoch",1];
+        uiNamespace setVariable ["ACME_SK_View","body"];
+        uiNamespace setVariable ["ACME_SK_Route","vascular"];
         _drawDisplay setVariable ["ACME_SK_ReturnPatient",_patient];
         uiNamespace setVariable ["ACME_SK_Patient",_patient];
         uiNamespace setVariable ["ACME_SK_SelFlush","ACM_SalineFlush_10"];

@@ -47,14 +47,10 @@ def test_pending_tag_typing_is_not_repainted_over_keyboard_focus():
 
 
 def test_draw_button_has_success_flash_and_successful_draw_counter():
-    begin = txt('functions/fn_skCompoundBegin.sqf')
-    draw = txt('functions/fn_skCompoundDraw.sqf')
-    assert 'ACME_SK_CompoundDrawCount", 0' in begin
-    assert 'private _drawCount = count _components;' in draw
-    assert 'ctrlSetText "Drawn!"' in draw
-    assert '["success",0.88] call ACME_fnc_a11yColor' in draw
-    assert 'ctrlSetText format ["Draw (%1)",_count]' in draw
-    assert '0.45] call CBA_fnc_waitAndExecute;' in draw
+    # Current feedback counts successful pulls and displays that count for one second.
+    # Preserve identity; do not restore the earlier unnumbered caption or 0.45-second reset.
+    from test_bounded_draw_feedback import assert_draw_feedback
+    assert_draw_feedback(txt('functions/fn_skCompoundBegin.sqf'), txt('functions/fn_skCompoundDraw.sqf'))
 
 
 def test_save_button_has_success_flash_then_fresh_reset():

@@ -102,6 +102,8 @@ def test_old_callback_cannot_unlock_or_retarget_a_new_normal_push(boundary,reope
         uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
     '''+('''
         _drawDisplay=parsingNamespace;
+        // skInject also records the shown patient on every initialized replacement display.
+        _drawDisplay setVariable ["ACME_SK_ReturnPatient",_patient];
         // The replacement is an injected display, with its own registration epoch.
         private _nextCloseEpoch=(uiNamespace getVariable ["ACME_SK_CloseEpoch",0])+1;
         uiNamespace setVariable ["ACME_SK_CloseEpoch",_nextCloseEpoch];

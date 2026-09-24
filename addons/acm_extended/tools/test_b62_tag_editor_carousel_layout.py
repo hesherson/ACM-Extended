@@ -79,14 +79,9 @@ def test_active_syringe_still_85_percent_and_hover_is_100_percent_with_bigger_ta
     assert '_fullH * 1.20' in render
 
 def test_edit_mode_disables_neighbor_selection_and_injection_hotspots():
-    render = txt('functions/fn_skCarouselRender.sqf')
-    build = txt('functions/fn_skBuildHotspots.sqf')
-    move = txt('functions/fn_skCarouselMove.sqf')
-    pick = txt('functions/fn_skCarouselPick.sqf')
-    assert '_hit ctrlShow (!_editMode); _hit ctrlEnable (!_editMode);' in render
-    assert '!_tagEditMode' in build
-    assert 'ACME_SK_TagEditMode",false]) exitWith {};' in move
-    assert 'ACME_SK_TagEditMode",false]) exitWith {};' in pick
+    # Dedicated center and neighbor gates replaced the older shared hitbox.
+    from test_bounded_body_input_gates import editor_input_contract
+    editor_input_contract()
 
 def test_hover_tooltip_remains_exact_three_written_tag_lines():
     from test_bounded_syringe_tooltips import tooltip_contract, test_tagged_active_tooltip_is_exactly_three_written_lines_not_a_medication_summary

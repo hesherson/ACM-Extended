@@ -23,7 +23,7 @@ def assert_site_contract(site, inject, hot):
 
 
 def setup():
-    site = (F/'fn_skSiteClick.sqf').read_text().replace('ctrlParent _ctrl','_drawDisplay')
+    site = (F/'fn_skSiteClick.sqf').read_text().replace('ctrlParent _ctrl','_drawDisplay').replace('findDisplay 84000','_drawDisplay')
     return push_setup()+'''
         private _control=parsingNamespace; private _flushes=[]; private _accessCalls=[];
         ACME_fnc_skFlushSite={_flushes pushBack +_this;};

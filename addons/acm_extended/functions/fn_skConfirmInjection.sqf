@@ -8,6 +8,13 @@ if (isNull _d || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"
 if (uiNamespace getVariable ["ACME_SK_InjectionBusy",false]) exitWith {false};
 if (uiNamespace getVariable ["ACME_SK_TagEditMode",false]) exitWith {false};
 
+// The shared selection must agree with the patient shown by this Body Map.
+// Reject a conflicting target before starting either a normal or persistent push.
+private _shownPatient = _d getVariable ["ACME_SK_ReturnPatient",objNull];
+if (isNull _shownPatient) then {_shownPatient = ACE_player;};
+private _selectedPatient = uiNamespace getVariable ["ACME_SK_Patient",objNull];
+if (!isNull _selectedPatient && {!(_selectedPatient isEqualTo _shownPatient)}) exitWith {false};
+
 private _pending = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
 if (!(_pending isEqualType []) || {count _pending < 3}) exitWith {false};
 _pending params ["_bodyPart","_siteIdx","_route"];
@@ -33,6 +40,14 @@ if (_idx < 0 || {_idx >= count _store}) exitWith {
 };
 private _entry = +(_store select _idx);
 private _stableId = _entry param [11,"",[""]];
+private _doseSignature = [
+    _entry param [0,"",[""]],
+    _entry param [1,10,[0]],
+    _entry param [2,0,[0]],
+    _entry param [4,0,[0]],
+    +(_entry param [5,[],[[]]]),
+    _entry param [6,"",[""]]
+];
 if (_stableId == "") exitWith {
     uiNamespace setVariable ["ACME_SK_PendingInjection",[]];
     call ACME_fnc_skBodyActionRender;
@@ -82,7 +97,7 @@ if (_closeEpoch < 0 || {(uiNamespace getVariable ["ACME_SK_CloseEpoch",-2]) != _
 // A normal push belongs to this display/provider/patient, not to whichever dialog opens later.
 private _epoch = (_d getVariable ["ACME_SK_InjectionEpoch",0]) + 1;
 _d setVariable ["ACME_SK_InjectionEpoch",_epoch];
-private _job = [_d,ACE_player,_patient,_stableId,_epoch,_closeEpoch];
+private _job = [_d,ACE_player,_patient,_stableId,_epoch,_closeEpoch,_doseSignature];
 uiNamespace setVariable ["ACME_SK_NormalPush",_job];
 private _validContext = {
     params ["_job"];
@@ -94,6 +109,10 @@ private _validContext = {
     if (!(uiNamespace getVariable ["ACME_SK_InjectionBusy",false])
         || {(uiNamespace getVariable ["ACME_SK_View",""]) != "body"}
         || {uiNamespace getVariable ["ACME_SK_TagEditMode",false]}) exitWith {false};
+    // A still-open display can change patient without changing the shared patient yet.
+    private _shownPatient = _display getVariable ["ACME_SK_ReturnPatient",objNull];
+    if (isNull _shownPatient) then {_shownPatient = _medic;};
+    if !(_shownPatient isEqualTo _patient) exitWith {false};
     private _currentPatient = uiNamespace getVariable ["ACME_SK_Patient",objNull];
     if (isNull _currentPatient) then {_currentPatient = _display getVariable ["ACME_SK_ReturnPatient",objNull];};
     private _hc = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
@@ -143,9 +162,18 @@ call ACME_fnc_skBuildHotspots;
     if !([_job] call _validContext) exitWith {[_job] call _retire;};
     private _d = _job select 0;
     private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
-    if (([_stableId,_store] call ACME_fnc_skSelectStored) < 0) exitWith {
-        [_job] call _retire;
-    };
+    private _selectedIdx = [_stableId,_store] call ACME_fnc_skSelectStored;
+    if (_selectedIdx < 0) exitWith {[_job] call _retire;};
+    private _currentEntry = _store select _selectedIdx;
+    private _currentDoseSignature = [
+        _currentEntry param [0,"",[""]],
+        _currentEntry param [1,10,[0]],
+        _currentEntry param [2,0,[0]],
+        _currentEntry param [4,0,[0]],
+        +(_currentEntry param [5,[],[[]]]),
+        _currentEntry param [6,"",[""]]
+    ];
+    if !(_currentDoseSignature isEqualTo (_job select 6)) exitWith {[_job] call _retire;};
 
     playSound "ACME_SyringePush";
     private _bar = _d displayCtrl 84420;
@@ -190,7 +218,20 @@ call ACME_fnc_skBuildHotspots;
         // Retire before the medication handoff so duplicate delivery cannot administer twice.
         uiNamespace setVariable ["ACME_SK_NormalPush",[]];
         private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
-        if (([_stableId,_store] call ACME_fnc_skSelectStored) >= 0) then {
+        private _selectedIdx = [_stableId,_store] call ACME_fnc_skSelectStored;
+        if (_selectedIdx >= 0) then {
+            private _currentEntry = _store select _selectedIdx;
+            private _currentDoseSignature = [
+                _currentEntry param [0,"",[""]],
+                _currentEntry param [1,10,[0]],
+                _currentEntry param [2,0,[0]],
+                _currentEntry param [4,0,[0]],
+                +(_currentEntry param [5,[],[[]]]),
+                _currentEntry param [6,"",[""]]
+            ];
+            if !(_currentDoseSignature isEqualTo (_job select 6)) then {_selectedIdx = -1;};
+        };
+        if (_selectedIdx >= 0) then {
             uiNamespace setVariable ["ACME_SK_SiteIdx",_siteIdx];
             uiNamespace setVariable ["ACME_SK_Route",_route];
             // Unlock immediately before the authoritative commit so its normal refresh/removal path can repaint.
