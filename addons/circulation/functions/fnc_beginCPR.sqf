@@ -179,7 +179,8 @@ private _controller = [{
         // Preserve the open-chest lease across the synchronous CPR -> BVM swap. The token is bounded so a failed
         // replacement cannot strand the carrier off the casualty.
         if (_swapToBVM && {!isNull _medic} && {!isNull _patient}) then {
-            _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 0.75], false];
+            _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 1.00], false];
+            [_patient, "chestAccessManeuverHandoff", [1.00]] call ACME_fnc_ownerDispatch;
         };
 
         if !([_medic, _patient, _epoch] call FUNC(cprCleanupLocal)) exitWith {};
