@@ -103,6 +103,15 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - Medicated-flush tag metadata is committed at Save rather than each Draw.
 - Dedicated tag editing owns input: A/D navigation and center-toggle are blocked while text/tag editing is active.
 
+## Final UI Contract Cleanup
+
+- Retained the widened current Narc Box medication/source columns instead of restoring the older narrow pre-B20 widths.
+- Prepared-syringe carousel navigation remains immediate; retired slide interpolation and single-syringe decorative nudging stay removed to reduce UI hitching.
+- Carousel promotion remains expanded for 1.35 seconds after navigation, with hover/retention refreshing its collapse deadline.
+- Compound Save resets the existing Draw Syringe controls immediately and uses a short nonblocking Saved! acknowledgement rather than tearing down and reopening the dialog.
+- Medication Draw feedback remains one second; medicated-flush Save retains its longer physical close/reopen confirmation.
+- Roller Clamp vision/darkness refresh remains in the independent clamp runtime so the dialog transition frame cannot reintroduce the NV blackout.
+
 ## Internal QA
 
 - All 146 original historical backlog entries have now been reconciled or fixed; the original H-ledger is at 0 unresolved after BA-BB.
