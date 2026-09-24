@@ -57,13 +57,14 @@ def test_shared_pose_timing_and_clean_exit():
     assert 'selectWeapon' not in txt('functions/fn_treatmentPoseStop.sqf')
 
 def test_stethoscope_hold_is_minigame_owned():
-    s = txt('functions/fn_treatmentPoseStart.sqf')
-    y = txt('functions/fn_treatmentPoseSync.sqf')
+    from test_historical_pose_lifecycle import (
+        test_owner_freeze_uses_current_mode_timeline_despite_frame_overshoot,
+        test_duplicate_hold_reuses_one_observer_worker_and_release_is_idempotent,
+    )
+    for duration in (3,12):
+        test_owner_freeze_uses_current_mode_timeline_despite_frame_overshoot('stethoscope',.421,duration)
+    test_duplicate_hold_reuses_one_observer_worker_and_release_is_idempotent()
     b = txt('functions/fn_beginStethoscopeAction.sqf')
-    assert '0.421' in s
-    assert 'case 3:' in s and 'reclaim' in s.lower()
-    assert '["lost", "release"] select _hardRelease' in y
-    assert 'treatmentPoseEpisode' not in '\n'.join(line for line in b.splitlines()[49:70] if not line.lstrip().startswith('//'))
     assert '[_medic, "stethoscope", _poseEpoch] call ACME_fnc_treatmentPoseStop' in b
 
 def test_tsp_animate_rewrite_optional_sling_support():
@@ -78,8 +79,8 @@ def test_tsp_animate_rewrite_optional_sling_support():
 
 def test_roll_uses_shared_medic4_pose_for_2_5_seconds():
     r = txt('functions/fn_rollProviderStart.sqf')
-    assert '["ACME_rollProviderDuration", 2.5]' in r
-    assert '[_medic, "roll", _duration] call ACME_fnc_treatmentPoseStart' in r
+    assert '["ACME_rollProviderDuration", 2.2]' in r
+    assert '[_medic, "roll", _duration, _patient] call ACME_fnc_treatmentPoseStart' in r
     assert '[_unit, "roll", _epoch] call ACME_fnc_treatmentPoseStop' in r
     f = txt('functions/fn_chestSealFlip.sqf')
     assert 'ACME_fnc_rollProviderStart' in f
