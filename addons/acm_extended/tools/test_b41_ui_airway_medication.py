@@ -43,7 +43,7 @@ def test_clinical_chest_wording():
     assert 'Auscultate Chest' not in text('config.cpp')
 
 
-def test_uniform_white_action_rows_are_runtime_default():
+def test_requested_alternating_pale_red_is_runtime_default():
     p = text('functions/fn_postInit.sqf')
     assert 'ACME_menuRowColorAlternate = [1, 1, 1, 1];' in p
 
