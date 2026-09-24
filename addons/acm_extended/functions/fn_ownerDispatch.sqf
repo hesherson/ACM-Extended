@@ -325,6 +325,14 @@ switch (_operation) do {
     case "nrbState": { _args call ACME_fnc_nrbStateLocal; };
     case "nrbAck": { _args call ACME_fnc_nrbOxygenAck; };
     case "chestEffect": { _args call ACME_fnc_chestSealEffectLocal; };
+    case "chestSealBurpGesture": {
+        _args params ["_medic","_casualty"];
+        if (_medic isEqualTo _patient && {!isNull _casualty} && {alive _medic}
+            && {!(_medic getVariable ["ACE_isUnconscious",false])}
+            && {(_medic distance _casualty) <= 5}) then {
+            [_medic,"chestSeal",3] call ACME_fnc_treatmentGesture;
+        };
+    };
     case "burp": { _args call ACME_fnc_chestSealBurp; };
     case "chestSealRoll": {_args call ACME_fnc_chestSealRoll;};
     case "patientRollCancel": {_args call ACME_fnc_patientRollCancel;};
