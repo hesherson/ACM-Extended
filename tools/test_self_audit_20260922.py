@@ -27,6 +27,13 @@ REVIEWED_LIFECYCLE_UPDATES = {
 }
 PROTECTED.update(REVIEWED_LIFECYCLE_UPDATES)
 
+# AW reviewed update: provider acquisition failure may no longer bypass the authored
+# medic4 gate and roll the casualty directly from the Flip button handler.
+REVIEWED_AW_UPDATES = {
+    'addons/acm_extended/functions/fn_chestSealFlip.sqf': '854017266106f8763a77a15350c7a70d70a2960fc9d31dba7f57a5e37ee484ae',
+}
+PROTECTED.update(REVIEWED_AW_UPDATES)
+
 @pytest.mark.parametrize("path,expected", sorted(PROTECTED.items()))
 def test_prior_fix_restored_without_rewrite(path, expected):
     data = (ROOT / path).read_bytes().replace(b"\r\n", b"\n")
