@@ -66,11 +66,13 @@ def test_expanded_view_lingers_and_motion_is_smooth_longer_slide():
     move = txt("functions/fn_skCarouselMove.sqf")
     pick = txt("functions/fn_skCarouselPick.sqf")
     tick = txt("functions/fn_skUiTick.sqf")
-    assert 'diag_tickTime + 0.95' in move
-    assert 'diag_tickTime + 0.90' in pick
-    assert 'private _motion = 0.180;' in move
-    assert '_c ctrlCommit _motion;' in move
-    assert '_now + 0.65' in tick
+    # Navigation commits immediately, then the promoted view lingers. Hover/retention refreshes
+    # the collapse deadline without reintroducing decorative multi-control interpolation.
+    assert 'diag_tickTime + 1.35' in move
+    assert 'ACME_SK_CarouselExpanded",true' in pick
+    assert '_motion' not in move
+    assert 'ctrlCommit' not in move
+    assert '_now + 0.90' in tick
 
 def test_patient_name_is_raised_farther_in_screen_to_head_gap():
 
