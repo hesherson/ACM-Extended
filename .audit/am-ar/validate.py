@@ -286,40 +286,38 @@ allowed={
 }
 assert changed==allowed,changed
 assert set(base_manifest).issubset(final_manifest)
-expected_added={
+# AM-AP originated as a local candidate, so its new tests/docs are intentionally untracked
+# until this cumulative checkpoint is committed. AQ/AR add four more review files.
+expected_untracked={
+ T+'test_bounded_body_input_gates.py',
+ T+'test_bounded_draw_feedback.py',
+ T+'test_bounded_push_display_patient.py',
+ T+'test_bounded_site_click_ownership.py',
  T+'test_bounded_push_content_identity.py',
  T+'test_bounded_route_selector_backing.py',
+ 'docs/audits/2026-09-23-bounded-backlog-AM.md',
+ 'docs/audits/2026-09-23-bounded-backlog-AN.md',
+ 'docs/audits/2026-09-23-bounded-backlog-AO.md',
+ 'docs/audits/2026-09-23-bounded-backlog-AP.md',
  'docs/audits/2026-09-23-bounded-backlog-AQ.md',
  'docs/audits/2026-09-23-bounded-backlog-AR.md',
 }
-# New review files are intentionally untracked until the bounded commit step.
-untracked=set(filter(None,cmd(['git','ls-files','--others','--exclude-standard','-z'],AFTER).stdout.split('\\0')))
-assert untracked==expected_added,untracked
+untracked=set(filter(None,cmd(['git','ls-files','--others','--exclude-standard','-z'],AFTER).stdout.split('\0')))
+assert untracked==expected_untracked,untracked
 
-# Commit two bounded batches and publish review branch.
-def commit(paths,msg):
-    cmd(['git','add',*paths],AFTER)
-    cmd(['git','-c','user.name=ACME Audit','-c','user.email=acme-audit@users.noreply.github.com','commit','-m',msg],AFTER)
-    return cmd(['git','rev-parse','HEAD'],AFTER).stdout.strip()
-
-# We need split commits from final tree: commit AQ runtime/test/doc first, then AR.
-# Reset AR files temporarily, commit AQ, then restore them from saved bytes.
-saved={p:(AFTER/p).read_bytes() for p in [H051,Path(LEDGER),route_test,Path('docs/audits/2026-09-23-bounded-backlog-AR.md')]}
-cmd(['git','checkout','--',str(H051),LEDGER],AFTER)
-for p in [route_test,Path('docs/audits/2026-09-23-bounded-backlog-AR.md')]:
-    (AFTER/p).unlink()
-# Ledger after AQ remains AM-AP's 65.
-aq=commit([str(CONF),T+'test_bounded_push_content_identity.py','docs/audits/2026-09-23-bounded-backlog-AQ.md'],'Guard timed push against same-ID content mutation (bounded AQ)')
-for p,b in saved.items():
-    (AFTER/p).parent.mkdir(parents=True,exist_ok=True); (AFTER/p).write_bytes(b)
-ar=commit([str(H051),LEDGER,T+'test_bounded_route_selector_backing.py','docs/audits/2026-09-23-bounded-backlog-AR.md'],'Align route selector contract with current vascular backing (bounded AR)')
+# Commit the complete cumulative AM-AR tree. AM-AP had previously existed only as a local
+# candidate, so a single cumulative checkpoint prevents any of its runtime/tests/docs from being omitted.
+cmd(['git','add','-A'],AFTER)
+cmd(['git','-c','user.name=ACME Audit','-c','user.email=acme-audit@users.noreply.github.com',
+     'commit','-m','Integrate validated cumulative AM-AR backlog checkpoint'],AFTER)
+checkpoint=cmd(['git','rev-parse','HEAD'],AFTER).stdout.strip()
 assert not cmd(['git','status','--porcelain'],AFTER).stdout.strip()
 
 report={
  'published_base':BASE,
  'retained_AM_AP_full_checkout_validated':True,
  'addon_comparison_provenance_run':35939306882,
- 'AQ':aq,'AR':ar,
+ 'checkpoint':checkpoint,
  'focused':focus[2],
  'AQ_original_AMAP':aq_before[2],
  'addon_before_AMAP':before[2],
