@@ -58,6 +58,10 @@ if (_start) then {
         // lift/remove/lower callback fail its generation check before it can touch gear or patient animation.
         private _busy = _patient getVariable ["ACME_chestAccess_vestBusy", ""];
         if ((_busy find "vest:access:") == 0) then {
+            if ((_patient getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _busy) then {
+                _patient setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
+                ["ace_common_setAnimSpeedCoef", [_patient, 1]] call CBA_fnc_globalEvent;
+            };
             _patient setVariable ["ACME_chestAccess_vestBusy", "", false];
             _patient setVariable ["ACME_chestAccess_readyServer", serverTime, true];
         };
