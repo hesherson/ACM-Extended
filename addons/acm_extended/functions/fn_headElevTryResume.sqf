@@ -38,8 +38,11 @@ if (count _leases > 0) exitWith {
 if !(_patient getVariable ["ACME_headElevated", false]) exitWith {
     _patient setVariable ["ACME_headElev_ResumePending", false, true];
 };
-if ([_patient] call ACM_core_fnc_cprActive) exitWith {
-    [{ _this call ACME_fnc_headElevTryResume }, [_patient, _token], 0.75] call CBA_fnc_waitAndExecute;
+private _maneuverHandoffUntil = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
+if (([_patient] call ACM_core_fnc_cprActive)
+    || {[_patient] call ACM_core_fnc_bvmActive}
+    || {(_maneuverHandoffUntil isEqualType 0) && {serverTime < _maneuverHandoffUntil}}) exitWith {
+    [{ _this call ACME_fnc_headElevTryResume }, [_patient, _token], 0.50] call CBA_fnc_waitAndExecute;
 };
 _patient setVariable ["ACME_headElev_ResumePending", false, true];
 [_patient] call ACME_fnc_headElevResume;
