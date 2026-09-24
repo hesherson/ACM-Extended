@@ -30,21 +30,15 @@ def test_runtime_font_fallback_prevents_invisible_tag_typing():
     font_contract(); no_outline_fonts(); layout_contract()
 
 def test_compact_and_promoted_tracks_are_distinct_and_promoted_is_wider():
-    inject = txt("functions/fn_skInject.sqf")
-    assert 'private _carCompactW = _toolbarW * 0.92;' in inject
-    assert 'private _carExpandedW = (_toolbarW * 1.32) min (safeZoneH * 0.46);' in inject
-    assert 'private _carBottom = _drawRowY - safeZoneH*0.030;' in inject
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
 
 def test_promoted_syringes_are_larger_and_ad_hints_move_outward():
-    car = txt("functions/fn_skCarouselRender.sqf")
-    move = txt("functions/fn_skCarouselMove.sqf")
-    assert 'then {0.435} else {0.150}' in car
-    assert 'private _fullH = safeZoneH*0.435;' in move
-    assert 'then {0.175} else {0.165}' in car
-    assert 'private _dx=_rw*0.175;' in move
-    assert 'private _hintPad = safeZoneH * (if (_expanded) then {0.018} else {0.010});' in car
-    assert 'private _leftKeyX = (_rx - _keyW - _hintPad)' in car
-    assert 'private _rightKeyX = (_rx + _rw + _hintPad)' in car
+
+    from test_bounded_current_carousel_contract import render_contract, hint_contract
+    render_contract()
+    hint_contract()
 
 def test_edit_syringe_tag_moves_with_route_row():
     layout = txt("functions/fn_skDynamicLayout.sqf")
@@ -56,14 +50,10 @@ def test_edit_syringe_tag_moves_with_route_row():
     assert 'ctrlPosition (_d displayCtrl 84151)' not in car
 
 def test_carousel_hit_regions_end_above_draw_syringe():
-    layout = txt("functions/fn_skDynamicLayout.sqf")
-    car = txt("functions/fn_skCarouselRender.sqf")
-    assert 'private _zoneBottom = (_drawRect select 1) - safeZoneH*0.018;' in layout
-    assert 'private _zoneH = (_zoneBottom - _zoneY) max 0;' in layout
-    assert 'max (safeZoneH*0.035)' not in layout
-    assert 'private _hoverBottom = (_drawForBounds select 1) - safeZoneH*0.018;' in car
-    assert 'private _hitH = (_hitBottom-_hitY) max 0;' in car
-    assert 'private _activeH = (_activeHitBottom-_activeHitY) max 0;' in car
+
+    from test_bounded_current_carousel_contract import geometry_contract, render_contract
+    geometry_contract()
+    render_contract()
 
 def test_untagged_hover_uses_last_two_simple_medication_pulls_only():
     from test_bounded_syringe_tooltips import tooltip_contract, test_untagged_tooltip_only_reveals_recent_or_written_marked_syringes, test_unlabelled_summary_uses_last_two_positions_and_localization_fallback
@@ -83,6 +73,6 @@ def test_expanded_view_lingers_and_motion_is_smooth_longer_slide():
     assert '_now + 0.65' in tick
 
 def test_patient_name_is_raised_farther_in_screen_to_head_gap():
-    layout = txt("functions/fn_skDynamicLayout.sqf")
-    assert 'private _headerCenterY = _screenTop + _available*0.18;' in layout
-    assert 'private _maxY = _headTop - (_hr select 3) - safeZoneH*0.008;' in layout
+
+    from test_bounded_current_carousel_contract import header_contract
+    header_contract()
