@@ -66,10 +66,7 @@ def test_feedback_lingers():
     assert 'Drawn! (%1)' in txt('functions/fn_skWasteDraw.sqf')
     assert '],1.00] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundDraw.sqf')
     assert '],1.00] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skWasteDraw.sqf')
-    assert '],1.10] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundSave.sqf')
+    # Compound Save now resets in place immediately and keeps only a short nonblocking Saved! flash.
+    assert '],0.45] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundSave.sqf')
+    # Flush Save still uses its authored close/reopen acknowledgement delay.
     assert '],1.10] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skFlushSave.sqf')
-
-if __name__=='__main__':
-    tests=[v for k,v in sorted(globals().items()) if k.startswith('test_')]
-    for f in tests: f()
-    print(f'B76 focused contracts: {len(tests)}/{len(tests)} passed')
