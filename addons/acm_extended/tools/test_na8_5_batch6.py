@@ -74,8 +74,16 @@ class SourceTests(unittest.TestCase):
  def test_no_duplicate_overlay_controls(self):self.assertNotIn('ctrlCreate',src('minigameVisionTick'))
  def test_shake_excludes_mask(self):self.assertIn('ACME_NV_Overlay',src('uiShakeApply'))
  def test_all_visual_passes_after_procedure(self):
-  for n in ['ivMinigameTick','chestSealTick','thoraTick','laryngoTick','syringeKitTick','skUiTick','updateClampDialog']:
+  # Procedure ticks end with their vision pass. Roller-clamp vision is intentionally owned by
+  # the independent clamp runtime so dialog-transition sampling cannot latch a black shade.
+  for n in ['ivMinigameTick','chestSealTick','thoraTick','laryngoTick','syringeKitTick','skUiTick']:
    with self.subTest(n=n):self.assertTrue(src(n).rstrip().endswith('call ACME_fnc_minigameVisionTick;'))
+  clamp=src('updateClampDialog')
+  runtime=src('registerClampDragRuntime')
+  self.assertNotIn('ACME_fnc_minigameVisionTick',clamp)
+  self.assertIn('ACME_RollerClamp_VisionSettleUntil',runtime)
+  self.assertIn('ACME_RollerClamp_NextVisionTick',runtime)
+  self.assertIn('[_display] call ACME_fnc_minigameVisionTick;',runtime)
  def test_cleaned_pad_stays(self):
   t=src('ivMinigameCleanDone');self.assertIn('ACME_IV_Cleaned", true',t)
   for k in ['HeldKind','ctrlShow false','HeldCtrl','"none"']:self.assertNotIn(k,t)
