@@ -76,16 +76,18 @@ def test_hover_events_cannot_snap_an_in_flight_carousel():
 
 
 def test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill():
+
+    from test_bounded_current_carousel_contract import render_contract, navigation_contract, hint_contract
+    render_contract()
+    navigation_contract()
+    hint_contract()
     move = txt('functions/fn_skCarouselMove.sqf')
     render = txt('functions/fn_skCarouselRender.sqf')
-    assert 'private _motion = 0.220;' in move
-    assert '[_motion] call ACME_fnc_skDynamicLayout; [_motion] call ACME_fnc_skCarouselRender;' in move
-    assert '_leftKey ctrlSetPosition' in render and '_rightKey ctrlSetPosition' in render
-    assert '_x ctrlCommit _duration;' in render
-    assert 'private _plungerY = _py + (_travel10 * _sizeRatio * _frac' in move
-    assert 'private _partY = if (_part == 2) then {_plungerY} else {_py};' in move
-    assert 'uiNamespace setVariable["ACME_SK_CarouselBusy",false];\n    [0] call ACME_fnc_skCarouselRender;' in move
-
+    # Promotion is now an immediate geometry state change. Per-syringe plunger fill is still recomputed
+    # from the authoritative stored volume on every render.
+    assert '_motion' not in move
+    assert 'private _frac = (((_amt + _nsMl) / (_size max 0.01)) max 0) min 1;' in render
+    assert 'private _py = _y + (_travel10 * _sizeRatio * _frac' in render
 
 def test_chest_holes_use_nonzero_seal_aware_spacing_and_more_rejection_attempts():
     gen = txt('functions/fn_chestSealGenHoles.sqf')
