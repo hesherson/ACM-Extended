@@ -23,11 +23,9 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
     private _existingClass = _existing param [1,""];
     private _existingId = _existing param [2,""];
 
-    if (_samePatient && {_existingId != ""}) then {
-        if (_existingClass == _class) exitWith {};
-        if (_existingClass in _maneuvers && {_class in _maneuvers}) exitWith {
-            _medic setVariable ["ACME_chestAccess_treatment", [_patient, _class, _existingId]];
-        };
+    if (_samePatient && {_existingId != ""} && {_existingClass == _class}) exitWith {};
+    if (_samePatient && {_existingId != ""} && {_existingClass in _maneuvers} && {_class in _maneuvers}) exitWith {
+        _medic setVariable ["ACME_chestAccess_treatment", [_patient, _class, _existingId]];
     };
 
     private _serial = (missionNamespace getVariable ["ACME_chestAccess_serial", 0]) + 1;
