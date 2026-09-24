@@ -1,8 +1,10 @@
 // Temporary plate-carrier removal for actions that need a genuinely unobstructed chest while a backpack is worn.
-// This is deliberately class-exact so BVM, airway adjuncts and unrelated descendants do not inherit it merely
-// because they share an ACM parent. Chest-seal and thoracostomy minigames own their separate long procedure scope.
-private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest", "cpr"];
+// This is deliberately class-exact. CPR and every explicit BVM treatment variant now share the same carrier custody
+// so middle-mouse CPR <-> BVM handoffs cannot re-dress the casualty between maneuvers.
+private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
+private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest"] + _maneuverClasses;
 missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
+missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClasses];
 
 ["ace_treatmentStarted", {
     params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
@@ -36,21 +38,36 @@ missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
     // Stethoscope success only launches its held scope. The continuous-action failure event below is the true end.
     if (_stored == "usestethoscope") exitWith {};
 
-    // CPR success starts the continuous compression session. Keep the chest clear until that session actually ends.
-    if (_stored == "cpr") exitWith {
+    // CPR and BVM are one continuous chest-access family. Keep the original lease until neither role is active.
+    // A provider-local handoff token bridges the deliberate BVM -> CPR 0.1 s swap delay; if the replacement
+    // maneuver fails to start, the token expires and ordinary restoration proceeds.
+    if (_stored in (missionNamespace getVariable ["ACME_chestAccess_maneuverClasses", ["cpr"]])) exitWith {
         [{
             params ["_p", "_m", "_id"];
-            isNull _p || {isNull _m} || {!alive _m} || {!([_p] call ACM_core_fnc_cprActive)}
+            if (isNull _p || {isNull _m} || {!alive _m}) exitWith {true};
+
+            private _handoff = _m getVariable ["ACME_chestAccessManeuverHandoff", []];
+            private _handoffActive = (_handoff param [0, objNull, [objNull]]) isEqualTo _p
+                && {(_handoff param [1, -1, [0]]) > CBA_missionTime};
+            private _maneuverActive = ([_p] call ACM_core_fnc_cprActive)
+                || {[_p] call ACM_core_fnc_bvmActive};
+
+            !_maneuverActive && {!_handoffActive}
         }, {
-            params ["_p", "_m", "_id"];
+            params ["_p", "_m", "_id", "_stored"];
             if (!isNull _m && {local _m}) then {
                 private _cur = _m getVariable ["ACME_chestAccess_treatment", []];
                 if ((_cur param [2, ""]) == _id) then {_m setVariable ["ACME_chestAccess_treatment", []];};
+
+                private _handoff = _m getVariable ["ACME_chestAccessManeuverHandoff", []];
+                if ((_handoff param [0, objNull, [objNull]]) isEqualTo _p) then {
+                    _m setVariable ["ACME_chestAccessManeuverHandoff", [], false];
+                };
             };
-            if (!isNull _p) then {[_p, _m, _id, false, "cpr"] call ACME_fnc_chestAccessVestEvent;};
-        }, [_patient, _medic, _entry param [2, ""]], 600, {
-            params ["_p", "_m", "_id"];
-            if (!isNull _p) then {[_p, _m, _id, false, "cpr"] call ACME_fnc_chestAccessVestEvent;};
+            if (!isNull _p) then {[_p, _m, _id, false, _stored] call ACME_fnc_chestAccessVestEvent;};
+        }, [_patient, _medic, _entry param [2, ""], _stored], 600, {
+            params ["_p", "_m", "_id", "_stored"];
+            if (!isNull _p) then {[_p, _m, _id, false, _stored] call ACME_fnc_chestAccessVestEvent;};
         }] call CBA_fnc_waitUntilAndExecute;
     };
 
