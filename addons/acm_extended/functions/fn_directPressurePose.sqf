@@ -17,6 +17,9 @@ private _entryGrace = CBA_missionTime < (_medic getVariable ["ACME_DP_PoseGraceU
 private _treating = !_entryGrace && {
     (_medic getVariable ["ACME_DP_TreatmentBusy", false])
     || {(_medic getVariable ["ACME_treatmentPreflightActive", false])}
+    || {(_medic getVariable ["ACME_chestAccessPreflightActive", false])}
+    || {(_medic getVariable ["ACME_chestAccessProvider", []]) isNotEqualTo []}
+    || {_medic getVariable ["ACME_headElev_seqActive", false]}
     || {(_medic getVariable ["ace_medical_treatment_endInAnim", ""]) != ""}
     || {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}
 };
