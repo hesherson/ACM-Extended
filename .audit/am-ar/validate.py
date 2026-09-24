@@ -247,10 +247,10 @@ focused=[
  T+'test_bounded_push_display_patient.py',
  T+'test_bounded_site_click_ownership.py',
  T+'test_bounded_flush_patient_context.py',
- T+'test_b23_narc_route_dead.py',
  T+'test_bounded_route_selector_backing.py',
- T+'test_b62_tag_editor_carousel_layout.py',
- T+'test_b73_syringe_tag_vial_carousel_anim.py',
+ T+'test_b23_narc_route_dead.py::B23RouteSelector::test_selected_route_has_green_backing',
+ T+'test_b62_tag_editor_carousel_layout.py::test_edit_mode_disables_neighbor_selection_and_injection_hotspots',
+ T+'test_b73_syringe_tag_vial_carousel_anim.py::test_draw_button_has_success_flash_and_successful_draw_counter',
 ]
 focus=tests('focused-AM-AR',AFTER,focused,300)
 assert focus[0]==0 and not ({'failed','error','skipped'} & set(focus[2])),focus[2]
