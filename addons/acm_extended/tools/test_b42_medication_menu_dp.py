@@ -36,7 +36,7 @@ def test_vial_parser_keeps_full_suffix():
     assert 'ACM_Ampule_Dimercaprol' in text('functions/fn_vialClass.sqf')
 
 
-def test_auscultate_chest_preserves_existing_child_indent_without_forcing_a_group():
+def test_auscultate_chest_keeps_group_child_indent():
     s = text('overrides/fn_updateActions.sqf')
     assert "_actionClass == 'usestethoscope'" in s
     assert "_baseName = 'Auscultate Chest';" in s
