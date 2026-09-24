@@ -1,6 +1,6 @@
 # ACM Extended — Upcoming Release Candidate Patch Notes
 
-These notes cover the cumulative backlog/stability work from the validated batch series through AW-AX. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative backlog/stability work from the validated batch series through AY-AZ. This is still an RC/testing build until live multiplayer acceptance is completed.
 
 ## Stability and multiplayer ownership
 
@@ -77,9 +77,19 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - Chest-seal and thoracostomy burp paths remain patient-owner authoritative with no gameplay timer between valid burps.
 - Removed a dead thoracostomy burp gesture dispatch so burping cannot reuse the medic3 animation reserved for actual chest-seal placement.
 
+## Cuff Syringe, Menu and Vision Presentation
+
+- Laryngoscopy cuff inflation continues to use ACM's real 10 mL syringe backbit/plunger with ACME's replacement flush barrel artwork.
+- Native syringe drawing uses the replacement barrel only for a selected 10 mL saline flush; ordinary medication syringes retain ACM's generic barrel.
+- Cuff inflation remains a one-second hold and now visibly drives the plunger from its authored 8 mL starting mark toward empty while the distal tip remains anchored to the pilot balloon.
+- Opening another patient's medical menu no longer holsters the provider's weapon. The menu requests the matching weapon-in-hand crouch; treatment actions that require empty hands own their own preflight.
+- Narc Box medication/contents/vial rows retain one cohesive dark section and scale selection indentation from the actual dialog width.
+- Prep Infusion tally layout reads the actual syringe-size list bounds and follows the widened current Narc Box source-column geometry.
+- Roller Clamp darkness/NV refresh remains owned by its independent runtime rather than the dialog update function, preventing transition-frame normal-vision sampling from latching an opaque shade over NVGs.
+
 ## Internal QA
 
-- Historical backlog reduced from 146 original unresolved entries to 42 after AW-AX.
+- Historical backlog reduced from 146 original unresolved entries to 35 after AY-AZ.
 - Full-suite comparisons are used to ensure previously passing identities do not regress.
 - Root-level legacy collection failures are tracked separately from the historical addon backlog.
 - Live dedicated-server and multi-client acceptance testing is still required before stable-release sign-off.
