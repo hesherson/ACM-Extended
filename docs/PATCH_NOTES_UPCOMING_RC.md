@@ -1,6 +1,16 @@
 # ACM Extended — Upcoming Release Candidate Patch Notes
 
-These notes cover the cumulative backlog/stability work from the validated batch series through residual backlog BF. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative backlog/stability work through the validated 1.2.2.1 baseline plus the first 1.2.3 runtime patch. This is still an RC/testing build until live multiplayer acceptance is completed.
+
+## 1.2.3 CPR / BVM chest access
+
+- CPR and all explicit BVM variants now share one exact chest-access/plate-carrier preparation path.
+- Plate-carrier custody remains open while either CPR or BVM is active, including repeated middle-mouse swaps.
+- A bounded CPR/BVM handoff token prevents the carrier from being restored during the controller transition gap.
+- Patient-owner restoration independently refuses to re-dress the casualty under active CPR or BVM.
+- Carrier-off choreography now completes in approximately 1.52 seconds using chest-specific timings, without changing Semi-Fowler timing.
+- Removed the synthetic post-removal settle gap so the queued intervention can launch before the medic4 hands-on-chest pose reaches its frozen hold.
+
 
 ## Stability and multiplayer ownership
 
