@@ -271,7 +271,11 @@ for k,v in before[1].items():
     if v=='failed' and after[1][k]=='passed': fixed.append(k)
     elif v!=after[1][k]: newly.append((k,v,after[1][k]))
 assert not missing and not newly,(missing,newly)
-assert len(fixed)==1 and fixed[0][1]=='test_selected_route_has_green_backing',fixed
+historical_fixed=[k for k in fixed if k[1]=='test_selected_route_has_green_backing']
+aq_fixed=[k for k in fixed if k[0]=='addons.acm_extended.tools.test_bounded_push_content_identity']
+assert len(historical_fixed)==1,historical_fixed
+assert len(aq_fixed)==12,aq_fixed
+assert len(fixed)==13,fixed
 
 with ThreadPoolExecutor(max_workers=2) as ex:
     rb=ex.submit(tests,'root-AMAP',BEFORE,['tools'],240)
