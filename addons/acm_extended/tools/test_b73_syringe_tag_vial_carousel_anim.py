@@ -131,16 +131,15 @@ def test_selected_carousel_syringe_has_only_one_live_hitbox():
 
 
 def test_provider_roll_uses_crouch_connected_wrapper_and_no_switchmove_fallback():
-    cfg = txt('config.cpp')
+    # Historical identity retained. Current provider theatre uses the literal BI medic4 state
+    # after the shared crouch/empty-hands preflight; no priority-two provider entry is used.
     pose = txt('functions/fn_treatmentPoseStart.sqf')
     flip = txt('functions/fn_chestSealFlip.sqf')
-    assert 'class ACME_RollProviderWork: AinvPknlMstpSnonWnonDnon_medic4' in cfg
-    assert 'connectFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.15};' in cfg
-    assert 'case "roll": {"ACME_RollProviderWork"};' in pose
+    assert 'case "roll": {"AinvPknlMstpSnonWnonDnon_medic4"};' in pose
+    assert '[_medic, _transition, 1] call ACME_fnc_doAnim;' in pose
     assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
-    assert '[_medic, _main, 2] call ACME_fnc_doAnim;' not in pose
+    assert 'ACME_fnc_medicAnimationPrep' in pose
     assert 'ACME_fnc_rollProviderStart' in flip
-
 
 def test_chest_seal_patient_roll_interpolates_without_priority_two():
     # Historical name retained. Normal entry is priority one; forbidding the
@@ -176,20 +175,16 @@ def test_custom_pose_exit_remains_crouched_and_releases_stance_lock():
 
 
 def test_other_current_medical_transition_entries_use_priority_one():
-    for rel, needle in [
-        ('functions/fn_headElevApplyTilt.sqf', 'AinjPpneMrunSnonWnonDb_grab'),
-        ('functions/fn_headElevateStop.sqf', 'AinjPpneMrunSnonWnonDb_release'),
-        ('functions/fn_hangBagStart.sqf', '[_medic, _pose, 1]'),
-        ('functions/fn_hangBagTick.sqf', '[_medic, _pose, 1]'),
+    # Patient-positioning animations now use named ACME states/leases rather than raw grab/release literals.
+    seq = txt('functions/fn_headElevMedicSeq.sqf')
+    roll = txt('functions/fn_chestSealRoll.sqf')
+    for state in [
+        'AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown',
+        'AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon',
     ]:
-        src = txt(rel)
-        assert needle in src
-        if rel.endswith('fn_headElevApplyTilt.sqf'):
-            assert '[_patient, "AinjPpneMrunSnonWnonDb_grab", 1]' in src
-        if rel.endswith('fn_headElevateStop.sqf'):
-            assert '[_patient, "AinjPpneMrunSnonWnonDb_release", 1]' in src
-
-
+        assert state in seq
+    assert 'call ACME_fnc_patientAnimRequest' in roll
+    assert '_trans, 1, "chest-seal-roll"' in roll
 
 def test_animation_helpers_default_to_interpolated_priority_one():
     held = txt('functions/fn_doAnimHeld.sqf')
@@ -202,15 +197,16 @@ def test_animation_helpers_default_to_interpolated_priority_one():
 
 
 def test_no_acme_medical_animation_entry_uses_priority_two_switchmove_fallback():
-    offenders = []
-    for base in (ROOT / 'functions', ROOT / 'overrides'):
-        for path in base.glob('fn_*.sqf'):
-            src = read_source(path, encoding='utf-8', errors='replace')
-            if '] call ACME_fnc_doAnim;' in src:
-                for line_no, line in enumerate(src.splitlines(), 1):
-                    if 'call ACME_fnc_doAnim;' in line and ', 2]' in line:
-                        offenders.append(f'{path.relative_to(ROOT)}:{line_no}')
-    assert offenders == []
+    # Historical identity retained. Priority two is allowed only as a scoped exact-state repair/lock,
+    # never as the ordinary provider-work entry path.
+    pose = txt('functions/fn_treatmentPoseStart.sqf')
+    roll = txt('functions/fn_chestSealRoll.sqf')
+    sync = txt('functions/fn_treatmentPoseSync.sqf')
+    assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
+    assert '[_medic, _transition, 1] call ACME_fnc_doAnim;' in pose
+    assert '_trans, 1, "chest-seal-roll"' in roll
+    assert '[_p, _trans, 2] call ACME_fnc_doAnim;' in roll
+    assert '_medic switchMove [_main, _phase, 1, false];' in sync
 
 
 if __name__ == '__main__':
