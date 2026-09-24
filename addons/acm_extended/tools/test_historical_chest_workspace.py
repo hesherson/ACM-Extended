@@ -65,6 +65,8 @@ def setup():
         ACME_fnc_chestSealParkCarrier={}; ACME_fnc_chestAccessVestPark={};
         ACME_fnc_chestAccessVestAcquire={_acquired=_acquired+1;};
         ACME_fnc_doAnim={_moves pushBack _this;};
+        ACM_core_fnc_cprActive={false};
+        ACM_core_fnc_bvmActive={false};
         // Roll direction and surface classification are tested separately below.
         ACME_fnc_chestSealRoll={_rolls pushBack _this;};
         ACME_fnc_patientRollCancel={_rolls pushBack ["cancel",_this];};
