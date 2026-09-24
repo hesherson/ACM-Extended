@@ -31,11 +31,12 @@ def test_main_draw_always_has_select_syringe_tag_left_of_native_syringe():
     tag_geometry_contract()
     pending = txt('functions/fn_skPendingTagRender.sqf')
     pick_flush = txt('functions/fn_skPickFlush.sqf')
-    waste = txt('functions/fn_skWasteDraw.sqf')
+    flush_save = txt('functions/fn_skFlushSave.sqf')
     # Current selector is centered under the native tag face, not forced to the syringe's left edge.
     assert 'private _tagCenterX = _x + _w*0.36;' in pending
     assert '[10, _patient, _bodyPart, _flushClass]' in pick_flush
-    assert 'ACME_fnc_skApplyPendingTag' in waste
+    # Medicated-flush tag metadata is committed at Save, not at each Draw.
+    assert 'ACME_fnc_skApplyPendingTag' in flush_save
 
 def test_tag_dropdowns_remain_wide_clickable_and_same_color_reselectable():
     from test_bounded_tag_dropdowns import dropdown_contract, geometry_contract
