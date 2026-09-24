@@ -48,6 +48,13 @@ _patient setVariable [QGVAR(CPR_session), [_medic, _epoch], true];
 GVAR(CPR_LocalSession) = [_medic, _patient, _epoch];
 [QGVAR(cprTrack), [_medic, _patient, _epoch]] call CBA_fnc_serverEvent;
 
+// 1.2.3: a successful CPR start completes any BVM -> CPR chest-access handoff.
+// The shared carrier lease itself stays owned by the treatment lifecycle until both maneuvers have ended.
+private _chestHandoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
+if ((_chestHandoff param [0, objNull, [objNull]]) isEqualTo _patient) then {
+    _medic setVariable ["ACME_chestAccessManeuverHandoff", [], false];
+};
+
 // Synchronously retire input/EH leftovers before installing new handlers. Never leave an old F0/F1/F2 or
 // AnimDone callback around to operate on the new CPRTarget.
 {
@@ -168,6 +175,13 @@ private _controller = [{
         || {_medic getVariable [QGVAR(CPR_Cancel), false]}
         || {_enteredVehicle} || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
         private _started = (_medic getVariable [QGVAR(CPR_StartedEpoch), -1]) == _epoch;
+
+        // Preserve the open-chest lease across the synchronous CPR -> BVM swap. The token is bounded so a failed
+        // replacement cannot strand the carrier off the casualty.
+        if (_swapToBVM && {!isNull _medic} && {!isNull _patient}) then {
+            _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 0.75], false];
+        };
+
         if !([_medic, _patient, _epoch] call FUNC(cprCleanupLocal)) exitWith {};
 
         if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo ACE_player} && {isNull objectParent _medic}) then {
