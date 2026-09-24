@@ -65,7 +65,7 @@ assert len(ledger(BEFORE))==65 and 'H264' not in ledger(BEFORE) and 'H361' not i
 
 # AQ regression tests: same stable identity must not authorize changed dosing contents.
 AQ=AFTER/(T+'test_bounded_push_content_identity.py')
-AQ.write_text(r""""""A timed normal push owns dosing-relevant syringe contents captured at confirmation."""
+AQ.write_text(r"""# Timed normal push owns dosing-relevant syringe contents captured at confirmation.
 import pytest
 from test_bounded_normal_push_lifetime import setup
 from test_menu_death_lifecycle import execute
