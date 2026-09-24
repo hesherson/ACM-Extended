@@ -1,4 +1,4 @@
-name: Bounded BA-BB focused
+name: Bounded BA-BB audit
 on:
   push:
     branches: [audit/bounded-backlog-ba-bb-20260923]
@@ -6,67 +6,130 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: bounded-ba-bb-focused
+  group: bounded-ba-bb-20260923
   cancel-in-progress: true
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: audit/bounded-backlog-ba-bb-20260923
+          ref: 586271f324d74cace5f8d845065ee6e4499f1774
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Install test dependencies and HEMTT
+      - name: Install pinned toolchain
         run: |
           set -euo pipefail
           mkdir -p /tmp/acme-tools
           curl -fLsS --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
           echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
-          chmod +x /tmp/acme-tools/hemtt
+          curl -fLsS --retry 1 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
           python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
-      - name: Focused 35-ID carousel gate
+      - name: Validate final original-backlog closure
         env:
           HEMTT: /tmp/acme-tools/hemtt
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
         run: |
-          python -m pytest 'addons/acm_extended/tools/test_b58_syringe_carousel_tags.py::test_final_name_ui_removed_and_drawn_body_only' \
-            'addons/acm_extended/tools/test_b58_syringe_carousel_tags.py::test_carousel_headers_summary_and_patient_location' \
-            'addons/acm_extended/tools/test_b59_shared_syringe_body_carousel.py::test_body_map_has_compact_three_slot_mini_carousel' \
-            'addons/acm_extended/tools/test_b59_shared_syringe_body_carousel.py::test_body_preview_renders_real_fill_tag_and_summary' \
-            'addons/acm_extended/tools/test_b59_shared_syringe_body_carousel.py::test_carousel_hides_draw_ui_sections_and_uses_native_scale' \
-            'addons/acm_extended/tools/test_b60_dynamic_syringe_body_tandem.py::test_body_and_carousel_have_compact_and_expanded_geometry' \
-            'addons/acm_extended/tools/test_b60_dynamic_syringe_body_tandem.py::test_active_syringe_is_85_percent_then_100_percent_on_hover' \
-            'addons/acm_extended/tools/test_b60_dynamic_syringe_body_tandem.py::test_save_returns_to_large_body_and_compact_carousel' \
-            'addons/acm_extended/tools/test_b61_carousel_bodymap_refinement.py::test_ultrawide_carousel_width_is_capped_and_moved_lower' \
-            'addons/acm_extended/tools/test_b61_carousel_bodymap_refinement.py::test_body_shrink_is_stronger_and_route_row_clears_body' \
-            'addons/acm_extended/tools/test_b61_carousel_bodymap_refinement.py::test_carousel_zoom_falloff_is_more_pronounced_but_active_remains_85_percent' \
-            'addons/acm_extended/tools/test_b61_carousel_bodymap_refinement.py::test_active_hover_target_is_larger_and_above_neighbor_targets' \
-            'addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_wide_carousel_retention_zone_spans_route_to_draw_workspace' \
-            'addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_compact_syringes_are_larger_and_carousel_is_tighter_on_ultrawide' \
-            'addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_body_moves_down_and_shrinks_more_during_promoted_carousel' \
-            'addons/acm_extended/tools/test_b62_tag_editor_carousel_layout.py::test_active_syringe_still_85_percent_and_hover_is_100_percent_with_bigger_target' \
-            'addons/acm_extended/tools/test_b63_tag_carousel_interaction.py::test_body_map_edit_tag_is_above_syringe_below_route' \
-            'addons/acm_extended/tools/test_b63_tag_carousel_interaction.py::test_carousel_is_toolbar_width_and_body_contracts_more' \
-            'addons/acm_extended/tools/test_b63_tag_carousel_interaction.py::test_carousel_art_is_larger_inside_tighter_footprint' \
-            'addons/acm_extended/tools/test_b63_tag_carousel_interaction.py::test_carousel_has_fading_gray_underlay' \
-            'addons/acm_extended/tools/test_b63_tag_carousel_interaction.py::test_patient_header_is_name_only_and_raised_in_body_view' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_main_draw_always_has_select_syringe_tag_left_of_native_syringe' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_edit_syringe_tag_is_attached_to_full_route_row' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_carousel_track_is_narrow_but_promoted_syringe_scale_is_restored' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_carousel_workspace_stays_between_edit_row_and_draw_row' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_carousel_hitboxes_cannot_cover_edit_or_draw_rows' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_ad_arrow_key_hints_exist_scale_and_hide_in_editor' \
-            'addons/acm_extended/tools/test_b64_syringe_tag_carousel_refinement.py::test_patient_name_uses_actual_screen_to_head_gap' \
-            'addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_compact_and_promoted_tracks_are_distinct_and_promoted_is_wider' \
-            'addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_promoted_syringes_are_larger_and_ad_hints_move_outward' \
-            'addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_carousel_hit_regions_end_above_draw_syringe' \
-            'addons/acm_extended/tools/test_b66_syringe_carousel_main_tag.py::test_patient_name_is_raised_farther_in_screen_to_head_gap' \
-            'addons/acm_extended/tools/test_b68_syringe_tag_push_layout.py::test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow' \
-            'addons/acm_extended/tools/test_b69_narcbox_carousel_visibility.py::test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill' \
-            'addons/acm_extended/tools/test_b70_semifowler_bvm_thora_syringe.py::test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel' \
-            'addons/acm_extended/tools/test_bounded_current_carousel_contract.py' -q
-          /tmp/acme-tools/hemtt check
+          python - <<'PY'
+          import subprocess,pathlib,xml.etree.ElementTree as ET,json,os
+          from concurrent.futures import ThreadPoolExecutor
+          from collections import Counter
+
+          BASE='957cf8186ba1d734ff115270bcdbe01dea6dc2c0'
+          CAND='586271f324d74cace5f8d845065ee6e4499f1774'
+          root=pathlib.Path.cwd()
+          before=pathlib.Path('/tmp/acme-babb-before')
+          out=pathlib.Path('/tmp/acme-ba-bb-results'); out.mkdir(exist_ok=True)
+
+          def cmd(a,cwd=root,t=480,check=True):
+              r=subprocess.run(a,cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=t)
+              if check and r.returncode: raise RuntimeError(str(a)+'\n'+r.stdout[-14000:])
+              return r
+          def suite(label,cwd,paths):
+              xml=out/(label+'.xml')
+              r=cmd(['python','-m','pytest',*paths,'-q','--tb=no','--continue-on-collection-errors','--junitxml='+str(xml)],cwd,430,False)
+              d={}
+              for c in ET.parse(xml).iter('testcase'):
+                  k=(c.get('classname',''),c.get('name',''))
+                  d[k]='error' if c.find('error') is not None else 'failed' if c.find('failure') is not None else 'skipped' if c.find('skipped') is not None else 'passed'
+              (out/(label+'.log')).write_text(r.stdout)
+              return r.returncode,d,Counter(d.values())
+
+          assert cmd(['git','rev-parse','HEAD']).stdout.strip()==CAND
+          cmd(['git','fetch','--depth=1','origin',BASE])
+          cmd(['git','worktree','add','--detach',str(before),BASE])
+
+          focused=cmd(['python','-m','pytest','addons/acm_extended/tools/test_bounded_current_carousel_contract.py','-q'],root,120,False)
+          (out/'current-contract.log').write_text(focused.stdout)
+          assert focused.returncode==0,focused.stdout[-8000:]
+
+          h=cmd([os.environ['HEMTT'],'check'],root,180,False)
+          (out/'hemtt.log').write_text(h.stdout)
+          assert h.returncode==0,h.stdout[-10000:]
+          assert cmd(['git','diff','--check',BASE,CAND],root,60,False).returncode==0
+
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              fb=ex.submit(suite,'addon-before',before,['addons/acm_extended/tools'])
+              fa=ex.submit(suite,'addon-after',root,['addons/acm_extended/tools'])
+              rb,db,cb=fb.result(); ra,da,ca=fa.result()
+
+          missing=set(db)-set(da); regress=[]; fixed=[]
+          for k,v in db.items():
+              if k not in da: continue
+              if v=='failed' and da[k]=='passed': fixed.append(k)
+              elif v!=da[k]: regress.append((k,v,da[k]))
+          expected=["test_final_name_ui_removed_and_drawn_body_only","test_carousel_headers_summary_and_patient_location","test_body_map_has_compact_three_slot_mini_carousel","test_body_preview_renders_real_fill_tag_and_summary","test_carousel_hides_draw_ui_sections_and_uses_native_scale","test_body_and_carousel_have_compact_and_expanded_geometry","test_active_syringe_is_85_percent_then_100_percent_on_hover","test_save_returns_to_large_body_and_compact_carousel","test_ultrawide_carousel_width_is_capped_and_moved_lower","test_body_shrink_is_stronger_and_route_row_clears_body","test_carousel_zoom_falloff_is_more_pronounced_but_active_remains_85_percent","test_active_hover_target_is_larger_and_above_neighbor_targets","test_wide_carousel_retention_zone_spans_route_to_draw_workspace","test_compact_syringes_are_larger_and_carousel_is_tighter_on_ultrawide","test_body_moves_down_and_shrinks_more_during_promoted_carousel","test_active_syringe_still_85_percent_and_hover_is_100_percent_with_bigger_target","test_body_map_edit_tag_is_above_syringe_below_route","test_carousel_is_toolbar_width_and_body_contracts_more","test_carousel_art_is_larger_inside_tighter_footprint","test_carousel_has_fading_gray_underlay","test_patient_header_is_name_only_and_raised_in_body_view","test_main_draw_always_has_select_syringe_tag_left_of_native_syringe","test_edit_syringe_tag_is_attached_to_full_route_row","test_carousel_track_is_narrow_but_promoted_syringe_scale_is_restored","test_carousel_workspace_stays_between_edit_row_and_draw_row","test_carousel_hitboxes_cannot_cover_edit_or_draw_rows","test_ad_arrow_key_hints_exist_scale_and_hide_in_editor","test_patient_name_uses_actual_screen_to_head_gap","test_compact_and_promoted_tracks_are_distinct_and_promoted_is_wider","test_promoted_syringes_are_larger_and_ad_hints_move_outward","test_carousel_hit_regions_end_above_draw_syringe","test_patient_name_is_raised_farther_in_screen_to_head_gap","test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow","test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill","test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel"]
+          assert not missing and not regress,(missing,regress)
+          assert {k[1] for k in fixed}==set(expected),(len(fixed),fixed)
+          assert len(fixed)==35
+
+          added=set(da)-set(db)
+          current_added={k for k in added if k[0].endswith('test_bounded_current_carousel_contract')}
+          assert len(current_added)==9,current_added
+          assert all(da[k]=='passed' for k in current_added)
+          assert added==current_added,added
+
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              rb2=ex.submit(suite,'root-before',before,['tools'])
+              ra2=ex.submit(suite,'root-after',root,['tools'])
+              _,db2,cb2=rb2.result(); _,da2,ca2=ra2.result()
+          assert db2==da2 and cb2==ca2,(cb2,ca2)
+
+          changed=set(filter(None,cmd(['git','diff','--name-only',BASE,CAND]).stdout.splitlines()))
+          runtime=[p for p in changed if '/functions/' in p and p.endswith('.sqf')]
+          config=[p for p in changed if p.endswith('config.cpp') or p.endswith('.hpp')]
+          assert runtime==[] and config==[],(runtime,config)
+
+          ledger=(root/'docs/audits/historical-backlog-remaining-20260922.txt').read_text()
+          assert ledger.splitlines()[0].endswith(': 0')
+          assert not any(line.startswith('H') for line in ledger.splitlines())
+
+          report={
+            'base':BASE,'candidate':CAND,
+            'focused_current_contract_passed':9,
+            'addon_before':dict(cb),'addon_after':dict(ca),
+            'original_historical_transitions':35,
+            'original_historical_remaining':0,
+            'new_current_contract_tests':9,
+            'root_before':dict(cb2),'root_after':dict(ca2),
+            'runtime_files_changed':[],
+            'config_files_changed':[],
+            'hemtt_exit':0,
+            'live_arma_tested':False,'stable_release_approved':False
+          }
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-bounded-BA-BB-evidence
+          path: /tmp/acme-ba-bb-results
+          retention-days: 30
