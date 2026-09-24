@@ -58,8 +58,13 @@ def test_middle_mouse_swaps_publish_and_consume_one_bounded_handoff():
         assert 'CBA_missionTime + 0.75' in source
         assert 'setVariable ["ACME_chestAccessManeuverHandoff", [], false]' in source
 
-    # CPR marks the handoff before its cleanup can make cprActive false.
-    assert cpr.index('CBA_missionTime + 0.75') < cpr.index('call FUNC(cprCleanupLocal)')
+    # CPR has an earlier stale-session cleanup before a new episode starts. Scope this ordering
+    # assertion to the controller's actual swap exit rather than the first cleanup call in the file.
+    swap_exit = cpr.index('private _swapToBVM = GVAR(SwapToBVM);')
+    handoff = cpr.index('CBA_missionTime + 0.75', swap_exit)
+    cleanup = cpr.index('call FUNC(cprCleanupLocal)', swap_exit)
+    assert handoff < cleanup
+
     # BVM marks the handoff before its cleanup and consumes it only after On Start owns a real session.
     cancel = bvm.index('private _swapToCPR')
     assert bvm.index('CBA_missionTime + 0.75', cancel) < bvm.index('call FUNC(bvmCleanupLocal)', cancel)
