@@ -53,6 +53,19 @@ These notes cover the cumulative backlog/stability work from the validated batch
 - Removed stale test expectations for alternating pale-red ordinary action rows.
 - Group headers retain their existing optional per-section colors while normal treatment rows remain white.
 
+## Animation and Provider Control
+
+- Reconciled provider animation ownership with the current single-controller model.
+- Ordinary medical provider entry continues to use priority-one interpolated movement instead of priority-two snap entry.
+- Physical patient chest rolls use owner-scoped animation leases so competing providers cannot continually overwrite the same casualty.
+- A narrowly scoped priority-two fallback remains only when Arma's lying-state graph swallows the requested patient roll transition.
+- Stethoscope, pulse, chest-inspection, chest-access, and roll holds continue to freeze on their authored timeline and synchronize that held frame to observers.
+- Roll-provider hold timing remains 2.2 seconds.
+- Response and airway assessments retain their current authored wrapper animations and treatment durations.
+- HPMK wrapping no longer physically rolls or repositions the casualty, avoiding unnecessary animation ownership and collision handoffs.
+- CPR and BVM remain native ACM-owned continuous actions rather than ACME animation replacements.
+- Priority-two/switchMove usage is limited to exact held-frame synchronization, explicit resting-state locks, and scoped state-graph recovery rather than ordinary treatment entry.
+
 ## Internal QA
 
 - Historical backlog reduced from 146 original unresolved entries to 59 after AS-AT.
