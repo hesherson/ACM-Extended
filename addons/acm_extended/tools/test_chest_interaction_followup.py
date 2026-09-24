@@ -48,10 +48,11 @@ def test_both_burp_paths_check_patient_ownership_without_a_timer():
     assert "ACME_CS_burpCooldown" not in gate
     assert '_medic, 0] call ACME_fnc_chestSealLogOnce' in traumatic
     assert '_medic,0] call ACME_fnc_chestSealLogOnce' in surgical
-    # Traumatic-seal burp stays in the persistent hands-on-chest hold. Surgical aftercare owns its separate gesture.
+    # Burping never reuses the seal-placement medic3 theatre. Traumatic seal work stays in the
+    # persistent workspace; thoracostomy aftercare performs its owner-authoritative clinical transaction in place.
     assert '"chestSealBurpGesture"' not in traumatic
-    assert '"chestSealBurpGesture"' in surgical
-    assert 'case "chestSealBurpGesture"' in fn("ownerDispatch")
+    assert '"chestSealBurpGesture"' not in surgical
+    assert 'case "chestSealBurpGesture"' not in fn("ownerDispatch")
 
 
 def test_seal_validation_still_allows_laying_the_corner_flat():
