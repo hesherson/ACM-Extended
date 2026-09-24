@@ -34,18 +34,23 @@ def test_closing_a_panel_invalidates_pending_roll_before_restoration():
 
 
 def test_both_burp_paths_check_patient_ownership_without_a_timer():
-    for name in ("chestSealBurp", "thoraAftercareLocal"):
-        source = fn(name)
+    traumatic = fn("chestSealBurp")
+    surgical = fn("thoraAftercareLocal")
+    assert 'if (!local _patient) exitWith' in traumatic
+    assert 'if (isNull _patient || {!local _patient}' in surgical
+    for source in (traumatic, surgical):
         gate = source.index("call ACME_fnc_chestSealBurpReady")
         assert gate < source.index("call ACME_fnc_ptxTreat")
         assert gate < source.index("call ACME_fnc_chestSealLogOnce")
-        assert gate < source.index('"chestSealBurpGesture"')
     gate = fn("chestSealBurpReady")
     assert "local _patient" in gate
     assert not any(t.kind == "ident" and t.value in ("serverTime", "CBA_missionTime", "diag_tickTime") for t in lex(gate))
     assert "ACME_CS_burpCooldown" not in gate
-    assert '_medic, 0] call ACME_fnc_chestSealLogOnce' in fn("chestSealBurp")
-    assert '_medic,0] call ACME_fnc_chestSealLogOnce' in fn("thoraAftercareLocal")
+    assert '_medic, 0] call ACME_fnc_chestSealLogOnce' in traumatic
+    assert '_medic,0] call ACME_fnc_chestSealLogOnce' in surgical
+    # Traumatic-seal burp stays in the persistent hands-on-chest hold. Surgical aftercare owns its separate gesture.
+    assert '"chestSealBurpGesture"' not in traumatic
+    assert '"chestSealBurpGesture"' in surgical
     assert 'case "chestSealBurpGesture"' in fn("ownerDispatch")
 
 
