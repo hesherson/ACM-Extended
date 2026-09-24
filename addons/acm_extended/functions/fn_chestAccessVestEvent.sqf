@@ -35,6 +35,25 @@ if (_start) then {
     [_patient, _medic, "access"] call ACME_fnc_chestAccessVestAcquire;
 } else {
     if ((count _leases) == 0) then {
+        // Cancel only an unfinished ACCESS removal episode. Clearing its exact busy token makes every delayed
+        // lift/remove/lower callback fail its generation check before it can touch gear or patient animation.
+        private _busy = _patient getVariable ["ACME_chestAccess_vestBusy", ""];
+        if ((_busy find "vest:access:") == 0) then {
+            _patient setVariable ["ACME_chestAccess_vestBusy", "", false];
+            _patient setVariable ["ACME_chestAccess_readyServer", serverTime, true];
+        };
+
         [_patient, false, _medic, "access"] call ACME_fnc_chestAccessVestRestore;
+
+        // A preparation canceled before ACE treatmentStarted has no head-elevation treatment lease to release.
+        // If it temporarily flattened Semi-Fowler, explicitly arm the ordinary deferred resume instead of leaving
+        // the patient flat or replaying elevation under another intervention.
+        if ((_patient getVariable ["ACME_headElevated", false])
+            && {_patient getVariable ["ACME_headElev_Suspended", false]}
+            && {(count (_patient getVariable ["ACME_headElev_treatments", createHashMap])) == 0}) then {
+            _patient setVariable ["ACME_headElev_ResumePending", true, true];
+            private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
+            [{_this call ACME_fnc_headElevTryResume;}, [_patient, _poseToken], 0.20] call CBA_fnc_waitAndExecute;
+        };
     };
 };
