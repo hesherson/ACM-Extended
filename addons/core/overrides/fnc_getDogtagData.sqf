@@ -26,7 +26,7 @@ private _dogtagData = _target getVariable QACEGVAR(dogtags,dogtagData);
 private _cacheValid = !isNil "_dogtagData"
     && {_dogtagData isEqualType []}
     && {count _dogtagData >= 3}
-    && {((_dogtagData select [0, 3]) findIf {!(_x isEqualType "")}) < 0};
+    && {(_dogtagData select [0, 3]) isEqualTypeAll ""};
 
 if (_cacheValid) exitWith {_dogtagData};
 if (!isNil "_dogtagData") then {
