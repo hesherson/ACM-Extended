@@ -27,11 +27,11 @@ class LabelsAndOrder(unittest.TestCase):
         self.assertIn('(_text select [0,_leading]) + (["position", _positionKey]',s)
         self.assertIn('(_chars select _leading) in [9,32]',s)
 
-    def test_both_posture_actions_remain_on_head_and_chest(self):
+    def test_posture_actions_are_head_only_and_stay_in_examine(self):
         c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
         for name in ('ACME_ElevateHead','ACME_LowerHead'):
             b=c.split('class '+name+':',1)[1].split('\n    };',1)[0]
-            self.assertIn('allowedSelections[] = {"Head", "Body"};',b)
+            self.assertIn('allowedSelections[] = {"Head"};',b)
             self.assertIn('category = "examine";',b)
         self.assertIn('displayName = "Elevate Head to 30°";',c)
 
@@ -49,10 +49,11 @@ class LabelsAndOrder(unittest.TestCase):
         p=src('postInit')
         self.assertIn('ACME_menuHeaderColorDefault = [1, 0.96, 0.84, 1];',p)
         self.assertIn('ACME_menuRowColorDefault = [1, 1, 1, 1];',p)
-        self.assertIn('ACME_menuRowColorAlternate = [1, 0.84, 0.84, 1];',p)
+        self.assertIn('ACME_menuRowColorAlternate = [1, 1, 1, 1];',p)
         settings=read_source(ROOT/'XEH_settings.hpp')
         header=settings.split('"ACME_menuColorHeaders"',1)[1].split('call CBA_fnc_addSetting',1)[0]
         self.assertIn('OFF (default): all dropdown headings use cream text',header)
+        self.assertIn('Regular action rows use uniform white text',header)
         self.assertRegex(header,r'\n\s*false,\n\s*0,')
         self.assertNotIn('ACME_menuOpenDimFactor =',p)
 
