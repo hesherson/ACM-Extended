@@ -286,14 +286,15 @@ allowed={
 }
 assert changed==allowed,changed
 assert set(base_manifest).issubset(final_manifest)
-added=set(final_manifest)-set(base_manifest)
 expected_added={
  T+'test_bounded_push_content_identity.py',
  T+'test_bounded_route_selector_backing.py',
  'docs/audits/2026-09-23-bounded-backlog-AQ.md',
  'docs/audits/2026-09-23-bounded-backlog-AR.md',
 }
-assert added==expected_added,added
+# New review files are intentionally untracked until the bounded commit step.
+untracked=set(filter(None,cmd(['git','ls-files','--others','--exclude-standard','-z'],AFTER).stdout.split('\\0')))
+assert untracked==expected_added,untracked
 
 # Commit two bounded batches and publish review branch.
 def commit(paths,msg):
