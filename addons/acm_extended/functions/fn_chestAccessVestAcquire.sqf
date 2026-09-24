@@ -241,6 +241,8 @@ private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestLowerTi
 if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 0.78;};
 private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftHold", 0.04];
 if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.04;};
+private _removeAnimSpeed = missionNamespace getVariable ["ACME_chestAccess_vestRemoveAnimSpeed", 1.80];
+if (!(_removeAnimSpeed isEqualType 0) || {!finite _removeAnimSpeed} || {_removeAnimSpeed < 1}) then {_removeAnimSpeed = 1.80;};
 
 // No synthetic settle gap after the casualty is back down. The queued intervention may launch on the first
 // readiness frame instead of waiting while the provider is frozen with hands on the chest.
@@ -255,12 +257,17 @@ _patient setVariable [_readyVar, -1, true];
 private _beginPatient = {
     params [
         "_p","_medic","_ctx","_savedVar","_propVar","_pfhVar","_busyVar","_readyVar","_token",
-        "_commit","_liftTime","_holdTime","_lowerTime","_sequenceTime"
+        "_commit","_liftTime","_holdTime","_lowerTime","_removeAnimSpeed","_sequenceTime"
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
     // Readiness begins now, after the provider has actually entered medic4 or its bounded presentation timeout fired.
     _p setVariable [_readyVar, serverTime + _sequenceTime, true];
+
+    // Actual casualty RTM acceleration for carrier removal. The token prevents an old episode from resetting
+    // a replacement patient's speed.
+    _p setVariable ["ACME_chestAccess_removeSpeedToken", _token, false];
+    ["ace_common_setAnimSpeedCoef", [_p, _removeAnimSpeed]] call CBA_fnc_globalEvent;
 
     [_p, false] call ACME_fnc_headElevCollision;
     [_p, "ACME_HeadElevPatientGrab", 2, "chest-access-vest", _medic, _sequenceTime + 0.5, 4, _token]
@@ -302,6 +309,11 @@ private _beginPatient = {
             _p setVariable ["ACME_CS_facing", "front", true];
         };
 
+        if ((_p getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _token) then {
+            _p setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
+            ["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;
+        };
+
         _p setVariable [_busyVar, "", false];
         _p setVariable [_readyVar, serverTime, true];
 
@@ -311,6 +323,15 @@ private _beginPatient = {
         // synchronously in fnc_treatment immediately before launching the queued intervention.
         // Chest Seal continues to own its separate chestseal context/hand-off path.
     }, [_p,_medic,_ctx,_busyVar,_readyVar,_token], _sequenceTime] call CBA_fnc_waitAndExecute;
+
+    [{
+        params ["_p","_tok"];
+        if (isNull _p || {!local _p}) exitWith {};
+        if ((_p getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _tok) then {
+            _p setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
+            ["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;
+        };
+    }, [_p,_token], _sequenceTime + 0.25] call CBA_fnc_waitAndExecute;
 };
 
 // After any Semi-Fowler lay-flat finishes, let the provider fully holster/crouch and reach literal medic4.
@@ -318,13 +339,13 @@ private _beginPatient = {
 [{
     params [
         "_p","_medic","_ctx","_savedVar","_propVar","_pfhVar","_busyVar","_readyVar","_token",
-        "_commit","_liftTime","_holdTime","_lowerTime","_sequenceTime","_beginPatient"
+        "_commit","_liftTime","_holdTime","_lowerTime","_removeAnimSpeed","_sequenceTime","_beginPatient"
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
     private _args = [
         _p,_medic,_ctx,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,
-        _commit,_liftTime,_holdTime,_lowerTime,_sequenceTime
+        _commit,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime
     ];
 
     if (isNull _medic || {_medic isEqualTo _p} || {!alive _medic}) exitWith {
@@ -351,7 +372,7 @@ private _beginPatient = {
     }] call CBA_fnc_waitUntilAndExecute;
 }, [
     _patient,_medic,_context,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,
-    _commitRemoval,_liftTime,_holdTime,_lowerTime,_sequenceTime,_beginPatient
+    _commitRemoval,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient
 ], _preDelay max 0] call CBA_fnc_waitAndExecute;
 
 true
