@@ -22,6 +22,8 @@ private _treating = !_entryGrace && {
     || {_medic getVariable ["ACME_headElev_seqActive", false]}
     || {(_medic getVariable ["ace_medical_treatment_endInAnim", ""]) != ""}
     || {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}
+    || {[_patient] call ACM_core_fnc_cprActive}
+    || {[_patient] call ACM_core_fnc_bvmActive}
 };
 if (_treating) exitWith {
     // Kill ACME_fnc_doAnimHeld's reassert generation before the tourniquet/bandage/other treatment takes over.
