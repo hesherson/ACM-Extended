@@ -55,7 +55,8 @@ class B22UIContracts(unittest.TestCase):
         rows=read('functions/fn_skListRefresh.sqf')
         self.assertNotIn('ACME_SK_MedOriginalRect',inject)
         self.assertNotIn('ACME_SK_MedMeterH',inject+rows)
-        self.assertIn('safeZoneW / 6.5',inject)
+        self.assertIn('_uiW / 5.25',inject)
+        self.assertIn('_uiW / 3.3',inject)
         self.assertIn('safeZoneH / 20',rows)
     def test_partial_vial_ledger_still_persists(self):
         for name in ('vialTake','vialRefund'):
