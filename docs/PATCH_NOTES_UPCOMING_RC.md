@@ -1,6 +1,6 @@
 # ACM Extended — Upcoming Release Candidate Patch Notes
 
-These notes cover the cumulative backlog/stability work from the validated batch series through AS-AT. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative backlog/stability work from the validated batch series through AU-AV. This is still an RC/testing build until live multiplayer acceptance is completed.
 
 ## Stability and multiplayer ownership
 
@@ -68,7 +68,7 @@ These notes cover the cumulative backlog/stability work from the validated batch
 
 ## Internal QA
 
-- Historical backlog reduced from 146 original unresolved entries to 59 after AS-AT.
+- Historical backlog reduced from 146 original unresolved entries to 47 after AU-AV.
 - Full-suite comparisons are used to ensure previously passing identities do not regress.
 - Root-level legacy collection failures are tracked separately from the historical addon backlog.
 - Live dedicated-server and multi-client acceptance testing is still required before stable-release sign-off.
