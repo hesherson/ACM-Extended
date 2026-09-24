@@ -159,7 +159,7 @@ _map set [_part, _arr];
 
 if (!_isSingle) then {
     private _yl = +(_patient getVariable ["ACME_YLines", []]);
-    if !(_lineKey in _yl) then {_yl pushBack _lineKey;};
+    _yl pushBackUnique _lineKey;
     [_patient, _yl, true] call ACME_fnc_yLinesCommit;
 };
 [_patient, _part, _iv, _site] call ACME_fnc_resumeSiteFlow;
