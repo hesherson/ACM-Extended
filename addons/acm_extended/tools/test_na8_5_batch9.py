@@ -160,10 +160,17 @@ class SourceContracts(unittest.TestCase):
         self.assertIn('getVariable ["ACME_NV_OverlayControl", false]',t)
         self.assertIn('(_x select 0) in _all',t)
     def test_darkness_runs_after_procedure_for_all_views(self):
-        for n in ("ivMinigameTick","chestSealTick","thoraTick","laryngoTick","syringeKitTick","skUiTick","updateClampDialog","ivMinigameFlip"):
+        for n in ("ivMinigameTick","chestSealTick","thoraTick","laryngoTick","syringeKitTick","skUiTick","ivMinigameFlip"):
             lines=src(n).rstrip().splitlines()
             self.assertIn("call ACME_fnc_darknessShade",lines[-2])
             self.assertIn("call ACME_fnc_minigameVisionTick",lines[-1])
+        # Roller Clamp deliberately samples vision in its independent runtime, not during dialog update.
+        clamp=src("updateClampDialog")
+        runtime=src("registerClampDragRuntime")
+        self.assertNotIn("ACME_fnc_minigameVisionTick",clamp)
+        self.assertIn("ACME_RollerClamp_VisionSettleUntil",runtime)
+        self.assertIn("ACME_RollerClamp_NextVisionTick",runtime)
+        self.assertIn("[_display] call ACME_fnc_minigameVisionTick;",runtime)
     def test_no_laryngo_stimulus_result_log(self):
         t=code(src("laryngoStimulusLocal"))
         for s in ("addToLog","displayText","hint","systemChat"):self.assertNotIn(s,t)
