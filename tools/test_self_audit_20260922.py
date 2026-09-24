@@ -31,6 +31,7 @@ PROTECTED.update(REVIEWED_LIFECYCLE_UPDATES)
 # medic4 gate and roll the casualty directly from the Flip button handler.
 REVIEWED_AW_UPDATES = {
     'addons/acm_extended/functions/fn_chestSealFlip.sqf': '854017266106f8763a77a15350c7a70d70a2960fc9d31dba7f57a5e37ee484ae',
+    'tools/test_fork_phase167_chest_minigame_animation_contract.py': '7185c7d14f33d92322d08ce9d7271f7593541e23b274207b136cd66e5f3a00f9',
 }
 PROTECTED.update(REVIEWED_AW_UPDATES)
 
