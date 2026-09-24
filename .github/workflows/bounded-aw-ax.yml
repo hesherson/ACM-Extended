@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 871a488ea792468e020aac211a636fb446b26dae
+          ref: d86ff5c3d35bedb6a44839e38f620ed965fd4cde
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -43,7 +43,7 @@ jobs:
 
           BASE='0a138fc5a2212f4507b77d6c8028cccc168d251e'
           PREVIOUS_FULL='34b9ebd67123bdbaf4d5b5a8efb02275b6c8ab96'
-          CAND='871a488ea792468e020aac211a636fb446b26dae'
+          CAND='d86ff5c3d35bedb6a44839e38f620ed965fd4cde'
           FULL_RUN=35945541640
           root=pathlib.Path.cwd()
           before=pathlib.Path('/tmp/awax-root-before')
