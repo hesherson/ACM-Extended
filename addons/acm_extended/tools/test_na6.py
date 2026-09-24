@@ -128,7 +128,7 @@ class SettingsTests(unittest.TestCase):
         for name in LABELS:
             with self.subTest(name=name):self.assertEqual(sum(self.resolve({name:True}).values()),1)
     def test_turning_one_off_preserves_others(self):
-        flags={name:True for name in LABELS};flags['ACME_hc_tbi']=False;r=self.resolve(flags);self.assertFalse(r['ACME_hcEff_tbi']);self.assertEqual(sum(r.values()),14)
+        flags={name:True for name in LABELS};flags['ACME_hc_tbi']=False;r=self.resolve(flags);self.assertFalse(r['ACME_hcEff_tbi']);self.assertEqual(sum(r.values()),len(LABELS)-1)
     def test_reapplication_does_not_compound(self):
         base=.2;flags={'ACME_hc_chestSeal':True};scale=lambda v:base*(1.15 if self.resolve(v)['ACME_hcEff_cs'] else 1)
         self.assertEqual(scale(flags),scale(flags));self.assertEqual(scale({}),base)
