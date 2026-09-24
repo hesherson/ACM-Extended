@@ -82,15 +82,13 @@ class TreatmentAnimationContracts(unittest.TestCase):
         self.assertNotIn('call ace_common_fnc_doAnimation', CONTINUOUS)
         self.assertIn('ACME_fnc_treatmentPoseStart', CONTINUOUS)
         self.assertIn('ACME_fnc_treatmentPoseStop', CONTINUOUS)
-        self.assertIn('_poseEnded', CONTINUOUS)
+        self.assertIn('ACM_core_ContinuousAction_Epoch', CONTINUOUS)
+        self.assertIn('ACM_core_ContinuousAction_Session', CONTINUOUS)
         self.assertIn('_enteredVehicle', CONTINUOUS)
         self.assertIn('call _onCancel', CONTINUOUS)
         self.assertIn('CBA_fnc_removeKeyHandler', CONTINUOUS)
         self.assertIn('ACM_core_openMedicalMenu', CONTINUOUS)
+        self.assertIn('ACME_stethPoseEpoch', CONTINUOUS)
         steth = read_source(ROOT / 'overrides/fn_useStethoscope.sqf')
         self.assertIn('call ACME_fnc_beginStethoscopeAction', steth)
         self.assertIn('ace_hearing_fnc_updateHearingProtection', steth)
-
-
-if __name__ == '__main__':
-    unittest.main()
