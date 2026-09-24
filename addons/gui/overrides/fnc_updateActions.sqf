@@ -328,7 +328,13 @@ private _actionIndex = 0;
         // flag. Direct Pressure Apply/Stop are immediate in-place state toggles, so they never touch pendingReopen.
         _ctrl ctrlAddEventHandler ['ButtonClick', _statement];
         if (_groupKey isEqualTo '' && {!(_actionClass in ['acme_directpressure', 'acme_stopdirectpressure'])}) then {
-            _ctrl ctrlAddEventHandler ['ButtonClick', {ace_medical_gui_pendingReopen = true;}];
+            _ctrl ctrlAddEventHandler ['ButtonClick', {
+                // Chest-access preflight closes the medical menu on the accepted click and owns cancellation/reopen.
+                // Do not let ACE's generic post-click handler reopen it over the carrier/Semi-Fowler animation.
+                if !(ACE_player getVariable ["ACME_chestAccessPreflightActive", false]) then {
+                    ace_medical_gui_pendingReopen = true;
+                };
+            }];
         };
 
         _shownIndex = _shownIndex + 1;
