@@ -6,6 +6,13 @@ Updated 24 September 2026.
 
 ### CPR / BVM chest access
 
+- RC2 makes the chest-access preflight a single-click state: the medical menu closes immediately, a top-center **Preparing...** banner appears, and repeated CPR/BVM clicks cannot enqueue duplicate carrier animations.
+- Escape/F0 during Preparing cancels that exact generation, releases only its chest-access lease, clears the banner and reopens the medical menu.
+- Direct Pressure now yields before carrier/head/intervention animation ownership and remains animation-passive for the full native CPR/BVM lifetime instead of resuming when the short launcher treatment ends.
+- Semi-Fowler suspension is lower priority than active intervention patient animation/physics and will not re-elevate during CPR, BVM or the CPR/BVM transfer window.
+- CPR/BVM use one stable maneuver-family chest-access lease across repeated middle-mouse swaps. Provider-local and patient-owner transfer windows both prevent carrier restoration in the gap.
+- Carrier restoration now has its own faster patient choreography: 0.50 s lift + 0.02 s hold + 0.55 s lower, with a token-scoped 1.60x patient animation speed and guaranteed reset to 1.0.
+- A new chest intervention clicked during the short carrier-return animation queues behind that restore instead of waiting until the 12-second fail-open timeout.
 - CPR and all BVM variants now use the same plate-carrier chest-access preflight.
 - Plate-carrier custody remains active while either CPR or BVM is active, including repeated middle-mouse swaps between the two interventions.
 - CPR -> BVM and BVM -> CPR handoffs use a bounded provider-local transfer token so the carrier cannot be restored during the transition gap. If the replacement maneuver fails to start, normal restoration resumes automatically.
