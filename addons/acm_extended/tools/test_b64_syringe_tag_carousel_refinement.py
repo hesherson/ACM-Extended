@@ -88,15 +88,15 @@ def test_patient_name_uses_actual_screen_to_head_gap():
     header_contract()
 
 def test_carousel_motion_is_one_physical_slide_then_zero_duration_rebind():
+    from test_bounded_current_carousel_contract import navigation_contract
+    navigation_contract()
     move = txt('functions/fn_skCarouselMove.sqf')
     pick = txt('functions/fn_skCarouselPick.sqf')
-    assert 'private _motion = 0.135;' in move
-    assert '_c ctrlCommit _motion;' in move
-    assert 'private _scale = if (_to>=0' in move
+    assert 'Carousel changes are now instantaneous' in move
+    assert '_motion' not in move
+    assert 'ctrlCommit' not in move
     assert '[0] call ACME_fnc_skCarouselRender;' in move
-    assert '[_motion] call ACME_fnc_skCarouselRender;' not in move
-    assert '[_dir] call ACME_fnc_skCarouselMove;' in pick
-
+    assert 'ACME_fnc_skCarouselMove' in pick
 
 def test_single_syringe_still_only_nudges_then_recenters():
     move = txt('functions/fn_skCarouselMove.sqf')
