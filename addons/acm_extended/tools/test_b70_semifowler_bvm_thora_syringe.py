@@ -96,13 +96,15 @@ def test_syringe_can_return_last_hundredth_to_exact_endpoint():
 
 
 def test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel():
+    from test_bounded_current_carousel_contract import navigation_contract, tag_geometry_contract
+    navigation_contract()
+    tag_geometry_contract()
     move = txt('functions/fn_skCarouselMove.sqf')
     pick = txt('functions/fn_skCarouselPick.sqf')
-    # Movement may hide editors/list/done/hitbox, but not the persistent Edit Syringe Tag button 84470.
-    assert '[84460,84461,84462,84470,84471,84472,84480]' not in move
-    assert '[84460,84461,84462,84471,84472,84480]' in move
+    # Dedicated tag editing owns the keyboard/click surface; A/D and center-toggle are intentionally blocked.
+    assert 'if (uiNamespace getVariable ["ACME_SK_TagEditMode", false]) exitWith {};' in move
+    assert 'if (uiNamespace getVariable ["ACME_SK_TagEditMode",false]) exitWith {};' in pick
     assert 'call ACME_fnc_skCarouselToggle;' in pick
-
 
 def test_b69_chest_seal_spacing_is_retained():
     gen = txt('functions/fn_chestSealGenHoles.sqf')
