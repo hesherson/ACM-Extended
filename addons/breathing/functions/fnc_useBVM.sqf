@@ -47,6 +47,13 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
     private _epoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
     _extraArgs set [2, _epoch];
     GVAR(BVM_LocalSession) = [_medic, _patient, _epoch];
+
+    // 1.2.3: a successful BVM start completes any CPR -> BVM chest-access handoff.
+    private _chestHandoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
+    if ((_chestHandoff param [0, objNull, [objNull]]) isEqualTo _patient) then {
+        _medic setVariable ["ACME_chestAccessManeuverHandoff", [], false];
+    };
+
     _medic setVariable [QGVAR(BVM_patient), _patient, true];
     _medic setVariable [QGVAR(BVM_epoch), _epoch, true];
     _patient setVariable [QGVAR(BVM_session), [_medic, _epoch], true];
@@ -151,6 +158,13 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
 
     private _epoch = _extraArgs param [2, -1];
     private _swapToCPR = missionNamespace getVariable [QGVAR(SwapToCPR), false];
+
+    // Preserve the open-chest lease across the deliberate 0.1 s BVM -> CPR handoff. The bounded token lets the
+    // existing lease watchdog restore the carrier if CPR fails to take ownership.
+    if (_swapToCPR && {!isNull _medic} && {!isNull _patient}) then {
+        _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 0.75], false];
+    };
+
     if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
     // Death/respawn/locality loss releases ownership without reopening menus on the replacement player.
     if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
