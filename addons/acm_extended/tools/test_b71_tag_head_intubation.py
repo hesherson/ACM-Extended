@@ -45,12 +45,21 @@ def test_pushing_status_is_bodymap_injection_only_and_above_active_syringe():
     assert '(_display displayCtrl 84810) ctrlShow false;' in view
 
 def test_intubate_hidden_for_conscious_patient():
+    # Historical identity retained. B120 deliberately permits a perfusing/awake casualty to enter
+    # laryngoscopy; airway reflex, sedation, paralysis and bucking are handled inside the procedure.
     cfg = txt('config.cpp')
-    block = cfg[cfg.index('class ACME_IntubateStart'):cfg.index('class ACME_IntubateStart')+3500]
-    assert "ACE_isUnconscious" in block
-    assert "ace_medical_unconscious" in block
-    assert "ace_medical_inCardiacArrest" in block
-    assert "ACME_Laryngoscope" in block and "ACME_ETTube" in block
+    block = cfg[cfg.index('class ACME_IntubateStart'):cfg.index('class ACME_Extubate')]
+    condition = block.split('condition = "',1)[1].split('";',1)[0]
+    assert "ACME_fnc_procedureActionAllowed" in condition
+    assert "ACME_Laryngoscope" in condition and "ACME_ETTube" in condition
+    assert "ACME_ETT_Inserted" in condition and "ACM_airway_RecoveryPosition_State" in condition
+    assert "ACM_airway_AirwayItem_Oral" in condition and "ACM_airway_SurgicalAirway_TubeInserted" in condition
+    assert "ACME_nrb_on" in condition
+    assert "ACE_isUnconscious" not in condition
+    assert "ace_medical_unconscious" not in condition
+    assert "ace_medical_inCardiacArrest" not in condition
+    from test_historical_laryngoscopy_execution import test_unsedated_reactive_passage_retains_existing_buck_and_cuff_order
+    test_unsedated_reactive_passage_retains_existing_buck_and_cuff_order()
 
 def test_head_elevation_rolls_only_actual_prone_patient_to_supine():
     from test_bounded_head_start_contracts import start_contract
@@ -60,14 +69,16 @@ def test_native_acm_treatment_cannot_invent_head_position_roll():
     cfg = txt('config.cpp')
     elev = cfg[cfg.index('class ACME_ElevateHead'):cfg.index('class ACME_LowerHead')]
     lower = cfg[cfg.index('class ACME_LowerHead'):cfg.index('class ACME_TuneHeadTilt')]
-    override = txt('overrides/fn_treatment.sqf')
+    override = read_source(ROOT.parent / 'core/overrides/fnc_treatment.sqf', encoding='utf-8', errors='ignore')
     assert 'ACM_rollToBack = 0;' in elev
     assert 'ACM_rollToBack = 0;' in lower
+    assert 'private _headOwned = _classname in ["ACME_ElevateHead", "ACME_LowerHead"];' in override
+    assert 'if (!_isBypass && {!_headOwned}' in override
     assert 'private _nativeArgs = +_this;' in override
-    assert '_classname in ["ACME_ElevateHead", "ACME_LowerHead"]' in override
-    assert 'toLowerANSI _bodyPart == "body"' in override
-    assert '_nativeArgs set [2, "Head"];' in override
-    assert 'private _started = _nativeArgs call ACME_native_fnc_treatment;' in override
+    tail = override.split('private _nativeArgs = +_this;',1)[1].split('private _started = _nativeArgs call ACM_core_fnc_treatmentNative;',1)[0]
+    assert '_nativeArgs set [' not in tail
+    from test_bounded_head_start_contracts import start_contract
+    start_contract()
 
 def test_exact_semifowler_patient_and_provider_animations_retained():
     from test_bounded_head_provider_sequence import provider_contract
