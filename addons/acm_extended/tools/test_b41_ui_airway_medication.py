@@ -17,11 +17,16 @@ def test_b41_runtime_stamp():
 
 def test_cuff_syringe_uses_real_acm_pbo_prefix():
     cfg = text('config.cpp')
-    for asset in ('backbit', 'plunger', 'barrel'):
+    block = cfg[cfg.index('class LG_Syringe:'):cfg.index('class LG_Suction:')]
+    # Backbit/plunger come from ACM's real PBO path. The barrel is intentionally ACME's
+    # replacement saline-flush art, shared with the cuff/flush views.
+    for asset in ('backbit', 'plunger'):
         good = rf'\x\ACM\addons\circulation\ui\syringe\syringe_10_{asset}_ca.paa'
         bad = rf'\z\acm\addons\circulation\ui\syringe\syringe_10_{asset}_ca.paa'
-        assert good in cfg
-        assert bad not in cfg
+        assert good in block
+        assert bad not in block
+    assert r'\acm_extended\ui\syringe\syringe_flush_10_barrel_ca.paa' in block
+    assert r'\z\acm\addons\circulation\ui\syringe\syringe_10_barrel_ca.paa' not in block
 
 
 def test_vomit_sound_uses_real_acm_pbo_prefix():
