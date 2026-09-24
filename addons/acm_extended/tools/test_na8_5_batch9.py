@@ -77,10 +77,13 @@ class SourceContracts(unittest.TestCase):
     def test_restore_record_clear_only_after_success(self):
         t=src("headElevVestRestore")
         self.assertLess(t.index("if (_restored) then"),t.index('setVariable ["ACME_headElev_vestRemoved", false'))
-    def test_death_restores_vest_without_pose(self):
+    def test_death_restores_vest_with_normal_lay_flat_release(self):
         t=code(src("headElevDeathRelease"))
         self.assertIn("ACME_fnc_headElevVestRestore",t)
-        for s in ("setVectorUp","setPos","switchMove","doAnim","setDamage"):self.assertNotIn(s,t)
+        self.assertIn("ACME_HeadElevPatientRelease",t)
+        self.assertIn("ACME_fnc_doAnim",t)
+        # Death cleanup may use the authored release animation, but never teleport or damage the corpse.
+        for s in ("setVectorUp","setPos","switchMove","setDamage"):self.assertNotIn(s,t)
     def test_stop_death_branch_before_pose(self):
         from test_bounded_head_pose_contracts import assert_dead_stop_delegates_first
         from test_bounded_head_completion import test_dead_lower_delegates_before_living_animation_and_restore
@@ -160,10 +163,18 @@ class SourceContracts(unittest.TestCase):
         self.assertIn('getVariable ["ACME_NV_OverlayControl", false]',t)
         self.assertIn('(_x select 0) in _all',t)
     def test_darkness_runs_after_procedure_for_all_views(self):
-        for n in ("ivMinigameTick","chestSealTick","thoraTick","laryngoTick","syringeKitTick","skUiTick","updateClampDialog","ivMinigameFlip"):
+        for n in ("ivMinigameTick","chestSealTick","thoraTick","laryngoTick","syringeKitTick","skUiTick","ivMinigameFlip"):
             lines=src(n).rstrip().splitlines()
             self.assertIn("call ACME_fnc_darknessShade",lines[-2])
             self.assertIn("call ACME_fnc_minigameVisionTick",lines[-1])
+
+        # Roller Clamp is the deliberate exception: vision refresh is owned by its independent runtime.
+        # Sampling inside updateClampDialog during the transition frame caused the hosted NV blackout regression.
+        clamp=src("updateClampDialog")
+        runtime=src("registerClampDragRuntime")
+        self.assertNotIn("call ACME_fnc_darknessShade",clamp)
+        self.assertIn('[_display, [], "ACME_Clamp_Shade"] call ACME_fnc_darknessShade;',runtime)
+        self.assertIn('[_display] call ACME_fnc_minigameVisionTick;',runtime)
     def test_no_laryngo_stimulus_result_log(self):
         t=code(src("laryngoStimulusLocal"))
         for s in ("addToLog","displayText","hint","systemChat"):self.assertNotIn(s,t)
