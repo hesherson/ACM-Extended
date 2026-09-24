@@ -7,6 +7,8 @@ if (isNull _unit) exitWith {false};
 
 if ((_unit getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []) exitWith {true};
 if (_unit getVariable ["ACME_treatmentPreflightActive", false]) exitWith {true};
+if (_unit getVariable ["ACME_chestAccessPreflightActive", false]) exitWith {true};
+if ((_unit getVariable ["ACME_chestAccessProvider", []]) isNotEqualTo []) exitWith {true};
 if ((_unit getVariable ["ace_medical_treatment_endInAnim", ""]) != "") exitWith {true};
 if (_unit getVariable ["ACME_rollProviderActive", false]) exitWith {true};
 if (_unit getVariable ["ACME_headElev_seqActive", false]) exitWith {true};
