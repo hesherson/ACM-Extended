@@ -169,13 +169,13 @@ if (_held in ["seal", "tube"]) exitWith {
         if (_patient getVariable [format ["ACME_thora_sealed_%1", _side], false]) exitWith {false};
         private _medS = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
         if !([_medS, "thoracostomySeal", true] call ACME_fnc_procedureAllowed) exitWith {false};
-        if (isNull _medS || {([_medS, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
+        if (isNull _medS || {([_medS, "ACM_ChestSeal"] call ACME_fnc_itemCount) < 1}) exitWith {
             ["You have no chest seal.", 2] call ace_common_fnc_displayTextStructured;
             false
         };
-        private _before = [_medS, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem;
-        _medS removeItem "ACM_ChestSeal";
-        if (([_medS, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) >= _before) exitWith {false};
+        private _before = [_medS, "ACM_ChestSeal"] call ACME_fnc_itemCount;
+        [_medS, "ACM_ChestSeal"] call ACME_fnc_itemTake;
+        if (([_medS, "ACM_ChestSeal"] call ACME_fnc_itemCount) >= _before) exitWith {false};
         [_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit;
         [_patient, _side, "closed", true] call ACME_fnc_thoraSideStateCommit;
         [_patient] call ACME_fnc_thoraBumpVer;
@@ -191,9 +191,9 @@ if (_held in ["seal", "tube"]) exitWith {
     private _tubeMedic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
     if (_patient getVariable [format ["ACME_thora_closed_%1", _side], false]) exitWith {false};
     if (!(([_tubeMedic] call ACME_fnc_thoraClosureMode) select 2)) exitWith {false};
-    private _tubeBefore = [_tubeMedic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem;
-    _tubeMedic removeItem "ACM_ChestTubeKit";
-    if (([_tubeMedic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem) >= _tubeBefore) exitWith {false};
+    private _tubeBefore = [_tubeMedic, "ACM_ChestTubeKit"] call ACME_fnc_itemCount;
+    [_tubeMedic, "ACM_ChestTubeKit"] call ACME_fnc_itemTake;
+    if (([_tubeMedic, "ACM_ChestTubeKit"] call ACME_fnc_itemCount) >= _tubeBefore) exitWith {false};
     [_patient, _side, "sealed", false] call ACME_fnc_thoraSideStateCommit;
     [_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit;
     [_patient, _side, "tube", true] call ACME_fnc_thoraSideStateCommit;

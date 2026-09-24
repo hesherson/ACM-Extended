@@ -28,6 +28,8 @@ private _hasO2 = false;
     } forEach (magazinesAmmoCargo _x);
     if (_hasO2) exitWith {};
 } forEach [uniformContainer _medic, vestContainer _medic, backpackContainer _medic];
+// a tank packed in a kit counts too (ACME_fnc_itemCount); it is drawn from there by useOxygenTankReserve.
+if (!_hasO2) then {_hasO2 = ([_medic, "ACM_OxygenTank_425"] call ACME_fnc_itemCount) > 0;};
 
 private _hardcore = missionNamespace getVariable ["ACME_hcEff_nrb", false];
 

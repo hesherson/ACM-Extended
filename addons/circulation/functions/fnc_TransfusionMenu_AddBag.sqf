@@ -72,7 +72,7 @@ if (!_freshMetadataReady) exitWith {
 if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {
     _vehicle addItemCargoGlobal [_itemClassname, -1];
 } else {
-    _target removeItem _itemClassname;
+    [_target, _itemClassname] call ACME_fnc_itemTake;
 };
 
 private _itemClassNameString = getText (configFile >> "CfgWeapons" >> _itemClassname >> "displayName");

@@ -82,7 +82,7 @@ GVAR(MedicHasBVM) = false;
 GVAR(MedicHasBVMType) = "";
 GVAR(SwapToBVM) = false;
 
-private _uniqueItems = [_medic, 0] call ACEFUNC(common,uniqueItems);
+private _uniqueItems = [_medic, 0] call ACME_fnc_itemList;
 private _itemIndex = _uniqueItems findIf {_x == "ACM_BVM"};
 if (_itemIndex < 0) then {
     _itemIndex = _uniqueItems findIf {_x == "ACM_PocketBVM"};
@@ -248,7 +248,7 @@ private _controller = [{
     private _bvmChanged = _bvmNow isNotEqualTo _bvmWasActive;
 
     if (_cprChanged || _bvmChanged) then {
-        private _uniqueItems = [_medic, 0] call ACEFUNC(common,uniqueItems);
+        private _uniqueItems = [_medic, 0] call ACME_fnc_itemList;
         private _itemIndex = _uniqueItems findIf {_x == "ACM_BVM"};
         if (_itemIndex < 0) then {
             _itemIndex = _uniqueItems findIf {_x == "ACM_PocketBVM"};

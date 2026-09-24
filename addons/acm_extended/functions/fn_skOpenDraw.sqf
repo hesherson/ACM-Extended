@@ -76,7 +76,7 @@ ace_medical_gui_pendingReopen = false;
                 call ACME_fnc_patchDrawDialog;
             } else {
                 // PLAIN narc-box draw: compounding is the DEFAULT.
-                if (_flushClass != "" && {([ACE_player, _flushClass] call ace_common_fnc_getCountOfItem) > 0}) then {
+                if (_flushClass != "" && {([ACE_player, _flushClass] call ACME_fnc_itemCount) > 0}) then {
                     [_flushClass] call ACME_fnc_skWasteBegin;
                 } else {
                     if ((uiNamespace getVariable ["ACME_SK_WasteStage", ""]) == "") then {

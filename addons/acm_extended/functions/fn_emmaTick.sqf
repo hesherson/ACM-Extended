@@ -13,7 +13,7 @@ if (isNull _player) exitWith {};
 private _layer = "ACME_EMMA" call BIS_fnc_rscLayer;
 private _dlg = uiNamespace getVariable ["ACME_EMMA_DLG", displayNull];
 
-private _hasOwnEmma = (([_player, "ACM_EMMA"] call ace_common_fnc_getCountOfItem) > 0);
+private _hasOwnEmma = (([_player, "ACM_EMMA"] call ACME_fnc_itemCount) > 0);
 
 // the BVM route stays tied to the medic's own inventory and device.
 private _bvmAttached = _player getVariable ["ACME_emma_bvmAttached", false];

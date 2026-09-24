@@ -40,7 +40,7 @@ if (_stage == "claim") then {
     private _hasItem = if (_inventoryMode == 2) then {
         !isNull _vehicle && {_class in ((getItemCargo _vehicle) select 0)}
     } else {
-        !isNull _inventoryTarget && {([_inventoryTarget,_class] call ace_common_fnc_getCountOfItem) > 0}
+        !isNull _inventoryTarget && {([_inventoryTarget,_class] call ACME_fnc_itemCount) > 0}
     };
     if (!_hasItem) exitWith {["The selected replacement bag is no longer available."] call _cancel;};
 

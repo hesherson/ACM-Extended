@@ -16,7 +16,7 @@ private _sessions = (_patient getVariable ["ACME_suctionSessions", []]) select {
 private _valid = alive _patient && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])};
 _valid = _valid && {_medic distance _patient <= 5 || {!isNull objectParent _medic && {objectParent _medic == objectParent _patient}}};
 if (_mode in ["hand","salad"]) then {
-    _valid = _valid && {_device == 1} && {([_medic, "ACM_ACCUVAC"] call ace_common_fnc_getCountOfItem) > 0};
+    _valid = _valid && {_device == 1} && {([_medic, "ACM_ACCUVAC"] call ACME_fnc_itemCount) > 0};
 };
 if (_mode == "manual") then {
     private _proof = _medic getVariable ["ACME_suctionManualSession", []];

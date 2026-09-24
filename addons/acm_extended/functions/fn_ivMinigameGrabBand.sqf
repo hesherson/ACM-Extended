@@ -12,7 +12,7 @@ if (uiNamespace getVariable ["ACME_IV_Held", "none"] == "band") exitWith {
 if (uiNamespace getVariable ["ACME_IV_BandOn", false]) exitWith {};
 // it requires an actual NAR BOA constricting band in the kit to pick one up.
 private _medic = uiNamespace getVariable ["ACME_IV_Medic", objNull];
-if (isNull _medic || {([_medic, "ACME_NARBOA"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
+if (isNull _medic || {([_medic, "ACME_NARBOA"] call ACME_fnc_itemCount) < 1}) exitWith {
     ["No NAR BOA constricting band in your kit.", 2, ACE_player] call ace_common_fnc_displayTextStructured;
     [] call ACME_fnc_ivMinigameRefreshBandSlot;
 };

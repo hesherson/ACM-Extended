@@ -3,13 +3,13 @@ if (isNull _patient || {isNull _medic}) exitWith {};
 
 if !(missionNamespace getVariable ["ACME_sys_chestSeal", true]) exitWith {
     if (_startTool == "spear") then {
-        if (([_medic, "ACME_NARSPEAR"] call ace_common_fnc_getCountOfItem) > 0) then {
-            _medic removeItem "ACME_NARSPEAR";
+        if (([_medic, "ACME_NARSPEAR"] call ACME_fnc_itemCount) > 0) then {
+            [_medic, "ACME_NARSPEAR"] call ACME_fnc_itemTake;
             [_medic, _patient] call ACM_breathing_fnc_performNCD;
         };
     } else {
-        if (([_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) > 0) then {
-            _medic removeItem "ACM_ChestSeal";
+        if (([_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount) > 0) then {
+            [_medic, "ACM_ChestSeal"] call ACME_fnc_itemTake;
             [_medic, _patient] call ACM_breathing_fnc_applyChestSeal;
         };
     };

@@ -9,7 +9,7 @@ params ["_medic", "_patient"];
 if (isNull _medic || {isNull _patient}) exitWith {};
 // B33: recheck the reusable SureTemp on completion, including if it was dropped
 // after treatment started. An ungated callback must not reveal an exact reading.
-if (([_medic, "ACM_Thermometer"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {};
+if (([_medic, "ACM_Thermometer"] call ACME_fnc_itemCount) <= 0) exitWith {};
 
 private _t = _patient getVariable ["ACME_hypo_temp", 37];
 _patient setVariable ["ACME_tempReading", _t, true];

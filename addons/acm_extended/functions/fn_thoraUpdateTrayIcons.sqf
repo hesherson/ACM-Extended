@@ -36,11 +36,11 @@ uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
 
     if (_tool == "tube") then {
         _allowed = _canTube && {!_closed} && {!_sealed};
-        _count = if (_allowed) then {[_medic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem} else {0};
+        _count = if (_allowed) then {[_medic, "ACM_ChestTubeKit"] call ACME_fnc_itemCount} else {0};
     };
     if (_tool == "seal") then {
         _allowed = _canSeal && {!_closed} && {!_sealed};
-        _count = if (_allowed) then {[_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem} else {0};
+        _count = if (_allowed) then {[_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount} else {0};
     };
     private _locked = (_tool in ["tube", "seal"]) && {!_allowed || {_count <= 0}};
     private _selected = _held == _tool;

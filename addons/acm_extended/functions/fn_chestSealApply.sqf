@@ -10,7 +10,7 @@ if !(["seal", _key, "ACM_ChestSeal"] call ACME_fnc_chestSealRequest) exitWith {}
 uiNamespace setVariable ["ACME_CS_Holes", _holes];
 uiNamespace setVariable ["ACME_CS_Held", false];
 private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
-uiNamespace setVariable ["ACME_CS_SealsLeft", [_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem];
+uiNamespace setVariable ["ACME_CS_SealsLeft", [_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount];
 // The exact AinvPknlMstpSnonWrflDnon_medic3 motion is reserved ONLY for physically applying a seal.
 // Hand the persistent workspace pose directly into that finite placement, then return directly to hands-on-chest.
 if (!isNull _medic && {local _medic}) then {

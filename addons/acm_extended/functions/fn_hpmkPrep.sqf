@@ -11,8 +11,8 @@ if (isNull _medic || {isNull _patient}) exitWith {false};
 // Provider-side phase. Remove exactly one kit before handing the commit to the patient authority.
 if (!local _patient) exitWith {
     if (!_inventoryTaken) then {
-        if (([_medic, "ACM_HPMK"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {false};
-        _medic removeItem "ACM_HPMK";
+        if (([_medic, "ACM_HPMK"] call ACME_fnc_itemCount) <= 0) exitWith {false};
+        [_medic, "ACM_HPMK"] call ACME_fnc_itemTake;
     };
     [_patient, "hpmkPrep", [_medic, _patient, true]] call ACME_fnc_ownerDispatch;
     true
@@ -32,8 +32,8 @@ if (!_eligible || {_occupied}) exitWith {
 
 // Same-owner case has not removed inventory yet.
 if (!_inventoryTaken) then {
-    if (([_medic, "ACM_HPMK"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {false};
-    _medic removeItem "ACM_HPMK";
+    if (([_medic, "ACM_HPMK"] call ACME_fnc_itemCount) <= 0) exitWith {false};
+    [_medic, "ACM_HPMK"] call ACME_fnc_itemTake;
 };
 
 _patient setVariable ["ACME_hpmk_provider", _medic, true];

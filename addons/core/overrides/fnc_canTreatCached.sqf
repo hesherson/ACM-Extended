@@ -93,7 +93,7 @@ if (
         };
         case "ACME_SwapVentBattery": {
             [_target] call ACME_fnc_canSwapVentBattery
-                && {([_caller, "ACME_VentBattery"] call ace_common_fnc_getCountOfItem) > 0}
+                && {([_caller, "ACME_VentBattery"] call ACME_fnc_itemCount) > 0}
         };
         case "ACME_RemoveNRB": {_target getVariable ["ACME_nrb_on", false]};
         case "ACME_UnwrapHPMK": {_caller isNotEqualTo _target && {_hpmkState in ["wrapped", "exposed"]}};
@@ -125,7 +125,7 @@ if (
 ) exitWith {
     private _has = {
         params ["_item"];
-        (([_caller, _item] call ace_common_fnc_getCountOfItem) > 0) || {([_caller, _target, [_item]] call ace_medical_treatment_fnc_hasItem)}
+        (([_caller, _item] call ACME_fnc_itemCount) > 0) || {([_caller, _target, [_item]] call ace_medical_treatment_fnc_hasItem)}
     };
     switch (_className) do {
         case "ACME_ApplyChestSeal": { ["ACM_ChestSeal"] call _has };

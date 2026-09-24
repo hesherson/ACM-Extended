@@ -59,7 +59,7 @@ _ctrlInventorySelectText ctrlSetText (format [LLSTRING(Common_InventoryTarget), 
 private _cachedItems = if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {
     if (isNull _vehicle) then {[]} else {(getItemCargo _vehicle) select 0}
 } else {
-    [_target, 0] call ACEFUNC(common,uniqueItems)
+    [_target, 0] call ACME_fnc_itemList
 };
 
 private _fluidsArray = +GVAR(Fluids_Array);
@@ -197,7 +197,7 @@ if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {
     } forEach _fluidsArray;
 } else {
     {
-        private _count = [_target, _x] call ACEFUNC(common,getCountOfItem);
+        private _count = [_target, _x] call ACME_fnc_itemCount;
 
         if (_count > 0) then {
             [_ctrlInventoryPanel, _fluidsArrayData, _count, _x, _forEachIndex] call _fnc_addToInventoryPanel;

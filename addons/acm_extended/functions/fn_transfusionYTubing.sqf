@@ -26,7 +26,7 @@ private _data = if (_idx >= 0) then { _right lbData _idx } else { "" };
 // we do not bother when the build cannot proceed.
 missionNamespace setVariable ["ACME_ySelExactVol", 0];
 missionNamespace setVariable ["ACME_ySelUsedId", ""];
-if ((((_data splitString "|") param [2, ""]) == "USED") && {([ACE_player, "ACME_YTubing"] call ace_common_fnc_getCountOfItem) >= 1}) then {
+if ((((_data splitString "|") param [2, ""]) == "USED") && {([ACE_player, "ACME_YTubing"] call ACME_fnc_itemCount) >= 1}) then {
     private _uid = (_data splitString "|") param [3, ""];
     private _used = ACE_player getVariable ["ACME_usedBags", []];
     private _ui = _used findIf { (_x param [0, ""]) isEqualTo _uid };
@@ -86,7 +86,7 @@ if (_pending isEqualTo "") exitWith {
     // fwb unit still hangs at its real collected volume and type. the raw, empty FBTK collection kit is still
     // refused above, caught by the FieldBloodTransfusionKit guard near the top, which matches the rule that y tubing
     // comes only after it fills.
-    if (([ACE_player, "ACME_YTubing"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, "ACME_YTubing"] call ACME_fnc_itemCount) < 1) exitWith {
         ["You need a Y-type blood tubing set to build a Y line.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
     missionNamespace setVariable ["ACME_yPending", _selClass];
@@ -127,7 +127,7 @@ private _fnc_clearPending = {
     missionNamespace setVariable ["ACME_yPendingSalineUsedId", ""];
 };
 
-if (([ACE_player, "ACME_YTubing"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, "ACME_YTubing"] call ACME_fnc_itemCount) < 1) exitWith {
     call _fnc_clearPending;
     ["Y-type tubing unavailable. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
@@ -139,7 +139,7 @@ if (([ACE_player, "ACME_YTubing"] call ace_common_fnc_getCountOfItem) < 1) exitW
 private _fnc_matUsed = {
     params ["_uid", "_cls"];
     if (_uid isEqualTo "") exitWith { true };  // not a used leg.
-    if (([ACE_player, _cls] call ace_common_fnc_getCountOfItem) >= 1) exitWith { true };  // already on hand.
+    if (([ACE_player, _cls] call ACME_fnc_itemCount) >= 1) exitWith { true };  // already on hand.
     private _used = ACE_player getVariable ["ACME_usedBags", []];
     private _ui = _used findIf { (_x param [0, ""]) isEqualTo _uid };
     if (_ui < 0) exitWith { false };  // the bag is gone from the store.
@@ -150,13 +150,13 @@ private _fnc_matUsed = {
     missionNamespace setVariable ["ACME_coolerAutoStoreSuppressUntil", diag_tickTime + 8];
     missionNamespace setVariable ["ACME_coolerAutoStoreBusy", true];
     ACE_player addItem _cls;
-    if (([ACE_player, _cls] call ace_common_fnc_getCountOfItem) < 1) then {
+    if (([ACE_player, _cls] call ACME_fnc_itemCount) < 1) then {
         private _cont = objNull;
         { if (!isNull _x) exitWith { _cont = _x; }; } forEach [backpackContainer ACE_player, vestContainer ACE_player, uniformContainer ACE_player];
         if (!isNull _cont) then { _cont addItemCargoGlobal [_cls, 1]; };
     };
     missionNamespace setVariable ["ACME_coolerAutoStoreBusy", false];
-    if (([ACE_player, _cls] call ace_common_fnc_getCountOfItem) >= 1) then {
+    if (([ACE_player, _cls] call ACME_fnc_itemCount) >= 1) then {
         _used deleteAt _ui;
         ACE_player setVariable ["ACME_usedBags", _used, true];
         uiNamespace setVariable ["ACME_usedRowSig", "__force__"];
@@ -201,7 +201,7 @@ private _bloodFromCooler = ((_bloodData splitString "|") param [2, ""]) == "COOL
 // same class, the re-derive above matches the [cooled] row and would mislabel this set [cooled], and try the
 // cooler pull. force it off, because the used leg never comes from the cooler.
 if (_bloodUsedId isNotEqualTo "") then { _bloodFromCooler = false; };
-if (_bloodFromCooler && {([ACE_player, _blood] call ace_common_fnc_getCountOfItem) < 1}) then {
+if (_bloodFromCooler && {([ACE_player, _blood] call ACME_fnc_itemCount) < 1}) then {
     private _cstore = ACE_player getVariable ["ACME_coolerStore", createHashMap];
     private _gotIt = false;
     // 1. a cooler the medic is carrying, which is a virtual store keyed by cooler class.
@@ -239,7 +239,7 @@ if (_bloodFromCooler && {([ACE_player, _blood] call ace_common_fnc_getCountOfIte
         // it is consumed into the set in this same action, so ignore the kit space. if additem did not take, because the
         // kit is full by ACM's slot accounting, force it into the cargo of a worn container, so it always lands and is
         // never lost.
-        if (([ACE_player, _blood] call ace_common_fnc_getCountOfItem) < 1) then {
+        if (([ACE_player, _blood] call ACME_fnc_itemCount) < 1) then {
             private _cont = objNull;
             { if (!isNull _x) exitWith { _cont = _x; }; } forEach [backpackContainer ACE_player, vestContainer ACE_player, uniformContainer ACE_player];
             if (!isNull _cont) then { _cont addItemCargoGlobal [_blood, 1]; };
@@ -249,11 +249,11 @@ if (_bloodFromCooler && {([ACE_player, _blood] call ace_common_fnc_getCountOfIte
         if (!isNull (uiNamespace getVariable ["ACME_CLR_DLG", displayNull])) then { call ACME_fnc_coolerRefresh; };
     };
 };
-if (([ACE_player, _blood] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _blood] call ACME_fnc_itemCount) < 1) exitWith {
     call _fnc_clearPending;
     ["Blood unit not on hand. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
-if (([ACE_player, _saline] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _saline] call ACME_fnc_itemCount) < 1) exitWith {
     call _fnc_clearPending;
     ["Saline bag not on hand. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
@@ -275,23 +275,23 @@ missionNamespace setVariable ["ACME_yBuildingActive", diag_tickTime + 2.5];
         missionNamespace setVariable ["ACME_yPendingSalineUsedId", ""];
     };
     // re-check that everything is still on hand, because any piece could have been dropped mid-build.
-    if (([ACE_player, "ACME_YTubing"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, "ACME_YTubing"] call ACME_fnc_itemCount) < 1) exitWith {
         call _fnc_clearPending;
         ["Y-type tubing unavailable. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([ACE_player, _blood] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _blood] call ACME_fnc_itemCount) < 1) exitWith {
         call _fnc_clearPending;
         ["Blood unit not on hand. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([ACE_player, _saline] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _saline] call ACME_fnc_itemCount) < 1) exitWith {
         call _fnc_clearPending;
         ["Saline bag not on hand. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
 
     // consume all three physical items into the set.
-    ACE_player removeItem "ACME_YTubing";
-    ACE_player removeItem _blood;
-    ACE_player removeItem _saline;
+    [ACE_player, "ACME_YTubing"] call ACME_fnc_itemTake;
+    [ACE_player, _blood] call ACME_fnc_itemTake;
+    [ACE_player, _saline] call ACME_fnc_itemTake;
 
 // the nominal full volume, parsed from the class suffix, such as ACM_BloodBag_..._500 or ACE_salineIV_500, where
 // a bare ace_salineiv is 1000. it is a label only, so an odd class name harmlessly defaults to 1000.

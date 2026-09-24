@@ -13,7 +13,7 @@ if (isNull _patient) then { _patient = ACE_player; };
 private _flushClass = uiNamespace getVariable ["ACME_SK_SelFlush", "ACM_SalineFlush_10"];
 if (_flushClass isEqualTo "") then { _flushClass = "ACM_SalineFlush_10"; };
 
-if (([ACE_player, _flushClass] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _flushClass] call ACME_fnc_itemCount) < 1) exitWith {
     ["No 10 mL saline flush in inventory.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     uiNamespace setVariable ["ACME_SK_SelFlush", ""];
     call ACME_fnc_skBuildHotspots;
@@ -30,7 +30,7 @@ playSound "ACME_SyringeDraw";
 
 // keep the body map open. if the medic still has flushes, leave flush mode armed for another site, and otherwise
 // return to normal syringe-selection mode.
-if (([ACE_player, _flushClass] call ace_common_fnc_getCountOfItem) < 1) then {
+if (([ACE_player, _flushClass] call ACME_fnc_itemCount) < 1) then {
     uiNamespace setVariable ["ACME_SK_SelFlush", ""];
 };
 call ACME_fnc_skBuildHotspots;

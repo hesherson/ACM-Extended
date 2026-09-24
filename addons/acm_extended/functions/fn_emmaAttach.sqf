@@ -4,7 +4,7 @@
 params ["_medic"];
 if (isNull _medic) exitWith {};
 
-if (([_medic, "ACM_EMMA"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {
+if (([_medic, "ACM_EMMA"] call ACME_fnc_itemCount) <= 0) exitWith {
     ["You do not have an EMMA.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 

@@ -12,7 +12,7 @@ private _dlg = findDisplay 84000;
 if (isNull _dlg) exitWith {};
 // Do not apply a 10 mL fill to geometry captured for another syringe size.
 if ((missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 0]) != 10) exitWith {};
-if (([ACE_player, _flushClass] call ace_common_fnc_getCountOfItem) < 1) exitWith {};
+if (([ACE_player, _flushClass] call ACME_fnc_itemCount) < 1) exitWith {};
 
 private _cap = 10;  // the wired flush is 10 ml.
 uiNamespace setVariable ["ACME_SK_WasteCap", _cap];

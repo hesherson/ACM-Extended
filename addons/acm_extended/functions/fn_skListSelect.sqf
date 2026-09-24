@@ -3,7 +3,7 @@ params ["_button"];
 private _d = ctrlParent _button;
 (_button getVariable ["ACME_SK_Row", []]) params ["_kind", "_nativeID", "_data", "_value", "_item", "_back", "_label"];
 private _list = _d displayCtrl _nativeID;
-private _available = _item == "" || {([ACE_player, _item] call ace_common_fnc_getCountOfItem) > 0};
+private _available = _item == "" || {([ACE_player, _item] call ACME_fnc_itemCount) > 0};
 if (_kind == "medication") then {
     private _holder = [ACE_player] call ACME_fnc_vialHolder;
     if (isNull _holder) then {_available = false;} else {

@@ -32,7 +32,7 @@ if (_needed > _sealed) exitWith {false};
 for "_i" from 1 to _needed do {
     private _consumeClass = _vial;
     if (([_holder, _vial] call ACME_fnc_vialItemCount) < 1 && {_legacyVial != ""} && {([_holder, _legacyVial] call ACME_fnc_vialItemCount) > 0}) then {_consumeClass = _legacyVial;};
-    if (_holder isKindOf "CAManBase") then {_holder removeItem _consumeClass;} else {_holder addItemCargoGlobal [_consumeClass, -1];};
+    if (_holder isKindOf "CAManBase") then {[_holder, _consumeClass] call ACME_fnc_itemTake;} else {_holder addItemCargoGlobal [_consumeClass, -1];};
 };
 private _left = (_open + _needed * _cap - _ml) max 0;
 private _discardResidual = missionNamespace getVariable ["ACME_vialDiscardResidualMl",0.0105];

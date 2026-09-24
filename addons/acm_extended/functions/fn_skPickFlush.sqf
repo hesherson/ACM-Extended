@@ -15,7 +15,7 @@ if (_index < 0) exitWith {};
 private _flushClass = _ctrl lbData _index;
 if (_flushClass isEqualTo "") then { _flushClass = "ACM_SalineFlush_10"; };
 
-if (([ACE_player, _flushClass] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _flushClass] call ACME_fnc_itemCount) < 1) exitWith {
     ["No 10 mL saline flush in inventory.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     _ctrl lbSetCurSel -1;
 };

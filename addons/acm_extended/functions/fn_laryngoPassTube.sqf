@@ -31,7 +31,7 @@ private _gagged = _gagChance > 0 && {!_arrest} && {!_paralyzed} && {_underSedate
 // the tube is committed. it is through the cords, so it stops being a thing in your hand and comes off the count,
 // because it belongs to the patient now. it keeps drawing seated and is simply not carried any more.
 private _med = uiNamespace getVariable ["ACME_laryngo_medic", ACE_player];
-if (!isNull _med && {!_existingTube}) then { _med removeItem "ACME_ETTube"; };
+if (!isNull _med && {!_existingTube}) then { [_med, "ACME_ETTube"] call ACME_fnc_itemTake; };
 uiNamespace setVariable ["ACME_laryngo_tubeInHand", false];
 uiNamespace setVariable ["ACME_laryngo_tubeGrip", false];
 uiNamespace setVariable ["ACME_laryngo_tubeAnchored", false];

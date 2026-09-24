@@ -172,7 +172,7 @@ if (_mode isEqualTo "swap") exitWith {
         uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2];
     };
 
-    if (([ACE_player, "ACME_VentBattery"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, "ACME_VentBattery"] call ACME_fnc_itemCount) < 1) exitWith {
         (_dlg displayCtrl 88001) ctrlSetText "NO SPARE BATTERY";
         (_dlg displayCtrl 88001) ctrlShow true;
         uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2];

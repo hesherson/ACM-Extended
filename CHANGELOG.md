@@ -1,5 +1,13 @@
 # ACM Extended patch notes
 
+## Unreleased
+
+### Inventory mods and Enhanced First Aid Kits
+
+- Every read and take of a medic's or patient's supplies goes through `ACME_fnc_itemCount`, `ACME_fnc_itemTake` and `ACME_fnc_itemList` instead of `ace_common_fnc_getCountOfItem`, `removeItem` and `ace_common_fnc_uniqueItems`. Without an inventory mod nothing changes. See [docs/inventory-api.md](docs/inventory-api.md).
+- With Enhanced First Aid Kits loaded, supplies packed in an IFAK, AFAK or MFAK work in every ACME window and action - chest seal, IV, syringe kit, laryngoscopy, suction, thoracostomy, ventilator, transfusion, EMMA, vials, CPR with a BVM, AED, syringes - and are taken straight out of the kit.
+- Portable oxygen and the NRB draw from an oxygen tank packed in a kit; the tank stays in the kit, opened. Refilling an empty tank at a medical vehicle takes the empty one out of a kit as well.
+
 ## 1.2.2 cumulative update
 
 Updated 19 September 2026. Version 1.2.2 incorporates the complete 1.2.1-rc1 patch series and aligns the release metadata. Consolidates all subsequent patches from 18–19 September, through [8fd12c0](https://github.com/hesherson/ACM-Extended/commit/8fd12c016f17504b05781925f095d75f0fbe9424). The [covered commit range](https://github.com/hesherson/ACM-Extended/compare/f2b6c482123aff1a60234e4d2b737e44de33767c...8fd12c016f17504b05781925f095d75f0fbe9424) includes 132 commits. The release check corrections and removal of the experimental drag handle are also included.

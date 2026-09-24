@@ -26,7 +26,7 @@ if (_bagId == "") exitWith {
 private _pending = missionNamespace getVariable ["ACME_piPending", createHashMap];
 if (((values _pending) findIf { !(_x select 3) && {(_x select 0) isEqualTo _patient} && {((_x select 1) select 2) == _bagId} }) >= 0) exitWith {};
 private _isNewCuff = !(_bagId in (_patient getVariable ["ACME_piCuffs", createHashMap]));
-if (_isNewCuff && {([ACE_player, "ACME_PressureInfuser"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
+if (_isNewCuff && {([ACE_player, "ACME_PressureInfuser"] call ACME_fnc_itemCount) < 1}) exitWith {
     ["No pressure infuser carried.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 private _seq = (missionNamespace getVariable ["ACME_piSequence", 0]) + 1;

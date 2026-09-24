@@ -15,8 +15,8 @@ private _patient = uiNamespace getVariable ["ACME_laryngo_patient", objNull];
 private _opened = !isNull _medic && {!isNull _patient} && {
     (uiNamespace getVariable ["ACME_suction_bagOwner", []]) isEqualTo [_medic, _patient]
 };
-private _accuN = if (isNull _medic) then {0} else {[_medic, "ACM_ACCUVAC"] call ace_common_fnc_getCountOfItem};
-private _bagN = if (isNull _medic) then {0} else {[_medic, "ACM_SuctionBag"] call ace_common_fnc_getCountOfItem};
+private _accuN = if (isNull _medic) then {0} else {[_medic, "ACM_ACCUVAC"] call ACME_fnc_itemCount};
+private _bagN = if (isNull _medic) then {0} else {[_medic, "ACM_SuctionBag"] call ACME_fnc_itemCount};
 private _type = -1;
 if (!isNull _medic && {!isNull _patient}) then {
     if (_accuN > 0) then {_type = 1;} else {

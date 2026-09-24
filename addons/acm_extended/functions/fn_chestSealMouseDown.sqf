@@ -136,7 +136,7 @@ if (_heldSpear) exitWith {
             if (!_queued) exitWith {false};
             uiNamespace setVariable ["ACME_CS_SpearHeld", false];
             if (!isNull _medic) then {
-                uiNamespace setVariable ["ACME_CS_SpearsLeft", [_medic, "ACME_NARSPEAR"] call ace_common_fnc_getCountOfItem];
+                uiNamespace setVariable ["ACME_CS_SpearsLeft", [_medic, "ACME_NARSPEAR"] call ACME_fnc_itemCount];
             };
             playSound "ACME_CS_HoleReveal";
             [] call ACME_fnc_chestSealRefreshSpearSlot;
@@ -193,7 +193,7 @@ if (_heldSeal) exitWith {
         };
         if (!_queued) exitWith {false};
         uiNamespace setVariable ["ACME_CS_Held", false];
-        uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem}];
+        uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount}];
         ["Seal misplaced. center it directly over the found hole.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
         [] call ACME_fnc_chestSealRefreshSlot;
         [] call ACME_fnc_chestSealRender;

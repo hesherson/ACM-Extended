@@ -4,7 +4,7 @@
 // _this is [_unit, _removeclasses, _addclasses]. the removes run first, freeing room for the adds.
 params ["_unit", ["_rem", []], ["_add", []]];
 if (isNull _unit || {!local _unit}) exitWith {};
-{ _unit removeItem _x; } forEach _rem;
+{ [_unit, _x] call ACME_fnc_itemTake; } forEach _rem;
 {
     if (_unit canAdd _x) then { _unit addItem _x; }
     else {

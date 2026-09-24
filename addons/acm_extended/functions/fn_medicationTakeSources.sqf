@@ -19,7 +19,7 @@ private _taken = [];
         };
     };
 } forEach _components;
-if (!_valid || {_container != "" && {([_medic, _container] call ace_common_fnc_getCountOfItem) < 1}}) exitWith {false};
+if (!_valid || {_container != "" && {([_medic, _container] call ACME_fnc_itemCount) < 1}}) exitWith {false};
 {if (([_medic, _x] call ACME_fnc_infusionVialVolume) + 0.000001 < (_need get _x)) then {_valid = false;};} forEach (keys _need);
 if (!_valid) exitWith {false};
 {
@@ -31,7 +31,7 @@ if (!_valid) exitWith {
     {[_medic, _x select 0, _x select 1, _medic] call ACME_fnc_vialRefund;} forEach _taken;
     false
 };
-if (_consumeContainer && {_container != ""}) then {_medic removeItem _container;};
+if (_consumeContainer && {_container != ""}) then {[_medic, _container] call ACME_fnc_itemTake;};
 _result = true;
 };
 _result

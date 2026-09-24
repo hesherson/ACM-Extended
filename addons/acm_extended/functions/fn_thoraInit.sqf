@@ -221,8 +221,8 @@ uiNamespace setVariable ["ACME_Thora_SealMode", false];
     private _isTube = _tool == "tube";
     private _isSeal = _tool == "seal";
     private _count = -1;
-    if (_isTube) then {_count = if (_canTube) then {[_medic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem} else {0};};
-    if (_isSeal) then {_count = if (_canSeal) then {[_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem} else {0};};
+    if (_isTube) then {_count = if (_canTube) then {[_medic, "ACM_ChestTubeKit"] call ACME_fnc_itemCount} else {0};};
+    if (_isSeal) then {_count = if (_canSeal) then {[_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount} else {0};};
     private _toolLocked = (_isTube || {_isSeal}) && {_count <= 0};
 
     private _bg = _display ctrlCreate ["RscText", -1];

@@ -11,5 +11,5 @@ private _range = missionNamespace getVariable ["ACME_emma_igelRange", 5];
 private _sameVehicle = (vehicle _medic != _medic) && {(vehicle _medic) isEqualTo (vehicle _patient)};
 if (!_sameVehicle && {(_medic distance _patient) > _range}) exitWith {false};
 (_medic getVariable ["ACME_emma_bvmAttached", false]) || {
-    ([_medic, "ACM_EMMA"] call ace_common_fnc_getCountOfItem) > 0
+    ([_medic, "ACM_EMMA"] call ACME_fnc_itemCount) > 0
 }

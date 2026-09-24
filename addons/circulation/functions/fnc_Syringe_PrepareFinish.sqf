@@ -15,11 +15,11 @@ if (!isNull _dlgVial) then {
 if (!_sessionOK) exitWith {false};
 if !([_holder, _medication, _dose, _medic] call ACME_fnc_vialTake) exitWith {false};
 private _empty = format ["ACM_Syringe_%1", _size];
-if (([_medic, _empty] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([_medic, _empty] call ACME_fnc_itemCount) < 1) exitWith {
     [_holder, _medication, _dose, _medic] call ACME_fnc_vialRefund;
     false
 };
-_medic removeItem _empty;
+[_medic, _empty] call ACME_fnc_itemTake;
 [_medic, format ["ACM_Syringe_%1_%2", _size, _medication], "", floor (_dose * 100)] call ace_common_fnc_addToInventory;
 private _dlgB25 = findDisplay 84000; if (!isNull _dlgB25) then {["clear", "", 0, _dlgB25] call ACME_fnc_vialSession;};
 

@@ -16,7 +16,7 @@ private _valid=(_cap isEqualType 0) && {finite _cap} && {_cap==10} && {(_nsMl is
     if (!(_x isEqualType []) || {count _x != 2} || {!((_x select 0) isEqualType "")} || {(_x select 0)==""} || {!((_x select 1) isEqualType 0)} || {!finite (_x select 1)} || {(_x select 1)<=0}) then {_valid=false;} else {_totalDrug=_totalDrug+(_x select 1);};
 } forEach _components;
 if (!_valid || {_nsMl+_totalDrug > _cap+0.001}) exitWith {};
-if (([ACE_player,_flushClass] call ace_common_fnc_getCountOfItem)<1) exitWith {["The saline flush is no longer in inventory.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;};
+if (([ACE_player,_flushClass] call ACME_fnc_itemCount)<1) exitWith {["The saline flush is no longer in inventory.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;};
 
 // Revalidate the exact explicitly selected vial sessions before any source or flush is consumed.
 private _needByMed=createHashMap;

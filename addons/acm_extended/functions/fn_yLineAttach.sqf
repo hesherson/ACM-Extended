@@ -55,7 +55,7 @@ if (local _target) then {
 [_target, "activity", "%1 hung blood on a Y-line with paired saline", [[ACE_player, false, true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
 
 // an inline blood warmer means the unit goes in warm.
-if (([ACE_player, "ACME_BloodWarmer"] call ace_common_fnc_getCountOfItem) >= 1) then {
+if (([ACE_player, "ACME_BloodWarmer"] call ACME_fnc_itemCount) >= 1) then {
     [_target, true] call ACME_fnc_bloodThermalStateCommit;
     ["Blood warmer inline.", 2, ACE_player] call ace_common_fnc_displayTextStructured;
 };

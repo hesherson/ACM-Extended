@@ -2807,6 +2807,9 @@ class CfgFunctions {
             class vialClass {};
             class vialMedication {};
             class vialItemCount {};
+            class itemCount {};
+            class itemTake {};
+            class itemList {};
             class vialCapacity {};
             class vialPreview {};
             class medicationSourceRows {};
@@ -6873,14 +6876,14 @@ class CfgVehicles {
                 class ACME_FlushMenu {
                     displayName = "Saline Flush / Push-Dose Epi";
                     icon = "\acm_extended\ui\items\salineFlush_ca.paa";
-                    condition = "(missionNamespace getVariable ['ACME_sys_sk', true]) && {((([_player, 'ACM_SalineFlush_10'] call ace_common_fnc_getCountOfItem) > 0) || {(_player getVariable ['ACME_flush_State', []]) isNotEqualTo []})}";
+                    condition = "(missionNamespace getVariable ['ACME_sys_sk', true]) && {((([_player, 'ACM_SalineFlush_10'] call ACME_fnc_itemCount) > 0) || {(_player getVariable ['ACME_flush_State', []]) isNotEqualTo []})}";
                     statement = "";
                     exceptions[] = {"isNotInside", "isNotSitting"};
                     showDisabled = 0;
                     class ACME_Flush_Prep {
                         displayName = "Saline Flush / Push-Dose (Syringe)";
                         icon = "\acm_extended\ui\items\salineFlush_ca.paa";
-                        condition = "([_player, 'ACM_SalineFlush_10'] call ace_common_fnc_getCountOfItem) > 0";
+                        condition = "([_player, 'ACM_SalineFlush_10'] call ACME_fnc_itemCount) > 0";
                         statement = "uiNamespace setVariable ['ACME_SK_AutoSaline', true]; call ACME_fnc_syringeKitOpen";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 0;
@@ -6915,7 +6918,7 @@ class CfgVehicles {
                     };
                     class ACME_SyringeKit_PushEpi {
                         displayName = "Draw Push-Dose Epi (10 mcg/mL)";
-                        condition = "(([_player, 'ACM_SalineFlush_10'] call ace_common_fnc_getCountOfItem) > 0) && {([_player, 'EpinephrineCardiac'] call ACME_fnc_infusionVialVolume) >= 1}";
+                        condition = "(([_player, 'ACM_SalineFlush_10'] call ACME_fnc_itemCount) > 0) && {([_player, 'EpinephrineCardiac'] call ACME_fnc_infusionVialVolume) >= 1}";
                         statement = "[_player, _player, '', ['pushDoseOneShot']] call ACME_fnc_salineFlush";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 1;
@@ -6978,7 +6981,7 @@ class CfgVehicles {
                     // ventilated patient. see fn_ventpanelopen.
                     displayName = "Open Ventilator";
                     icon = "\acm_extended\ui\vent\ventway_sparrow_robust_ca.paa";
-                    condition = "([_player, 'ACME_Ventilator'] call ace_common_fnc_getCountOfItem) > 0";
+                    condition = "([_player, 'ACME_Ventilator'] call ACME_fnc_itemCount) > 0";
                     statement = "[] call ACME_fnc_ventPanelOpen";
                     exceptions[] = {"isNotInside", "isNotSitting"};
                     showDisabled = 0;
@@ -8200,7 +8203,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 3;
         allowedSelections[] = {"Head","Body"};
-        condition = "([_medic, 'ACM_Thermometer'] call ace_common_fnc_getCountOfItem) > 0";
+        condition = "([_medic, 'ACM_Thermometer'] call ACME_fnc_itemCount) > 0";
         callbackSuccess = "_this call ACME_fnc_checkTemperature";
         callbackFailure = "";
         callbackProgress = "";
@@ -8437,7 +8440,7 @@ class ace_medical_treatment_actions {
         items[] = {};
         // B120: Orotracheal intubation may be attempted on a perfusing casualty. Airway reflex, sedation and
         // paralysis are handled inside the procedure rather than hiding the action from the menu.
-        condition = "([_medic, 'ACME_IntubateStart'] call ACME_fnc_procedureActionAllowed) && {([_medic, 'ACME_Laryngoscope'] call ace_common_fnc_getCountOfItem) > 0} && {([_medic, 'ACME_ETTube'] call ace_common_fnc_getCountOfItem) > 0} && {!(_patient getVariable ['ACME_ETT_Inserted', false])} && {!(_patient getVariable ['ACM_airway_RecoveryPosition_State', false])} && {(_patient getVariable ['ACM_airway_AirwayItem_Oral', '']) isEqualTo ''} && {!(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false])} && {!(_patient getVariable ['ACME_nrb_on', false])}";
+        condition = "([_medic, 'ACME_IntubateStart'] call ACME_fnc_procedureActionAllowed) && {([_medic, 'ACME_Laryngoscope'] call ACME_fnc_itemCount) > 0} && {([_medic, 'ACME_ETTube'] call ACME_fnc_itemCount) > 0} && {!(_patient getVariable ['ACME_ETT_Inserted', false])} && {!(_patient getVariable ['ACM_airway_RecoveryPosition_State', false])} && {(_patient getVariable ['ACM_airway_AirwayItem_Oral', '']) isEqualTo ''} && {!(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false])} && {!(_patient getVariable ['ACME_nrb_on', false])}";
         callbackSuccess = "[_medic, _patient, toLower _bodyPart] call ACME_fnc_laryngoOpen";
         callbackFailure = "";
         callbackProgress = "";
@@ -8511,7 +8514,7 @@ class ace_medical_treatment_actions {
         consumeItem = 0;
         allowedSelections[] = {"Head"};
         items[] = {};
-        condition = "([_medic, 'ACME_ConnectETVent'] call ACME_fnc_procedureActionAllowed) && {!(_patient getVariable ['ACM_airway_RecoveryPosition_State', false])} && {((_patient getVariable ['ACME_ETT_Inserted', false]) || {(_patient getVariable ['ACM_airway_AirwayItem_Oral', '']) isEqualTo 'SGA'} || {_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false]}) && {!(_patient getVariable ['ACME_vent_circuit', false])} && {!(_patient getVariable ['ACME_vent_onPatient', false])} && {(_patient getVariable ['ACME_vent_custodyId', '']) == ''} && {([_medic, 'ACME_Ventilator'] call ace_common_fnc_getCountOfItem) > 0}}";
+        condition = "([_medic, 'ACME_ConnectETVent'] call ACME_fnc_procedureActionAllowed) && {!(_patient getVariable ['ACM_airway_RecoveryPosition_State', false])} && {((_patient getVariable ['ACME_ETT_Inserted', false]) || {(_patient getVariable ['ACM_airway_AirwayItem_Oral', '']) isEqualTo 'SGA'} || {_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false]}) && {!(_patient getVariable ['ACME_vent_circuit', false])} && {!(_patient getVariable ['ACME_vent_onPatient', false])} && {(_patient getVariable ['ACME_vent_custodyId', '']) == ''} && {([_medic, 'ACME_Ventilator'] call ACME_fnc_itemCount) > 0}}";
         callbackSuccess = "[_medic, _patient] call ACME_fnc_ventConnectPatient";
         ACM_menuIcon = "ACME_Ventilator";
         callbackFailure = "";
@@ -8568,7 +8571,7 @@ class ace_medical_treatment_actions {
         // the machine is on the patient once connected, so requiring the medic to carry one would make the panel
         // unreachable the moment it was hooked up. carrying a spare still works for a patient who has been configured
         // and not yet connected.
-        condition = "([_medic, 'ACME_VentOpenPatient'] call ACME_fnc_procedureActionAllowed) && {((_patient getVariable ['ACME_vent_circuit', false]) || {_patient getVariable ['ACME_vent_configured', false]}) && {(_patient getVariable ['ACME_vent_onPatient', false]) || {([_medic, 'ACME_Ventilator'] call ace_common_fnc_getCountOfItem) > 0}}}";
+        condition = "([_medic, 'ACME_VentOpenPatient'] call ACME_fnc_procedureActionAllowed) && {((_patient getVariable ['ACME_vent_circuit', false]) || {_patient getVariable ['ACME_vent_configured', false]}) && {(_patient getVariable ['ACME_vent_onPatient', false]) || {([_medic, 'ACME_Ventilator'] call ACME_fnc_itemCount) > 0}}}";
         callbackSuccess = "[_patient, true] call ACME_fnc_ventPanelOpen";
         ACM_menuIcon = "ACME_Ventilator";
         callbackFailure = "";
@@ -8766,7 +8769,7 @@ class ace_medical_treatment_actions {
         // axillary wounds too. XStat is a junctional hemostatic and the axilla is a junctional site. it is one of the
         // places the sponges are indicated, because it is a wound you cannot tourniquet and cannot reliably pack by
         // hand. the AAJT exclusion stays inguinal only, because that is the only site the AAJT occupies.
-        condition = "private _i = ['head','body','leftarm','rightarm','leftleg','rightleg'] find toLowerANSI _bodyPart; ((_patient getVariable [format ['ACME_Junc_%1', toLowerANSI _bodyPart], '']) == 'open') && {_i >= 0} && {!([_patient, _i] call ACME_fnc_aajtOccludes)} && {([_medic, 'ACME_XStat'] call ace_common_fnc_getCountOfItem) > 0}";
+        condition = "private _i = ['head','body','leftarm','rightarm','leftleg','rightleg'] find toLowerANSI _bodyPart; ((_patient getVariable [format ['ACME_Junc_%1', toLowerANSI _bodyPart], '']) == 'open') && {_i >= 0} && {!([_patient, _i] call ACME_fnc_aajtOccludes)} && {([_medic, 'ACME_XStat'] call ACME_fnc_itemCount) > 0}";
         callbackSuccess = "_this call ACME_fnc_xstatApply";
         callbackFailure = "";
         callbackProgress = "";
@@ -8795,7 +8798,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 1;
         allowedSelections[] = {"Head"};
-        condition = "(missionNamespace getVariable ['ACME_sys_nrb', true]) && {[_patient] call ACME_fnc_nrbAirwayCompatible} && {!(_patient getVariable ['ACME_nrb_on', false]) && {([_medic, 'ACM_NRBMask'] call ace_common_fnc_getCountOfItem) > 0}}";
+        condition = "(missionNamespace getVariable ['ACME_sys_nrb', true]) && {[_patient] call ACME_fnc_nrbAirwayCompatible} && {!(_patient getVariable ['ACME_nrb_on', false]) && {([_medic, 'ACM_NRBMask'] call ACME_fnc_itemCount) > 0}}";
         callbackSuccess = "_this call ACME_fnc_nrbApply";
         callbackFailure = "";
         callbackProgress = "";
@@ -8834,7 +8837,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 5.699;
         allowedSelections[] = {"Body"};
-        condition = "!(_patient isEqualTo _medic) && {(_patient getVariable ['ACE_isUnconscious', false]) || {(stance _patient) == 'PRONE'} || {_patient getVariable ['ACM_core_Lying_State', false]}} && {(missionNamespace getVariable ['ACME_sys_hpmk', true]) && {((_patient getVariable ['ACME_hpmk_state', '']) == '') && {([_medic, 'ACM_HPMK'] call ace_common_fnc_getCountOfItem) > 0}}}";
+        condition = "!(_patient isEqualTo _medic) && {(_patient getVariable ['ACE_isUnconscious', false]) || {(stance _patient) == 'PRONE'} || {_patient getVariable ['ACM_core_Lying_State', false]}} && {(missionNamespace getVariable ['ACME_sys_hpmk', true]) && {((_patient getVariable ['ACME_hpmk_state', '']) == '') && {([_medic, 'ACM_HPMK'] call ACME_fnc_itemCount) > 0}}}";
         callbackStart = "params ['_medic','_patient']; if (!isNull _patient) then {[_patient, 5.699] call ACME_fnc_markImportantSfx}; if (!isNull _medic) then {[_medic, 'ACM_HPMK_Wrap'] remoteExec ['say3D', 0]}";
         callbackSuccess = "_this call ACME_fnc_hpmkPrep";
         callbackFailure = "";
@@ -8946,7 +8949,7 @@ class ace_medical_treatment_actions {
         allowSelfTreatment = 1;
         treatmentTime = 0.5;
         allowedSelections[] = {"Head","Body","LeftArm","RightArm","LeftLeg","RightLeg"};
-        condition = "!(_medic getVariable ['ACME_emma_bvmAttached', false]) && {([_medic, 'ACM_EMMA'] call ace_common_fnc_getCountOfItem) > 0}";
+        condition = "!(_medic getVariable ['ACME_emma_bvmAttached', false]) && {([_medic, 'ACM_EMMA'] call ACME_fnc_itemCount) > 0}";
         callbackStart = "params ['_medic']; if (!isNull _medic) then {[_medic, 'ACME_EMMA_Attach'] remoteExec ['say3D', 0]}";
         callbackSuccess = "_this call ACME_fnc_emmaAttach";
         callbackFailure = "";
@@ -9160,7 +9163,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 8;
         allowedSelections[] = {"Body"};
-        condition = "([_medic, 'ACM_Thermometer'] call ace_common_fnc_getCountOfItem) > 0";
+        condition = "([_medic, 'ACM_Thermometer'] call ACME_fnc_itemCount) > 0";
         callbackSuccess = "_this call ACME_fnc_readCoreTemp";
         callbackFailure = "";
         callbackProgress = "";
@@ -9439,7 +9442,7 @@ class ace_medical_treatment_actions {
         displayNameProgress = "Flushing IV/IO site...";
         category = "medication";
         treatmentTime = 3;
-        condition = "(([_medic, 'ACM_SalineFlush_10'] call ace_common_fnc_getCountOfItem) > 0) && {([_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIV) || {[_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO}}";
+        condition = "(([_medic, 'ACM_SalineFlush_10'] call ACME_fnc_itemCount) > 0) && {([_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIV) || {[_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO}}";
         callbackStart = "playSound 'ACME_SyringeDraw'";
         callbackSuccess = "[_this select 0, _this select 1, _this select 2, ['flushLine']] call ACME_fnc_salineFlush";
         items[] = {};

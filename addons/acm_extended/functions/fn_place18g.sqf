@@ -11,7 +11,7 @@ params ["_medic", "_patient", "_bodyPart", "_args"];
 _args params [["_accessSite", 2]];  // 0 upper, 1 middle, 2 lower.
 if (isNull _patient) exitWith {};
 
-if (([_medic, "ACM_IV_18g"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([_medic, "ACM_IV_18g"] call ACME_fnc_itemCount) < 1) exitWith {
     ["No 18G catheter in inventory.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
@@ -21,7 +21,7 @@ if (([_medic, "ACM_IV_18g"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
 // stick lets the message of setiv stand and wastes the catheter, like ACM.
 if (!isNil "ACM_circulation_fnc_setIV") then {
     [_medic, _patient, _bodyPart, 5, true, true, _accessSite] call ACM_circulation_fnc_setIV;
-    _medic removeItem "ACM_IV_18g";
+    [_medic, "ACM_IV_18g"] call ACME_fnc_itemTake;
     if ([_patient, _bodyPart, 5, _accessSite] call ACM_circulation_fnc_hasIV) then {
         private _siteName = ["upper", "middle", "lower"] select _accessSite;
         [format ["18G IV: %1 %2.", _siteName, ([_bodyPart, "display"] call ACME_fnc_bodyPartName)], 2, _medic] call ace_common_fnc_displayTextStructured;

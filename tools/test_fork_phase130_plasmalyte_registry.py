@@ -12,6 +12,6 @@ for item,data in [('ACME_PlasmaLyteBag','PlasmaLyteIV_1000'),('ACME_PlasmaLyteBa
     assert f'class {item}' in cfg
 assert 'while {count ACM_circulation_Fluids_Array_Data <= _index}' in init
 assert 'GVAR(TransfusionMenu_Selected_Inventory) == 2' in menu
-assert '[_target, 0] call ACEFUNC(common,uniqueItems)' in menu
+assert '[_target, 0] call ACME_fnc_itemList' in menu
 assert 'case "PlasmaLyte"' in vol or '"PlasmaLyte"' in vol
 print('PASS phase130: Plasma-Lyte item/data pairs survive list rebuilds and selected inventory gating')

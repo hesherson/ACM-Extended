@@ -20,7 +20,7 @@ if (_held) exitWith {
 
 private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
 private _patient = uiNamespace getVariable ["ACME_CS_Patient", objNull];
-private _count = if (isNull _medic) then {0} else {[_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem};
+private _count = if (isNull _medic) then {0} else {[_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount};
 uiNamespace setVariable ["ACME_CS_SealsLeft", _count];
 if (_count <= 0) exitWith {
     [] call ACME_fnc_chestSealRefreshSlot;

@@ -18,11 +18,11 @@ private _duplicate = false;
     if ((_req select 0) == _patient && {(_req select 4) == (_snapshot select 0)} && {(_req select 6) == _operation} && {(_req select 7) isEqualTo _payload}) exitWith { _duplicate = true; };
 } forEach (keys ACME_CS_pending);
 if (_duplicate) exitWith {false};
-if (_item != "" && {([_medic, _item] call ace_common_fnc_getCountOfItem) <= 0}) exitWith {false};
+if (_item != "" && {([_medic, _item] call ACME_fnc_itemCount) <= 0}) exitWith {false};
 if (_item != "") then {
-    private _before = [_medic, _item] call ace_common_fnc_getCountOfItem;
-    _medic removeItem _item;
-    if (([_medic, _item] call ace_common_fnc_getCountOfItem) >= _before) then { _item = "__RESERVATION_FAILED__"; };
+    private _before = [_medic, _item] call ACME_fnc_itemCount;
+    [_medic, _item] call ACME_fnc_itemTake;
+    if (([_medic, _item] call ACME_fnc_itemCount) >= _before) then { _item = "__RESERVATION_FAILED__"; };
 };
 if (_item == "__RESERVATION_FAILED__") exitWith {false};
 ACME_CS_requestSequence = (missionNamespace getVariable ["ACME_CS_requestSequence", 0]) + 1;

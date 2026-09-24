@@ -59,7 +59,7 @@ if (_fromUsed) exitWith {
     _used deleteAt _ui; ACE_player setVariable ["ACME_usedBags",_used,true];
     private _requestId=format ["rehang:%1:%2:%3",clientOwner,diag_frameNo,floor(diag_tickTime*1000)];
     private _pending=uiNamespace getVariable ["ACME_usedRehangPending",createHashMap]; _pending set [_requestId,_record]; uiNamespace setVariable ["ACME_usedRehangPending",_pending]; uiNamespace setVariable ["ACME_usedRowSig","__force__"];
-    private _warmer=([ACE_player,"ACME_BloodWarmer"] call ace_common_fnc_getCountOfItem)>=1;
+    private _warmer=([ACE_player,"ACME_BloodWarmer"] call ACME_fnc_itemCount)>=1;
     [_target2,"rehangUsedBag",[_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer]] call ACME_fnc_ownerDispatch;
 };
 
@@ -82,7 +82,7 @@ if (_isBlood && {(missionNamespace getVariable ["ACME_yPending", ""]) == _class}
 // a box within reach, and it becomes a normal loose unit for either the y refill or the spike and stage below.
 // _fromCooler tells us it is cold. it only fires when nothing of this class is already loose, because a loose bag
 // is always used first.
-if (_isBlood && _fromCooler && {([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1}) then {
+if (_isBlood && _fromCooler && {([ACE_player, _class] call ACME_fnc_itemCount) < 1}) then {
     private _cstore = ACE_player getVariable ["ACME_coolerStore", createHashMap];
     private _heldNow = ((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player)) select { (_x find "ACME_BloodCooler_") == 0 };
     private _gotIt = false;
@@ -108,7 +108,7 @@ if (_isBlood && _fromCooler && {([ACE_player, _class] call ace_common_fnc_getCou
         missionNamespace setVariable ["ACME_coolerAutoStoreSuppressUntil", diag_tickTime + 5];
         missionNamespace setVariable ["ACME_coolerAutoStoreBusy", true];
         ACE_player addItem _class;
-        if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) then {
+        if (([ACE_player, _class] call ACME_fnc_itemCount) < 1) then {
             private _cont = objNull;
             { if (!isNull _x) exitWith { _cont = _x; }; } forEach [backpackContainer ACE_player, vestContainer ACE_player, uniformContainer ACE_player];
             if (!isNull _cont) then { _cont addItemCargoGlobal [_class, 1]; };
@@ -136,7 +136,7 @@ private _requestYRefill = {
     private _inventoryMode = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory", 0];
     // Cooler rows were materialized into the medic's inventory above before this claim is requested.
     if (_fromCooler) then {_inventoryMode = 0;};
-    private _warmer = ([ACE_player, "ACME_BloodWarmer"] call ace_common_fnc_getCountOfItem) >= 1;
+    private _warmer = ([ACE_player, "ACME_BloodWarmer"] call ACME_fnc_itemCount) >= 1;
     private _epoch = [_target] call ACME_fnc_clinicalEpoch;
     private _requestId = format ["yrefill:%1:%2:%3", clientOwner, diag_frameNo, floor (diag_tickTime * 1000)];
     private _pending = uiNamespace getVariable ["ACME_yRefillPending", createHashMap];
@@ -164,7 +164,7 @@ if (_isBlood && _lineYd && {!isNull _target}) exitWith {
     if (_dirtyNow) exitWith {
         ["Flush the line (Flush Line) before hanging the next unit.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _class] call ACME_fnc_itemCount) < 1) exitWith {
         ["Blood unit not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
     ["blood"] call _requestYRefill;
@@ -183,7 +183,7 @@ if (_isSaline && _lineYd && {!isNull _target}) then {
     }) >= 0;
 };
 if (_isSaline && _lineYd && {!isNull _target} && {!_yReserveLive}) exitWith {
-    if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _class] call ACME_fnc_itemCount) < 1) exitWith {
         ["Bag not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
     ["saline"] call _requestYRefill;
@@ -192,10 +192,10 @@ if (_isSaline && _lineYd && {!isNull _target} && {!_yReserveLive}) exitWith {
 // spike into stage. any bag not caught above is spiked and staged into the prepared iv sets.
 private _setItem = "ACME_IVLine";
 private _setName = "an IV line (administration set)";
-if (([ACE_player, _setItem] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _setItem] call ACME_fnc_itemCount) < 1) exitWith {
     [format ["You need %1 to spike this bag.", _setName], 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
-if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _class] call ACME_fnc_itemCount) < 1) exitWith {
     ["Bag not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 // do not start a second spike while one is running.
@@ -207,14 +207,14 @@ missionNamespace setVariable ["ACME_spikingActive", [_class, diag_tickTime + 1.6
 [{
     params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold"];
     missionNamespace setVariable ["ACME_spikingActive", []];
-    if (([ACE_player, _setItem] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _setItem] call ACME_fnc_itemCount) < 1) exitWith {
         [format ["%1 is no longer available.", _setName], 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _class] call ACME_fnc_itemCount) < 1) exitWith {
         ["The bag is no longer on hand.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
-    ACE_player removeItem _setItem;
-    ACE_player removeItem _class;
+    [ACE_player, _setItem] call ACME_fnc_itemTake;
+    [ACE_player, _class] call ACME_fnc_itemTake;
 
     private _cfg = configFile >> "CfgWeapons" >> _class;
     private _nm = [getText (_cfg >> "displayName"), getText (_cfg >> "shortName")] select (isText (_cfg >> "shortName"));

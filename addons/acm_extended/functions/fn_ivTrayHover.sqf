@@ -51,7 +51,7 @@ if (!isNull _bg) then {
 };
 
 private _medic = uiNamespace getVariable ['ACME_IV_Medic',objNull];
-private _count = if (isNull _medic) then {0} else {[_medic,format ['ACM_IV_%1g',_gauge]] call ace_common_fnc_getCountOfItem};
+private _count = if (isNull _medic) then {0} else {[_medic,format ['ACM_IV_%1g',_gauge]] call ACME_fnc_itemCount};
 private _shown = (_count min 5) max 0;
 private _colors = createHashMapFromArray [
     [14,[1,0.55,0.55,0.84]],

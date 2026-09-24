@@ -22,9 +22,9 @@ if (_tool in ["scalpel", "kelly", "finger"] && {!_repeatFinger} && {
 }) exitWith {};
 // Reject before touching the current tool/step. A nested exitWith would only leave its inner block.
 if (_tool == "tube" && {isNull _medic || {!([_medic, "chestTube"] call ACME_fnc_procedureAllowed)}
-    || {([_medic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem) < 1}}) exitWith {};
+    || {([_medic, "ACM_ChestTubeKit"] call ACME_fnc_itemCount) < 1}}) exitWith {};
 if (_tool == "seal" && {isNull _medic || {!([_medic, "thoracostomySeal"] call ACME_fnc_procedureAllowed)}
-    || {([_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) < 1}}) exitWith {};
+    || {([_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount) < 1}}) exitWith {};
 
 uiNamespace setVariable ["ACME_Thora_Held", _tool];
 uiNamespace setVariable ["ACME_Thora_TubeSnap", false];

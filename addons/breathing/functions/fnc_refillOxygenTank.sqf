@@ -17,9 +17,9 @@
 
 params ["_unit"];
 
-_unit call ACEFUNC(common,goKneeling);
+if !([_unit, "ACM_OxygenTank_425_Empty"] call ACME_fnc_itemTake) exitWith {};
 
-_unit removeItem "ACM_OxygenTank_425_Empty";
+_unit call ACEFUNC(common,goKneeling);
 
 [8, [_unit], {
     params ["_args"];

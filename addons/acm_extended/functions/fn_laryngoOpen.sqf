@@ -34,11 +34,11 @@ uiNamespace setVariable ["ACME_LG_Shade", []];
 // the tube check below is still waived for a resume, because the tube is already in the patient rather than in the
 // kit.
 if ((_patient getVariable ["ACME_ETT_Inserted", false])) then { uiNamespace setVariable ["ACME_laryngo_resume", true]; };
-if (([_medic, "ACME_Laryngoscope"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([_medic, "ACME_Laryngoscope"] call ACME_fnc_itemCount) < 1) exitWith {
     ["You need a laryngoscope to intubate.", 2] call ace_common_fnc_displayTextStructured;
 };
 if (!(uiNamespace getVariable ["ACME_laryngo_resume", false])
-    && {([_medic, "ACME_ETTube"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
+    && {([_medic, "ACME_ETTube"] call ACME_fnc_itemCount) < 1}) exitWith {
     ["You need an endotracheal tube to intubate.", 2] call ace_common_fnc_displayTextStructured;
 };
 // already intubated?

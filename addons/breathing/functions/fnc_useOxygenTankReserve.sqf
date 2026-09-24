@@ -18,6 +18,7 @@
 params ["_unit"];
 
 private _return = false;
+private _found = false;
 
 private _itemContainers = [uniformContainer _unit, vestContainer _unit, backpackContainer _unit];
 private _containerString = ["uniform", "vest", "backpack"];
@@ -38,6 +39,7 @@ private _containerString = ["uniform", "vest", "backpack"];
     } forEach _mags;
 
     if (count _targetMags > 0) exitWith {
+        _found = true;
         _targetMags sort true;
 
         private _targetAmmoCount = (_targetMags select 0);
@@ -54,5 +56,17 @@ private _containerString = ["uniform", "vest", "backpack"];
         };
     };
 } forEach _itemContainers;
+
+// No loose tank: one packed in an Enhanced First Aid Kits kit is drawn from right inside the kit, where it
+// stays opened. drawCharge answers the units left in it, -1 when no kit holds a tank.
+if (!_found && {!isNil "efak_medical_fnc_drawCharge"}) then {
+    private _left = [_unit, "ACM_OxygenTank_425"] call efak_medical_fnc_drawCharge;
+
+    if (_left == 0) then {
+        [_unit, "ACM_OxygenTank_425_Empty"] call ACEFUNC(common,addToInventory);
+    };
+
+    _return = _left >= 1;
+};
 
 _return;

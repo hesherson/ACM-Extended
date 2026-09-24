@@ -1,6 +1,6 @@
 params [["_unit", ACE_player]];
 
-private _items = [_unit, 0] call ace_common_fnc_uniqueItems;
+private _items = [_unit, 0] call ACME_fnc_itemList;
 private _result = -1;
 
 {

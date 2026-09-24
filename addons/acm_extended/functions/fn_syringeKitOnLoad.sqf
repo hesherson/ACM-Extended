@@ -142,7 +142,7 @@ _sizes lbSetCurSel 3;  // "10 mL".
 private _autoLoaded = false;
 if (uiNamespace getVariable ["ACME_SK_AutoSaline", false]) then {
     uiNamespace setVariable ["ACME_SK_AutoSaline", false];
-    if (([ACE_player, "ACM_SalineFlush_10"] call ace_common_fnc_getCountOfItem) >= 1) then {
+    if (([ACE_player, "ACM_SalineFlush_10"] call ACME_fnc_itemCount) >= 1) then {
         // the full saline-flush state, set explicitly. it mirrors the saline case of fn_syringekitsource.
         uiNamespace setVariable ["ACME_SK_Size", 10];
         uiNamespace setVariable ["ACME_SK_Source", "Saline"];

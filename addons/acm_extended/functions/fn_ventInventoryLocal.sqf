@@ -18,12 +18,12 @@ if (_operation == "take") then {
     if (alive _medic && {!isNull _patient} && {alive _patient}
         && {[_medic, "ventilator"] call ACME_fnc_procedureAllowed}
         && {[_medic, _patient] call ACME_fnc_ventRecoveryNear}) then {
-        private _before = [_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem;
+        private _before = [_medic, "ACME_Ventilator"] call ACME_fnc_itemCount;
         if (_before > 0) then {
             _device = [];
             {if (!isNil {_medic getVariable _x}) then {_device pushBack [_x, _medic getVariable _x];};} forEach ([] call ACME_fnc_ventDeviceFields);
-            _medic removeItem "ACME_Ventilator";
-            _ok = ([_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem) == (_before - 1);
+            [_medic, "ACME_Ventilator"] call ACME_fnc_itemTake;
+            _ok = ([_medic, "ACME_Ventilator"] call ACME_fnc_itemCount) == (_before - 1);
         };
     };
     // Failed takes are terminal. A later connect request gets a new transaction ID.
@@ -31,14 +31,14 @@ if (_operation == "take") then {
 };
 if (_operation == "give") then {
     if ([_medic, _patient, _lastPos, _lastVehicle] call ACME_fnc_ventRecoveryNear) then {
-        private _before = [_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem;
+        private _before = [_medic, "ACME_Ventilator"] call ACME_fnc_itemCount;
         _medic addItem "ACME_Ventilator";
-        private _after = [_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem;
+        private _after = [_medic, "ACME_Ventilator"] call ACME_fnc_itemCount;
         if (_after == _before) then {
             private _container = objNull;
             {if (!isNull _x) exitWith {_container = _x;};} forEach [backpackContainer _medic, vestContainer _medic, uniformContainer _medic];
             if (!isNull _container) then {_container addItemCargoGlobal ["ACME_Ventilator", 1];};
-            _after = [_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem;
+            _after = [_medic, "ACME_Ventilator"] call ACME_fnc_itemCount;
         };
         _ok = _after == (_before + 1);
         if (_ok) then {

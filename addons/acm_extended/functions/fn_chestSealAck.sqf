@@ -15,8 +15,8 @@ if (_message != "") then { [_message, 2.5, ACE_player, 13] call ace_common_fnc_d
 [_patient, _snapshot, true] call ACME_fnc_chestSealSyncUI;
 if ((uiNamespace getVariable ["ACME_CS_Patient", objNull]) == _patient && {!isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])}) then {
     private _currentMedic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
-    uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _currentMedic) then {0} else {[_currentMedic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem}];
-    uiNamespace setVariable ["ACME_CS_SpearsLeft", if (isNull _currentMedic) then {0} else {[_currentMedic, "ACME_NARSPEAR"] call ace_common_fnc_getCountOfItem}];
+    uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _currentMedic) then {0} else {[_currentMedic, "ACM_ChestSeal"] call ACME_fnc_itemCount}];
+    uiNamespace setVariable ["ACME_CS_SpearsLeft", if (isNull _currentMedic) then {0} else {[_currentMedic, "ACME_NARSPEAR"] call ACME_fnc_itemCount}];
     [] call ACME_fnc_chestSealRefreshSlot;
     [] call ACME_fnc_chestSealRefreshSpearSlot;
 };

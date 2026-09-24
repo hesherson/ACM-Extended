@@ -75,7 +75,7 @@ if (_gauge == 20) then { _type = 6; };  // 20g, the smallest bore and the slowes
 // consume one catheter from the inventory of the medic, which is the item of the iv action.
 if (!isNull _medic) then {
     private _cl = format ["ACM_IV_%1g", _gauge];  // the 14g, 16g and 18g each consume their own catheter.
-    if (([_medic, _cl] call ace_common_fnc_getCountOfItem) > 0) then { _medic removeItem _cl; };
+    if (([_medic, _cl] call ACME_fnc_itemCount) > 0) then { [_medic, _cl] call ACME_fnc_itemTake; };
 };
 
 // Owner/episode-checked single-site commit. No delayed whole-row repair.
