@@ -23,7 +23,12 @@ def assert_entry_exit_contract(start, stop):
 
 
 def assert_nonexclusive_contract(start, regions):
-    has(start, 'if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active",false]) exitWith')
+    has(start, 'private _providerManeuver = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])')
+    has(start, '_medic getVariable ["ACM_circulation_isPerformingCPR", false]')
+    has(start, '_medic getVariable ["ACM_breathing_isUsingBVM", false]')
+    has(start, '[_patient] call ACM_core_fnc_cprActive')
+    has(start, '[_patient] call ACM_core_fnc_bvmActive')
+    has(start, 'if (_providerManeuver) exitWith')
     has(start, 'if (_bodyPart == "body") then')
     for name in ('directPressureTorso', 'directPressureSelf', 'directPressureLimb'):
         has(start, 'call ACME_fnc_' + name)
