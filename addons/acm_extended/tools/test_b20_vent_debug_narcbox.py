@@ -40,13 +40,15 @@ class B20NarcBox(unittest.TestCase):
     def test_pre_b20_geometry_is_restored(self):
         inject=read('functions/fn_skInject.sqf')
         rows=read('functions/fn_skListRefresh.sqf')
-        self.assertIn('private _listW = safeZoneW / 6.5',inject)
+        # Later Narc Box work deliberately widened the medication/source columns while retaining
+        # the established row height/backing and removing the retired final-name surface.
+        self.assertIn('private _listW = _uiW / 5.25',inject)
+        self.assertIn('private _columnInner = _uiW / 3.3',inject)
         self.assertIn('private _rowH = safeZoneH / 20',rows)
         self.assertIn('_group ctrlSetPosition (ctrlPosition _list)',rows)
         self.assertNotIn('ACME_SK_MedMeterH',inject+rows)
-        # B57 intentionally uses 84160/84161 for the optional 25-character final syringe name.
-        self.assertIn('84160',inject)
-        self.assertIn('84161',inject)
+        self.assertNotIn('Final Syringe Name (25 max)',inject)
+        self.assertNotIn('ctrlCreate ["ACME_SK_NameEdit", 84161]',inject)
     def test_existing_rows_gain_smart_text_and_live_vial_stock(self):
         rows=read('functions/fn_skListRefresh.sqf')
         tick=read('functions/fn_skUiTick.sqf')
