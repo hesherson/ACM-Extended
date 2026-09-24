@@ -1,0 +1,92 @@
+name: Non-ledger BE-BF audit
+on:
+  push:
+    branches: [audit/nonledger-be-bf-20260923]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/nonledger-be-bf-20260923
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install HEMTT and tests
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-tools
+          curl -fLsS --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          chmod +x /tmp/acme-tools/hemtt
+          python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
+      - name: Validate BE-BF
+        env:
+          HEMTT: /tmp/acme-tools/hemtt
+        run: |
+          python - <<'PY'
+          import subprocess,pathlib,xml.etree.ElementTree as ET,json,os
+          from concurrent.futures import ThreadPoolExecutor
+          from collections import Counter
+          BASE='4f802befbad73cdd41717afca022a30016b19737'; root=pathlib.Path.cwd()
+          CAND=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          before=pathlib.Path('/tmp/bebf-before'); out=pathlib.Path('/tmp/bebf-out'); out.mkdir(exist_ok=True)
+          def cmd(a,cwd=root,t=480,check=True):
+              r=subprocess.run(a,cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=t)
+              if check and r.returncode: raise RuntimeError(r.stdout[-12000:])
+              return r
+          def suite(label,cwd,paths):
+              x=out/(label+'.xml'); r=cmd(['python','-m','pytest',*paths,'-q','--tb=no','--continue-on-collection-errors','--junitxml='+str(x)],cwd,430,False)
+              d={}
+              for c in ET.parse(x).iter('testcase'):
+                  k=(c.get('classname',''),c.get('name','')); d[k]='error' if c.find('error') is not None else 'failed' if c.find('failure') is not None else 'skipped' if c.find('skipped') is not None else 'passed'
+              (out/(label+'.log')).write_text(r.stdout); return r.returncode,d,Counter(d.values())
+          cmd(['git','fetch','--depth=1','origin',BASE]); cmd(['git','worktree','add','--detach',str(before),BASE])
+          focused=[
+            'addons/acm_extended/tools/test_b31_treatment_animations.py::TreatmentAnimationContracts::test_stethoscope_lifecycle_has_one_pose_owner_and_native_cleanup',
+            'addons/acm_extended/tools/test_b37_menu_state.py::RuntimeSourceContracts::test_callbacks_item_counts_and_pending_reopen_are_retained',
+            'addons/acm_extended/tools/test_b40_animation_audit.py::test_hang_bag_normal_entry_and_exit_blend',
+            'addons/acm_extended/tools/test_b80_v110_head_menu.py::test_historical_head_menu_contract[provider DraggerBase wrapper]',
+            'addons/acm_extended/tools/test_b80_v110_head_menu.py::test_historical_head_menu_contract[provider sequence uses lift wrapper]',
+            'addons/acm_extended/tools/test_b80_v110_head_menu.py::test_historical_head_menu_contract[provider waits for one preflight]',
+            'addons/acm_extended/tools/test_b80_v110_head_menu.py::test_historical_head_menu_contract[duplicate holster suppression]']
+          r=cmd(['python','-m','pytest',*focused,'-q'],root,180,False); (out/'focused.log').write_text(r.stdout); assert r.returncode==0,r.stdout[-9000:]
+          h=cmd([os.environ['HEMTT'],'check'],root,180,False); (out/'hemtt.log').write_text(h.stdout); assert h.returncode==0
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              a=ex.submit(suite,'addon-before',before,['addons/acm_extended/tools']); b=ex.submit(suite,'addon-after',root,['addons/acm_extended/tools'])
+              _,db,cb=a.result(); _,da,ca=b.result()
+          missing=set(db)-set(da); regress=[]; fixed=[]
+          for k,v in db.items():
+              if k not in da: continue
+              if v=='failed' and da[k]=='passed': fixed.append(k)
+              elif v!=da[k]: regress.append((k,v,da[k]))
+          expected_names={'test_stethoscope_lifecycle_has_one_pose_owner_and_native_cleanup','test_callbacks_item_counts_and_pending_reopen_are_retained','test_hang_bag_normal_entry_and_exit_blend'}
+          expected_param_prefix='test_historical_head_menu_contract'
+          assert not missing and not regress,(missing,regress)
+          plain=[k for k in fixed if k[1] in expected_names]
+          param=[k for k in fixed if k[1].startswith(expected_param_prefix)]
+          assert len(plain)==3 and len(param)==4,fixed
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              a=ex.submit(suite,'root-before',before,['tools']); b=ex.submit(suite,'root-after',root,['tools'])
+              _,db2,cb2=a.result(); _,da2,ca2=b.result()
+          assert db2==da2 and cb2==ca2,(cb2,ca2)
+          changed=set(filter(None,cmd(['git','diff','--name-only',BASE,CAND]).stdout.splitlines()))
+          runtime=[p for p in changed if '/functions/' in p and p.endswith('.sqf')]
+          config=[p for p in changed if p.endswith('.hpp') or p.endswith('config.cpp')]
+          assert not runtime and not config,(runtime,config)
+          report={'base':BASE,'candidate':CAND,'focused_passed':7,'addon_before':dict(cb),'addon_after':dict(ca),
+                  'fixed_nonledger':7,'root_before':dict(cb2),'root_after':dict(ca2),'runtime_files_changed':[],'hemtt_exit':0,'live_arma_tested':False}
+          (out/'report.json').write_text(json.dumps(report,indent=2)); print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-nonledger-BE-BF-evidence
+          path: /tmp/bebf-out
+          retention-days: 30
