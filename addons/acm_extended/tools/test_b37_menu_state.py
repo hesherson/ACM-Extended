@@ -228,9 +228,5 @@ class RuntimeSourceContracts(unittest.TestCase):
     def test_callbacks_item_counts_and_pending_reopen_are_retained(self):
         self.assertIn('call ace_medical_gui_fnc_countTreatmentItems', RENDER)
         self.assertIn("ctrlAddEventHandler ['ButtonClick', _statement]", RENDER)
-        self.assertIn("if (_groupKey isEqualTo '') then", RENDER)
+        self.assertIn("if (_groupKey isEqualTo '' && {!(_actionClass in ['acme_directpressure', 'acme_stopdirectpressure'])}) then", RENDER)
         self.assertIn('ace_medical_gui_pendingReopen = true', RENDER)
-
-
-if __name__ == '__main__':
-    unittest.main()
