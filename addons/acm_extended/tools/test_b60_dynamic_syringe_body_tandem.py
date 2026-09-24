@@ -17,14 +17,9 @@ def test_b60_version_and_new_functions_registered():
         assert f'class {fn} {{}};' in cfg
 
 def test_body_and_carousel_have_compact_and_expanded_geometry():
-    inj = txt('functions/fn_skInject.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
-    for token in ('ACME_SK_BodyRectCompact','ACME_SK_BodyRectExpanded','ACME_SK_CarouselRectCompact','ACME_SK_CarouselRectExpanded'):
-        assert token in inj and token in layout
-    assert 'safeZoneH*0.70' in inj
-    assert 'safeZoneH*0.49' in inj
-    assert 'ctrlCommit _duration' in layout
-    assert 'ACME_SK_LayoutBusyUntil' in layout
+
+    from test_bounded_current_carousel_contract import geometry_contract
+    geometry_contract()
 
 def test_ad_expands_carousel_and_auto_collapse_is_hover_aware():
     from test_historical_carousel_input import test_keydown_hold_and_keyup_preserve_existing_repeat_cadence, test_expanded_view_collapse_respects_existing_retention_conditions
@@ -34,12 +29,14 @@ def test_ad_expands_carousel_and_auto_collapse_is_hover_aware():
         test_expanded_view_collapse_respects_existing_retention_conditions(guard)
 
 def test_active_syringe_is_85_percent_then_100_percent_on_hover():
+
+    from test_bounded_current_carousel_contract import render_contract
+    render_contract()
     car = txt('functions/fn_skCarouselRender.sqf')
-    assert '[0.20,0.44,0.85,0.44,0.20]' in car
-    assert '[0.14,0.32,0.85,0.32,0.14]' in car
-    assert '_slot == 2 && {_hover}' in car
-    assert '_scale = _scale * 1.055; _alpha = 1;' in car
-    assert 'private _activeScale = if (_hover) then {1.055} else {1};' in car
+    # Compact center is 85% opacity; hover is opacity-only and never changes geometry.
+    assert '[0.06,0.24,0.85,0.24,0.06]' in car
+    assert 'private _activeScale = 1;' in car
+    assert 'if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};' in car
 
 def test_same_five_carousel_controls_are_used_in_both_layouts():
     inj = txt('functions/fn_skInject.sqf')
@@ -85,13 +82,15 @@ def test_pending_tag_is_applied_to_every_narcbox_save_path():
         test_actual_save_attaches_pending_tag_without_changing_source_funding(kind)
 
 def test_save_returns_to_large_body_and_compact_carousel():
+
+    from test_bounded_current_carousel_contract import save_contract
+    save_contract()
     after = txt('functions/fn_skAfterSaveOpenBody.sqf')
     compound = txt('functions/fn_skCompoundSave.sqf')
     waste = txt('functions/fn_skWasteDraw.sqf')
     direct = txt('overrides/fn_syringeDrawButton.sqf')
-    assert 'ACME_SK_CarouselExpanded", false' in after
-    assert 'ACME_SK_View", "body"' in after
-    assert 'ACME_fnc_skSetView' in after
+    # Saving now stays on Draw Syringe; it must not force Body Map open.
+    assert 'ACME_SK_View", "body"' not in after
     assert '[true] call ACME_fnc_skAfterSaveOpenBody' in compound
     assert '[true] call ACME_fnc_skAfterSaveOpenBody' in waste
     assert 'call ACME_fnc_skAfterSaveOpenBody' in direct
