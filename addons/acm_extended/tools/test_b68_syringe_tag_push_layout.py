@@ -16,15 +16,11 @@ def test_b68_version_stamp():
 
 
 def test_main_draw_select_syringe_tag_is_unconditionally_present_and_below_dropdown():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    tick = txt('functions/fn_skUiTick.sqf')
-    assert 'private _showSetup = (_view == "syringe");' in pending
-    assert '_button ctrlSetText "Select Syringe Tag";' in pending
-    assert '_button ctrlShow true;' in pending and '_button ctrlEnable true;' in pending
-    assert 'private _btnX = (_x - _btnW - _gap)' in pending
-    assert 'private _menuY = _btnY + _btnH + 2*pixelH;' in pending
-    assert '_menuY = _btnY - _menuH' not in pending
-    assert 'if (_now >= (_d getVariable ["ACME_SK_NextPendingTag",0])) then {' in tick
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 
 def test_compact_track_and_hints_stay_inside_toolbar_but_promoted_track_widens():
@@ -50,31 +46,20 @@ def test_body_route_edit_stack_and_carousel_are_lifted_clear_of_draw_row():
 
 
 def test_promoted_syringes_are_larger_and_carousel_motion_is_real_slide_grow():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    move = txt('functions/fn_skCarouselMove.sqf')
-    assert 'then {0.470} else {0.150}' in car
-    assert 'private _fullH = safeZoneH*0.470;' in move
-    assert 'then {0.185} else {0.155}' in car
-    assert 'private _dx=_rw*0.185;' in move
-    assert 'private _motion = 0.220;' in move
-    assert 'private _scale = if (_to>=0' in move
-    assert '_c ctrlCommit _motion;' in move
-    assert 'diag_tickTime + 1.35' in move
 
+    from test_bounded_current_carousel_contract import render_contract, navigation_contract
+    render_contract()
+    navigation_contract()
+    move = txt('functions/fn_skCarouselMove.sqf')
+    # Decorative slide/grow interpolation was removed for client performance; selection/layout commit immediately.
+    assert '_motion' not in move
+    assert 'ctrlCommit' not in move
+    assert '[0] call ACME_fnc_skDynamicLayout;' in move
+    assert '[0] call ACME_fnc_skCarouselRender;' in move
 
 def test_tag_text_is_lower_larger_and_edit_mode_uses_native_draw_position_without_body():
-    car = txt('functions/fn_skCarouselRender.sqf')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    layout = txt('functions/fn_skDynamicLayout.sqf')
-    for src in (car, pending):
-        assert '[0.458,0.488,0.510]' in src
-        assert '*0.016' in src
-        assert '*0.031' in src
-    assert 'private _editNativeCtrl = _d displayCtrl' in car
-    assert 'private _editX = _editNative select 0;' in car
-    assert 'private _editY = _editNative select 1;' in car
-    assert '_group ctrlShow (!_editMode);' in layout
-    assert '_patientHeader ctrlShow (!_editMode);' in layout
+    from test_bounded_editor_presentation import frame_contract, native_editor_contract
+    frame_contract(); native_editor_contract()
 
 
 def test_done_pulses_green_only_when_tag_has_text_but_is_not_required():
@@ -94,17 +79,19 @@ def test_saving_syringe_stays_on_main_draw_page():
 
 
 def test_body_map_site_click_runs_locked_three_second_visual_push_before_commit():
+    # Historical identity retained. Site click stages; explicit confirmation owns the timed push.
+    from test_bounded_staged_push_contracts import assert_staged_contract, contains
     site = txt('functions/fn_skSiteClick.sqf')
     begin = txt('functions/fn_skBeginInjection.sqf')
+    confirm = txt('functions/fn_skConfirmInjection.sqf')
     inject = txt('functions/fn_skInjectSite.sqf')
+    click = txt('functions/fn_skBodyActionClick.sqf')
     cfg = txt('config.cpp')
-    assert '[_part] call ACME_fnc_skBeginInjection;' in site
-    assert 'uiNamespace setVariable ["ACME_SK_CarouselExpanded",true];' in begin
-    assert 'uiNamespace setVariable ["ACME_SK_InjectionBusy",true];' in begin
-    assert '_pl ctrlCommit 3.0;' in begin
-    assert 'playSound "ACME_SyringePush";' in begin
-    assert '[_bodyPart] call ACME_fnc_skInjectSite;' in begin
-    assert 'private _pushSec = 3;' in inject
+    assert contains(site, '[_part] call ACME_fnc_skBeginInjection;')
+    assert contains(begin, 'uiNamespace setVariable ["ACME_SK_CarouselExpanded",true];')
+    assert contains(click, 'call ACME_fnc_skConfirmInjection')
+    assert_staged_contract(begin, confirm)
+    assert contains(inject, 'params ["_bodyPart", ["_pushSec", 3], ["_confirmedEpiMl", -1, [0]]];')
     assert 'class ACME_SyringePush' in cfg
     assert 'acm_extended\\sound\\syringe_push.ogg' in cfg
 

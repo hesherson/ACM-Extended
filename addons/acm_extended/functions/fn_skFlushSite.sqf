@@ -4,7 +4,10 @@
 params ["_bodyPart"];
 
 private _display = findDisplay 84000;
-private _patient = uiNamespace getVariable ["ACME_SK_Patient", objNull];
+if (isNull _display) exitWith {};
+// Match the patient used by the Body Map artwork and exact site-click validation.
+// Shared preparation state may have been cleared or changed since this display opened.
+private _patient = _display getVariable ["ACME_SK_ReturnPatient", objNull];
 if (isNull _patient) then { _patient = ACE_player; };
 
 private _flushClass = uiNamespace getVariable ["ACME_SK_SelFlush", "ACM_SalineFlush_10"];

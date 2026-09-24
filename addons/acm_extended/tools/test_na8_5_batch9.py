@@ -77,14 +77,18 @@ class SourceContracts(unittest.TestCase):
     def test_restore_record_clear_only_after_success(self):
         t=src("headElevVestRestore")
         self.assertLess(t.index("if (_restored) then"),t.index('setVariable ["ACME_headElev_vestRemoved", false'))
-    def test_death_restores_vest_without_pose(self):
+    def test_death_restores_vest_with_normal_lay_flat_release(self):
         t=code(src("headElevDeathRelease"))
         self.assertIn("ACME_fnc_headElevVestRestore",t)
-        for s in ("setVectorUp","setPos","switchMove","doAnim","setDamage"):self.assertNotIn(s,t)
+        self.assertIn("ACME_HeadElevPatientRelease",t)
+        self.assertIn("ACME_fnc_doAnim",t)
+        # Death cleanup may use the authored release animation, but never teleport or damage the corpse.
+        for s in ("setVectorUp","setPos","switchMove","setDamage"):self.assertNotIn(s,t)
     def test_stop_death_branch_before_pose(self):
-        t=src("headElevateStop")
-        self.assertLess(t.index("if (!alive _patient)"),t.index("ACME_fnc_animQueue"))
-        self.assertIn("ACME_fnc_headElevVestRestore",t)
+        from test_bounded_head_pose_contracts import assert_dead_stop_delegates_first
+        from test_bounded_head_completion import test_dead_lower_delegates_before_living_animation_and_restore
+        assert_dead_stop_delegates_first()
+        test_dead_lower_delegates_before_living_animation_and_restore()
     def test_clear_all_does_not_discard_pending_snapshot(self):
         t=src("clearAllAilments")
         self.assertIn("headElevDeathRelease",t);self.assertIn("headElevVestRestore",t)
@@ -100,9 +104,14 @@ class SourceContracts(unittest.TestCase):
         t=src("ownerInit");self.assertIn("ACME_headElev_pfh",t);self.assertIn('removeEventHandler ["Killed"',t)
         self.assertIn("ACME_fnc_headElevWatch",src("ownerRegister"))
     def test_old_pose_callback_owns_token(self):
+        from test_bounded_head_start_retry import retry_contract
+        from test_bounded_head_pose_contracts import contains
+        retry_contract()
         t=src("headElevateStart")
-        self.assertGreaterEqual(t.count('getVariable ["ACME_headElev_poseToken", ""]'),2)
-        self.assertGreaterEqual(t.count("!alive _patient"),3)
+        # The carrier-creation callback also keeps its existing placement/life gate.
+        self.assertTrue(contains(t, 'params ["_patient", "_vestClass", "_poseToken"];'))
+        self.assertTrue(contains(t, '|| {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}'))
+        self.assertTrue(contains(t, 'if (isNull _patient || {!local _patient} || {!alive _patient}'))
     def test_watchdog_is_one_half_second_local_worker(self):
         t=code(src("headElevWatch"))
         self.assertIn("}, 0.5, [_patient]]",t)
@@ -154,10 +163,18 @@ class SourceContracts(unittest.TestCase):
         self.assertIn('getVariable ["ACME_NV_OverlayControl", false]',t)
         self.assertIn('(_x select 0) in _all',t)
     def test_darkness_runs_after_procedure_for_all_views(self):
-        for n in ("ivMinigameTick","chestSealTick","thoraTick","laryngoTick","syringeKitTick","skUiTick","updateClampDialog","ivMinigameFlip"):
+        for n in ("ivMinigameTick","chestSealTick","thoraTick","laryngoTick","syringeKitTick","skUiTick","ivMinigameFlip"):
             lines=src(n).rstrip().splitlines()
             self.assertIn("call ACME_fnc_darknessShade",lines[-2])
             self.assertIn("call ACME_fnc_minigameVisionTick",lines[-1])
+
+        # Roller Clamp is the deliberate exception: vision refresh is owned by its independent runtime.
+        # Sampling inside updateClampDialog during the transition frame caused the hosted NV blackout regression.
+        clamp=src("updateClampDialog")
+        runtime=src("registerClampDragRuntime")
+        self.assertNotIn("call ACME_fnc_darknessShade",clamp)
+        self.assertIn('[_display, [], "ACME_Clamp_Shade"] call ACME_fnc_darknessShade;',runtime)
+        self.assertIn('[_display] call ACME_fnc_minigameVisionTick;',runtime)
     def test_no_laryngo_stimulus_result_log(self):
         t=code(src("laryngoStimulusLocal"))
         for s in ("addToLog","displayText","hint","systemChat"):self.assertNotIn(s,t)

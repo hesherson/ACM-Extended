@@ -101,7 +101,11 @@ if (!isNull _medic && {_poseEpoch >= 0}
     };
 };
 
-if (!isNull _medic && {local _medic} && {alive _medic}
+// A superseded display must not start its exit over a newer continuous action.
+// Use the scope generation here: an active Flip legitimately owns a newer roll pose epoch.
+if (_continuousEpoch >= 0
+    && {(missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch",-2]) == _continuousEpoch}
+    && {!isNull _medic} && {local _medic} && {alive _medic}
     && {!(_medic getVariable ["ACE_isUnconscious",false])}
     && {isNull objectParent _medic}
     && {!(_medic getVariable ["ACME_headElev_seqActive",false])}) then {

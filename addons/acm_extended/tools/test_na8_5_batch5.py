@@ -128,10 +128,17 @@ class SourceContracts(unittest.TestCase):
     def test_open_vials_visible_and_selectable(self):
         # B20's row renderer uses a non-mutating vial preview for partial/open stock; the actual draw paths still
         # use infusionVialVolume for authoritative availability and debit.
-        self.assertIn('ACME_fnc_vialPreview',src('skListRefresh'))
-        for f in ('infusionDrawStock','openPrepFromInventoryMenu'):
-            self.assertIn('ACME_fnc_infusionVialVolume',src(f))
-        self.assertIn('ACME_fnc_infusionVialVolume',src('skListSelect'))
+        # Follow actual preview/selection delegates. A stock repaint must not debit or relabel a draw.
+        from test_bounded_medication_presentation import require, source, test_prep_stock_refresh_preserves_partial_draw_identity_and_button_gate
+        from test_historical_medication_rows import test_open_partial_survives_consumed_physical_item_without_zero_volume_ghosts, test_stock_preview_uses_reserved_volume_and_the_rows_exact_physical_class
+        for amount, visible in ((0, False), (0.000001, False), (0.01, True), (2, True)):
+            test_open_partial_survives_consumed_physical_item_without_zero_volume_ghosts(amount, visible)
+        test_stock_preview_uses_reserved_volume_and_the_rows_exact_physical_class()
+        test_prep_stock_refresh_preserves_partial_draw_identity_and_button_gate(2, False, False, True, True, False)
+        require(source('infusionDrawStock'), '[_display] call ACME_fnc_skMedicationStockRefresh;')
+        require(source('skListSelect'), '[_holder, _data, 0, _item] call ACME_fnc_vialPreview;')
+        require(source('skListSelect'), '["select", _data, _reserved, _d] call ACME_fnc_vialSession;')
+        require(source('openPrepFromInventoryMenu'), 'call ACME_fnc_infusionVialVolume')
     def test_all_drugs_tallied(self):
         self.assertIn('ACME_fnc_preparedComponents',src('infusionRefreshTally'))
         self.assertIn('forEach _rows',src('infusionRefreshTally'))
@@ -158,7 +165,9 @@ class SourceContracts(unittest.TestCase):
         self.assertIn('ACME_fnc_laryngoStimulusEffect',src('bpCompute'))
         self.assertIn('ACME_fnc_laryngoStimulusEffect',read_source(ROOT/'overrides/fn_updateHeartRate.sqf'))
     def test_debug_propofol_separate(self):
-        s=src('debugMenu');self.assertIn('ACME_fnc_sedationComponents',s);self.assertIn('["Ketamine"',s);self.assertIn('["Propofol"',s);self.assertIn('["Fentanyl"',s)
+        from test_bounded_assessment_contracts import assert_debug_component_contract
+        # Current compact clinical rows use Ket/Prop/Mid/Fent, with distinct values.
+        assert_debug_component_contract()
     def test_mixed_bag_not_single_drug_epi_source(self):
         # B13 retires all bag-derived pressor shortcuts, not just mixed bags.
         self.assertIn('Bag-derived push-dose shortcuts are retired',src('salineFlush'))

@@ -73,33 +73,33 @@ private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
 if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85;};
 _rollTime = (_rollTime max 0.1) min 5;
 
-// Provider theatre is presentation. If it cannot acquire, do not turn Flip into a no-op: physically roll the
-// eligible casualty anyway, keep the UI locked for the authored patient roll, then return to hands-on-chest.
+// A physical Flip is staged: provider medic4 must acquire first, and chestSealFlipTick dispatches the patient
+// roll only after the requested work state is actually observed. If provider theatre cannot acquire, abort the
+// click cleanly instead of rolling the casualty from the button/prep state.
 if (!_started) exitWith {
-    uiNamespace setVariable ["ACME_CS_Side",_newSide];
-    uiNamespace setVariable ["ACME_CS_FlipTarget",_newSide];
-    uiNamespace setVariable ["ACME_CS_FlipLockedUntil",diag_tickTime + _rollTime];
-    [_patient,_newSide,false,_provider] call ACME_fnc_chestSealRoll;
-    [] call ACME_fnc_chestSealRender;
+    uiNamespace setVariable ["ACME_CS_FlipPendingToken",""];
+    uiNamespace setVariable ["ACME_CS_FlipLockedUntil",0];
+    uiNamespace setVariable ["ACME_CS_FlipTarget",""];
+    uiNamespace setVariable ["ACME_CS_VirtualFlip",false];
 
-    [{
-        params ["_p","_m","_d","_session","_token"];
-        if ((uiNamespace getVariable ["ACME_CS_SessionToken",""]) != _session
-            || {(uiNamespace getVariable ["ACME_CS_FlipPendingToken",""]) != _token}) exitWith {};
-        uiNamespace setVariable ["ACME_CS_FlipPendingToken",""];
-        uiNamespace setVariable ["ACME_CS_FlipLockedUntil",0];
-        uiNamespace setVariable ["ACME_CS_FlipTarget",""];
-        if (!isNull _d) then {
-            private _b = _d displayCtrl 86426;
-            _b ctrlEnable true;
-            _b ctrlSetText "Flip";
+    if (!isNull _display) then {
+        private _b = _display displayCtrl 86426;
+        _b ctrlEnable true;
+        _b ctrlSetText "Flip";
+    };
+
+    if (!isNull _provider && {local _provider}) then {
+        private _holdEpoch = [_provider,_patient] call ACME_fnc_chestSealProviderHoldStart;
+        _provider setVariable ["ACME_CS_providerHoldEpoch",_holdEpoch,false];
+        uiNamespace setVariable ["ACME_CS_ProviderHoldEpoch",_holdEpoch];
+
+        if ((_provider getVariable ["ACME_DP_PauseTreatmentClass",""]) == "chestsealflip") then {
+            _provider setVariable ["ACME_DP_Paused",false];
+            _provider setVariable ["ACME_DP_PauseTreatmentClass",""];
+            _provider setVariable ["ACME_DP_TreatmentBusy",false];
+            _provider setVariable ["ACME_DP_IdleStart",CBA_missionTime];
         };
-        if (!isNull _m && {local _m}) then {
-            private _holdEpoch = [_m,_p] call ACME_fnc_chestSealProviderHoldStart;
-            _m setVariable ["ACME_CS_providerHoldEpoch",_holdEpoch,false];
-            uiNamespace setVariable ["ACME_CS_ProviderHoldEpoch",_holdEpoch];
-        };
-    }, [_patient,_provider,_display,_session,_token], _rollTime + 0.08] call CBA_fnc_waitAndExecute;
+    };
 };
 
 private _args = [_patient,_provider,_display,_session,_token,_epoch,_rollToken,_newSide,_rollTime,-1,_now + 5.5];

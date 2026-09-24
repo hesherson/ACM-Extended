@@ -120,9 +120,10 @@ private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
 [{
     params ["_patient", "_poseToken", "_patientAnimToken", "_parkSupport"];
     if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
-    [_patient, true] call ACME_fnc_headElevCollision;
     if ((_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken
         || {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {};
+    // A resumed/replaced placement owns its collision recovery, not this retired suspension.
+    [_patient, true] call ACME_fnc_headElevCollision;
 
     // This is the central B122 behavior: no temporary treatment re-vests the support carrier while the logical
     // elevated-head state still exists. It stays beyond the head until resume or a true Lower Head action.

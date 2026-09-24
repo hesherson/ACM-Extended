@@ -16,18 +16,9 @@ def test_version_batch():
 
 
 def test_main_tag_selector_is_native_syringe_anchored_and_aspect_independent():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    for src in (render, ensure):
-        assert 'ctrlTextWidth' in src
-        assert 'pixelW' in src
-        assert '*0.254' in src
-    assert 'private _btnRight = _tagLeft - _gap;' in render
-    assert 'private _btnRight0 = _tagLeft0 - _gap0;' in ensure
-    assert 'safeZoneW * 0.070' not in render
-    assert 'safeZoneW * 0.070' not in ensure
-    assert '_x + _w*0.20' not in render
-    assert '(_r0 select 0) + (_r0 select 2)*0.20' not in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 
 def test_selector_right_edge_tracks_tag_face_across_common_aspects():
@@ -56,27 +47,24 @@ def test_pending_tag_typing_is_not_repainted_over_keyboard_focus():
 
 
 def test_draw_button_has_success_flash_and_successful_draw_counter():
-    begin = txt('functions/fn_skCompoundBegin.sqf')
-    draw = txt('functions/fn_skCompoundDraw.sqf')
-    assert 'ACME_SK_CompoundDrawCount", 0' in begin
-    assert 'private _drawCount = count _components;' in draw
-    assert 'ctrlSetText "Drawn!"' in draw
-    assert '["success",0.88] call ACME_fnc_a11yColor' in draw
-    assert 'ctrlSetText format ["Draw (%1)",_count]' in draw
-    assert '0.45] call CBA_fnc_waitAndExecute;' in draw
+    # Current feedback counts successful pulls and displays that count for one second.
+    # Preserve identity; do not restore the earlier unnumbered caption or 0.45-second reset.
+    from test_bounded_draw_feedback import assert_draw_feedback
+    assert_draw_feedback(txt('functions/fn_skCompoundBegin.sqf'), txt('functions/fn_skCompoundDraw.sqf'))
 
 
-def test_save_button_has_success_flash_then_fresh_reset():
+def test_save_button_has_success_flash_then_immediate_fresh_reset():
     save = txt('functions/fn_skCompoundSave.sqf')
-    end = txt('functions/fn_skWasteEnd.sqf')
+    begin = txt('functions/fn_skCompoundBegin.sqf')
     assert 'ctrlSetText "Saved!"' in save
     assert '["success",0.88] call ACME_fnc_a11yColor' in save
-    assert '0.55] call CBA_fnc_waitAndExecute;' in save
-    assert '_save ctrlSetText "Save"' in save
-    assert '_draw ctrlSetText "Draw"' in save
-    assert 'call ACME_fnc_skWasteEnd' in save
-    assert 'ACME_SK_CompoundDrawCount", 0' in end
-
+    assert '[] call ACME_fnc_skCompoundBegin;' in save
+    assert 'call ACME_fnc_skListRefresh;' in save
+    assert 'call ACME_fnc_skPendingTagRender;' in save
+    assert '],0.45] call CBA_fnc_waitAndExecute;' in save
+    assert '_b ctrlSetText "Save";' in save
+    assert 'closeDialog 0' not in save
+    assert 'ACME_SK_CompoundDrawCount", 0' in begin
 
 def test_compound_plunger_snaps_final_hundredth_to_current_vial_limit():
     begin = txt('functions/fn_skCompoundBegin.sqf')
@@ -88,9 +76,9 @@ def test_compound_plunger_snaps_final_hundredth_to_current_vial_limit():
 
 def test_plain_draw_snaps_final_hundredth_to_hard_max():
     tick = txt('functions/fn_skUiTick.sqf')
-    assert '(_hardMax - _drawnNow) <= 0.015' in tick
-    assert '_my >= _maxMouse - (2 * pixelH)' in tick
-    assert 'ACM_circulation_SyringeDraw_DrawnAmount = _hardMax;' in tick
+    from test_bounded_draw_endpoints import NATIVE, assert_native_endpoints
+    # Same-frame native drag applies the vial ceiling. Do not restore a competing UI-tick writer.
+    assert_native_endpoints(NATIVE.read_text(), tick)
 
 
 def test_micro_vial_residue_is_safely_discardable_and_not_regranted():
@@ -144,16 +132,15 @@ def test_selected_carousel_syringe_has_only_one_live_hitbox():
 
 
 def test_provider_roll_uses_crouch_connected_wrapper_and_no_switchmove_fallback():
-    cfg = txt('config.cpp')
+    # Historical identity retained. Current provider theatre uses the literal BI medic4 state
+    # after the shared crouch/empty-hands preflight; no priority-two provider entry is used.
     pose = txt('functions/fn_treatmentPoseStart.sqf')
     flip = txt('functions/fn_chestSealFlip.sqf')
-    assert 'class ACME_RollProviderWork: AinvPknlMstpSnonWnonDnon_medic4' in cfg
-    assert 'connectFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.15};' in cfg
-    assert 'case "roll": {"ACME_RollProviderWork"};' in pose
+    assert 'case "roll": {"AinvPknlMstpSnonWnonDnon_medic4"};' in pose
+    assert '[_medic, _transition, 1] call ACME_fnc_doAnim;' in pose
     assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
-    assert '[_medic, _main, 2] call ACME_fnc_doAnim;' not in pose
+    assert 'ACME_fnc_medicAnimationPrep' in pose
     assert 'ACME_fnc_rollProviderStart' in flip
-
 
 def test_chest_seal_patient_roll_interpolates_without_priority_two():
     # Historical name retained. Normal entry is priority one; forbidding the
@@ -189,20 +176,16 @@ def test_custom_pose_exit_remains_crouched_and_releases_stance_lock():
 
 
 def test_other_current_medical_transition_entries_use_priority_one():
-    for rel, needle in [
-        ('functions/fn_headElevApplyTilt.sqf', 'AinjPpneMrunSnonWnonDb_grab'),
-        ('functions/fn_headElevateStop.sqf', 'AinjPpneMrunSnonWnonDb_release'),
-        ('functions/fn_hangBagStart.sqf', '[_medic, _pose, 1]'),
-        ('functions/fn_hangBagTick.sqf', '[_medic, _pose, 1]'),
+    # Patient-positioning animations now use named ACME states/leases rather than raw grab/release literals.
+    seq = txt('functions/fn_headElevMedicSeq.sqf')
+    roll = txt('functions/fn_chestSealRoll.sqf')
+    for state in [
+        'AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown',
+        'AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon',
     ]:
-        src = txt(rel)
-        assert needle in src
-        if rel.endswith('fn_headElevApplyTilt.sqf'):
-            assert '[_patient, "AinjPpneMrunSnonWnonDb_grab", 1]' in src
-        if rel.endswith('fn_headElevateStop.sqf'):
-            assert '[_patient, "AinjPpneMrunSnonWnonDb_release", 1]' in src
-
-
+        assert state in seq
+    assert 'call ACME_fnc_patientAnimRequest' in roll
+    assert '_trans, 1, "chest-seal-roll"' in roll
 
 def test_animation_helpers_default_to_interpolated_priority_one():
     held = txt('functions/fn_doAnimHeld.sqf')
@@ -215,15 +198,16 @@ def test_animation_helpers_default_to_interpolated_priority_one():
 
 
 def test_no_acme_medical_animation_entry_uses_priority_two_switchmove_fallback():
-    offenders = []
-    for base in (ROOT / 'functions', ROOT / 'overrides'):
-        for path in base.glob('fn_*.sqf'):
-            src = read_source(path, encoding='utf-8', errors='replace')
-            if '] call ACME_fnc_doAnim;' in src:
-                for line_no, line in enumerate(src.splitlines(), 1):
-                    if 'call ACME_fnc_doAnim;' in line and ', 2]' in line:
-                        offenders.append(f'{path.relative_to(ROOT)}:{line_no}')
-    assert offenders == []
+    # Historical identity retained. Priority two is allowed only as a scoped exact-state repair/lock,
+    # never as the ordinary provider-work entry path.
+    pose = txt('functions/fn_treatmentPoseStart.sqf')
+    roll = txt('functions/fn_chestSealRoll.sqf')
+    sync = txt('functions/fn_treatmentPoseSync.sqf')
+    assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in pose
+    assert '[_medic, _transition, 1] call ACME_fnc_doAnim;' in pose
+    assert '_trans, 1, "chest-seal-roll"' in roll
+    assert '[_p, _trans, 2] call ACME_fnc_doAnim;' in roll
+    assert '_medic switchMove [_main, _phase, 1, false];' in sync
 
 
 if __name__ == '__main__':

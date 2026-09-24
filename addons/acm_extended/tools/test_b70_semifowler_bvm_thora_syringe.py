@@ -15,32 +15,14 @@ def test_b70_version_stamp():
 
 
 def test_semifowler_patient_uses_exact_grab_release_without_helper_positioning():
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    start = txt('functions/fn_headElevateStart.sqf')
-    stop = txt('functions/fn_headElevateStop.sqf')
-    suspend = txt('functions/fn_headElevSuspend.sqf')
-    assert 'AinjPpneMrunSnonWnonDb_grab' in apply
-    assert 'AinjPpneMrunSnonWnonDb_release' in stop
-    assert 'AinjPpneMrunSnonWnonDb_release' in suspend
-    assert '[_patient] call ACME_fnc_headElevApplyTilt;' in start
-    # No B70 casualty placement/tilt helper may be introduced for the pose.
-    assert '_patient attachTo' not in apply
-    assert '_patient setPos' not in apply
-    assert '_patient setPos' not in stop
-    assert '_patient setPos' not in suspend
+    from test_bounded_head_pose_contracts import assert_connected_patient_states, assert_no_patient_teleport
+    assert_connected_patient_states()
+    assert_no_patient_teleport()
 
 
 def test_semifowler_provider_runs_requested_full_duration_sequence_and_finishes_unarmed():
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    assert 'private _dragger = "DraggerBase";' in seq
-    assert 'private _toUnarmed = "AcinPknlMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon";' in seq
-    assert 'private _unarmed = "AmovPknlMstpSnonWnonDnon";' in seq
-    assert 'addEventHandler ["AnimDone"' in seq
-    assert 'private _doneEH' in seq
-    assert '[_u, _toUnarmed, 0] call ACME_fnc_doAnim;' in seq
-    assert '[_u, _unarmed, 0] call ACME_fnc_doAnim;' in seq
-    assert 'ACME_fnc_doAnimHeld' not in seq
-    assert 'ACME_fnc_animQueue' not in seq
+    from test_bounded_head_provider_sequence import provider_contract
+    provider_contract()
 
 
 def test_provider_weapon_preflight_is_one_clear_only_and_never_tsp_or_auto_redraw():
@@ -108,18 +90,21 @@ def test_syringe_can_return_last_hundredth_to_exact_endpoint():
     assert '(_fill - _floorMl) <= 0.015' in compound
     assert '_fill = _floorMl;' in compound
     assert '_newY = _floorY;' in compound
-    assert '_drawnNow <= 0.015' in tick
-    assert 'ACM_circulation_SyringeDraw_DrawnAmount = 0;' in tick
+    from test_bounded_draw_endpoints import NATIVE, assert_native_endpoints
+    # Native drag owns exact numeric endpoints; the UI tick only repairs staged stock overage.
+    assert_native_endpoints(NATIVE.read_text(), tick)
 
 
 def test_edit_tag_stays_visible_during_ad_and_center_click_toggles_carousel():
+    from test_bounded_current_carousel_contract import navigation_contract, tag_geometry_contract
+    navigation_contract()
+    tag_geometry_contract()
     move = txt('functions/fn_skCarouselMove.sqf')
     pick = txt('functions/fn_skCarouselPick.sqf')
-    # Movement may hide editors/list/done/hitbox, but not the persistent Edit Syringe Tag button 84470.
-    assert '[84460,84461,84462,84470,84471,84472,84480]' not in move
-    assert '[84460,84461,84462,84471,84472,84480]' in move
+    # Dedicated tag editing owns the keyboard/click surface; A/D and center-toggle are intentionally blocked.
+    assert 'if (uiNamespace getVariable ["ACME_SK_TagEditMode", false]) exitWith {};' in move
+    assert 'if (uiNamespace getVariable ["ACME_SK_TagEditMode",false]) exitWith {};' in pick
     assert 'call ACME_fnc_skCarouselToggle;' in pick
-
 
 def test_b69_chest_seal_spacing_is_retained():
     gen = txt('functions/fn_chestSealGenHoles.sqf')

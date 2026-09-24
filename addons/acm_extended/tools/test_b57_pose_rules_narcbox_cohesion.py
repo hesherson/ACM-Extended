@@ -50,10 +50,14 @@ def test_owner_freezes_locally_and_sync_does_not_restart_owner():
     test_duplicate_hold_reuses_one_observer_worker_and_release_is_idempotent()
 
 def test_menu_open_is_only_empty_hands_and_crouch_transition():
+    # Historical identity retained. Opening the menu no longer stows the weapon; it uses the
+    # matching weapon-in-hand kneel. Treatments that require empty hands own that preflight.
     start=txt('functions/fn_menuPoseStart.sqf')
-    assert 'selectWeapon ""' in start
+    assert 'selectWeapon ""' not in start
     assert 'setUnitPos "MIDDLE"' in start
-    assert 'AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon' in start
+    assert 'currentWeapon _medic' in start
+    assert 'primaryWeapon _medic' in start and 'secondaryWeapon _medic' in start and 'handgunWeapon _medic' in start
+    assert '[_medic, _kneel, 0] call ACME_fnc_doAnim;' in start
     code='\n'.join(line for line in start.splitlines() if not line.lstrip().startswith(('*','//','/*')))
     for forbidden in ('UnconsciousMedicFromUnarmedKneel','UnconsciousReviveMedic_B','switchMove [','addPerFrameHandler','ACME_menuPoseFallback'):
         assert forbidden not in code
@@ -122,20 +126,10 @@ def test_obsolete_medication_background_diagnostic_is_removed():
     assert 'medicationDiagTick' not in txt('functions/fn_skUiTick.sqf')
 
 def test_final_syringe_name_is_25_char_unicode_metadata():
-    cfg=txt('config.cpp')
-    assert 'class ACME_SK_NameEdit: RscEdit' in cfg
-    assert 'maxChars = 25;' in cfg
-    assert 'class skFinalName {};' in cfg
-    fn=txt('functions/fn_skFinalName.sqf')
-    assert 'ctrlText _ctrl' in fn
-    assert '_name select [0, 25]' in fn
-    for bad in ('toLowerANSI','toUpperANSI','regex','splitString'):
-        assert bad not in fn
-    inject=txt('functions/fn_skInject.sqf')
-    assert 'Final Syringe Name (25 max)' in inject
-    assert 'ctrlCreate ["ACME_SK_NameEdit", 84161]' in inject
-    for rel in ('overrides/fn_syringeDrawButton.sqf','functions/fn_skWasteDraw.sqf','functions/fn_skCompoundCommit.sqf','functions/fn_epinephrineDrawCardiac.sqf','functions/fn_epinephrinePrepare.sqf'):
-        assert 'customName' in txt(rel), rel
+    # Final-name UI is retired. Three 25-character tag lines carry clinical metadata.
+    from test_bounded_tag_contracts import test_retired_final_name_shim_does_not_change_prepared_metadata, test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes
+    test_retired_final_name_shim_does_not_change_prepared_metadata()
+    test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes(26, True)
 
 def test_narcbox_cohesive_section_and_selection_fix_retained():
     r=txt('functions/fn_skListRefresh.sqf')
@@ -143,7 +137,7 @@ def test_narcbox_cohesive_section_and_selection_fix_retained():
     assert '"ACME_SK_Backdrop"' in r
     assert '_backdrop ctrlSetBackgroundColor [0,0,0,0.55];' in r
     assert '"RobotoCondensedBold"' in r
-    assert 'private _indent = safeZoneW / 240;' in r
+    assert 'private _indent = _uiW / 240;' in r
     assert '_list ctrlShow (_kind == "medication")' not in r
 
 def test_auscultate_indent_and_dogtag_handoff_retained():

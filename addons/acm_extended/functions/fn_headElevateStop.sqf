@@ -38,13 +38,16 @@ if (_needFrontFirst) exitWith {
         ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
     };
 
+    // The roll belongs to this placement. A later elevation or a completed lower
+    // must not be retired by this old retry, even when the patient is local again.
+    private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
     [{
-        params ["_m","_p","_quiet"];
-        if (!isNull _p && {local _p}) then {
-            _p setVariable ["ACME_CS_facing","front",true];
-            [_m,_p,_quiet,true] call ACME_fnc_headElevateStop;
-        };
-    }, [_medic,_patient,_quiet], _delay] call CBA_fnc_waitAndExecute;
+        params ["_m","_p","_quiet","_poseToken"];
+        if (isNull _p || {!local _p}) exitWith {};
+        if ((_p getVariable ["ACME_headElev_poseToken", ""]) != _poseToken) exitWith {};
+        _p setVariable ["ACME_CS_facing","front",true];
+        [_m,_p,_quiet,true] call ACME_fnc_headElevateStop;
+    }, [_medic,_patient,_quiet,_poseToken], _delay] call CBA_fnc_waitAndExecute;
 };
 
 _patient setVariable ["ACME_CS_facing","front",true];
@@ -85,8 +88,9 @@ if (_visibleLower) then {
     [{
         params ["_patient", "_rest"];
         if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
-        [_patient, true] call ACME_fnc_headElevCollision;
         if (_patient getVariable ["ACME_headElevated", false]) exitWith {};
+        // A newer elevation must finish its own lift before normal collision returns.
+        [_patient, true] call ACME_fnc_headElevCollision;
         // This is a true Lower Head action: the support carrier may finally return to the body. A separate
         // backpack-supported chest-access carrier still waits for its own action lease to end.
         [_patient] call ACME_fnc_headElevVestRestore;

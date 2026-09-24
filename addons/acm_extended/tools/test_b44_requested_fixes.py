@@ -9,16 +9,15 @@ def test_b44_version():
     assert_release_identity()
 
 def test_roll_provider_emptyhand_wrapper():
-    c=txt('config.cpp'); f=txt('functions/fn_rollProviderStart.sqf')
-    assert 'class ACME_RollProviderWork: AinvPknlMstpSnonWrflDr_medic2_old' in c
-    block=c.split('class ACME_RollProviderWork:',1)[1].split('};',1)[0]
-    for x in ['disableWeapons = 1','disableWeaponsLong = 1','disableWeaponsShort = 1','disableReload = 1','canPullTrigger = 0']:
-        assert x in block
-    assert '"AmovPknlMstpSnonWnonDnon", 0.15' in block
-    assert '"ACME_RollProviderWork"' in f
-    assert 'selectWeapon ""' in f
-    assert 'setUnitPos "MIDDLE"' in f
-    assert '2.5' in f
+    # Historical identity retained. The custom wrapper remains available for graph compatibility,
+    # while the live provider controller deliberately uses the known-good literal BI medic4 state.
+    c=txt('config.cpp'); start=txt('functions/fn_treatmentPoseStart.sqf'); roll=txt('functions/fn_rollProviderStart.sqf')
+    assert 'class ACME_RollProviderWork: AinvPknlMstpSnonWnonDnon_medic4' in c
+    assert 'case "roll": {"AinvPknlMstpSnonWnonDnon_medic4"};' in start
+    assert 'ACME_fnc_medicAnimationPrep' in start
+    assert '[_medic, _main, 1] call ACME_fnc_doAnim;' in start
+    assert '["ACME_rollProviderDuration", 2.2]' in roll
+    assert '[_medic, "roll", _duration, _patient] call ACME_fnc_treatmentPoseStart' in roll
 
 def test_chest_seal_flip_patient_roll():
     # Route through the patient owner and preserve a priority-one lease, with the

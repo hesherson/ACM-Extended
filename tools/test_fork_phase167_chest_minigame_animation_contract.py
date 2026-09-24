@@ -40,19 +40,28 @@ def test_medic3_is_reserved_for_actual_seal_placement():
     pose = read("addons/acm_extended/functions/fn_treatmentPoseStart.sqf")
     apply = read("addons/acm_extended/functions/fn_chestSealApply.sqf")
     burp = read("addons/acm_extended/functions/fn_chestSealBurp.sqf")
+    thora = read("addons/acm_extended/functions/fn_thoraAftercareLocal.sqf")
     dispatch = read("addons/acm_extended/functions/fn_ownerDispatch.sqf")
     assert 'case "chestSeal": {"AinvPknlMstpSnonWrflDnon_medic3"};' in pose
     assert '[_medic,"chestSeal",2.0,_patient] call ACME_fnc_treatmentPoseStart' in apply
     assert "ACME_fnc_chestSealProviderHoldStart" in apply
     assert "chestSealBurpGesture" not in burp
+    assert "chestSealBurpGesture" not in thora
     assert 'case "chestSealBurpGesture"' not in dispatch
 
 def test_flip_never_turns_provider_failure_into_patient_noop():
+    # Provider acquisition failure now aborts the physical Flip instead of bypassing medic4.
+    # The workspace is restored and the user can retry without moving the casualty out of sequence.
     flip = read("addons/acm_extended/functions/fn_chestSealFlip.sqf")
     assert "if (!_started) exitWith" in flip
-    fallback = flip.split("if (!_started) exitWith", 1)[1]
-    assert '[_patient,_newSide,false,_provider] call ACME_fnc_chestSealRoll' in fallback
+    fallback = flip.split("if (!_started) exitWith", 1)[1].split("private _args =",1)[0]
+    assert 'call ACME_fnc_chestSealRoll' not in fallback
+    assert '["ACME_CS_FlipPendingToken",""]' in fallback
+    assert '["ACME_CS_FlipLockedUntil",0]' in fallback
+    assert '["ACME_CS_FlipTarget",""]' in fallback
     assert "ACME_fnc_chestSealProviderHoldStart" in fallback
+    assert 'ACME_DP_PauseTreatmentClass' in fallback
+    assert 'ACME_DP_Paused",false' in fallback
     assert "ACME_CS_ApplyGestureUntil" in flip
 
 def test_workspace_handoff_is_valid_empty_hands_source():

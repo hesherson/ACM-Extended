@@ -87,7 +87,7 @@ class B23RouteSelector(unittest.TestCase):
 
     def test_selected_route_has_green_backing(self):
         s = read('functions/fn_skBuildHotspots.sqf')
-        self.assertIn('private _green = [0.12,0.62,0.24,0.92]', s)
+        self.assertIn('private _green = [0.20,0.65,0.20,0.92]', s)
         self.assertIn('private _gray = [0.20,0.20,0.20,0.72]', s)
         self.assertIn('_route == "vascular"', s)
         self.assertIn('_route == "im"', s)

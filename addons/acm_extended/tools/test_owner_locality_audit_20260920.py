@@ -206,7 +206,7 @@ def test_aajt_application_tamponade_clock_is_patient_owner_local():
     assert config.count("'aajtApplying'") >= 6
     assert 'case "aajtApplying"' in owner
     block = owner.split('case "aajtApplying"', 1)[1].split('case "xstatApply"', 1)[0]
-    assert '[time, toLowerANSI _part]' in block
+    assert '[serverTime, toLowerANSI _part]' in block
     assert '"aajtApplying", ["", false]' in apply
 
 

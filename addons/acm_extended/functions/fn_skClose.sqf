@@ -2,6 +2,24 @@
    The return snapshot is stored by fn_skInject on this exact display. */
 disableSerialization;
 params ["_display"];
+// Consume this display's teardown before any global cleanup or delegate call.
+// A newer injected display, a repeated Unload or an unregistered display owns none of it.
+private _closeEpoch = _display getVariable ["ACME_SK_CloseEpoch", -1];
+if (_closeEpoch < 0 || {(uiNamespace getVariable ["ACME_SK_CloseEpoch", -2]) != _closeEpoch}) exitWith {};
+uiNamespace setVariable ["ACME_SK_CloseEpoch", _closeEpoch + 1];
+// Cancel only this display's normal, display-bound push. Hardcore flow survives Unload.
+private _normalPush = uiNamespace getVariable ["ACME_SK_NormalPush",[]];
+if (count _normalPush >= 5 && {(_normalPush select 0) isEqualTo _display}) then {
+    uiNamespace setVariable ["ACME_SK_NormalPush",[]];
+    private _hc = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+    if !(_hc isEqualType createHashMap && {count _hc > 0}) then {
+        uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
+        uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
+        private _pushPfh = uiNamespace getVariable ["ACME_SK_PushAnimPFH",-1];
+        if (_pushPfh >= 0) then {[_pushPfh] call CBA_fnc_removePerFrameHandler;};
+        uiNamespace setVariable ["ACME_SK_PushAnimPFH",-1];
+    };
+};
 private _restore = uiNamespace getVariable ["ACME_SK_RestoreMouse", []];
 private _switch = (_restore isEqualType []) && {count _restore == 2};
 private _infusion = !((_display getVariable ["ACME_SK_Return", []]) isEqualTo []);

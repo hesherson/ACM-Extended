@@ -30,14 +30,15 @@ def test_postinit_snapshots_actual_native_registry():
 
 
 def test_medication_column_visible_in_body_and_infusion_views():
-    r = text('functions/fn_skListRefresh.sqf')
-    assert 'private _visible = true;' in r
-    assert '!(_kind == "medication" && {_body})' not in r
-    v = text('functions/fn_skSetView.sqf')
-    assert '(_display displayCtrl 84007) ctrlShow (!_infusion);' in v
-    assert '(_display displayCtrl 84008) ctrlShow true;' in v
-    # Infusion prep may hide flush/drawn rows, but never medication rows.
-    assert 'if (_infusion && {_kind in ["flush", "drawn"]}) then {_visible = false;};' in r
+    # Body Map is now administration-only; prep infusions explicitly return to preparation.
+    from test_bounded_medication_presentation import test_actual_view_and_refresh_keep_preparation_sources_off_body_map, require, source
+    for view in ('syringe','body','carousel'):
+        for infusion in (False,True):
+            test_actual_view_and_refresh_keep_preparation_sources_off_body_map(view,infusion,'medication')
+    for name in ('skSetView','skListRefresh'):
+        s=source(name)
+        require(s, 'ctrlShow (!_infusion && {!_body})')
+        require(s, 'ctrlShow (!_body)')
 
 
 def test_narc_box_vascular_highlight_matches_acm_green():

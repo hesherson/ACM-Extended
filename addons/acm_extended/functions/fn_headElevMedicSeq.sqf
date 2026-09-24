@@ -18,7 +18,8 @@ params [
     ["_medic", objNull, [objNull]],
     ["_mode", "elevate", [""]]
 ];
-if (isNull _medic || {!alive _medic}) exitWith {};
+// Provider consciousness is separate from the casualty's eligibility for head positioning.
+if (isNull _medic || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
 _mode = toLower _mode;
 if !(_mode in ["elevate", "lower"]) exitWith {};
 if (!local _medic) exitWith {
@@ -47,9 +48,20 @@ private _prepDelay = [_medic] call ACME_fnc_medicAnimationPrep;
 if !(_prepDelay isEqualType 0) then {_prepDelay = 0;};
 private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
 
+// Bind cancellation only to this local player's input and the menu present at entry.
+// Chest-minigame exits also call this controller without a medical menu; do not make
+// those menu-less sequences depend on a later, unrelated display.
+disableSerialization;
+private _menu = displayNull;
+if (hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+    _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+};
+private _watchMenu = !isNull _menu;
+
 [{
     params ["_args", "_pfh"];
-    _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest", "_stage", "_seen", "_stageAt", "_prepUntil"];
+    _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest", "_stage", "_seen", "_stageAt", "_prepUntil", "_menu", "_watchMenu"];
+    disableSerialization;
 
     private _finalize = {
         params ["_u", "_pfh", "_rest", "_token"];
@@ -69,9 +81,13 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
             _u setVariable ["ACME_DP_LastPoseAssert", 0, false];
         };
         _u setVariable ["ACME_headElev_pinToken", (_u getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
+        // Local-only bookkeeping above must retire even after locality is lost, so it cannot
+        // strand this machine on a later return. Only the current owner may publish animation cleanup.
+        if (!local _u) exitWith {};
         ["ace_common_setAnimSpeedCoef", [_u, 1]] call CBA_fnc_globalEvent;
 
-        if (alive _u && {local _u} && {isNull objectParent _u}) then {
+        if (alive _u && {local _u} && {isNull objectParent _u}
+            && {!(_u getVariable ["ACE_isUnconscious", false])}) then {
             _u selectWeapon "";
             _u setUnitPos "MIDDLE";
             // Final state is always the requested unarmed crouch, regardless of which move graph edge ended the
@@ -81,7 +97,8 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
             // is never trapped by head positioning and can move/change stance normally.
             [{
                 params ["_unit", "_finishedToken"];
-                if (isNull _unit || {!local _unit} || {!alive _unit} || {!isNull objectParent _unit}) exitWith {};
+                if (isNull _unit || {!local _unit} || {!alive _unit} || {!isNull objectParent _unit}
+                    || {_unit getVariable ["ACE_isUnconscious", false]}) exitWith {};
                 if ((_unit getVariable ["ACME_headElev_medicAnimToken", -1]) != _finishedToken) exitWith {};
                 if (_unit getVariable ["ACME_headElev_seqActive", false]) exitWith {};
                 if ([_unit] call ACME_fnc_providerStanceOwned) exitWith {};
@@ -94,8 +111,25 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
     if ((_u getVariable ["ACME_headElev_medicAnimToken", -1]) != _token) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };
-    if (!alive _u || {!local _u} || {[_u] call ACME_fnc_animBlocked}) exitWith {
+    if (!alive _u || {!local _u} || {_u getVariable ["ACE_isUnconscious", false]}
+        || {[_u] call ACME_fnc_animBlocked}) exitWith {
         [_u, _pfh, _rest, _token] call _finalize;
+    };
+
+    // Check token/life/locality above before cancellation can retire any controller.
+    // Input from the player must never cancel another locally owned (AI) provider.
+    private _cancel = false;
+    if (hasInterface && {!isNil "ACE_player"} && {_u isEqualTo ACE_player}) then {
+        _cancel = ["MoveForward", "MoveBack", "TurnLeft", "TurnRight", "MoveLeft", "MoveRight", "MoveFastForward", "MoveSlowForward"] findIf {
+            (inputAction _x) > 0.05
+        } >= 0;
+        if (_watchMenu && {isNull _menu || {!(_menu isEqualTo (uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull]))}}) then {
+            _cancel = true;
+        };
+    };
+    if (_cancel) exitWith {
+        call ACME_fnc_headElevateCancelSeq;
+        [_pfh] call CBA_fnc_removePerFrameHandler;
     };
 
     private _now = CBA_missionTime;
@@ -162,4 +196,4 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
         if (!_finished && {!_seen} && {_now - _stageAt > 4}) then {_finished = true;};
         if (_finished) then {[_u, _pfh, _rest, _token] call _finalize;};
     };
-}, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false, CBA_missionTime, _prepUntil]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false, CBA_missionTime, _prepUntil, _menu, _watchMenu]] call CBA_fnc_addPerFrameHandler;

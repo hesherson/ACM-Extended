@@ -16,24 +16,15 @@ def test_b69_version_stamp():
 
 
 def test_main_select_syringe_tag_is_created_after_runtime_source_panels_for_top_z_order():
-    inj = txt('functions/fn_skInject.sqf')
-    last_initial_refresh = inj.rfind('call ACME_fnc_skListRefresh;\n\n// B69: runtime row groups/backdrops')
-    create_button = inj.find('private _pendingTagBtn = _display ctrlCreate ["ACME_SK_StyledButton", 84610];')
-    set_view = inj.rfind('call ACME_fnc_skSetView;')
-    assert last_initial_refresh >= 0
-    assert last_initial_refresh < create_button < set_view
-    # The selector is instantiated exactly once and then continuously repainted from the native syringe rect.
-    assert inj.count('ctrlCreate ["ACME_SK_StyledButton", 84610]') == 1
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'private _showSetup = (_view == "syringe");' in pending
-    assert '_button ctrlShow true;' in pending
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 
 def test_main_select_syringe_tag_is_narrower_and_has_real_art_clearance():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    assert 'private _gap = safeZoneH * 0.018;' in pending
-    assert 'private _btnW = (safeZoneH * 0.155) min (safeZoneW * 0.082);' in pending
-    assert 'private _btnX = (_x - _btnW - _gap)' in pending
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 
 def test_tag_text_controls_require_an_actual_tag_color():
@@ -85,16 +76,18 @@ def test_hover_events_cannot_snap_an_in_flight_carousel():
 
 
 def test_promotion_animates_hints_with_syringes_and_preserves_each_plunger_fill():
+
+    from test_bounded_current_carousel_contract import render_contract, navigation_contract, hint_contract
+    render_contract()
+    navigation_contract()
+    hint_contract()
     move = txt('functions/fn_skCarouselMove.sqf')
     render = txt('functions/fn_skCarouselRender.sqf')
-    assert 'private _motion = 0.220;' in move
-    assert '[_motion] call ACME_fnc_skDynamicLayout; [_motion] call ACME_fnc_skCarouselRender;' in move
-    assert '_leftKey ctrlSetPosition' in render and '_rightKey ctrlSetPosition' in render
-    assert '_x ctrlCommit _duration;' in render
-    assert 'private _plungerY = _py + (_travel10 * _sizeRatio * _frac' in move
-    assert 'private _partY = if (_part == 2) then {_plungerY} else {_py};' in move
-    assert 'uiNamespace setVariable["ACME_SK_CarouselBusy",false];\n    [0] call ACME_fnc_skCarouselRender;' in move
-
+    # Promotion is now an immediate geometry state change. Per-syringe plunger fill is still recomputed
+    # from the authoritative stored volume on every render.
+    assert '_motion' not in move
+    assert 'private _frac = (((_amt + _nsMl) / (_size max 0.01)) max 0) min 1;' in render
+    assert 'private _py = _y + (_travel10 * _sizeRatio * _frac' in render
 
 def test_chest_holes_use_nonzero_seal_aware_spacing_and_more_rejection_attempts():
     gen = txt('functions/fn_chestSealGenHoles.sqf')
@@ -108,13 +101,9 @@ def test_chest_holes_use_nonzero_seal_aware_spacing_and_more_rejection_attempts(
 
 
 def test_b68_three_second_push_and_b67_cardiac_safety_still_present():
-    begin = txt('functions/fn_skBeginInjection.sqf')
-    rate = txt('functions/fn_rhythmThresholdTick.sqf')
-    post = txt('functions/fn_postInit.sqf')
-    assert '_pl ctrlCommit 3.0;' in begin
-    assert 'playSound "ACME_SyringePush";' in begin
-    assert 'ACME_tbi_nonterminalMinHR    = 42' in post
-    assert 'call ACME_fnc_arrestLocal' not in rate
+    # Current timed confirmation and native ACM rhythm authority supersede the old inline push/floor.
+    from test_bounded_push_native_contract import historical_combined_check
+    historical_combined_check()
 
 
 def test_deterministic_thorax_lattice_can_pack_four_seal_safe_centers():

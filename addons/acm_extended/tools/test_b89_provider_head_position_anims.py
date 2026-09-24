@@ -1,4 +1,4 @@
-from historical_source import read_source
+from historical_source import read_source, assert_release_identity
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,8 +41,7 @@ def main():
     assert 'class ACME_HeadElevPatientGrab: AinjPpneMrunSnonWnonDb_grab' in cfg
     assert 'class ACME_HeadElevPatientRelease: AinjPpneMrunSnonWnonDb_release' in cfg
 
-    assert 'version = "1.2.0-r0";' in cfg
-    assert 'ACME_buildBatch = "B89";' in post
+    assert_release_identity()
 
     print("B89 shared provider Putdown sequence: PASS")
 

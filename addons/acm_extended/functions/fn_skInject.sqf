@@ -9,6 +9,27 @@ private _display = findDisplay 84000;
 if (isNull _display) exitWith {};
 if (!isNull (_display displayCtrl 84130)) exitWith {};  // already injected on this instance.
 
+// A fresh injected workspace replaces any display-bound normal push before it takes
+// ownership of the shared UI flags. Do not inherit an abandoned injection lock.
+private _previousPush = uiNamespace getVariable ["ACME_SK_NormalPush",[]];
+if (count _previousPush >= 5) then {
+    uiNamespace setVariable ["ACME_SK_NormalPush",[]];
+    private _hcPush = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+    if !(_hcPush isEqualType createHashMap && {count _hcPush > 0}) then {
+        uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
+        uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
+        private _oldPushPfh = uiNamespace getVariable ["ACME_SK_PushAnimPFH",-1];
+        if (_oldPushPfh >= 0) then {[_oldPushPfh] call CBA_fnc_removePerFrameHandler;};
+        uiNamespace setVariable ["ACME_SK_PushAnimPFH",-1];
+    };
+};
+
+// Each injected display owns one teardown generation. Older/repeated Unload events
+// must not mutate the shared preparation state of a replacement display.
+private _closeEpoch = (uiNamespace getVariable ["ACME_SK_CloseEpoch", 0]) + 1;
+uiNamespace setVariable ["ACME_SK_CloseEpoch", _closeEpoch];
+_display setVariable ["ACME_SK_CloseEpoch", _closeEpoch];
+
 // Return routing belongs to this display, even if a completion clears the global context.
 private _ctx = missionNamespace getVariable ["ACME_infusion_pendingContext", []];
 private _return = [];

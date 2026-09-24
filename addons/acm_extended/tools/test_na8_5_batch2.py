@@ -196,8 +196,9 @@ class EmmaSource(unittest.TestCase):
         s=read('config.cpp').split('class ACME_RemoveEMMAETT:',1)[1].split('class ACME_AttachEMMAIGel:',1)[0]
         self.assertIn('ACME_EMMA_Detach',s)
     def test_existing_state_keys_are_retained(self):
-        for f in ['emmaCanAttachIGel','emmaAttachIGel','emmaTick']:
-            self.assertIn('ACME_emma_igelAttached',sqf(f))
+        from test_bounded_assessment_contracts import assert_emma_identity_contract
+        # Attachment keys belong to the current shared writer, not every caller.
+        assert_emma_identity_contract()
 
 class EmmaModel(unittest.TestCase):
     def test_ett_and_igel_supported(self):
@@ -228,11 +229,11 @@ class TallySourceAndModel(unittest.TestCase):
         self.assertIn('_sizeY + _sizeH + _gap',s)
         self.assertNotIn('safeZoneH / 1.72',s)
     def test_old_headers_and_lists_hidden(self):
-        self.assertIn('[84131, 84132, 84133, 84134, 84301, 84302]',sqf('patchDrawDialog'))
-        s=sqf('skListRefresh')
-        self.assertIn('84131',s)
-        self.assertIn('84134',s)
-        self.assertIn('ctrlShow _visible',s)
+        from test_bounded_stock_columns import test_preparation_hides_only_existing_flush_sources_and_keeps_tally_wiring
+        from test_bounded_medication_presentation import test_actual_view_and_refresh_keep_preparation_sources_off_body_map
+        test_preparation_hides_only_existing_flush_sources_and_keeps_tally_wiring()
+        for kind in ('flush', 'medication'):
+            test_actual_view_and_refresh_keep_preparation_sources_off_body_map('syringe', True, kind)
     def test_text_lives_in_scrolling_group(self):
         s=sqf('patchDrawDialog')
         self.assertIn('["RscControlsGroup", 84362]',s)
@@ -257,16 +258,19 @@ class TallySourceAndModel(unittest.TestCase):
                 self.assertEqual(size[0],header[0])
                 self.assertEqual(size[2],body[2])
     def test_layout_ratios_match_source(self):
-        self.assertIn('safeZoneH / 1.19',sqf('patchDrawDialog'))
-        self.assertIn('safeZoneH / 40',sqf('patchDrawDialog'))
-        self.assertIn('safeZoneH / 28',sqf('patchDrawDialog'))
-        # B22 restores the established pre-B20 Narc Box geometry; vial status is appended inside the
-        # original rows rather than replacing/reflowing the whole dialog.
+        patch=sqf('patchDrawDialog')
+        self.assertIn('safeZoneH / 1.19',patch)
+        self.assertIn('safeZoneH / 40',patch)
+        self.assertIn('safeZoneH / 28',patch)
+        self.assertIn('ctrlPosition (_display displayCtrl 84130)',patch)
+        # Current Narc Box geometry deliberately widens the two source columns while preserving
+        # their inner edges. The tally then reads the actual size-list bounds rather than duplicating ratios.
         inj=sqf('skInject')
-        self.assertIn('private _listW = safeZoneW / 6.5',inj)
-        self.assertIn('private _leftX = (safeZoneX + (safeZoneW / 2) - (safeZoneW / 3.3)) - _listW',inj)
+        self.assertIn('private _listW = _uiW / 5.25',inj)
+        self.assertIn('private _columnInner = _uiW / 3.3',inj)
+        self.assertIn('private _leftX = (_uiX + (_uiW / 2) - _columnInner) - _listW',inj)
         self.assertIn('private _sizeListH = safeZoneH / 5',inj)
-        self.assertNotIn('ctrlPosition _nativeMed',inj)
+        self.assertIn('private _nativeMedGeometry = _display displayCtrl 84006',inj)
         self.assertNotIn('ACME_SK_MedMeterH',inj)
 
 if __name__ == '__main__':

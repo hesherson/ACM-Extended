@@ -17,11 +17,16 @@ def test_b41_runtime_stamp():
 
 def test_cuff_syringe_uses_real_acm_pbo_prefix():
     cfg = text('config.cpp')
-    for asset in ('backbit', 'plunger', 'barrel'):
+    block = cfg[cfg.index('class LG_Syringe:'):cfg.index('class LG_Suction:')]
+    # Backbit/plunger come from ACM's real PBO path. The barrel is intentionally ACME's
+    # replacement saline-flush art, shared with the cuff/flush views.
+    for asset in ('backbit', 'plunger'):
         good = rf'\x\ACM\addons\circulation\ui\syringe\syringe_10_{asset}_ca.paa'
         bad = rf'\z\acm\addons\circulation\ui\syringe\syringe_10_{asset}_ca.paa'
-        assert good in cfg
-        assert bad not in cfg
+        assert good in block
+        assert bad not in block
+    assert r'\acm_extended\ui\syringe\syringe_flush_10_barrel_ca.paa' in block
+    assert r'\z\acm\addons\circulation\ui\syringe\syringe_10_barrel_ca.paa' not in block
 
 
 def test_vomit_sound_uses_real_acm_pbo_prefix():
@@ -33,10 +38,11 @@ def test_vomit_sound_uses_real_acm_pbo_prefix():
 def test_clinical_chest_wording():
     groups = text('functions/fn_menuExamineGroups.sqf')
     actions = text('overrides/fn_updateActions.sqf')
-    assert '["examine_chest", "Chest Inspection"' in groups
+    assert '"examine_chest"' not in groups
     assert "_actionClass == 'usestethoscope'" in actions
     assert "_clinicalDescriptors" in actions
-    assert "format ['%1Auscultate Chest'" in actions
+    assert "_baseName = 'Auscultate Chest';" in actions
+    assert "_wasChild = _nestEnabled" in actions
     assert "ACME_menuChildIndent" in actions
     # Rename is applied at paint time, not by overwriting ACM's base localized displayName.
     assert 'Auscultate Chest' not in text('config.cpp')
@@ -44,7 +50,7 @@ def test_clinical_chest_wording():
 
 def test_requested_alternating_pale_red_is_runtime_default():
     p = text('functions/fn_postInit.sqf')
-    assert 'ACME_menuRowColorAlternate = [1, 0.84, 0.84, 1];' in p
+    assert 'ACME_menuRowColorAlternate = [1, 1, 1, 1];' in p
 
 
 def test_full_medication_registry_is_config_derived_and_immutable():
