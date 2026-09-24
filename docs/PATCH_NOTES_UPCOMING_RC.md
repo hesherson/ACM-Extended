@@ -2,6 +2,17 @@
 
 These notes cover the cumulative backlog/stability work through the validated 1.2.2.1 baseline plus the first 1.2.3 runtime patch. This is still an RC/testing build until live multiplayer acceptance is completed.
 
+## 1.2.3 RC2 intervention priority and preparation
+
+- Long chest-access preparation is now one-click. The medical menu closes immediately and a top-center **Preparing...** banner owns the transition so CPR/BVM cannot be spam queued.
+- Escape/F0 cancels only the current preparation generation and returns to the medical menu.
+- Carrier-removal provider teardown is now synchronous on the medic machine immediately before native treatment launch; a remote casualty owner can no longer deliver a late pose-stop packet over newly started CPR/BVM.
+- Direct Pressure explicitly recognizes native CPR/BVM ownership. It yields its pose and clinical marker before higher-priority choreography and cannot reassert because the short launcher treatment finished.
+- Semi-Fowler patient choreography uses lower animation-lock priority than interventions, does not seize collision/pin ownership when a higher-priority patient animation is live, and remains suspended until CPR/BVM plus the transfer window are clear.
+- Repeated CPR <-> BVM swaps reuse one stable chest-access lease, reinforced by a patient-owner server-time handoff deadline.
+- Plate-carrier return is faster on the casualty itself: 0.50 s lift, 0.02 s hold, 0.55 s lower with a token-scoped 1.60x animation coefficient.
+- Starting another intervention during carrier return is queued immediately after the short restore instead of becoming stranded in preparation.
+
 ## 1.2.3 CPR / BVM chest access
 
 - CPR and all explicit BVM variants now share one exact chest-access/plate-carrier preparation path.
