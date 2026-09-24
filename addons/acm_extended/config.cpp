@@ -1823,6 +1823,7 @@ class CfgFunctions {
             class chestAccessVestPark {};
             class chestAccessVestRestore {};
             class chestAccessVestProvider {};
+            class chestAccessPreparing {};
             class chestSealProviderHoldStart {};
             class registerMegacodeInteractionRuntime {};
             class registerVentilatorKeybindRuntime {};
