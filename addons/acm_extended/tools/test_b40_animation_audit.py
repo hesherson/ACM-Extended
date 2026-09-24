@@ -63,9 +63,13 @@ def test_hpmk_roll_uses_guarded_animation_wrapper():
         assert forbidden not in '\n'.join(line.split('//',1)[0] for line in src.splitlines())
 
 def test_cpr_authored_exit_blends():
-    # CPR is native ACM-owned. ACME must not carry a compile-time CPR animation override.
-    from test_b90_critical_provider_cpr_bvm import test_cpr_and_bvm_are_native_acm_owned
-    test_cpr_and_bvm_are_native_acm_owned()
+    # Historical identity retained. CPR is native ACM-owned; ACME only preserves its Direct Pressure handoff.
+    cfg = text('config.cpp')
+    treatment = read_source(ROOT.parent/'core/overrides/fnc_treatment.sqf', errors='ignore')
+    assert 'class beginCPR { file = "\\acm_extended\\overrides\\fn_beginCPR.sqf"; };' not in cfg
+    block = treatment.split('if (_nativeContinuousClass == "cpr") exitWith {',1)[1].split('\n    };',1)[0]
+    assert '_this call ACM_core_fnc_treatmentNative' in block
+    assert 'ACME_fnc_doAnim' not in block and 'switchMove' not in block
 
 def test_remaining_hard_switches_are_known_state_locks_only():
     # switchMove remains intentional only for exact held-frame/state-lock repair, not ordinary medical entry.
