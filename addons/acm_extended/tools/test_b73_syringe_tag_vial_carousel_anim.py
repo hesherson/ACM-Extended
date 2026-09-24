@@ -58,12 +58,11 @@ def test_save_button_has_success_flash_then_fresh_reset():
     end = txt('functions/fn_skWasteEnd.sqf')
     assert 'ctrlSetText "Saved!"' in save
     assert '["success",0.88] call ACME_fnc_a11yColor' in save
-    assert '0.55] call CBA_fnc_waitAndExecute;' in save
-    assert '_save ctrlSetText "Save"' in save
-    assert '_draw ctrlSetText "Draw"' in save
-    assert 'call ACME_fnc_skWasteEnd' in save
+    assert '0.45] call CBA_fnc_waitAndExecute;' in save
+    assert '_b ctrlSetText "Save"' in save
+    assert '[] call ACME_fnc_skCompoundBegin;' in save
+    assert 'call ACME_fnc_skPendingTagReset' in save
     assert 'ACME_SK_CompoundDrawCount", 0' in end
-
 
 def test_compound_plunger_snaps_final_hundredth_to_current_vial_limit():
     begin = txt('functions/fn_skCompoundBegin.sqf')
