@@ -53,17 +53,18 @@ def test_draw_button_has_success_flash_and_successful_draw_counter():
     assert_draw_feedback(txt('functions/fn_skCompoundBegin.sqf'), txt('functions/fn_skCompoundDraw.sqf'))
 
 
-def test_save_button_has_success_flash_then_fresh_reset():
+def test_save_button_has_success_flash_then_immediate_fresh_reset():
     save = txt('functions/fn_skCompoundSave.sqf')
-    end = txt('functions/fn_skWasteEnd.sqf')
+    begin = txt('functions/fn_skCompoundBegin.sqf')
     assert 'ctrlSetText "Saved!"' in save
     assert '["success",0.88] call ACME_fnc_a11yColor' in save
-    assert '0.55] call CBA_fnc_waitAndExecute;' in save
-    assert '_save ctrlSetText "Save"' in save
-    assert '_draw ctrlSetText "Draw"' in save
-    assert 'call ACME_fnc_skWasteEnd' in save
-    assert 'ACME_SK_CompoundDrawCount", 0' in end
-
+    assert '[] call ACME_fnc_skCompoundBegin;' in save
+    assert 'call ACME_fnc_skListRefresh;' in save
+    assert 'call ACME_fnc_skPendingTagRender;' in save
+    assert '],0.45] call CBA_fnc_waitAndExecute;' in save
+    assert '_b ctrlSetText "Save";' in save
+    assert 'closeDialog 0' not in save
+    assert 'ACME_SK_CompoundDrawCount", 0' in begin
 
 def test_compound_plunger_snaps_final_hundredth_to_current_vial_limit():
     begin = txt('functions/fn_skCompoundBegin.sqf')
