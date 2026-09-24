@@ -33,18 +33,19 @@ def test_vomit_sound_uses_real_acm_pbo_prefix():
 def test_clinical_chest_wording():
     groups = text('functions/fn_menuExamineGroups.sqf')
     actions = text('overrides/fn_updateActions.sqf')
-    assert '["examine_chest", "Chest Inspection"' in groups
+    assert '"examine_chest"' not in groups
     assert "_actionClass == 'usestethoscope'" in actions
     assert "_clinicalDescriptors" in actions
-    assert "format ['%1Auscultate Chest'" in actions
+    assert "_baseName = 'Auscultate Chest';" in actions
+    assert "_wasChild = _nestEnabled" in actions
     assert "ACME_menuChildIndent" in actions
     # Rename is applied at paint time, not by overwriting ACM's base localized displayName.
     assert 'Auscultate Chest' not in text('config.cpp')
 
 
-def test_requested_alternating_pale_red_is_runtime_default():
+def test_uniform_white_action_rows_are_runtime_default():
     p = text('functions/fn_postInit.sqf')
-    assert 'ACME_menuRowColorAlternate = [1, 0.84, 0.84, 1];' in p
+    assert 'ACME_menuRowColorAlternate = [1, 1, 1, 1];' in p
 
 
 def test_full_medication_registry_is_config_derived_and_immutable():
