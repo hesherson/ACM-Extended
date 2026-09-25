@@ -32,9 +32,6 @@ _medic setVariable ["ACME_headElev_seqActive", true, false];
 _medic setVariable ["ACME_headElev_seqMode", _mode, false];
 _medic setVariable ["ACME_headElev_seqLastSeen", CBA_missionTime, false];
 _medic setVariable ["ACME_headElev_seqPFH", -1, false];
-// Retire the old cross-owner handshake variable. It is not part of the provider-only contract in B166.
-_medic setVariable ["ACME_headElev_pendingMove", [], false];
-
 _medic setVariable ["ACME_headElev_pinToken", (_medic getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
 private _rate = call ACME_fnc_choreographyRate;
 if !(_rate isEqualType 0 && {finite _rate} && {_rate > 0}) then {_rate = 1.5;};
@@ -58,7 +55,6 @@ private _providerPFH = [{
         if (isNull _u) exitWith {};
         if ((_u getVariable ["ACME_headElev_medicAnimToken", -1]) != _token) exitWith {};
 
-        _u setVariable ["ACME_headElev_pendingMove", [], false];
         _u setVariable ["ACME_headElev_medicAnimStage", -1, false];
         _u setVariable ["ACME_headElev_seqActive", false, false];
         _u setVariable ["ACME_headElev_seqMode", "", false];
