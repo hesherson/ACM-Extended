@@ -256,7 +256,6 @@ private _epoch = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_c
 _top pushBack (["Epoch", _epoch, _cLabel, "Alive", if (!isNull _patient && {alive _patient}) then {"yes"} else {"no"}, if (!isNull _patient && {alive _patient}) then {_cGood} else {_cWarn}] call _pair);
 
 _network pushBack (["RUNTIME / NETWORK"] call _sect);
-_network pushBack (["NETWORK LAYERS"] call _sect);
 private _naChest = missionNamespace getVariable ["ACME_NA2_chestInstalled", false];
 private _naOwner = missionNamespace getVariable ["ACME_NA2_ownerInstalled", false];
 _network pushBack (["Chest", if (_naChest) then {"on"} else {"off"}, if (_naChest) then {_cGood} else {_cBad}, "Owner", if (_naOwner) then {"on"} else {"off"}, if (_naOwner) then {_cGood} else {_cBad}] call _pair);
