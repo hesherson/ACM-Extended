@@ -86,7 +86,7 @@ _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
         && {(_p getVariable ["ACME_CS_vestBusy", ""]) == ""}
         && {(_p getVariable ["ACME_CS_frontBusy", ""]) == ""}
 }, {
-    params ["_p","_preSide","_preGrounded","_prep"];
+    params ["_p","_preSide","_preGrounded","_prep","_medic"];
 
     if (isNull _p || {!local _p}
         || {(_p getVariable ["ACME_CS_PreparationToken", ""]) != _prep}
@@ -97,12 +97,20 @@ _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
     private _actual = [_p, _p getVariable ["ACME_CS_facing", _preSide]] call ACME_fnc_chestSealActualSide;
 
     if (_canNormalize && {_actual != "front"}) then {
-        [_p, "front", false, objNull] call ACME_fnc_chestSealRoll;
-        // A nominal roll deadline can expire while its finish callback is still
-        // queued on a loaded owner. Publish only after the roll actually retires
-        // and the body is anterior-up; a denied competing lease is not readiness.
+        private _hasProvider = !isNull _medic && {!(_medic isEqualTo _p)} && {alive _medic};
+        if (_hasProvider) then {
+            [_medic,"chestAccessFrontRoll",[_medic,_p,true,"chestseal",_prep]] call ACME_fnc_ownerDispatch;
+        } else {
+            [_p, "front", false, objNull, true] call ACME_fnc_chestSealRoll;
+        };
+
+        // A nominal roll deadline can expire while its finish callback is still queued on a loaded owner.
+        // Publish only after the canonical roll actually retires and the body is anterior-up. Provider-backed
+        // retries use the same medic4 -> chestSealRoll handoff as the normal Flip button rather than inventing a
+        // preparation-only animation.
+        private _retryDelay = [0.25, 3.10] select _hasProvider;
         [{
-            params ["_p","_prep","_retry"];
+            params ["_p","_prep","_retry","_medic"];
             if (isNull _p || {!local _p}
                 || {(_p getVariable ["ACME_CS_PreparationToken", ""]) != _prep}
                 || {(_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}) exitWith {true};
@@ -111,13 +119,17 @@ _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
             if ((_p getVariable ["ACME_CS_rollToken", ""]) != "") exitWith {false};
             if (([_p, "front"] call ACME_fnc_chestSealActualSide) == "front") exitWith {true};
 
-            // A denied request has no roll token. Retry only after the competing
-            // lease retires, at a bounded cadence, without stealing that lease.
             private _lock = _p getVariable ["ACME_patientAnimLock", []];
             if (((count _lock) < 5 || {(_lock param [4,-1]) <= serverTime})
                 && {CBA_missionTime >= (_retry select 0)}) then {
-                _retry set [0, CBA_missionTime + 0.25];
-                [_p, "front", false, objNull] call ACME_fnc_chestSealRoll;
+                private _hasProvider = !isNull _medic && {!(_medic isEqualTo _p)} && {alive _medic};
+                private _delay = [0.25, 3.10] select _hasProvider;
+                _retry set [0, CBA_missionTime + _delay];
+                if (_hasProvider) then {
+                    [_medic,"chestAccessFrontRoll",[_medic,_p,true,"chestseal",_prep]] call ACME_fnc_ownerDispatch;
+                } else {
+                    [_p, "front", false, objNull, true] call ACME_fnc_chestSealRoll;
+                };
             };
             false
         }, {
@@ -126,7 +138,7 @@ _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
                 || {(_p getVariable ["ACME_CS_PreparationToken", ""]) != _prep}
                 || {(_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}) exitWith {};
             _p setVariable ["ACME_CS_ProcedureReadyAt", serverTime, true];
-        }, [_p,_prep,[CBA_missionTime + 0.25]]] call CBA_fnc_waitUntilAndExecute;
+        }, [_p,_prep,[CBA_missionTime + _retryDelay],_medic]] call CBA_fnc_waitUntilAndExecute;
     } else {
         _p setVariable ["ACME_CS_facing", "front", true];
         _p setVariable ["ACME_CS_ProcedureReadyAt", serverTime, true];
