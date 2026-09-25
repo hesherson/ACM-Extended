@@ -81,7 +81,7 @@ def setup():
         // roll request so workspace timing tests do not depend on rendering the medic4 provider RTM.
         ACME_fnc_ownerDispatch={
             params ["_owner","_op","_args"];
-            if (_op=="chestAccessFrontRoll") then {
+            if (_op=="chestSealEntryFrontRoll") then {
                 _args params ["_m","_p"];
                 [_p,"front",false,_m,true] call ACME_fnc_chestSealRoll;
             };
