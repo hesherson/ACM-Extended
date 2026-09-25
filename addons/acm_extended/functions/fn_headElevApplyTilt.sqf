@@ -4,9 +4,12 @@
  * through terrain.  Elevation therefore plays the requested patient animation once and lets its move graph settle.
  */
 params [["_patient", objNull, [objNull]], ["_replayAnim", true, [true]]];
-if (isNull _patient || {!alive _patient}) exitWith {};
-if (!local _patient) exitWith {[_patient, "headElevTilt", [_patient, _replayAnim]] call ACME_fnc_ownerDispatch;};
-if ([_patient] call ACME_fnc_animBlocked) exitWith {};
+if (isNull _patient || {!alive _patient}) exitWith {false};
+if (!local _patient) exitWith {
+    [_patient, "headElevTilt", [_patient, _replayAnim]] call ACME_fnc_ownerDispatch;
+    true
+};
+if ([_patient] call ACME_fnc_animBlocked) exitWith {false};
 
 // Retire any helper left by an older build without moving the casualty back to a stale stored world position.
 private _helper = _patient getVariable ["ACME_headElev_helper", objNull];
@@ -16,6 +19,7 @@ _patient setVariable ["ACME_headElev_helper", objNull, true];
 private _m = _patient getVariable ["ACME_headElev_mass", -1];
 if (_m > 0) then {_patient setMass _m; _patient setVariable ["ACME_headElev_mass", nil, true];};
 
+private _visualAccepted = true;
 if (_replayAnim && {isNull objectParent _patient}) then {
     // ACM can report ACM_LyingState for one frame while the grab enters. Give the animation guard a short grace.
     // Priority 2 is the ACE pickup method: playMoveNow first, then switchMove when the move graph has no edge from
@@ -27,7 +31,7 @@ if (_replayAnim && {isNull objectParent _patient}) then {
     if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2 / (call ACME_fnc_choreographyRate);};
     private _animToken = [_patient, "ACME_HeadElevPatientGrab", 2, "head-elev-lift", objNull, _liftTime + 0.6, 1]
         call ACME_fnc_patientAnimRequest;
-    if (_animToken == "") exitWith {};
+    if (_animToken == "") exitWith {_visualAccepted = false;};
     [_patient, false] call ACME_fnc_headElevCollision;
     // The pin covers the whole lift motion and a short tail. The hold that follows has a speed of zero and moves
     // nothing, so the pin is not needed after that.
@@ -90,4 +94,9 @@ if (_replayAnim && {isNull objectParent _patient}) then {
         };
     }, [_patient, _poseToken, _animToken], _liftTime + 0.5] call CBA_fnc_waitAndExecute;
 };
+if (!_visualAccepted) exitWith {
+    _patient setVariable ["ACME_headElev_visualActive", false, true];
+    false
+};
 _patient setVariable ["ACME_headElev_visualActive", true, true];
+true
