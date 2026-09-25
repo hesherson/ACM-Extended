@@ -4,6 +4,11 @@
 
 Updated 24 September 2026.
 
+### RC5 wake posture
+
+- Successful on-foot clinical wakes now pre-arm ACM's treatment/lying contract before ACE clears unconsciousness, so the casualty wakes into `ACM_LyingState` instead of immediately exiting to a normal prone/get-up animation.
+- `Get Up` remains a separate patient action after consciousness returns. Vehicle wake behavior is unchanged.
+
 ### Consciousness and wake stimuli
 
 - RC4 fixes a CBA state-machine calling-convention regression introduced by the September 22 wake refactor. CBA invokes transition conditions with the casualty object directly, while the new wake gate expected an argument array; this could abort every normal wake transition.
@@ -34,7 +39,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Internal build batch advanced to B147 and the release-candidate debug revision is rc4.
+- Internal build batch advanced to B148 and the release-candidate debug revision is rc5.
 
 ## 1.2.2 cumulative update
 
