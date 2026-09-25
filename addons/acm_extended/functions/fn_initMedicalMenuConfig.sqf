@@ -14,6 +14,9 @@
 // The collector retains action class IDs and stable bucket keys for the changed routes.
 // Display-name lists remain a compatibility fallback for the existing groups.
 // Format: [key, label, category, exact fallback names, visibility code, color].
+// Group visibility is anatomy-only presentation. It prevents a stale cached dropdown from surviving a body-part
+// change (including death transitions) without touching any treatment row, condition, statement or callback.
+// Head: Airway, Breathing, Capnography. Body: Chest, Positioning. Medication route groups were already head-only.
 ACME_menuGroups = [
     // airway
     ["adjuncts", "Airway", "airway", [
@@ -23,26 +26,26 @@ ACME_menuGroups = [
         "Remove OPA", "Remove NPA", "Remove i-gel",
         "Intubate (Orotracheal)", "Remove Endotracheal Tube",
         "Establish Surgical Airway", "Stitch Airway Incision"
-    ], {true}, [0.53, 0.53, 0.95, 1]],
+    ], {ace_medical_gui_selectedBodyPart == 0}, [0.53, 0.53, 0.95, 1]],
     ["ventilation", "Breathing", "airway", [
         "Check Breathing",
         "Use BVM", "Use BVM with Oxygen", "Use BVM with Oxygen (Vehicle)", "Use BVM with Oxygen (Portable)",
         "Apply Non-Rebreather Mask", "Remove Non-Rebreather Mask"
-    ], {true}, [0.19, 0.65, 0.57, 1]],
+    ], {ace_medical_gui_selectedBodyPart == 0}, [0.19, 0.65, 0.57, 1]],
     ["chest", "Chest", "airway", [
         "Apply Chest Seal", "Perform Needle-Chest-Decompression", "Perform NCD (NAR SPEAR)",
         "Perform Thoracostomy", "Perform Thoracostomy (Kit)", "Adjust Thoracostomy", "Insert Chest Tube",
         "Drain Fluid (ACCUVAC)", "Drain Fluid (Suction Bag)", "Re-Seal Chest Tube",
         "Close Thoracostomy Incision", "Close Incision (Suture)", "Suture Chest Tube"
-    ], {true}, [0.58, 0.24, 0.92, 1]],
+    ], {ace_medical_gui_selectedBodyPart == 1}, [0.58, 0.24, 0.92, 1]],
     ["position", "Positioning", "airway", [
         "Establish Recovery Position", "Cancel Recovery Position"
-    ], {true}, [0.60, 0.88, 0.64, 1]],
+    ], {ace_medical_gui_selectedBodyPart == 1}, [0.60, 0.88, 0.64, 1]],
     ["capno", "Capnography", "airway", [
         "Attach EMMA to My BVM", "Remove EMMA from My BVM",
         "Attach EMMA to their i-gel", "Remove EMMA from their i-gel",
         "Attach EMMA to ETT", "Remove EMMA from ETT"
-    ], {true}, [0.95, 0.53, 0.74, 1]],
+    ], {ace_medical_gui_selectedBodyPart == 0}, [0.95, 0.53, 0.74, 1]],
 
     // Medication route labels are selected live by fn_updateActions.
     // The class-based collector supplies membership; no clinical behavior is changed.
