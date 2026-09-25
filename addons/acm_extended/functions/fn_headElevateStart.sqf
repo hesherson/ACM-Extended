@@ -34,25 +34,19 @@ if (_needFrontFirst) exitWith {
     private _delay = 0.08;
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
-        private _hasProvider = !isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic};
-        if (_hasProvider) then {
-            // B162 changed chestAccessFrontRoll from provider-only theatre into the complete staged
-            // medic4 -> patient-roll pipeline. Do NOT also call chestSealRoll here: doing both requested
-            // the same casualty roll twice and could leave Semi-Fowler waiting behind its own duplicate lease.
-            [_medic,"chestAccessFrontRoll",[_medic,_patient,true,"access",""]] call ACME_fnc_ownerDispatch;
-        } else {
-            [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
+        // Semi-Fowler keeps the historical parallel roll choreography: one provider medic4 theatre plus one
+        // patient-owned canonical roll. chestAccessFrontRoll is presentation-only again in B164, so these are
+        // complementary owners rather than duplicate patient requests.
+        if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
+            [_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;
         };
+        [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
 
         private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
         if !(_patientRoll isEqualType 0 && {finite _patientRoll}) then {_patientRoll = 1.85;};
         private _providerRoll = missionNamespace getVariable ["ACME_rollProviderDuration",2.2];
         if !(_providerRoll isEqualType 0 && {finite _providerRoll}) then {_providerRoll = 2.2;};
-        _delay = if (_hasProvider) then {
-            (_providerRoll + _patientRoll + 0.20) max 2.5
-        } else {
-            _patientRoll + 0.15
-        };
+        _delay = (_patientRoll + 0.10) max (_providerRoll + 0.25);
     } else {
         // A stale/non-rollable downed state must still never feed the Semi-Fowler grab from the stomach.
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
