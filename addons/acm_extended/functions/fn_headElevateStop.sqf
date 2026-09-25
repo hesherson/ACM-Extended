@@ -11,6 +11,7 @@ if (!local _patient) exitWith {
 };
 if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized] call ACME_fnc_headElevateStop;};};
 private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];
+private _wasManualUnsupported = _patient getVariable ["ACME_headElev_manualUnsupported", false];
 [_patient] call ACME_fnc_headElevHoldClear;
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;};
@@ -88,7 +89,9 @@ if (_visibleLower) then {
     [_patient, "ACME_HeadElevPatientRelease", 2] call ACME_fnc_doAnim;
     private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
     [_patient, _lowerTime] call ACME_fnc_headElevPinPose;
-    if (!isNull _medic) then {[_medic, "lower"] call ACME_fnc_headElevMedicSeq;};
+    // Manual/unsupported Semi-Fowler owns its provider exit through fn_headElevHoldStart. Starting the ordinary
+    // Lower Head provider sequence here would make two animation controllers fight over the same medic.
+    if (!isNull _medic && {!_wasManualUnsupported}) then {[_medic, "lower"] call ACME_fnc_headElevMedicSeq;};
     private _rest = [_patient] call ACME_fnc_headElevRestAnim;
     [{
         params ["_patient", "_rest"];
