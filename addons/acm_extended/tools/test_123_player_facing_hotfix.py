@@ -161,4 +161,4 @@ def test_direct_cpr_waits_for_single_semifowler_lower_and_never_resumes_it():
     assert 'ACME_headElev_Suspended' in cpr
     assert 'ACME_headElev_lowerAnimTime' in cpr
     assert '[_m,_p,true] call ACM_circulation_fnc_beginCPR;' in cpr
-    assert '"headElevStop", [_medic, _patient, false, false]' in cpr
+    assert '"headElevStop", [objNull, _patient, false, false]' in cpr
