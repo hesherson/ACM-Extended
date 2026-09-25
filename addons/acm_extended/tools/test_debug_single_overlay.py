@@ -129,7 +129,7 @@ def test_layout_uses_top_metadata_tab_and_anchors_runtime_to_safearea_bottom(hea
         [abs ((_top select 1)-(_head select 1)-(_head select 3)-0.0045)<0.00001,"metadata tab is not directly beneath header"] call _check;
         [abs ((_net select 1)+(_net select 3)-0.84)<0.00001,"runtime footer is not anchored to safe-area bottom"] call _check;
         [abs ((_back select 1)+(_back select 3)-0.84)<0.00001,"backing does not span top-to-bottom safe area"] call _check;
-        [(_left select 3)>(_clinicalH max 0),"clinical columns were not given remaining vertical space"] call _check;
+        [abs ((_left select 1)+(_left select 3)+0.01-(_net select 1))<0.00001,"clinical columns were not given the remaining vertical space"] call _check;
         [abs ((_right select 0)+(_right select 2)-(_back select 0)-(_back select 2))<0.00001,"columns outside backing"] call _check;
     ''')
 
