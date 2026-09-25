@@ -18,7 +18,7 @@ def test_123_release_identity_and_hemtt_version():
     assert 'version = "1.2.3";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
     assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B151";' in startup
+    assert 'ACME_buildBatch = "B152";' in startup
     assert 'ACME_debugRevision = "";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
     for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
@@ -92,16 +92,18 @@ def test_middle_mouse_swaps_publish_provider_and_owner_handoff_before_cleanup():
     cpr = raw(ADDONS / "circulation" / "functions" / "fnc_beginCPR.sqf")
     bvm = raw(ADDONS / "breathing" / "functions" / "fnc_useBVM.sqf")
 
-    for source in (cpr, bvm):
-        assert 'ACME_chestAccessManeuverHandoff' in source
-        assert 'CBA_missionTime + 1.00' in source
-        assert '"chestAccessManeuverHandoff", [1.00]' in source
+    assert 'ACME_chestAccessManeuverHandoff' in cpr
+    assert 'CBA_missionTime + 1.00' in cpr
+    assert '"chestAccessManeuverHandoff", [1.00]' in cpr
 
     cpr_swap = cpr.index('private _swapToBVM = GVAR(SwapToBVM);')
     assert cpr.index('"chestAccessManeuverHandoff", [1.00]', cpr_swap) < cpr.index('call FUNC(cprCleanupLocal)', cpr_swap)
 
-    bvm_swap = bvm.index('private _swapToCPR')
-    assert bvm.index('"chestAccessManeuverHandoff", [1.00]', bvm_swap) < bvm.index('call FUNC(bvmCleanupLocal)', bvm_swap)
+    # BVM -> CPR may need one authored Semi-Fowler lower before compressions. Keep the shared chest lease alive
+    # through that delay so the carrier cannot restore/re-remove in the gap.
+    assert 'private _handoffSec = if (_patient getVariable ["ACME_headElevated", false]) then {2.50} else {1.00};' in bvm
+    assert 'CBA_missionTime + _handoffSec' in bvm
+    assert '"chestAccessManeuverHandoff", [_handoffSec]' in bvm
 
 
 def test_patient_owner_blocks_restore_during_roles_and_transfer_window():
@@ -160,17 +162,26 @@ def test_cpr_and_bvm_yield_direct_pressure_instead_of_destroying_episode():
     assert '_ownerHandoffActive' in tick
 
 
-def test_semifowler_is_lower_priority_and_never_resumes_under_cpr_bvm():
+def test_semifowler_cpr_cancels_but_supported_bvm_preserves_posture():
     suspend = acme("functions/fn_headElevSuspend.sqf")
     resume = acme("functions/fn_headElevTryResume.sqf")
+    runtime = acme("functions/fn_registerHeadElevationTreatmentRuntime.sqf")
+    acquire = acme("functions/fn_chestAccessVestAcquire.sqf")
+    treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
+
     assert 'private _interventionOwnsPatient' in suspend
     assert '_lockPriority >= 2' in suspend
     assert '"head-elev-lower", objNull, _lowerTime + 0.3, 1' in suspend
     assert '"head-elev-flat", objNull, 0.8, 1' in suspend
-    assert 'if (isNull objectParent _patient && {!_interventionOwnsPatient}) then {' in suspend
+
+    assert '_classLC in ["recoveryposition","cpr"]' in runtime
+    assert 'if (_classLC in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]) exitWith {};' in runtime
     assert '[_patient] call ACM_core_fnc_cprActive' in resume
-    assert '[_patient] call ACM_core_fnc_bvmActive' in resume
+    assert '[_patient] call ACM_core_fnc_bvmActive' not in resume
     assert 'ACME_chestAccess_maneuverHandoffUntil' in resume
+
+    assert 'private _preserveHeadElevation = _treatmentClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];' in acquire
+    assert 'private _bvmChestClass = _nativeContinuousClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];' in treatment
 
 
 def test_cancelled_prep_invalidates_patient_callbacks_and_can_resume_semifowler():
