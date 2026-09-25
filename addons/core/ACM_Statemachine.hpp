@@ -48,7 +48,7 @@ class ACE_Medical_StateMachine {
         };
         class WakeUp {
             targetState = "Injured";
-            condition = QFUNC(canWake);
+            condition = QUOTE([_this] call FUNC(canWake));
             events[] = {QACEGVAR(medical,WakeUp)};
             onTransition = QUOTE([ARR_2(_this,false)] call ACEFUNC(medical_status,setUnconsciousState));
         };
