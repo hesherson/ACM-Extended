@@ -15,6 +15,10 @@ if (isNull _patient) then {_patient = _d getVariable ["ACME_SK_ReturnPatient",ob
 if (isNull _patient) exitWith {false};
 private _identity = [_patient,_body,_site] call ACME_fnc_medicationLineIdentity;
 if (_identity isEqualTo []) exitWith {false};
+if ([_patient,_body,_site] call ACME_fnc_medicationLineBloodBusy) exitWith {
+    ["Blood is actively flowing through that line. Stop or finish the transfusion before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
+    false
+};
 private _leash = missionNamespace getVariable ["ACM_circulation_AEDDistanceLimit",5];
 if (((objectParent ACE_player) isNotEqualTo (objectParent _patient)) || {ACE_player distance _patient > _leash}) exitWith {false};
 private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
