@@ -135,7 +135,7 @@ def test_normalization_waits_for_actual_roll_retirement_not_nominal_durations(pa
         missionNamespace setVariable ["ACME_CS_rollTime",{patient}];
         missionNamespace setVariable ["ACME_rollProviderDuration",{provider}];
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
-        [count _untils==1 && {count _waits==0},"normalization fell back to fixed animation delay"] call _check;
+        [count _untils==1 && {{count _waits==0}},"normalization fell back to fixed animation delay"] call _check;
         [abs (((_untils select 0) select 3)-4.5)<0.0001,"roll completion fail-safe changed"] call _check;
     ''')
 
