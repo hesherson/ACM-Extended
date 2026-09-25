@@ -10,11 +10,14 @@ params [
     ["_patient", objNull, [objNull]],
     ["_medic", objNull, [objNull]],
     ["_context", "access", [""]],
-    ["_frontNormalized", false, [false]]
+    ["_frontNormalized", false, [false]],
+    ["_treatmentClass", "", [""]]
 ];
 if (isNull _patient || {!local _patient}) exitWith {false};
 _context = toLowerANSI _context;
 if !(_context in ["access","chestseal"]) then {_context = "access";};
+_treatmentClass = toLowerANSI _treatmentClass;
+private _preserveHeadElevation = _treatmentClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];
 
 private _savedVar = ["ACME_chestAccess_vestLoadout","ACME_CS_vestLoadout"] select (_context == "chestseal");
 private _propVar = ["ACME_chestAccess_vestProp","ACME_CS_vestProp"] select (_context == "chestseal");
@@ -61,12 +64,12 @@ if (!_frontNormalized) then {
             private _wait = (_patientRoll + 0.15) max (_providerRoll + 0.40);
 
             [{
-                params ["_p","_m","_ctx","_busyVar","_token"];
+                params ["_p","_m","_ctx","_busyVar","_token","_treatmentClass"];
                 if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
                 _p setVariable [_busyVar,"",false];
                 _p setVariable ["ACME_CS_facing","front",true];
-                [_p,_m,_ctx,true] call ACME_fnc_chestAccessVestAcquire;
-            }, [_patient,_medic,_context,_frontBusyVar,_frontToken], _wait] call CBA_fnc_waitAndExecute;
+                [_p,_m,_ctx,true,_treatmentClass] call ACME_fnc_chestAccessVestAcquire;
+            }, [_patient,_medic,_context,_frontBusyVar,_frontToken,_treatmentClass], _wait] call CBA_fnc_waitAndExecute;
         };
     };
 };
@@ -87,7 +90,9 @@ if ((_patient getVariable [_busyVar, ""]) != "") exitWith {true};
 // Semi-Fowler is lowered before any separate worn carrier is lifted off.
 // Start a fresh fixed park episode for the Semi-Fowler support prop.
 private _preDelay = 0;
-if (_patient getVariable ["ACME_headElevated", false]) then {
+// BVM is compatible with a supported Semi-Fowler posture. If BVM still needs the worn carrier moved, remove/park
+// the carrier without first laying the casualty flat. CPR and other flat-required work retain the normal suspension.
+if ((_patient getVariable ["ACME_headElevated", false]) && {!_preserveHeadElevation}) then {
     private _headProp = _patient getVariable ["ACME_headElev_propObj", objNull];
     if (!isNull _headProp) then {_headProp setVariable ["ACME_chestFixedPark", nil, false];};
 
@@ -214,7 +219,8 @@ private _commitRemoval = {
 
 // Animation is allowed only for casualties whose body ACME may legitimately control.
 // Otherwise gear correctness wins and the action proceeds after the Semi-Fowler lowering delay, if any.
-private _canAnimate = alive _patient
+private _canAnimate = !_preserveHeadElevation
+    && {alive _patient}
     && {isNull objectParent _patient}
     && {!([_patient] call ACME_fnc_animBlocked)}
     && {[_patient] call ACME_fnc_chestSealCanPhysicalRoll
