@@ -75,7 +75,20 @@ if (_patient getVariable ["ACME_headElev_vestRemoved", false]) exitWith {};
 // back.
 private _hasBag = ((backpack _patient) isNotEqualTo "");
 private _vestClass = vest _patient;
-private _manual = !_hasBag && {_vestClass isEqualTo ""};
+
+// Only an actual armored carrier is accepted as passive Semi-Fowler support. An unarmored chest rig/vest does not
+// physically prop the casualty and therefore uses the same active provider-held mode as no vest at all.
+private _hasCarrier = false;
+if (_vestClass != "") then {
+    private _vestInfo = configFile >> "CfgWeapons" >> _vestClass >> "ItemInfo";
+    private _legacyArmor = getNumber (_vestInfo >> "armor");
+    private _hp = _vestInfo >> "HitpointsProtectionInfo";
+    private _chestArmor = getNumber (_hp >> "Chest" >> "armor");
+    private _diaArmor = getNumber (_hp >> "Diaphragm" >> "armor");
+    private _abdArmor = getNumber (_hp >> "Abdomen" >> "armor");
+    _hasCarrier = (_legacyArmor max _chestArmor max _diaArmor max _abdArmor) > 0;
+};
+private _manual = !_hasBag && {!_hasCarrier};
 if (_manual && {_auto || {isNull _medic} || {!alive _medic}
     || {_medic getVariable ["ACE_isUnconscious", false]}
     || {([_medic, _patient] call ACME_fnc_patientInteractionDistance) > (missionNamespace getVariable ["ace_medical_gui_maxDistance", 3])
