@@ -3,6 +3,7 @@ params ["_patient", ["_phase", "finish"], ["_preserveJunctional", false]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_phase == "begin") exitWith {
     [_patient] call ACME_fnc_headElevHoldClear;
+    _patient setVariable ["ACME_headElev_manualUnsupported", false, true];
     [_patient] call ACME_fnc_aajtDownedStop;
     private _aajtPain = _patient getVariable ["ACME_AAJT_painPFH", -1];
     if (_aajtPain >= 0) then {[_aajtPain] call CBA_fnc_removePerFrameHandler;};
