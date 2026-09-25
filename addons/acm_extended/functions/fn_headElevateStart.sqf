@@ -51,14 +51,19 @@ if (_needFrontFirst) exitWith {
                 params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
                 if (isNull _p || {!local _p} || {!alive _p}
                     || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                // A different non-empty token means another/newer roll superseded this normalization. Do not let the
+                // old Semi-Fowler continuation steal that patient's animation generation.
+                if ((_p getVariable ["ACME_CS_rollToken", ""]) != "") exitWith {};
                 _p setVariable ["ACME_CS_facing","front",true];
                 [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
             }, [_patient,_rollToken,_startPoseToken,_medic,_bodyPart,_auto], 4.5, {
                 params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
                 if (isNull _p || {!local _p} || {!alive _p}
                     || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
-                // Fail closed to the stable supine side. A wedged roll may not strand head positioning or leave its
-                // patient lease behind indefinitely.
+                private _currentRoll = _p getVariable ["ACME_CS_rollToken", ""];
+                if (_currentRoll != "" && {_currentRoll != _rollToken}) exitWith {};
+                // Fail closed to the stable supine side. Only the exact wedged roll this start created may be
+                // cancelled; a newer roll generation is never touched.
                 [_p,"front"] call ACME_fnc_patientRollCancel;
                 _p setVariable ["ACME_CS_facing","front",true];
                 [{_this call ACME_fnc_headElevateStart;}, [_m,_p,_body,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
