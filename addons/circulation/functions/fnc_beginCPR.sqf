@@ -33,9 +33,16 @@ private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
 if (!_headLowered
     && {_patient getVariable ["ACME_headElevated", false]}
     && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
-    [_patient, "headElevStop", [objNull, _patient, false, false]] call ACME_fnc_ownerDispatch;
     private _lowerDelay = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
     if !(_lowerDelay isEqualType 0 && {finite _lowerDelay} && {_lowerDelay >= 0.2}) then {_lowerDelay = 1.4;};
+
+    // Publish owner-side open-chest custody BEFORE the support carrier is detached from Semi-Fowler ownership.
+    // The deadline bridges the 1.4 s lay-flat; once CPR starts, live CPR ownership keeps restoration blocked.
+    private _handoffSec = _lowerDelay + 1.00;
+    _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + _handoffSec], false];
+    [_patient, "chestAccessManeuverHandoff", [_handoffSec]] call ACME_fnc_ownerDispatch;
+
+    [_patient, "headElevStop", [objNull, _patient, false, false, true]] call ACME_fnc_ownerDispatch;
     [{
         params ["_m","_p"];
         if (!isNull _m && {!isNull _p} && {alive _m} && {local _m}) then {
@@ -47,7 +54,8 @@ if (!_headLowered
 if (!_headLowered
     && {_patient getVariable ["ACME_headElevated", false]}
     && {_patient getVariable ["ACME_headElev_Suspended", false]}) then {
-    [_patient, "headElevStop", [objNull, _patient, true, false]] call ACME_fnc_ownerDispatch;
+    // A pre-existing suspension already owns open-chest state. Preserve any support carrier under that custody.
+    [_patient, "headElevStop", [objNull, _patient, true, false, true]] call ACME_fnc_ownerDispatch;
 };
 
 // CPR outranks Direct Pressure for provider animation and clinical hand use without destroying the persistent
