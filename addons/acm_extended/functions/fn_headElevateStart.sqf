@@ -136,20 +136,18 @@ if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}
 };
 [_patient] call ACME_fnc_headElevWatch;
 
-// B71 Semi-Fowler: preserve the support-surface reference only for prop bookkeeping.  Do not attach or setPos the
-// casualty. The provider reaches first; its accepted reach releases the patient lift on the owner.
+// Patient and provider begin the authored Semi-Fowler choreography together. Earlier builds inserted a
+// provider-ready network handshake here; that produced visible dead time and could leave the logical posture set
+// while the patient never moved if the provider episode was interrupted. Patient motion is patient-owned and starts
+// immediately. Provider theatre is presentation-only and can be cancelled/preempted independently.
 _patient setVariable ["ACME_headElev_basePosASL", getPosASL _patient, true];
 _patient setVariable ["ACME_headElev_baseDir", getDir _patient, true];
 _patient setVariable ["ACME_headElev_baseAnim", animationState _patient, true];
+_patient setVariable ["ACME_headElev_pendingLift", [], true];
+_patient setVariable ["ACME_headElev_liftRequestAt", -1, false];
 missionNamespace setVariable ["ACME_headElev_TunePatient", _patient];
-private _waitForMedic = !_auto && {!isNull _medic}
-    && {!([_medic] call ACME_fnc_animBlocked)} && {!([_patient] call ACME_fnc_animBlocked)};
-if (_waitForMedic) then {
-    _patient setVariable ["ACME_headElev_pendingLift", [_medic, _poseToken], true];
-    _patient setVariable ["ACME_headElev_liftRequestAt", CBA_missionTime, false];
-} else {
-    [_patient] call ACME_fnc_headElevApplyTilt;
-};
+
+[_patient] call ACME_fnc_headElevApplyTilt;
 
 if (_manual) then {
     [_medic, "headElevHoldStart", [_medic, _patient, _bodyPart, _poseToken]] call ACME_fnc_ownerDispatch;
