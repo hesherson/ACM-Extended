@@ -18,8 +18,8 @@ def test_123_release_identity_and_hemtt_version():
     assert 'version = "1.2.3";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
     assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B145";' in startup
-    assert 'ACME_debugRevision = "rc2";' in startup
+    assert 'ACME_buildBatch = "B146";' in startup
+    assert 'ACME_debugRevision = "rc3";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
     for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
         assert line in script
@@ -117,6 +117,27 @@ def test_direct_pressure_yields_before_pose_for_native_cpr_bvm_and_chest_prep():
     assert '[_patient] call ACM_core_fnc_bvmActive' in pose
     assert '[_patient] call ACM_core_fnc_cprActive' in stance
     assert '[_patient] call ACM_core_fnc_bvmActive' in stance
+
+
+def test_bvm_yields_direct_pressure_instead_of_destroying_episode():
+    bvm = raw(ADDONS / "breathing" / "functions" / "fnc_useBVM.sqf")
+    treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
+    tick = acme("functions/fn_directPressureTick.sqf")
+
+    assert 'call ACME_fnc_directPressureStop' not in bvm
+    assert '_medic setVariable ["ACME_DP_Paused", true, false];' in bvm
+    assert '_medic setVariable ["ACME_DP_PauseTreatmentClass", "usebvm", false];' in bvm
+
+    branch = 'if (_nativeContinuousClass in ["usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]) exitWith {'
+    branch_pos = treatment.index(branch)
+    native_pos = treatment.index('private _startedContinuous = _this call ACM_core_fnc_treatmentNative;', branch_pos)
+    pause_pos = treatment.index('call _fnc_dpPauseForManeuver;', branch_pos)
+    assert pause_pos < native_pos
+
+    assert 'ACME_chestAccessManeuverHandoff' in tick
+    assert 'ACME_chestAccess_maneuverHandoffUntil' in tick
+    assert '_providerHandoffActive' in tick
+    assert '_ownerHandoffActive' in tick
 
 
 def test_semifowler_is_lower_priority_and_never_resumes_under_cpr_bvm():
