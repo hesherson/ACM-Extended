@@ -29,39 +29,54 @@ private _actualBeforeElevate = [_patient, _patient getVariable ["ACME_CS_facing"
 private _needFrontFirst = !_afterProneRoll && {_actualBeforeElevate != "front"};
 
 if (_needFrontFirst) exitWith {
-    // A delayed normalization belongs to the placement state that accepted this request.
+    // This pre-roll belongs to the still-unstarted placement generation. Use the roll's real ownership token rather
+    // than sleeping for a nominal animation duration: the next Semi-Fowler frame begins as soon as the casualty roll
+    // actually retires, with no dead-air delay and no race against a late roll callback.
     private _startPoseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
-    private _delay = 0.08;
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
-        // Semi-Fowler keeps the historical parallel roll choreography: one provider medic4 theatre plus one
-        // patient-owned canonical roll. chestAccessFrontRoll is presentation-only again in B164, so these are
-        // complementary owners rather than duplicate patient requests.
         if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
             [_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;
         };
         [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
 
-        private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
-        if !(_patientRoll isEqualType 0 && {finite _patientRoll}) then {_patientRoll = 1.85;};
-        private _providerRoll = missionNamespace getVariable ["ACME_rollProviderDuration",2.2];
-        if !(_providerRoll isEqualType 0 && {finite _providerRoll}) then {_providerRoll = 2.2;};
-        _delay = (_patientRoll + 0.10) max (_providerRoll + 0.25);
+        private _rollToken = _patient getVariable ["ACME_CS_rollToken", ""];
+        if (_rollToken != "") then {
+            [{
+                params ["_p","_rollToken","_startPoseToken"];
+                if (isNull _p || {!local _p} || {!alive _p}
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {true};
+                (_p getVariable ["ACME_CS_rollToken", ""]) != _rollToken
+            }, {
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
+                if (isNull _p || {!local _p} || {!alive _p}
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                _p setVariable ["ACME_CS_facing","front",true];
+                [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
+            }, [_patient,_rollToken,_startPoseToken,_medic,_bodyPart,_auto], 4.5, {
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
+                if (isNull _p || {!local _p} || {!alive _p}
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                // Fail closed to the stable supine side. A wedged roll may not strand head positioning or leave its
+                // patient lease behind indefinitely.
+                [_p,"front"] call ACME_fnc_patientRollCancel;
+                _p setVariable ["ACME_CS_facing","front",true];
+                [{_this call ACME_fnc_headElevateStart;}, [_m,_p,_body,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+            }] call CBA_fnc_waitUntilAndExecute;
+        } else {
+            // Roll request was denied by an older patient-animation lease. Stabilize to face-up and retry on the
+            // next scheduling slice instead of waiting several seconds for a transition that never started.
+            private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
+            _patient setVariable ["ACME_CS_facing","front",true];
+            ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
+            [{_this call ACME_fnc_headElevateStart;}, [_medic,_patient,_bodyPart,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+        };
     } else {
-        // A stale/non-rollable downed state must still never feed the Semi-Fowler grab from the stomach.
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
         _patient setVariable ["ACME_CS_facing","front",true];
         ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
+        [{_this call ACME_fnc_headElevateStart;}, [_medic,_patient,_bodyPart,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
     };
-
-    [{
-        params ["_m","_p","_body","_auto","_startPoseToken"];
-        if (!isNull _p && {local _p} && {alive _p}) then {
-            if ((_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken) exitWith {};
-            // Startup revalidates eligibility before setting facing or touching gear. Do not write ahead of it.
-            [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
-        };
-    }, [_medic,_patient,_bodyPart,_auto,_startPoseToken], _delay] call CBA_fnc_waitAndExecute;
 };
 
 // At this point the patient is definitively anterior-up. All Semi-Fowler patient/provider animations start from it.
