@@ -134,9 +134,11 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         && {isNull objectParent _patient}
         && {[_patient] call ACME_fnc_chestSealCanPhysicalRoll}
         && {_actualChestSide == "back"};
+    private _bvmChestClass = _nativeContinuousClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];
     private _needsPhysicalPrep = _needsFrontNormalize
         || {((vest _patient) != "" && {(count _chestSaved) != 2})}
-        || {_patient getVariable ["ACME_headElevated", false]
+        || {!_bvmChestClass
+            && {_patient getVariable ["ACME_headElevated", false]}
             && {!(_patient getVariable ["ACME_headElev_Suspended", false])}};
 
     if (_needsChestAccess && {_needsPhysicalPrep} && {!_alreadyPrepared}
