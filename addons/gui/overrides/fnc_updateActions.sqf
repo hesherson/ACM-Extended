@@ -18,8 +18,7 @@ private _selectedCategory = missionNamespace getVariable ['ace_medical_gui_selec
 // ACE calls the menu painter from a 0-delay PFH. Re-evaluating every grouped action, inventory count, tooltip,
 // handler and control on every rendered frame is unnecessary and disproportionately hurts lower-FPS clients.
 // Patient/body-part/category changes bypass the throttle and repaint immediately.
-// Death/revival changes the visible action set even when the selected limb/category did not move.
-private _paintKey = [_target, _bodyPart, _selectedCategory, !isNull _target && {alive _target}];
+private _paintKey = [_target, _bodyPart, _selectedCategory];
 private _lastPaintKey = _display getVariable ['ACME_menuPaintKey', []];
 private _nextPaint = _display getVariable ['ACME_menuNextPaint', 0];
 if (_paintKey isEqualTo _lastPaintKey && {diag_tickTime < _nextPaint}) exitWith {};
@@ -94,11 +93,14 @@ if (_showTriage) exitWith {
 // Build display-local headers only when grouping is enabled. The collected actions already
 // carry the correct categories and order for both grouped and flat menus.
 private _menuActions = missionNamespace getVariable ['ace_medical_gui_actions', []];
+// Check Airway and Check Breathing are head-only assessments. canTreatCached deliberately keeps these evidence
+// checks available on corpses for AAR/training continuity, so the paint layer must not reintroduce a death-only
+// gate which leaks patient death. Re-apply anatomy only because grouped children replace their condition after collection.
+_menuActions = _menuActions select {
+    private _class = toLower (_x param [8, '']);
+    !(_class in ['checkairway', 'checkbreathing']) || {_bodyPart == 0 && {!isNull _target}}
+};
 
-// Keep native treatment rows and their condition/statement closures byte-for-byte intact here. B162/B163
-// inserted a global anatomy transformation between collection and rendering; although it stopped the stale Chest
-// submenu leak, it also changed the execution path shared by unrelated timed actions. Anatomy correction now lives
-// only in the dropdown bucketing path below, where the renderer already substitutes a child's condition with {true}.
 // Do not retain a cached positioning row after the casualty stands up.
 _menuActions = _menuActions select {
     (toLower (_x param [8, ''])) != 'acme_elevatehead'
@@ -131,24 +133,6 @@ _menuActions = _menuActions select {
     private _class = toLower (_x param [8, '']);
     !(_class in ['acme_stopdirectpressure', 'acme_directpressure'])
 };
-private _groupAnatomyAllowed = {
-    params ['_row'];
-    private _className = _row param [8, ''];
-    if (_className == '') exitWith {true};
-
-    private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;
-    if !(isClass _cfg) exitWith {true};
-
-    private _allowed = getArray (_cfg >> 'allowedSelections');
-    if (_allowed isEqualTo []) exitWith {true};
-
-    private _bodyNames = ['head', 'body', 'leftarm', 'rightarm', 'leftleg', 'rightleg'];
-    if (_bodyPart < 0 || {_bodyPart >= count _bodyNames}) exitWith {false};
-    private _selected = _bodyNames select _bodyPart;
-    private _allowedLower = _allowed apply {toLowerANSI _x};
-    ('all' in _allowedLower) || {_selected in _allowedLower}
-};
-
 if (_nestEnabled) then {
     private _groups = (missionNamespace getVariable ['ACME_menuGroups', []]) select {
         (_x select 2) isEqualTo _selectedCategory && {call (_x param [4, {true}])}
@@ -176,11 +160,8 @@ if (_nestEnabled) then {
             if (_key == '') then {
                 _out pushBack _x;
             } else {
-                // Group children replace their condition with {true} once expanded, so anatomy must be
-                // proven here before that substitution. Direct/ungrouped actions retain the exact native row path.
-                if ([_x] call _groupAnatomyAllowed && {call _condition}) then {
-                    (_buckets get _key) pushBack _x;
-                };
+                // Evaluate each grouped treatment condition once, including closed groups.
+                if (call _condition) then {(_buckets get _key) pushBack _x;};
             };
         };
     } forEach _menuActions;
