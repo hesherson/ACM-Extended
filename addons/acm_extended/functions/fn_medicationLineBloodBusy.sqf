@@ -28,7 +28,6 @@ if (_bags isEqualTo []) then {
 };
 if !(_bags isEqualType []) exitWith {false};
 
-private _detached = _patient getVariable ["ACME_detachedBags", []];
 (_bags findIf {
     private _bag = _x;
     if !(_bag isEqualType [] && {count _bag >= 5}) exitWith {false};
@@ -36,10 +35,8 @@ private _detached = _patient getVariable ["ACME_detachedBags", []];
     private _remaining = _bag param [1,0,[0]];
     private _bagSite = _bag param [3,-1,[0]];
     private _bagIV = _bag param [4,true,[true]];
-    private _bagUid = _bag param [8,"",[""]];
     (_type in ["Blood","FreshBlood","FBTK"])
         && {_remaining > 0.01}
         && {_bagIV isEqualTo _iv}
         && {!_iv || {_bagSite == _site}}
-        && {!(_bagUid in _detached)}
 }) >= 0
