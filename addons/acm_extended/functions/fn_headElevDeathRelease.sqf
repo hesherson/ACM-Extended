@@ -13,6 +13,7 @@ private _releaseTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTim
 [_patient] call ACME_fnc_headElevHoldClear;
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 _patient setVariable ["ACME_headElevated", false, true];
+_patient setVariable ["ACME_headElev_manualUnsupported", false, true];
 _patient setVariable ["ACME_headElev_Suspended", false, true];
 _patient setVariable ["ACME_headElev_ResumePending", false, true];
 _patient setVariable ["ACME_headElev_TransportPending", nil, true];
