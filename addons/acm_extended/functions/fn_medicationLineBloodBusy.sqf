@@ -1,7 +1,7 @@
 /*
- * True only when blood is CURRENTLY flowing through the exact vascular access selected for a medication push.
- * Empty blood bags and blood bags on another IV/IO do not block medication. A closed/occluded line does not
- * count as flowing. This is read-only and safe on provider and patient-owner machines.
+ * True when a NON-EMPTY blood product is attached to the exact vascular access selected for a medication push.
+ * Medication is allowed only after that blood bag is empty or absent. Closing the clamp does not make the line
+ * medication-safe because blood is still occupying the tubing. Blood on another IV/IO does not block this access.
  */
 params [
     ["_patient", objNull, [objNull]],
@@ -16,22 +16,6 @@ private _parts = ["head","body","leftarm","rightarm","leftleg","rightleg"];
 private _partIndex = _parts find _part;
 if (_partIndex < 0 || {!(_site in [-1,0,1,2])}) exitWith {false};
 private _iv = _site >= 0;
-
-// Native line switch / roller state. If this access itself is shut, blood is not currently running through it.
-private _lineOpen = if (_iv) then {
-    private _flows = _patient getVariable [
-        "ACM_circulation_FluidBagsFlow_IV",
-        [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]]
-    ];
-    ((_flows param [_partIndex,[1,1,1],[[]]]) param [_site,1,[0]]) > 0
-} else {
-    private _flows = _patient getVariable ["ACM_circulation_FluidBagsFlow_IO", [1,1,1,1,1,1]];
-    (_flows param [_partIndex,1,[0]]) > 0
-};
-if (!_lineOpen) exitWith {false};
-
-// The flow-rate authority also applies AAJT/tourniquet occlusion, access gauge, clamp and pressure-cuff state.
-if (([_patient,_partIndex,_iv,_site,-1,""] call ACM_circulation_fnc_getIVFlowRate) <= 0) exitWith {false};
 
 private _bagMap = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
 if !(_bagMap isEqualType createHashMap) exitWith {false};
