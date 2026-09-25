@@ -33,7 +33,7 @@ private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
 if (!_headLowered
     && {_patient getVariable ["ACME_headElevated", false]}
     && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
-    [_patient, "headElevStop", [_medic, _patient, false, false]] call ACME_fnc_ownerDispatch;
+    [_patient, "headElevStop", [objNull, _patient, false, false]] call ACME_fnc_ownerDispatch;
     private _lowerDelay = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
     if !(_lowerDelay isEqualType 0 && {finite _lowerDelay} && {_lowerDelay >= 0.2}) then {_lowerDelay = 1.4;};
     [{
@@ -47,7 +47,7 @@ if (!_headLowered
 if (!_headLowered
     && {_patient getVariable ["ACME_headElevated", false]}
     && {_patient getVariable ["ACME_headElev_Suspended", false]}) then {
-    [_patient, "headElevStop", [_medic, _patient, true, false]] call ACME_fnc_ownerDispatch;
+    [_patient, "headElevStop", [objNull, _patient, true, false]] call ACME_fnc_ownerDispatch;
 };
 
 // CPR outranks Direct Pressure for provider animation and clinical hand use without destroying the persistent
