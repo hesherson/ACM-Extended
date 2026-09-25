@@ -38,7 +38,7 @@ private _y = safeZoneY + safeZoneH * 0.025;
 private _ctrl = _display ctrlCreate ["RscStructuredText", -1];
 _ctrl ctrlEnable false;
 _ctrl ctrlSetPosition [_x, _y, _w, _h];
-_ctrl ctrlSetBackgroundColor [0, 0, 0, 0.72];
+_ctrl ctrlSetBackgroundColor [0, 0, 0, 0];
 _ctrl ctrlSetStructuredText parseText "<t align='center' valign='middle' size='1.15'>Preparing...</t>";
 _ctrl ctrlCommit 0;
 uiNamespace setVariable ["ACME_ChestAccessPreparing", [_ctrl, _token, _patient]];
