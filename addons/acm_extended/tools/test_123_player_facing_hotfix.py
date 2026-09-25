@@ -123,7 +123,8 @@ def test_semifowler_passive_support_requires_backpack_or_armored_carrier():
     assert 'private _hasBag = ((backpack _patient) isNotEqualTo "");' in start
     assert 'private _hasCarrier = false;' in start
     assert 'HitpointsProtectionInfo' in start
-    assert '_hasCarrier = (_legacyArmor max _chestArmor max _diaArmor max _abdArmor) > 0;' in start
+    assert 'private _carrierArmor = (((_legacyArmor max _chestArmor) max _diaArmor) max _abdArmor);' in start
+    assert '_hasCarrier = _carrierArmor > 0;' in start
     assert 'private _manual = !_hasBag && {!_hasCarrier};' in start
 
 
