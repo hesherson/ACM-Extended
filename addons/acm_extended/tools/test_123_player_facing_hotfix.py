@@ -141,6 +141,9 @@ def test_unsupported_semifowler_is_provider_held_active_maneuver():
     assert 'setAnimSpeedCoef 0' in hold
     assert 'ACME_headElev_manualAnimPFH' in hold
     assert 'inputAction _x' in hold
+    assert '[0xF0, [false,false,false], _cancelCode' in hold
+    assert 'ACM_core_ContinuousAction_Epoch' in hold
+    assert 'ACME_headElev_manualCancelID' in hold
     assert 'ACM_core_fnc_cprActive' in hold
     assert 'ACM_core_fnc_bvmActive' in hold
     assert '}, false, -1, true] call ACM_core_fnc_beginContinuousAction;' in hold
