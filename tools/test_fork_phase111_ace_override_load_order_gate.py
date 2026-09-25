@@ -40,7 +40,7 @@ assert not missing, "ACE override target missing from owner requiredAddons[]: " 
 
 core = next((x for x in owners if x[0] == "core"), None)
 assert core is not None, "core ACE override owner missing"
-assert len(core[1]) == 14, f"expected 14 ACE override target addons in core, found {len(core[1])}: {sorted(core[1])}"
+assert len(core[1]) == 15, f"expected 15 ACE override target addons in core, found {len(core[1])}: {sorted(core[1])}"
 
 gui = next((x for x in owners if x[0] == "gui"), None)
 assert gui is not None and gui[1] == {"ace_medical_gui"}, "GUI override ownership changed unexpectedly"

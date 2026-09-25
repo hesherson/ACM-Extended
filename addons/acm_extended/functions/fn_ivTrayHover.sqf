@@ -1,7 +1,8 @@
 /* IV tray hover animation.
    Needle textures are already horizontal. Hover enlarges the front catheter and fans the provider's
    available stock (up to five total needles) like a small deck. >5 adds a + marker. Band/pad only enlarge.
-   All dynamic fan controls are input-disabled and collapse/fade back to the slot as soon as hover ends. */
+   Fan pictures are declared behind each main logo, farthest first. They are input-disabled and collapse/fade
+   back to the slot as soon as hover ends. */
 disableSerialization;
 params [['_kind','', ['']], ['_gauge',0,[0]], ['_enter',false,[true]]];
 private _d = uiNamespace getVariable ['ACME_IV_DLG',displayNull];
@@ -58,20 +59,18 @@ private _badgeRect = [_px,_py,_pw,_ph];
 private _medic = uiNamespace getVariable ['ACME_IV_Medic',objNull];
 private _count = if (isNull _medic) then {0} else {[_medic,format ['ACM_IV_%1g',_gauge]] call ace_common_fnc_getCountOfItem};
 private _shown = (_count min 5) max 0;
-private _colors = createHashMapFromArray [
-    [14,[1,0.55,0.55,0.56]],
-    [16,[1,1,1,0.56]],
-    [18,[0.70,0.90,1,0.56]],
-    [20,[0.60,0.85,1,0.56]]
-];
+// Preserve the original catheter colors. Only opacity changes with distance from the main logo.
+private _alphas = [0.72,0.52,0.34,0.18];
+private _fanIdcBase = switch (_gauge) do {case 14:{86580}; case 16:{86584}; case 18:{86588}; default {86592};};
 private _fanKey = format ['ACME_IV_TrayFan_%1',_gauge];
 private _fan = _d getVariable [_fanKey,[]];
 if (_fan isEqualTo []) then {
-    // Four copies + the real front logo = five total needles maximum.
+    // Four existing copies + the real front logo = five total needles maximum. Config declares the copies
+    // farthest-to-nearest BEFORE the main logo; ctrlCreate here would incorrectly cover that foreground icon.
     for '_i' from 0 to 3 do {
-        private _c = _d ctrlCreate ['RscPictureKeepAspect',-1];
+        private _c = _d displayCtrl (_fanIdcBase + _i);
         _c ctrlSetText format ['\acm_extended\ui\iv\tray\iv_tray_%1g_%2_ca.paa',_gauge,_i + 1];
-        _c ctrlSetTextColor (_colors getOrDefault [_gauge,[1,1,1,0.56]]);
+        _c ctrlSetTextColor [1,1,1,_alphas select _i];
         _c ctrlSetPosition _base;
         _c ctrlSetFade 1;
         _c ctrlEnable false;

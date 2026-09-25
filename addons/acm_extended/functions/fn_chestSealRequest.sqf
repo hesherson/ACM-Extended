@@ -9,7 +9,7 @@ if (_operation in ["ncd", "miss"] && {!([_medic, "ncd"] call ACME_fnc_procedureA
 private _snapshot = uiNamespace getVariable ["ACME_CS_netSnapshot", []];
 if (count _snapshot < 5) exitWith {
     ["Synchronizing this patient's chest state.", 2, _medic] call ace_common_fnc_displayTextStructured;
-    ["ACME_CS_session", [_patient, _viewer, "sync"]] call CBA_fnc_serverEvent;
+    ["ACME_CS_session", [_patient, _viewer, "sync", uiNamespace getVariable ["ACME_CS_SessionToken", ""]]] call CBA_fnc_serverEvent;
     false
 };
 private _duplicate = false;

@@ -9,7 +9,7 @@ params [
     ["_token", "", [""]]
 ];
 
-if (!hasInterface || {isNil "ACE_player"} || {isNull _medic} || {!(_medic isEqualTo ACE_player)}) exitWith {false};
+if (!hasInterface) exitWith {false};
 
 private _entry = uiNamespace getVariable ["ACME_ChestAccessPreparing", []];
 private _oldCtrl = _entry param [0, controlNull];
@@ -22,6 +22,9 @@ if (!_show) exitWith {
     };
     true
 };
+
+// Cleanup above is token-owned even if the provider has respawned or changed locality.
+if (isNil "ACE_player" || {isNull _medic} || {!(_medic isEqualTo ACE_player)}) exitWith {false};
 
 if (!isNull _oldCtrl) then {ctrlDelete _oldCtrl;};
 private _display = findDisplay 46;

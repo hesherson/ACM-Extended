@@ -1,4 +1,4 @@
-"""B154 single overlay, with SQF formatting/fitting and explicit engine UI metric fixtures."""
+"""Single narrow overlay, with SQF fitting and explicit engine UI metric fixtures."""
 import re
 
 import pytest
@@ -92,13 +92,47 @@ def test_enabled_overlay_reuses_controls_and_restores_transparency():
     ''')
 
 
-def test_disabling_cleans_up_header_all_sections_and_hidden_measurement():
+def test_disabling_cleans_up_backing_header_all_sections_and_hidden_measurement():
     source = definition("_cleanup").replace("controlNull", '"NONE"')
     source = source.replace("isNull _c", '(_c isEqualTo "NONE")').replace("ctrlDelete _c;", "_deleted pushBack _c;")
     execute('private _deleted=[];' + source + '''
-        private _names=["ACME_DebugMenuCtrl","ACME_DebugMenuCtrlL","ACME_DebugMenuCtrlR","ACME_DebugMenuCtrlS","ACME_DebugMenuCtrlMeasure"];
+        private _names=["ACME_DebugMenuBackdrop","ACME_DebugMenuCtrl","ACME_DebugMenuCtrlL","ACME_DebugMenuCtrlR","ACME_DebugMenuCtrlS","ACME_DebugMenuCtrlMeasure"];
         {uiNamespace setVariable [_x,_x];} forEach _names;
         call _cleanup;
         [_deleted isEqualTo _names,"disabled overlay left visible or hidden controls"] call _check;
         {[(uiNamespace getVariable _x)=="NONE","control handle survived cleanup"] call _check;} forEach _names;
     ''')
+
+
+@pytest.mark.parametrize("screen_width,screen_height", [(2.37, 1.33), (4.74, 1.33), (0.50, 0.80)])
+def test_narrow_overlay_has_two_columns_and_network_below_within_one_panel(screen_width, screen_height):
+    source = read("debugMenuClinical")
+    start = source.index("private _gap =")
+    end = source.index("// A hidden, wide control", start)
+    geometry = source[start:end]
+    geometry = geometry.replace("safeZoneWAbs", str(screen_width)).replace("safeZoneH", str(screen_height))
+    geometry = geometry.replace("safeZoneXAbs", "-1").replace("safeZoneY", "-0.16")
+    geometry = re.sub(r'(_ctrl\w+) ctrlSetPosition (\[[^;]+\]);', r'_positions pushBack [\1,\2];', geometry)
+    execute('private _ctrlB="back";private _ctrlH="header";private _ctrlL="left";private _ctrlR="right";private _ctrlS="network";private _positions=[];' + geometry + '''
+        [_totalW<=0.54 && {_totalW>0.42},"overlay is not just slightly wider than original"] call _check;
+        [count _positions==5,"wrong number of visible layout regions"] call _check;
+        private _back=(_positions select 0) select 1;
+        private _left=(_positions select 2) select 1;
+        private _right=(_positions select 3) select 1;
+        private _network=(_positions select 4) select 1;
+        [(_network select 0)==(_back select 0) && {(_network select 2)==(_back select 2)},"network did not use full panel width"] call _check;
+        [(_network select 1)>(_left select 1)+(_left select 3),"network overlaps clinical columns"] call _check;
+        [abs (((_right select 0)+(_right select 2))-((_back select 0)+(_back select 2)))<0.00001,"columns extend past backing"] call _check;
+        [abs (((_network select 1)+(_network select 3))-((_back select 1)+(_back select 3)))<0.00001,"backing does not cover entire overlay"] call _check;
+        [(_left select 3)>0 && {(_network select 3)>0},"section has no room to render"] call _check;
+    ''')
+
+
+def test_single_subtle_backing_is_created_below_all_text_and_ignores_mouse_input():
+    source = read("debugMenuClinical")
+    assert source.index('private _ctrlB =') < source.index('private _ctrlH =')
+    assert '_ctrlB ctrlSetBackgroundColor [0, 0, 0, 0.20];' in source
+    assert '_ctrlB ctrlEnable false;' in source
+    # Introducing the backing to a running old overlay must first remove its existing text controls.
+    before = source[:source.index('private _control =')]
+    assert 'if (isNull _backdrop || {!((ctrlParent _backdrop) isEqualTo _display)}) then {call _cleanup;};' in before

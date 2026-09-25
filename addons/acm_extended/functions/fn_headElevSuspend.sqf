@@ -129,11 +129,22 @@ if (isNull objectParent _patient && {!_interventionOwnsPatient}) then {
     };
 };
 private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
+// Chest-seal preparation must observe this callback's actual completion, not
+// just the nominal lower deadline. A new suspension cannot inherit an old
+// callback when the supported placement itself has kept the same pose token.
+private _suspendSerial = 1 + (_patient getVariable ["ACME_headElev_suspendSerial", 0]);
+_patient setVariable ["ACME_headElev_suspendSerial", _suspendSerial, false];
+private _suspendToken = format ["%1:%2", _poseToken, _suspendSerial];
+_patient setVariable ["ACME_headElev_suspendPending", _suspendToken, false];
 [{
-    params ["_patient", "_poseToken", "_patientAnimToken", "_parkSupport"];
-    if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
-    if ((_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken
-        || {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {};
+    params ["_patient", "_poseToken", "_patientAnimToken", "_parkSupport", "_suspendToken"];
+    if (isNull _patient) exitWith {};
+    if ((_patient getVariable ["ACME_headElev_suspendPending", ""]) != _suspendToken) exitWith {};
+    if (!local _patient || {!alive _patient}
+        || {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}
+        || {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
+        _patient setVariable ["ACME_headElev_suspendPending", "", false];
+    };
     // A resumed/replaced placement owns its collision recovery, not this retired suspension.
     [_patient, true] call ACME_fnc_headElevCollision;
 
@@ -146,4 +157,5 @@ private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
     if (isNull objectParent _patient && {_rest != ""} && {_patientAnimToken != ""}) then {
         [_patient, _rest, 2, "head-elev-flat", objNull, 0.8, 1, _patientAnimToken] call ACME_fnc_patientAnimRequest;
     };
-}, [_patient, _poseToken, _patientAnimToken, _parkSupport], _lowerTime] call CBA_fnc_waitAndExecute;
+    _patient setVariable ["ACME_headElev_suspendPending", "", false];
+}, [_patient, _poseToken, _patientAnimToken, _parkSupport, _suspendToken], _lowerTime] call CBA_fnc_waitAndExecute;

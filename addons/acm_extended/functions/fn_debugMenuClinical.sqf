@@ -6,13 +6,16 @@ private _cleanup = {
         private _c = uiNamespace getVariable [_x, controlNull];
         if (!isNull _c) then {ctrlDelete _c;};
         uiNamespace setVariable [_x, controlNull];
-    } forEach ["ACME_DebugMenuCtrl", "ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrlMeasure"];
+    } forEach ["ACME_DebugMenuBackdrop", "ACME_DebugMenuCtrl", "ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrlMeasure"];
 };
 if (!(call ACME_fnc_debugEnabled)) exitWith {call _cleanup;};
 private _display = findDisplay 46;
 if (isNull _display) then {_display = uiNamespace getVariable ["RscDisplayMission", displayNull];};
 if (isNull _display) exitWith {call _cleanup;};
 
+// Recreate older overlays before adding the backing, so it is always below every text control.
+private _backdrop = uiNamespace getVariable ["ACME_DebugMenuBackdrop", controlNull];
+if (isNull _backdrop || {!((ctrlParent _backdrop) isEqualTo _display)}) then {call _cleanup;};
 private _control = {
     params ["_key", ["_visible", true]];
     private _c = uiNamespace getVariable [_key, controlNull];
@@ -23,31 +26,37 @@ private _control = {
     _c ctrlShow _visible;
     _c
 };
+private _ctrlB = ["ACME_DebugMenuBackdrop"] call _control;
+_ctrlB ctrlSetBackgroundColor [0, 0, 0, 0.20];
+_ctrlB ctrlEnable false;
 private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
 private _ctrlL = ["ACME_DebugMenuCtrlL"] call _control;
 private _ctrlR = ["ACME_DebugMenuCtrlR"] call _control;
 private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
 private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 
-// Physical left edge also works on ultrawide screens. Compact paired values need less whitespace than
-// the old 12-character value fields; the overall overlay remains a modest part of an ultrawide display.
+// Slightly wider than the original 0.42 UI overlay. Two clinical columns retain its compact footprint;
+// the network block spans their combined width below them, inside the same lightly shaded panel.
 private _gap = 0.010;
-private _totalW = 1.05 min (safeZoneWAbs - 0.020);
-private _w = (_totalW - 2 * _gap) / 3;
+private _totalW = 0.54 min (safeZoneWAbs - 0.020);
+private _w = (_totalW - _gap) / 2;
 private _x = safeZoneXAbs + 0.008;
 private _y = safeZoneY + 0.012;
 private _headerH = 0.075 min (safeZoneH * 0.14);
 private _h = safeZoneH - _headerH - 0.030;
+private _clinicalH = _h * 0.65;
+private _networkH = _h - _clinicalH - _gap;
 private _bodyY = _y + _headerH;
+_ctrlB ctrlSetPosition [_x, _y, _totalW, _headerH + _h];
 _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
-_ctrlL ctrlSetPosition [_x, _bodyY, _w, _h];
-_ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _h];
-_ctrlS ctrlSetPosition [_x + 2 * (_w + _gap), _bodyY, _w, _h];
+_ctrlL ctrlSetPosition [_x, _bodyY, _w, _clinicalH];
+_ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _clinicalH];
+_ctrlS ctrlSetPosition [_x, _bodyY + _clinicalH + _gap, _totalW, _networkH];
 // A hidden, wide control measures unwrapped text before it is drawn. Fit both dimensions rather than
 // shrinking only after wrapping has already doubled the row count. Long patient names remain complete.
 _ctrlM ctrlSetPosition [_x, _y, safeZoneWAbs * 8, safeZoneH * 8];
-{_x ctrlCommit 0;} forEach [_ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
-private _scale = 0.62;
+{_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
+private _scale = 0.58;
 private _renderBlock = {
     params ["_ctrl", "_rows", "_size", "_width", "_height"];
     private _body = _rows joinString "<br/>";
@@ -151,9 +160,9 @@ private _header = [
 ];
 private _renderAll = {
     [_ctrlH, _header, _scale * 1.10, _totalW, _headerH] call _renderBlock;
-    [_ctrlL, _left, _scale, _w, _h] call _renderBlock;
-    [_ctrlR, _right, _scale, _w, _h] call _renderBlock;
-    [_ctrlS, _network, _scale, _w, _h] call _renderBlock;
+    [_ctrlL, _left, _scale, _w, _clinicalH] call _renderBlock;
+    [_ctrlR, _right, _scale, _w, _clinicalH] call _renderBlock;
+    [_ctrlS, _network, _scale, _totalW, _networkH] call _renderBlock;
 };
 _network pushBack (["MACHINE"] call _sect);
 private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};

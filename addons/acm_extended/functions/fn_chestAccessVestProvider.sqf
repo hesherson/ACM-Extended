@@ -6,13 +6,14 @@ params [
     ["_patient", objNull, [objNull]],
     ["_op", "start", [""]],
     ["_handoff", false, [false]],
-    ["_episodeToken", "", [""]]
+    ["_episodeToken", "", [""]],
+    ["_preparationToken", "", [""]]
 ];
 if (isNull _medic) exitWith {-1};
 _op = toLowerANSI _op;
 
 if (!local _medic) exitWith {
-    [_medic, "chestAccessVestProvider", [_medic, _patient, _op, _handoff, _episodeToken]] call ACME_fnc_ownerDispatch;
+    [_medic, "chestAccessVestProvider", [_medic, _patient, _op, _handoff, _episodeToken, _preparationToken]] call ACME_fnc_ownerDispatch;
     -1
 };
 
@@ -52,6 +53,18 @@ if (!alive _medic
     || {[_medic] call ACME_fnc_animBlocked}
     || {_medic isEqualTo _patient}) exitWith {-1};
 
+// A delayed owner packet may arrive after cancel/reopen or after the workspace has already opened. Carrier
+// presentation belongs only to the original pending viewer; it must never replace a newer workspace/episode.
+private _chestSealEntry = (_episodeToken find "vest:chestseal:") == 0;
+if (_chestSealEntry && {
+    _preparationToken == ""
+    || {(uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != _preparationToken}
+    || {(uiNamespace getVariable ["ACME_CS_Medic", objNull]) isNotEqualTo _medic}
+    || {(uiNamespace getVariable ["ACME_CS_Patient", objNull]) isNotEqualTo _patient}
+    || {(uiNamespace getVariable ["ACME_CS_EntryKeys", []]) isEqualTo []}
+    || {(uiNamespace getVariable ["ACME_CS_EntryCancelToken", ""]) == _preparationToken}
+}) exitWith {-1};
+
 private _armReadyProbe = {
     params ["_m","_epoch","_token"];
     if (_token == "") exitWith {};
@@ -60,10 +73,11 @@ private _armReadyProbe = {
 
     [{
         params ["_m","_epoch","_token"];
-        if (isNull _m || {!local _m} || {!alive _m}) exitWith {true};
+        if (isNull _m || {!local _m} || {!alive _m}
+            || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {true};
 
         private _entry = _m getVariable ["ACME_chestAccessProvider", []];
-        if ((_entry param [2,""]) != _token) exitWith {true};
+        if ((_entry param [2,""]) != _token || {(_entry param [1,-1]) != _epoch}) exitWith {true};
 
         private _state = _m getVariable ["ACME_treatmentPoseState", []];
         (_state param [0,-2]) == _epoch
@@ -72,14 +86,21 @@ private _armReadyProbe = {
             && {(toLowerANSI animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"}
     }, {
         params ["_m","_epoch","_token"];
+        if (isNull _m || {!local _m} || {!alive _m}
+            || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {};
         private _entry = _m getVariable ["ACME_chestAccessProvider", []];
-        if ((_entry param [2,""]) == _token) then {
+        private _state = _m getVariable ["ACME_treatmentPoseState", []];
+        if ((_entry param [2,""]) == _token && {(_entry param [1,-1]) == _epoch}
+            && {(_state param [0,-2]) == _epoch} && {(_state param [1,""]) == "chestAccess"}
+            && {(toLowerANSI animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"}) then {
             _m setVariable ["ACME_chestAccessProviderReady", [_token, serverTime], true];
         };
     }, [_m,_epoch,_token], 4.5, {
         params ["_m","_epoch","_token"];
+        if (isNull _m || {!local _m} || {!alive _m}
+            || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {};
         private _entry = _m getVariable ["ACME_chestAccessProvider", []];
-        if ((_entry param [2,""]) == _token) then {
+        if ((_entry param [2,""]) == _token && {(_entry param [1,-1]) == _epoch}) then {
             // -2 means the provider presentation timed out. The patient transaction may proceed fail-open.
             _m setVariable ["ACME_chestAccessProviderReady", [_token, -2], true];
         };
@@ -97,6 +118,9 @@ if ((_existingPatient isEqualTo _patient)
     && {(_pose param [1, ""]) == "chestAccess"}) exitWith {
     if (_episodeToken != "") then {
         _medic setVariable ["ACME_chestAccessProvider", [_patient, _existingEpoch, _episodeToken], false];
+        if (_chestSealEntry) then {
+            uiNamespace setVariable ["ACME_CS_EntryProvider", [_existingEpoch, _episodeToken]];
+        };
         if ((_episodeToken find "vest:access:") == 0) then {
             private _speed = missionNamespace getVariable ["ACME_chestAccess_providerAnimSpeed", 1.50];
             if (!(_speed isEqualType 0) || {!finite _speed} || {_speed < 1}) then {_speed = 1.50;};
@@ -121,6 +145,9 @@ if (_priorMode in ["stethoscope","inspect","chestSealWorkspace","roll"]
 private _epoch = [_medic, "chestAccess", -1, _patient] call ACME_fnc_treatmentPoseStart;
 if (_epoch >= 0) then {
     _medic setVariable ["ACME_chestAccessProvider", [_patient, _epoch, _episodeToken], false];
+    if (_chestSealEntry) then {
+        uiNamespace setVariable ["ACME_CS_EntryProvider", [_epoch, _episodeToken]];
+    };
 
     // Only ordinary chest-access preparation is accelerated here. Chest Seal owns its own workspace handoff.
     if ((_episodeToken find "vest:access:") == 0) then {

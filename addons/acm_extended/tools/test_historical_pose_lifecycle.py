@@ -27,12 +27,14 @@ def pose_source(name):
                         ('netId '+var,'"provider"')]:
             text=re.sub(re.escape(old)+r'\b',lambda m:new,text)
         text=text.replace(var+' getUnitMovesInfo 2','_duration')
+        text=text.replace(var+' getUnitMovesInfo 1','_nativeElapsed')
         text=text.replace(var+' getUnitMovesInfo 0','_visiblePhase')
         text=re.sub(re.escape(var)+r' setUnitPos ([^;]+);',r'_positions pushBack (\1);',text)
         text=re.sub(re.escape(var)+r' setAnimSpeedCoef ([^;]+);',r'_speed=(\1); _speedWrites pushBack _speed;',text)
         # Model the documented concern in the source: seeking may reset speed.
         text=re.sub(re.escape(var)+r' switchMove (\[[^;]+\]);',r'_seeks pushBack \1; _speed=1;',text)
     text=text.replace('currentWeapon _medic','_weapon').replace('_medic selectWeapon "";','_weapon="";')
+    text=text.replace('finite _nativeElapsed','_nativeFinite')
     text=text.replace('isServer','_server').replace('hasInterface','_interface').replace('clientOwner','_client')
     text=text.replace('owner _medic','_ownerNum')
     text=text.replace('getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> _main >> "speed")','_configSpeed')
@@ -62,7 +64,8 @@ def setup():
         private _server=true; private _interface=true; private _client=7;
         private _animation="amovpknlmstpsnonwnondnon"; private _weapon="";
         private _positions=[]; private _seeks=[]; private _speedWrites=[];
-        private _speed=1; private _duration=12; private _visiblePhase=0; private _configSpeed=-12;
+        private _speed=1; private _duration=12; private _nativeElapsed=-1; private _nativeFinite=true;
+        private _visiblePhase=0; private _configSpeed=-12;
         private _testPrepDelay=0; private _preps=0; private _blocked=false; private _removedJip=[];
         private _getDefault={params ["_map","_key","_default"]; if (_key in _map) then {_map get _key} else {_default}};
         CBA_fnc_waitAndExecute={_waits pushBack [_this select 0,_this select 1,_this select 2];};

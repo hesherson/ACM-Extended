@@ -15,7 +15,7 @@ def source(name):
     return (F/('fn_'+name+'.sqf')).read_text()
 
 
-def code(name):
+def code(name, server_clock='CBA_missionTime'):
     text=source(name)
     for unit in ('_patient','_p'):
         for old,new in [('local '+unit,'_patientLocal'),('alive '+unit,'_patientAlive'),
@@ -25,7 +25,7 @@ def code(name):
             text=re.sub(re.escape(old)+r'\b',lambda m:new,text)
         text=text.replace(unit+' setUnitLoadout [_loadout,false];',
                           '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
-    text=text.replace('serverTime','CBA_missionTime')
+    text=text.replace('serverTime',server_clock)
     text=text.replace('finite _rollTime','(_rollTime call _finite)')
     text=text.replace('finite _animSpeed','(_animSpeed call _finite)')
     for key in ('ace_medical_engine_uncon_anim_faceup','ace_medical_engine_uncon_anim_facedown'):
@@ -54,7 +54,7 @@ def setup():
         private _getDefault={params ["_map","_key","_default"]; if (_key in _map) then {_map get _key} else {_default};};
         CBA_fnc_waitAndExecute={_waits pushBack ["delay",_this select 0,_this select 1,_this select 2];};
         CBA_fnc_execNextFrame={_waits pushBack ["frame",_this select 0,_this select 1,0];};
-        CBA_fnc_waitUntilAndExecute={_waits pushBack ["condition",_this select 1,_this select 2,_this param [3,0],_this select 0,_this param [4,{}]];};
+        CBA_fnc_waitUntilAndExecute={_waits pushBack ["condition",_this select 1,_this select 2,_this param [3,-1],_this select 0,_this param [4,{}]];};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
         ACME_fnc_patientAnimRequest={_animRequests pushBack _this; if (_leaseAllowed) then {_this select 7} else {""};};
@@ -159,6 +159,7 @@ def test_deferred_workspace_cleanup_cannot_move_a_newer_viewer_session(wait_path
         [count _waits==1,"expected pending restore callback"] call _check;
         private _old=_waits select 0; _waits=[];
         [_patient,"new",_medic] call ACME_fnc_chestSealPatientBegin;
+        private _pendingNew=+_waits;
         private _newGeneration=_patient getVariable ["ACME_CS_ProcedureGeneration",-1];
         _patient setVariable ["ACE_isUnconscious",true];
         _patient setVariable ["ACME_CS_facing","back"];
@@ -171,7 +172,7 @@ def test_deferred_workspace_cleanup_cannot_move_a_newer_viewer_session(wait_path
         [(_patient getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo ["new"],"new viewer lost lease"] call _check;
         [(_patient getVariable ["ACME_CS_ProcedureGeneration",0])==_newGeneration,"new generation altered"] call _check;
         [(_patient getVariable ["ACME_CS_ProcedureReadyAt",0])==222,"new readiness altered"] call _check;
-        [count _loadouts==0 && {count _waits==0},"old cleanup resumed custody work"] call _check;
+        [count _loadouts==0 && {_waits isEqualTo _pendingNew},"old cleanup altered new preparation or resumed custody work"] call _check;
     ''')
 
 

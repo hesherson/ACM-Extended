@@ -1,4 +1,4 @@
-"""Execute the current per-display font selection, not glyph/font availability.
+"""Check safe control defaults and execute per-display optional font selection.
 
 Only file probing and UI commands are fixtures. No font files are bundled here.
 """
@@ -44,7 +44,9 @@ def font_contract(config=None, pending=None, stored=None):
     family=config_class(config,FONT)
     require(family,'fonts[] = {"'+ASSET[:-4]+'"};')
     for cls in ('ACME_SK_TagEdit','ACME_SK_TagText'):
-        require(config_class(config,cls),'font = "'+FONT+'";')
+        # The engine resolves this font when ctrlCreate runs, before the render
+        # function can probe optional assets or apply its cached font choice.
+        require(config_class(config,cls),'font = "Caveat";')
     for kind,text in [('pending',pending),('stored',stored)]:
         block=font_block(kind,text)
         for f in ('private _tagFont = _d getVariable ["ACME_SK_TagFont", ""];',
@@ -145,11 +147,11 @@ def test_font_wiring_and_no_outline_font_distribution():
     font_contract();no_outline_fonts()
 
 
-@pytest.mark.parametrize('mutation',['old-family','wrong-probe','empty-fallback','no-cache','wrong-static-target'])
+@pytest.mark.parametrize('mutation',['unavailable-control-font','wrong-probe','empty-fallback','no-cache','wrong-static-target'])
 def test_font_contract_rejects_mutations_despite_comment_decoys(mutation):
     pending=source('skPendingTagRender');stored=source('skCarouselRender');config=(ROOT/'addons/acm_extended/config.cpp').read_text()
-    if mutation=='old-family':
-        old='font = "'+FONT+'";';config=config.replace(old,'font = "ACME_QEPhillips"; /* '+old+' */')
+    if mutation=='unavailable-control-font':
+        old='font = "Caveat";';config=config.replace(old,'font = "'+FONT+'"; /* '+old+' */')
     elif mutation=='wrong-probe':
         old='fileExists "'+ASSET+'"';pending=pending.replace(old,'fileExists "wrong.fxy" /* '+old+' */')
     elif mutation=='empty-fallback':

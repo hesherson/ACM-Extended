@@ -2913,7 +2913,8 @@ class CfgFunctions {
 };
 
 // B72: QEDaveMergens replaces the previous syringe-tag handwriting family. Arma requires generated .fxy/.paa
-// font assets at the configured base path; runtime tag controls fall back to Caveat only when those assets are absent.
+// font assets at the configured base path. Controls start with Caveat so creation does not load missing assets;
+// runtime tag rendering selects this optional family only after its bitmap font file has been found.
 class CfgFontFamilies {
     class ACME_QEDaveMergens {
         fonts[] = {"\acm_extended\ui\fonts\QEDaveMergens\QEDaveMergens96"};
@@ -3262,7 +3263,7 @@ class ACME_SK_TagEdit: RscEdit {
     colorDisabled[] = {0.08,0.08,0.08,0.6};
     colorBorder[] = {0,0,0,0};
     borderSize = 0;
-    font = "ACME_QEDaveMergens";
+    font = "Caveat";
     sizeEx = "safeZoneH / 58";
     shadow = 0;
     forceDrawCaret = 0;
@@ -3271,7 +3272,7 @@ class ACME_SK_TagEdit: RscEdit {
 class ACME_SK_TagText: RscText {
     colorBackground[] = {0,0,0,0};
     colorText[] = {0.08,0.08,0.08,1};
-    font = "ACME_QEDaveMergens";
+    font = "Caveat";
     shadow = 0;
     style = 0;
 };
@@ -3840,10 +3841,18 @@ class ACME_IVMinigame_Dialog {
             idc = 86540; x = 0; y = 0; w = 0; h = 0; text = "";
             colorBackground[] = {0.10, 0.13, 0.17, 0.92};
         };
+        // Back-to-front stock layers. Keep the real inventory logo after every duplicate.
+        class IV_G14Fan4: RscPictureKeepAspect {
+            idc = 86583; x = 0; y = 0; w = 0; h = 0; text = "";
+            colorText[] = {1, 1, 1, 0};
+        };
+        class IV_G14Fan3: IV_G14Fan4 { idc = 86582; };
+        class IV_G14Fan2: IV_G14Fan4 { idc = 86581; };
+        class IV_G14Fan1: IV_G14Fan4 { idc = 86580; };
         class IV_G14Logo: RscPictureKeepAspect {
             idc = 86541; x = 0; y = 0; w = 0; h = 0;
             text = "\acm_extended\ui\iv\tray\iv_tray_14g_0_ca.paa";
-            colorText[] = {1, 0.55, 0.55, 1};
+            colorText[] = {1, 1, 1, 1};
         };
         class IV_G14Lbl: RscText {
             idc = 86542; x = 0; y = 0; w = 0; h = 0; style = 2;
@@ -3862,18 +3871,30 @@ class ACME_IVMinigame_Dialog {
             onButtonClick = "[14] call ACME_fnc_ivMinigameGrabNeedle";
         };
         class IV_G16BG: IV_G14BG { idc = 86544; };
+        class IV_G16Fan4: IV_G14Fan4 { idc = 86587; };
+        class IV_G16Fan3: IV_G14Fan4 { idc = 86586; };
+        class IV_G16Fan2: IV_G14Fan4 { idc = 86585; };
+        class IV_G16Fan1: IV_G14Fan4 { idc = 86584; };
         class IV_G16Logo: IV_G14Logo { idc = 86545; colorText[] = {1, 1, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_16g_0_ca.paa"; };
         class IV_G16Lbl: IV_G14Lbl { idc = 86546; text = "16g"; colorText[] = {0.90, 0.95, 1, 1}; };
         class IV_G16Click: IV_G14Click { idc = 86547; onButtonClick = "[16] call ACME_fnc_ivMinigameGrabNeedle"; };
         class IV_G18BG: IV_G14BG { idc = 86548; };
-        class IV_G18Logo: IV_G14Logo { idc = 86549; colorText[] = {0.70, 0.90, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_18g_0_ca.paa"; };
+        class IV_G18Fan4: IV_G14Fan4 { idc = 86591; };
+        class IV_G18Fan3: IV_G14Fan4 { idc = 86590; };
+        class IV_G18Fan2: IV_G14Fan4 { idc = 86589; };
+        class IV_G18Fan1: IV_G14Fan4 { idc = 86588; };
+        class IV_G18Logo: IV_G14Logo { idc = 86549; colorText[] = {1, 1, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_18g_0_ca.paa"; };
         class IV_G18Lbl: IV_G14Lbl { idc = 86550; text = "18g"; colorText[] = {0.75, 0.90, 1, 1}; };
         class IV_G18Click: IV_G14Click { idc = 86551; onButtonClick = "[18] call ACME_fnc_ivMinigameGrabNeedle"; };
         // the 20g slot. idcs 86556 to 86559 were the only free block below IV_Flip at 86560.
         // the geometry is set in fn_ivMinigameInit from the _gauges table, like the other three, so the zeros here
         // are correct and must stay.
         class IV_G20BG: IV_G14BG { idc = 86556; };
-        class IV_G20Logo: IV_G14Logo { idc = 86557; colorText[] = {0.60, 0.85, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_20g_0_ca.paa"; };
+        class IV_G20Fan4: IV_G14Fan4 { idc = 86595; };
+        class IV_G20Fan3: IV_G14Fan4 { idc = 86594; };
+        class IV_G20Fan2: IV_G14Fan4 { idc = 86593; };
+        class IV_G20Fan1: IV_G14Fan4 { idc = 86592; };
+        class IV_G20Logo: IV_G14Logo { idc = 86557; colorText[] = {1, 1, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_20g_0_ca.paa"; };
         class IV_G20Lbl: IV_G14Lbl { idc = 86558; text = "20g"; colorText[] = {0.70, 0.88, 1, 1}; };
         class IV_G20Click: IV_G14Click { idc = 86559; onButtonClick = "[20] call ACME_fnc_ivMinigameGrabNeedle"; };
 

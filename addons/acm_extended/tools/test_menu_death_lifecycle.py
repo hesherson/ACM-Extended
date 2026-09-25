@@ -88,7 +88,9 @@ def adapt(s, component='core'):
         'toLowerANSI': 'toLower', 'diag_tickTime': '_nowTime', 'vest _p': '""',
         'addMissionEventHandler ["HandleDisconnect",': '_disconnect = (["HandleDisconnect",',
     }.items():
-        s = re.sub(re.escape(old) + (r'\b' if old[-1].isalnum() else ''), lambda _: new, s)
+        # Match command/identifier boundaries on both sides. In particular,
+        # `stance _p` must not match the tail of `_m distance _p`.
+        s = re.sub(r'(?<!\w)' + re.escape(old) + (r'\b' if old[-1].isalnum() else ''), lambda _: new, s)
     s = s.replace('objNull, [objNull]', 'objNull, [profileNamespace]')
     # Objects are namespace stand-ins here. This SQF-VM returns nil for missing
     # typed-object param values instead of Arma's objNull fallback; adapt only
@@ -137,7 +139,7 @@ CBA_fnc_removeKeyHandler = {_removed pushBack (_this select 0);};
 CBA_fnc_addPerFrameHandler = {_handlers pushBack [_this select 0,_this select 2,true]; count _handlers - 1};
 CBA_fnc_removePerFrameHandler = {(_handlers select (_this select 0)) set [2,false];};
 CBA_fnc_waitAndExecute = {_waits pushBack [_this select 0,_this select 1];};
-CBA_fnc_waitUntilAndExecute = {_waits pushBack [_this select 1,_this select 2,_this select 0,_this select 4];};
+CBA_fnc_waitUntilAndExecute = {_waits pushBack [_this select 1,_this select 2,_this select 0,_this param [4,{}]];};
 CBA_fnc_addEventHandler = {_track = _this select 1;};
 CBA_fnc_serverEvent = {_events pushBack _this; (_this select 1) call _track;};
 CBA_fnc_targetEvent = {_events pushBack _this;};
@@ -174,6 +176,11 @@ def core(name):
     return adapt((ROOT / 'addons/core/functions' / f'fnc_{name}.sqf').read_text())
 
 
+def test_engine_adapter_does_not_replace_command_suffixes():
+    source = '_m distance _p; stance _p; _patient distance2D _medic; mydiag_tickTime; diag_tickTime;'
+    assert adapt(source) == '_m distance _p; "PRONE"; _distance; mydiag_tickTime; _nowTime;'
+
+
 def test_three_chest_viewers_join_and_leave_independently():
     execute('private _session = {' + adapt(read('chestSealSession')) + '};' + '''
         ACME_CS_sessions = missionNamespace;
@@ -188,17 +195,18 @@ def test_three_chest_viewers_join_and_leave_independently():
 
 
 def test_duplicate_open_attempts_share_one_pending_request():
-    # Native panel creation is held until the async readiness callback runs.
-    execute('private _open = {' + adapt(read('chestSealOpen')) + '};' + '''
-        [_medic,_patient,"body"] call _open;
+    # Exercise the current owned pending PFH; native panel creation remains an engine boundary.
+    from test_chest_entry_timing import setup
+    execute(setup() + '''
+        [_medic,_patient,"body"] call ACME_fnc_chestSealOpen;
         private _token = uiNamespace getVariable "ACME_CS_SessionToken";
-        [_medic,_patient,"body"] call _open;
-        [count _waits == 1,"duplicate open queued"] call _check;
+        private _pending = uiNamespace getVariable ["ACME_CS_EntryPFH",-1];
+        [_medic,_patient,"body"] call ACME_fnc_chestSealOpen;
+        [count _handlers == 1 && {count _capturedKeys==2},"duplicate open queued"] call _check;
         [(uiNamespace getVariable "ACME_CS_SessionToken") == _token,"pending token overwritten"] call _check;
         uiNamespace setVariable ["ACME_CS_SessionToken","replacement"];
-        private _w = _waits select 0;
-        (_w select 1) call (_w select 0);
-        [count _waits == 1,"old callback opened replacement"] call _check;
+        [_pending] call _poseTick;
+        [count _opened == 0 && {_pending in _removed},"old callback opened replacement"] call _check;
     ''')
 
 
@@ -219,6 +227,9 @@ def test_drag_retains_resistance_with_duplicate_timestamp(elapsed):
 
 def test_last_viewer_restore_cannot_clear_reopened_workspace():
     execute('private _begin = {' + adapt(read('chestSealPatientBegin')) + '}; private _end = {' + adapt(read('chestSealPatientEnd')) + '};' + '''
+        ACME_fnc_chestSealCanPhysicalRoll = {false};
+        private _acquires=0;
+        ACME_fnc_chestAccessVestAcquire = {_acquires=_acquires+1;};
         _patient setVariable ["ACME_CS_ProcedureActive",true];
         _patient setVariable ["ACME_CS_PreProcedureState",["front",false,false,false,""]];
         _patient setVariable ["ACME_CS_ProcedureGeneration",1];
@@ -231,6 +242,7 @@ def test_last_viewer_restore_cannot_clear_reopened_workspace():
         [_patient,"first"] call _end;
         [count _waits == 1,"last viewer did not schedule restore"] call _check;
         [_patient,"new"] call _begin;
+        [_acquires==1 && {count _waits==2},"reopened workspace did not restart preparation"] call _check;
         private _w = _waits select 0;
         (_w select 1) call (_w select 0);
         [_patient getVariable "ACME_CS_ProcedureActive","old restore ended new workspace"] call _check;

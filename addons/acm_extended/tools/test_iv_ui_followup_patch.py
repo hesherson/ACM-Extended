@@ -95,4 +95,4 @@ def test_iv_tray_stock_fan_is_upward_only_and_plus_is_top_left():
     assert 'private _py = _sy + _insetY;' in h
     assert '_sx + _sw - _pw - _insetX' not in h
     assert "ctrlCreate ['RscStructuredText',-1]" in h
-    assert "[14,[1,0.55,0.55,0.56]]" in h
+    assert "_c ctrlSetTextColor [1,1,1,_alphas select _i];" in h

@@ -2,6 +2,15 @@
 
 These notes cover the cumulative 1.2.3 changes promoted from the release-candidate series into the stable 1.2.3 build.
 
+## B155 chest-entry timing and UI follow-up
+
+- Reduced the unified debug menu width and added a subtle shared black background.
+- IV splay copies keep their original colors, fade with distance, and remain beneath the main tray icon.
+- Chest-seal entry tolerates missed provider-animation frames and delayed patient preparation; cancellation and session ownership remain enforced.
+- Fixed the optional tag-font startup lookup, duplicate expansion compilation, and missing Zeus override load-order dependency.
+- Audited the supplied mixed-install RPT and all 14 stale-function reports. External modpack errors remain separately documented.
+- Runtime identity is **1.2.3 / B155**. See [patch details](patch-notes/2026-09-25-1.2.3-b155-entry-ui.md) and [RPT findings](audits/2026-09-25-b155-rpt-audit.md).
+
 ## B154 IV tray and debug menu repair
 
 - Rebuilt all 20 IV tray textures with HEMTT. B153's handwritten PAA containers omitted the mipmap offset table; an independent loader reported zero images despite the custom pixel decoder displaying them.

@@ -362,4 +362,4 @@ uiNamespace setVariable ["ACME_CS_RMB", false];
 if (isServer) then {[_patient] call ACME_fnc_chestSealGenHoles;};
 private _cached = _patient getVariable ["ACME_CS_netSnapshot", []];
 if (count _cached >= 5) then { [_patient, _cached, true] call ACME_fnc_chestSealSyncUI; };
-["ACME_CS_session", [_patient, _viewer, "join"]] call CBA_fnc_serverEvent;
+["ACME_CS_session", [_patient, _viewer, "join", uiNamespace getVariable ["ACME_CS_SessionToken", ""]]] call CBA_fnc_serverEvent;

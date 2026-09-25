@@ -30,7 +30,7 @@ def test_iv_tray_centers_visible_art_and_fans_up_only():
     assert 'iv_tray_%1g_%2_ca.paa' in hover
     assert "private _rise = _sh * 0.02 * (_i + 1);" in hover
     assert "_c ctrlSetPosition [_bx,_by - _rise,_bw,_bh];" in hover
-    assert "[14,[1,0.55,0.55,0.56]]" in hover
+    assert "_c ctrlSetTextColor [1,1,1,_alphas select _i];" in hover
     assert "ctrlCreate ['RscStructuredText',-1]" in hover
     assert "private _px = _sx + _insetX;" in hover
     assert "private _py = _sy + _insetY;" in hover
@@ -102,7 +102,7 @@ def test_medic_thoracostomy_and_doctor_only_chest_tube_tray():
 
 def test_hotfix_keeps_stable_123_debug_identity():
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_buildBatch = "B154";' in startup
+    assert 'ACME_buildBatch = "B155";' in startup
     assert 'ACME_debugRevision = "";' in startup
 
 

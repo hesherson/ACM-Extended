@@ -40,9 +40,11 @@ def test_networked_transient_deadlines_use_server_time():
     assert "private _now = serverTime;" in acme("fn_patientAnimRequest.sqf")
     assert "> serverTime" in acme("fn_treatmentPatientSettle.sqf")
     chest_begin = acme("fn_chestSealPatientBegin.sqf")
-    assert 'serverTime + _rollTime + 0.08' in chest_begin
+    # Readiness is acknowledged after actual roll/custody completion, never a nominal future finish time.
+    assert 'serverTime + _rollTime + 0.08' not in chest_begin
+    assert 'ACME_CS_rollToken' in chest_begin
     assert 'ACME_CS_ProcedureReadyAt", serverTime' in chest_begin
-    assert "serverTime >= _readyAt" in acme("fn_chestSealOpen.sqf")
+    assert "serverTime < _readyAt" in acme("fn_chestSealOpen.sqf")
 
 def test_progressive_bandage_and_junctional_clocks_are_shared():
     start = read(ADDONS / "damage/functions/fnc_bandageProgressStart.sqf")

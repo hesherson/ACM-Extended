@@ -23,6 +23,26 @@ _patient setVariable ["ACME_CS_ProcedureTokens", _tokens, true];
 if !(_tokens isEqualTo []) exitWith {};
 if !(_patient getVariable ["ACME_CS_ProcedureActive", false]) exitWith {};
 
+// Last-viewer cancellation retires only this workspace's unfinished preparation.
+// Queued lift/front-roll callbacks must not restart it after teardown or reopen.
+_patient setVariable ["ACME_CS_PreparationToken", "", true];
+_patient setVariable ["ACME_CS_ProcedureReadyAt", -1, true];
+_patient setVariable ["ACME_CS_frontBusy", "", false];
+private _prepareBusy = _patient getVariable ["ACME_CS_vestBusy", ""];
+if ((_prepareBusy find "vest:chestseal:") == 0) then {
+    _patient setVariable ["ACME_CS_vestBusy", "", false];
+    if ((_patient getVariable ["ACME_chestAccess_removeSpeedToken", ""]) == _prepareBusy) then {
+        _patient setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
+        ["ace_common_setAnimSpeedCoef", [_patient, 1]] call CBA_fnc_globalEvent;
+    };
+    private _prepareLock = _patient getVariable ["ACME_patientAnimLock", []];
+    if ((_prepareLock param [0, ""]) == _prepareBusy
+        && {(_prepareLock param [1, ""]) == "chest-access-vest"}) then {
+        _patient setVariable ["ACME_patientAnimLock", [], true];
+    };
+    [_patient, true] call ACME_fnc_headElevCollision;
+};
+
 private _pre = +(_patient getVariable ["ACME_CS_PreProcedureState", ["front", false, false, false, ""]]);
 private _preHeadElev = _pre param [1, false, [false]];
 
@@ -32,6 +52,9 @@ private _forceFrontRest = {
     if (isNull _p || {!local _p}
         || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}
         || {!((_p getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo [])}) exitWith {};
+
+    private _lock = _p getVariable ["ACME_patientAnimLock", []];
+    if ((count _lock) >= 5 && {(_lock param [4,-1]) > serverTime}) exitWith {};
 
     _p setVariable ["ACME_CS_facing", "front", true];
 
@@ -53,6 +76,7 @@ private _finalize = {
     [_p,_generation] call _forceFront;
 
     _p setVariable ["ACME_CS_ProcedureActive", false, true];
+    _p setVariable ["ACME_CS_PreparationToken", "", true];
     _p setVariable ["ACME_CS_ProcedureReadyAt", -1, true];
     _p setVariable ["ACME_CS_ProcedureGrounded", false, true];
     _p setVariable ["ACME_CS_PreProcedureState", [], true];
@@ -76,21 +100,20 @@ private _finalize = {
 private _restoreCarrier = {
     params ["_p","_medic","_head","_generation","_finalize","_forceFront","_restoreCarrier"];
     if (isNull _p || {!local _p}
-        || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}) exitWith {};
+        || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}
+        || {!((_p getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo [])}) exitWith {};
 
     private _busy = _p getVariable ["ACME_CS_vestBusy",""];
     if (_busy != "" && {(_busy find "restore:") != 0}) exitWith {
         [{
-            params ["_p"];
-            (_p getVariable ["ACME_CS_vestBusy",""]) == ""
+            params ["_p","","","_generation"];
+            isNull _p || {!local _p}
+                || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}
+                || {(_p getVariable ["ACME_CS_vestBusy",""]) == ""}
         }, {
             params ["_p","_medic","_head","_generation","_finalize","_forceFront","_restoreCarrier"];
             [_p,_medic,_head,_generation,_finalize,_forceFront,_restoreCarrier] call _restoreCarrier;
-        }, [_p,_medic,_head,_generation,_finalize,_forceFront,_restoreCarrier], 12, {
-            params ["_p","_medic","_head","_generation","_finalize","_forceFront"];
-            [_p,_generation] call _forceFront;
-            [_p,_head,_generation,_forceFront] call _finalize;
-        }] call CBA_fnc_waitUntilAndExecute;
+        }, [_p,_medic,_head,_generation,_finalize,_forceFront,_restoreCarrier]] call CBA_fnc_waitUntilAndExecute;
     };
 
     private _saved = +(_p getVariable ["ACME_CS_vestLoadout", []]);
@@ -100,30 +123,38 @@ private _restoreCarrier = {
     };
 
     // Rollable casualties are front/supine; an ineligible body is left under its own control.
-    private _started = [_p,false,_medic,"chestseal",true] call ACME_fnc_chestAccessVestRestore;
+    private _lock = _p getVariable ["ACME_patientAnimLock", []];
+    private _foreignBodyWork = (count _lock) >= 5 && {(_lock param [4,-1]) > serverTime};
+    private _started = [_p,_foreignBodyWork,_medic,"chestseal",true] call ACME_fnc_chestAccessVestRestore;
     if (!_started) exitWith {
         [_p,_generation] call _forceFront;
         [_p,_head,_generation,_forceFront] call _finalize;
     };
 
     [{
-        params ["_p"];
-        (_p getVariable ["ACME_CS_vestBusy",""]) == ""
-            && {(count (_p getVariable ["ACME_CS_vestLoadout",[]])) != 2}
+        params ["_p","","_generation"];
+        isNull _p || {!local _p}
+            || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}
+            || {(_p getVariable ["ACME_CS_vestBusy",""]) == ""
+                && {(count (_p getVariable ["ACME_CS_vestLoadout",[]])) != 2}}
     }, {
         params ["_p","_head","_generation","_finalize","_forceFront"];
         [_p,_generation] call _forceFront;
         [_p,_head,_generation,_forceFront] call _finalize;
-    }, [_p,_head,_generation,_finalize,_forceFront], 12, {
-        params ["_p","_head","_generation","_finalize","_forceFront"];
-        [_p,_generation] call _forceFront;
-        [_p,_head,_generation,_forceFront] call _finalize;
-    }] call CBA_fnc_waitUntilAndExecute;
+    }, [_p,_head,_generation,_finalize,_forceFront]] call CBA_fnc_waitUntilAndExecute;
 };
 
 private _beginRestore = {
     params ["_p","_medic","_head","_generation","_restoreCarrier","_finalize","_forceFront"];
-    if (isNull _p || {!local _p}) exitWith {};
+    if (isNull _p || {!local _p}
+        || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}
+        || {!((_p getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo [])}) exitWith {};
+
+    // Cancellation restores gear without seizing a valid competing body lease.
+    private _lock = _p getVariable ["ACME_patientAnimLock", []];
+    if ((count _lock) >= 5 && {(_lock param [4,-1]) > serverTime}) exitWith {
+        [_p,_medic,_head,_generation,_finalize,_forceFront,_restoreCarrier] call _restoreCarrier;
+    };
 
     private _actual = [_p, _p getVariable ["ACME_CS_facing","front"]] call ACME_fnc_chestSealActualSide;
     if (_actual == "front") exitWith {

@@ -22,10 +22,9 @@
  * frozen frame is held before the controller ends the episode itself). Both are hashmaps set in fn_postInit and
  * can be changed live. A mode with no entry plays at native speed until its own action ends it.
  *
- * Time is measured on the owner's clock from the frame animationState first reports the requested state. It does
- * not depend on getUnitMovesInfo, whose index meaning is unverified in this project. getUnitMovesInfo is only used
- * to derive the normalized phase that peers seek to; when it reports nothing useful, the CfgMoves speed entry is
- * tried, and failing that peers freeze in place without a seek.
+ * Most modes measure time from the first observed requested state. Chest-access entry also samples the native
+ * elapsed move time (getUnitMovesInfo 1), because sparse owner frames can observe medic4 well after its start.
+ * getUnitMovesInfo 2 supplies the duration for the held phase, with the CfgMoves speed entry as a fallback.
  *
  * B53 carried a syntax error at the old line 140 (if !(a) && {b} then). SQF binds `if !(a)` before `&&`, so the
  * whole per-frame body aborted there on every tick once the pose was entered. That single line is why no freeze
@@ -229,13 +228,25 @@ private _pfh = [{
         case 1: {
             if (_current == toLower _main) then {
                 _state set [3, 2];
-                _state set [4, _now];
+                private _elapsed = 0;
+                if (_mode == "chestAccess") then {
+                    private _nativeElapsed = _medic getUnitMovesInfo 1;
+                    if (_nativeElapsed isEqualType 0 && {finite _nativeElapsed} && {_nativeElapsed >= 0}) then {
+                        _elapsed = _nativeElapsed;
+                    };
+                };
+                _state set [4, _now - _elapsed];
             } else {
                 // Do not replay the requested state while it is entering. The former 0.10 s replay loop caused the
                 // rapid repeating reported after TSP integration. Modes that freeze must reach the exact state.
                 if (_now - _stageStarted > 0.75 && {_holdAt < 0}) then {
                     _state set [3, 2];
                     _state set [4, _now];
+                };
+                // A missed finite medic4 or a disconnected move-graph transition must not leave chest entry
+                // pending forever. Retire only this still-owned presentation, without replaying the move.
+                if (_mode == "chestAccess" && {_now - _stageStarted >= 4.5}) then {
+                    [_medic, _mode, _epoch, true] call ACME_fnc_treatmentPoseStop;
                 };
             };
         };
@@ -250,13 +261,21 @@ private _pfh = [{
                     _state set [4, _now];
                 };
             };
-            if (_current != toLower _main) exitWith {};
+            if (_current != toLower _main && {_mode != "chestAccess"}) exitWith {};
             // Owner-clock time since the requested state was first reported. This is the freeze rule the user set.
             private _elapsed = _now - _stageStarted;
+            if (_mode == "chestAccess" && {_current == toLower _main}) then {
+                private _nativeElapsed = _medic getUnitMovesInfo 1;
+                if (_nativeElapsed isEqualType 0 && {finite _nativeElapsed} && {_nativeElapsed >= 0}) then {
+                    _elapsed = _nativeElapsed;
+                };
+            };
             if (_elapsed < _holdAt) exitWith {};
 
             // Normalized phase for peers to seek to. Unknown duration means peers freeze in place instead.
-            private _duration = _medic getUnitMovesInfo 2;
+            // After a long owner frame, chestAccess can have left its observed finite move. Seek its one held
+            // sample using that move's configured duration, never the duration of the unrelated current idle.
+            private _duration = if (_current == toLower _main) then {_medic getUnitMovesInfo 2} else {0};
             if !(_duration isEqualType 0) then {_duration = 0;};
             if (_duration <= 0) then {
                 private _speed = getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> _main >> "speed");

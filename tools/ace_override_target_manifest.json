@@ -67,14 +67,6 @@
     },
     {
       "tag": "ace_dragging",
-      "function": "dropObject_carry",
-      "owner_addon": "core",
-      "local": "core/overrides/fnc_dropObject_carry.sqf",
-      "upstream": "addons/dragging/functions/fnc_dropObject_carry.sqf",
-      "upstream_present": true
-    },
-    {
-      "tag": "ace_dragging",
       "function": "handleUnconscious",
       "owner_addon": "core",
       "local": "core/overrides/fnc_handleUnconscious.sqf",
@@ -411,6 +403,14 @@
     },
     {
       "tag": "ace_medical_treatment",
+      "function": "canTreat_holsterCheck",
+      "owner_addon": "core",
+      "local": "core/overrides/fnc_canTreat_holsterCheck.sqf",
+      "upstream": "addons/medical_treatment/functions/fnc_canTreat_holsterCheck.sqf",
+      "upstream_present": true
+    },
+    {
+      "tag": "ace_medical_treatment",
       "function": "canTreatCached",
       "owner_addon": "core",
       "local": "core/overrides/fnc_canTreatCached.sqf",
@@ -543,6 +543,14 @@
       "owner_addon": "core",
       "local": "core/overrides/fnc_updatePeripheralResistance.sqf",
       "upstream": "addons/medical_vitals/functions/fnc_updatePeripheralResistance.sqf",
+      "upstream_present": true
+    },
+    {
+      "tag": "ace_zeus",
+      "function": "moduleUnconscious",
+      "owner_addon": "core",
+      "local": "core/overrides/fnc_moduleUnconscious.sqf",
+      "upstream": "addons/zeus/functions/fnc_moduleUnconscious.sqf",
       "upstream_present": true
     }
   ]

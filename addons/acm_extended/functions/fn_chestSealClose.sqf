@@ -2,6 +2,18 @@ disableSerialization;
 params [["_closing", displayNull]];
 // A late unload from an older panel cannot release the current workspace or its input loop.
 if (_this isNotEqualTo [] && {_closing isNotEqualTo (uiNamespace getVariable ["ACME_CS_DLG", displayNull])}) exitWith {};
+private _entryPFH = uiNamespace getVariable ["ACME_CS_EntryPFH", -1];
+private _entryProvider = uiNamespace getVariable ["ACME_CS_EntryProvider", []];
+if (_entryPFH >= 0) then {[_entryPFH] call CBA_fnc_removePerFrameHandler;};
+uiNamespace setVariable ["ACME_CS_EntryPFH", -1];
+{
+    if (!(_x isEqualTo -1) && {!(_x isEqualTo "")}) then {[_x, "keydown"] call CBA_fnc_removeKeyHandler;};
+} forEach (uiNamespace getVariable ["ACME_CS_EntryKeys", []]);
+uiNamespace setVariable ["ACME_CS_EntryKeys", []];
+uiNamespace setVariable ["ACME_CS_EntryCancelToken", ""];
+uiNamespace setVariable ["ACME_CS_EntryProvider", []];
+[false, uiNamespace getVariable ["ACME_CS_Medic", objNull], uiNamespace getVariable ["ACME_CS_Patient", objNull],
+    uiNamespace getVariable ["ACME_CS_SessionToken", ""]] call ACME_fnc_chestAccessPreparing;
 // Cancel a live Flip immediately. Closing the minigame is an explicit abort, not a request to let the provider
 // finish medic4. Remove the flip PFH now, invalidate its token, and hard-cancel only this chest-seal roll owner.
 private _flipPFH = uiNamespace getVariable ["ACME_CS_FlipPFH",-1];
@@ -19,14 +31,25 @@ if (!isNull _flipMedic && {local _flipMedic}) then {
     private _pose = _flipMedic getVariable ["ACME_treatmentPoseState",[]];
     private _poseMode = _pose param [1,""];
     private _poseEpoch = _pose param [0,-1];
-    if (_poseEpoch >= 0 && {_poseMode in ["chestSealWorkspace","chestSeal","chestAccess"]}) then {
+    private _ownsChestPose = _poseMode in ["chestSealWorkspace","chestSeal","chestAccess"];
+    if (_entryPFH >= 0) then {
+        private _provider = _flipMedic getVariable ["ACME_chestAccessProvider", []];
+        _ownsChestPose = _poseMode == "chestAccess"
+            && {!(_entryProvider isEqualTo [])}
+            && {(_provider param [0, objNull]) isEqualTo _closingPatient}
+            && {(_provider param [1, -2]) == _poseEpoch}
+            && {(_entryProvider select 0) == _poseEpoch}
+            && {(_entryProvider select 1) == (_provider param [2, ""])};
+    };
+    if (_poseEpoch >= 0 && {_ownsChestPose}) then {
         [_flipMedic,_poseMode,_poseEpoch,true] call ACME_fnc_treatmentPoseStop;
     };
 
     _flipMedic setVariable ["ACME_CS_providerHoldEpoch",-1,false];
 
     // User-requested close theatre: the exact Semi-Fowler Putdown pair, then normal unarmed crouch.
-    if (alive _flipMedic
+    if (_ownsChestPose
+        && {alive _flipMedic}
         && {!(_flipMedic getVariable ["ACE_isUnconscious",false])}
         && {isNull objectParent _flipMedic}
         && {!(_flipMedic getVariable ["ACME_headElev_seqActive",false])}) then {

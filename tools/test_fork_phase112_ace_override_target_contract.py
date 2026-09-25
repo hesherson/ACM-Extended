@@ -51,5 +51,5 @@ for tag,fn,owner,local in actual:
     assert (ROOT/'addons'/owner/local).is_file(), f'missing local override source: {owner}/{local}'
 missing=[(x['tag'],x['function']) for x in manifest if not x['upstream_present']]
 assert missing==[('ace_medical_status','getBloodVolumeChange')], f'unexpected ACE source exceptions: {missing}'
-assert len(manifest)==68
-print('PASS phase112: 68 compile-time ACE override targets frozen; 67 supplied ACE sources + 1 documented fork compatibility owner')
+assert len(manifest)==69
+print('PASS phase112: 69 compile-time ACE override targets frozen; 68 supplied ACE sources + 1 documented fork compatibility owner')

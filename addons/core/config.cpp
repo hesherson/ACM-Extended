@@ -22,7 +22,8 @@ class CfgPatches {
             "ace_medical_statemachine",
             "ace_medical_status",
             "ace_medical_treatment",
-            "ace_medical_vitals"
+            "ace_medical_vitals",
+            "ace_zeus"
         };
         author = AUTHOR;
         VERSION_CONFIG;

@@ -8,6 +8,9 @@ private _members = +(_entry select 1);
 private _idx = _members findIf {(_x select 0) == _viewer};
 private _changed = false;
 private _oldToken = if (_idx < 0) then {""} else {(_members select _idx) param [2, ""]};
+// A heartbeat renews its enrolled episode only. Delayed packets cannot resurrect a
+// closed viewer or overwrite the token of a newer entry from the same provider.
+if (_mode == "ping" && {_idx < 0 || {_token != _oldToken}}) exitWith {};
 if (_mode == "leave" && {_token != ""} && {_token != _oldToken}) exitWith {};
 if (_token == "") then {_token = _oldToken;};
 switch (_mode) do {
