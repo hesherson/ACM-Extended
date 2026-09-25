@@ -11,6 +11,9 @@ Updated 24 September 2026.
 - Narc Box syringe carousel hover no longer forces repeated full-opacity repaints, and typed push-duration seconds remain stable while editing and across syringe selection changes.
 - Medication cannot be pushed through an IV/IO line that still contains a non-empty Blood, FreshBlood, or FBTK bag. The blood bag must be empty or removed; blood on a different access does not block the selected line.
 - Medic-role providers retain thoracostomy access but no longer receive a chest-tube tray option. Doctor-role providers retain thoracostomy plus chest-tube access.
+- Check Breathing / Inspect Chest no longer enter a redundant ACME roll-only `Preparing...` stage when native ACM already owns the patient roll.
+- Leaving interaction range during `Preparing...` now permanently cancels that preparation generation; it cannot later launch when range changes again.
+- `Preparing...` is now text-only with no black background panel.
 
 ### Wake posture
 
@@ -47,7 +50,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Stable 1.2.3 runtime identity uses internal build B150 with no RC suffix in the debug menu.
+- Stable 1.2.3 runtime identity uses internal build B151 with no RC suffix in the debug menu.
 
 ## 1.2.2 cumulative update
 
