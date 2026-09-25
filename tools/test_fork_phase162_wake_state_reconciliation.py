@@ -46,7 +46,7 @@ assert '"obtunded"' in obt
 assert 'CBA_statemachine_fnc_manualTransition' not in obt
 assert obt.index('call ACM_core_fnc_requestWake') < obt.index('call ACME_fnc_obtundedStateCommit')
 
-assert 'ACME_buildBatch = "B151";' in startup
+assert 'ACME_buildBatch = "B152";' in startup
 assert 'ACME_debugRevision = "";' in startup
 
 print("PASS 1.2.3 stable: wake repair preserves CBA state synchronization and ACM lying-state recovery")
