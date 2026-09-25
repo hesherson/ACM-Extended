@@ -18,6 +18,28 @@
 ["ace_medicalMenuOpened", {
     params ["_medic", "_target", "_display"];
 
+    if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+        // A valid continuous action refreshes LastSeen every <=2 s. If that heartbeat disappeared, release only
+        // the orphaned global gate before the menu evaluates treatment eligibility.
+        if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) then {
+            private _session = _medic getVariable ["ACM_core_ContinuousAction_Session", []];
+            private _lastSeen = _medic getVariable ["ACM_core_ContinuousAction_LastSeen", -1e6];
+            if ((count _session) < 2 || {(CBA_missionTime - _lastSeen) > 4}) then {
+                missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+                _medic setVariable ["ACM_core_ContinuousAction_Session", [], true];
+            };
+        };
+
+        // Provider-only Semi-Fowler theatre has its own every-frame heartbeat. A lost PFH must not leave menu
+        // stance/animation ownership latched forever; valid live choreography is deliberately left untouched.
+        if (_medic getVariable ["ACME_headElev_seqActive", false]) then {
+            private _seqSeen = _medic getVariable ["ACME_headElev_seqLastSeen", -1e6];
+            if ((CBA_missionTime - _seqSeen) > 1) then {
+                call ACME_fnc_headElevateCancelSeq;
+            };
+        };
+    };
+
     // Pulse palpation is a modal cutRsc. Opening the medical menu must retire it immediately; otherwise the pulse
     // layer can survive underneath the menu and keep its input/pose handlers alive until the player finds Escape.
     if (uiNamespace getVariable ["ACME_PulseCheckActive", false]) then {
