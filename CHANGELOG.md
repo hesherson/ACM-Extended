@@ -14,6 +14,10 @@ Updated 24 September 2026.
 - Check Breathing / Inspect Chest no longer enter a redundant ACME roll-only `Preparing...` stage when native ACM already owns the patient roll.
 - Leaving interaction range during `Preparing...` now permanently cancels that preparation generation; it cannot later launch when range changes again.
 - `Preparing...` is now text-only with no black background panel.
+- Patient-spawner casualties now receive their plate carrier inside the initial spawn/loadout transaction, before unconsciousness or injuries are applied.
+- Semi-Fowler can now be initiated with no backpack or plate carrier as a true provider-held continuous maneuver. The provider freezes in the authored Putdown support pose and releasing/moving/leaving range or losing the maneuver lays the casualty back down.
+- Unsupported/manual Semi-Fowler never auto-resumes after the provider yields; it must be initiated again.
+- Supported Semi-Fowler remains compatible with BVM. CPR permanently cancels Semi-Fowler and direct BVM -> CPR swaps perform one authored lay-flat before compressions while keeping the chest-access lease alive.
 
 ### Wake posture
 
@@ -50,7 +54,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Stable 1.2.3 runtime identity uses internal build B151 with no RC suffix in the debug menu.
+- Stable 1.2.3 runtime identity uses internal build B152 with no RC suffix in the debug menu.
 
 ## 1.2.2 cumulative update
 
