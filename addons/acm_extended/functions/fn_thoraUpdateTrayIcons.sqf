@@ -1,4 +1,4 @@
-// B120: refresh the six independent thoracostomy tray rows.  Tube and seal are full-width vertical slots;
+// Refresh the role-filtered thoracostomy tray rows. Tube exists only for Doctor; seal remains a full-width row;
 // this function never resizes/rebuilds controls, so repeated refreshes cannot squash either icon.
 disableSerialization;
 private _display = uiNamespace getVariable ["ACME_Thora_DLG", displayNull];
