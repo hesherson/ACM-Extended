@@ -7,16 +7,29 @@
     params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
     if (isNull _patient || {!local _medic} || {!(_patient getVariable ["ACME_headElevated", false])}) exitWith {};
     private _classLC = toLowerANSI _classname;
-    // Recovery position replaces Semi-Fowler rather than borrowing a temporary flat-treatment lease.
-    // Begin lowering during the three-second treatment window so success lands directly in the authored
-    // recovery pose instead of re-elevating the casualty after the native callback.
-    if (_classLC == "recoveryposition") exitWith {
-        [_medic, _patient, true] call ACME_fnc_headElevateStop;
+    // Recovery position and CPR REPLACE Semi-Fowler. They never borrow a temporary flat-treatment lease and
+    // never auto-resume. If chest preparation already laid the casualty flat, permanent cancellation detects the
+    // suspended state and does not replay another release animation.
+    if (_classLC in ["recoveryposition","cpr"]) exitWith {
+        private _alreadyFlat = _patient getVariable ["ACME_headElev_Suspended", false];
+        [_medic, _patient, _alreadyFlat] call ACME_fnc_headElevateStop;
     };
+
     private _cfg = configFile >> "ace_medical_treatment_actions" >> _classname;
     private _roll = (getNumber (_cfg >> "ACM_rollToBack")) > 0;
     private _isBody = if (_bodyPart isEqualType "") then {toLower _bodyPart == "body"} else {_bodyPart == 1};
     if !(_roll || _isBody) exitWith {};
+
+    // Unsupported/manual Semi-Fowler has no physical prop. Once the supporting provider must yield to ANY
+    // intervention that requires a flat/body-access posture, the episode is over and must be explicitly restarted.
+    if (_patient getVariable ["ACME_headElev_manualUnsupported", false]) exitWith {
+        private _alreadyFlat = _patient getVariable ["ACME_headElev_Suspended", false];
+        [_medic, _patient, _alreadyFlat] call ACME_fnc_headElevateStop;
+    };
+
+    // Supported Semi-Fowler is compatible with BVM. Ventilation does not itself require the casualty flat, so a
+    // fresh BVM and BVM<->CPR handoff must not repeatedly suspend/resume the posture. CPR was handled above.
+    if (_classLC in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]) exitWith {};
     private _serial = (missionNamespace getVariable ["ACME_headElev_treatmentSerial", 0]) + 1;
     missionNamespace setVariable ["ACME_headElev_treatmentSerial", _serial];
     private _id = format ["%1:%2:%3", clientOwner, netId _medic, _serial];
