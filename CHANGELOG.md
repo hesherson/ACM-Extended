@@ -4,6 +4,14 @@
 
 Updated 24 September 2026.
 
+### Player-facing hotfix
+
+- IV tray catheter stacks are centered on the visible catheter artwork, fan upward only, use lighter overlap opacity, and keep the extra-stock `+` badge inside the tray tile.
+- Tibial IO flow is now occluded by a tourniquet on that leg and by Zone 3 AAJT-S/REBOA occlusion.
+- Narc Box syringe carousel hover no longer forces repeated full-opacity repaints, and typed push-duration seconds remain stable while editing and across syringe selection changes.
+- Medication cannot be pushed through an IV/IO line that still contains a non-empty Blood, FreshBlood, or FBTK bag. The blood bag must be empty or removed; blood on a different access does not block the selected line.
+- Medic-role providers retain thoracostomy access but no longer receive a chest-tube tray option. Doctor-role providers retain thoracostomy plus chest-tube access.
+
 ### Wake posture
 
 - Successful on-foot clinical wakes now pre-arm ACM's treatment/lying contract before ACE clears unconsciousness, so the casualty wakes into `ACM_LyingState` instead of immediately exiting to a normal prone/get-up animation.
@@ -39,7 +47,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Stable 1.2.3 runtime identity uses internal build B149 with no RC suffix in the debug menu.
+- Stable 1.2.3 runtime identity uses internal build B150 with no RC suffix in the debug menu.
 
 ## 1.2.2 cumulative update
 
