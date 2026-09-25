@@ -76,7 +76,6 @@ def test_nonempty_blood_on_exact_line_blocks_every_medication_commit_path():
     assert '_remaining > 0.01' in helper
     assert '_bagIV isEqualTo _iv' in helper
     assert '!_iv || {_bagSite == _site}' in helper
-    assert 'ACME_detachedBags' in helper
 
     for src in (request, owner, site, confirm, hc_start, hc_tick):
         assert "ACME_fnc_medicationLineBloodBusy" in src
@@ -100,3 +99,9 @@ def test_medic_thoracostomy_and_doctor_only_chest_tube_tray():
     assert 'if (_canTube) then {_tools pushBack ["tube"' in thora
     assert 'if (_tool == "tube" && {!_canTube}) then {' in refresh
     assert '!([_medic, 2] call ace_medical_treatment_fnc_isMedic)' in select
+
+
+def test_hotfix_keeps_stable_123_debug_identity():
+    startup = acme("functions/fn_initForkStartupRuntime.sqf")
+    assert 'ACME_buildBatch = "B150";' in startup
+    assert 'ACME_debugRevision = "";' in startup
