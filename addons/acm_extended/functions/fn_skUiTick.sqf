@@ -91,8 +91,15 @@ if (_body) then {
     };
 };
 if (_body) then {
-    // Keep Push validation live while typing. The renderer only changes edit geometry/enable state when needed.
-    call ACME_fnc_skBodyActionRender;
+    // The duration editor owns its text while focused. Do not repaint this action surface at the 25 Hz UI cadence:
+    // KeyUp performs the one validation render needed for each actual edit. Outside text entry, 8 Hz is enough for
+    // access/busy-state changes and prevents the visible repeated reload of the carousel/action controls.
+    private _actionFocus = focusedCtrl _d;
+    private _durationEditing = !isNull _actionFocus && {(ctrlIDC _actionFocus) == 84831};
+    if (!_durationEditing && {_now >= (_d getVariable ["ACME_SK_NextBodyAction",0])}) then {
+        _d setVariable ["ACME_SK_NextBodyAction",_now + 0.12];
+        call ACME_fnc_skBodyActionRender;
+    };
 };
 private _navPulse = ["info", 0.30 + 0.45 * (0.5 + 0.5 * sin (_now * 220))] call ACME_fnc_a11yColor;
 (_d displayCtrl 84153) ctrlSetBackgroundColor _navPulse;
