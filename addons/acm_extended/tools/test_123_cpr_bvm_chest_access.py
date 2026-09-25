@@ -18,8 +18,8 @@ def test_123_release_identity_and_hemtt_version():
     assert 'version = "1.2.3";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
     assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B147";' in startup
-    assert 'ACME_debugRevision = "rc4";' in startup
+    assert 'ACME_buildBatch = "B148";' in startup
+    assert 'ACME_debugRevision = "rc5";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
     for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
         assert line in script
