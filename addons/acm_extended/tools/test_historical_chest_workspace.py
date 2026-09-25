@@ -77,6 +77,15 @@ def setup():
         ACME_fnc_chestAccessManeuverActive={([_patient] call ACM_core_fnc_cprActive) || {[_patient] call ACM_core_fnc_bvmActive}};
         // Roll direction and surface classification are tested separately below.
         ACME_fnc_chestSealRoll={_rolls pushBack _this;};
+        // Provider-owner dispatch is an engine/network boundary in this harness. Preserve the canonical casualty
+        // roll request so workspace timing tests do not depend on rendering the medic4 provider RTM.
+        ACME_fnc_ownerDispatch={
+            params ["_owner","_op","_args"];
+            if (_op=="chestAccessFrontRoll") then {
+                _args params ["_m","_p"];
+                [_p,"front",false,_m,true] call ACME_fnc_chestSealRoll;
+            };
+        };
         ACME_fnc_patientRollCancel={_rolls pushBack ["cancel",_this];};
         missionNamespace setVariable ["ace_medical_engine_animations",createHashMapFromArray [
             ["ace_medical_engine_uncon_anim_faceup",["known_up"]],
