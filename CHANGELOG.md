@@ -4,14 +4,14 @@
 
 Updated 24 September 2026.
 
-### RC5 wake posture
+### Wake posture
 
 - Successful on-foot clinical wakes now pre-arm ACM's treatment/lying contract before ACE clears unconsciousness, so the casualty wakes into `ACM_LyingState` instead of immediately exiting to a normal prone/get-up animation.
 - `Get Up` remains a separate patient action after consciousness returns. Vehicle wake behavior is unchanged.
 
 ### Consciousness and wake stimuli
 
-- RC4 fixes a CBA state-machine calling-convention regression introduced by the September 22 wake refactor. CBA invokes transition conditions with the casualty object directly, while the new wake gate expected an argument array; this could abort every normal wake transition.
+- Fixed a CBA state-machine calling-convention regression introduced by the September 22 wake refactor. CBA invokes transition conditions with the casualty object directly, while the new wake gate expected an argument array; this could abort every normal wake transition.
 - `ACM_core_fnc_canWake` now accepts both CBA's direct casualty-object call and normal array-style calls.
 - The `ace_medical_WakeUp` observer now accepts the actual direct-object event payload instead of running `params` on an object.
 - Ammonia inhalant, Slap Awake, Shake Awake, spontaneous wake and fracture-pressure stimulation now reach the same functioning canonical wake path again.
@@ -20,10 +20,10 @@ Updated 24 September 2026.
 
 ### CPR / BVM chest access
 
-- RC2 makes the chest-access preflight a single-click state: the medical menu closes immediately, a top-center **Preparing...** banner appears, and repeated CPR/BVM clicks cannot enqueue duplicate carrier animations.
+- The chest-access preflight is now a single-click state: the medical menu closes immediately, a top-center **Preparing...** banner appears, and repeated CPR/BVM clicks cannot enqueue duplicate carrier animations.
 - Escape/F0 during Preparing cancels that exact generation, releases only its chest-access lease, clears the banner and reopens the medical menu.
 - Direct Pressure now yields before carrier/head/intervention animation ownership and remains animation-passive for the full native CPR/BVM lifetime instead of resuming when the short launcher treatment ends.
-- RC3 preserves the Direct Pressure episode itself across CPR/BVM: its PFH, input ownership and target remain intact while the clinical marker/provider pose yield, then resume only after CPR, BVM and their bounded transfer window are all clear.
+- Direct Pressure episodes now persist across CPR/BVM: its PFH, input ownership and target remain intact while the clinical marker/provider pose yield, then resume only after CPR, BVM and their bounded transfer window are all clear.
 - Semi-Fowler suspension is lower priority than active intervention patient animation/physics and will not re-elevate during CPR, BVM or the CPR/BVM transfer window.
 - CPR/BVM use one stable maneuver-family chest-access lease across repeated middle-mouse swaps. Provider-local and patient-owner transfer windows both prevent carrier restoration in the gap.
 - Carrier restoration now has its own accelerated patient choreography: 0.75 s lift + 0.02 s hold + 0.88 s lower, with a token-scoped 1.60x patient animation speed and guaranteed reset to 1.0.
@@ -39,7 +39,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Internal build batch advanced to B148 and the release-candidate debug revision is rc5.
+- Stable 1.2.3 runtime identity uses internal build B149 with no RC suffix in the debug menu.
 
 ## 1.2.2 cumulative update
 
