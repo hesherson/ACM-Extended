@@ -88,6 +88,9 @@ private _poseToken = format ["%1:%2:%3", clientOwner, CBA_missionTime, _serial];
 _patient setVariable ["ACME_headElev_poseToken", _poseToken, true];
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 _patient setVariable ["ACME_headElevated", true, true];
+// Unsupported/manual Semi-Fowler is an active maneuver, not a passive posture. Keep this origin flag even if a
+// competing intervention clears the provider hold first; that episode may never auto-resume without a new action.
+_patient setVariable ["ACME_headElev_manualUnsupported", _manual, true];
 _patient setVariable ["ACME_headElev_hold", [[], [_medic, _poseToken, CBA_missionTime]] select _manual, true];
 
 // A backpack or vehicle seat needs no removed vest and no refund record.
