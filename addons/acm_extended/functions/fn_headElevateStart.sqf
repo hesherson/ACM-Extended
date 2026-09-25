@@ -147,7 +147,12 @@ _patient setVariable ["ACME_headElev_pendingLift", [], true];
 _patient setVariable ["ACME_headElev_liftRequestAt", -1, false];
 missionNamespace setVariable ["ACME_headElev_TunePatient", _patient];
 
-[_patient] call ACME_fnc_headElevApplyTilt;
+private _tiltAccepted = [_patient] call ACME_fnc_headElevApplyTilt;
+if !(_tiltAccepted isEqualTo true) exitWith {
+    // The treatment timer completed but another patient animation acquired the casualty in the handoff frame.
+    // Roll the logical placement back immediately rather than leaving Semi-Fowler "on" with no visible posture.
+    [objNull, _patient, true] call ACME_fnc_headElevateStop;
+};
 
 if (_manual) then {
     [_medic, "headElevHoldStart", [_medic, _patient, _bodyPart, _poseToken]] call ACME_fnc_ownerDispatch;
