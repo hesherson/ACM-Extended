@@ -9,7 +9,10 @@ These notes cover the cumulative 1.2.3 changes promoted from the release-candida
 - Stopped Narc Box carousel hover/repaint loops that repeatedly brightened syringes and disturbed the push-duration editor; typed seconds now remain with the prepared syringe.
 - Medication pushes are blocked on an exact IV/IO access while a non-empty Blood, FreshBlood, or FBTK bag remains on that line. Empty/removed blood bags clear the restriction.
 - Medic-role providers can perform thoracostomy but do not see a chest-tube tray slot. Doctor-role providers have access to both.
-- Runtime identity is **1.2.3 / B150** with no RC suffix in the debug menu.
+- Check Breathing / Inspect Chest now let native ACM own their normal patient roll instead of opening an unnecessary ACME roll-only `Preparing...` state.
+- Range or interaction loss during `Preparing...` terminally cancels that generation, and launch performs a fresh treatment/interaction validation.
+- The `Preparing...` banner is text-only with no black backing panel.
+- Runtime identity is **1.2.3 / B151** with no RC suffix in the debug menu.
 
 ## Wake posture restoration
 
