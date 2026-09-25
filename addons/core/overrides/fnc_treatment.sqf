@@ -10,6 +10,22 @@ params ["_medic", "_patient", "_bodyPart", "_classname"];
 // Semi-Fowler is also an active hands-on maneuver by design; a new intervention cancels that exact hold so a stale
 // continuous-action generation can never leave the rest of the medical menu inert.
 if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+    // Self-heal a genuinely stale shared continuous-action gate. Live actions refresh LastSeen every <=2 s;
+    // a missing session or >4 s heartbeat gap means no current PFH can legitimately own the global lock.
+    private _continuousActive = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
+    if (_continuousActive) then {
+        private _session = _medic getVariable ["ACM_core_ContinuousAction_Session", []];
+        private _lastSeen = _medic getVariable ["ACM_core_ContinuousAction_LastSeen", -1e6];
+        if ((count _session) < 2 || {(CBA_missionTime - _lastSeen) > 4}) then {
+            missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+            _medic setVariable ["ACM_core_ContinuousAction_Session", [], true];
+            if (call ACME_fnc_debugEnabled) then {
+                diag_log format ["[ACME CONTINUOUS] cleared stale provider gate before %1; session=%2 age=%3",
+                    _classname, _session, CBA_missionTime - _lastSeen];
+            };
+        };
+    };
+
     if (_medic getVariable ["ACME_headElev_seqActive", false]) then {
         call ACME_fnc_headElevateCancelSeq;
     };
