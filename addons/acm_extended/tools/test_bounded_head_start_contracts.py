@@ -18,6 +18,7 @@ def start_contract(text=None):
         'private _needFrontFirst = !_afterProneRoll && {_actualBeforeElevate != "front"};',
         'if (_needFrontFirst) exitWith {',
         'if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {',
+        '[_medic,"chestAccessFrontRoll",[_medic,_patient,true,"access",""]] call ACME_fnc_ownerDispatch;',
         '[_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;',
         '[_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;',
         '_patient setVariable ["ACME_headElevated", true, true];',
@@ -42,6 +43,15 @@ def start_setup():
         private _tilts=[]; private _starts=[]; private _watches=[];
         ACME_fnc_headElevateCanStart={_canStart};
         ACME_fnc_chestSealCanPhysicalRoll={_canRoll};
+        // Staged provider roll is a network/engine boundary here. Record the one casualty roll that B164's
+        // provider-local chestAccessFrontRoll dispatches after medic4 reaches its work state.
+        ACME_fnc_ownerDispatch={
+            params ["_owner","_op","_args"];
+            if (_op=="chestAccessFrontRoll") then {
+                _args params ["_m","_p"];
+                [_p,"front",false,_m,true] call ACME_fnc_chestSealRoll;
+            };
+        };
         ACME_fnc_headElevApplyTilt={_tilts pushBack _this;};
         // This older normalization fixture immediately acknowledges the provider reach.
         ACME_fnc_headElevMedicStart={
@@ -67,7 +77,7 @@ def test_actual_side_not_cached_label_decides_initial_normalization(actual,cache
     ''' + (f'''
         [count _tilts==0 && {{count _starts==0}},"lift started before normalization retry"] call _check;
         private _retry=_waits select 0; _waits=[];
-        [abs ((_retry select 2)-{2.45 if rollable else .08})<0.0001,"normalization delay changed"] call _check;
+        [abs ((_retry select 2)-{4.25 if rollable else .08})<0.0001,"normalization delay changed"] call _check;
         _actualSide="front";
         [_retry] call _deliver;
         [count _waits==0,"retry queued another normalization"] call _check;
@@ -104,8 +114,8 @@ def test_start_retry_retains_existing_owner_life_and_eligibility_checks(change):
 
 
 @pytest.mark.parametrize('patient,provider,expected',[
-    ('1.85','2.2',2.45), ('4','2.2',4.10), ('1.85','5',5.25),
-    ('"bad"','"bad"',2.45),
+    ('1.85','2.2',4.25), ('4','2.2',6.40), ('1.85','5',7.05),
+    ('"bad"','"bad"',4.25),
 ])
 def test_normalization_waits_for_the_longer_patient_or_provider_move(patient,provider,expected):
     execute(start_setup()+f'''
@@ -115,6 +125,17 @@ def test_normalization_waits_for_the_longer_patient_or_provider_move(patient,pro
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
         [count _waits==1 && {{abs (((_waits select 0) select 2)-{expected})<0.0001}},"patient/provider delay contract changed"] call _check;
     ''')
+
+
+def test_provider_normalization_does_not_request_patient_roll_twice():
+    s=source('headElevateStart')
+    start=s.index('if (_hasProvider) then {')
+    end=s.index('} else {',start)
+    provider=s[start:end]
+    assert 'chestAccessFrontRoll' in provider
+    assert 'call ACME_fnc_chestSealRoll' not in provider
+    fallback=s[end:s.index('};',end)+2]
+    assert 'call ACME_fnc_chestSealRoll' in fallback
 
 
 @pytest.mark.parametrize('old,new',[
