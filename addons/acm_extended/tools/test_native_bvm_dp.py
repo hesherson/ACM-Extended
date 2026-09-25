@@ -1,7 +1,7 @@
-"""Execute native BVM and real Direct Pressure entry/teardown together.
+"""Execute native BVM and persistent Direct Pressure yield/resume together.
 
-SQF owns the reservations, callbacks, key handlers and breath loop. Native object,
-UI, animation and network operations are simulated; no DP stop is stubbed out.
+SQF owns the reservations, callbacks, key handlers, DP worker and breath loop.
+Native object, UI, animation and network operations are simulated.
 """
 import re
 
@@ -71,14 +71,21 @@ def setup():
             private _h = _handlers select _id;
             [_h select 1,_id] call (_h select 0);
         };
-        private _pressReleased = {
-            [!(_medic getVariable ["ACME_DP_Active",true]),"DP stayed active"] call _check;
-            [(_medic getVariable ["ACME_DP_Patient",_patient]) isEqualTo objNull,"DP target retained"] call _check;
-            [(_medic getVariable ["ACME_DP_PFH",0]) == -1,"DP worker retained"] call _check;
-            [(_medic getVariable ["ACME_DP_KeyIDs",[1]]) isEqualTo [],"DP inputs retained"] call _check;
-            [!(_medic getVariable ["ACME_DP_TreatmentBusy",true]),"DP treatment busy retained"] call _check;
-            [!(_medic getVariable ["ACME_DP_Paused",true]),"DP pause retained"] call _check;
-            [(_patient getVariable [format ["ACME_DP_press_%1",_this],objNull]) isEqualTo objNull,"DP clinical effect retained"] call _check;
+        private _pressYielded = {
+            private _part = _this;
+            [_medic getVariable ["ACME_DP_Active",false],"BVM destroyed the DP episode"] call _check;
+            [(_medic getVariable ["ACME_DP_Patient",objNull]) isEqualTo _patient,"BVM changed the DP target"] call _check;
+            [(_medic getVariable ["ACME_DP_PFH",-1]) >= 0,"BVM removed the DP worker"] call _check;
+            [_medic getVariable ["ACME_DP_Paused",false],"DP did not remain paused under BVM"] call _check;
+            [_medic getVariable ["ACME_DP_ClinicalYield",false],"DP did not yield its clinical marker under BVM"] call _check;
+            [(_patient getVariable [format ["ACME_DP_press_%1",_part],objNull]) isEqualTo objNull,"DP marker remained active under BVM"] call _check;
+        };
+        private _pressResumed = {
+            private _part = _this;
+            [_medic getVariable ["ACME_DP_Active",false],"DP episode did not survive BVM"] call _check;
+            [!(_medic getVariable ["ACME_DP_Paused",true]),"DP stayed paused after BVM"] call _check;
+            [!(_medic getVariable ["ACME_DP_ClinicalYield",true]),"DP clinical yield stayed latched after BVM"] call _check;
+            [(_patient getVariable [format ["ACME_DP_press_%1",_part],objNull]) isEqualTo _medic,"DP marker did not resume after BVM"] call _check;
         };
         private _toggle = {
             private _key = (_keys select {(_x select 0) == ACM_breathing_BVMToggle_MouseID}) select 0;
@@ -93,35 +100,44 @@ def setup():
 
 
 @pytest.mark.parametrize("part", ["body", "leftarm", "head"])
-def test_pressure_to_bvm_breath_pause_resume_stop_and_repeat(part):
+def test_pressure_to_bvm_yields_then_resumes_after_stop_and_repeat(part):
     execute(setup() + f'private _part = "{part}";' + '''
+        _part call _press; call _pressTick;
+        private _pressureKeys = +(_medic getVariable "ACME_DP_KeyIDs");
+        private _pressurePFH = _medic getVariable "ACME_DP_PFH";
+        private _pressurePoseToken = _medic getVariable "ACME_DP_PoseToken";
+
         for "_round" from 1 to 2 do {
-            _part call _press; call _pressTick;
-            private _pressureKeys = +(_medic getVariable "ACME_DP_KeyIDs");
-            private _pressurePFH = _medic getVariable "ACME_DP_PFH";
-            private _oldPoseToken = _medic getVariable "ACME_DP_PoseToken";
             [_medic,_patient] call ACM_breathing_fnc_useBVM;
-            _part call _pressReleased;
+            call _pressTick;
+            _part call _pressYielded;
             [ACM_core_ContinuousAction_Active,"BVM did not start from DP"] call _check;
-            [!((_handlers select _pressurePFH) select 2),"old pressure worker still scheduled"] call _check;
-            [(_pressureKeys findIf {!(_x in _removed)}) == -1,"old pressure input still registered"] call _check;
-            [(_medic getVariable "ACME_DP_PoseToken") > _oldPoseToken,"old pose callbacks not retired"] call _check;
+            [(_medic getVariable "ACME_DP_PFH") == _pressurePFH,"BVM replaced the DP worker"] call _check;
+            [(_medic getVariable "ACME_DP_KeyIDs") isEqualTo _pressureKeys,"BVM replaced the DP inputs"] call _check;
+            [(_medic getVariable "ACME_DP_PoseToken") >= _pressurePoseToken,"BVM regressed the DP pose generation"] call _check;
+
             private _before = _squeezes;
             CBA_missionTime = CBA_missionTime + 3; call _tick;
             CBA_missionTime = CBA_missionTime + 7; call _tick;
-            [_squeezes == _before + 2,"BVM failed after direct pressure"] call _check;
+            [_squeezes == _before + 2,"BVM failed after DP yield"] call _check;
+
             call _toggle;
             [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo _medic,"pause lost reservation"] call _check;
             CBA_missionTime = CBA_missionTime + 30; call _tick;
             [_squeezes == _before + 2 && {ACM_core_ContinuousAction_Active},"pause stopped BVM or delivered breath"] call _check;
+            call _pressTick;
+            _part call _pressYielded;
+
             call _toggle;
             [_squeezes == _before + 3,"resume failed"] call _check;
             call _stopBVM;
             [!ACM_core_ContinuousAction_Active,"BVM stop retained controller"] call _check;
             [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo objNull,"BVM stop retained patient"] call _check;
+
+            call _pressTick;
+            _part call _pressResumed;
         };
     ''')
-
 
 def test_pending_pressure_workers_and_pose_callback_cannot_disturb_bvm():
     execute(setup() + '''
@@ -198,8 +214,8 @@ def test_delayed_treatment_completion_cannot_restore_released_pressure():
         "FieldDressing" call _completed;
         [count _waits > 0,"no delayed completion captured"] call _check;
         [_medic,_patient] call ACM_breathing_fnc_useBVM;
-        call _finishWaits; call _tick;
-        "leftarm" call _pressReleased;
+        call _finishWaits; call _tick; call _pressTick;
+        "leftarm" call _pressYielded;
         [!_dialog && {ACM_core_ContinuousAction_Active},"old completion reopened menu or ended BVM"] call _check;
         CBA_missionTime = 13; call _tick;
         [_squeezes == 1,"old completion blocked ventilation"] call _check;
