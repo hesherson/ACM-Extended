@@ -34,6 +34,13 @@ if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
 private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
 [_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);
 
+// A provider-supported Semi-Fowler has no prop and cannot survive the supporting provider yielding to BVM.
+// Supported backpack/carrier Semi-Fowler is compatible with BVM and is intentionally left elevated.
+if ((_patient getVariable ["ACME_headElevated", false])
+    && {_patient getVariable ["ACME_headElev_manualUnsupported", false]}) then {
+    [_patient, "headElevStop", [_medic, _patient, false, false]] call ACME_fnc_ownerDispatch;
+};
+
 // BVM outranks Direct Pressure for provider animation and clinical hand use, but it must not destroy the
 // persistent pressure episode. Yield the same-provider/same-patient hold before BVM takes ownership; the DP PFH
 // keeps the episode alive without its marker/pose and resumes it only after the real native BVM/CPR lifetime ends.
