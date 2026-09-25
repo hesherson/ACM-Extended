@@ -236,9 +236,8 @@ private _own = if (isNull _patient) then {-1} else {owner _patient};
 private _loc = !isNull _patient && {local _patient};
 private _netId = if (isNull _patient) then {"-"} else {netId _patient};
 _top pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
-_top pushBack (["NetID", _netId, _cMute] call _one);
 private _epoch = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_clinicalEpoch};
-_top pushBack (["Epoch", _epoch, _cLabel, "Alive", if (!isNull _patient && {alive _patient}) then {"yes"} else {"no"}, if (!isNull _patient && {alive _patient}) then {_cGood} else {_cWarn}] call _pair);
+_top pushBack (["NetID", _netId, _cMute, "Epoch", _epoch, _cLabel] call _pair);
 
 _network pushBack (["RUNTIME / NETWORK"] call _sect);
 private _naChest = missionNamespace getVariable ["ACME_NA2_chestInstalled", false];
