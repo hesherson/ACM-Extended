@@ -37,7 +37,7 @@ private _detached = _patient getVariable ["ACME_detachedBags", []];
     private _bagSite = _bag param [3,-1,[0]];
     private _bagIV = _bag param [4,true,[true]];
     private _bagUid = _bag param [8,"",[""]];
-    (_type in ["Blood","FreshBlood"])
+    (_type in ["Blood","FreshBlood","FBTK"])
         && {_remaining > 0.01}
         && {_bagIV isEqualTo _iv}
         && {!_iv || {_bagSite == _site}}
