@@ -58,8 +58,12 @@ if (isNull _durEdit) then {
             _drafts set [_draftId,_clean];
             uiNamespace setVariable ["ACME_SK_PushDurationDrafts",_drafts];
         };
-        // Validate once per real keystroke. The 25 Hz UI loop deliberately leaves this edit alone while focused.
-        call ACME_fnc_skBodyActionRender;
+        // Do not repaint the body-action surface from inside the edit's own keyboard event. Re-rendering here
+        // can move/recreate sibling controls while Arma is resolving focus/caret state, which makes the field appear
+        // to reset on every click or keypress. Mark the surface dirty instead; fn_skUiTick will repaint as soon as
+        // focus leaves this editor.
+        private _display = ctrlParent _ctrl;
+        if (!isNull _display) then {_display setVariable ["ACME_SK_NextBodyAction",0];};
         false
     }];
 };
