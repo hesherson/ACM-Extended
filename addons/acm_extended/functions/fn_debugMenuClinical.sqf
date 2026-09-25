@@ -119,7 +119,7 @@ private _padRight = {
     _s
 };
 private _alignValue = {
-    params ["_v", ["_w", 12]];
+    params ["_v", ["_w", 11]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
     // Original layout: right-align the whole token, or the part before its decimal.
     // This also aligns yes/no, none, OPEN and client/host with integer readings.
