@@ -189,8 +189,16 @@ private _flipH = _szH * 0.040;
 private _gapFlip = _szH * 0.015;
 private _slotGap = _szH * 0.008;
 private _botPad = _szH * 0.020;
-private _slotsAvail = (_doneTop - _top - _botPad - _flipH - _gapFlip - (5 * _slotGap)) max (_szH * 0.35);
-private _slotH = _slotsAvail / 6;
+
+// Role split: Medic+ may perform the thoracostomy itself, but the chest-tube instrument is a Doctor tool.
+// Build five rows for a non-doctor and six for a doctor so there is no grey/invisible "tube option" left behind.
+private _medic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
+private _isDoctor = !isNull _medic && {[_medic, 2] call ace_medical_treatment_fnc_isMedic};
+private _canTube = _isDoctor && {[_medic, "chestTube"] call ACME_fnc_procedureAllowed};
+private _canSeal = !isNull _medic && {[_medic, "thoracostomySeal"] call ACME_fnc_procedureAllowed};
+private _toolCount = if (_canTube) then {6} else {5};
+private _slotsAvail = (_doneTop - _top - _botPad - _flipH - _gapFlip - ((_toolCount - 1) * _slotGap)) max (_szH * 0.35);
+private _slotH = _slotsAvail / _toolCount;
 private _colW = _slotH * _af;
 private _colX = _bodyX + _bodyW + (_bodyH * 0.035 * _af);
 
@@ -202,18 +210,15 @@ private _tools = [
     ["chlorhexidine", "\acm_extended\ui\items\chlorhexidine_right_ca.paa"],
     ["scalpel",       "\x\acm\addons\airway\ui\surgical_airway\inv_scalpel.paa"],
     ["kelly",         "\acm_extended\ui\items\kelly_clamps_icon_ca.paa"],
-    ["finger",        "\acm_extended\ui\items\thoracostomy_finger_right_ca.paa"],
-    ["tube",          "\acm_extended\ui\items\chest_tube_right_placed_ca.paa"],
-    ["seal",          "\x\acm\addons\breathing\ui\chestseal_ca.paa"]
+    ["finger",        "\acm_extended\ui\items\thoracostomy_finger_right_ca.paa"]
 ];
+if (_canTube) then {_tools pushBack ["tube", "\acm_extended\ui\items\chest_tube_right_placed_ca.paa"];};
+_tools pushBack ["seal", "\x\acm\addons\breathing\ui\chestseal_ca.paa"];
 private _slotBGs = [];
 // UI X units are wider than Y units.  Keep the artwork physically square by applying the aspect correction to
 // the horizontal inset too; using the raw slot-height inset on both axes was what made the tray art look narrow.
 private _insetY = _slotH * 0.15;
 private _insetX = _insetY * _af;
-private _medic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
-private _canTube = !isNull _medic && {[_medic, "chestTube"] call ACME_fnc_procedureAllowed};
-private _canSeal = !isNull _medic && {[_medic, "thoracostomySeal"] call ACME_fnc_procedureAllowed};
 uiNamespace setVariable ["ACME_Thora_CanTube", _canTube];
 uiNamespace setVariable ["ACME_Thora_SealMode", false];
 {
