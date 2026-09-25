@@ -18,6 +18,7 @@ private _body = _job getOrDefault ["bodyPart","body"];
 private _site = _job getOrDefault ["site",-2];
 private _identity = [_patient,_body,_site] call ACME_fnc_medicationLineIdentity;
 if (_identity isEqualTo [] || {!(_identity isEqualTo (_job getOrDefault ["identity",[]]))}) exitWith {["access"] call ACME_fnc_hardcorePushStop;};
+if ([_patient,_body,_site] call ACME_fnc_medicationLineBloodBusy) exitWith {["blood-line"] call ACME_fnc_hardcorePushStop;};
 private _now = diag_tickTime;
 private _last = _job getOrDefault ["lastTick",_now];
 private _dt = ((_now - _last) max 0) min 0.25;
