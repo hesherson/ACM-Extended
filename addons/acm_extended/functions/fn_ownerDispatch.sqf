@@ -74,9 +74,56 @@ switch (_operation) do {
         _patient setVariable ["ACME_chestAccess_maneuverHandoffUntil", serverTime + _duration, true];
     };
     case "chestAccessFrontRoll": {
-        _args params [["_medic",objNull,[objNull]],["_casualty",objNull,[objNull]]];
+        _args params [
+            ["_medic",objNull,[objNull]],
+            ["_casualty",objNull,[objNull]],
+            ["_preserveHead",false,[false]],
+            ["_context","access",[""]],
+            ["_prep","",[""]]
+        ];
         if (!isNull _medic && {local _medic} && {alive _medic} && {!isNull _casualty}) then {
-            [_medic,"chestAccessFront",_casualty] call ACME_fnc_rollProviderStart;
+            // Initial chest-access normalization uses the exact same provider work state as an in-menu Flip:
+            // rollProviderStart -> literal medic4 -> canonical chestSealRoll. Do not start the casualty RTM from
+            // the preparation click itself, otherwise the provider and patient animations can be visibly unrelated.
+            private _started = [_medic,"chestAccessFront",_casualty] call ACME_fnc_rollProviderStart;
+            if (!_started) exitWith {
+                [_casualty, "chestSealRoll", [_casualty,"front",false,_medic,_preserveHead]] call ACME_fnc_ownerDispatch;
+            };
+
+            private _pose = _medic getVariable ["ACME_treatmentPoseState",[]];
+            private _epoch = _pose param [0,-1];
+            private _rollToken = _medic getVariable ["ACME_rollProviderToken",""];
+            private _deadline = diag_tickTime + 3.0;
+            [{
+                params ["_state","_handle"];
+                _state params ["_m","_p","_epoch","_rollToken","_preserve","_ctx","_prep","_deadline"];
+                if (isNull _m || {isNull _p} || {!local _m} || {!alive _m}) exitWith {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                };
+                if (_ctx == "chestseal" && {_prep != ""} && {
+                    (_p getVariable ["ACME_CS_PreparationToken",""]) != _prep
+                    || {(_p getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo []}
+                }) exitWith {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                };
+                if ((_m getVariable ["ACME_rollProviderToken",""]) != _rollToken || {_rollToken == ""}) exitWith {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                };
+
+                private _poseNow = _m getVariable ["ACME_treatmentPoseState",[]];
+                private _work = toLowerANSI (_poseNow param [2,""]);
+                private _atWork = (_poseNow param [0,-2]) == _epoch
+                    && {(_poseNow param [1,""]) == "roll"}
+                    && {(_poseNow param [3,-2]) >= 1}
+                    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
+                    && {(toLowerANSI animationState _m) == _work};
+                private _completed = (_m getVariable ["ACME_rollProviderCompletedEpoch",-1]) == _epoch;
+
+                if (_atWork || {_completed} || {diag_tickTime >= _deadline}) then {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                    [_p, "chestSealRoll", [_p,"front",false,_m,_preserve]] call ACME_fnc_ownerDispatch;
+                };
+            }, 0, [_medic,_casualty,_epoch,_rollToken,_preserveHead,toLowerANSI _context,_prep,_deadline]] call CBA_fnc_addPerFrameHandler;
         };
     };
     case "headElevTilt": {_args call ACME_fnc_headElevApplyTilt;};
