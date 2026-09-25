@@ -177,8 +177,12 @@ if (_dpSamePatient) then {
     // Preserve the open-chest lease across the deliberate 0.1 s BVM -> CPR handoff. The bounded token lets the
     // existing lease watchdog restore the carrier if CPR fails to take ownership.
     if (_swapToCPR && {!isNull _medic} && {!isNull _patient}) then {
-        _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 1.00], false];
-        [_patient, "chestAccessManeuverHandoff", [1.00]] call ACME_fnc_ownerDispatch;
+        // A supported Semi-Fowler BVM -> CPR swap has to lower the casualty once before compressions begin.
+        // Keep the existing chest-access lease alive through that authored 1.4 s release so the carrier is not
+        // restored and immediately removed again during the handoff.
+        private _handoffSec = if (_patient getVariable ["ACME_headElevated", false]) then {2.50} else {1.00};
+        _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + _handoffSec], false];
+        [_patient, "chestAccessManeuverHandoff", [_handoffSec]] call ACME_fnc_ownerDispatch;
     };
 
     if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
