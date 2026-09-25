@@ -30,7 +30,7 @@ if (_iv) then {_present = if (_siteIdx >= 0) then {[_patient,_bodyPart,0,_siteId
 if (!_present) exitWith {uiNamespace setVariable ["ACME_SK_PendingInjection",[]]; call ACME_fnc_skBodyActionRender; false};
 
 if (_iv && {[_patient,_bodyPart,_siteIdx] call ACME_fnc_medicationLineBloodBusy}) exitWith {
-    ["Blood is actively flowing through that line. Stop or finish the transfusion before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
+    ["Blood is present in that line. Finish or remove the blood bag before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
     call ACME_fnc_skBodyActionRender;
     false
 };
