@@ -5,6 +5,21 @@
  */
 params ["_medic", "_patient", "_bodyPart", "_classname"];
 
+// Head positioning is provider theatre, never a global treatment lock. Any newly accepted medical click preempts
+// a leftover/current Semi-Fowler provider sequence before normal treatment gating runs. Manual unsupported
+// Semi-Fowler is also an active hands-on maneuver by design; a new intervention cancels that exact hold so a stale
+// continuous-action generation can never leave the rest of the medical menu inert.
+if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+    if (_medic getVariable ["ACME_headElev_seqActive", false]) then {
+        call ACME_fnc_headElevateCancelSeq;
+    };
+    private _sfHold = _medic getVariable ["ACME_headElev_holding", []];
+    if (count _sfHold >= 2 && {(_sfHold select 0) isEqualTo _patient}
+        && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) then {
+        missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+    };
+};
+
 // This debug command has no physical treatment or provider animation. Execute directly,
 // so empty-hands preflight, the progress bar and the generic patient settle cannot consume the click.
 if (_classname == "ACME_DebugInduceSeizure") exitWith {
