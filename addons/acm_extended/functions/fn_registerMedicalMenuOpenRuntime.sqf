@@ -53,6 +53,11 @@
 // inspection and failed availability checks do not turn first contact into empty hands.
 ["ace_treatmentStarted", {
     params ["_medic", "_patient", ["_bodyPart", ""], ["_classname", ""]];
+    if (call ACME_fnc_debugEnabled) then {
+        diag_log format ["[ACME TREATMENT] started class=%1 body=%2 patient=%3 medic=%4",
+            _classname, _bodyPart, if (isNull _patient) then {"null"} else {netId _patient},
+            if (isNull _medic) then {"null"} else {netId _medic}];
+    };
     if (!isNull _medic && {local _medic} && {!isNull _patient} && {_medic isNotEqualTo _patient}) then {
         _medic setVariable ["ACME_menuPoseAfterTreatment", _patient];
         _medic setVariable ["ACME_menuPoseCare", [_patient, _classname]];
@@ -71,3 +76,20 @@
         };
     }] call CBA_fnc_addEventHandler;
 } forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];
+
+// Debug-only lifecycle markers make timer-with-no-result reports decisive without changing treatment ownership.
+// ACE emits success after the class callback has run; failure means the progress action terminated before it.
+["ace_treatmentSucceded", {
+    params ["_medic", "_patient", ["_bodyPart", ""], ["_classname", ""]];
+    if (call ACME_fnc_debugEnabled) then {
+        diag_log format ["[ACME TREATMENT] success class=%1 body=%2 patient=%3",
+            _classname, _bodyPart, if (isNull _patient) then {"null"} else {netId _patient}];
+    };
+}] call CBA_fnc_addEventHandler;
+["ace_treatmentFailed", {
+    params ["_medic", "_patient", ["_bodyPart", ""], ["_classname", ""]];
+    if (call ACME_fnc_debugEnabled) then {
+        diag_log format ["[ACME TREATMENT] failed class=%1 body=%2 patient=%3",
+            _classname, _bodyPart, if (isNull _patient) then {"null"} else {netId _patient}];
+    };
+}] call CBA_fnc_addEventHandler;
