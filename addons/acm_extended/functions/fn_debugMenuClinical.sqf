@@ -30,10 +30,10 @@ private _ctrlB = ["ACME_DebugMenuBackdrop"] call _control;
 _ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.74];
 _ctrlB ctrlEnable false;
 private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
-private _ctrlT = ["ACME_DebugMenuCtrlTop"] call _control;
+private _ctrlT = ["ACME_DebugMenuCtrlTop", false] call _control;
 private _ctrlL = ["ACME_DebugMenuCtrlL"] call _control;
-private _ctrlR = ["ACME_DebugMenuCtrlR"] call _control;
-private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
+private _ctrlR = ["ACME_DebugMenuCtrlR", false] call _control;
+private _ctrlS = ["ACME_DebugMenuCtrlS", false] call _control;
 private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 
 // B163 is intentionally a compact diagnostic strip, not a screen-sized dashboard. Keep the same safe-zone
