@@ -10,6 +10,7 @@ if (!local _patient) exitWith {
     [_patient, "headElevStop", [_medic, _patient, _quiet, _frontNormalized]] call ACME_fnc_ownerDispatch;
 };
 if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized] call ACME_fnc_headElevateStop;};};
+private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];
 [_patient] call ACME_fnc_headElevHoldClear;
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;};
@@ -53,6 +54,7 @@ if (_needFrontFirst) exitWith {
 _patient setVariable ["ACME_CS_facing","front",true];
 _patient setVariable ["ACME_headElev_poseToken", "", true];
 _patient setVariable ["ACME_headElevated", false, true];
+_patient setVariable ["ACME_headElev_manualUnsupported", false, true];
 _patient setVariable ["ACME_headElev_Suspended", false, true];
 _patient setVariable ["ACME_headElev_ResumePending", false, true];
 _patient setVariable ["ACME_headElev_visualActive", false, true];
@@ -75,7 +77,10 @@ private _mass = _patient getVariable ["ACME_headElev_mass", -1];
 if (_mass > 0) then {_patient setMass _mass; _patient setVariable ["ACME_headElev_mass", nil, true];};
 
 
-private _visibleLower = !_quiet && {isNull objectParent _patient};
+// If the casualty was already physically flat from a temporary suspension, permanent cancellation only retires
+// the logical Semi-Fowler episode. Replaying the release animation here is what caused CPR/BVM handoffs to keep
+// "setting them down" over and over.
+private _visibleLower = !_quiet && {!_wasSuspended} && {isNull objectParent _patient};
 if (_visibleLower) then {
     // Patient and provider start together. The carrier stays as the physical bolster until the authored release has
     // finished, then it returns to the chest. That prevents a loadout change from cutting the lay-flat animation short.
