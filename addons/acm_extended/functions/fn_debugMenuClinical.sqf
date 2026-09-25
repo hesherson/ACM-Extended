@@ -6,7 +6,7 @@ private _cleanup = {
         private _c = uiNamespace getVariable [_x, controlNull];
         if (!isNull _c) then {ctrlDelete _c;};
         uiNamespace setVariable [_x, controlNull];
-    } forEach ["ACME_DebugMenuBackdrop", "ACME_DebugMenuCtrl", "ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrlMeasure"];
+    } forEach ["ACME_DebugMenuBackdrop", "ACME_DebugMenuCtrl", "ACME_DebugMenuCtrlTop", "ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrlMeasure"];
 };
 if (!(call ACME_fnc_debugEnabled)) exitWith {call _cleanup;};
 private _display = findDisplay 46;
@@ -27,22 +27,25 @@ private _control = {
     _c
 };
 private _ctrlB = ["ACME_DebugMenuBackdrop"] call _control;
-_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.86];
+_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.74];
 _ctrlB ctrlEnable false;
 private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
+private _ctrlT = ["ACME_DebugMenuCtrlTop"] call _control;
 private _ctrlL = ["ACME_DebugMenuCtrlL"] call _control;
 private _ctrlR = ["ACME_DebugMenuCtrlR"] call _control;
 private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
 private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 
-// Set the control's base font, so blank lines and text share the same line height.
-// B157 scaled only the text tags, then let the widest value shrink every section.
-// Use a readable screen-relative size (at least 14 px) and give the text its required space.
-private _fontH = (safeZoneH * 0.0125) max (14 * pixelH);
-{_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
-private _gap = 0.010;
-private _x = safeZoneXAbs + 0.008;
-private _y = safeZoneY + 0.012;
+// Keep one safe-zone-relative font on every resolution. A pixel minimum made the overlay change proportions
+// between 1080p, 1440p, ultrawide and supersampled UI scales. B162 is slightly smaller than B161 so the full
+// clinical/runtime set can use the screen vertically without changing its typography from one resolution to another.
+private _fontH = safeZoneH * 0.0116;
+{_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
+private _gap = safeZoneH * 0.006;
+private _marginX = safeZoneWAbs * 0.004;
+private _x = safeZoneXAbs + _marginX;
+private _y = safeZoneY + safeZoneH * 0.008;
+private _panelBottom = safeZoneY + safeZoneH - safeZoneH * 0.008;
 // Keep the original eight-character whole-value/decimal anchor. Reserve room after
 // it for complete units and compound readings, rather than wrapping ordinary vitals.
 private _valueW = 20;
@@ -60,7 +63,12 @@ private _charW = ((ctrlTextWidth _ctrlM) - _shortW) / 16;
 // Two fixed label/value pairs per clinical column. Grow the panel to fit the font,
 // rather than reducing the font to fit padded fields. Only extended device lists wrap.
 private _rowChars = 2 * (8 + 1 + _valueW) + 2;
-private _totalW = (0.54 max (2 * (_rowChars * _charW + 0.020) + _gap)) min (safeZoneWAbs - 0.020);
+// The measured text still owns the minimum width, while the safe-zone fraction prevents an ultrawide display
+// from making the same panel look proportionally tiny. The cap is screen-height based so 16:9 and 32:9 keep a
+// comparable visual footprint.
+private _minPanelW = (safeZoneWAbs * 0.24) min (safeZoneH * 0.78);
+private _totalW = (_minPanelW max (2 * (_rowChars * _charW + safeZoneWAbs * 0.010) + _gap))
+    min (safeZoneWAbs - 2 * _marginX);
 private _w = (_totalW - _gap) / 2;
 private _measureRows = {
     params ["_rows", "_width"];
@@ -70,15 +78,25 @@ private _measureRows = {
     (ctrlTextHeight _ctrlM) + _fontH * 0.25
 };
 private _layout = {
-    params ["_headerH", "_clinicalH", "_networkH"];
-    private _bodyY = _y + _headerH + _gap;
-    private _networkY = _bodyY + _clinicalH + _gap;
-    _ctrlB ctrlSetPosition [_x, _y, _totalW, _networkY + _networkH - _y];
+    params ["_headerH", "_topH", "_clinicalH", "_networkH"];
+    private _topY = _y + _headerH + (_gap * 0.45);
+    private _bodyY = _topY + _topH + _gap;
+
+    // Runtime/network state is anchored at the bottom of the safe area. The clinical columns receive every
+    // remaining vertical pixel between the top metadata tab and that footer, so the overlay consistently spans
+    // top-to-bottom instead of ending at an arbitrary content height. If a pathological amount of content is
+    // present, keep sections sequential rather than letting them overlap.
+    private _networkY = (_panelBottom - _networkH) max (_bodyY + _clinicalH + _gap);
+    private _contentBottom = (_networkY + _networkH) max _panelBottom;
+    private _bodyH = (_networkY - _gap - _bodyY) max _clinicalH;
+
+    _ctrlB ctrlSetPosition [_x, _y, _totalW, _contentBottom - _y];
     _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
-    _ctrlL ctrlSetPosition [_x, _bodyY, _w, _clinicalH];
-    _ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _clinicalH];
+    _ctrlT ctrlSetPosition [_x, _topY, _totalW, _topH];
+    _ctrlL ctrlSetPosition [_x, _bodyY, _w, _bodyH];
+    _ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _bodyH];
     _ctrlS ctrlSetPosition [_x, _networkY, _totalW, _networkH];
-    {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlR, _ctrlS];
+    {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS];
 };
 
 private _cTitle = "#D9A441";
@@ -193,6 +211,7 @@ if (_ver == "") then {_ver = missionNamespace getVariable ["ACME_infusion_versio
 private _rc = missionNamespace getVariable ["ACME_debugRevision", ""];
 if (_rc isEqualType "" && {_rc != ""}) then {_ver = format ["%1-%2", _ver, _rc];};
 private _batch = missionNamespace getVariable ["ACME_buildBatch", "?"];
+private _top = [];
 private _left = [];
 private _right = [];
 private _network = [];
@@ -202,6 +221,7 @@ private _header = [
     format ["<t color='%1'>Patient: %2</t>", _cLabel, [_pName] call _safe]
 ];
 private _renderAll = {
+    private _topRows = _top apply {[_x, _valueW] call _formatRow};
     private _leftRows = _left apply {[_x, _valueW] call _formatRow};
     private _rightRows = _right apply {[_x, _valueW] call _formatRow};
     private _networkRows = _network apply {[_x, _valueW] call _formatRow};
@@ -210,30 +230,32 @@ private _renderAll = {
         if (count _x > 0 && {((_x select 0) select [0, 5]) == "<br/>"}) then {
             _x set [0, (_x select 0) select [5]];
         };
-    } forEach [_leftRows, _rightRows, _networkRows];
+    } forEach [_topRows, _leftRows, _rightRows, _networkRows];
     private _headerH = [_header, _totalW] call _measureRows;
+    private _topH = [_topRows, _totalW] call _measureRows;
     private _clinicalH = ([_leftRows, _w] call _measureRows) max ([_rightRows, _w] call _measureRows);
     private _networkH = [_networkRows, _totalW] call _measureRows;
-    [_headerH, _clinicalH, _networkH] call _layout;
+    [_headerH, _topH, _clinicalH, _networkH] call _layout;
     [_ctrlH, _header] call _renderBlock;
+    [_ctrlT, _topRows] call _renderBlock;
     [_ctrlL, _leftRows] call _renderBlock;
     [_ctrlR, _rightRows] call _renderBlock;
     [_ctrlS, _networkRows] call _renderBlock;
 };
-_network pushBack (["MACHINE"] call _sect);
-private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
-_network pushBack (["Role", _role, if (isServer) then {_cGood} else {_cLabel}, "MP", if (isMultiplayer) then {"yes"} else {"no"}, if (isMultiplayer) then {_cGood} else {_cMute}] call _pair);
-_network pushBack (["Client", clientOwner, _cLabel, "Server", if (isServer) then {"local"} else {"remote"}, if (isServer) then {_cGood} else {_cLabel}] call _pair);
 
-_network pushBack (["PATIENT OWNERSHIP"] call _sect);
+_top pushBack (["MACHINE / PATIENT OWNERSHIP"] call _sect);
+private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
+_top pushBack (["Role", _role, if (isServer) then {_cGood} else {_cLabel}, "MP", if (isMultiplayer) then {"yes"} else {"no"}, if (isMultiplayer) then {_cGood} else {_cMute}] call _pair);
+_top pushBack (["Client", clientOwner, _cLabel, "Server", if (isServer) then {"local"} else {"remote"}, if (isServer) then {_cGood} else {_cLabel}] call _pair);
 private _own = if (isNull _patient) then {-1} else {owner _patient};
 private _loc = !isNull _patient && {local _patient};
 private _netId = if (isNull _patient) then {"-"} else {netId _patient};
-_network pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
-_network pushBack (["NetID", _netId, _cMute] call _one);
+_top pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
+_top pushBack (["NetID", _netId, _cMute] call _one);
 private _epoch = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_clinicalEpoch};
-_network pushBack (["Epoch", _epoch, _cLabel, "Alive", if (!isNull _patient && {alive _patient}) then {"yes"} else {"no"}, if (!isNull _patient && {alive _patient}) then {_cGood} else {_cWarn}] call _pair);
+_top pushBack (["Epoch", _epoch, _cLabel, "Alive", if (!isNull _patient && {alive _patient}) then {"yes"} else {"no"}, if (!isNull _patient && {alive _patient}) then {_cGood} else {_cWarn}] call _pair);
 
+_network pushBack (["RUNTIME / NETWORK"] call _sect);
 _network pushBack (["NETWORK LAYERS"] call _sect);
 private _naChest = missionNamespace getVariable ["ACME_NA2_chestInstalled", false];
 private _naOwner = missionNamespace getVariable ["ACME_NA2_ownerInstalled", false];
