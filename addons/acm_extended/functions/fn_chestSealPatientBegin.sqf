@@ -99,7 +99,7 @@ _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
     if (_canNormalize && {_actual != "front"}) then {
         private _hasProvider = !isNull _medic && {!(_medic isEqualTo _p)} && {alive _medic};
         if (_hasProvider) then {
-            [_medic,"chestAccessFrontRoll",[_medic,_p,true,"chestseal",_prep]] call ACME_fnc_ownerDispatch;
+            [_medic,"chestSealEntryFrontRoll",[_medic,_p,true,_prep]] call ACME_fnc_ownerDispatch;
         } else {
             [_p, "front", false, objNull, true] call ACME_fnc_chestSealRoll;
         };
@@ -126,7 +126,7 @@ _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
                 private _delay = [0.25, 3.10] select _hasProvider;
                 _retry set [0, CBA_missionTime + _delay];
                 if (_hasProvider) then {
-                    [_medic,"chestAccessFrontRoll",[_medic,_p,true,"chestseal",_prep]] call ACME_fnc_ownerDispatch;
+                    [_medic,"chestSealEntryFrontRoll",[_medic,_p,true,_prep]] call ACME_fnc_ownerDispatch;
                 } else {
                     [_p, "front", false, objNull, true] call ACME_fnc_chestSealRoll;
                 };
