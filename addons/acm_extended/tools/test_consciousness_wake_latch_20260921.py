@@ -18,6 +18,18 @@ def test_request_wake_repairs_only_after_gate_recheck():
     assert "setUnconsciousState" in s
     assert "ACME CONSCIOUSNESS REPAIR" in s
 
+def test_cba_wake_boundaries_accept_direct_patient_object():
+    gate = read(ADDONS / "core/functions/fnc_canWake.sqf")
+    sm = read(ADDONS / "core/ACM_Statemachine.hpp")
+    post = read(ADDONS / "core/XEH_postInit.sqf")
+    fracture = read(ROOT / "functions/fn_directPressureFracturePain.sqf")
+
+    assert "if (_this isEqualType objNull) then {" in gate
+    assert "condition = QUOTE([_this] call FUNC(canWake));" in sm
+    assert "private _unit = if (_this isEqualType objNull)" in post
+    assert '"fracture-pressure"] call ACM_core_fnc_requestWake' in fracture
+    assert '["ace_medical_WakeUp", _patient] call CBA_fnc_localEvent' not in fracture
+
 def test_rocuronium_and_seizure_use_canonical_unconscious_entry():
     roc = read(ROOT / "functions/fn_rocuroniumTick.sqf")
     seiz = read(ROOT / "functions/fn_seizureCollapse.sqf")
