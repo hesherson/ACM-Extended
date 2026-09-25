@@ -29,4 +29,12 @@ _patient setVariable ["ACME_headElev_baseDir", getDir _patient, true];
 private _headProp = _patient getVariable ["ACME_headElev_propObj", objNull];
 if (!isNull _headProp) then {_headProp setVariable ["ACME_chestFixedPark", nil, false];};
 [_patient] call ACME_fnc_headElevPropApply;
-[_patient] call ACME_fnc_headElevApplyTilt;
+private _resumed = [_patient] call ACME_fnc_headElevApplyTilt;
+if !(_resumed isEqualTo true) then {
+    // Keep the logical episode suspended and retry after the competing animation lease retires. Never publish an
+    // elevated logical state while the casualty is still visually flat.
+    _patient setVariable ["ACME_headElev_Suspended", true, true];
+    _patient setVariable ["ACME_headElev_ResumePending", true, true];
+    [{_this call ACME_fnc_headElevTryResume;}, [_patient, _patient getVariable ["ACME_headElev_poseToken", ""]], 0.15]
+        call CBA_fnc_waitAndExecute;
+};
