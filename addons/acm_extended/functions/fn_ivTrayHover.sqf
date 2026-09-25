@@ -54,10 +54,10 @@ private _medic = uiNamespace getVariable ['ACME_IV_Medic',objNull];
 private _count = if (isNull _medic) then {0} else {[_medic,format ['ACM_IV_%1g',_gauge]] call ace_common_fnc_getCountOfItem};
 private _shown = (_count min 5) max 0;
 private _colors = createHashMapFromArray [
-    [14,[1,0.55,0.55,0.84]],
-    [16,[1,1,1,0.84]],
-    [18,[0.70,0.90,1,0.84]],
-    [20,[0.60,0.85,1,0.84]]
+    [14,[1,0.55,0.55,0.56]],
+    [16,[1,1,1,0.56]],
+    [18,[0.70,0.90,1,0.56]],
+    [20,[0.60,0.85,1,0.56]]
 ];
 private _fanKey = format ['ACME_IV_TrayFan_%1',_gauge];
 private _fan = _d getVariable [_fanKey,[]];
@@ -66,7 +66,7 @@ if (_fan isEqualTo []) then {
     for '_i' from 0 to 3 do {
         private _c = _d ctrlCreate ['RscPictureKeepAspect',-1];
         _c ctrlSetText (ctrlText _logo);
-        _c ctrlSetTextColor (_colors getOrDefault [_gauge,[1,1,1,0.84]]);
+        _c ctrlSetTextColor (_colors getOrDefault [_gauge,[1,1,1,0.56]]);
         _c ctrlSetPosition _base;
         _c ctrlSetAngle [-90,0.5,0.5,false];
         _c ctrlSetFade 1;
@@ -74,10 +74,9 @@ if (_fan isEqualTo []) then {
         _c ctrlCommit 0;
         _fan pushBack _c;
     };
-    private _plus = _d ctrlCreate ['RscText',-1];
-    _plus ctrlSetText '+';
-    _plus ctrlSetFont 'RobotoCondensed';
-    _plus ctrlSetTextColor [0.94,0.91,0.82,1];
+    private _plus = _d ctrlCreate ['RscStructuredText',-1];
+    _plus ctrlSetStructuredText parseText "<t align='center' valign='middle'>+</t>";
+    _plus ctrlSetTextColor [0.94,0.91,0.82,0.90];
     _plus ctrlSetBackgroundColor [0,0,0,0];
     _plus ctrlSetFade 1;
     _plus ctrlEnable false;
@@ -132,10 +131,10 @@ _slot params ['_sx','_sy','_sw','_sh'];
 // X still opens the deck slightly left/right, but Y is monotonic upward. Nothing is ever spawned below the
 // resting/front catheter.
 private _poses = [
-    [-0.036, -0.58, -99],
-    [-0.014, -0.78, -94],
-    [ 0.014, -0.98, -86],
-    [ 0.036, -1.18, -81]
+    [-0.018, -0.50, -94],
+    [-0.006, -0.70, -98],
+    [ 0.006, -0.90, -102],
+    [ 0.018, -1.10, -106]
 ];
 private _cloneCount = ((_shown - 1) max 0) min 4;
 private _fanMul = 1.03;
@@ -163,14 +162,14 @@ if (!isNull _plus) then {
     // >5 badge belongs INSIDE the live gauge tile, at its TOP-LEFT corner. It is deliberately anchored to the
     // background slot rather than the oversized catheter canvas, so aspect changes and hover scaling cannot push it
     // outside the tray icon.
-    private _pw = _sw * 0.20;
-    private _ph = _sh * 0.25;
-    private _insetX = _sw * 0.045;
-    private _insetY = _sh * 0.035;
+    private _pw = _sw * 0.18;
+    private _ph = _sh * 0.22;
+    private _insetX = _sw * 0.08;
+    private _insetY = _sh * 0.055;
     private _px = _sx + _insetX;
     private _py = _sy + _insetY;
     _plus ctrlSetPosition [_px,_py,_pw,_ph];
-    _plus ctrlSetFontHeight (_sh * 0.21);
+    _plus ctrlSetStructuredText parseText format ["<t align='center' size='%1' color='#F0E7D2'>+</t>", 0.95];
     _plus ctrlSetFade (if (_enter && {_count > 5}) then {0} else {1});
     _plus ctrlCommit _ease;
 };
