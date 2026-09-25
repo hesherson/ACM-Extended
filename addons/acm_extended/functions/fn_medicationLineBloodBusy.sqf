@@ -21,9 +21,10 @@ private _bagMap = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap
 if !(_bagMap isEqualType createHashMap) exitWith {false};
 private _bags = _bagMap getOrDefault [_part, []];
 if (_bags isEqualTo []) then {
-    private _key = (keys _bagMap) select {
+    private _matchingKeys = (keys _bagMap) select {
         _x isEqualType "" && {(toLowerANSI _x) == _part}
-    } param [0,""];
+    };
+    private _key = _matchingKeys param [0,""];
     if (_key != "") then {_bags = _bagMap getOrDefault [_key,[]];};
 };
 if !(_bags isEqualType []) exitWith {false};
