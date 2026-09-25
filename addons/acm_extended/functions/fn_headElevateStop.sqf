@@ -3,13 +3,14 @@ params [
     ["_medic", objNull, [objNull]],
     ["_patient", objNull, [objNull]],
     ["_quiet", false, [false]],
-    ["_frontNormalized", false, [false]]
+    ["_frontNormalized", false, [false]],
+    ["_preserveSupportForChest", false, [false]]
 ];
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {
-    [_patient, "headElevStop", [_medic, _patient, _quiet, _frontNormalized]] call ACME_fnc_ownerDispatch;
+    [_patient, "headElevStop", [_medic, _patient, _quiet, _frontNormalized, _preserveSupportForChest]] call ACME_fnc_ownerDispatch;
 };
-if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized] call ACME_fnc_headElevateStop;};};
+if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized, _preserveSupportForChest] call ACME_fnc_headElevateStop;};};
 private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];
 private _wasManualUnsupported = _patient getVariable ["ACME_headElev_manualUnsupported", false];
 
@@ -22,7 +23,8 @@ private _headSupportRemoved = _patient getVariable ["ACME_headElev_vestRemoved",
     && {(count _headSupportSaved) == 2};
 private _chestLeasesNow = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
 private _handoffUntilNow = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
-private _chestOwnsAfterCancel = (count _chestLeasesNow) > 0
+private _chestOwnsAfterCancel = _preserveSupportForChest
+    || {(count _chestLeasesNow) > 0}
     || {[_patient] call ACM_core_fnc_cprActive}
     || {[_patient] call ACM_core_fnc_bvmActive}
     || {(_handoffUntilNow isEqualType 0) && {serverTime < _handoffUntilNow}};
@@ -74,12 +76,12 @@ if (_needFrontFirst) exitWith {
     // must not be retired by this old retry, even when the patient is local again.
     private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
     [{
-        params ["_m","_p","_quiet","_poseToken"];
+        params ["_m","_p","_quiet","_poseToken","_preserveSupportForChest"];
         if (isNull _p || {!local _p}) exitWith {};
         if ((_p getVariable ["ACME_headElev_poseToken", ""]) != _poseToken) exitWith {};
         _p setVariable ["ACME_CS_facing","front",true];
-        [_m,_p,_quiet,true] call ACME_fnc_headElevateStop;
-    }, [_medic,_patient,_quiet,_poseToken], _delay] call CBA_fnc_waitAndExecute;
+        [_m,_p,_quiet,true,_preserveSupportForChest] call ACME_fnc_headElevateStop;
+    }, [_medic,_patient,_quiet,_poseToken,_preserveSupportForChest], _delay] call CBA_fnc_waitAndExecute;
 };
 
 _patient setVariable ["ACME_CS_facing","front",true];
