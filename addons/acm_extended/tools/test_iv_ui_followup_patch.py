@@ -51,7 +51,9 @@ def test_tray_rotation_hover_splay_and_spear_sound():
     assert "_count > 5" in h
     assert "private _liveSlot = ctrlPosition _bg;" in h
     assert "private _artV = missionNamespace getVariable ['ACME_iv_trayArtV',0.66];" in h
-    assert 'ACME_iv_trayIconBias", 0.40' in i
+    assert 'ACME_iv_trayIconBias", 0.56' in i
+    assert 'private _visibleXOffset = (_artV - 0.5) * _iconH;' in i
+    assert 'private _iconX = _colX + (_slotW / 2) - (_iconW / 2) - _visibleXOffset;' in i
     assert "private _artOffset = {" in h
     assert "private _rectAtVisualCenter = {" in h
     assert "private _spriteX = _bx + (_bw * 0.5) + (_baseOff select 0);" in h
@@ -64,10 +66,10 @@ def test_tray_rotation_hover_splay_and_spear_sound():
     assert "_sx + _sw - _pw - _insetX" not in h
     assert "private _fanW = _sw * 0.88;" not in h
     assert "private _fanH = _sh * 0.70;" not in h
-    assert "[-0.036, -0.58, -99]" in h
-    assert "[-0.014, -0.78, -94]" in h
-    assert "[ 0.014, -0.98, -86]" in h
-    assert "[ 0.036, -1.18, -81]" in h
+    assert "[-0.018, -0.50, -94]" in h
+    assert "[-0.006, -0.70, -98]" in h
+    assert "[ 0.006, -0.90, -102]" in h
+    assert "[ 0.018, -1.10, -106]" in h
     assert "One-sided upward fan" in h
     assert "Nothing is ever spawned below" in h
     assert "1 - _iconBias" not in h
@@ -99,15 +101,18 @@ def test_iv_tray_stock_fan_is_upward_only_and_plus_is_top_left():
 
     # All fan Y offsets are negative, and each successive copy rises farther.
     poses=[
-        (-0.036,-0.58,-99),
-        (-0.014,-0.78,-94),
-        ( 0.014,-0.98,-86),
-        ( 0.036,-1.18,-81),
+        (-0.018,-0.50,-94),
+        (-0.006,-0.70,-98),
+        ( 0.006,-0.90,-102),
+        ( 0.018,-1.10,-106),
     ]
     assert all(y < 0 for _,y,_ in poses)
     assert all(abs(poses[i][1]) < abs(poses[i+1][1]) for i in range(len(poses)-1))
+    assert all(angle < -90 for _,_,angle in poses), "every clone must rotate to the same/upward side of the resting -90 degree catheter"
 
     # The >5 marker is inset from the live tray tile's top-left, never its right edge.
     assert 'private _px = _sx + _insetX;' in h
     assert 'private _py = _sy + _insetY;' in h
     assert '_sx + _sw - _pw - _insetX' not in h
+    assert "ctrlCreate ['RscStructuredText',-1]" in h
+    assert "[14,[1,0.55,0.55,0.56]]" in h
