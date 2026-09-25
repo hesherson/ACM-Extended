@@ -54,8 +54,8 @@ def test_initial_front_normalization_uses_same_provider_and_patient_roll_pipelin
     assert '[_medic,"chestAccessFront",_casualty] call ACME_fnc_rollProviderStart' in owner
     assert 'ainvpknlmstpsnonwnondnon_medic4' in owner
     assert '[_p, "chestSealRoll", [_p,"front",false,_m,_preserve]] call ACME_fnc_ownerDispatch' in owner
-    assert '[_medic,"chestAccessFrontRoll",[_medic,_patient,_preserveHead,_context,_workspaceToken]] call ACME_fnc_ownerDispatch' in acquire
-    assert '[_medic,"chestAccessFrontRoll",[_medic,_p,true,"chestseal",_prep]] call ACME_fnc_ownerDispatch' in begin
+    assert '[_medic,"chestSealEntryFrontRoll",[_medic,_patient,_preserveHead,_workspaceToken]] call ACME_fnc_ownerDispatch' in acquire
+    assert '[_medic,"chestSealEntryFrontRoll",[_medic,_p,true,_prep]] call ACME_fnc_ownerDispatch' in begin
     assert '[_p, "front", false, objNull] call ACME_fnc_chestSealRoll;' not in begin
 
 
