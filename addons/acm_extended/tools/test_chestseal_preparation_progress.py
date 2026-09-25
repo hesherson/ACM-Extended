@@ -47,6 +47,18 @@ def worn_acquire(context='chestseal'):
     ''' + f'[_patient,objNull,"{context}",true] call ACME_fnc_chestAccessVestAcquire;'
 
 
+def test_initial_front_normalization_uses_same_provider_and_patient_roll_pipeline_as_flip():
+    owner = code('ownerDispatch')
+    acquire = code('chestAccessVestAcquire')
+    begin = code('chestSealPatientBegin')
+    assert '[_medic,"chestAccessFront",_casualty] call ACME_fnc_rollProviderStart' in owner
+    assert 'ainvpknlmstpsnonwnondnon_medic4' in owner
+    assert '[_p, "chestSealRoll", [_p,"front",false,_m,_preserve]] call ACME_fnc_ownerDispatch' in owner
+    assert '[_medic,"chestAccessFrontRoll",[_medic,_patient,_preserveHead,_context,_workspaceToken]] call ACME_fnc_ownerDispatch' in acquire
+    assert '[_medic,"chestAccessFrontRoll",[_medic,_p,true,"chestseal",_prep]] call ACME_fnc_ownerDispatch' in begin
+    assert '[_p, "front", false, objNull] call ACME_fnc_chestSealRoll;' not in begin
+
+
 def test_late_lift_does_not_publish_future_readiness_or_finish_on_same_frame():
     execute(setup() + worn_acquire() + r'''
         private _start=call _take; [_start] call _deliver;
@@ -272,7 +284,7 @@ def test_no_vest_suspension_passes_back_facing_body_to_normalization_retry():
         [count _rolls==1 && {count _waits==1},"back-facing suspension stranded before normalization retry"] call _check;
         private _normalize=call _take;
         [!([_normalize] call _ready),"foreign lease bypassed by no-vest handoff"] call _check;
-        _serverClock=1301; CBA_missionTime=81;
+        _serverClock=1301; CBA_missionTime=84;
         [!([_normalize] call _ready) && {count _rolls==2},"no-vest body never retried after foreign lease"] call _check;
         _actualSide="front"; [_normalize] call _deliver;
         [(_patient getVariable ["ACME_CS_ProcedureReadyAt",0])==1301,"normalized no-vest body failed readiness"] call _check;
