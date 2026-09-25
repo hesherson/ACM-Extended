@@ -125,7 +125,12 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         && {_existingChestId != ""}
         && {_existingChestClass == _nativeContinuousClass || {_sameManeuverFamily}};
     private _actualChestSide = [_patient, _patient getVariable ["ACME_CS_facing","front"]] call ACME_fnc_chestSealActualSide;
-    private _needsFrontNormalize = alive _patient
+    // Check Breathing / Inspect Chest already use ACM_rollToBack. Let native ACM own that roll when no separate
+    // carrier/Semi-Fowler transaction is required; otherwise ACME's redundant roll-only preflight can sit on a
+    // no-carrier casualty and consume the click behind Preparing....
+    private _nativeRollOwnsPosition = _nativeContinuousClass in ["checkbreathing", "acme_inspectchest"];
+    private _needsFrontNormalize = !_nativeRollOwnsPosition
+        && {alive _patient}
         && {isNull objectParent _patient}
         && {[_patient] call ACME_fnc_chestSealCanPhysicalRoll}
         && {_actualChestSide == "back"};
@@ -236,6 +241,17 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 [_m,_p,_leaseId,_classKey,_tok,_finish,true] call _abort;
             };
 
+            // Preparation can last several seconds. Revalidate the ACTUAL treatment and interaction now, not the
+            // cached menu result from the original click. A casualty/provider state or range change may never turn
+            // into a delayed treatment start.
+            private _stillTreatable = _args call ace_medical_treatment_fnc_canTreat;
+            private _stillInteractive = [_m, _p, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith;
+            if (!_stillTreatable || {!_stillInteractive} || {(_m distance _p) > ace_medical_gui_maxDistance}
+                || {objectParent _m isNotEqualTo objectParent _p}) exitWith {
+                _m setVariable ["ACME_chestAccessPreflightCancel", true, false];
+                [_m,_p,_leaseId,_classKey,_tok,_finish,true] call _abort;
+            };
+
             // Critical ownership boundary: retire medic4 synchronously on the provider machine BEFORE native CPR/BVM
             // or another queued treatment acquires animation. This removes the dedicated-server late-stop race.
             [_m, _p, "stop", true, _tok] call ACME_fnc_chestAccessVestProvider;
@@ -273,12 +289,20 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         [{
             params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch","_finish","_abort"];
             if (isNull _m || {isNull _p} || {!local _m}
-                || {(_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok}
-                || {_m getVariable ["ACME_chestAccessPreflightCancel", false]}
+                || {(_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok}) exitWith {true};
+
+            // Invalidation is terminal for this generation. Latch cancellation before reporting completion to
+            // waitUntilAndExecute so stepping back into range cannot convert an invalidation frame into launch.
+            private _invalid = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
                 || {_m getVariable ["ACE_isUnconscious", false]}
                 || {(_m distance _p) > ace_medical_gui_maxDistance}
-                || {objectParent _m isNotEqualTo objectParent _p}) exitWith {true};
+                || {objectParent _m isNotEqualTo objectParent _p}
+                || {!([_m, _p, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith)};
+            if (_invalid) exitWith {
+                _m setVariable ["ACME_chestAccessPreflightCancel", true, false];
+                true
+            };
 
             private _readyLease = _p getVariable ["ACME_chestAccess_readyLease", ""];
             private _ready = _p getVariable ["ACME_chestAccess_readyServer", -1];
