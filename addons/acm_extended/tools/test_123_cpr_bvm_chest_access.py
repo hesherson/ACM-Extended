@@ -65,7 +65,7 @@ def test_bvm_variants_and_cpr_share_one_stable_maneuver_lease():
     for cls in ("cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"):
         assert f'"{cls}"' in runtime
     assert 'ACME_chestAccess_maneuverClasses' in runtime
-    assert '_existingClass in _maneuvers && {_class in _maneuvers}' in runtime
+    assert '_samePatient && {_existingId != ""} && {_existingClass in _maneuvers} && {_class in _maneuvers}' in runtime
     assert '[_patient, _class, _existingId]' in runtime
     assert 'ACME_chestAccessManeuverWatch' in runtime
     assert '!_maneuverActive && {!_handoffActive} && {!_ownerHandoffActive} && {!_preparing}' in runtime
