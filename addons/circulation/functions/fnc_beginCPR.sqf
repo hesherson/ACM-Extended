@@ -26,6 +26,20 @@ if ([_reserved, _patient] call FUNC(cprSessionValid)) exitWith {
 
 private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
 [_reserved, _patient, _oldSession param [1, -1]] call FUNC(cprRelease);
+
+// CPR outranks Direct Pressure for provider animation and clinical hand use without destroying the persistent
+// pressure episode. This local guard also covers direct/scripted CPR starts that bypass the ACE treatment bridge.
+private _dpSamePatient = (_medic getVariable ["ACME_DP_Active", false])
+    && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient};
+if (_dpSamePatient) then {
+    _medic setVariable ["ACME_DP_Paused", true, false];
+    _medic setVariable ["ACME_DP_PauseTreatmentClass", "cpr", false];
+    _medic setVariable ["ACME_dah_gen", (_medic getVariable ["ACME_dah_gen", 0]) + 1, false];
+    _medic setVariable ["ACME_DP_InPose", false, false];
+    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+    _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
+};
+
 // Recover this client's interrupted controller before replacing its captured session.
 private _localSession = missionNamespace getVariable [QGVAR(CPR_LocalSession), []];
 if !(_localSession isEqualTo []) then {_localSession call FUNC(cprCleanupLocal);};
