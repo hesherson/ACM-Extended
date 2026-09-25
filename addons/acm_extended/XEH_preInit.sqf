@@ -112,9 +112,9 @@ private _settings = [
     ],
     [
         "ACME_iv_trayIconBias", "SLIDER",
-        ["IV panel: tray icon height", "Where the catheter sits inside its tray box. 0 is the top, 0.5 is centered, 1 is the bottom. The art has its bulk low in its own canvas, so centered reads as low."],
+        ["IV panel: tray icon height", "Moves the catheter toward the top (0) or bottom (1) of its tray box. Position is bounded to keep the full upward stock fan inside the box."],
         [_cIV, "Mini-game panel"],
-        [0, 1, 0.34, 2], 2, {}
+        [0, 1, 0.66, 2], 2, {}
     ],
     [
         "ACME_iv_bruiseMaxAlpha", "SLIDER",

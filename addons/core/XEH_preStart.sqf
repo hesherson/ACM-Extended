@@ -2,12 +2,8 @@
 
 #include "XEH_PREP.hpp"
 
-// B127 multiplayer override reconciliation. ACE prepares its dragging functions from XEH_preStart as well, and
-// heavily modded clients can otherwise finish startup with ACE's native carry-drop function installed after the
-// CfgFunctions override below. Rebind the one carry-drop function whose ACM lying-state handoff is required by this
-// fork after ace_dragging (a required addon of ACM_core) has completed its own preparation. fn_compatCheck performs
-// one late verification/repair as a second line of defense for mods which deliberately recompile it during postInit.
-ace_dragging_fnc_dropObject_carry = compile preprocessFileLineNumbers QPATHTOF(overrides\fnc_dropObject_carry.sqf);
+// ACE owns dropObject_carry. ACME's lying-state handoff is registered on ace_dragging_stoppedCarry by
+// fn_initForkStartupRuntime; do not reinstall the retired override during preStart.
 
 // ace/addons/medical_ai/XEH_preStart.sqf
 private _itemHash = createHashMap;

@@ -2,6 +2,15 @@
 
 These notes cover the cumulative 1.2.3 changes promoted from the release-candidate series into the stable 1.2.3 build.
 
+## B153 runtime continuation
+
+- Patient spawners create a carrier-equipped unit class directly and retire delayed armor repair before treatment begins.
+- Semi-Fowler's to CPR lowering is covered by the CPR session's cancellation and duplicate-start protection.
+- Delayed direct-pressure pose repair respects incoming interventions and CPR/BVM transfer pauses.
+- IV tray pictures use pre-rendered poses with pixel-correct proportions and upward-only stock fanning.
+- Removed the retired carry-drop override; compatibility warnings retain real conflict checks and explain complete-fork installation.
+- Runtime identity is **1.2.3 / B153**. See [patch details and runtime checks](patch-notes/2026-09-25-1.2.3-b153-runtime.md).
+
 ## Player-facing hotfix
 
 - Reworked the IV tray catheter stack so the visible catheter is centered, inventory copies fan upward only with lower opacity, and the extra-stock `+` badge stays inside the tray tile.

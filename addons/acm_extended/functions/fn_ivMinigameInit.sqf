@@ -243,44 +243,40 @@ uiNamespace setVariable ["ACME_IV_PadSlotRect", [_colX, _padY, _slotW, _slotH]];
 (_display displayCtrl 86539) ctrlShow false;
 
 // four needle slots, rows 2 to 5, then the saline line on row 6.
-// the catheter art sits in a large transparent canvas, so the logo control is blown up past the box and the
-// margins overflow harmlessly. the supercath art is about three times longer than the art this scale was first
-// set for, at 6.0, which is why the needles hung out of the tray.
-// the old art was 0.104 of its canvas tall and drew at 6.0, so it filled 0.62 of the box. the straight supercath
-// frame is 0.307 of its canvas. The catheter is rotated 90 degrees left for the tray and enlarged to use the
-// available slot width; tune it with ACME_iv_trayIconScale.
+// Tray-only textures are cropped, centered and already horizontal. Avoid ctrlSetAngle here: its native
+// transform can distort images at 90 degrees under custom FOV (BI T136844). All five stock poses were baked
+// from the same source pixels, so hover only moves/scales square canvases and never stretches the catheter.
 private _nY0 = _colY + (_step * 2);
 private _iconScale = missionNamespace getVariable ["ACME_iv_trayIconScale", 2.45];
+if (!(_iconScale isEqualType 0) || {!finite _iconScale}) then {_iconScale = 2.45;};
+_iconScale = (_iconScale max 0.5) min 3;
 private _gauges = [[86540,86541,86542,86543,14], [86544,86545,86546,86547,16], [86548,86549,86550,86551,18],
                    [86556,86557,86558,86559,20]];
 private _needleRects = [];
 {
     _x params ["_bgIdc", "_logoIdc", "_lblIdc", "_clickIdc", "_g"];
     private _ry = _nY0 + (_forEachIndex * _step);
-    private _iconH = _slotH * _iconScale;
+    // Leave room for the 1.06 hover enlargement and the full upward fan on narrow/ultrawide trays.
+    private _iconH = ((_slotH * _iconScale) min ((_slotW * 0.90) / _af)) min (_slotH * 1.95);
     // _af is pixelW / pixelH. For a physically square PAA canvas:
     //     width / pixelW == height / pixelH
     // therefore width = height * (pixelW / pixelH).
     private _iconW = _iconH * _af;
 
-    // The catheter artwork is not centered inside its transparent PAA canvas. At the tray's -90 degree rotation,
-    // the vertical artwork bias becomes a horizontal screen-space bias. Center the VISIBLE catheter on the tile,
-    // not the transparent control rectangle, so every gauge reads centered at rest and the hover fan inherits the
-    // same true center.
-    private _artV = missionNamespace getVariable ["ACME_iv_trayArtV", 0.66];
-    if (!(_artV isEqualType 0) || {!finite _artV}) then {_artV = 0.66;};
-    _artV = (_artV max 0) min 1;
-    private _visibleXOffset = (_artV - 0.5) * _iconH; // -90 deg: source Y bias rotates into +screen X.
-    private _iconX = _colX + (_slotW / 2) - (_iconW / 2) - _visibleXOffset;
+    private _iconX = _colX + (_slotW / 2) - (_iconW / 2);
 
-    // Keep the visible catheter baseline slightly low so every inventory copy can fan upward only.
-    private _iconBias = missionNamespace getVariable ["ACME_iv_trayIconBias", 0.56];
-    if (!(_iconBias isEqualType 0) || {!finite _iconBias}) then {_iconBias = 0.56;};
-    private _iconY = _ry + (_slotH * ((_iconBias max 0) min 1)) - (_iconH / 2);
+    // Keep the existing height preference, bounded by the actual fan footprint. This also safely brings old
+    // saved 0.34 defaults down from the top without overwriting the player's stored preference.
+    private _iconBias = missionNamespace getVariable ["ACME_iv_trayIconBias", 0.66];
+    if (!(_iconBias isEqualType 0) || {!finite _iconBias}) then {_iconBias = 0.66;};
+    private _minBias = 0.12 + (0.27 * _iconH / _slotH);
+    private _maxBias = 0.90 - (0.065 * _iconH / _slotH);
+    _iconBias = (_iconBias max _minBias) min _maxBias;
+    private _iconY = _ry + (_slotH * _iconBias) - (_iconH / 2);
     (_display displayCtrl _bgIdc) ctrlSetPosition [_colX, _ry, _slotW, _slotH]; (_display displayCtrl _bgIdc) ctrlCommit 0;
     private _logo = _display displayCtrl _logoIdc;
+    _logo ctrlSetText format ["\acm_extended\ui\iv\tray\iv_tray_%1g_0_ca.paa", _g];
     _logo ctrlSetPosition [_iconX, _iconY, _iconW, _iconH];
-    _logo ctrlSetAngle [-90,0.5,0.5,false];
     _logo ctrlCommit 0;
     (_display displayCtrl _lblIdc) ctrlSetPosition [_colX, _ry + _slotH, _slotW, _lblH]; (_display displayCtrl _lblIdc) ctrlCommit 0;
     private _click = _display displayCtrl _clickIdc;

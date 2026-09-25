@@ -10,6 +10,7 @@ import shutil
 import subprocess
 
 import pytest
+from test_menu_death_lifecycle import namespace_public_arguments
 
 ROOT = Path(__file__).resolve().parents[3]
 F = ROOT / 'addons/circulation/functions'
@@ -42,10 +43,16 @@ def source(name):
         'closeDialog 0;': '_closed = _closed + 1;',
         'hasInterface': '_hasInterface',
         'isServer': '_isServer',
+        # All configured delay fixtures are finite; the VM lacks this command.
+        'finite _lowerDelay': '(_lowerDelay isEqualType 0)',
         'addMissionEventHandler ["HandleDisconnect",': '_disconnectHandler = (["HandleDisconnect",',
     }.items():
         s = s.replace(a, b)
-    s = re.sub(r'(setVariable \[[^;\n]*,[^;\n]*), (?:true|false)(\])', r'\1\2', s)
+    s = namespace_public_arguments(s)
+    # This fixture represents engine objects with namespaces. SQF-VM also returns
+    # nil for a missing typed-object param, unlike Arma's objNull default. Keep the
+    # actual fallback/ownership logic while adapting only the object type check.
+    s = re.sub(r'(\bparam\s*\[\s*\d+\s*,\s*objNull)\s*,\s*\[objNull\](\s*\])', r'\1\2', s)
     s = re.sub(r'\bisNull (_\w+)', r'(\1 isEqualTo objNull)', s)
     s = re.sub(r'\bdialog\b', '_dialog', s)
     s = re.sub(r'_medic removeEventHandler (\[[^;]+\]);', r'\1 call _removeAnim;', s)
@@ -97,6 +104,7 @@ def execute(scenario, runtime=False):
         private _reopens = 0;
         private _logs = [];
         private _texts = [];
+        private _dispatches = [];
         private _duringSwitch = false;
         private _fireAnimOnSwitch = false;
         CBA_missionTime = 20;
@@ -106,6 +114,7 @@ def execute(scenario, runtime=False):
         ACM_breathing_SwapToCPR = false;
         ACM_core_ContinuousAction_Active = false;
         ace_common_fnc_isAwake = {_awake};
+        ACME_fnc_ownerDispatch = {_dispatches pushBack _this;};
         ace_common_fnc_uniqueItems = {if (_hasBVM) then {["ACM_BVM"]} else {[]}};
         ace_common_fnc_displayTextStructured = {_texts pushBack (_this select 0);};
         ace_common_fnc_getName = {"Provider"};

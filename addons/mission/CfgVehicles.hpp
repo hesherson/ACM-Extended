@@ -1,4 +1,15 @@
 class CfgVehicles {
+    class B_Survivor_F;
+    // Engine initial loadout: both patient spawners create this class directly.
+    // A scripted addVest after createUnit leaves an observable unarmored interval.
+    class GVAR(TrainingPatient): B_Survivor_F {
+        scope = 1;
+        scopeCurator = 0;
+        scopeArsenal = 0;
+        linkedItems[] = {"V_PlateCarrier1_rgr"};
+        respawnLinkedItems[] = {"V_PlateCarrier1_rgr"};
+    };
+
     class Logic;
     class Module_F: Logic {
         class AttributesBase {

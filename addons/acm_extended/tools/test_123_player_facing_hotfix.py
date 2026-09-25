@@ -20,17 +20,16 @@ def test_iv_tray_centers_visible_art_and_fans_up_only():
     init = acme("functions/fn_ivMinigameInit.sqf")
     hover = acme("functions/fn_ivTrayHover.sqf")
 
-    assert 'private _visibleXOffset = (_artV - 0.5) * _iconH;' in init
-    assert 'private _iconX = _colX + (_slotW / 2) - (_iconW / 2) - _visibleXOffset;' in init
-    assert 'ACME_iv_trayIconBias", 0.56' in init
-
-    for pose in (
-        "[-0.018, -0.50, -94]",
-        "[-0.006, -0.70, -98]",
-        "[ 0.006, -0.90, -102]",
-        "[ 0.018, -1.10, -106]",
-    ):
-        assert pose in hover
+    tray = init.split('// four needle slots,', 1)[1].split('// the saline line slot is off.', 1)[0]
+    assert 'ctrlSetAngle' not in '\n'.join(line for line in tray.splitlines() if not line.strip().startswith('//'))
+    assert 'ctrlSetAngle' not in hover
+    assert 'private _iconX = _colX + (_slotW / 2) - (_iconW / 2);' in init
+    assert 'ACME_iv_trayIconBias", 0.66' in init
+    assert '_iconBias = (_iconBias max _minBias) min _maxBias;' in init
+    assert 'iv_tray_%1g_0_ca.paa' in init
+    assert 'iv_tray_%1g_%2_ca.paa' in hover
+    assert "private _rise = _sh * 0.02 * (_i + 1);" in hover
+    assert "_c ctrlSetPosition [_bx,_by - _rise,_bw,_bh];" in hover
     assert "[14,[1,0.55,0.55,0.56]]" in hover
     assert "ctrlCreate ['RscStructuredText',-1]" in hover
     assert "private _px = _sx + _insetX;" in hover
@@ -103,19 +102,36 @@ def test_medic_thoracostomy_and_doctor_only_chest_tube_tray():
 
 def test_hotfix_keeps_stable_123_debug_identity():
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_buildBatch = "B152";' in startup
+    assert 'ACME_buildBatch = "B153";' in startup
     assert 'ACME_debugRevision = "";' in startup
 
 
-def test_patient_spawner_equips_plate_carrier_inside_spawn_transaction():
+def test_patient_spawner_creates_configured_armored_unit_without_gear_replacement():
     generated = addon("mission", "functions/fnc_generatePatient.sqf")
     custom = addon("mission", "functions/fnc_spawnCustomPatient.sqf")
+    vehicles = addon("mission", "CfgVehicles.hpp")
+    config = addon("mission", "config.cpp")
+
+    # The loadout is part of the class passed to createUnit, not a later repair.
+    patient_class = vehicles.split("class GVAR(TrainingPatient): B_Survivor_F {", 1)[1].split("\n    };", 1)[0]
+    assert 'linkedItems[] = {"V_PlateCarrier1_rgr"};' in patient_class
+    assert 'respawnLinkedItems[] = {"V_PlateCarrier1_rgr"};' in patient_class
+    assert 'scope = 1;' in patient_class
+    assert 'scopeCurator = 0;' in patient_class
+    assert '"A3_Characters_F"' in config.split('requiredAddons[] = {', 1)[1].split('};', 1)[0]
+    assert 'QGVAR(TrainingPatient)' in config.split('units[] = {', 1)[1].split('};', 1)[0]
+
     for src in (generated, custom):
-        assert 'private _patient = GVAR(TrainingCasualtyGroup) createUnit' in src
-        assert 'ACME_patientSpawnerVestClass' in src
-        assert '"V_PlateCarrier1_rgr"' in src
-        assert '_patient addVest _spawnVestClass;' in src
-        assert src.index('_patient addVest _spawnVestClass;') < src.index('ACEFUNC(medical,setUnconscious)')
+        assert 'createUnit [QGVAR(TrainingPatient),' in src
+        assert 'removeVest' not in src
+        assert 'addVest' not in src
+        assert 'setUnitLoadout' not in src
+        # No mission override can replace the required plate carrier with an
+        # empty, missing, non-vest or unarmored class.
+        assert 'missionNamespace getVariable ["ACME_patientSpawnerVestClass"' not in src
+        done = src.index('setVariable ["ACME_acmSpawnerPlateCarrierDone", true, true]')
+        assert done < src.index('ACEFUNC(medical,setUnconscious)')
+        assert 'setVariable ["ACME_patientSpawnerVestClass", vest _patient, true]' in src
 
 
 def test_semifowler_passive_support_requires_backpack_or_armored_carrier():
@@ -176,7 +192,10 @@ def test_direct_cpr_waits_for_single_semifowler_lower_and_never_resumes_it():
     assert 'ACME_headElev_lowerAnimTime' in cpr
     assert 'private _handoffSec = _lowerDelay + 1.00;' in cpr
     assert '"chestAccessManeuverHandoff", [_handoffSec]' in cpr
-    assert '[_m,_p,true] call ACM_circulation_fnc_beginCPR;' in cpr
+    assert 'private _headLowerDelay = 0;' in cpr
+    assert '_headLowerDelay = _lowerDelay + 0.05;' in cpr
+    assert 'private _readyAt = CBA_missionTime + (_startDelay max _headLowerDelay);' in cpr
+    assert '[_m,_p,true] call ACM_circulation_fnc_beginCPR;' not in cpr
     assert '"headElevStop", [objNull, _patient, false, false, true]' in cpr
 
     assert '["_preserveSupportForChest", false, [false]]' in stop

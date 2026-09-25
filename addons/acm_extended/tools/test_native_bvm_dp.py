@@ -25,6 +25,7 @@ def pressure_source(name):
         "getPosVisual _medic": "[0,0,0]",
         "getPosVisual _patient": "[0,1,0]",
         "eyeDirection _medic": "_look",
+        "serverTime": "_serverTime",
         '_medic setUnitPos "MIDDLE";': "",
         '_m setUnitPos "AUTO";': "_stanceFreed = true;",
         'removeMissionEventHandler ["Draw3D", _d3];': "_removedDraw pushBack _d3;",
@@ -43,12 +44,14 @@ def setup():
         private _look = [0,1,0];
         private _removedDraw = [];
         private _pressureLogs = [];
+        private _serverTime = 1000;
         ACME_fnc_animBlocked = {false};
         ACME_fnc_doAnim = {_moves pushBack (_this select 1);};
         ACME_fnc_bodyPartName = {_this select 0};
         ACME_fnc_medLog = {_pressureLogs pushBack _this;};
         ACME_fnc_directPressureHasFracture = {false};
         ACM_damage_fnc_clotWoundsOnBodyPart = {};
+        ace_medical_status_fnc_updateWoundBloodLoss = {};
         CBA_fnc_execNextFrame = {_waits pushBack [_this select 0,_this select 1];};
     '''
     # The BVM fixture simulates only the breath command. Execute the current
@@ -157,6 +160,60 @@ def test_pending_pressure_workers_and_pose_callback_cannot_disturb_bvm():
         [count _moves == _before,"old pressure callback changed BVM animation"] call _check;
         CBA_missionTime = 13; call _tick;
         [ACM_core_ContinuousAction_Active && {_squeezes == 1},"old pressure callback cancelled BVM"] call _check;
+    ''')
+
+
+def test_unclaimed_pressure_pose_still_gets_its_delayed_movement_repair():
+    execute(setup() + '''
+        "leftarm" call _press;
+        _look = [0,-1,0];
+        [_medic,_patient] call ACME_fnc_directPressurePose;
+        [count _waits == 1,"pressure repair was not queued"] call _check;
+        private _before = count _moves;
+        {(_x select 1) call (_x select 0);} forEach _waits;
+        [count _moves == _before + 1,"unclaimed stale pressure pose was not repaired"] call _check;
+        [(_moves select _before) == "AmovPknlMstpSnonWnonDnon","repair used wrong release pose"] call _check;
+    ''')
+
+
+def test_pending_pressure_pose_repair_yields_during_maneuver_transfer_gap():
+    execute(setup() + '''
+        "leftarm" call _press;
+        _look = [0,-1,0];
+        [_medic,_patient] call ACME_fnc_directPressurePose;
+        [count _waits == 1,"pressure repair was not queued"] call _check;
+        private _repair = _waits select 0;
+        [_medic,_patient] call ACM_breathing_fnc_useBVM;
+        call _pressTick;
+        _medic setVariable ["ACME_chestAccessManeuverHandoff",[_patient,CBA_missionTime + 1]];
+        _patient setVariable ["ACME_chestAccess_maneuverHandoffUntil",_serverTime + 1];
+        call _stopBVM;
+        call _pressTick;
+        [!ACM_core_ContinuousAction_Active && {!_cprActive},"fixture is not in transfer gap"] call _check;
+        "leftarm" call _pressYielded;
+        private _before = count _moves;
+        (_repair select 1) call (_repair select 0);
+        [count _moves == _before,"old pressure repair changed pose during transfer gap"] call _check;
+    ''')
+
+
+def test_pressure_waits_for_both_provider_and_owner_handoff_deadlines():
+    execute(setup() + '''
+        "leftarm" call _press;
+        [_medic,_patient] call ACM_breathing_fnc_useBVM;
+        call _pressTick;
+        "leftarm" call _pressYielded;
+        call _stopBVM;
+        _medic setVariable ["ACME_chestAccessManeuverHandoff",[_patient,CBA_missionTime + 2]];
+        _patient setVariable ["ACME_chestAccess_maneuverHandoffUntil",_serverTime + 2];
+        call _pressTick;
+        "leftarm" call _pressYielded;
+        CBA_missionTime = CBA_missionTime + 3;
+        call _pressTick;
+        "leftarm" call _pressYielded;
+        _serverTime = _serverTime + 3;
+        call _pressTick;
+        "leftarm" call _pressResumed;
     ''')
 
 

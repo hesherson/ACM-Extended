@@ -88,6 +88,11 @@ if (_moving || {!_looking}) then {
             if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}) exitWith {};
             if ((_m getVariable ["ACME_DP_PoseToken", -1]) != _tok) exitWith {};
             if !(_m getVariable ["ACME_DP_Active", false]) exitWith {};
+            // CPR/BVM preserve the pressure episode while borrowing its provider. The old DP frame may still be
+            // visible during that transition; it does not authorize this delayed repair to override the new owner.
+            // The pause also spans the short transfer gap before the successor publishes its live role.
+            if (_m getVariable ["ACME_DP_Paused", false]) exitWith {};
+            if ([_m] call ACME_fnc_providerStanceOwned) exitWith {};
             if ((toLower animationState _m) != "acme_directpressurehold") exitWith {};
             _m setUnitPos "AUTO";
             [_m, "AmovPknlMstpSnonWnonDnon", 2] call ACME_fnc_doAnim;

@@ -29,10 +29,12 @@ private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
 
 // CPR is the one supported-patient maneuver that permanently replaces Semi-Fowler. A normal chest-access preflight
 // may already have laid the patient flat; finalize that logical posture without replaying another set-down. Direct
-// starts such as BVM -> CPR have no preflight, so play the authored release once and start CPR after it finishes.
+// starts such as BVM -> CPR have no preflight, so play the authored release once. Its wait belongs to the same CPR
+// session/watchdog as the provider entry, keeping Escape, distance loss and replacement actions effective throughout.
+private _headLowerDelay = 0;
 if (!_headLowered
     && {_patient getVariable ["ACME_headElevated", false]}
-    && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
+    && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) then {
     private _lowerDelay = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
     if !(_lowerDelay isEqualType 0 && {finite _lowerDelay} && {_lowerDelay >= 0.2}) then {_lowerDelay = 1.4;};
 
@@ -43,12 +45,7 @@ if (!_headLowered
     [_patient, "chestAccessManeuverHandoff", [_handoffSec]] call ACME_fnc_ownerDispatch;
 
     [_patient, "headElevStop", [objNull, _patient, false, false, true]] call ACME_fnc_ownerDispatch;
-    [{
-        params ["_m","_p"];
-        if (!isNull _m && {!isNull _p} && {alive _m} && {local _m}) then {
-            [_m,_p,true] call ACM_circulation_fnc_beginCPR;
-        };
-    }, [_medic,_patient], _lowerDelay + 0.05] call CBA_fnc_waitAndExecute;
+    _headLowerDelay = _lowerDelay + 0.05;
 };
 
 if (!_headLowered
@@ -191,7 +188,7 @@ if (_initialAnimation in ["amovpercmstpsnonwnondnon", "amovpknlmstpsnonwnondnon_
     _startDelay = 1.8;
 };
 
-private _readyAt = CBA_missionTime + _startDelay;
+private _readyAt = CBA_missionTime + (_startDelay max _headLowerDelay);
 private _CPRStartTime = _readyAt + 0.2;
 
 // Start the watchdog immediately, not after a blind wait. Escape/F0 during the entry animation therefore tears the

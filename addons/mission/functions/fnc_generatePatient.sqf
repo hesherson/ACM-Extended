@@ -73,7 +73,12 @@ private _fnc_generateWounds = {
     [_targetPart,_mechanism,_damageAmount];
 };
 
-private _patient = GVAR(TrainingCasualtyGroup) createUnit ["B_Survivor_F", position _location, [], 0, "FORM"];
+private _patient = GVAR(TrainingCasualtyGroup) createUnit [QGVAR(TrainingPatient), position _location, [], 0, "FORM"];
+
+// The unit class supplies its carrier during creation. Mark the legacy armor
+// watcher complete before any treatment can remove the carrier intentionally.
+_patient setVariable ["ACME_acmSpawnerPlateCarrierDone", true, true];
+_patient setVariable ["ACME_patientSpawnerVestClass", vest _patient, true];
 
 _patient disableAI "MOVE";
 
@@ -81,16 +86,6 @@ removeAllWeapons _patient;
 removeAllItems _patient;
 removeAllAssignedItems _patient;
 removeGoggles _patient;
-
-// Patient-spawner invariant: the casualty is born with the plate carrier already in its loadout. Do this in the
-// spawn transaction before unconsciousness/injury initialization so no client ever observes a later "vest added"
-// correction and chest-access/Semi-Fowler code reads the correct equipment from its first frame.
-removeVest _patient;
-private _spawnVestClass = missionNamespace getVariable ["ACME_patientSpawnerVestClass", "V_PlateCarrier1_rgr"];
-if (_spawnVestClass isEqualType "" && {_spawnVestClass != ""} && {isClass (configFile >> "CfgWeapons" >> _spawnVestClass)}) then {
-    _patient addVest _spawnVestClass;
-};
-_patient setVariable ["ACME_patientSpawnerVestClass", vest _patient, true];
 
 _patient setVariable [QACEGVAR(medical_statemachine,AIUnconsciousness), true, true];
 

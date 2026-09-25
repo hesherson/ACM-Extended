@@ -1,11 +1,13 @@
-// add a plate carrier to casualties created by the training patient spawner of ACM.
-// this is intentionally post-spawn rather than a full ACM spawner override, because ACM strips gear during
-// generatepatient and spawncustompatient. so this runs after the unit exists and only touches members of
-// ACM_mission_TrainingCasualtyGroup.
+// Compatibility armor repair for unmarked legacy/external ACM training casualties.
+// The fork's patient spawners create an armored unit class and mark the watcher
+// complete immediately; they do not depend on this post-spawn fallback.
 params ["_patient"];
 
 if (!(missionNamespace getVariable ["ACME_acmSpawnerPlateCarrierEnabled", true])) exitWith {};
 if (isNull _patient) exitWith {};
+// Recheck on the owner too: a request queued before Done replicated can arrive
+// after a treatment deliberately removed the already-equipped carrier.
+if (_patient getVariable ["ACME_acmSpawnerPlateCarrierDone", false]) exitWith {};
 if (!alive _patient) exitWith {};
 if (isPlayer _patient) exitWith {};
 if (!local _patient) exitWith {

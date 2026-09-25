@@ -4,12 +4,14 @@ class CfgPatches {
     class ADDON {
         name = COMPONENT_NAME;
         units[] = {
+            QGVAR(TrainingPatient),
             QGVAR(Eden_FullHealFacility),
             QGVAR(Eden_ElevationOverride)
         };
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
+            "A3_Characters_F",
             "cba_main",
             "ace_main",
             "ace_medical_treatment",

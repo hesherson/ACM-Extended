@@ -90,6 +90,10 @@ def adapt(s, component='core'):
     }.items():
         s = re.sub(re.escape(old) + (r'\b' if old[-1].isalnum() else ''), lambda _: new, s)
     s = s.replace('objNull, [objNull]', 'objNull, [profileNamespace]')
+    # Objects are namespace stand-ins here. This SQF-VM returns nil for missing
+    # typed-object param values instead of Arma's objNull fallback; adapt only
+    # that engine type boundary, preserving the actual default and lease logic.
+    s = re.sub(r'(\bparam\s*\[\s*\d+\s*,\s*objNull)\s*,\s*\[(?:objNull|profileNamespace)\](\s*\])', r'\1\2', s)
     s = s.replace('ACME_CS_sessions getOrDefault', 'ACME_CS_sessions getVariable')
     s = s.replace('ACME_CS_sessions set ', 'ACME_CS_sessions setVariable ')
     s = re.sub(r'\bisNull (\(uiNamespace getVariable \[[^\n]*?\]\))', r'(\1 isEqualTo objNull)', s)

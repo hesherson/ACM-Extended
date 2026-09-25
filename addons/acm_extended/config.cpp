@@ -3843,7 +3843,7 @@ class ACME_IVMinigame_Dialog {
         };
         class IV_G14Logo: RscPictureKeepAspect {
             idc = 86541; x = 0; y = 0; w = 0; h = 0;
-            text = "\acm_extended\ui\iv\14g\base\iv_catheter_14g_base_frame_00_ready_ca.paa";
+            text = "\acm_extended\ui\iv\tray\iv_tray_14g_0_ca.paa";
             colorText[] = {1, 0.55, 0.55, 1};
         };
         class IV_G14Lbl: RscText {
@@ -3863,18 +3863,18 @@ class ACME_IVMinigame_Dialog {
             onButtonClick = "[14] call ACME_fnc_ivMinigameGrabNeedle";
         };
         class IV_G16BG: IV_G14BG { idc = 86544; };
-        class IV_G16Logo: IV_G14Logo { idc = 86545; colorText[] = {1, 1, 1, 1}; text = "\acm_extended\ui\iv\16g\base\iv_catheter_16g_base_frame_00_ready_ca.paa"; };
+        class IV_G16Logo: IV_G14Logo { idc = 86545; colorText[] = {1, 1, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_16g_0_ca.paa"; };
         class IV_G16Lbl: IV_G14Lbl { idc = 86546; text = "16g"; colorText[] = {0.90, 0.95, 1, 1}; };
         class IV_G16Click: IV_G14Click { idc = 86547; onButtonClick = "[16] call ACME_fnc_ivMinigameGrabNeedle"; };
         class IV_G18BG: IV_G14BG { idc = 86548; };
-        class IV_G18Logo: IV_G14Logo { idc = 86549; colorText[] = {0.70, 0.90, 1, 1}; text = "\acm_extended\ui\iv\18g\base\iv_catheter_18g_base_frame_00_ready_ca.paa"; };
+        class IV_G18Logo: IV_G14Logo { idc = 86549; colorText[] = {0.70, 0.90, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_18g_0_ca.paa"; };
         class IV_G18Lbl: IV_G14Lbl { idc = 86550; text = "18g"; colorText[] = {0.75, 0.90, 1, 1}; };
         class IV_G18Click: IV_G14Click { idc = 86551; onButtonClick = "[18] call ACME_fnc_ivMinigameGrabNeedle"; };
         // the 20g slot. idcs 86556 to 86559 were the only free block below IV_Flip at 86560.
         // the geometry is set in fn_ivMinigameInit from the _gauges table, like the other three, so the zeros here
         // are correct and must stay.
         class IV_G20BG: IV_G14BG { idc = 86556; };
-        class IV_G20Logo: IV_G14Logo { idc = 86557; colorText[] = {0.60, 0.85, 1, 1}; text = "\acm_extended\ui\iv\20g\base\iv_catheter_20g_base_frame_00_ready_ca.paa"; };
+        class IV_G20Logo: IV_G14Logo { idc = 86557; colorText[] = {0.60, 0.85, 1, 1}; text = "\acm_extended\ui\iv\tray\iv_tray_20g_0_ca.paa"; };
         class IV_G20Lbl: IV_G14Lbl { idc = 86558; text = "20g"; colorText[] = {0.70, 0.88, 1, 1}; };
         class IV_G20Click: IV_G14Click { idc = 86559; onButtonClick = "[20] call ACME_fnc_ivMinigameGrabNeedle"; };
 

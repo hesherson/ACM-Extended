@@ -30,12 +30,16 @@ def code(name):
         text = text.replace('deleteVehicle ' + var + ';', '_deleted pushBack ' + var + ';')
         text = text.replace('detach ' + var + ';', '_detached pushBack ' + var + ';')
     text = text.replace('canSuspend', 'false')
+    # SQF-VM does not implement serverTime. Keep its fixture separate from
+    # CBA_missionTime so cross-machine handoff deadlines use the correct clock.
+    text = re.sub(r'\bserverTime\b', '_serverClock', text)
     return adapt(text)
 
 
 def setup():
     pre = r'''
         private _patientLocal=true; private _parent=objNull;
+        private _serverClock=1000;
         private _animation="ACME_HeadElevPatientHold"; private _actualSide="front";
         private _collisions=[]; private _pins=[]; private _restores=[];
         private _parks=[]; private _animRequests=[]; private _provider=[];
@@ -170,4 +174,20 @@ def test_new_lift_keeps_collision_until_its_own_completion(kind):
         [count _collisions==0,"old completion interfered with actual new lift"] call _check;
         [_newCompletion] call _deliver;
         [_collisions isEqualTo [[_patient,true]],"new lift did not recover its own collision"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('server_clock,active', [(999.5, True), (1000, False), (1000.5, False)])
+def test_support_custody_handoff_expires_on_server_clock(server_clock,active):
+    execute(setup()+f'_serverClock={server_clock};'+'''
+        private _saved=["V_PlateCarrier1_rgr",[["FirstAidKit",1]]];
+        _patient setVariable ["ACME_headElev_vestRemoved",true];
+        _patient setVariable ["ACME_headElev_vestLoadout",+_saved];
+        _patient setVariable ["ACME_chestAccess_maneuverHandoffUntil",1000];
+        // The distinct CBA clock is still 10, which would incorrectly retain
+        // custody in both expired cases if used for the network deadline.
+        [_medic,_patient,true] call ACME_fnc_headElevateStop;
+    '''+f'''
+        [(_patient getVariable ["ACME_chestAccess_vestLoadout",[]]) isEqualTo {"_saved" if active else "[]"},"handoff used the wrong clock or expiry boundary"] call _check;
+        [(_patient getVariable ["ACME_headElev_vestLoadout",[]]) isEqualTo {"[]" if active else "_saved"},"support custody changed outside the handoff window"] call _check;
     ''')

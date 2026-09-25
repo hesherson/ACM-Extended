@@ -1,5 +1,5 @@
 /* IV tray hover animation.
-   Needle slots rotate 90 degrees left at rest. Hover enlarges the front catheter and fans the provider's
+   Needle textures are already horizontal. Hover enlarges the front catheter and fans the provider's
    available stock (up to five total needles) like a small deck. >5 adds a + marker. Band/pad only enlarge.
    All dynamic fan controls are input-disabled and collapse/fade back to the slot as soon as hover ends. */
 disableSerialization;
@@ -38,11 +38,8 @@ _rec params ['','_slot','_base','_logoIdc'];
 private _logo = _d displayCtrl _logoIdc;
 if (isNull _logo) exitWith {};
 
-// Use the LIVE tray box for the badge boundary. Use the original live logo canvas for every catheter copy.
-// The catheter PAA has a large transparent canvas and its opaque artwork is biased below the texture midpoint;
-// after the tray's -90 degree rotation that becomes a visible right-side bias. Shrinking the clones into the
-// tray box changes the KeepAspect fit and makes that bias much worse. Keeping every copy on the same canvas as
-// the real catheter preserves the exact texture aspect and makes the visible catheter centroid predictable.
+// Use the live tile for the badge boundary and the saved square canvas for every stock copy.
+// The fixed fan poses are pre-rotated in source-pixel space; no native control rotation is involved.
 private _bgIdc = switch (_gauge) do {case 14:{86540}; case 16:{86544}; case 18:{86548}; default {86556};};
 private _bg = _d displayCtrl _bgIdc;
 if (!isNull _bg) then {
@@ -65,10 +62,9 @@ if (_fan isEqualTo []) then {
     // Four copies + the real front logo = five total needles maximum.
     for '_i' from 0 to 3 do {
         private _c = _d ctrlCreate ['RscPictureKeepAspect',-1];
-        _c ctrlSetText (ctrlText _logo);
+        _c ctrlSetText format ['\acm_extended\ui\iv\tray\iv_tray_%1g_%2_ca.paa',_gauge,_i + 1];
         _c ctrlSetTextColor (_colors getOrDefault [_gauge,[1,1,1,0.56]]);
         _c ctrlSetPosition _base;
-        _c ctrlSetAngle [-90,0.5,0.5,false];
         _c ctrlSetFade 1;
         _c ctrlEnable false;
         _c ctrlCommit 0;
@@ -86,73 +82,25 @@ if (_fan isEqualTo []) then {
 };
 private _plus = _fan param [4,controlNull];
 
-// Approximate the opaque catheter's center inside the SOURCE canvas. This is intentionally independent from
-// ACME_iv_trayIconBias, which only moves the resting tray control. Coupling those two values made a placement tune
-// change the hover geometry and could make the fan appear stretched or drift away from the real catheter.
-private _artU = 0.5;
-private _artV = missionNamespace getVariable ['ACME_iv_trayArtV',0.66];
-if !(_artV isEqualType 0 && {finite _artV}) then {_artV = 0.66;};
-_artV = (_artV max 0) min 1;
-
-private _artOffset = {
-    params ['_w','_h','_ang','_u','_v'];
-    private _dx = (_u - 0.5) * _w;
-    private _dy = (_v - 0.5) * _h;
-    private _ca = cos _ang;
-    private _sa = sin _ang;
-    [(_dx * _ca) - (_dy * _sa), (_dx * _sa) + (_dy * _ca)]
-};
-private _rectAtVisualCenter = {
-    params ['_anchorX','_anchorY','_w','_h','_ang','_u','_v'];
-    private _off = [_w,_h,_ang,_u,_v] call _artOffset;
-    [_anchorX - (_off select 0) - (_w * 0.5), _anchorY - (_off select 1) - (_h * 0.5), _w, _h]
-};
-
-_base params ['_bx','_by','_bw','_bh'];
-private _baseOff = [_bw,_bh,-90,_artU,_artV] call _artOffset;
-private _spriteX = _bx + (_bw * 0.5) + (_baseOff select 0);
-private _spriteY = _by + (_bh * 0.5) + (_baseOff select 1);
-
-// Grow the real front catheter without moving the visible catheter itself. Scaling the transparent control around
-// its geometric center is what previously made the front image shift as the source-art bias became more obvious.
-private _frontMul = if (_enter && {_shown > 0}) then {1.11} else {1};
-private _frontW = _bw * _frontMul;
-private _frontH = _bh * _frontMul;
-_logo ctrlSetPosition ([_spriteX,_spriteY,_frontW,_frontH,-90,_artU,_artV] call _rectAtVisualCenter);
-_logo ctrlSetAngle [-90,0.5,0.5,false];
+// Centered rest art makes uniform hover scaling sufficient. Every fan texture shares the same
+// left-tip anchor and source scale. Its handle rises 4/8/12/16 degrees above the baseline.
+_logo ctrlSetPosition ([_base, if (_enter && {_shown > 0}) then {1.06} else {1}] call _scaleRect);
 _logo ctrlCommit _ease;
 
 _slot params ['_sx','_sy','_sw','_sh'];
-// One-sided upward fan. UI Y increases downward, so EVERY clone receives a substantial negative-Y rise.
-// The former tiny -0.034/-0.060 offsets moved only the control center a few pixels; once the long catheter was
-// rotated, one end still visibly dropped below the resting needle. These offsets clear the full tilted silhouette,
-// including 32:9 where one tray slot is physically short relative to the catheter length.
-//
-// X still opens the deck slightly left/right, but Y is monotonic upward. Nothing is ever spawned below the
-// resting/front catheter.
-private _poses = [
-    [-0.018, -0.50, -94],
-    [-0.006, -0.70, -98],
-    [ 0.006, -0.90, -102],
-    [ 0.018, -1.10, -106]
-];
+_base params ['_bx','_by','_bw','_bh'];
 private _cloneCount = ((_shown - 1) max 0) min 4;
-private _fanMul = 1.03;
-private _fanW = _bw * _fanMul;
-private _fanH = _bh * _fanMul;
 for '_i' from 0 to 3 do {
     private _c = _fan select _i;
     if (_enter && {_i < _cloneCount}) then {
-        (_poses select _i) params ['_ox','_oy','_ang'];
-        private _anchorX = _spriteX + (_sw * _ox);
-        private _anchorY = _spriteY + (_sh * _oy);
-        _c ctrlSetPosition ([_anchorX,_anchorY,_fanW,_fanH,_ang,_artU,_artV] call _rectAtVisualCenter);
-        _c ctrlSetAngle [_ang,0.5,0.5,false];
+        // UI Y increases downward. A small upward step separates the tips too; the baked
+        // rotation lifts only the handle, so no end drops below the resting catheter.
+        private _rise = _sh * 0.02 * (_i + 1);
+        _c ctrlSetPosition [_bx,_by - _rise,_bw,_bh];
         _c ctrlSetFade 0;
         _c ctrlCommit _ease;
     } else {
         _c ctrlSetPosition _base;
-        _c ctrlSetAngle [-90,0.5,0.5,false];
         _c ctrlSetFade 1;
         _c ctrlCommit _ease;
     };
