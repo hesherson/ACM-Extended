@@ -18,14 +18,14 @@ def test_123_release_identity_and_hemtt_version():
     assert 'version = "1.2.3";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
     assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B150";' in startup
+    assert 'ACME_buildBatch = "B151";' in startup
     assert 'ACME_debugRevision = "";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
     for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
         assert line in script
 
 
-def test_preparing_banner_is_real_top_screen_control_and_registered():
+def test_preparing_banner_is_real_top_screen_text_without_backing_panel():
     cfg = acme("config.cpp")
     ui = acme("functions/fn_chestAccessPreparing.sqf")
     assert "class chestAccessPreparing {};" in cfg
@@ -33,6 +33,7 @@ def test_preparing_banner_is_real_top_screen_control_and_registered():
     assert 'ctrlCreate ["RscStructuredText", -1]' in ui
     assert "Preparing..." in ui
     assert "safeZoneY + safeZoneH * 0.025" in ui
+    assert 'ctrlSetBackgroundColor [0, 0, 0, 0];' in ui
     assert 'ACME_ChestAccessPreparing' in ui
 
 
@@ -47,6 +48,22 @@ def test_long_chest_prep_is_one_click_closes_menu_and_is_cancellable():
     assert '[0xF0, [false,false,false], _cancelCode' in treatment
     assert '["ACM_core_openMedicalMenu", _p] call CBA_fnc_localEvent;' in treatment
     assert 'if !(ACE_player getVariable ["ACME_chestAccessPreflightActive", false]) then {' in gui
+
+
+def test_native_roll_actions_do_not_enter_roll_only_chest_preparation():
+    treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
+    assert 'private _nativeRollOwnsPosition = _nativeContinuousClass in ["checkbreathing", "acme_inspectchest"];' in treatment
+    assert 'private _needsFrontNormalize = !_nativeRollOwnsPosition' in treatment
+    assert 'ACM_rollToBack' in raw(ADDONS / "breathing" / "ACE_Medical_Treatment_Actions.hpp")
+
+
+def test_chest_preparation_range_loss_is_terminal_and_launch_revalidates():
+    treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
+    assert 'private _invalid = (_m getVariable ["ACME_chestAccessPreflightCancel", false])' in treatment
+    assert '_m setVariable ["ACME_chestAccessPreflightCancel", true, false];' in treatment
+    assert 'private _stillTreatable = _args call ace_medical_treatment_fnc_canTreat;' in treatment
+    assert 'private _stillInteractive = [_m, _p, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith;' in treatment
+    assert '(_m distance _p) > ace_medical_gui_maxDistance' in treatment
 
 
 def test_provider_pose_is_retired_locally_before_native_intervention_launch():
