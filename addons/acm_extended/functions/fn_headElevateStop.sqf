@@ -12,6 +12,36 @@ if (!local _patient) exitWith {
 if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized] call ACME_fnc_headElevateStop;};};
 private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];
 private _wasManualUnsupported = _patient getVariable ["ACME_headElev_manualUnsupported", false];
+
+// If CPR/chest access permanently replaces a plate-carrier-supported Semi-Fowler, transfer that exact removed
+// carrier into chest-access custody instead of putting it back on during CPR. The existing chest-access release
+// path then restores it once CPR/BVM and their handoff window are genuinely over.
+private _headSupportSaved = +(_patient getVariable ["ACME_headElev_vestLoadout", []]);
+private _headSupportProp = _patient getVariable ["ACME_headElev_propObj", objNull];
+private _headSupportRemoved = _patient getVariable ["ACME_headElev_vestRemoved", false]
+    && {(count _headSupportSaved) == 2};
+private _chestLeasesNow = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
+private _handoffUntilNow = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
+private _chestOwnsAfterCancel = (count _chestLeasesNow) > 0
+    || {[_patient] call ACM_core_fnc_cprActive}
+    || {[_patient] call ACM_core_fnc_bvmActive}
+    || {(_handoffUntilNow isEqualType 0) && {serverTime < _handoffUntilNow}};
+
+if (_headSupportRemoved && {_chestOwnsAfterCancel}
+    && {(count (_patient getVariable ["ACME_chestAccess_vestLoadout", []])) != 2}) then {
+    _patient setVariable ["ACME_chestAccess_vestLoadout", +_headSupportSaved, true];
+    _patient setVariable ["ACME_chestAccess_vestProp", _headSupportProp, true];
+    if (!isNull _headSupportProp) then {
+        _headSupportProp setVariable ["ACME_chestFixedPark", _headSupportProp getVariable ["ACME_chestFixedPark", []], false];
+    };
+
+    _patient setVariable ["ACME_headElev_vestRemoved", false, true];
+    _patient setVariable ["ACME_headElev_vestLoadout", [], true];
+    _patient setVariable ["ACME_headElev_propVest", "", true];
+    _patient setVariable ["ACME_headElev_propVestItems", [], true];
+    _patient setVariable ["ACME_headElev_propObj", objNull, true];
+};
+
 [_patient] call ACME_fnc_headElevHoldClear;
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;};
