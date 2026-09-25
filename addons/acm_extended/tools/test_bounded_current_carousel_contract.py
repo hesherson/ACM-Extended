@@ -41,7 +41,7 @@ def render_contract():
     assert "private _sc = if (_expanded) then {[0.34,0.66,1.0,0.66,0.34]} else {[0.28,0.55,1.0,0.55,0.28]};" in car
     assert "private _al = if (_expanded) then {[0.08,0.34,1.0,0.34,0.08]} else {[0.06,0.24,0.85,0.24,0.06]};" in car
     assert "private _dx = _rw * (if (_expanded) then {0.185} else {0.155});" in car
-    assert "if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};" in car
+    assert "if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};" not in car\n    assert "private _hoverOffset =" not in car
     assert "private _activeScale = 1;" in car
     assert "private _hitW = _fullW * 1.55; private _hitH = _fullH * 1.26;" in car
     assert "private _hitY = (_y-_padY) max _hoverTop;" in car
