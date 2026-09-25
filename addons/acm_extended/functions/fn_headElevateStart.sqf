@@ -86,7 +86,8 @@ if (_vestClass != "") then {
     private _chestArmor = getNumber (_hp >> "Chest" >> "armor");
     private _diaArmor = getNumber (_hp >> "Diaphragm" >> "armor");
     private _abdArmor = getNumber (_hp >> "Abdomen" >> "armor");
-    _hasCarrier = (_legacyArmor max _chestArmor max _diaArmor max _abdArmor) > 0;
+    private _carrierArmor = (((_legacyArmor max _chestArmor) max _diaArmor) max _abdArmor);
+    _hasCarrier = _carrierArmor > 0;
 };
 private _manual = !_hasBag && {!_hasCarrier};
 if (_manual && {_auto || {isNull _medic} || {!alive _medic}
