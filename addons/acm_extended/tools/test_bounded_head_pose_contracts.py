@@ -133,20 +133,20 @@ def test_lift_uses_connected_grab_and_one_guarded_hold_completion(lift,delay,alr
     '''+('' if already_hold else '[_moves isEqualTo [[_patient,"ACME_HeadElevPatientHold",2]],"wrong hold wrapper"] call _check;'))
 
 
-@pytest.mark.parametrize('change',[
-    '_patientLocal=false;', '_patientAlive=false;',
-    '_patient setVariable ["ACME_headElev_poseToken","later"];',
-    '_patient setVariable ["ACME_headElevated",false];',
-    '_patient setVariable ["ACME_headElev_Suspended",true];',
-    '_patient setVariable ["ACME_patientAnimLock",["new-owner","roll","provider",3,2000]];',
+@pytest.mark.parametrize('change,collision_count',[
+    ('_patientLocal=false;',0), ('_patientAlive=false;',0),
+    ('_patient setVariable ["ACME_headElev_poseToken","later"];',0),
+    ('_patient setVariable ["ACME_headElevated",false];',1),
+    ('_patient setVariable ["ACME_headElev_Suspended",true];',1),
+    ('_patient setVariable ["ACME_patientAnimLock",["new-owner","roll","provider",3,2000]];',0),
 ])
-def test_lift_completion_rejects_retired_placement(change):
+def test_lift_completion_retires_own_lease_without_touching_replacement(change,collision_count):
     execute(setup()+'''
         [_patient] call ACME_fnc_headElevApplyTilt;
         _moves=[]; _collisions=[];
-    '''+change+'''
+    '''+change+f'''
         [_waits select 0] call _deliver;
-        [count _moves==0 && {count _collisions==0},"retired placement resumed hold/collision"] call _check;
+        [count _moves==0 && {{count _collisions=={collision_count}}},"retired lift used wrong cleanup boundary"] call _check;
     ''')
 
 
