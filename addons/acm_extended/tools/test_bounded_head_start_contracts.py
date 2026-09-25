@@ -49,12 +49,8 @@ def start_setup():
             params ["_owner","_op","_args"];
             if (_op=="chestAccessFrontRoll") then {_providerRolls pushBack _args;};
         };
-        ACME_fnc_headElevApplyTilt={_tilts pushBack _this;};
-        // This older normalization fixture immediately acknowledges the provider reach.
-        ACME_fnc_headElevMedicStart={
-            _starts pushBack _this;
-            if ((_patient getVariable ["ACME_headElev_pendingLift",[]]) isNotEqualTo []) then {[_patient] call ACME_fnc_headElevApplyTilt;};
-        };
+        ACME_fnc_headElevApplyTilt={_tilts pushBack _this; true};
+        ACME_fnc_headElevMedicStart={_starts pushBack _this;};
         ACME_fnc_headElevWatch={_watches pushBack _this;};
         _patient setVariable ["ACME_headElevated",false];
         _patient setVariable ["ACME_headElev_poseToken",""];
