@@ -26,6 +26,20 @@
 params ["_args", "_onStart", "_onCancel", "_perFrame", ["_allowProne", false], ["_dialogID", -1], ["_suppressProviderAnim", false, [false]]];
 _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
 
+// A stale shared gate used to make every later continuous action silently no-op. A live generation publishes a
+// provider session immediately and refreshes LastSeen at least every two seconds, so a missing session or >4 s
+// heartbeat gap is definitive stale state on this client. Recover before the normal exclusivity guard; valid BVM,
+// CPR, stethoscope, Narc Box and manual Semi-Fowler sessions remain exclusive exactly as before.
+if (!isNull _medic && {local _medic} && {GVAR(ContinuousAction_Active)}) then {
+    private _staleSession = _medic getVariable [QGVAR(ContinuousAction_Session), []];
+    private _staleSeen = _medic getVariable [QGVAR(ContinuousAction_LastSeen), -1e6];
+    if ((count _staleSession) < 2 || {(CBA_missionTime - _staleSeen) > 4}) then {
+        GVAR(ContinuousAction_Active) = false;
+        _medic setVariable [QGVAR(ContinuousAction_Session), [], true];
+        GVAR(ContinuousAction_PFH) = -1;
+    };
+};
+
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
     || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}) exitWith {};
 
