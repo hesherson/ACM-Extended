@@ -38,12 +38,13 @@ if (_readyAt > CBA_missionTime) exitWith {
 // only after that exact animation lease has retired; otherwise the grab request can be denied and leave Semi-Fowler
 // logically active but visually flat.
 private _animLock = _patient getVariable ["ACME_patientAnimLock", []];
-if ((count _animLock) >= 5) then {
-    private _lockUntil = _animLock param [4, -1];
-    if (_lockUntil isEqualType 0 && {_lockUntil > serverTime}) exitWith {
-        [{_this call ACME_fnc_headElevTryResume;}, [_patient, _token], ((_lockUntil - serverTime) max 0.05) + 0.05]
-            call CBA_fnc_waitAndExecute;
-    };
+private _lockUntil = _animLock param [4, -1];
+private _animationBusy = (count _animLock) >= 5
+    && {_lockUntil isEqualType 0}
+    && {_lockUntil > serverTime};
+if (_animationBusy) exitWith {
+    [{_this call ACME_fnc_headElevTryResume;}, [_patient, _token], ((_lockUntil - serverTime) max 0.05) + 0.05]
+        call CBA_fnc_waitAndExecute;
 };
 
 private _leases = _patient getVariable ["ACME_headElev_treatments", createHashMap];
