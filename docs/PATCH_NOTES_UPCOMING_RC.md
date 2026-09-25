@@ -12,7 +12,11 @@ These notes cover the cumulative 1.2.3 changes promoted from the release-candida
 - Check Breathing / Inspect Chest now let native ACM own their normal patient roll instead of opening an unnecessary ACME roll-only `Preparing...` state.
 - Range or interaction loss during `Preparing...` terminally cancels that generation, and launch performs a fresh treatment/interaction validation.
 - The `Preparing...` banner is text-only with no black backing panel.
-- Runtime identity is **1.2.3 / B151** with no RC suffix in the debug menu.
+- Patient-spawner casualties receive the plate carrier during the initial spawn/loadout transaction, before unconsciousness or injury setup.
+- Semi-Fowler without a backpack or carrier is now a provider-held continuous maneuver using the Putdown animation family, frozen at the support frame until release.
+- Manual/unsupported Semi-Fowler cancels on movement, range loss, provider invalidation or a competing flat-required intervention and never auto-resumes.
+- Supported Semi-Fowler stays elevated during BVM. CPR permanently cancels it; BVM -> CPR performs one lay-flat and retains chest-access custody through the handoff.
+- Runtime identity is **1.2.3 / B152** with no RC suffix in the debug menu.
 
 ## Wake posture restoration
 
