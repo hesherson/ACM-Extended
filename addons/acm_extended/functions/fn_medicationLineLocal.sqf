@@ -29,7 +29,7 @@ if (_iv && {!(_identity isEqualTo ([_patient,_bodyPart,_site] call ACME_fnc_medi
 // Re-check on the patient owner at settlement time. A blood unit can be opened after the provider pressed Push;
 // this prevents that multiplayer race from mixing a medication bolus into a line now carrying blood.
 if (_operation == "administer" && {_iv} && {[_patient,_bodyPart,_site] call ACME_fnc_medicationLineBloodBusy}) exitWith {
-    [false,"blood actively flowing on selected catheter"] call _reply
+    [false,"blood present on selected catheter"] call _reply
 };
 // B123: all treatment actions remain callable on corpses, but a truly dead patient has no medication physiology
 // to evolve. Acknowledge the transaction so provider inventory/syringe accounting completes, then stop here.
