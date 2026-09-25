@@ -95,39 +95,10 @@ if (_showTriage) exitWith {
 // carry the correct categories and order for both grouped and flat menus.
 private _menuActions = missionNamespace getVariable ['ace_medical_gui_actions', []];
 
-// Re-apply each treatment class's configured anatomy at paint time before any dropdown can replace a child
-// condition with {true}. Do not use exitWith from a select{} predicate here: on the live engine that can make
-// the select expression itself return a BOOL, which turned _menuActions into false/true and removed every button.
-private _bodyPartNames = ['head', 'body', 'leftarm', 'rightarm', 'leftleg', 'rightleg'];
-private _selectedBodyName = if (_bodyPart >= 0 && {_bodyPart < count _bodyPartNames}) then {
-    _bodyPartNames select _bodyPart
-} else {
-    ''
-};
-private _anatomyFiltered = [];
-{
-    private _row = _x;
-    private _keep = true;
-    private _className = _row param [8, ''];
-
-    // Native drag/carry rows and foreign rows without a treatment config stay under their own conditions.
-    if (_className != '') then {
-        private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;
-        if (isClass _cfg) then {
-            private _allowed = (getArray (_cfg >> 'allowedSelections')) apply {toLowerANSI _x};
-            // An absent/empty declaration means there is no extra anatomy restriction to add here.
-            if (_allowed isNotEqualTo []) then {
-                _keep = _selectedBodyName != '' && {
-                    ('all' in _allowed) || {_selectedBodyName in _allowed}
-                };
-            };
-        };
-    };
-
-    if (_keep) then {_anatomyFiltered pushBack _row;};
-} forEach _menuActions;
-_menuActions = _anatomyFiltered;
-
+// Keep native treatment rows and their condition/statement closures byte-for-byte intact here. B162/B163
+// inserted a global anatomy transformation between collection and rendering; although it stopped the stale Chest
+// submenu leak, it also changed the execution path shared by unrelated timed actions. Anatomy correction now lives
+// only in the dropdown bucketing path below, where the renderer already substitutes a child's condition with {true}.
 // Do not retain a cached positioning row after the casualty stands up.
 _menuActions = _menuActions select {
     (toLower (_x param [8, ''])) != 'acme_elevatehead'
@@ -160,6 +131,24 @@ _menuActions = _menuActions select {
     private _class = toLower (_x param [8, '']);
     !(_class in ['acme_stopdirectpressure', 'acme_directpressure'])
 };
+private _groupAnatomyAllowed = {
+    params ['_row'];
+    private _className = _row param [8, ''];
+    if (_className == '') exitWith {true};
+
+    private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;
+    if !(isClass _cfg) exitWith {true};
+
+    private _allowed = getArray (_cfg >> 'allowedSelections');
+    if (_allowed isEqualTo []) exitWith {true};
+
+    private _bodyNames = ['head', 'body', 'leftarm', 'rightarm', 'leftleg', 'rightleg'];
+    if (_bodyPart < 0 || {_bodyPart >= count _bodyNames}) exitWith {false};
+    private _selected = _bodyNames select _bodyPart;
+    private _allowedLower = _allowed apply {toLowerANSI _x};
+    ('all' in _allowedLower) || {_selected in _allowedLower}
+};
+
 if (_nestEnabled) then {
     private _groups = (missionNamespace getVariable ['ACME_menuGroups', []]) select {
         (_x select 2) isEqualTo _selectedCategory && {call (_x param [4, {true}])}
@@ -187,8 +176,11 @@ if (_nestEnabled) then {
             if (_key == '') then {
                 _out pushBack _x;
             } else {
-                // Evaluate each grouped treatment condition once, including closed groups.
-                if (call _condition) then {(_buckets get _key) pushBack _x;};
+                // Group children replace their condition with {true} once expanded, so anatomy must be
+                // proven here before that substitution. Direct/ungrouped actions retain the exact native row path.
+                if ([_x] call _groupAnatomyAllowed && {call _condition}) then {
+                    (_buckets get _key) pushBack _x;
+                };
             };
         };
     } forEach _menuActions;
