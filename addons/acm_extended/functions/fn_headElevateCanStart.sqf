@@ -11,10 +11,11 @@ if (_patient call ace_common_fnc_isBeingDragged || {_patient call ace_common_fnc
 // animation. B165 could make headElevated=false before the old animation lease retired, allowing an immediate second
 // click to lose its lift request and leave logical Semi-Fowler state with no visible posture.
 private _animLock = _patient getVariable ["ACME_patientAnimLock", []];
-if ((count _animLock) >= 5) then {
-    private _until = _animLock param [4, -1];
-    if (_until isEqualType 0 && {_until > serverTime}) exitWith {false};
-};
+private _animLockUntil = _animLock param [4, -1];
+private _animLockActive = (count _animLock) >= 5
+    && {_animLockUntil isEqualType 0}
+    && {_animLockUntil > serverTime};
+if (_animLockActive) exitWith {false};
 private _stance = stance _patient;
 if (_stance in ["STAND", "CROUCH"]) exitWith {false};
 private _down = (_patient getVariable ["ACE_isUnconscious", false])
