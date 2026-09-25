@@ -179,7 +179,7 @@ _openCtrl ctrlShow false;
 uiNamespace setVariable ["ACME_Thora_OpenCtrl", _openCtrl];
 
 
-// the right-side tool tray: flip at the top, then six full-width tools in the order of operations.  B120 gives
+// the right-side tool tray: flip at the top, then five Medic rows or six Doctor rows in the order of operations. B120 gives
 // chest tube and chest seal their own vertical rows rather than compressing both into one half-width row.
 uiNamespace setVariable ["ACME_Thora_Held", ""];
 uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
