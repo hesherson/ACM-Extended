@@ -119,14 +119,17 @@ def test_direct_pressure_yields_before_pose_for_native_cpr_bvm_and_chest_prep():
     assert '[_patient] call ACM_core_fnc_bvmActive' in stance
 
 
-def test_bvm_yields_direct_pressure_instead_of_destroying_episode():
+def test_cpr_and_bvm_yield_direct_pressure_instead_of_destroying_episode():
+    cpr = raw(ADDONS / "circulation" / "functions" / "fnc_beginCPR.sqf")
     bvm = raw(ADDONS / "breathing" / "functions" / "fnc_useBVM.sqf")
     treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
     tick = acme("functions/fn_directPressureTick.sqf")
 
     assert 'call ACME_fnc_directPressureStop' not in bvm
-    assert '_medic setVariable ["ACME_DP_Paused", true, false];' in bvm
-    assert '_medic setVariable ["ACME_DP_PauseTreatmentClass", "usebvm", false];' in bvm
+    for source, cls in ((cpr, "cpr"), (bvm, "usebvm")):
+        assert '_medic setVariable ["ACME_DP_Paused", true, false];' in source
+        assert f'_medic setVariable ["ACME_DP_PauseTreatmentClass", "{cls}", false];' in source
+        assert '_medic setVariable ["ACME_DP_InPose", false, false];' in source
 
     branch = 'if (_nativeContinuousClass in ["usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]) exitWith {'
     branch_pos = treatment.index(branch)
