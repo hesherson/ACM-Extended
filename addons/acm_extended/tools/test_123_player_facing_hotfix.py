@@ -118,6 +118,15 @@ def test_patient_spawner_equips_plate_carrier_inside_spawn_transaction():
         assert src.index('_patient addVest _spawnVestClass;') < src.index('ACEFUNC(medical,setUnconscious)')
 
 
+def test_semifowler_passive_support_requires_backpack_or_armored_carrier():
+    start = acme("functions/fn_headElevateStart.sqf")
+    assert 'private _hasBag = ((backpack _patient) isNotEqualTo "");' in start
+    assert 'private _hasCarrier = false;' in start
+    assert 'HitpointsProtectionInfo' in start
+    assert '_hasCarrier = (_legacyArmor max _chestArmor max _diaArmor max _abdArmor) > 0;' in start
+    assert 'private _manual = !_hasBag && {!_hasCarrier};' in start
+
+
 def test_unsupported_semifowler_is_provider_held_active_maneuver():
     start = acme("functions/fn_headElevateStart.sqf")
     hold = acme("functions/fn_headElevHoldStart.sqf")
@@ -156,9 +165,18 @@ def test_manual_semifowler_never_auto_resumes_after_provider_yields():
 
 def test_direct_cpr_waits_for_single_semifowler_lower_and_never_resumes_it():
     cpr = addon("circulation", "functions/fnc_beginCPR.sqf")
+    stop = acme("functions/fn_headElevateStop.sqf")
     assert '["_headLowered", false, [false]]' in cpr
     assert 'ACME_headElevated' in cpr
     assert 'ACME_headElev_Suspended' in cpr
     assert 'ACME_headElev_lowerAnimTime' in cpr
+    assert 'private _handoffSec = _lowerDelay + 1.00;' in cpr
+    assert '"chestAccessManeuverHandoff", [_handoffSec]' in cpr
     assert '[_m,_p,true] call ACM_circulation_fnc_beginCPR;' in cpr
-    assert '"headElevStop", [objNull, _patient, false, false]' in cpr
+    assert '"headElevStop", [objNull, _patient, false, false, true]' in cpr
+
+    assert '["_preserveSupportForChest", false, [false]]' in stop
+    assert 'private _chestOwnsAfterCancel = _preserveSupportForChest' in stop
+    assert '_patient setVariable ["ACME_chestAccess_vestLoadout", +_headSupportSaved, true];' in stop
+    assert '_patient setVariable ["ACME_chestAccess_vestProp", _headSupportProp, true];' in stop
+    assert '_patient setVariable ["ACME_headElev_vestRemoved", false, true];' in stop
