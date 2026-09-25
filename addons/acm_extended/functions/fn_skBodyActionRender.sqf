@@ -214,7 +214,7 @@ if (_pending isEqualType [] && {count _pending >= 3}) then {
     _btn ctrlEnable (!_busy && {_total > 0} && {_validPushTime} && {!_bloodBusy});
     _btn ctrlSetTooltip (
         if (_bloodBusy) then {
-            "Blood is actively flowing through this line. Stop or finish the transfusion before pushing medication."
+            "Blood is present in this line. Finish or remove the blood bag before pushing medication."
         } else {
             if (_validPushTime) then {"Confirm administration. If no push time is entered, 3 seconds is used."}
             else {"Push duration must be 1-300 seconds. Grey text is only the recommendation."}
