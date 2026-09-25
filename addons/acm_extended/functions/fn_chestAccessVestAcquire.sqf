@@ -53,17 +53,22 @@ if (!_frontNormalized) then {
             _patient setVariable [_frontBusyVar,_frontToken,false];
             _patient setVariable [_readyVar,-1,true];
 
-            // Provider uses the same literal medic4 roll theatre, but this episode completes fully back to crouch
-            // before carrier access begins.
-            if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
-                [_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;
-            };
-
             private _preserveHead = (_patient getVariable ["ACME_headElevated",false])
                 || {_patient getVariable ["ACME_headElev_Suspended",false]}
                 || {_context == "chestseal"};
-            if (_context != "chestseal" || {(_patient getVariable ["ACME_CS_rollToken", ""]) == ""}) then {
-                [_patient,"front",false,_medic,_preserveHead] call ACME_fnc_chestSealRoll;
+            private _existingRoll = _context == "chestseal"
+                && {(_patient getVariable ["ACME_CS_rollToken", ""]) != ""};
+
+            // Use the same staged Flip choreography as the open chest-seal workspace. The provider enters literal
+            // medic4 first; that provider-local owner command dispatches the canonical patient roll only after the
+            // work state is observed. If no usable provider exists, still use chestSealRoll so the casualty RTM is
+            // the same roll-to-back animation rather than a pose snap.
+            if (!_existingRoll) then {
+                if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
+                    [_medic,"chestAccessFrontRoll",[_medic,_patient,_preserveHead,_context,_workspaceToken]] call ACME_fnc_ownerDispatch;
+                } else {
+                    [_patient,"front",false,_medic,_preserveHead] call ACME_fnc_chestSealRoll;
+                };
             };
 
             private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
