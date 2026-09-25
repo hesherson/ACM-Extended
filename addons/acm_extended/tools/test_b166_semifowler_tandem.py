@@ -66,7 +66,7 @@ def test_lower_head_can_supersede_inflight_lift_without_waiting():
 def test_reentry_waits_for_previous_patient_animation_to_retire():
     can=read("headElevateCanStart")
     assert 'ACME_patientAnimLock' in can
-    assert '_until > serverTime' in can
+    assert '_animLockUntil > serverTime' in can
     resume=read("headElevTryResume")
     assert 'ACME_patientAnimLock' in resume
     assert '_lockUntil > serverTime' in resume
