@@ -59,18 +59,18 @@ if (_obtunded) then {
 };
 
 if (_aceUncon) then {
-    // the same two events the salts and the slap raise. driving ACE's unconscious setters by hand here was what
-    // produced the roll over: the casualty was brought round outside ACM's own wake path and then stood up.
-    // ACM lays a casualty down on waking if WasTreated is set, and raises its own get up prompt instead of
-    // letting them stand. that is the state this wake belongs in, so the flag is set before the event.
-    // without it the casualty came round and stood up on their own, which is what a pain stimulus does not do.
+    // Pain stimulus is a real wake attempt, so use the same canonical request path as ammonia/slap.
+    // Mark the casualty treated/lying BEFORE the wake so ACM's normal onUnconscious(false) path leaves them down
+    // and offers Get Up rather than standing them automatically.
     [_patient, true, true] call ACM_core_fnc_setWasTreated;
     [_patient, true, true] call ACM_core_fnc_setLyingState;
-    ["ACM_core_playWakeUpSound", _patient] call CBA_fnc_localEvent;
-    ["ace_medical_WakeUp", _patient] call CBA_fnc_localEvent;
-    // an AI has no get up prompt and its own logic will put it back on its feet, so it is pinned down as well.
-    // the get up override clears this when a provider actually stands them up.
-    if (!isPlayer _patient) then { _patient setUnitPos "DOWN"; };
+
+    if ([_patient, true, "fracture-pressure"] call ACM_core_fnc_requestWake) then {
+        ["ACM_core_playWakeUpSound", _patient] call CBA_fnc_localEvent;
+    };
+
+    // An AI has no get-up prompt and its own logic can immediately stand it, so retain the down posture.
+    if (!isPlayer _patient) then {_patient setUnitPos "DOWN";};
 };
 
 // they come round on the floor, and they stay there. ACM's lying state and its own getup gate keep them down
