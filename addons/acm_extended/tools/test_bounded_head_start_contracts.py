@@ -45,7 +45,7 @@ def start_setup():
         private _tilts=[]; private _starts=[]; private _watches=[];
         ACME_fnc_headElevateCanStart={_canStart};
         ACME_fnc_chestSealCanPhysicalRoll={_canRoll};
-        private _providerRolls=[]; private _untils=[];
+        private _providerRolls=[]; private _untils=[]; private _rollCancels=[];
         // Generic chestAccessFrontRoll is presentation-only. The patient roll owns one explicit token.
         ACME_fnc_ownerDispatch={
             params ["_owner","_op","_args"];
@@ -56,6 +56,7 @@ def start_setup():
             _patient setVariable ["ACME_CS_rollToken","roll:test"];
         };
         ACME_fnc_patientRollCancel={
+            _rollCancels pushBack _this;
             _patient setVariable ["ACME_CS_rollToken",""];
             true
         };
@@ -136,6 +137,20 @@ def test_normalization_waits_for_actual_roll_retirement_not_nominal_durations(pa
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
         [count _untils==1 && {count _waits==0},"normalization fell back to fixed animation delay"] call _check;
         [abs (((_untils select 0) select 3)-4.5)<0.0001,"roll completion fail-safe changed"] call _check;
+    ''')
+
+
+def test_superseded_prone_roll_cannot_start_or_cancel_from_old_semifowler_continuation():
+    execute(start_setup()+'''
+        _actualSide="back";
+        [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
+        private _job=_untils select 0;
+        _patient setVariable ["ACME_CS_rollToken","newer-roll"];
+        [(_job select 2)] call (_job select 1);
+        [count _tilts==0 && {count _starts==0},"superseded roll started old Semi-Fowler continuation"] call _check;
+        [(_job select 2)] call (_job select 4);
+        [count _rollCancels==0,"old Semi-Fowler timeout cancelled newer roll"] call _check;
+        [(_patient getVariable ["ACME_CS_rollToken",""])=="newer-roll","newer roll token changed"] call _check;
     ''')
 
 
