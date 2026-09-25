@@ -4,6 +4,15 @@
 
 Updated 24 September 2026.
 
+### Consciousness and wake stimuli
+
+- RC4 fixes a CBA state-machine calling-convention regression introduced by the September 22 wake refactor. CBA invokes transition conditions with the casualty object directly, while the new wake gate expected an argument array; this could abort every normal wake transition.
+- `ACM_core_fnc_canWake` now accepts both CBA's direct casualty-object call and normal array-style calls.
+- The `ace_medical_WakeUp` observer now accepts the actual direct-object event payload instead of running `params` on an object.
+- Ammonia inhalant, Slap Awake, Shake Awake, spontaneous wake and fracture-pressure stimulation now reach the same functioning canonical wake path again.
+- Fracture-pressure stimulation now calls `ACM_core_fnc_requestWake` directly instead of manually publishing a parallel WakeUp event.
+- Sedation, paralysis, active seizure, cardiac arrest and other explicit forced-unconscious blockers remain authoritative; the fix restores eligible waking rather than bypassing those gates.
+
 ### CPR / BVM chest access
 
 - RC2 makes the chest-access preflight a single-click state: the medical menu closes immediately, a top-center **Preparing...** banner appears, and repeated CPR/BVM clicks cannot enqueue duplicate carrier animations.
@@ -25,7 +34,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Internal build batch advanced to B146 and the release-candidate debug revision is rc3.
+- Internal build batch advanced to B147 and the release-candidate debug revision is rc4.
 
 ## 1.2.2 cumulative update
 
