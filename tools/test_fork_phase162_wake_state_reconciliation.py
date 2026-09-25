@@ -14,16 +14,24 @@ obt = read("addons/acm_extended/functions/fn_obtundedApply.sqf")
 startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
 
 # Every ace_medical_WakeUp event gets a next-frame coherence check after native ACE has first chance.
+# CBA publishes the casualty object directly, so the observer must normalize that object before scheduling repair.
 assert '[QACEGVAR(medical,WakeUp), {' in post
 wake = post.split('[QACEGVAR(medical,WakeUp), {', 1)[1].split('[QGVAR(playWakeUpSound), {', 1)[0]
+assert 'private _unit = if (_this isEqualType objNull)' in wake
 assert 'CBA_fnc_execNextFrame' in wake
-assert 'ACEFUNC(medical_status,hasStableVitals)' in wake
-assert 'FUNC(isForcedUnconscious)' in wake
-assert 'CBA_statemachine_fnc_getCurrentState' in wake
-assert 'CBA_statemachine_fnc_manualTransition' in wake
-assert '"Unconscious", "Injured"' in wake
-assert 'ACEFUNC(medical_status,setUnconsciousState)' in wake
+assert 'FUNC(canWake)' in wake
+assert 'FUNC(reconcileWake)' in wake
 assert 'ACME_obtunded_wakeStimGraceUntil' in wake
+
+gate = read("addons/core/functions/fnc_canWake.sqf")
+machine = read("addons/core/ACM_Statemachine.hpp")
+repair = read("addons/core/functions/fnc_reconcileWake.sqf")
+assert 'if (_this isEqualType objNull) then {' in gate
+assert 'condition = QUOTE([_this] call FUNC(canWake));' in machine
+assert 'CBA_statemachine_fnc_getCurrentState' in repair
+assert 'CBA_statemachine_fnc_manualTransition' in repair
+assert '"Unconscious", "Injured"' in repair
+assert 'ACEFUNC(medical_status,setUnconsciousState)' in repair
 
 # Normal gameplay systems must use ACE's public state-machine setter for new KO/wake requests.
 assert 'call ace_medical_fnc_setUnconscious;' in blast
@@ -35,7 +43,7 @@ assert 'call ace_medical_status_fnc_setUnconsciousState;' not in roc
 assert 'CBA_statemachine_fnc_manualTransition' in obt
 assert '"ACMEObtundedWake"' in obt
 
-assert 'ACME_buildBatch = "B133";' in startup
-assert 'ACME_debugRevision = "rc17";' in startup
+assert 'ACME_buildBatch = "B147";' in startup
+assert 'ACME_debugRevision = "rc4";' in startup
 
-print("PASS rc17: wake events self-heal state-machine desync and new KO paths stay synchronized")
+print("PASS rc4: wake events self-heal state-machine desync and CBA object payloads stay synchronized")
