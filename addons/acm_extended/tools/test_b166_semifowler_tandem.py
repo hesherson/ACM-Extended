@@ -16,11 +16,18 @@ def read(name):
 
 def test_patient_and_provider_start_together_without_ready_handshake():
     start=read("headElevateStart")
-    tandem=start[start.index('missionNamespace setVariable ["ACME_headElev_TunePatient"'):]
-    assert 'private _tiltAccepted = [_patient] call ACME_fnc_headElevApplyTilt;' in tandem
-    assert '[_medic, _patient] call ACME_fnc_headElevMedicStart;' in tandem
-    assert 'ACME_headElev_pendingLift", [], true' in tandem
+    clear='ACME_headElev_pendingLift", [], true'
+    tune='missionNamespace setVariable ["ACME_headElev_TunePatient"'
+    tilt='private _tiltAccepted = [_patient] call ACME_fnc_headElevApplyTilt;'
+    provider='[_medic, _patient] call ACME_fnc_headElevMedicStart;'
+
+    assert clear in start
+    assert tune in start and tilt in start and provider in start
+    assert start.index(clear) < start.index(tune) < start.index(tilt) < start.index(provider)
+
+    tandem=start[start.index(tune):]
     assert 'headElevMedicReady' not in tandem
+    assert 'ACME_headElev_pendingLift", [_medic' not in tandem
 
 
 def test_provider_sequence_is_presentation_only_and_not_bound_to_menu_lifetime():
