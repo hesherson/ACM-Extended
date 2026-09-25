@@ -1876,6 +1876,7 @@ class CfgFunctions {
             class medicationRequest {};
             class medicationEscrowCommit {};
             class medicationLineIdentity {};
+            class medicationLineBloodBusy {};
             class medicationLineFraction {};
             class medicationLeak {};
             class medicationRefund {};
