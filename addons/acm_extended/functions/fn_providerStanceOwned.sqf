@@ -17,7 +17,12 @@ if ((_unit getVariable ["ace_medical_treatment_endInAnim", ""]) != ""
     && {!_closingMenu || {!isNull (uiNamespace getVariable ["ace_common_dlgProgress", displayNull])}
         || {(_unit getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []}}) exitWith {true};
 if (_unit getVariable ["ACME_rollProviderActive", false]) exitWith {true};
-if (_unit getVariable ["ACME_headElev_seqActive", false]) exitWith {true};
+if (_unit getVariable ["ACME_headElev_seqActive", false]) then {
+    // A crashed/retired provider PFH must not hold every later stance cleanup hostage. Live B166 head-position
+    // theatre refreshes this heartbeat every frame; one second is deliberately far beyond a normal scheduling gap.
+    private _headSeen = _unit getVariable ["ACME_headElev_seqLastSeen", -1e6];
+    if ((CBA_missionTime - _headSeen) <= 1) exitWith {true};
+};
 if ((_unit getVariable ["ACME_menuPose", []]) isNotEqualTo []) exitWith {true};
 if (_unit getVariable ["ACME_hang_Raising", false]) exitWith {true};
 if (_unit getVariable ["ACME_hang_Active", false]) exitWith {true};
@@ -27,6 +32,13 @@ if (_unit getVariable ["ACM_circulation_isPerformingCPR", false]) exitWith {true
 
 // Continuous actions are client-owned mission state (BVM, stethoscope, etc.), so only read it for the local player.
 if (hasInterface && {!isNil "ACE_player"} && {_unit isEqualTo ACE_player}
-    && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) exitWith {true};
+    && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) then {
+    // Continuous actions refresh LastSeen at least every two seconds. Ignore an orphaned global flag here so an old
+    // BVM/manual-hold generation cannot indefinitely block menu/treatment stance cleanup while the recovery path
+    // clears the actual global gate.
+    private _session = _unit getVariable ["ACM_core_ContinuousAction_Session", []];
+    private _lastSeen = _unit getVariable ["ACM_core_ContinuousAction_LastSeen", -1e6];
+    if ((count _session) >= 2 && {(CBA_missionTime - _lastSeen) <= 4}) exitWith {true};
+};
 
 false
