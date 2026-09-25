@@ -53,10 +53,11 @@ def test_real_preflight_is_once_then_provider_fallback_never_redraws_weapon(mode
         [_holsters isEqualTo [["{'ace' if ace else 'engine'}",_medic]],"wrong or repeated holster"] call _check;
         private _job=_jobs select 0;
         private _reserve=+(_medic getVariable ["ACME_medicAnimationPrep",[]]);
-        CBA_missionTime=10+{delay}-0.01;
+        // The existing shared choreography rate also speeds the weapon preparation.
+        CBA_missionTime=10+({delay}/1.5)-0.01;
         for "_i" from 0 to 3 do {{[_job] call _tick;}};
         [count _moves==0 && {{_weapon=="{weapon}"}},"head controller bypassed prep grace"] call _check;
-        CBA_missionTime=10+{delay}+0.01;
+        CBA_missionTime=10+({delay}/1.5)+0.01;
         [_job] call _tick;
         [_weapon=="" && {{count _moves==1}},"existing empty-selection fallback lost"] call _check;
         _anim=toLower "{REST}"; [_job] call _tick;

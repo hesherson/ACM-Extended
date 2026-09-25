@@ -102,6 +102,7 @@ private _poseToken = format ["%1:%2:%3", clientOwner, CBA_missionTime, _serial];
 _patient setVariable ["ACME_headElev_poseToken", _poseToken, true];
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 _patient setVariable ["ACME_headElevated", true, true];
+_patient setVariable ["ACME_headElev_visualActive", false, true];
 // Unsupported/manual Semi-Fowler is an active maneuver, not a passive posture. Keep this origin flag even if a
 // competing intervention clears the provider hold first; that episode may never auto-resume without a new action.
 _patient setVariable ["ACME_headElev_manualUnsupported", _manual, true];
@@ -123,29 +124,7 @@ if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}) then {
             _patient setVariable ["ACME_headElev_propVestItems", [], true];
         };
     };
-    // place it after the lift step, so the sequence reads strip, lift, wedge. it is guarded against an early lower or
-    // death.
-    [{
-        params ["_patient", "_vestClass", "_poseToken"];
-        if (isNull _patient || {!local _patient} || {!alive _patient}
-            || {!(_patient getVariable ["ACME_headElevated", false])}
-            || {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}
-            || {!(_patient getVariable ["ACME_headElev_vestRemoved", false])}
-            || {!isNull objectParent _patient}) exitWith {};
-        // render the carrier as a createSimpleObject of the world model of the vest: a static, non-simulated visual that
-        // renders the instant it is created and is pinned by the attachment. that is unlike the old GroundWeaponHolder
-        // plus cargo, whose draped-vest cargo frequently never spawned a visible model and froze invisible. it falls back
-        // to a weapon holder only if the vest exposes no usable model.
-        private _model = getText (configFile >> "CfgWeapons" >> _vestClass >> "model");
-        private _prop = objNull;
-        if (_model != "") then { _prop = createSimpleObject [_model, [0,0,0], false]; };
-        if (isNull _prop) then {
-            _prop = createVehicle ["GroundWeaponHolder", getPosATL _patient, [], 0, "CAN_COLLIDE"];
-            _prop addItemCargoGlobal [_vestClass, 1];
-        };
-        _patient setVariable ["ACME_headElev_propObj", _prop, true];
-        [_patient] call ACME_fnc_headElevPropApply;  // it seats and orients behind the upper back, with no sim toggling needed.
-    }, [_patient, _vestClass, _poseToken], (missionNamespace getVariable ["ACME_headElev_standTime", 0.8]) + 0.4] call CBA_fnc_waitAndExecute;
+
 };
 
 if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}
@@ -156,12 +135,19 @@ if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}
 [_patient] call ACME_fnc_headElevWatch;
 
 // B71 Semi-Fowler: preserve the support-surface reference only for prop bookkeeping.  Do not attach or setPos the
-// casualty. The patient and provider start their requested animations in tandem on this frame.
+// casualty. The provider reaches first; its accepted reach releases the patient lift on the owner.
 _patient setVariable ["ACME_headElev_basePosASL", getPosASL _patient, true];
 _patient setVariable ["ACME_headElev_baseDir", getDir _patient, true];
 _patient setVariable ["ACME_headElev_baseAnim", animationState _patient, true];
 missionNamespace setVariable ["ACME_headElev_TunePatient", _patient];
-[_patient] call ACME_fnc_headElevApplyTilt;
+private _waitForMedic = !_auto && {!isNull _medic}
+    && {!([_medic] call ACME_fnc_animBlocked)} && {!([_patient] call ACME_fnc_animBlocked)};
+if (_waitForMedic) then {
+    _patient setVariable ["ACME_headElev_pendingLift", [_medic, _poseToken], true];
+    _patient setVariable ["ACME_headElev_liftRequestAt", CBA_missionTime, false];
+} else {
+    [_patient] call ACME_fnc_headElevApplyTilt;
+};
 
 if (_manual) then {
     [_medic, "headElevHoldStart", [_medic, _patient, _bodyPart, _poseToken]] call ACME_fnc_ownerDispatch;

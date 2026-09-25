@@ -6,13 +6,15 @@ if (!(_patient isEqualType objNull) || {isNull _patient}) exitWith {};
 if (!local _patient) exitWith {[_patient, "headElevDeath", [_patient]] call ACME_fnc_ownerDispatch;};
 if (canSuspend) exitWith {isNil {[_patient] call ACME_fnc_headElevDeathRelease;};};
 
-private _wasElevated = _patient getVariable ["ACME_headElevated", false];
+private _wasElevated = (_patient getVariable ["ACME_headElevated", false])
+    && {_patient getVariable ["ACME_headElev_visualActive", true]};
 private _inVehicle = !isNull objectParent _patient;
 private _releaseTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
 
 [_patient] call ACME_fnc_headElevHoldClear;
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 _patient setVariable ["ACME_headElevated", false, true];
+_patient setVariable ["ACME_headElev_pendingLift", [], true];
 _patient setVariable ["ACME_headElev_manualUnsupported", false, true];
 _patient setVariable ["ACME_headElev_Suspended", false, true];
 _patient setVariable ["ACME_headElev_ResumePending", false, true];

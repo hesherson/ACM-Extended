@@ -74,6 +74,7 @@ def setup():
         ACME_fnc_doAnim={_moves pushBack _this;};
         ACM_core_fnc_cprActive={false};
         ACM_core_fnc_bvmActive={false};
+        ACME_fnc_chestAccessManeuverActive={([_patient] call ACM_core_fnc_cprActive) || {[_patient] call ACM_core_fnc_bvmActive}};
         // Roll direction and surface classification are tested separately below.
         ACME_fnc_chestSealRoll={_rolls pushBack _this;};
         ACME_fnc_patientRollCancel={_rolls pushBack ["cancel",_this];};

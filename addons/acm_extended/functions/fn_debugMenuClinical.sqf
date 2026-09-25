@@ -35,46 +35,48 @@ private _ctrlR = ["ACME_DebugMenuCtrlR"] call _control;
 private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
 private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 
-// Slightly wider than the original 0.42 UI overlay. Two clinical columns retain its compact footprint;
-// the network block spans their combined width below them, inside the same original navy panel.
+// Set the control's base font, so blank lines and text share the same line height.
+// B157 scaled only the text tags, then let the widest value shrink every section.
+// Use a readable screen-relative size (at least 14 px) and give the text its required space.
+private _fontH = (safeZoneH * 0.0125) max (14 * pixelH);
+{_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
 private _gap = 0.010;
-private _totalW = 0.54 min (safeZoneWAbs - 0.020);
-private _w = (_totalW - _gap) / 2;
 private _x = safeZoneXAbs + 0.008;
 private _y = safeZoneY + 0.012;
-private _headerH = 0.075 min (safeZoneH * 0.14);
-private _h = safeZoneH - _headerH - 0.030;
-// Normal clinical/network blocks contain about 32/20 lines including section gaps.
-// Give them proportional heights so the network block does not unnecessarily shrink the shared font.
-private _clinicalH = _h * 0.61;
-private _networkH = _h - _clinicalH - _gap;
-private _bodyY = _y + _headerH;
-_ctrlB ctrlSetPosition [_x, _y, _totalW, _headerH + _h];
-_ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
-_ctrlL ctrlSetPosition [_x, _bodyY, _w, _clinicalH];
-_ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _clinicalH];
-_ctrlS ctrlSetPosition [_x, _bodyY + _clinicalH + _gap, _totalW, _networkH];
-// A hidden, wide control measures unwrapped text before it is drawn. Fit both dimensions rather than
-// shrinking only after wrapping has already doubled the row count. Long patient names remain complete.
-_ctrlM ctrlSetPosition [_x, _y, safeZoneWAbs * 8, safeZoneH * 8];
-{_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
-private _scale = 0.58;
-private _measureBlock = {
-    params ["_rows", "_size", "_width", "_height"];
-    private _body = _rows joinString "<br/>";
-    private _template = "<t size='%1' font='EtelkaMonospacePro' shadow='1'>%2</t>";
-    private _needW = 0.001;
-    {
-        _ctrlM ctrlSetStructuredText parseText format [_template, _size, _x];
-        _needW = _needW max (ctrlTextWidth _ctrlM);
-    } forEach _rows;
-    _ctrlM ctrlSetStructuredText parseText format [_template, _size, _body];
-    private _needH = (ctrlTextHeight _ctrlM) max 0.001;
-    _size * (1 min (((_width - 0.020) max 0.001) / _needW) min ((_height * 0.98) / _needH))
-};
+private _valueW = 8;
 private _renderBlock = {
-    params ["_ctrl", "_rows", "_size"];
-    _ctrl ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro' shadow='1'>%2</t>", _size, _rows joinString "<br/>"];
+    params ["_ctrl", "_rows"];
+    _ctrl ctrlSetStructuredText parseText format ["<t font='EtelkaMonospacePro' shadow='1'>%1</t>", _rows joinString "<br/>"];
+};
+// Subtract two lengths to remove the control's fixed text margins from the glyph width.
+_ctrlM ctrlSetPosition [_x, _y, safeZoneWAbs * 2, safeZoneH * 2];
+_ctrlM ctrlCommit 0;
+[_ctrlM, ["0000000000000000"]] call _renderBlock;
+private _shortW = ctrlTextWidth _ctrlM;
+[_ctrlM, ["00000000000000000000000000000000"]] call _renderBlock;
+private _charW = ((ctrlTextWidth _ctrlM) - _shortW) / 16;
+// Two fixed label/value pairs per clinical column. Grow the panel to fit the font,
+// rather than reducing the font to fit padded fields. Long values wrap within their field.
+private _rowChars = 2 * (8 + 1 + _valueW) + 2;
+private _totalW = (0.54 max (2 * (_rowChars * _charW + 0.020) + _gap)) min (safeZoneWAbs - 0.020);
+private _w = (_totalW - _gap) / 2;
+private _measureRows = {
+    params ["_rows", "_width"];
+    _ctrlM ctrlSetPosition [_x, _y, _width, safeZoneH * 4];
+    _ctrlM ctrlCommit 0;
+    [_ctrlM, _rows] call _renderBlock;
+    (ctrlTextHeight _ctrlM) + _fontH * 0.25
+};
+private _layout = {
+    params ["_headerH", "_clinicalH", "_networkH"];
+    private _bodyY = _y + _headerH + _gap;
+    private _networkY = _bodyY + _clinicalH + _gap;
+    _ctrlB ctrlSetPosition [_x, _y, _totalW, _networkY + _networkH - _y];
+    _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
+    _ctrlL ctrlSetPosition [_x, _bodyY, _w, _clinicalH];
+    _ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _clinicalH];
+    _ctrlS ctrlSetPosition [_x, _networkY, _totalW, _networkH];
+    {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlR, _ctrlS];
 };
 
 private _cTitle = "#D9A441";
@@ -96,8 +98,8 @@ private _safe = {
 };
 private _yn = {params ["_v"]; if (_v) then {"yes"} else {"no"};};
 private _ynCol = {params ["_v", ["_badWhenTrue", false]]; if (_badWhenTrue) exitWith {if (_v) then {_cBad} else {_cGood}}; if (_v) then {_cGood} else {_cMute};};
-// Format every section using the same label/value fields. Rows remain data until render time so
-// unusually long values can widen the shared field instead of shifting only that row's second column.
+// Keep fixed label/value columns. Long values continue on another line without moving
+// the next column or changing the font size of unrelated clinical and machine rows.
 private _padRight = {
     params ["_s", "_w"];
     if !(_s isEqualType "") then {_s = str _s;};
@@ -105,7 +107,7 @@ private _padRight = {
     _s
 };
 private _alignValue = {
-    params ["_v", ["_w", 12]];
+    params ["_v", ["_w", 8]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
     // Right-align the integer part of numbers, preserving decimal points and units. Text values are
     // left-aligned; strings such as 120/80 and 99% use the same numeric anchor as ordinary vitals.
@@ -116,7 +118,7 @@ private _alignValue = {
     while {_end < count _chars && {(_chars select _end) >= 48} && {(_chars select _end) <= 57}} do {_end = _end + 1;};
     if (_end > _firstDigit) then {
         private _integer = _s select [0, _end];
-        while {count _integer < 5} do {_integer = " " + _integer;};
+        while {count _integer < 4} do {_integer = " " + _integer;};
         _s = _integer + (_s select [_end]);
     };
     [_s, _w] call _padRight
@@ -129,21 +131,46 @@ private _one = {
     params ["_a", "_av", "_ac"];
     [_a, _av, _ac]
 };
+private _wrapValue = {
+    params ["_s", "_width"];
+    private _lines = [];
+    while {count _s > _width} do {
+        private _cut = _width;
+        // Prefer a word/device boundary; keep all characters, including signs, units and separators.
+        for "_i" from (_width - 1) to 1 step -1 do {
+            if ((_s select [_i, 1]) in [" ", "+", ",", "/"]) exitWith {_cut = _i + 1;};
+        };
+        // Numeric left padding is not a useful wrap point.
+        if ((_s select [0, _cut]) == (["", _cut] call _padRight)) then {_cut = _width;};
+        _lines pushBack (_s select [0, _cut]);
+        _s = _s select [_cut];
+    };
+    _lines pushBack _s;
+    _lines
+};
 private _formatRow = {
     params ["_row", "_valueW"];
     if (_row isEqualType "") exitWith {_row};
     _row params ["_a", "_av", "_ac"];
     private _aTxt = [([_a, 8] call _padRight)] call _safe;
-    private _avTxt = [([_av, _valueW] call _alignValue)] call _safe;
+    private _avTxt = [([_av, 0] call _alignValue)] call _safe;
     if (count _row == 3) exitWith {
         format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
     };
     private _b = _row select 3;
     private _bv = _row select 4;
     private _bc = _row select 5;
-    private _bTxt = [([_b, 8] call _padRight)] call _safe;
-    private _bvTxt = [([_bv, _valueW] call _alignValue)] call _safe;
-    format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aTxt, _avTxt, _ac, _bTxt, _bvTxt, _bc, _cLabel]
+    private _aLines = [([_av, 0] call _alignValue), _valueW] call _wrapValue;
+    private _bLines = [([_bv, 0] call _alignValue), _valueW] call _wrapValue;
+    private _lines = [];
+    for "_i" from 0 to (((count _aLines) max (count _bLines)) - 1) do {
+        private _aLabel = [([if (_i == 0) then {_a} else {""}, 8] call _padRight)] call _safe;
+        private _bLabel = [([if (_i == 0) then {_b} else {""}, 8] call _padRight)] call _safe;
+        private _aValue = [([_aLines param [_i, ""], _valueW] call _padRight)] call _safe;
+        private _bValue = [([_bLines param [_i, ""], _valueW] call _padRight)] call _safe;
+        _lines pushBack format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aLabel, _aValue, _ac, _bLabel, _bValue, _bc, _cLabel];
+    };
+    _lines joinString "<br/>"
 };
 private _sect = {params ["_s"]; format ["<br/><t color='%1'>%2</t>", _cSect, _s];};
 private _arr = {params ["_name"]; private _v = missionNamespace getVariable [_name, []]; if (_v isEqualType []) then {_v} else {[]};};
@@ -178,26 +205,23 @@ private _header = [
     format ["<t color='%1'>Patient: %2</t>", _cLabel, [_pName] call _safe]
 ];
 private _renderAll = {
-    private _valueW = 12;
+    private _leftRows = _left apply {[_x, _valueW] call _formatRow};
+    private _rightRows = _right apply {[_x, _valueW] call _formatRow};
+    private _networkRows = _network apply {[_x, _valueW] call _formatRow};
+    // Remove only the leading section spacer. Later sections retain a single font-sized gap.
     {
-        if (_x isEqualType [] && {count _x == 6}) then {
-            _valueW = _valueW max (count ([_x select 1, 0] call _alignValue)) max (count ([_x select 4, 0] call _alignValue));
+        if (count _x > 0 && {((_x select 0) select [0, 5]) == "<br/>"}) then {
+            _x set [0, (_x select 0) select [5]];
         };
-    } forEach (_left + _right + _network);
-    private _blocks = [
-        [_ctrlH, _header, _totalW, _headerH],
-        [_ctrlL, _left apply {[_x, _valueW] call _formatRow}, _w, _clinicalH],
-        [_ctrlR, _right apply {[_x, _valueW] call _formatRow}, _w, _clinicalH],
-        [_ctrlS, _network apply {[_x, _valueW] call _formatRow}, _totalW, _networkH]
-    ];
-    // One fit for the entire overlay, including the title and machine/transport rows. Independent
-    // fitting previously gave each block a different font size and broke their shared tab stops.
-    private _fit = _scale;
-    {
-        _x params ["_ctrl", "_rows", "_width", "_height"];
-        _fit = _fit min ([_rows, _scale, _width, _height] call _measureBlock);
-    } forEach _blocks;
-    {[_x select 0, _x select 1, _fit] call _renderBlock;} forEach _blocks;
+    } forEach [_leftRows, _rightRows, _networkRows];
+    private _headerH = [_header, _totalW] call _measureRows;
+    private _clinicalH = ([_leftRows, _w] call _measureRows) max ([_rightRows, _w] call _measureRows);
+    private _networkH = [_networkRows, _totalW] call _measureRows;
+    [_headerH, _clinicalH, _networkH] call _layout;
+    [_ctrlH, _header] call _renderBlock;
+    [_ctrlL, _leftRows] call _renderBlock;
+    [_ctrlR, _rightRows] call _renderBlock;
+    [_ctrlS, _networkRows] call _renderBlock;
 };
 _network pushBack (["MACHINE"] call _sect);
 private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
@@ -508,7 +532,7 @@ _right pushBack (["FLUIDS / INFUSIONS"] call _sect);
 if (_fluidRows isEqualTo []) then {
     _right pushBack (["Bags", 0, _cGood, "Pressor", _pressor toFixed 2, if (_pressor > 0) then {_cGood} else {_cMute}] call _pair);
 } else {
-    // Every active bag stays visible. Width and height fitting handles unusually busy patients.
+    // Every active bag retains the common readable font; the measured block grows with wrapped rows.
     for "_i" from 0 to ((count _fluidRows) - 1) do {
         (_fluidRows select _i) params ["_what", "_where", "_rem", "_rate"];
         private _tail = if (_rate >= 0) then {format ["%1mL/%2g", _rem toFixed 0, round _rate]} else {format ["%1mL", _rem toFixed 0]};

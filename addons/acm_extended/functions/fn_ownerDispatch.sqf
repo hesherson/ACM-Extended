@@ -87,6 +87,7 @@ switch (_operation) do {
     case "headElevStart": {_args call ACME_fnc_headElevateStart;};
     case "headElevStop": {_args call ACME_fnc_headElevateStop;};
     case "headElevDeath": {[_patient] call ACME_fnc_headElevDeathRelease;};
+    case "headElevMedicReady": {_args call ACME_fnc_headElevMedicReady;};
     case "headElevMedicStart": {_args call ACME_fnc_headElevMedicStart;};
     case "headElevMedicSeq": {_args call ACME_fnc_headElevMedicSeq;};
     case "airwayGradeState": {

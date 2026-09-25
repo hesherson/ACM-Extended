@@ -251,7 +251,7 @@ private _commitRemoval = {
 
             if ((count _leases) == 0
                 && {(_patient getVariable ["ACME_chestAccess_vestBusy", ""]) == ""}) then {
-                [_patient, true, objNull, "access"] call ACME_fnc_chestAccessVestRestore;
+                [_patient, false, objNull, "access"] call ACME_fnc_chestAccessVestRestore;
             };
         };
     }, 0.20, [_p,_ctx,_savedVar,_pfhVar]] call CBA_fnc_addPerFrameHandler;

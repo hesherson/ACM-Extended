@@ -4,13 +4,15 @@ params [
     ["_patient", objNull, [objNull]],
     ["_quiet", false, [false]],
     ["_frontNormalized", false, [false]],
-    ["_preserveSupportForChest", false, [false]]
+    ["_preserveSupportForChest", false, [false]],
+    ["_providerReady", false, [false]]
 ];
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {
-    [_patient, "headElevStop", [_medic, _patient, _quiet, _frontNormalized, _preserveSupportForChest]] call ACME_fnc_ownerDispatch;
+    [_patient, "headElevStop", [_medic, _patient, _quiet, _frontNormalized, _preserveSupportForChest, _providerReady]] call ACME_fnc_ownerDispatch;
 };
-if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized, _preserveSupportForChest] call ACME_fnc_headElevateStop;};};
+if (canSuspend) exitWith {isNil {[_medic, _patient, _quiet, _frontNormalized, _preserveSupportForChest, _providerReady] call ACME_fnc_headElevateStop;};};
+private _wasVisual = _patient getVariable ["ACME_headElev_visualActive", true];
 private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];
 private _wasManualUnsupported = _patient getVariable ["ACME_headElev_manualUnsupported", false];
 
@@ -25,8 +27,7 @@ private _chestLeasesNow = _patient getVariable ["ACME_chestAccess_leases", creat
 private _handoffUntilNow = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
 private _chestOwnsAfterCancel = _preserveSupportForChest
     || {(count _chestLeasesNow) > 0}
-    || {[_patient] call ACM_core_fnc_cprActive}
-    || {[_patient] call ACM_core_fnc_bvmActive}
+    || {[_patient] call ACME_fnc_chestAccessManeuverActive}
     || {(_handoffUntilNow isEqualType 0) && {serverTime < _handoffUntilNow}};
 
 if (_headSupportRemoved && {_chestOwnsAfterCancel}
@@ -84,9 +85,18 @@ if (_needFrontFirst) exitWith {
     }, [_medic,_patient,_quiet,_poseToken,_preserveSupportForChest], _delay] call CBA_fnc_waitAndExecute;
 };
 
+// An explicit supported Lower Head waits for the medic's actual reach. Automatic suspension,
+// manual-hold release and CPR still use their existing patient-only handoff.
+if (!_providerReady && {!_quiet} && {!_wasSuspended} && {!_wasManualUnsupported}
+    && {!isNull _medic} && {!([_medic] call ACME_fnc_animBlocked)}
+    && {!([_patient] call ACME_fnc_animBlocked)}) exitWith {
+    [_medic, "lower", _patient, _patient getVariable ["ACME_headElev_poseToken", ""]] call ACME_fnc_headElevMedicSeq;
+};
+
 _patient setVariable ["ACME_CS_facing","front",true];
 _patient setVariable ["ACME_headElev_poseToken", "", true];
 _patient setVariable ["ACME_headElevated", false, true];
+_patient setVariable ["ACME_headElev_pendingLift", [], true];
 _patient setVariable ["ACME_headElev_manualUnsupported", false, true];
 _patient setVariable ["ACME_headElev_Suspended", false, true];
 _patient setVariable ["ACME_headElev_ResumePending", false, true];
@@ -113,7 +123,8 @@ if (_mass > 0) then {_patient setMass _mass; _patient setVariable ["ACME_headEle
 // If the casualty was already physically flat from a temporary suspension, permanent cancellation only retires
 // the logical Semi-Fowler episode. Replaying the release animation here is what caused CPR/BVM handoffs to keep
 // "setting them down" over and over.
-private _visibleLower = !_quiet && {!_wasSuspended} && {isNull objectParent _patient};
+private _visibleLower = !_quiet && {!_wasSuspended} && {isNull objectParent _patient}
+    && {_wasVisual};
 if (_visibleLower) then {
     // Patient and provider start together. The carrier stays as the physical bolster until the authored release has
     // finished, then it returns to the chest. That prevents a loadout change from cutting the lay-flat animation short.
@@ -126,7 +137,7 @@ if (_visibleLower) then {
     };
     // Manual/unsupported Semi-Fowler owns its provider exit through fn_headElevHoldStart. Starting the ordinary
     // Lower Head provider sequence here would make two animation controllers fight over the same medic.
-    if (!isNull _medic && {!_wasManualUnsupported}) then {[_medic, "lower"] call ACME_fnc_headElevMedicSeq;};
+    // The supported provider sequence already owns its reach/exit; never start it again here.
     private _rest = [_patient] call ACME_fnc_headElevRestAnim;
     [{
         params ["_patient", "_rest", "_animToken"];

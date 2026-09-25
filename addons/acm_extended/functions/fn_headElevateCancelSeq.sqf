@@ -4,6 +4,11 @@ private _medic = ACE_player;
 if (isNull _medic || {!local _medic}) exitWith {};
 if !(_medic getVariable ["ACME_headElev_seqActive", false]) exitWith {};
 
+private _pendingMove = _medic getVariable ["ACME_headElev_pendingMove", []];
+_medic setVariable ["ACME_headElev_pendingMove", [], false];
+if (count _pendingMove == 4 && {!isNull (_pendingMove select 1)}) then {
+    [_pendingMove select 1, "headElevMedicReady", _pendingMove + [true]] call ACME_fnc_ownerDispatch;
+};
 _medic setVariable ["ACME_headElev_seqActive", false, false];
 _medic setVariable ["ACME_headElev_seqToken", -1, false];
 // Advance the existing generation; resetting it would let a later restart reuse an old PFH token.

@@ -1,4 +1,4 @@
-"""Single narrow overlay, with SQF fitting and explicit engine UI metric fixtures."""
+"""Single readable overlay, with SQF layout and explicit engine UI metric fixtures."""
 import re
 
 import pytest
@@ -32,29 +32,32 @@ def test_all_legacy_entrypoints_reach_the_same_overlay_once():
     execute(setup + '[_draws==3,"legacy entrypoint opened another renderer or duplicated draw"] call _check;')
 
 
-@pytest.mark.parametrize("width,height", [(0.2, 0.3), (1.8, 0.3), (0.2, 2.0), (1.8, 2.0)])
-def test_actual_text_fit_preserves_rows_and_respects_both_available_dimensions(width, height):
-    source = definition("_measureBlock")
-    source = source.replace('_ctrlM ctrlSetStructuredText parseText format [_template, _size, _body];',
-                            '_measured pushBack (format [_template, _size, _body]);')
-    source = source.replace('_ctrlM ctrlSetStructuredText parseText format [_template, _size, _x];',
-                            '_measured pushBack (format [_template, _size, _x]);')
-    source = source.replace("ctrlTextWidth _ctrlM", "_metricW").replace("ctrlTextHeight _ctrlM", "_metricH")
-    execute(f'private _metricW={width};private _metricH={height};private _measured=[];private _rendered=[];' +
-        source + '''
-        private _fit=[["ACME DEBUG v1.2.3 | B154", "Patient: Long Complete Patient Name"], 0.62, 0.34, 1] call _measureBlock;
-        [count _measured==3,"each row and full height were not measured before render"] call _check;
-        private _body=_measured select 2;
-        [_fit>0 && {_fit<=0.62},"fit grew or invalidated font size"] call _check;
-        [(_metricW*_fit/0.62)<=0.320001,"width fit would wrap"] call _check;
-        [(_metricH*_fit/0.62)<=0.980001,"height fit would clip"] call _check;
-        [(_body find "ACME DEBUG v1.2.3 | B154")>=0,"title/build was truncated"] call _check;
-        [(_body find "Patient: Long Complete Patient Name")>=0,"patient name was truncated"] call _check;
+@pytest.mark.parametrize("metric_height", [0.04, 0.22, 0.77])
+def test_measurement_uses_wrapped_content_height_without_changing_font(metric_height):
+    source = definition("_measureRows")
+    source = source.replace('_ctrlM ctrlSetPosition [_x, _y, _width, safeZoneH * 4];', '_positions pushBack _width;')
+    source = source.replace('_ctrlM ctrlCommit 0;', '')
+    source = source.replace('ctrlTextHeight _ctrlM', '_metricH')
+    execute(f'private _metricH={metric_height};private _fontH=0.018;private _ctrlM="measure";private _positions=[];private _draws=[];' +
+        'private _renderBlock={_draws pushBack _this;};' + source + '''
+        private _height=[["Patient: Long Complete Patient Name"],0.34] call _measureRows;
+        [_positions isEqualTo [0.34],"measurement did not use actual wrapping width"] call _check;
+        [abs (_height-_metricH-0.0045)<0.00001,"content height replaced by fixed allocation"] call _check;
+        [_fontH==0.018 && {count (_draws select 0)==2},"measurement reduced readable font"] call _check;
+        [((_draws select 0) select 1) isEqualTo ["Patient: Long Complete Patient Name"],"measurement lost text"] call _check;
     ''')
 
 
+def test_common_base_font_has_a_readable_pixel_floor_and_no_content_shrink():
+    source = read("debugMenuClinical")
+    assert 'max (14 * pixelH)' in source
+    assert '{_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];' in source
+    assert "size='" not in source
+    assert '_measureBlock' not in source and '_fit' not in source
+
+
 def test_section_color_spacing_and_values_survive_shared_formatting():
-    source = ''.join(definition(n) for n in ("_safe", "_padRight", "_alignValue", "_pair", "_formatRow", "_sect"))
+    source = ''.join(definition(n) for n in ("_safe", "_padRight", "_alignValue", "_pair", "_wrapValue", "_formatRow", "_sect"))
     execute('private _cTitle="#D9A441";private _cSect=_cTitle;private _cLabel="label";' + source + '''
         private _section=["PERFUSION / BLEEDING"] call _sect;
         [(_section find "<br/>")==0,"missing space before section"] call _check;
@@ -102,27 +105,22 @@ def test_disabling_cleans_up_backing_header_all_sections_and_hidden_measurement(
     ''')
 
 
-@pytest.mark.parametrize("screen_width,screen_height", [(2.37, 1.33), (4.74, 1.33), (0.50, 0.80)])
-def test_narrow_overlay_has_two_columns_and_network_below_within_one_panel(screen_width, screen_height):
-    source = read("debugMenuClinical")
-    start = source.index("private _gap =")
-    end = source.index("// A hidden, wide control", start)
-    geometry = source[start:end]
-    geometry = geometry.replace("safeZoneWAbs", str(screen_width)).replace("safeZoneH", str(screen_height))
-    geometry = geometry.replace("safeZoneXAbs", "-1").replace("safeZoneY", "-0.16")
-    geometry = re.sub(r'(_ctrl\w+) ctrlSetPosition (\[[^;]+\]);', r'_positions pushBack [\1,\2];', geometry)
-    execute('private _ctrlB="back";private _ctrlH="header";private _ctrlL="left";private _ctrlR="right";private _ctrlS="network";private _positions=[];' + geometry + '''
-        [_totalW<=0.54 && {_totalW>0.42},"overlay is not just slightly wider than original"] call _check;
-        [count _positions==5,"wrong number of visible layout regions"] call _check;
+@pytest.mark.parametrize("header,clinical,network", [(0.035,0.42,0.28), (0.065,0.68,0.34), (0.03,0.15,0.22)])
+def test_network_follows_actual_clinical_height_without_dead_screen_space(header, clinical, network):
+    source=definition("_layout")
+    source=re.sub(r'(_ctrl\w+) ctrlSetPosition (\[[^;]+\]);', r'_positions pushBack [\1,\2];',source)
+    source=source.replace('{_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlR, _ctrlS];','')
+    execute('''
+        private _ctrlB="back";private _ctrlH="head";private _ctrlL="left";private _ctrlR="right";private _ctrlS="net";
+        private _positions=[];private _x=-1;private _y=-0.16;private _totalW=0.60;private _w=0.295;private _gap=0.01;
+    '''+source+f'[{header},{clinical},{network}] call _layout;'+'''
         private _back=(_positions select 0) select 1;
         private _left=(_positions select 2) select 1;
         private _right=(_positions select 3) select 1;
-        private _network=(_positions select 4) select 1;
-        [(_network select 0)==(_back select 0) && {(_network select 2)==(_back select 2)},"network did not use full panel width"] call _check;
-        [(_network select 1)>(_left select 1)+(_left select 3),"network overlaps clinical columns"] call _check;
-        [abs (((_right select 0)+(_right select 2))-((_back select 0)+(_back select 2)))<0.00001,"columns extend past backing"] call _check;
-        [abs (((_network select 1)+(_network select 3))-((_back select 1)+(_back select 3)))<0.00001,"backing does not cover entire overlay"] call _check;
-        [(_left select 3)>0 && {(_network select 3)>0},"section has no room to render"] call _check;
+        private _net=(_positions select 4) select 1;
+        [abs ((_net select 1)-(_left select 1)-(_left select 3)-0.01)<0.00001,"network separated by unused screen height"] call _check;
+        [abs ((_right select 0)+(_right select 2)-(_back select 0)-(_back select 2))<0.00001,"columns outside backing"] call _check;
+        [abs ((_net select 1)+(_net select 3)-(_back select 1)-(_back select 3))<0.00001,"backing not fitted to content"] call _check;
     ''')
 
 
@@ -144,59 +142,41 @@ def test_number_anchor_preserves_digits_decimals_units_and_full_text():
         private _temp=["37.5 C"] call _alignValue;
         private _negative=["-0.42"] call _alignValue;
         private _bleed=["1200 mL/min"] call _alignValue;
-        [(_hr find "3")==4 && {(_map find "5")==4},"integer ones do not align"] call _check;
-        [(_temp find ".")==5 && {(_negative find ".")==5},"decimal values do not share the integer anchor"] call _check;
-        [count _hr==12 && {count _temp==12} && {count _bleed==12},"normal values shift the paired column"] call _check;
+        [(_hr find "3")==3 && {(_map find "5")==3},"integer ones do not align"] call _check;
+        [(_temp find ".")==4 && {(_negative find ".")==4},"decimal values do not share the integer anchor"] call _check;
+        [count _hr==8 && {count _temp==8} && {count _bleed==11},"normal values shift the paired column"] call _check;
         [(_temp find "37.5 C")>=0 && {(_bleed find "1200 mL/min")>=0},"units or numbers were truncated"] call _check;
         private _long=["CONDITION VALUE LONGER THAN TWELVE"] call _alignValue;
         [_long=="CONDITION VALUE LONGER THAN TWELVE","long state text lost data"] call _check;
     ''')
 
 
-def test_all_blocks_use_one_font_and_one_value_width_with_long_states():
-    source = ''.join(definition(n) for n in ('_safe', '_padRight', '_alignValue', '_pair', '_one', '_formatRow', '_renderAll'))
-    # Only engine text metrics and draws are substituted; actual row formatting/common-fit logic runs.
+def test_long_values_wrap_without_moving_columns_or_shrinking_unrelated_sections():
+    source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_pair','_one','_formatRow','_renderAll'))
     execute('''
-        private _cLabel="label";
-        private _scale=0.58;
-        private _totalW=0.54;private _w=0.265;private _headerH=0.075;
-        private _clinicalH=0.60;private _networkH=0.25;
+        private _cLabel="label";private _valueW=8;private _fontH=0.018;
+        private _totalW=0.60;private _w=0.295;
         private _ctrlH="head";private _ctrlL="left";private _ctrlR="right";private _ctrlS="net";
-        private _measures=[];private _renders=[];
-        private _measureBlock={
-            params ["_rows","_size","_width","_height"];
-            _measures pushBack [_rows,_size,_width,_height];
-            [0.56,0.41,0.48,0.50] select ((count _measures)-1)
-        };
+        private _renders=[];private _sizes=[];private _heights=[];
+        private _measureRows={_heights pushBack _this;[0.035,0.51,0.62,0.27] select ((count _heights)-1)};
+        private _layout={_sizes=+_this;};
         private _renderBlock={_renders pushBack _this;};
-    ''' + source + '''
-        private _header=["ACME DEBUG v1.2.3 | B157", "Patient: Long Complete Patient Name"];
-        private _left=[
-            ["HR",103,"good","BP","120/80","good"] call _pair,
-            ["Ext","1200 mL/min","good","Junc",0,"good"] call _pair
-        ];
-        private _right=[
-            ["AAJT","Z3+Ing-left+AxL+AxR","good","XStat","no","good"] call _pair,
-            ["Internal",1200,"good","Suppress",1.2,"good"] call _pair
-        ];
-        private _network=[
-            ["Role","client","good","MP","yes","good"] call _pair,
-            ["Client",17,"good","Server","remote","good"] call _pair,
-            ["NetID","2:13087","mute"] call _one
-        ];
+    '''+source+'''
+        private _header=["ACME DEBUG B158","Patient: Complete Long Name"];
+        private _left=[["HR",103,"good","BP","120/80","good"] call _pair];
+        private _right=[["AAJT","Z3+Ing-left+AxL+AxR","good","XStat","no","good"] call _pair];
+        private _network=[["Role","client","good","MP","yes","good"] call _pair];
         call _renderAll;
-        [count _renders==4 && {count _measures==4},"not all regions were included"] call _check;
-        { [(_x select 2)==0.41,"overlay uses different font sizes"] call _check; } forEach _renders;
-        private _leftRows=(_renders select 1) select 1;
-        private _rightRows=(_renders select 2) select 1;
-        private _networkRows=(_renders select 3) select 1;
-        private _anchor=(_leftRows select 0) find "BP      ";
-        [((_leftRows select 1) find "Junc    ")==_anchor,"units shifted second label"] call _check;
-        [((_rightRows select 0) find "XStat   ")==_anchor,"long device state shifted second label"] call _check;
-        [((_rightRows select 1) find "Suppress")==_anchor,"eight-character label lost alignment"] call _check;
-        [((_networkRows select 0) find "MP      ")==_anchor,"machine labels do not align with clinical labels"] call _check;
-        [((_networkRows select 1) find "Server  ")==_anchor,"network labels do not align"] call _check;
-        [((_rightRows select 0) find "Z3+Ing-left+AxL+AxR")>=0,"shared column sizing lost a long value"] call _check;
-        [((_rightRows select 1) find "Internal")>=0,"label was truncated"] call _check;
-        [(((_renders select 0) select 1) select 1)=="Patient: Long Complete Patient Name","header was abbreviated"] call _check;
+        [count _renders==4 && {count _heights==4},"not all regions rendered/measured"] call _check;
+        {[count _x==2,"region used its own font size"] call _check;} forEach _renders;
+        [_fontH==0.018 && {_sizes isEqualTo [0.035,0.62,0.27]},"long state shrank font instead of sizing content"] call _check;
+        private _leftRow=((_renders select 1) select 1) select 0;
+        private _rightRow=((_renders select 2) select 1) select 0;
+        private _netRow=((_renders select 3) select 1) select 0;
+        [(_leftRow find "BP      ")==(_rightRow find "XStat   "),"long state moved paired label"] call _check;
+        [(_leftRow find "BP      ")==(_netRow find "MP      "),"machine columns differ from clinical"] call _check;
+        private _parts=["Z3+Ing-left+AxL+AxR",8] call _wrapValue;
+        [(_parts joinString "")=="Z3+Ing-left+AxL+AxR","wrapping dropped device text"] call _check;
+        {[(count _x)<=8,"continuation overruns fixed field"] call _check;} forEach _parts;
+        [(_rightRow find "<br/>")>=0,"long value did not continue at readable size"] call _check;
     ''')

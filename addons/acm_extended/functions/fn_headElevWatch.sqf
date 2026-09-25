@@ -18,6 +18,15 @@ private _pfh = [{
         [_handle] call CBA_fnc_removePerFrameHandler;
         _patient setVariable ["ACME_headElev_pfh", -1];
     };
+    // A lost provider/ready packet must not leave a logical elevation with the casualty still flat.
+    private _pendingLift = _patient getVariable ["ACME_headElev_pendingLift", []];
+    private _waitingMedic = _pendingLift param [0, objNull];
+    if (count _pendingLift == 2 && {
+        isNull _waitingMedic || {!alive _waitingMedic} || {_waitingMedic getVariable ["ACE_isUnconscious", false]}
+        || {CBA_missionTime - (_patient getVariable ["ACME_headElev_liftRequestAt", CBA_missionTime]) > 8}
+    }) exitWith {
+        [_waitingMedic, _patient, "elevate", _pendingLift select 1, true] call ACME_fnc_headElevMedicReady;
+    };
     private _hold = _patient getVariable ["ACME_headElev_hold", []];
     private _releaseHold = false;
     if !(_hold isEqualTo []) then {

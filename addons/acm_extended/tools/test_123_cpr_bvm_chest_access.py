@@ -18,7 +18,7 @@ def test_123_release_identity_and_hemtt_version():
     assert 'version = "1.2.3";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
     assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B157";' in startup
+    assert 'ACME_buildBatch = "B158";' in startup
     assert 'ACME_debugRevision = "";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
     for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
@@ -111,8 +111,8 @@ def test_patient_owner_blocks_restore_during_roles_and_transfer_window():
     restore = acme("functions/fn_chestAccessVestRestore.sqf")
     assert 'case "chestAccessManeuverHandoff"' in owner
     assert 'ACME_chestAccess_maneuverHandoffUntil' in owner
-    assert 'private _maneuverBusy = ([_patient] call ACM_core_fnc_cprActive)' in restore
-    assert '|| {[_patient] call ACM_core_fnc_bvmActive};' in restore
+    assert 'private _maneuverBusy = [_patient] call ACME_fnc_chestAccessManeuverActive;' in restore
+    assert '&& {!([_p] call ACME_fnc_chestAccessManeuverActive)}' in restore
     assert 'private _handoffBusy' in restore
     assert 'serverTime < _handoffUntil' in restore
 

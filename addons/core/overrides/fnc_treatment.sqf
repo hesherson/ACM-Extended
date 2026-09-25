@@ -587,6 +587,14 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         _medic setVariable ["ACME_treatmentPreflightActive", false, false];
     };
 
+    // A newly accepted head-position action replaces the previous finite treatment's exit lease.
+    // Its leftover rate record must not make the Putdown controller mistake its own startup for a takeover.
+    if (_headOwned && {local _medic}) then {
+        _medic setVariable ["ACME_nativeTreatmentRate", [], true];
+        [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
+        [_medic, true] call ACME_fnc_menuPoseStop;
+    };
+
     // Head positioning is head-selection only. Pass the selected body part through unchanged.
     private _nativeArgs = +_this;
 
@@ -603,7 +611,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         // From this point until ACE emits treatment success/failure, Direct Pressure is animation-passive.
         _medic setVariable ["ACME_DP_TreatmentBusy", true, false];
     };
-    if (_ownsProviderAnim && {local _medic}) then {
+    if ((_ownsProviderAnim || {_headOwned}) && {local _medic}) then {
         _medic setVariable ["ACME_suppressNativeTreatmentAnim", true, false];
     };
         // Ordinary ACE work has no treatmentPose controller of its own. Its existing completion events

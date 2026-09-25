@@ -36,6 +36,32 @@ if (_replayAnim && {isNull objectParent _patient}) then {
     // The move graph carries the casualty from the grab into the hold. This check only covers the case where
     // another system took the casualty out of the grab first.
     private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
+    if (_patient getVariable ["ACME_headElev_vestRemoved", false]
+        && {isNull (_patient getVariable ["ACME_headElev_propObj", objNull])}) then {
+        // Seat the saved support carrier after this actual lift, never during provider preparation.
+        [{
+            params ["_patient", "_vestClass", "_poseToken"];
+            if (isNull _patient || {!local _patient} || {!alive _patient}
+                || {!(_patient getVariable ["ACME_headElevated", false])}
+                || {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}
+                || {!(_patient getVariable ["ACME_headElev_vestRemoved", false])}
+                || {!isNull (_patient getVariable ["ACME_headElev_propObj", objNull])}
+                || {!isNull objectParent _patient}) exitWith {};
+            // render the carrier as a createSimpleObject of the world model of the vest: a static, non-simulated visual that
+            // renders the instant it is created and is pinned by the attachment. that is unlike the old GroundWeaponHolder
+            // plus cargo, whose draped-vest cargo frequently never spawned a visible model and froze invisible. it falls back
+            // to a weapon holder only if the vest exposes no usable model.
+            private _model = getText (configFile >> "CfgWeapons" >> _vestClass >> "model");
+            private _prop = objNull;
+            if (_model != "") then { _prop = createSimpleObject [_model, [0,0,0], false]; };
+            if (isNull _prop) then {
+                _prop = createVehicle ["GroundWeaponHolder", getPosATL _patient, [], 0, "CAN_COLLIDE"];
+                _prop addItemCargoGlobal [_vestClass, 1];
+            };
+            _patient setVariable ["ACME_headElev_propObj", _prop, true];
+            [_patient] call ACME_fnc_headElevPropApply;  // it seats and orients behind the upper back, with no sim toggling needed.
+        }, [_patient, _patient getVariable ["ACME_headElev_propVest", ""], _poseToken], _liftTime + 0.1] call CBA_fnc_waitAndExecute;
+    };
     [{
         params ["_patient", "_poseToken", "_animToken"];
         if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};

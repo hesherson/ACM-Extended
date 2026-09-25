@@ -89,8 +89,7 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
             private _preparing = (_m getVariable ["ACME_chestAccessPreflightActive", false])
                 && {((_m getVariable ["ACME_chestAccess_treatment", []]) param [0,objNull]) isEqualTo _p};
 
-            private _maneuverActive = ([_p] call ACM_core_fnc_cprActive)
-                || {[_p] call ACM_core_fnc_bvmActive};
+            private _maneuverActive = [_p] call ACME_fnc_chestAccessManeuverActive;
 
             !_maneuverActive && {!_handoffActive} && {!_ownerHandoffActive} && {!_preparing}
         }, {
@@ -110,10 +109,7 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
                 };
             };
             if (!isNull _p) then {[_p, _m, _id, false, _stored] call ACME_fnc_chestAccessVestEvent;};
-        }, [_patient, _medic, _id, _stored], 600, {
-            params ["_p", "_m", "_id", "_stored"];
-            if (!isNull _p) then {[_p, _m, _id, false, _stored] call ACME_fnc_chestAccessVestEvent;};
-        }] call CBA_fnc_waitUntilAndExecute;
+        }, [_patient, _medic, _id, _stored]] call CBA_fnc_waitUntilAndExecute;
     };
 
     _medic setVariable ["ACME_chestAccess_treatment", []];
@@ -133,11 +129,9 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
     // Once a CPR/BVM maneuver watcher exists, it alone owns final release. A short setup/failure event from one
     // side of a swap must never tear down the stable lease underneath the other side.
     private _maneuvers = missionNamespace getVariable ["ACME_chestAccess_maneuverClasses", ["cpr"]];
-    if (_stored in _maneuvers) then {
-        private _watch = _medic getVariable ["ACME_chestAccessManeuverWatch", []];
-        if ((_watch param [0,objNull]) isEqualTo _patient
-            && {(_watch param [1,""]) == (_entry param [2,""])}) exitWith {};
-    };
+    private _watch = _medic getVariable ["ACME_chestAccessManeuverWatch", []];
+    if (_stored in _maneuvers && {(_watch param [0,objNull]) isEqualTo _patient}
+        && {(_watch param [1,""]) == (_entry param [2,""])}) exitWith {};
 
     _medic setVariable ["ACME_chestAccess_treatment", []];
     [_patient, _medic, _entry param [2, ""], false, _stored] call ACME_fnc_chestAccessVestEvent;

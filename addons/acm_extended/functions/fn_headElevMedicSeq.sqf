@@ -16,14 +16,16 @@
  */
 params [
     ["_medic", objNull, [objNull]],
-    ["_mode", "elevate", [""]]
+    ["_mode", "elevate", [""]],
+    ["_patient", objNull, [objNull]],
+    ["_poseToken", "", [""]]
 ];
 // Provider consciousness is separate from the casualty's eligibility for head positioning.
 if (isNull _medic || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
 _mode = toLower _mode;
 if !(_mode in ["elevate", "lower"]) exitWith {};
 if (!local _medic) exitWith {
-    [_medic, "headElevMedicSeq", [_medic, _mode]] call ACME_fnc_ownerDispatch;
+    [_medic, "headElevMedicSeq", [_medic, _mode, _patient, _poseToken]] call ACME_fnc_ownerDispatch;
 };
 if ([_medic] call ACME_fnc_animBlocked) exitWith {};
 [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
@@ -34,11 +36,17 @@ private _forcePose = _rest;
 private _first = "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown";
 private _second = "AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon";
 
+private _previousMove = _medic getVariable ["ACME_headElev_pendingMove", []];
+if (count _previousMove == 4 && {!isNull (_previousMove select 1)}) then {
+    [_previousMove select 1, "headElevMedicReady", _previousMove + [true]] call ACME_fnc_ownerDispatch;
+};
+
 private _token = (_medic getVariable ["ACME_headElev_medicAnimToken", 0]) + 1;
 _medic setVariable ["ACME_headElev_medicAnimToken", _token, false];
 _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
 _medic setVariable ["ACME_headElev_seqActive", true, false];
 _medic setVariable ["ACME_headElev_seqMode", _mode, false];
+_medic setVariable ["ACME_headElev_pendingMove", [_medic, _patient, _mode, _poseToken], false];
 
 // One shared animation rate covers holster, both finite Putdown moves and exit; no position pin.
 _medic setVariable ["ACME_headElev_pinToken", (_medic getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
@@ -74,6 +82,11 @@ private _menuPatient = missionNamespace getVariable ["ace_medical_gui_target", o
         if (isNull _u) exitWith {};
         // A newer provider sequence owns the unit now. Retire this PFH without touching the new sequence.
         if ((_u getVariable ["ACME_headElev_medicAnimToken", -1]) != _token) exitWith {};
+        private _pendingMove = _u getVariable ["ACME_headElev_pendingMove", []];
+        _u setVariable ["ACME_headElev_pendingMove", [], false];
+        if (count _pendingMove == 4 && {!isNull (_pendingMove select 1)}) then {
+            [_pendingMove select 1, "headElevMedicReady", _pendingMove + [true]] call ACME_fnc_ownerDispatch;
+        };
         _u setVariable ["ACME_headElev_medicAnimStage", -1, false];
         _u setVariable ["ACME_headElev_seqActive", false, false];
         _u setVariable ["ACME_headElev_seqMode", "", false];
@@ -195,6 +208,11 @@ private _menuPatient = missionNamespace getVariable ["ace_medical_gui_target", o
     // 1: wait for the first finite move to finish. Never request it a second time.
     if (_stage == 1) exitWith {
         if (_state == _firstLC) then {
+            private _pendingMove = _u getVariable ["ACME_headElev_pendingMove", []];
+            _u setVariable ["ACME_headElev_pendingMove", [], false];
+            if (count _pendingMove == 4 && {!isNull (_pendingMove select 1)}) then {
+                [_pendingMove select 1, "headElevMedicReady", _pendingMove] call ACME_fnc_ownerDispatch;
+            };
             _seen = true;
             _args set [8, true];
         };

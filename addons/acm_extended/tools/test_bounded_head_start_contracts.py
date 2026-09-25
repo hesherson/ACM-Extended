@@ -43,7 +43,11 @@ def start_setup():
         ACME_fnc_headElevateCanStart={_canStart};
         ACME_fnc_chestSealCanPhysicalRoll={_canRoll};
         ACME_fnc_headElevApplyTilt={_tilts pushBack _this;};
-        ACME_fnc_headElevMedicStart={_starts pushBack _this;};
+        // This older normalization fixture immediately acknowledges the provider reach.
+        ACME_fnc_headElevMedicStart={
+            _starts pushBack _this;
+            if ((_patient getVariable ["ACME_headElev_pendingLift",[]]) isNotEqualTo []) then {[_patient] call ACME_fnc_headElevApplyTilt;};
+        };
         ACME_fnc_headElevWatch={_watches pushBack _this;};
         _patient setVariable ["ACME_headElevated",false];
         _patient setVariable ["ACME_headElev_poseToken",""];

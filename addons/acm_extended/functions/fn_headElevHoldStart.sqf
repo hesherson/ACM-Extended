@@ -51,6 +51,7 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
     private _token = _extra select 0;
 
     _medic setVariable ["ACME_headElev_holding", [_patient, _token], true];
+    _medic setVariable ["ACME_headElev_manualLiftToken", "", false];
 
     // Match CPR/BVM's mouse-cancel behavior. Bind the handler to this exact continuous-action generation so a
     // stale F0 callback is harmless even if CBA delivers it after another maneuver has taken ownership.
@@ -131,6 +132,10 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
         };
 
         if (_stage == 0) exitWith {
+            if (_state in [_entryLC, _holdLC] && {(_m getVariable ["ACME_headElev_manualLiftToken", ""]) != _poseToken}) then {
+                _m setVariable ["ACME_headElev_manualLiftToken", _poseToken, false];
+                [_p, "headElevMedicReady", [_m, _p, "elevate", _poseToken]] call ACME_fnc_ownerDispatch;
+            };
             // The transition normally lands in the static Putdown state. If another move graph masks that target,
             // force the authored end state once after a bounded entry window instead of replaying the transition.
             if (_state == _holdLC) then {

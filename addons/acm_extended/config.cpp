@@ -1818,6 +1818,7 @@ class CfgFunctions {
             class registerTreatmentRollRuntime {};
             class registerHeadElevationTreatmentRuntime {};
             class registerChestAccessVestRuntime {};
+            class chestAccessManeuverActive {};
             class chestAccessVestEvent {};
             class chestAccessVestAcquire {};
             class chestAccessVestPark {};
@@ -2457,6 +2458,7 @@ class CfgFunctions {
             class headElevDeathRelease {};
             class headElevVestRestore {};
             class headElevWatch {};
+            class headElevMedicReady {};
             class headElevMedicStart {};
             class headElevateCancelSeq {};
             class headElevApplyTilt {};

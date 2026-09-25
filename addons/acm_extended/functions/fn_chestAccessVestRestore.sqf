@@ -29,8 +29,7 @@ if (!_force) then {
         } else {
             private _workspaceBusy = (_patient getVariable ["ACME_CS_ProcedureActive", false])
                 || {_patient getVariable ["ACME_Thora_ChestAccessActive", false]};
-            private _maneuverBusy = ([_patient] call ACM_core_fnc_cprActive)
-                || {[_patient] call ACM_core_fnc_bvmActive};
+            private _maneuverBusy = [_patient] call ACME_fnc_chestAccessManeuverActive;
             private _handoffUntil = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
             private _handoffBusy = (_handoffUntil isEqualType 0) && {serverTime < _handoffUntil};
 
@@ -43,8 +42,7 @@ if (!_force) then {
                     private _until = _p getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
                     !(_p getVariable ["ACME_CS_ProcedureActive", false])
                         && {!(_p getVariable ["ACME_Thora_ChestAccessActive", false])}
-                        && {!([_p] call ACM_core_fnc_cprActive)}
-                        && {!([_p] call ACM_core_fnc_bvmActive)}
+                        && {!([_p] call ACME_fnc_chestAccessManeuverActive)}
                         && {!((_until isEqualType 0) && {serverTime < _until})}
                         && {(count (_p getVariable ["ACME_chestAccess_leases", createHashMap])) == 0}
                 }, {

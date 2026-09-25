@@ -75,8 +75,14 @@ def assert_no_patient_teleport(data=None):
 def assert_legacy_helper_is_retired(data=None):
     d=sources() if data is None else data
     s=d['headElevApplyTilt']
-    forbidden={'createvehicle','createvehiclelocal','createsimpleobject','attachto'}
+    # The support-carrier prop is now created here after the actual lift; it is not a patient helper.
+    forbidden={'createvehiclelocal','attachto'}
     assert not any(t.kind=='ident' and t.value.lower() in forbidden for t in lex(s))
+    ts=lex(s)
+    for i,t in enumerate(ts):
+        if t.kind=='ident' and t.value.lower()=='createvehicle':
+            assert ts[i+1].value=='[' and ts[i+2].value=='GroundWeaponHolder'
+
     assert contains(s,'[_patient,_helper] call ACME_fnc_releasePatient;')
     assert contains(s,'deleteVehicle _helper;')
     assert contains(s,'_patient setVariable ["ACME_headElev_helper",objNull,true];')

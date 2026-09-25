@@ -57,7 +57,10 @@ def setup():
             private _recordingLeaseExpiry=true;
             _this call ACME_test_patientAnimRequest;
         };
-        ACME_fnc_headElevMedicSeq={_provider pushBack _this;};
+        ACME_fnc_headElevMedicSeq={
+            _provider pushBack [_this select 0,_this select 1];
+            if (count _this >= 4) then {[_this select 0,_this select 2,false,true,false,true] call ACME_fnc_headElevateStop;};
+        };
         ACME_fnc_headElevDeathRelease={_death pushBack _this;};
         ACME_fnc_headElevHoldClear={_holdClears pushBack _this;};
         ACME_fnc_headElevRestAnim={"ACM_LyingState"};
@@ -68,6 +71,7 @@ def setup():
         ACME_fnc_chestSealRoll={_rolls pushBack _this;};
         ACM_core_fnc_cprActive={false};
         ACM_core_fnc_bvmActive={false};
+        ACME_fnc_chestAccessManeuverActive={([_patient] call ACM_core_fnc_cprActive) || {[_patient] call ACM_core_fnc_bvmActive}};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
         CBA_fnc_waitAndExecute={

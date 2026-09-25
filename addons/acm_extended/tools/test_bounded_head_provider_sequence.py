@@ -34,8 +34,8 @@ def provider_contract(text=None):
     assert not contains(s, '_u setUnitPos "UP";')
     assert not contains(s, 'private _dragger = "DraggerBase";')
     # No head-position caller can drift to a different provider controller.
-    assert contains(source('headElevMedicStart'), '[_medic, "elevate"] call ACME_fnc_headElevMedicSeq;')
-    assert contains(source('headElevateStop'), '[_medic, "lower"] call ACME_fnc_headElevMedicSeq;')
+    assert contains(source('headElevMedicStart'), '[_medic, "elevate", _patient, _patient getVariable ["ACME_headElev_poseToken", ""]] call ACME_fnc_headElevMedicSeq;')
+    assert contains(source('headElevateStop'), '[_medic, "lower", _patient, _patient getVariable ["ACME_headElev_poseToken", ""]] call ACME_fnc_headElevMedicSeq;')
 
 
 def setup():
@@ -50,6 +50,8 @@ def setup():
             s=re.sub(re.escape(old)+(r'\b' if old[-1].isalnum() else ''),lambda _:new,s)
         s=s.replace(name+' setUnitPos "MIDDLE";', '_stances pushBack "MIDDLE";')
         s=s.replace(name+' setUnitPos "AUTO";', '_stances pushBack "AUTO";')
+    for pending in ('_pendingMove', '_previousMove'):
+        s=s.replace(f'isNull ({pending} select 1)',f'(({pending} select 1) isEqualTo objNull)')
     s=s.replace('hasInterface', '_interfacePresent').replace('inputAction _x', '(_input getVariable [_x,0])')
     return r'''
         private _interfacePresent=true; private _input=missionNamespace;
