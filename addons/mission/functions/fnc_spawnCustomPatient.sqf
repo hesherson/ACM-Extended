@@ -45,6 +45,16 @@ removeAllItems _patient;
 removeAllAssignedItems _patient;
 removeGoggles _patient;
 
+// Patient-spawner invariant: the casualty is born with the plate carrier already in its loadout. Do this in the
+// spawn transaction before unconsciousness/injury initialization so no client ever observes a later "vest added"
+// correction and chest-access/Semi-Fowler code reads the correct equipment from its first frame.
+removeVest _patient;
+private _spawnVestClass = missionNamespace getVariable ["ACME_patientSpawnerVestClass", "V_PlateCarrier1_rgr"];
+if (_spawnVestClass isEqualType "" && {_spawnVestClass != ""} && {isClass (configFile >> "CfgWeapons" >> _spawnVestClass)}) then {
+    _patient addVest _spawnVestClass;
+};
+_patient setVariable ["ACME_patientSpawnerVestClass", vest _patient, true];
+
 _patient setVariable [QACEGVAR(medical_statemachine,AIUnconsciousness), true, true];
 
 [_patient, true, 30] call ACEFUNC(medical,setUnconscious);
