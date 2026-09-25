@@ -106,7 +106,8 @@ switch (_operation) do {
                 }) exitWith {
                     [_handle] call CBA_fnc_removePerFrameHandler;
                 };
-                if ((_m getVariable ["ACME_rollProviderToken",""]) != _rollToken || {_rollToken == ""}) exitWith {
+                private _completed = (_m getVariable ["ACME_rollProviderCompletedEpoch",-1]) == _epoch;
+                if (((_m getVariable ["ACME_rollProviderToken",""]) != _rollToken || {_rollToken == ""}) && {!_completed}) exitWith {
                     [_handle] call CBA_fnc_removePerFrameHandler;
                 };
 
@@ -117,7 +118,6 @@ switch (_operation) do {
                     && {(_poseNow param [3,-2]) >= 1}
                     && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
                     && {(toLowerANSI animationState _m) == _work};
-                private _completed = (_m getVariable ["ACME_rollProviderCompletedEpoch",-1]) == _epoch;
 
                 if (_atWork || {_completed} || {diag_tickTime >= _deadline}) then {
                     [_handle] call CBA_fnc_removePerFrameHandler;
