@@ -33,6 +33,19 @@ private _readyAt = _patient getVariable ["ACME_headElev_suspendReadyAt", -1];
 if (_readyAt > CBA_missionTime) exitWith {
     [{_this call ACME_fnc_headElevTryResume;}, [_patient, _token], ((_readyAt - CBA_missionTime) max 0.05) + 0.05] call CBA_fnc_waitAndExecute;
 };
+
+// The release-to-flat tail may still own the patient for a few frames after the nominal suspension time. Re-elevate
+// only after that exact animation lease has retired; otherwise the grab request can be denied and leave Semi-Fowler
+// logically active but visually flat.
+private _animLock = _patient getVariable ["ACME_patientAnimLock", []];
+if ((count _animLock) >= 5) then {
+    private _lockUntil = _animLock param [4, -1];
+    if (_lockUntil isEqualType 0 && {_lockUntil > serverTime}) exitWith {
+        [{_this call ACME_fnc_headElevTryResume;}, [_patient, _token], ((_lockUntil - serverTime) max 0.05) + 0.05]
+            call CBA_fnc_waitAndExecute;
+    };
+};
+
 private _leases = _patient getVariable ["ACME_headElev_treatments", createHashMap];
 {
     private _entry = _leases get _x;
