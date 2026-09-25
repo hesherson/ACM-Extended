@@ -18,9 +18,7 @@ if (!isNull _selectedPatient && {!(_selectedPatient isEqualTo _shownPatient)}) e
 private _pending = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
 if (!(_pending isEqualType []) || {count _pending < 3}) exitWith {false};
 _pending params ["_bodyPart","_siteIdx","_route"];
-// B121 Hardcore Medications replaces the display-bound animation with a persistent transaction.
-// The worker survives every menu close/reopen; only Stop Push, leash/access loss or completion ends flow.
-if ((missionNamespace getVariable ["ACME_hcEff_medications",false]) && {_route != "im"}) exitWith {call ACME_fnc_hardcorePushStart};
+// B121 Hardcore Medications uses the same access and blood-line preflight below before handing off to its persistent worker.
 uiNamespace setVariable ["ACME_SK_SiteIdx",_siteIdx];
 uiNamespace setVariable ["ACME_SK_Route",_route];
 private _patient = uiNamespace getVariable ["ACME_SK_Patient",objNull];
@@ -30,6 +28,15 @@ private _iv = _route != "im";
 private _present = true;
 if (_iv) then {_present = if (_siteIdx >= 0) then {[_patient,_bodyPart,0,_siteIdx] call ACM_circulation_fnc_hasIV} else {[_patient,_bodyPart,0] call ACM_circulation_fnc_hasIO};};
 if (!_present) exitWith {uiNamespace setVariable ["ACME_SK_PendingInjection",[]]; call ACME_fnc_skBodyActionRender; false};
+
+if (_iv && {[_patient,_bodyPart,_siteIdx] call ACME_fnc_medicationLineBloodBusy}) exitWith {
+    ["Blood is actively flowing through that line. Stop or finish the transfusion before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
+    call ACME_fnc_skBodyActionRender;
+    false
+};
+
+// The persistent Hardcore worker starts only after the same exact-access validation used by a normal push.
+if ((missionNamespace getVariable ["ACME_hcEff_medications",false]) && {_route != "im"}) exitWith {call ACME_fnc_hardcorePushStart};
 
 private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
 private _idx = [_store] call ACME_fnc_skSelectedIndex;
