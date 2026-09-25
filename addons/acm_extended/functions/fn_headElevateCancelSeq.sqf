@@ -12,6 +12,8 @@ private _cancelToken = (_medic getVariable ["ACME_headElev_medicAnimToken", 0]) 
 _medic setVariable ["ACME_headElev_medicAnimToken", _cancelToken, false];
 _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
 _medic setVariable ["ACME_headElev_seqMode", "", false];
+_medic setVariable ["ACME_headElev_seqPFH", -1, false];
+_medic setVariable ["ACME_headElev_seqLastSeen", CBA_missionTime, false];
 
 private _handoff = (_medic getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []
     || {(_medic getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []}
