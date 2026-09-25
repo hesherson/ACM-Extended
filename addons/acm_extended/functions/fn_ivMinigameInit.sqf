@@ -261,14 +261,21 @@ private _needleRects = [];
     // _af is pixelW / pixelH. For a physically square PAA canvas:
     //     width / pixelW == height / pixelH
     // therefore width = height * (pixelW / pixelH).
-    // The old division inverted this ratio, stretching the rotated catheter horizontally by 1/_af^2
-    // (about 3.16x at 16:9 and 12.64x at 32:9).
     private _iconW = _iconH * _af;
-    private _iconX = _colX + (_slotW / 2) - (_iconW / 2);
-    // Keep the resting catheter slightly low in its tray so the inventory fan has room to open upward.
-    // This is only tray placement; source-art centroid math lives in fn_ivTrayHover and must not be coupled to it.
-    private _iconBias = missionNamespace getVariable ["ACME_iv_trayIconBias", 0.40];
-    if (!(_iconBias isEqualType 0) || {!finite _iconBias}) then { _iconBias = 0.40 };
+
+    // The catheter artwork is not centered inside its transparent PAA canvas. At the tray's -90 degree rotation,
+    // the vertical artwork bias becomes a horizontal screen-space bias. Center the VISIBLE catheter on the tile,
+    // not the transparent control rectangle, so every gauge reads centered at rest and the hover fan inherits the
+    // same true center.
+    private _artV = missionNamespace getVariable ["ACME_iv_trayArtV", 0.66];
+    if (!(_artV isEqualType 0) || {!finite _artV}) then {_artV = 0.66;};
+    _artV = (_artV max 0) min 1;
+    private _visibleXOffset = (_artV - 0.5) * _iconH; // -90 deg: source Y bias rotates into +screen X.
+    private _iconX = _colX + (_slotW / 2) - (_iconW / 2) - _visibleXOffset;
+
+    // Keep the visible catheter baseline slightly low so every inventory copy can fan upward only.
+    private _iconBias = missionNamespace getVariable ["ACME_iv_trayIconBias", 0.56];
+    if (!(_iconBias isEqualType 0) || {!finite _iconBias}) then {_iconBias = 0.56;};
     private _iconY = _ry + (_slotH * ((_iconBias max 0) min 1)) - (_iconH / 2);
     (_display displayCtrl _bgIdc) ctrlSetPosition [_colX, _ry, _slotW, _slotH]; (_display displayCtrl _bgIdc) ctrlCommit 0;
     private _logo = _display displayCtrl _logoIdc;
