@@ -36,19 +36,17 @@ private _ctrlR = ["ACME_DebugMenuCtrlR"] call _control;
 private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
 private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 
-// Keep one safe-zone-relative font on every resolution. A pixel minimum made the overlay change proportions
-// between 1080p, 1440p, ultrawide and supersampled UI scales. B162 is slightly smaller than B161 so the full
-// clinical/runtime set can use the screen vertically without changing its typography from one resolution to another.
-private _fontH = safeZoneH * 0.0116;
+// B163 is intentionally a compact diagnostic strip, not a screen-sized dashboard. Keep the same safe-zone
+// proportions on every resolution, but make the typography and padding dense enough for one vertical column.
+private _fontH = safeZoneH * 0.0096;
 {_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
-private _gap = safeZoneH * 0.006;
-private _marginX = safeZoneWAbs * 0.004;
+private _gap = safeZoneH * 0.0025;
+private _marginX = safeZoneWAbs * 0.003;
 private _x = safeZoneXAbs + _marginX;
-private _y = safeZoneY + safeZoneH * 0.008;
-private _panelBottom = safeZoneY + safeZoneH - safeZoneH * 0.008;
-// Keep the original eight-character whole-value/decimal anchor. Reserve room after
-// it for complete units and compound readings, rather than wrapping ordinary vitals.
-private _valueW = 20;
+private _y = safeZoneY + safeZoneH * 0.006;
+// Most values fit comfortably in fourteen characters; exceptional device/revision strings wrap inside this
+// single column instead of forcing the panel to grow horizontally.
+private _valueW = 14;
 private _renderBlock = {
     params ["_ctrl", "_rows"];
     _ctrl ctrlSetStructuredText parseText format ["<t font='EtelkaMonospacePro' shadow='1'>%1</t>", _rows joinString "<br/>"];
@@ -60,16 +58,14 @@ _ctrlM ctrlCommit 0;
 private _shortW = ctrlTextWidth _ctrlM;
 [_ctrlM, ["00000000000000000000000000000000"]] call _renderBlock;
 private _charW = ((ctrlTextWidth _ctrlM) - _shortW) / 16;
-// Two fixed label/value pairs per clinical column. Grow the panel to fit the font,
-// rather than reducing the font to fit padded fields. Only extended device lists wrap.
+// One row still carries two label/value pairs, but there is only ONE major vertical column now. B162 multiplied
+// this width by two for left/right clinical columns and then forced a large minimum panel width; that is the unused
+// horizontal space visible in the screenshot.
 private _rowChars = 2 * (8 + 1 + _valueW) + 2;
-// The measured text still owns the minimum width, while the safe-zone fraction prevents an ultrawide display
-// from making the same panel look proportionally tiny. The cap is screen-height based so 16:9 and 32:9 keep a
-// comparable visual footprint.
-private _minPanelW = (safeZoneWAbs * 0.24) min (safeZoneH * 0.78);
-private _totalW = (_minPanelW max (2 * (_rowChars * _charW + safeZoneWAbs * 0.010) + _gap))
+private _maxPanelW = (safeZoneWAbs * 0.235) min (safeZoneH * 0.62);
+private _measuredW = (_rowChars * _charW) + (safeZoneWAbs * 0.006);
+private _totalW = ((_measuredW max (safeZoneWAbs * 0.14)) min _maxPanelW)
     min (safeZoneWAbs - 2 * _marginX);
-private _w = (_totalW - _gap) / 2;
 private _measureRows = {
     params ["_rows", "_width"];
     _ctrlM ctrlSetPosition [_x, _y, _width, safeZoneH * 4];
@@ -78,25 +74,18 @@ private _measureRows = {
     (ctrlTextHeight _ctrlM) + _fontH * 0.25
 };
 private _layout = {
-    params ["_headerH", "_topH", "_clinicalH", "_networkH"];
-    private _topY = _y + _headerH + (_gap * 0.45);
-    private _bodyY = _topY + _topH + _gap;
+    params ["_headerH", "_bodyH"];
+    private _bodyY = _y + _headerH + _gap;
+    private _panelH = _headerH + _gap + _bodyH + (_fontH * 0.20);
 
-    // Runtime/network state is anchored at the bottom of the safe area. The clinical columns receive every
-    // remaining vertical pixel between the top metadata tab and that footer, so the overlay consistently spans
-    // top-to-bottom instead of ending at an arbitrary content height. If a pathological amount of content is
-    // present, keep sections sequential rather than letting them overlap.
-    private _networkY = (_panelBottom - _networkH) max (_bodyY + _clinicalH + _gap);
-    private _contentBottom = (_networkY + _networkH) max _panelBottom;
-    private _bodyH = (_networkY - _gap - _bodyY) max _clinicalH;
-
-    _ctrlB ctrlSetPosition [_x, _y, _totalW, _contentBottom - _y];
+    // Content owns the height. Do not stretch a sparse diagnostic panel to the bottom of the screen.
+    _ctrlB ctrlSetPosition [_x, _y, _totalW, _panelH];
     _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
-    _ctrlT ctrlSetPosition [_x, _topY, _totalW, _topH];
-    _ctrlL ctrlSetPosition [_x, _bodyY, _w, _bodyH];
-    _ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _bodyH];
-    _ctrlS ctrlSetPosition [_x, _networkY, _totalW, _networkH];
-    {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS];
+    _ctrlL ctrlSetPosition [_x, _bodyY, _totalW, _bodyH];
+
+    // Retire B162's separate top/right/footer regions in-place so an already running mission cannot leave one visible.
+    {_x ctrlShow false;} forEach [_ctrlT, _ctrlR, _ctrlS];
+    {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlT, _ctrlR, _ctrlS];
 };
 
 private _cTitle = "#D9A441";
@@ -187,7 +176,7 @@ private _formatRow = {
     };
     _lines joinString "<br/>"
 };
-private _sect = {params ["_s"]; format ["<br/><t color='%1'>%2</t>", _cSect, _s];};
+private _sect = {params ["_s"]; format ["<t color='%1'>%2</t>", _cSect, _s];};
 private _arr = {params ["_name"]; private _v = missionNamespace getVariable [_name, []]; if (_v isEqualType []) then {_v} else {[]};};
 private _pushUnique = {params ["_a", "_o"]; if (!isNull _o && {!(_o in _a)}) then {_a pushBack _o;}; _a};
 
@@ -217,30 +206,26 @@ private _right = [];
 private _network = [];
 private _pName = if (isNull _patient) then {"NO PATIENT"} else {name _patient};
 private _header = [
-    format ["<t color='%1'>ACME DEBUG v%2 | %3</t>", _cTitle, [_ver] call _safe, [_batch] call _safe],
-    format ["<t color='%1'>Patient: %2</t>", _cLabel, [_pName] call _safe]
+    format [
+        "<t color='%1'>ACME DEBUG v%2 | %3</t><t color='%4'> | Patient: %5</t>",
+        _cTitle, [_ver] call _safe, [_batch] call _safe, _cLabel, [_pName] call _safe
+    ]
 ];
 private _renderAll = {
-    private _topRows = _top apply {[_x, _valueW] call _formatRow};
-    private _leftRows = _left apply {[_x, _valueW] call _formatRow};
-    private _rightRows = _right apply {[_x, _valueW] call _formatRow};
-    private _networkRows = _network apply {[_x, _valueW] call _formatRow};
-    // Remove only the leading section spacer. Later sections retain a single font-sized gap.
-    {
-        if (count _x > 0 && {((_x select 0) select [0, 5]) == "<br/>"}) then {
-            _x set [0, (_x select 0) select [5]];
-        };
-    } forEach [_topRows, _leftRows, _rightRows, _networkRows];
+    // Preserve the existing logical section builders, but serialize them into one compact vertical stream.
+    // This removes the entire second major column and the large B162 gap before runtime/network data.
+    private _allRows = [];
+    _allRows append _top;
+    _allRows append _left;
+    _allRows append _right;
+    _allRows append _network;
+    private _bodyRows = _allRows apply {[_x, _valueW] call _formatRow};
+
     private _headerH = [_header, _totalW] call _measureRows;
-    private _topH = [_topRows, _totalW] call _measureRows;
-    private _clinicalH = ([_leftRows, _w] call _measureRows) max ([_rightRows, _w] call _measureRows);
-    private _networkH = [_networkRows, _totalW] call _measureRows;
-    [_headerH, _topH, _clinicalH, _networkH] call _layout;
+    private _bodyH = [_bodyRows, _totalW] call _measureRows;
+    [_headerH, _bodyH] call _layout;
     [_ctrlH, _header] call _renderBlock;
-    [_ctrlT, _topRows] call _renderBlock;
-    [_ctrlL, _leftRows] call _renderBlock;
-    [_ctrlR, _rightRows] call _renderBlock;
-    [_ctrlS, _networkRows] call _renderBlock;
+    [_ctrlL, _bodyRows] call _renderBlock;
 };
 
 _top pushBack (["MACHINE / PATIENT OWNERSHIP"] call _sect);
