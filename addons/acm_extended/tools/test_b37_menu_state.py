@@ -211,13 +211,19 @@ class RuntimeSourceContracts(unittest.TestCase):
         self.assertIn("['ACME_menuRowTarget', objNull]) isNotEqualTo _patient) exitWith", RENDER)
         self.assertIn("['ACME_menuTarget', objNull]) isNotEqualTo _patient) exitWith", RENDER)
 
-    def test_renderer_reapplies_configured_body_anatomy_before_grouping(self):
+    def test_renderer_reapplies_configured_body_anatomy_before_grouping_without_select_exitwith():
         anatomy = RENDER.index("private _bodyPartNames = ['head', 'body', 'leftarm', 'rightarm', 'leftleg', 'rightleg'];")
         grouping = RENDER.index("if (_nestEnabled) then {")
         self.assertLess(anatomy, grouping)
-        self.assertIn("getArray (_cfg >> 'allowedSelections') apply {toLowerANSI _x}", RENDER)
-        self.assertIn("'all' in _allowed || {_selectedBodyName in _allowed}", RENDER)
-        self.assertIn("private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;", RENDER)
+        block = RENDER[anatomy:grouping]
+        self.assertIn("private _anatomyFiltered = [];", block)
+        self.assertIn("forEach _menuActions;", block)
+        self.assertIn("_menuActions = _anatomyFiltered;", block)
+        self.assertIn("private _allowed = (getArray (_cfg >> 'allowedSelections')) apply {toLowerANSI _x};", block)
+        self.assertIn("('all' in _allowed) || {_selectedBodyName in _allowed}", block)
+        self.assertNotIn("exitWith", block)
+        self.assertNotIn("_menuActions = _menuActions select {", block)
+        self.assertIn("if (_allowed isNotEqualTo []) then {", block)
 
     def test_death_transition_is_part_of_renderer_paint_identity(self):
         self.assertIn("_selectedCategory, !isNull _target && {alive _target}", RENDER)
