@@ -39,9 +39,12 @@ assert 'ace_medical_status_fnc_setUnconsciousState' not in blast
 assert 'call ace_medical_fnc_setUnconscious;' in roc
 assert 'call ace_medical_status_fnc_setUnconsciousState;' not in roc
 
-# Intentional KO -> obtunded conversion manually transitions the state machine instead of only flipping the flag.
-assert 'CBA_statemachine_fnc_manualTransition' in obt
-assert '"ACMEObtundedWake"' in obt
+# Intentional KO -> obtunded conversion must use the same canonical wake authority as every other
+# consciousness transition. The actual state-machine repair now lives centrally in reconcileWake.
+assert 'ACM_core_fnc_requestWake' in obt
+assert '"obtunded"' in obt
+assert 'CBA_statemachine_fnc_manualTransition' not in obt
+assert obt.index('call ACM_core_fnc_requestWake') < obt.index('call ACME_fnc_obtundedStateCommit')
 
 assert 'ACME_buildBatch = "B147";' in startup
 assert 'ACME_debugRevision = "rc4";' in startup
