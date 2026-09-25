@@ -1,6 +1,7 @@
-"""Full provider/cancel execution with explicit input and display fixtures.
-No real keyboard events, display lifetime, animation or network scheduling is simulated.
-Only the originating medical display is tracked; menu-less chest exits remain valid.
+"""Provider movement cancellation without medical-menu lifetime coupling.
+
+The B166 provider theatre is presentation-only. Movement may cancel that theatre, but closing/recreating ACE's
+medical menu must never cancel patient Semi-Fowler state or gate its animation.
 """
 import pytest
 from test_menu_death_lifecycle import execute
@@ -14,12 +15,11 @@ ACTIONS=['MoveForward','MoveBack','TurnLeft','TurnRight','MoveLeft','MoveRight',
 
 def stopped():
     return f'''
-        [!(_medic getVariable ["ACME_headElev_seqActive",true]),"movement/menu exit did not cancel provider"] call _check;
+        [!(_medic getVariable ["ACME_headElev_seqActive",true]),"movement did not cancel provider theatre"] call _check;
         [_removed isEqualTo [100],"cancel did not retire exact controller"] call _check;
-        [_moves isEqualTo [[_medic,"{REST}",2]],"cancel lost existing crouch recovery"] call _check;
+        [_moves isEqualTo [[_medic,"{REST}",2]],"cancel lost crouch recovery"] call _check;
         [_stances isEqualTo ["MIDDLE"],"cancel changed stance sequence"] call _check;
         [count _waits==1 && {{(_waits select 0 select 2)==0.25}},"cancel changed release delay"] call _check;
-        [!(_medic getVariable ["ACME_DP_Paused",true]) && {{!(_medic getVariable ["ACME_DP_TreatmentBusy",true])}},"pressure pause left busy"] call _check;
         if (count _waits==1) then {{[_waits select 0] call _deliver;}};
         [_stances isEqualTo ["MIDDLE","AUTO"],"cancel left stance locked"] call _check;
         call _patientUntouched;
@@ -39,7 +39,7 @@ def reset(stage):
 
 @pytest.mark.parametrize('mode',['elevate','lower'])
 @pytest.mark.parametrize('stage',[-1,0,1,2])
-def test_movement_retires_every_stage_without_lowering_casualty(mode,stage):
+def test_movement_retires_every_stage_without_touching_casualty(mode,stage):
     execute(setup()+begin(mode)+reset(stage)+'''
         _input setVariable ["MoveForward",1];
         [_job] call _tick;
@@ -47,7 +47,7 @@ def test_movement_retires_every_stage_without_lowering_casualty(mode,stage):
 
 
 @pytest.mark.parametrize('action',ACTIONS)
-def test_each_remappable_movement_action_can_cancel(action):
+def test_each_remappable_movement_action_can_cancel_provider_theatre(action):
     execute(setup()+begin()+reset(1)+f'''
         _input setVariable ["{action}",0.1];
         [_job] call _tick;
@@ -55,22 +55,8 @@ def test_each_remappable_movement_action_can_cancel(action):
 
 
 @pytest.mark.parametrize('mode',['elevate','lower'])
-@pytest.mark.parametrize('stage',[-1,0,1,2])
-@pytest.mark.parametrize('replacement',['objNull','profileNamespace'])
-def test_originating_menu_close_or_replacement_cancels_without_patient_writes(mode,stage,replacement):
+def test_stationary_provider_keeps_full_choreography(mode):
     execute(setup()+'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",missionNamespace];
-    '''+begin(mode)+reset(stage)+f'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",{replacement}];
-        [_job] call _tick;
-    '''+stopped())
-
-
-@pytest.mark.parametrize('mode',['elevate','lower'])
-@pytest.mark.parametrize('menu',['objNull','missionNamespace'])
-def test_stationary_current_context_keeps_full_choreography(mode,menu):
-    execute(setup()+f'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",{menu}];
         _input setVariable ["MoveForward",0.05];
     '''+begin(mode)+finish()+'''
         [count _moves==4 && {_removed isEqualTo [100]},"idle/dead-zone changed choreography"] call _check;
@@ -78,39 +64,10 @@ def test_stationary_current_context_keeps_full_choreography(mode,menu):
     ''')
 
 
-@pytest.mark.parametrize('owner',['ai','headless'])
-def test_other_local_provider_does_not_read_players_input_or_menu(owner):
-    extra='ACE_player=profileNamespace;' if owner=='ai' else '_interfacePresent=false;'
-    execute(setup()+extra+'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",missionNamespace];
-        _input setVariable ["MoveForward",1];
-    '''+begin()+'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",objNull];
-    '''+finish()+'''
-        [count _moves==4 && {_removed isEqualTo [100]},"player input cancelled other local provider"] call _check;
-        call _patientUntouched;
-    ''')
-
-
-def test_no_originating_menu_does_not_bind_to_later_unrelated_menu():
-    execute(setup()+begin()+'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",missionNamespace];
-        _anim=toLower "'''+REST+'''";
-        [_job] call _tick;
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",objNull];
-    '''+finish()+'''
-        [count _moves==4 && {_removed isEqualTo [100]},"menu-less exit adopted unrelated menu"] call _check;
-        call _patientUntouched;
-    ''')
-
-
-def test_superseded_controller_cannot_cancel_new_sequence_even_with_input_and_closed_menu():
-    execute(setup()+'''
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",missionNamespace];
-    '''+begin()+reset(1)+'''
+def test_superseded_controller_cannot_cancel_new_sequence_even_with_input():
+    execute(setup()+begin()+reset(1)+'''
         _medic setVariable ["ACME_headElev_medicAnimToken",99];
         _input setVariable ["MoveForward",1];
-        uiNamespace setVariable ["ace_medical_gui_menuDisplay",objNull];
         [_job] call _tick;
         [_medic getVariable ["ACME_headElev_seqActive",false],"old input cancelled new sequence"] call _check;
         [count _moves==0 && {count _stances==0} && {count _waits==0} && {count _events==0},"old input requested cleanup"] call _check;
@@ -119,20 +76,23 @@ def test_superseded_controller_cannot_cancel_new_sequence_even_with_input_and_cl
     ''')
 
 
-def movement_menu_contract(text=None):
+def movement_contract(text=None):
     s=source('headElevMedicSeq') if text is None else text
     for part in (
-        'private _watchMenu = !isNull _menu;',
-        'hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}',
-        'if (hasInterface && {!isNil "ACE_player"} && {_u isEqualTo ACE_player}) then {',
+        'hasInterface && {!isNil "ACE_player"} && {_u isEqualTo ACE_player}',
         '(inputAction _x) > 0.05',
-        '_watchMenu && {isNull _menu || {!(_menu isEqualTo (uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull]))}}',
         'if (_cancel) exitWith {',
         'call ACME_fnc_headElevateCancelSeq;',
         '[_pfh] call CBA_fnc_removePerFrameHandler;',
+        'private _hardDeadline = CBA_missionTime + 6.0;',
     ):
         assert contains(s,part),part
-    for action in ACTIONS:assert contains(s,'"'+action+'"')
+    for action in ACTIONS:
+        assert contains(s,'"'+action+'"')
+    assert 'ace_medical_gui_menuDisplay' not in s
+    assert '_watchMenu' not in s
+    assert 'headElevMedicReady' not in s
+    assert 'ACME_headElev_pendingMove' not in s
     assert s.index('if ((_u getVariable ["ACME_headElev_medicAnimToken", -1]) != _token) exitWith {') < s.index('private _cancel = false;')
     assert not contains(source('headElevateCancelSeq'),'call ACME_fnc_headElevateStop')
     assert contains(source('headElevateCancelSeq'),'_m setUnitPos "AUTO";')
@@ -140,10 +100,10 @@ def movement_menu_contract(text=None):
 
 @pytest.mark.parametrize('old,new',[
     ('(inputAction _x) > 0.05','false'),
-    ('private _watchMenu = !isNull _menu;','private _watchMenu = false;'),
-    ('&& {_u isEqualTo ACE_player}','&& {true}'),
     ('call ACME_fnc_headElevateCancelSeq;',''),
+    ('private _hardDeadline = CBA_missionTime + 6.0;','private _hardDeadline = CBA_missionTime + 60.0;'),
 ])
-def test_contract_rejects_removed_cancellation_guards_despite_comment_decoy(old,new):
-    s=source('headElevMedicSeq');assert old in s
-    with pytest.raises(AssertionError):movement_menu_contract(s.replace(old,new)+'\n/* '+old+' */')
+def test_contract_rejects_removed_cancellation_guards(old,new):
+    s=source('headElevMedicSeq'); assert old in s
+    with pytest.raises(AssertionError):
+        movement_contract(s.replace(old,new)+'\n/* '+old+' */')
