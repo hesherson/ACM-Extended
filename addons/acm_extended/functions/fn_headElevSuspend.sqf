@@ -22,35 +22,8 @@ if !((_patient getVariable ["ACME_headElev_hold", []]) isEqualTo []) then {
 };
 if !(_patient getVariable ["ACME_headElevated", false]) exitWith {};
 
-// Even temporary lowering starts from anterior-up. An already-correct Semi-Fowler patient is untouched; any stale
-// posterior orientation is normalized first so ACME_HeadElevPatientRelease is never played from the stomach.
-private _actualBeforeSuspend = [_patient, _patient getVariable ["ACME_CS_facing","front"]]
-    call ACME_fnc_chestSealActualSide;
-private _needFrontFirst = !_frontNormalized && {_actualBeforeSuspend != "front"};
-
-if (_needFrontFirst) exitWith {
-    private _delay = 0.08;
-
-    if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
-        [_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
-        _delay = (_rollTime max 0.1) + 0.08;
-    } else {
-        private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
-        _patient setVariable ["ACME_CS_facing","front",true];
-        ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
-    };
-
-    [{
-        params ["_p","_keep"];
-        if (!isNull _p && {local _p} && {alive _p}) then {
-            _p setVariable ["ACME_CS_facing","front",true];
-            [_p,_keep,true] call ACME_fnc_headElevSuspend;
-        };
-    }, [_patient,_keepVestOut], _delay] call CBA_fnc_waitAndExecute;
-};
-
+// A live Semi-Fowler placement is already face-up. Temporary suspension is a direct lay-flat transition;
+// never insert a front/back roll between elevation and the authored release.
 _patient setVariable ["ACME_CS_facing","front",true];
 
 private _parkSupport = {
