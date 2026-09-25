@@ -2,13 +2,22 @@
 
 These notes cover the cumulative 1.2.3 changes promoted from the release-candidate series into the stable 1.2.3 build.
 
+## Player-facing hotfix
+
+- Reworked the IV tray catheter stack so the visible catheter is centered, inventory copies fan upward only with lower opacity, and the extra-stock `+` badge stays inside the tray tile.
+- Tibial IO access no longer passes fluid through a tourniqueted leg or Zone 3 AAJT-S/REBOA occlusion.
+- Stopped Narc Box carousel hover/repaint loops that repeatedly brightened syringes and disturbed the push-duration editor; typed seconds now remain with the prepared syringe.
+- Medication pushes are blocked on an exact IV/IO access while a non-empty Blood, FreshBlood, or FBTK bag remains on that line. Empty/removed blood bags clear the restriction.
+- Medic-role providers can perform thoracostomy but do not see a chest-tube tray slot. Doctor-role providers have access to both.
+- Runtime identity is **1.2.3 / B150** with no RC suffix in the debug menu.
+
 ## Wake posture restoration
 
 - Successful on-foot wake requests now restore consciousness into ACM's lying state rather than immediately playing the ordinary ACE wake/get-out animation.
 - `WasTreated` and `Lying_State` are armed before the WakeUp event because ACE calls `setUnconsciousAnim(false)` before publishing `ace_unconscious`.
 - The existing ACM `onUnconscious(false)` flow then consumes `WasTreated`, retains `Lying_State`, and exposes the normal separate Get Up action.
 - Vehicle wake behavior is intentionally unchanged.
-- Runtime identity is **1.2.3 / B149** with no RC suffix in the debug menu.
+- Runtime identity is **1.2.3 / B150** with no RC suffix in the debug menu.
 
 ## Consciousness wake repair
 
