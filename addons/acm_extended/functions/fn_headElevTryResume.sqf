@@ -9,6 +9,14 @@ if (!local _patient) exitWith {[_patient, "headElevTryResume", [_patient, _token
 if (_token == "") then {_token = _patient getVariable ["ACME_headElev_poseToken", ""];};
 if ((_patient getVariable ["ACME_headElev_poseToken", ""]) != _token) exitWith {};
 if !(_patient getVariable ["ACME_headElev_ResumePending", false]) exitWith {};
+
+// Unsupported/manual Semi-Fowler is never a passive posture. Once its provider hold was released by any competing
+// maneuver, the episode is over and the casualty must be explicitly elevated again.
+if (_patient getVariable ["ACME_headElev_manualUnsupported", false]) exitWith {
+    private _alreadyFlat = _patient getVariable ["ACME_headElev_Suspended", false];
+    [objNull, _patient, _alreadyFlat] call ACME_fnc_headElevateStop;
+};
+
 if (_patient getVariable ["ACME_CS_ProcedureActive", false]) exitWith {
     [{_this call ACME_fnc_headElevTryResume;}, [_patient, _token], 0.5] call CBA_fnc_waitAndExecute;
 };
@@ -40,7 +48,6 @@ if !(_patient getVariable ["ACME_headElevated", false]) exitWith {
 };
 private _maneuverHandoffUntil = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
 if (([_patient] call ACM_core_fnc_cprActive)
-    || {[_patient] call ACM_core_fnc_bvmActive}
     || {(_maneuverHandoffUntil isEqualType 0) && {serverTime < _maneuverHandoffUntil}}) exitWith {
     [{ _this call ACME_fnc_headElevTryResume }, [_patient, _token], 0.50] call CBA_fnc_waitAndExecute;
 };
