@@ -77,7 +77,9 @@ if (GVAR(ignoreIncompatibleAddonWarning)) then {
 // External and native wake events share the same state-aware repair as requestWake.
 // A later knockout, full heal/restore, second request or owner handoff invalidates this callback.
 [QACEGVAR(medical,WakeUp), {
-    params [["_unit", objNull, [objNull]]];
+    // ACE/CBA publishes ace_medical_WakeUp with the casualty OBJECT as the event payload.
+    // Do not run params directly on that object; normalize it first.
+    private _unit = if (_this isEqualType objNull) then {_this} else {_this param [0, objNull, [objNull]]};
     if (isNull _unit || {!local _unit} || {!alive _unit}) exitWith {};
     private _ticket = (_unit getVariable ["ACME_wakeRepairTicket", 0]) + 1;
     _unit setVariable ["ACME_wakeRepairTicket", _ticket, false];
