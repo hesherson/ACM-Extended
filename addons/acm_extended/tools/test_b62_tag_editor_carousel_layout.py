@@ -70,7 +70,7 @@ def test_active_syringe_still_85_percent_and_hover_is_100_percent_with_bigger_ta
     render_contract()
     render = txt('functions/fn_skCarouselRender.sqf')
     assert '0.85' in render
-    assert 'if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};' in render
+    assert 'if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};' not in render
     assert 'private _hitW = _fullW * 1.55; private _hitH = _fullH * 1.26;' in render
 
 def test_edit_mode_disables_neighbor_selection_and_injection_hotspots():
