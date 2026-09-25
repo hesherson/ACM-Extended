@@ -93,3 +93,13 @@ def test_stale_stance_ownership_is_heartbeat_bounded():
     assert '(CBA_missionTime - _headSeen) <= 1' in stance
     assert 'ACM_core_ContinuousAction_LastSeen' in stance
     assert '(CBA_missionTime - _lastSeen) <= 4' in stance
+
+
+def test_continuous_action_acquisition_self_heals_only_stale_generation():
+    begin=(ROOT.parent/"core"/"functions"/"fnc_beginContinuousAction.sqf").read_text(encoding="utf-8")
+    assert 'QGVAR(ContinuousAction_Session)' in begin
+    assert 'QGVAR(ContinuousAction_LastSeen)' in begin
+    assert '(CBA_missionTime - _staleSeen) > 4' in begin
+    assert 'GVAR(ContinuousAction_Active) = false;' in begin
+    # Normal exclusivity remains after the bounded stale-state cleanup.
+    assert '|| {GVAR(ContinuousAction_Active)}) exitWith {};' in begin
