@@ -64,17 +64,30 @@ if (_replayAnim && {isNull objectParent _patient}) then {
     };
     [{
         params ["_patient", "_poseToken", "_animToken"];
-        if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
-        if ((_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken) exitWith {};
-        if (!(_patient getVariable ["ACME_headElevated", false])) exitWith {};
-        if (_patient getVariable ["ACME_headElev_Suspended", false]) exitWith {};
-        if (((_patient getVariable ["ACME_patientAnimLock", []]) param [0, ""]) != _animToken) exitWith {};
+        if (isNull _patient || {!local _patient}) exitWith {};
+        private _lock = _patient getVariable ["ACME_patientAnimLock", []];
+        private _ownsAnim = (_lock param [0, ""]) == _animToken;
+        if (!_ownsAnim) exitWith {};
+
+        // Always retire our own lift lease, even when Lower Head/cancellation cleared the logical placement while
+        // the grab was still running. B165 returned before this release and could strand the patient animation lock
+        // and collision-disabled state, which in turn made later medical actions appear dead.
         [_patient, _animToken] call ACME_fnc_patientAnimRelease;
-        private _state = toLower animationState _patient;
+
+        private _currentPose = _patient getVariable ["ACME_headElev_poseToken", ""];
+        private _replacementPlacement = _currentPose != "" && {_currentPose != _poseToken};
+        if (!_replacementPlacement) then {
+            [_patient, true] call ACME_fnc_headElevCollision;
+        };
+
+        if (!alive _patient || {_replacementPlacement}
+            || {!(_patient getVariable ["ACME_headElevated", false])}
+            || {_patient getVariable ["ACME_headElev_Suspended", false]}) exitWith {};
+
+        private _state = toLowerANSI animationState _patient;
         if (_state != "acme_headelevpatienthold") then {
             [_patient, "ACME_HeadElevPatientHold", 2] call ACME_fnc_doAnim;
         };
-        [_patient, true] call ACME_fnc_headElevCollision;
     }, [_patient, _poseToken, _animToken], _liftTime + 0.5] call CBA_fnc_waitAndExecute;
 };
 _patient setVariable ["ACME_headElev_visualActive", true, true];
