@@ -32,6 +32,9 @@ private _refundMags = [];
 if (_iv && {!([_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIV)} && {!([_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO)}) exitWith {
     ["No IV/IO at that site. Switch Route to IM, or pick a limb with a line.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
+if (_iv && {[_patient,_bodyPart,_siteIdx] call ACME_fnc_medicationLineBloodBusy}) exitWith {
+    ["Blood is present in that line. Finish or remove the blood bag before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
+};
 
 private _virtual = ((_store select _storeIdx) param [6, ""]) in ["compoundB13", "dilutionB13"];
 
