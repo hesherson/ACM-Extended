@@ -86,7 +86,7 @@ def test_actual_side_not_cached_label_decides_initial_normalization(actual,cache
         [count _untils==1 && {count _waits==0},"rollable normalization used a nominal sleep"] call _check;
         private _job=_untils select 0;
         _patient setVariable ["ACME_CS_rollToken",""];
-        [(_job select 2)] call (_job select 1);
+        (_job select 2) call (_job select 1);
         '''
             if rollable else
             '''
@@ -121,7 +121,7 @@ def test_start_retry_retains_existing_owner_life_and_eligibility_checks(change):
         private _job=_untils select 0; _untils=[];
         _patient setVariable ["ACME_CS_rollToken",""];
     '''+change+'''
-        [(_job select 2)] call (_job select 1);
+        (_job select 2) call (_job select 1);
         [count _tilts==0 && {count _starts==0} && {count _restores==0},"invalid retry started elevation"] call _check;
     ''')
 
@@ -146,9 +146,9 @@ def test_superseded_prone_roll_cannot_start_or_cancel_from_old_semifowler_contin
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
         private _job=_untils select 0;
         _patient setVariable ["ACME_CS_rollToken","newer-roll"];
-        [(_job select 2)] call (_job select 1);
+        (_job select 2) call (_job select 1);
         [count _tilts==0 && {count _starts==0},"superseded roll started old Semi-Fowler continuation"] call _check;
-        [(_job select 2)] call (_job select 4);
+        (_job select 2) call (_job select 4);
         [count _rollCancels==0,"old Semi-Fowler timeout cancelled newer roll"] call _check;
         [(_patient getVariable ["ACME_CS_rollToken",""])=="newer-roll","newer roll token changed"] call _check;
     ''')
