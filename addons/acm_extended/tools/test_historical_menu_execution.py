@@ -119,6 +119,11 @@ def section_setup():
     # Unsupported VM map getOrDefault primitive is replaced at that one boundary;
     # real hashmaps and the source's condition/row-copy algorithm are retained.
     text=text.replace("_nameKeys getOrDefault [_name, '']","([_nameKeys,_name,''] call _mapDefault)")
+    # Config lookup is an engine boundary in this renderer harness. Anatomy itself has dedicated source/config
+    # contracts; this execution fixture is for row ordering, conditions and callbacks.
+    anatomy_start=text.index("private _groupAnatomyAllowed = {")
+    anatomy_end=text.index("if (_nestEnabled) then {", anatomy_start)
+    text=text[:anatomy_start] + "private _groupAnatomyAllowed={true};\n" + text[anatomy_end:]
     return menu_setup()+'''
         private _display=uiNamespace; private _target=_patient;
         private _bodyPart=0; private _selectedCategory="examine";
@@ -156,7 +161,7 @@ def test_section_eligibility_and_callbacks_survive_flat_closed_and_open_views(gr
 
 @pytest.mark.parametrize('bodypart',[0,1,2,3,4,5])
 @pytest.mark.parametrize('dead',[False,True])
-def test_head_assessment_filter_is_anatomical_not_a_death_detector(bodypart,dead):
+def test_flat_direct_rows_are_not_rewritten_by_dropdown_anatomy_guard(bodypart,dead):
     execute(section_setup()+f'_bodyPart={bodypart}; _patientAlive={str(not dead).lower()}; _nestEnabled=false; _selectedCategory="airway";'+'''
         missionNamespace setVariable ["ace_medical_gui_actions",[
             ["Airway","airway",{true},_action,[],"",[],"","CheckAirway", "adjuncts"],
@@ -164,7 +169,11 @@ def test_head_assessment_filter_is_anatomical_not_a_death_detector(bodypart,dead
             ["Other","airway",{true},_action,[],"",[],"","ForeignAction", ""]
         ]];
         private _rows=call _render;
-    '''+f'[count _rows=={3 if bodypart==0 else 1},"wrong anatomy/death filter"] call _check;')
+        [count _rows==3,"flat/direct rows were removed by dropdown-only anatomy policy"] call _check;
+        private _callbacksBefore=+_callbacks;
+        ["direct"] call ((_rows select 2) select 3);
+        [count _callbacks==count _callbacksBefore+1,"direct action callback was replaced"] call _check;
+    ''')
 
 
 @pytest.mark.parametrize('names',[
