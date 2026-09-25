@@ -14,6 +14,14 @@ if (_partIndex < 0 || {_partIndex > 5} || {_iv && {!(_accessSite in [0,1,2])}}) 
 private _acmeBinding = "NA4:getIVFlowRate";
 if ([_patient, _partIndex] call ACME_fnc_aajtOccludes) exitWith {0};
 
+// A conventional tourniquet also removes usable venous return from an access distal to it. IVs are always
+// tourniquet-blocked on their limb. Tibial IOs (left/right leg) are likewise blocked: bone access does not make
+// fluid bypass the limb's occluded venous return. Humeral IO remains independent because it is proximal to the
+// ordinary arm-tourniquet model used here.
+private _tqs = _patient getVariable ["ace_medical_tourniquets", [0,0,0,0,0,0]];
+private _tqOnPart = (_tqs param [_partIndex,0,[0]]) > 0;
+if (_tqOnPart && {_iv || {_partIndex in [4,5]}}) exitWith {0};
+
 
 // get_io and get_iv, de-macroed. the defaults are all-0 for io, and 6 parts of [0,0,0] for iv.
 private _ioP = _patient getVariable ["ACM_circulation_IO_Placement", [0,0,0,0,0,0]];
