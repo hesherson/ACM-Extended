@@ -34,10 +34,18 @@ if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
 private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
 [_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);
 
-// BVM needs both hands. End this provider's Direct Pressure before ACM takes over the
-// controls and animation; a paused pressure worker must not keep its own input handlers.
-if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPressureStop"}) then {
-    [true, _medic, false] call ACME_fnc_directPressureStop;
+// BVM outranks Direct Pressure for provider animation and clinical hand use, but it must not destroy the
+// persistent pressure episode. Yield the same-provider/same-patient hold before BVM takes ownership; the DP PFH
+// keeps the episode alive without its marker/pose and resumes it only after the real native BVM/CPR lifetime ends.
+private _dpSamePatient = (_medic getVariable ["ACME_DP_Active", false])
+    && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient};
+if (_dpSamePatient) then {
+    _medic setVariable ["ACME_DP_Paused", true, false];
+    _medic setVariable ["ACME_DP_PauseTreatmentClass", "usebvm", false];
+    _medic setVariable ["ACME_dah_gen", (_medic getVariable ["ACME_dah_gen", 0]) + 1, false];
+    _medic setVariable ["ACME_DP_InPose", false, false];
+    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+    _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
 };
 
 [[_medic, _patient, "head", [_useOxygen, _portableOxygen]], { // On Start
