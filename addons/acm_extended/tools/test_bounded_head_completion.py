@@ -57,6 +57,8 @@ def setup():
         ACME_fnc_medLog={}; ACME_fnc_animBlocked={_blocked};
         ACME_fnc_chestSealCanPhysicalRoll={true};
         ACME_fnc_chestSealRoll={_rolls pushBack _this;};
+        ACM_core_fnc_cprActive={false};
+        ACM_core_fnc_bvmActive={false};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
         CBA_fnc_waitAndExecute={_waits pushBack [_this select 0,_this select 1,_this select 2];};
