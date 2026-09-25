@@ -185,6 +185,32 @@ def execute(scenario, runtime=False):
     assert 'CPR_FIX_OK' in output and 'CPR_FIX_FAIL' not in output, output
 
 
+def test_direct_cpr_start_yields_same_patient_direct_pressure_without_destroying_episode():
+    execute('''
+        _medic setVariable ["ACME_DP_Active",true];
+        _medic setVariable ["ACME_DP_Patient",_patient];
+        _medic setVariable ["ACME_DP_PFH",77];
+        _medic setVariable ["ACME_DP_KeyIDs",["dp-key"]];
+        _medic setVariable ["ACME_DP_InPose",true];
+        _medic setVariable ["ACME_DP_PoseToken",4];
+        _medic setVariable ["ACME_dah_gen",9];
+
+        call _start;
+
+        [_medic getVariable ["ACME_DP_Active",false],"CPR destroyed Direct Pressure"] call _check;
+        [(_medic getVariable ["ACME_DP_Patient",objNull]) isEqualTo _patient,"CPR changed DP target"] call _check;
+        [(_medic getVariable ["ACME_DP_PFH",-1]) == 77,"CPR removed DP worker"] call _check;
+        [(_medic getVariable ["ACME_DP_KeyIDs",[]]) isEqualTo ["dp-key"],"CPR removed DP inputs"] call _check;
+        [_medic getVariable ["ACME_DP_Paused",false],"CPR did not pause DP"] call _check;
+        [(_medic getVariable ["ACME_DP_PauseTreatmentClass",""]) == "cpr","CPR used wrong DP pause owner"] call _check;
+        [!(_medic getVariable ["ACME_DP_InPose",true]),"CPR left DP pose active"] call _check;
+        [(_medic getVariable ["ACME_dah_gen",0]) == 10,"CPR did not retire DP pose generation"] call _check;
+
+        call _cancel; call _freed;
+        [_medic getVariable ["ACME_DP_Active",false],"CPR cleanup destroyed DP episode"] call _check;
+    ''')
+
+
 def test_stop_with_string_ids_releases_patient_loop_and_requests_native_exit():
     execute('''
         call _start; call _enter;
