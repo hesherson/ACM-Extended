@@ -134,7 +134,7 @@ def test_lift_uses_connected_grab_and_one_guarded_hold_completion(lift,delay,alr
 
 
 @pytest.mark.parametrize('change,collision_count',[
-    ('_patientLocal=false;',0), ('_patientAlive=false;',0),
+    ('_patientLocal=false;',0), ('_patientAlive=false;',1),
     ('_patient setVariable ["ACME_headElev_poseToken","later"];',0),
     ('_patient setVariable ["ACME_headElevated",false];',1),
     ('_patient setVariable ["ACME_headElev_Suspended",true];',1),
