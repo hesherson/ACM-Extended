@@ -173,6 +173,10 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         _medic setVariable ["ACME_chestAccessPreflightCancel", false, false];
         _medic setVariable ["ACME_checkBreathingProviderRequested", "", false];
         _medic setVariable ["ACME_chestAccess_treatment", [_patient, _nativeContinuousClass, _leaseId]];
+        if (_heldBreathingCheck) then {
+            diag_log format ["[ACME CHECK BREATHING] preparing patient %1; build %2; lease %3",
+                netId _patient, missionNamespace getVariable ["ACME_buildBatch","?"], _leaseId];
+        };
 
         // The medical menu closes on the accepted click. Its normal pending-reopen handler is suppressed by the
         // renderer while this flag is active; only an explicit abort/failure reopens it.
@@ -206,6 +210,9 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             params ["_m","_p","_leaseId","_classKey","_tok","_finish",["_reopen",true]];
             if (isNull _m || {!local _m}) exitWith {};
             if ((_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok) exitWith {};
+            if (_classKey == "checkbreathing") then {
+                diag_log format ["[ACME CHECK BREATHING] preparation aborted; lease %1", _leaseId];
+            };
 
             // Retire the provider theatre locally. Never wait for a casualty-owner packet to end this pose.
             [_m, _p, "stop", true, ((_m getVariable ["ACME_chestAccessProvider", []]) param [2, ""])] call ACME_fnc_chestAccessVestProvider;
@@ -244,6 +251,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
 
             private _cancelled = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
+                || {_classKey == "checkbreathing" && {!alive _p}}
                 || {_m getVariable ["ACE_isUnconscious", false]}
                 || {(_m distance _p) > ace_medical_gui_maxDistance}
                 || {objectParent _m isNotEqualTo objectParent _p};
@@ -292,6 +300,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             if (_heldBreathing) then {
                 _m setVariable ["ACME_checkBreathingPose", [_p, _pose select 0, _leaseId], false];
                 _m setVariable ["ACME_suppressNativeTreatmentAnim", true, false];
+                diag_log format ["[ACME CHECK BREATHING] starting timer with provider held; lease %1", _leaseId];
             };
             private _started = _args call ACM_core_fnc_treatmentNative;
             if (_heldBreathing) then {_m setVariable ["ACME_suppressNativeTreatmentAnim", false, false];};
@@ -327,6 +336,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             // waitUntilAndExecute so stepping back into range cannot convert an invalidation frame into launch.
             private _invalid = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
+                || {_classKey == "checkbreathing" && {!alive _p}}
                 || {_m getVariable ["ACE_isUnconscious", false]}
                 || {(_m distance _p) > ace_medical_gui_maxDistance}
                 || {objectParent _m isNotEqualTo objectParent _p}

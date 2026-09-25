@@ -96,6 +96,9 @@ def test_denied_patient_lift_waits_foreign_lease_then_resumes():
         [!([_leaseWait] call _ready),"valid foreign lease treated as retired"] call _check;
         [(_patient getVariable ["ACME_patientAnimLock",[]]) isEqualTo _foreign,"valid lock overwritten"] call _check;
         _serverClock=1101; _leaseAllowed=true; [_leaseWait] call _deliver;
+        private _retry=call _take;
+        [(_retry select 0)=="delay" && {(_retry select 3)>0},"retry did not yield to a later frame"] call _check;
+        [_retry] call _deliver;
         [count _pins==1 && {count _waits==1},"retired lease never resumed patient preparation"] call _check;
     ''')
 

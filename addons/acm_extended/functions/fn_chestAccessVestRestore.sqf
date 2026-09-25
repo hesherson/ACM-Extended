@@ -189,6 +189,14 @@ private _beginRestore = {
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
+    // Re-evaluate after a competing lease/provider delay. The outer restore path
+    // handles dead, seated and mobile casualties without requesting a lift.
+    if (!alive _p || {!isNull objectParent _p}
+        || {!([_p] call ACME_fnc_chestSealCanPhysicalRoll)}) exitWith {
+        _p setVariable [_busyVar,"",false];
+        [_p,false,_medic,_ctx,true] call ACME_fnc_chestAccessVestRestore;
+    };
+
     private _claim = [_p,"ACME_HeadElevPatientGrab",2,"chest-access-vest-restore",_medic,_total + 0.5,4,_token]
         call ACME_fnc_patientAnimRequest;
     if (_claim == "") exitWith {
@@ -202,7 +210,9 @@ private _beginRestore = {
             (count _lock) < 5 || {(_lock param [4,-1]) <= serverTime}
         }, {
             params ["_args","_begin"];
-            _args call _begin;
+            // Never append another immediately-ready retry to CBA's live
+            // wait-until iteration. Let clocks, cancellation and cleanup advance.
+            [_begin, _args, 0.05] call CBA_fnc_waitAndExecute;
         }, [+_this,_begin]] call CBA_fnc_waitUntilAndExecute;
     };
     _p setVariable [_readyVar,-1,true];

@@ -241,7 +241,15 @@ private _pfh = [{
                     _state set [4, _now];
                 };
             };
-            if (_current != toLower _main && {_mode != "chestAccess"}) exitWith {};
+            if (_current != toLower _main && {_mode != "chestAccess"}) exitWith {
+                // A sparse frame can skip the finite roll's held sample entirely.
+                // It was observed running in stage 1; after its authored work time
+                // has elapsed, record completion without replaying that finished RTM.
+                if (_mode == "roll" && {(_now - _stageStarted) * _rate >= _holdAt}) then {
+                    _medic setVariable ["ACME_rollProviderCompletedEpoch", _epoch, false];
+                    [_medic, _mode, _epoch] call ACME_fnc_treatmentPoseStop;
+                };
+            };
             // Owner-clock time since the requested state was first reported. This is the freeze rule the user set.
             private _elapsed = (_now - _stageStarted) * _rate;
             if (_current == toLower _main) then {
@@ -278,6 +286,11 @@ private _pfh = [{
             _state set [13, _now];
             _state set [14, _now];
             _state set [3, 3];
+            // Flip must still see completion if the short roll hold auto-exits
+            // before its next tick. The epoch prevents reuse by a later click.
+            if (_mode == "roll") then {
+                _medic setVariable ["ACME_rollProviderCompletedEpoch", _epoch, false];
+            };
         };
 
         case 3: {

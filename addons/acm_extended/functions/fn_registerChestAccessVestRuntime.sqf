@@ -14,6 +14,7 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
         private _record = _medic getVariable ["ACME_checkBreathingPose", []];
         if ((_record param [0, objNull]) isNotEqualTo _patient) exitWith {};
         _medic setVariable ["ACME_checkBreathingPose", [], false];
+        diag_log format ["[ACME CHECK BREATHING] timer ended; lease %1", _record param [2, ""]];
         private _entry = _medic getVariable ["ACME_chestAccessProvider", []];
         if ((_entry param [0, objNull]) isEqualTo _patient
             && {(_entry param [1, -1]) == (_record param [1, -2])}) then {

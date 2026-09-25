@@ -337,7 +337,10 @@ private _beginPatient = {
     // removal/lowering callbacks several frames after their nominal deadlines.
     _p setVariable [_readyVar, -1, true];
 
-    if (_ctx == "chestseal" && {(!alive _p) || {!isNull objectParent _p}}) exitWith {
+    // The provider wait can outlive the casualty's ground/lying state. Finish the
+    // gear transaction without animation instead of retrying a permanently denied lift.
+    if (!alive _p || {!isNull objectParent _p}
+        || {!([_p] call ACME_fnc_chestSealCanPhysicalRoll)}) exitWith {
         [_p,_ctx,_savedVar,_propVar,_pfhVar] call _commit;
         _p setVariable [_busyVar, "", false];
         _p setVariable [_readyVar, serverTime, true];
@@ -356,7 +359,9 @@ private _beginPatient = {
             (count _lock) < 5 || {(_lock param [4,-1]) <= serverTime}
         }, {
             params ["_args","_begin"];
-            _args call _begin;
+            // CBA visits callbacks appended to its wait-until queue in the same
+            // frame. A retired token or another permanent denial must yield time.
+            [_begin, _args, 0.05] call CBA_fnc_waitAndExecute;
         }, [+_this,_begin]] call CBA_fnc_waitUntilAndExecute;
     };
 

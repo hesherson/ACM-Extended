@@ -79,7 +79,7 @@ def test_breathing_timer_completion_or_cancel_releases_exact_hold_and_custody(ev
 
 @pytest.mark.parametrize('invalidation',[
     '_medic setVariable ["ACME_chestAccessPreflightCancel",true];',
-    '_distance=9;', '_alive=false;',
+    '_distance=9;', '_alive=false;', '_patientAlive=false;',
     '_medic setVariable ["ACE_isUnconscious",true];',
     '_interactable=false;',
 ])
