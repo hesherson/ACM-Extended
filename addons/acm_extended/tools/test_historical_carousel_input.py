@@ -207,7 +207,7 @@ def test_hover_is_presentation_only_and_keeps_selection_and_expansion(expanded,h
     execute(setup()+f'uiNamespace setVariable ["ACME_SK_CarouselExpanded",{str(expanded).lower()}];[{str(hover).lower()}] call ACME_fnc_skCarouselHover;'+
         f'[(uiNamespace getVariable "ACME_SK_CarouselExpanded") isEqualTo {str(expanded).lower()},"hover changed expansion"] call _check;'+'''
         [(uiNamespace getVariable "ACME_SK_SelectedSyringeId")=="id-a","hover changed medication"] call _check;
-        [count _layouts==0 && {_renders==1} && {_hotspots==0} && {count _waits==0},"hover changed layout or queued navigation"] call _check;
+        [count _layouts==0 && {_renders==0} && {_hotspots==0} && {count _waits==0},"hover repainted layout or queued navigation"] call _check;
     ''')
 
 
@@ -288,8 +288,7 @@ def test_actual_slot_hover_alpha_changes_without_changing_its_geometry(expanded,
     '''+code(dimensions)+'private _paint={'+code(presentation)+'[_alpha,_scale,_x,_y,_w,_h]};'+'''
         private _base=call _paint;
         _hoverOffset=_off;private _hovered=call _paint;
-        [(_hovered select 0)==1,"hovered slot not fully opaque"] call _check;
-        [(_hovered select [1,5]) isEqualTo (_base select [1,5]),"hover changed slot geometry"] call _check;
+        [_hovered isEqualTo _base,"hover changed slot opacity or geometry"] call _check;
         _hoverOffset=_off+1;
         [(call _paint) isEqualTo _base,"another slot hover changed this slot"] call _check;
     ''')
