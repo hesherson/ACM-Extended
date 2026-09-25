@@ -311,7 +311,17 @@ if (_classname != "ACME_ConnectETVent") exitWith {
     };
 
     if (_nativeContinuousClass in ["usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]) exitWith {
-        _this call ACM_core_fnc_treatmentNative
+        // Match CPR: BVM takes provider/clinical priority without destroying persistent Direct Pressure.
+        // This path covers already-prepared/no-carrier cases where the chest-access preflight above did not run.
+        if (_dpSamePatient) then {[_medic, _nativeContinuousClass] call _fnc_dpPauseForManeuver;};
+        private _startedContinuous = _this call ACM_core_fnc_treatmentNative;
+        if (!_startedContinuous && {_dpSamePatient}
+            && {(_medic getVariable ["ACME_DP_PauseTreatmentClass", ""]) == _nativeContinuousClass}) then {
+            _medic setVariable ["ACME_DP_Paused", false, false];
+            _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
+            _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+        };
+        _startedContinuous
     };
 
     // Preserve the existing Direct Pressure handoff for CPR.
