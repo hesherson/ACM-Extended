@@ -303,6 +303,7 @@ def line_setup():
         ACME_fnc_clinicalEpoch={(_this select 0) getVariable ["ACME_clinicalEpoch",1]};
         ACME_fnc_medicationRouteAllowed={true};
         ACME_fnc_medicationLineIdentity={_lineIdentity};
+        ACME_fnc_medicationLineBloodBusy={false};
         ACME_fnc_medicationLineFraction={_fraction};
         ACME_fnc_medicationLeak={_leaks pushBack _this;};
         ace_medical_treatment_fnc_medicationLocal={_deliveries pushBack _this;};
