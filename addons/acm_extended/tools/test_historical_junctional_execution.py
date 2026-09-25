@@ -148,7 +148,7 @@ def test_junctional_body_evidence_uses_current_layers_on_live_and_dead_patients(
         [uiNamespace,_patient] call _draw;
         for "_i" from 0 to 3 do {
             private _base=((7290004+_i) toFixed 0)+":ctrlShow";
-            private _packed=((7290020+_i) toFixed 0)+":ctrlShow";
+            private _packed=((7290040+_i) toFixed 0)+":ctrlShow";
             private _wrap=((7290000+_i) toFixed 0)+":ctrlShow";
     '''+f'[(_controlValues get _base) isEqualTo {str(state in ("open","packed","xstat")).lower()},"base evidence incorrect"] call _check;'+
         f'[(_controlValues get _packed) isEqualTo {str(state=="packed").lower()},"gauze layer covered XStat incorrectly"] call _check;'+
