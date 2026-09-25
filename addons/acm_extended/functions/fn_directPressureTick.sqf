@@ -62,8 +62,13 @@ if (_moving) exitWith {
 // continuous action. DP remains clinically alive and resumes later; it never cancels or overwrites the maneuver.
 private _nativeCpr = [_patient] call ACM_core_fnc_cprActive;
 private _nativeBvm = [_patient] call ACM_core_fnc_bvmActive;
+private _handoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
+private _providerHandoffActive = ((_handoff param [0, objNull, [objNull]]) isEqualTo _patient)
+    && {(_handoff param [1, -1, [0]]) > CBA_missionTime};
+private _ownerHandoffUntil = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
+private _ownerHandoffActive = (_ownerHandoffUntil isEqualType 0) && {serverTime < _ownerHandoffUntil};
 private _maneuverActive = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
-    || {_nativeCpr} || {_nativeBvm};
+    || {_nativeCpr} || {_nativeBvm} || {_providerHandoffActive} || {_ownerHandoffActive};
 private _manualPause = _medic getVariable ["ACME_DP_Paused", false];
 private _pauseClass = _medic getVariable ["ACME_DP_PauseTreatmentClass", ""];
 private _chestPrep = _medic getVariable ["ACME_chestAccessPreflightActive", false]
@@ -74,7 +79,7 @@ private _treatmentBusy = _medic getVariable ["ACME_DP_TreatmentBusy", false]
 
 private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
 // CPR's launcher treatment ends long before compressions do. Keep the DP pause through the real native role and
-// clear it from this long-lived PFH only after both CPR/BVM have actually ended.
+// the bounded CPR <-> BVM transfer window; clear it only after both roles and both handoff clocks have ended.
 if (!_maneuverActive && {_pauseClass in _maneuverClasses}) then {
     _medic setVariable ["ACME_DP_Paused", false, false];
     _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
