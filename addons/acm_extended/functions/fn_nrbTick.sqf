@@ -108,7 +108,12 @@ private _fnc_stopSfx = {
         };
         if (count _request >= 3 && {_now - (_u getVariable ["ACME_nrb_lastDrawSend", -1]) >= 1}) then {
             _u setVariable ["ACME_nrb_lastDrawSend", _now, false];
-            ["ACME_nrbDraw", [_u, _medic, _request select 0, _request select 1], _medic] call CBA_fnc_targetEvent;
+            private _source = _u getVariable ["ACME_nrb_oxygenSource", _medic];
+            if (!isNull _source) then {
+                ["ACME_nrbDraw", [_u, _medic, _request select 0, _request select 1, 0, _source], _source] call CBA_fnc_targetEvent;
+            } else {
+                [_u, _request select 0, _request select 1, false] call ACME_fnc_nrbOxygenAck;
+            };
         };
         private _flowing = !_awaitingTooLong && {_u getVariable ["ACME_nrb_hasO2", false]};
         if (isNil {_u getVariable "ACME_nrb_sfxWanted"} || {(_u getVariable ["ACME_nrb_sfxWanted", false]) != _flowing}) then {

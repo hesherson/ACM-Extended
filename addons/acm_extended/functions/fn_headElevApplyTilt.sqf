@@ -23,11 +23,12 @@ if (_replayAnim && {isNull objectParent _patient}) then {
     _patient setVariable ["ACME_headElev_animGraceUntil", CBA_missionTime + 2.5, false];
     // The casualty carries no physics weight while the body moves. A provider standing over them is otherwise
     // pushed by the body, hard enough to throw them and kill them.
+    private _liftTime = missionNamespace getVariable ["ACME_headElev_liftAnimTime", 1.2 / (call ACME_fnc_choreographyRate)];
+    if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2 / (call ACME_fnc_choreographyRate);};
+    private _animToken = [_patient, "ACME_HeadElevPatientGrab", 2, "head-elev-lift", objNull, _liftTime + 0.6, 1]
+        call ACME_fnc_patientAnimRequest;
+    if (_animToken == "") exitWith {};
     [_patient, false] call ACME_fnc_headElevCollision;
-    [_patient, "ACME_HeadElevPatientGrab", 2] call ACME_fnc_doAnim;
-
-    private _liftTime = missionNamespace getVariable ["ACME_headElev_liftAnimTime", 1.2];
-    if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2;};
     // The pin covers the whole lift motion and a short tail. The hold that follows has a speed of zero and moves
     // nothing, so the pin is not needed after that.
     [_patient, _liftTime + 0.6] call ACME_fnc_headElevPinPose;
@@ -36,16 +37,18 @@ if (_replayAnim && {isNull objectParent _patient}) then {
     // another system took the casualty out of the grab first.
     private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
     [{
-        params ["_patient", "_poseToken"];
+        params ["_patient", "_poseToken", "_animToken"];
         if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
         if ((_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken) exitWith {};
         if (!(_patient getVariable ["ACME_headElevated", false])) exitWith {};
         if (_patient getVariable ["ACME_headElev_Suspended", false]) exitWith {};
+        if (((_patient getVariable ["ACME_patientAnimLock", []]) param [0, ""]) != _animToken) exitWith {};
+        [_patient, _animToken] call ACME_fnc_patientAnimRelease;
         private _state = toLower animationState _patient;
         if (_state != "acme_headelevpatienthold") then {
             [_patient, "ACME_HeadElevPatientHold", 2] call ACME_fnc_doAnim;
         };
         [_patient, true] call ACME_fnc_headElevCollision;
-    }, [_patient, _poseToken], _liftTime + 0.5] call CBA_fnc_waitAndExecute;
+    }, [_patient, _poseToken, _animToken], _liftTime + 0.5] call CBA_fnc_waitAndExecute;
 };
 _patient setVariable ["ACME_headElev_visualActive", true, true];

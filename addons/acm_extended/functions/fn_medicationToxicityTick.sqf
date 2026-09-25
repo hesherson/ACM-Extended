@@ -51,13 +51,13 @@ private _fired = _patient getVariable ["ACME_medicationToxicityFired",createHash
             _reference = _reference * (GET_BODYWEIGHT(_patient) / IDEAL_BODYWEIGHT);
         };
         if (_limit > 0 && {_reference > 0}) then {
-            _burden = _burden + ([_patient,_x,false] call ace_medical_status_fnc_getMedicationCount) * _reference / _limit;
+            _burden = _burden + ([_patient,_x,false] call ACME_fnc_medicationCountCompat) * _reference / _limit;
         };
     } forEach _classes;
     private _generation = _generations getOrDefault [_family,0];
     private _last = _fired getOrDefault [_family,-1];
     if (_burden > 1.05 && {_generation > _last}
-        && {([_patient,_syndrome,true] call ace_medical_status_fnc_getMedicationCount) <= 0.001}) then {
+        && {([_patient,_syndrome,true] call ACME_fnc_medicationCountCompat) <= 0.001}) then {
         _fired = [_patient, "mark", _family, _generation, createHashMap, true] call ACME_fnc_medicationToxicityFiredCommit; // commit before adding another medication record
         [_patient,_trigger] call _handleOverdoseEffect;
     };

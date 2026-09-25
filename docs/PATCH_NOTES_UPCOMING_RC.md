@@ -2,6 +2,16 @@
 
 These notes cover the cumulative 1.2.3 changes promoted from the release-candidate series into the stable 1.2.3 build.
 
+## B156 compatibility, shared supplies and animation ownership
+
+- Preserve ACM's scalar medication API while accepting current ACE effect-pair results in Extended readers; repair the native medication summary bridge.
+- Rebuild coagulation's base separately from its combined output, process active patients at 5 Hz, and stop unchanged coagulation broadcasts.
+- Allow patient supplies through ACE's sharing setting across treatment minigames and their medical-menu gates. Keep explicit medication source selection and exact-donor refunds.
+- Prevent stale airway, hemolysis and mercy callbacks from restoring effects after a full heal; resume current native workers after ownership transfer.
+- Use one 1.5x choreography rate, correct observer freeze drift, and restore ACM's animated continuous crouch with generation-safe menu cleanup.
+- Fix repeated medication Save, final partial-push timing and native prepared-dose rounding; preserve source volumes and cancellation receipts.
+- Runtime identity is **1.2.3 / B156**. See [patch details](patch-notes/2026-09-25-1.2.3-b156-compat-supplies-animation.md).
+
 ## B155 chest-entry timing and UI follow-up
 
 - Reduced the unified debug menu width and added a subtle shared black background.

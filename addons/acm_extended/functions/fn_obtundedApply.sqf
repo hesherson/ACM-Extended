@@ -45,7 +45,8 @@ if (_on) then {
     _patient setUnitPos "AUTO";
     _patient setAnimSpeedCoef 1;
     if (_patient getVariable ["ACME_obtunded_sprintRagdollActive", false]) then {
-        _patient setVariable ["ACME_obtunded_sprintRagdollActive", false, false];
+        _patient setVariable ["ACME_obtunded_sprintRagdollActive", false, true];
         if (!(_patient getVariable ["ACE_isUnconscious", false])) then {_patient setUnconscious false;};
     };
+    _patient setVariable ["ACME_obtunded_sprintRagdollToken", [], true];
 };

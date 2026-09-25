@@ -40,7 +40,7 @@ if (_needFrontFirst) exitWith {
 
         [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
 
-        private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
+        private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
         if !(_patientRoll isEqualType 0 && {finite _patientRoll}) then {_patientRoll = 1.85;};
         private _providerRoll = missionNamespace getVariable ["ACME_rollProviderDuration",2.2];
         if !(_providerRoll isEqualType 0 && {finite _providerRoll}) then {_providerRoll = 2.2;};

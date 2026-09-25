@@ -136,8 +136,8 @@ if (_held isEqualTo "finger") exitWith {
     private _usedKit = _kit == "ACM_ThoracostomyKit";
     if (_usedKit) then {
         // Respect ACE shared equipment and fail before creating a completed tract.
-        private _used = [_medic, _patient, [_kit]] call ace_medical_treatment_fnc_useItem;
-        if ((_used param [1, ""]) != _kit) then {_kit = "";};
+        private _used = [_medic, _patient, [_kit]] call ACME_fnc_treatmentSupplyTake;
+        if (_used isEqualTo []) then {_kit = "";} else {[_used, false] call ACME_fnc_treatmentSupplyRefund;};
     };
     if (_kit == "") exitWith {false};
     [_patient, _side, "open", "finger"] call ACME_fnc_thoraSideStateCommit;
@@ -169,13 +169,12 @@ if (_held in ["seal", "tube"]) exitWith {
         if (_patient getVariable [format ["ACME_thora_sealed_%1", _side], false]) exitWith {false};
         private _medS = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
         if !([_medS, "thoracostomySeal", true] call ACME_fnc_procedureAllowed) exitWith {false};
-        if (isNull _medS || {([_medS, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
-            ["You have no chest seal.", 2] call ace_common_fnc_displayTextStructured;
+        private _receipt = [_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake;
+        if (_receipt isEqualTo []) exitWith {
+            ["No chest seal available.", 2] call ace_common_fnc_displayTextStructured;
             false
         };
-        private _before = [_medS, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem;
-        _medS removeItem "ACM_ChestSeal";
-        if (([_medS, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) >= _before) exitWith {false};
+        [_receipt, false] call ACME_fnc_treatmentSupplyRefund;
         [_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit;
         [_patient, _side, "closed", true] call ACME_fnc_thoraSideStateCommit;
         [_patient] call ACME_fnc_thoraBumpVer;
@@ -191,9 +190,9 @@ if (_held in ["seal", "tube"]) exitWith {
     private _tubeMedic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
     if (_patient getVariable [format ["ACME_thora_closed_%1", _side], false]) exitWith {false};
     if (!(([_tubeMedic] call ACME_fnc_thoraClosureMode) select 2)) exitWith {false};
-    private _tubeBefore = [_tubeMedic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem;
-    _tubeMedic removeItem "ACM_ChestTubeKit";
-    if (([_tubeMedic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem) >= _tubeBefore) exitWith {false};
+    private _tubeReceipt = [_tubeMedic, _patient, ["ACM_ChestTubeKit"]] call ACME_fnc_treatmentSupplyTake;
+    if (_tubeReceipt isEqualTo []) exitWith {false};
+    [_tubeReceipt, false] call ACME_fnc_treatmentSupplyRefund;
     [_patient, _side, "sealed", false] call ACME_fnc_thoraSideStateCommit;
     [_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit;
     [_patient, _side, "tube", true] call ACME_fnc_thoraSideStateCommit;

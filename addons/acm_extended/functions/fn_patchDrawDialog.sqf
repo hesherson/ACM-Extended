@@ -69,11 +69,11 @@ _ctrlCancel ctrlSetFontHeight (safeZoneH / 42);
 _ctrlCancel ctrlCommit 0;
 
 private _ctrlSwitch = _display displayCtrl 84007;
-_ctrlSwitch ctrlShow false;
-_ctrlSwitch ctrlEnable false;
+_ctrlSwitch ctrlShow true;
+_ctrlSwitch ctrlEnable true;
 
 private _ctrlInventoryText = _display displayCtrl 84008;
-_ctrlInventoryText ctrlSetText "Allowed infusion medications";
+_ctrlInventoryText ctrlSetText "Inventory: Self";
 
 // The normal Body Map / page-navigation control has no meaning in infusion mode. Keep exactly one completion
 // control: the bottom-right Done button above. A second Done in the navigation strip was ambiguous and made the

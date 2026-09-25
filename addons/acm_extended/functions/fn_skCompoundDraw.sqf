@@ -25,7 +25,8 @@ if (_drugMl <= 0.05) exitWith {
 private _vial = [_med] call ACME_fnc_vialClass;
 private _required = _drugMl;
 {if ((_x select 0) == _med) then {_required = _required + (_x select 1);};} forEach _locked;
-if (([ACE_player, _med] call ACME_fnc_infusionVialVolume) + 0.000001 < _required) exitWith {
+private _holder = [ACE_player] call ACME_fnc_vialHolder;
+if (([_holder, _med] call ACME_fnc_infusionVialVolume) + 0.000001 < _required) exitWith {
     [format ["No %1 vial in inventory.", _med], 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 

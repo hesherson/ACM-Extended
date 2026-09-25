@@ -1,5 +1,6 @@
 #include "script_component.hpp"
 
+[QGVAR(handleAirway), LINKFUNC(handleAirway)] call CBA_fnc_addEventHandler;
 [QGVAR(handleAirwayCollapse), LINKFUNC(handleAirwayCollapse)] call CBA_fnc_addEventHandler;
 [QGVAR(handleAirwayObstruction_Vomit), LINKFUNC(handleAirwayObstruction_Vomit)] call CBA_fnc_addEventHandler;
 [QGVAR(handleAirwayObstruction_Blood), LINKFUNC(handleAirwayObstruction_Blood)] call CBA_fnc_addEventHandler;

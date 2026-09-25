@@ -18,12 +18,15 @@ if (_operation == "take") then {
     if (alive _medic && {!isNull _patient} && {alive _patient}
         && {[_medic, "ventilator"] call ACME_fnc_procedureAllowed}
         && {[_medic, _patient] call ACME_fnc_ventRecoveryNear}) then {
-        private _before = [_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem;
-        if (_before > 0) then {
+        private _supply = [_medic, _patient, ["ACME_Ventilator"]] call ACME_fnc_treatmentSupplyTake;
+        if !(_supply isEqualTo []) then {
+            private _source = if (isNull (_supply select 2)) then {_supply select 0} else {_supply select 2};
             _device = [];
-            {if (!isNil {_medic getVariable _x}) then {_device pushBack [_x, _medic getVariable _x];};} forEach ([] call ACME_fnc_ventDeviceFields);
-            _medic removeItem "ACME_Ventilator";
-            _ok = ([_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem) == (_before - 1);
+            {if (!isNil {_source getVariable _x}) then {_device pushBack [_x, _source getVariable _x];};} forEach ([] call ACME_fnc_ventDeviceFields);
+            // Custody retains the origin separately from patient device fields for recovery.
+            _device pushBack ["ACME_supplyOrigin", [_supply select 0, _supply select 2]];
+            [_supply, false] call ACME_fnc_treatmentSupplyRefund;
+            _ok = true;
         };
     };
     // Failed takes are terminal. A later connect request gets a new transaction ID.

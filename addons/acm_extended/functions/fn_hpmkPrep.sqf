@@ -4,17 +4,19 @@
 params [
     ["_medic", objNull, [objNull]],
     ["_patient", objNull, [objNull]],
-    ["_inventoryTaken", false, [false]]
+    ["_inventoryTaken", false, [false]],
+    ["_supplyReceipt", [], [[]]]
 ];
 if (isNull _medic || {isNull _patient}) exitWith {false};
 
-// Provider-side phase. Remove exactly one kit before handing the commit to the patient authority.
+// Reserve once on the treating provider's machine; ACE chooses patient/provider/vehicle supply.
+if (!_inventoryTaken) then {
+    _supplyReceipt = [_medic, _patient, ["ACM_HPMK"]] call ACME_fnc_treatmentSupplyTake;
+    _inventoryTaken = !(_supplyReceipt isEqualTo []);
+};
+if (!_inventoryTaken) exitWith {false};
 if (!local _patient) exitWith {
-    if (!_inventoryTaken) then {
-        if (([_medic, "ACM_HPMK"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {false};
-        _medic removeItem "ACM_HPMK";
-    };
-    [_patient, "hpmkPrep", [_medic, _patient, true]] call ACME_fnc_ownerDispatch;
+    [_patient, "hpmkPrep", [_medic, _patient, true, _supplyReceipt]] call ACME_fnc_ownerDispatch;
     true
 };
 
@@ -25,16 +27,13 @@ private _isLying = if (_lyingState isEqualType true) then {_lyingState} else {_l
 private _eligible = (_patient getVariable ["ACE_isUnconscious", false]) || {_isLying};
 private _occupied = (_patient getVariable ["ACME_hpmk_state", ""]) != "";
 if (!_eligible || {_occupied}) exitWith {
-    if (_inventoryTaken) then {["ACME_hpmkReturnItem", [_medic], _medic] call CBA_fnc_targetEvent;};
+    ["ACME_supplySettle", [_supplyReceipt, true], parseNumber ((_supplyReceipt param [3, "0"]) splitString ":" select 0)] call CBA_fnc_ownerEvent;
     if (_occupied) then {["This patient already has an HPMK prepped or applied.", 2, _medic] call ACME_fnc_netNotice;};
     false
 };
 
-// Same-owner case has not removed inventory yet.
-if (!_inventoryTaken) then {
-    if (([_medic, "ACM_HPMK"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {false};
-    _medic removeItem "ACM_HPMK";
-};
+// The casualty authority accepts only one reservation. Settle on the issuer, including remote donors.
+["ACME_supplySettle", [_supplyReceipt, false], parseNumber ((_supplyReceipt param [3, "0"]) splitString ":" select 0)] call CBA_fnc_ownerEvent;
 
 _patient setVariable ["ACME_hpmk_provider", _medic, true];
 _patient setVariable ["ACME_hpmk_returnPending", false, true];

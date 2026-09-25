@@ -26,6 +26,8 @@ if (!local _medic) exitWith {
     [_medic, "headElevMedicSeq", [_medic, _mode]] call ACME_fnc_ownerDispatch;
 };
 if ([_medic] call ACME_fnc_animBlocked) exitWith {};
+[_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
+[_medic, true] call ACME_fnc_menuPoseStop;
 
 private _rest = "AmovPknlMstpSnonWnonDnon";
 private _forcePose = _rest;
@@ -38,9 +40,11 @@ _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
 _medic setVariable ["ACME_headElev_seqActive", true, false];
 _medic setVariable ["ACME_headElev_seqMode", _mode, false];
 
-// Neutralize legacy provider-only animation modifiers. B89 uses the native authored speeds and no position pin.
+// One shared animation rate covers holster, both finite Putdown moves and exit; no position pin.
 _medic setVariable ["ACME_headElev_pinToken", (_medic getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
-["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+private _rate = call ACME_fnc_choreographyRate;
+_medic setAnimSpeedCoef _rate;
+["ace_common_setAnimSpeedCoef", [_medic, _rate]] call CBA_fnc_globalEvent;
 
 // Empty hands are requested once. If another mod delays the holster beyond the normal settle window, selectWeapon
 // is only a fallback to enforce the contract; ACME never restores the weapon after head positioning.
@@ -57,10 +61,11 @@ if (hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then
     _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
 };
 private _watchMenu = !isNull _menu;
+private _menuPatient = missionNamespace getVariable ["ace_medical_gui_target", objNull];
 
 [{
     params ["_args", "_pfh"];
-    _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest", "_stage", "_seen", "_stageAt", "_prepUntil", "_menu", "_watchMenu"];
+    _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest", "_stage", "_seen", "_stageAt", "_prepUntil", "_menu", "_watchMenu", "_menuPatient"];
     disableSerialization;
 
     private _finalize = {
@@ -93,6 +98,13 @@ private _watchMenu = !isNull _menu;
             // Final state is always the requested unarmed crouch, regardless of which move graph edge ended the
             // finite sequence.
             [_u, _rest, 2] call ACME_fnc_doAnim;
+            // A menu reopened while this sequence owned the provider could not acquire its idle yet.
+            // Resume only the same display/patient after both Putdown moves have finished.
+            if (_watchMenu && {!isNull _menu} && {!isNull _menuPatient}
+                && {_menu isEqualTo (uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull])}
+                && {_menuPatient isEqualTo (missionNamespace getVariable ["ace_medical_gui_target", objNull])}) then {
+                [_u, _menuPatient, _menu] call ACME_fnc_menuPoseStart;
+            };
             // MIDDLE is only the entry/final-pose guard. Release it after the crouch is established so the player
             // is never trapped by head positioning and can move/change stance normally.
             [{
@@ -196,4 +208,4 @@ private _watchMenu = !isNull _menu;
         if (!_finished && {!_seen} && {_now - _stageAt > 4}) then {_finished = true;};
         if (_finished) then {[_u, _pfh, _rest, _token] call _finalize;};
     };
-}, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false, CBA_missionTime, _prepUntil, _menu, _watchMenu]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false, CBA_missionTime, _prepUntil, _menu, _watchMenu, _menuPatient]] call CBA_fnc_addPerFrameHandler;

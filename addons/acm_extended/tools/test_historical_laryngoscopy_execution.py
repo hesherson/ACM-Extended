@@ -31,6 +31,9 @@ def setup():
         private _tubeDebits=0;private _ejections=[];private _placements=[];private _dispatches=[];
         private _logs=[];private _cuffFinishes=0;private _slotRefreshes=0;
         private _effects=[0,0,0,0,1,0];
+        ACME_fnc_treatmentSupplyCount={1};
+        ACME_fnc_treatmentSupplyTake={_tubeDebits=_tubeDebits+1;[_medic,"ACME_ETTube",objNull,"fixture"]};
+        ACME_fnc_treatmentSupplyRefund={true};
         ACME_fnc_sedationComponents={_effects};
         ACME_fnc_vomitDislodgeOPA={_dislodges=_dislodges+1;};
         ACM_airway_fnc_clearAirwayCheckedTime={};

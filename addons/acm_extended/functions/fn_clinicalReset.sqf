@@ -2,6 +2,13 @@
 params ["_patient", ["_phase", "finish"], ["_preserveJunctional", false]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_phase == "begin") exitWith {
+    // B156 native treatment rate cleanup: invalidate delayed completion before patient/provider reuse.
+    if ((_patient getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []) then {
+        _patient setVariable ["ACME_nativeTreatmentRate", [], true];
+        _patient setAnimSpeedCoef 1;
+        ["ace_common_setAnimSpeedCoef", [_patient, 1]] call CBA_fnc_globalEvent;
+    };
+    // End B156 native treatment rate cleanup.
     [_patient] call ACME_fnc_headElevHoldClear;
     _patient setVariable ["ACME_headElev_manualUnsupported", false, true];
     [_patient] call ACME_fnc_aajtDownedStop;
@@ -25,6 +32,14 @@ if (_phase == "begin") exitWith {
     private _nativeVomitPFH = _patient getVariable ["ACM_airway_AirwayObstructionVomit_PFH", -1];
     if (_nativeVomitPFH isEqualType 0 && {_nativeVomitPFH >= 0}) then {[_nativeVomitPFH] call CBA_fnc_removePerFrameHandler;};
     [_patient, [["vomitPFH", -1]], false] call ACM_airway_fnc_setAirwayState;
+    // These native workers also outlive a full heal unless their exact local handles are retired.
+    {
+        private _handle = _patient getVariable [_x, -1];
+        if (_handle isEqualType 0 && {_handle >= 0}) then {[_handle] call CBA_fnc_removePerFrameHandler;};
+        _patient setVariable [_x, -1, false];
+    } forEach ["ACM_airway_AirwayCollapse_PFH", "ACM_airway_AirwayObstructionBlood_PFH", "ACM_circulation_HemolyticReaction_PFH"];
+    {_patient setVariable [_x, false, true];} forEach ["ACME_nativeCollapseActive", "ACME_nativeBloodObstructionActive", "ACME_nativeHemolysisActive"];
+
     {private _h = _patient getVariable [_x, -1]; if (_h isEqualType 0 && {_h >= 0}) then {[_h] call CBA_fnc_removePerFrameHandler;}; _patient setVariable [_x, -1, false];} forEach ["ACME_juncPFH", "ACME_thora_drainPFH"];
     _patient setVariable ["ACME_juncWorker", [], false];
     _patient setVariable ["ACME_nativeVomitWorker", [], false];
@@ -37,7 +52,7 @@ if (_phase == "begin") exitWith {
     _patient setVariable ["ACME_nrb_session", "", true];
     _patient setVariable ["ACME_nrb_o2Pending", 0, true];
     {private _k = toLowerANSI _x; if ((_k find "acme_clock_") == 0 || {(_k find "acme_clamprate_") == 0}) then {_patient setVariable [_x, nil, false];};} forEach allVariables _patient;
-    {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
+    {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_coag_activePatients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
 };
 // Physical equipment is detached, not converted into inventory by a medical full heal.
 if ((_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient) then {

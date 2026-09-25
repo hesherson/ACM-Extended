@@ -13,7 +13,7 @@ private _live = _sessions select {
     private _present = alive _patient && {!isNull _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])}
         && {_e == _epoch} && {_expires > _now}
         && {_medic distance _patient <= 5 || {!isNull objectParent _medic && {objectParent _medic == objectParent _patient}}};
-    if (_mode in ["hand","salad"]) then {_present = _present && {([_medic, "ACM_ACCUVAC"] call ace_common_fnc_getCountOfItem) > 0};};
+    if (_mode in ["hand","salad"]) then {_present = _present && {([_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount) > 0};};
     if (_mode == "manual") then {
         private _proof = _medic getVariable ["ACME_suctionManualSession", []];
         _present = _present && {(_proof param [0, objNull]) == _patient} && {(_proof param [1, ""]) == _token};

@@ -9,7 +9,7 @@ params ["_medic", "_patient"];
 if (isNull _medic || {isNull _patient}) exitWith {};
 // B33: the alternate exact-temperature action uses the same reusable device.
 // The action condition alone cannot cover a tool dropped during treatment.
-if (([_medic, "ACM_Thermometer"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {};
+if (([_medic, _patient, "ACM_Thermometer"] call ACME_fnc_treatmentSupplyCount) <= 0) exitWith {};
 
 private _t = _patient getVariable ["ACME_hypo_temp", 37];
 private _band = switch (true) do {

@@ -16,7 +16,13 @@
  * Public: No
  */
 
-if (isNull GVAR(SyringeDraw_Target)) exitWith {};
+private _sourcePatient = GVAR(SyringeDraw_Target);
+if (isNull _sourcePatient) then {_sourcePatient = uiNamespace getVariable ["ACME_SK_Patient",objNull];};
+if (isNull _sourcePatient) exitWith {};
+// A staged component is still owned by its selected vial holder. Changing the
+// inventory before Save would otherwise debit the same drug from another kit.
+if (GVAR(SyringeDraw_DrawnAmount) > 0.0005
+    || {!((uiNamespace getVariable ["ACME_SK_CompoundComponents",[]]) isEqualTo [])}) exitWith {};
 
 private _targetInventory = GVAR(SyringeDraw_InventorySelection);
 
@@ -29,7 +35,7 @@ private _vehicle = objectParent ACE_player;
 
 switch (_targetInventory) do {
     case 1: {
-        if (ACE_player == GVAR(SyringeDraw_Target)) then {
+        if (ACE_player == _sourcePatient || {!(_sourcePatient in ([ACE_player,_sourcePatient] call ACME_fnc_treatmentSupplyOrder))}) then {
             if !(isNull _vehicle) then {
                 _targetInventory = 2;
             } else {
@@ -52,10 +58,11 @@ switch (_targetInventory) do {
 GVAR(SyringeDraw_InventorySelection) = _targetInventory;
 
 private _display = uiNamespace getVariable [QGVAR(SyringeDraw_DLG), displayNull];
+if (!isNull _display) then {["clear","",0,_display] call ACME_fnc_vialSession;};
 private _ctrlInventorySelectText = _display displayCtrl IDC_SYRINGEDRAW_MEDLIST_SELECTION_TEXT;
 
 private _text = [LLSTRING(Common_Self), LLSTRING(Common_Patient), LLSTRING(Common_Vehicle)] select GVAR(SyringeDraw_InventorySelection);
-private _target = [ACE_player, GVAR(SyringeDraw_Target), _vehicle] select GVAR(SyringeDraw_InventorySelection);
+private _target = [ACE_player, _sourcePatient, _vehicle] select GVAR(SyringeDraw_InventorySelection);
 
 _ctrlInventorySelectText ctrlSetText (format [LLSTRING(Common_InventoryTarget), _text]);
 

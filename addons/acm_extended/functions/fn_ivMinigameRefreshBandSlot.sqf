@@ -13,7 +13,7 @@ private _bandOn = uiNamespace getVariable ["ACME_IV_BandOn", false];
 private _count = {
     params ["_item"];
     if (isNull _medic) exitWith {0};
-    [_medic, _item] call ace_common_fnc_getCountOfItem
+    [_medic, uiNamespace getVariable ["ACME_IV_Patient", objNull], _item] call ACME_fnc_treatmentSupplyCount
 };
 private _nBand = ["ACME_NARBOA"] call _count;
 private _n14   = ["ACM_IV_14g"]  call _count;

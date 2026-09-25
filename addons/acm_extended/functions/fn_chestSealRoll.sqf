@@ -49,8 +49,8 @@ private _hold = if (_target isEqualTo "back") then {
 // playMoveNow, so verify the requested roll actually began. If it did not, use ACE priority 2 once as a narrowly
 // scoped state-graph repair. The token prevents an old fallback from overriding a newer flip.
 private _token = format ["%1:%2:%3", clientOwner, CBA_missionTime, random 1];
-private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85];
-if (!(_rollTime isEqualType 0) || {_rollTime <= 0}) then {_rollTime = 1.85;};
+private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
+if (!(_rollTime isEqualType 0) || {!finite _rollTime} || {_rollTime <= 0}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
 private _leaseToken = [_patient, _trans, 1, "chest-seal-roll", _provider, _rollTime + 0.45, 3, _token] call ACME_fnc_patientAnimRequest;
 if (_leaseToken == "") exitWith {_patient setVariable ["ACME_CS_rollUntil", -1, false];};
 _patient setVariable ["ACME_CS_rollToken", _token, false];
@@ -59,6 +59,8 @@ _patient setVariable ["ACME_CS_rollUntil", CBA_missionTime + _rollTime, false];
     params ["_p", "_tok", "_trans"];
     if (isNull _p || {!local _p} || {!alive _p} || {!isNull objectParent _p}) exitWith {};
     if ((_p getVariable ["ACME_CS_rollToken", ""]) != _tok) exitWith {};
+    private _lock = _p getVariable ["ACME_patientAnimLock", []];
+    if ((_lock param [0, ""]) != _tok) exitWith {};
     if !([_p] call ACME_fnc_chestSealCanPhysicalRoll) exitWith {};
     if ((toLower animationState _p) != (toLower _trans)) then {
         [_p, _trans, 2] call ACME_fnc_doAnim;
@@ -71,6 +73,9 @@ _patient setVariable ["ACME_CS_rollUntil", CBA_missionTime + _rollTime, false];
     if ((_p getVariable ["ACME_CS_rollToken", ""]) != _tok) exitWith {};
     _p setVariable ["ACME_CS_rollToken", "", false];
     _p setVariable ["ACME_CS_rollUntil", -1, false];
+    private _lock = _p getVariable ["ACME_patientAnimLock", []];
+    if ((_lock param [0, ""]) != _tok) exitWith {};
+    [_p, _tok] call ACME_fnc_patientAnimRelease;
     if (!alive _p || {!isNull objectParent _p}) exitWith {};
     private _stillRollable = [_p] call ACME_fnc_chestSealCanPhysicalRoll;
     if (_needsHold && {_stillRollable}) then {

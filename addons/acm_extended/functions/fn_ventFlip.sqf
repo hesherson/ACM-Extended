@@ -172,11 +172,17 @@ if (_mode isEqualTo "swap") exitWith {
         uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2];
     };
 
-    if (([ACE_player, "ACME_VentBattery"] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    // Hold the selected physical spare during the hatch animation. Another viewer cannot
+    // swap the same patient's spare, and closing before completion returns that exact donor.
+    if ((uiNamespace getVariable ["ACME_vent_batterySwapRequest", ""]) != ""
+        || {!((uiNamespace getVariable ["ACME_vent_batterySupply", []]) isEqualTo [])}) exitWith {};
+    private _supply = [ACE_player, _tgt, ["ACME_VentBattery"]] call ACME_fnc_treatmentSupplyTake;
+    if (_supply isEqualTo []) exitWith {
         (_dlg displayCtrl 88001) ctrlSetText "NO SPARE BATTERY";
         (_dlg displayCtrl 88001) ctrlShow true;
         uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2];
     };
+    uiNamespace setVariable ["ACME_vent_batterySupply", _supply];
     playSound "ACME_VentBattSwap";
     uiNamespace setVariable ["ACME_vent_swapUntil", diag_tickTime + SWAP_SECS];
 
@@ -208,17 +214,23 @@ if (_mode isEqualTo "tick") exitWith {
         // An exchange, not a reset. If the device is on another casualty, the casualty owner atomically swaps the
         // fitted charge and returns the old charge to this provider. This also serializes simultaneous viewers.
         private _holder = if (isNull _tgt) then { ACE_player } else { _tgt };
-        private _spare  = ACE_player getVariable ["ACME_vent_spareBattery", 100];
+        private _supply = uiNamespace getVariable ["ACME_vent_batterySupply", []];
+        uiNamespace setVariable ["ACME_vent_batterySupply", []];
+        if (_supply isEqualTo []) exitWith {};
+        private _source = if (isNull (_supply select 2)) then {_supply select 0} else {_supply select 2};
+        private _spare = _source getVariable ["ACME_vent_spareBattery", 100];
         if (local _holder) then {
             private _fitted = _holder getVariable ["ACME_vent_battery", 100];
             _holder setVariable ["ACME_vent_battery", _spare, true];
             _holder setVariable ["ACME_vent_battWarned", 0, true];
-            ACE_player setVariable ["ACME_vent_spareBattery", _fitted, true];
+            _source setVariable ["ACME_vent_spareBattery", _fitted, true];
+            [_supply] call ACME_fnc_treatmentSupplyRefund;
         } else {
             private _seq = 1 + (uiNamespace getVariable ["ACME_vent_batterySwapSeq", 0]);
             uiNamespace setVariable ["ACME_vent_batterySwapSeq", _seq];
             private _requestId = format ["%1:%2:%3", clientOwner, _seq, diag_frameNo];
             uiNamespace setVariable ["ACME_vent_batterySwapRequest", _requestId];
+            uiNamespace setVariable ["ACME_vent_batterySwapSupply", _supply];
             [_holder, "ventBatteryExchange", [ACE_player, _requestId, _spare, serverTime]] call ACME_fnc_ownerDispatch;
         };
 

@@ -75,6 +75,9 @@ class CfgFunctions {
             class addMedicationAdjustment { // Administration route, respiration rate adjust
                 file = QPATHTOF(overrides\fnc_addMedicationAdjustment.sqf); //ace/addons/medical_status/functions/fnc_addMedicationAdjustment.sqf
             };
+            class getAllMedicationCount {
+                file = QPATHTOF(overrides\fnc_getAllMedicationCount.sqf);
+            };
             class getMedicationCount { // Administration route, respiration rate adjust
                 file = QPATHTOF(overrides\fnc_getMedicationCount.sqf); //ace/addons/medical_status/functions/fnc_getMedicationCount.sqf
             };

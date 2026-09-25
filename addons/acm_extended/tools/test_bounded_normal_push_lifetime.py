@@ -54,6 +54,7 @@ def setup():
         _drawDisplay setVariable ["ACME_SK_ReturnPatient",_patient];
         _drawDisplay setVariable ["ACME_SK_CarouselNativeRect",[0.2,0.3,0.2,0.4]];
         ACM_circulation_fnc_hasIV={_hasAccess}; ACM_circulation_fnc_hasIO={_hasAccess};
+        ACME_fnc_medicationLineBloodBusy={false};
         ACME_fnc_skDynamicLayout={}; ACME_fnc_skCarouselRender={_refreshes=_refreshes+1;};
         ACME_fnc_skBuildHotspots={}; ACME_fnc_skBodyActionRender={};
         ACME_fnc_hardcorePushStart={_hcStarts=_hcStarts+1; true};

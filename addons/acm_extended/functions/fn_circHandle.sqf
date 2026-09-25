@@ -245,7 +245,6 @@ private _getMedEffect = {
     };
     [_patient,"ACME_ca_mapDropEased",_caMAPdrop,0.02,2] call ACME_fnc_setVarNetApprox;
     _state set ["caMAPdrop", _caMAPdrop];
-    private _coagMult = linearConversion [1, _caFloor, _ionizedCa, 1, (missionNamespace getVariable ["ACME_ca_coagMaxMult", 1.4]), true];
 
     // hypothermia, the third leg of the lethal triad. cold impairs the clotting cascade, which is a coagulopathy
     // multiplied onto the calcium one. it blunts the response to catecholamines, because the myocardium is cold,
@@ -253,10 +252,6 @@ private _getMedEffect = {
     // after the shock hr arc. the core temp is in degrees c.
     private _temp = _patient getVariable ["ACME_hypo_temp", 37];
     _state set ["temp", _temp];
-    private _hypoCoag = linearConversion [
-        (missionNamespace getVariable ["ACME_hypo_coagStartTemp", 35]),
-        (missionNamespace getVariable ["ACME_hypo_coagFullTemp", 32]),
-        _temp, 1, (missionNamespace getVariable ["ACME_hypo_coagMaxMult", 1.6]), true];
     private _hypoBlunt = linearConversion [
         (missionNamespace getVariable ["ACME_hypo_bluntStartTemp", 34]),
         (missionNamespace getVariable ["ACME_hypo_bluntFullTemp", 30]),
@@ -282,20 +277,17 @@ private _getMedEffect = {
     // acidosis carried in state, recomputed in the offset section below, which gives a one-tick lag that is
     // immaterial at the accrual rate. correcting acidosis, through restored perfusion or a plasma-lyte buffer,
     // therefore improves clotting as well as the pressor response.
-    private _acidCoag = linearConversion [
-        (missionNamespace getVariable ["ACME_acidosis_coagThreshold", 0.3]),
-        1,
-        (_state getOrDefault ["acidosis", 0]),
-        1,
-        (missionNamespace getVariable ["ACME_acidosis_coagMaxMult", 1.3]),
-        true];
+    private _coagParts = [_patient, _ionizedCa, _state getOrDefault ["acidosis", 0]] call ACME_fnc_coagulationBase;
+    _coagParts params ["_coagBase", "_coagMult", "_hypoCoag", "_acidCoag"];
     _state set ["calciumCoagMult", _coagMult];
     _state set ["hypoCoagMult", _hypoCoag];
     _state set ["acidCoagMult", _acidCoag];
-    // the combined coagulopathy is calcium times hypothermia times acidosis. the native circulation drainer
-    // reads it.
-    [_patient,"ACME_ca_coagMult",(_coagMult * _hypoCoag * _acidCoag),0.005,2] call ACME_fnc_setVarNetApprox;
-    _state set ["coagMult", (_coagMult * _hypoCoag * _acidCoag)];
+    // Circulation owns the base; only coagulationTick publishes the combined bleeding multiplier.
+    // A changed base enrolls immediately, including recovery back to normal.
+    private _previousBase = _patient getVariable ["ACME_ca_coagBaseMult", 1];
+    [_patient,"ACME_ca_coagBaseMult",_coagBase,([0.005,0] select (_coagBase == 1)),0] call ACME_fnc_setVarNetApprox;
+    _state set ["coagMult", _coagBase];
+    if (_coagBase != _previousBase) then {[[_patient]] call ACME_fnc_coagulationTick;};
 
     // Route observations do not synthesize drug dose or turn norepinephrine into epinephrine.
     private _pressorDrive = 0;

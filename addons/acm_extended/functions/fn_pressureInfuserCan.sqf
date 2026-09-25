@@ -7,4 +7,4 @@ private _id = _bag param [8, ""];
 if (_id == "" || {(_bag param [1, 0]) <= 0.5}) exitWith {false};
 private _hasDrug = ((_patient getVariable ["ACME_infusion_BagMedications", []]) findIf {(_x param [23, ""]) == _id}) >= 0;
 private _eligible = _type in ["Blood", "FreshBlood", "Saline", "Plasma", "PlasmaLyte"] || {(toLowerANSI _type) in keys (missionNamespace getVariable ["ACME_infusion_premixedByType", createHashMap])};
-_eligible && {_hasDrug == _infusion} && {(_id in (_patient getVariable ["ACME_piCuffs", createHashMap])) || {([ACE_player, "ACME_PressureInfuser"] call ace_common_fnc_getCountOfItem) > 0}}
+_eligible && {_hasDrug == _infusion} && {(_id in (_patient getVariable ["ACME_piCuffs", createHashMap])) || {([ACE_player, _patient, "ACME_PressureInfuser"] call ACME_fnc_treatmentSupplyCount) > 0}}

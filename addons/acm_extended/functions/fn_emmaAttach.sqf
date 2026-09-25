@@ -1,10 +1,10 @@
 // attach the medic-owned EMMA inline on the own BVM of the medic.
 // the physical inventory item remains in inventory, and this only toggles the BVM state of the reusable device.
 // _this is the ACE callback [_medic, _patient, _bodyPart].
-params ["_medic"];
+params ["_medic", ["_patient", objNull]];
 if (isNull _medic) exitWith {};
 
-if (([_medic, "ACM_EMMA"] call ace_common_fnc_getCountOfItem) <= 0) exitWith {
+if (([_medic, _patient, "ACM_EMMA"] call ACME_fnc_treatmentSupplyCount) <= 0) exitWith {
     ["You do not have an EMMA.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
@@ -19,6 +19,7 @@ if ((_medic getVariable ["ACME_emma_bvmAttached", false])) exitWith {
     ["EMMA is already attached to your BVM.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
+_medic setVariable ["ACME_emma_supplyPatient", _patient, false];
 _medic setVariable ["ACME_emma_bvmAttached", true, true];
 _medic setVariable ["ACME_emma_route", "bvm", false];
 _medic setVariable ["ACME_emma_capPatient", objNull, false];

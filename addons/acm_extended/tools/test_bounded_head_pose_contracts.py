@@ -56,8 +56,10 @@ def assert_connected_patient_states(data=None):
     assert contains(release,'looped = 0;')
     assert contains(release,'ConnectTo[] = {"ACM_LyingState",0.1};')
     assert contains(d['headElevateStart'],'[_patient] call ACME_fnc_headElevApplyTilt;')
-    assert contains(d['headElevApplyTilt'],'[_patient,"ACME_HeadElevPatientGrab",2] call ACME_fnc_doAnim;')
-    assert contains(d['headElevateStop'],'[_patient,"ACME_HeadElevPatientRelease",2] call ACME_fnc_doAnim;')
+    assert contains(d['headElevApplyTilt'],'[_patient,"ACME_HeadElevPatientGrab",2,"head-elev-lift"')
+    assert contains(d['headElevApplyTilt'],'call ACME_fnc_patientAnimRequest;')
+    assert contains(d['headElevateStop'],'[_patient,"ACME_HeadElevPatientRelease",2,"head-elev-lower"')
+    assert contains(d['headElevateStop'],'call ACME_fnc_patientAnimRequest;')
     assert contains(d['headElevSuspend'],'[_patient,"ACME_HeadElevPatientRelease",2,"head-elev-lower"')
 
 
@@ -102,12 +104,15 @@ def assert_dead_stop_delegates_first(data=None):
     assert death<animation and death<restore
 
 
-@pytest.mark.parametrize('lift,delay', [('1.2',1.2),('2',2),('0',1.2),('-2',1.2),('"bad"',1.2)])
+@pytest.mark.parametrize('lift,delay', [('1.2',1.2),('2',2),('0',.8),('-2',.8),('"bad"',.8)])
 @pytest.mark.parametrize('already_hold',[False,True])
 def test_lift_uses_connected_grab_and_one_guarded_hold_completion(lift,delay,already_hold):
     execute(setup()+f'missionNamespace setVariable ["ACME_headElev_liftAnimTime",{lift}];'+'''
         [_patient] call ACME_fnc_headElevApplyTilt;
         [_moves isEqualTo [[_patient,"ACME_HeadElevPatientGrab",2]],"grab wrapper/priority changed"] call _check;
+        [count _animRequests==1 && {count _leaseWaits==1},"lift bypassed accepted animation lease"] call _check;
+        [(_patient getVariable ["ACME_patientAnimLock",[]]) isNotEqualTo [],"lift did not retain its animation lease"] call _check;
+        [_testAnimationSpeed==1.5,"lift did not use the shared choreography rate"] call _check;
         [(_patient getVariable ["ACME_headElev_animGraceUntil",0])==12.5,"startup grace changed"] call _check;
         [count _waits==1,"lift scheduled repeated callbacks"] call _check;
     '''+f'''
@@ -117,6 +122,8 @@ def test_lift_uses_connected_grab_and_one_guarded_hold_completion(lift,delay,alr
         _moves=[];
         [_waits select 0] call _deliver;
         [count _moves=={int(not already_hold)},"missing hold or unnecessary hold restart"] call _check;
+        [(_patient getVariable ["ACME_patientAnimLock",[]]) isEqualTo [],"completion did not release its animation lease"] call _check;
+        [_testAnimationSpeed==1,"completion leaked its moving animation speed"] call _check;
     '''+('' if already_hold else '[_moves isEqualTo [[_patient,"ACME_HeadElevPatientHold",2]],"wrong hold wrapper"] call _check;'))
 
 
@@ -125,6 +132,7 @@ def test_lift_uses_connected_grab_and_one_guarded_hold_completion(lift,delay,alr
     '_patient setVariable ["ACME_headElev_poseToken","later"];',
     '_patient setVariable ["ACME_headElevated",false];',
     '_patient setVariable ["ACME_headElev_Suspended",true];',
+    '_patient setVariable ["ACME_patientAnimLock",["new-owner","roll","provider",3,2000]];',
 ])
 def test_lift_completion_rejects_retired_placement(change):
     execute(setup()+'''
@@ -171,6 +179,7 @@ def test_lift_eligibility_blocks_local_presentation(change,events):
 ])
 def test_contracts_reject_regressions_even_with_original_text_in_comments(validator,filename,old,new):
     d=sources()
+    validator(d)
     original=d[filename]
     if old:
         assert old in original

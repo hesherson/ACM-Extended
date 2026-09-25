@@ -104,6 +104,10 @@ def adapt(s, component='core'):
     s = re.sub(r'private (_ctrl\w+) = _display displayCtrl \w+;', r'private \1 = objNull;', s)
     s = re.sub(r'_ctrl\w+ ctrlSetText [^;]*;', '', s)
     s = s.replace('_medic setUnitPos "AUTO";', '_stanceFreed = true;')
+    # Explicit native animation-speed boundary; generation and scheduling code still executes.
+    s = re.sub(r'_\w+ setAnimSpeedCoef ([^;]+);', r'_testAnimationSpeed = (\1);', s)
+    s = re.sub(r'getAnimSpeedCoef _\w+', '_testAnimationSpeed', s)
+    s = s.replace('finite _rate', 'true').replace('finite _visiblePhase', 'true')
     s = re.sub(r'\bdialog\b', '_dialog', s)
     s = s.replace('    false\n}];', '    false\n}] select 1);')
     return namespace_public_arguments(s)
@@ -120,6 +124,8 @@ private _ownerNum = 7;
 private _distance = 1;
 private _dialog = false;
 private _stanceFreed = false;
+private _testAnimationSpeed = 1;
+ACME_fnc_choreographyRate = {1.5};
 private _moves = [];
 private _removed = [];
 private _keys = [];

@@ -103,7 +103,7 @@ _patient setVariable [VAR_INTERNAL_WOUNDS, _internalWounds, true];
 
 [_patient] call ACEFUNC(medical_status,updateWoundBloodLoss);
 
-[_patient, _totalPain] call ACEFUNC(medical_status,fnc_adjustPainLevel);
+[_patient, _totalPain] call ACEFUNC(medical_status,adjustPainLevel);
 
 if (_fractureArray isNotEqualTo [false,false,false,false]) then {
     private _fractureState = GET_FRACTURES(_patient);

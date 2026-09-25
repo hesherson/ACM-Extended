@@ -1,38 +1,6 @@
-/* B54: single-shot owner for ACME provider-treatment poses.
- *
- * Exact requested states, played at native speed:
- *   response             AinvPknlMstpSnonWrflDr_medic3_old
- *   airway               AinvPknlMstpSnonWrflDr_medic4_old
- *   roll                 AinvPknlMstpSnonWnonDnon_medic4, literal BI state, frozen at 2.2 s, then the exit blend
- *   inspect              AinvPknlMstpSnonWnonDnon_medic4, frozen at 2.2 s until the 6 s inspection ends
- *   stethoscope          ACME_StethoscopeWork, frozen at 0.421 s until the minigame exits
- *   pulse                ACME_StethoscopeWork, frozen at 0.421 s until the minigame exits
- *   chestSeal            AinvPknlMstpSnonWrflDnon_medic3 (seal placement only)
- *   ncdSeat              AinvPknlMstpSnonWrflDnon_medic1
- *   torsoBandage         AinvPknlMstpSnonWrflDnon_medic4
- *   headBandageLeft      AinvPknlMstpSnonWrflDnon_medic0
- *   headBandageRight     AinvPknlMstpSnonWrflDr_medic2_old
- *   directPressureAction AinvPknlMstpSnonWrflDnon_medic5
- *
- * Entry is always: one immediate empty-hands select if a weapon is currently selected, then the normal BI stand-to-
- * kneel or prone-to-kneel transition when the provider is not already crouched, then the requested state through
- * playMoveNow. Nothing is forced from a standing pose straight into a kneeling RTM.
- *
- * Freeze rules live in ACME_poseHoldAt (seconds on the native timeline) and ACME_poseStopAfterHold (seconds the
- * frozen frame is held before the controller ends the episode itself). Both are hashmaps set in fn_postInit and
- * can be changed live. A mode with no entry plays at native speed until its own action ends it.
- *
- * Most modes measure time from the first observed requested state. Chest-access entry also samples the native
- * elapsed move time (getUnitMovesInfo 1), because sparse owner frames can observe medic4 well after its start.
- * getUnitMovesInfo 2 supplies the duration for the held phase, with the CfgMoves speed entry as a fallback.
- *
- * B53 carried a syntax error at the old line 140 (if !(a) && {b} then). SQF binds `if !(a)` before `&&`, so the
- * whole per-frame body aborted there on every tick once the pose was entered. That single line is why no freeze
- * rule was being followed in game. The speed-scaling block that line guarded is gone: the rules are native speed
- * plus freeze, never a sped-up RTM.
- *
- * Finite actions start exactly once per episode. The PFH observes entry, applies the freeze once, and owns the
- * frozen hold. fn_medicAnimationPrep selects empty hands once; no sling/holster loop is used.
+/* Owner of one provider-treatment episode. Work samples are native RTM seconds; preparation and
+ * moving portions use the shared choreography rate. Clinical hold/inspection timers stay in real seconds.
+ * The owner publishes run -> hold -> exit/release, and receivers reject reordered older operations.
  */
 params [
     ["_medic", objNull, [objNull]],
@@ -44,7 +12,7 @@ if (isNull _medic || {!local _medic} || {!alive _medic}
     || {_medic getVariable ["ACE_isUnconscious", false]}
     || {[_medic] call ACME_fnc_animBlocked}) exitWith {-1};
 
-[_medic] call ACME_fnc_treatmentPoseStop;
+[_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
 // B56: a treatment pose replaces the medical-menu pose without an intermediate exit motion.
 [_medic, true] call ACME_fnc_menuPoseStop;
 
@@ -88,6 +56,11 @@ _medic setVariable ["ACME_treatmentPoseEpoch", _epoch, true];
 _medic setVariable ["ACME_treatmentPoseEpisode", [_epoch, true], true];
 private _exclusion = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
 private _actionStarted = CBA_missionTime;
+private _rate = call ACME_fnc_choreographyRate;
+_medic setAnimSpeedCoef _rate;
+private _speedJIP = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
+["ACME_treatmentPoseSync", [_medic, _epoch, "run", "", -1, clientOwner, _rate], _speedJIP] call CBA_fnc_globalEventJIP;
+[_speedJIP, _medic] call CBA_fnc_removeGlobalEventJIP;
 // B101: when another intervention takes animation ownership from an active Direct Pressure hold, the provider is
 // already in ACME's authored empty-hands medical theatre. currentWeapon may still report the selected rifle even
 // though the visible DP state has weapons disabled. Do not run medicAnimationPrep again in that handoff or Arma
@@ -110,11 +83,11 @@ private _prepUntil = _actionStarted + (_prepDelay max 0);
 // State layout:
 //  0 epoch, 1 mode, 2 main, 3 stage, 4 stageStarted, 5 pfh, 6 owner, 7 exclusion,
 //  8 waitUntil, 9 finiteWindow (informational), 10 actionStarted, 11 holdAt, 12 holdPhase,
-//  13 lastHoldAssert, 14 holdStarted, 15 stopAfterHold, 16 upright (standing medicUp state in use)
+//  13 lastHoldAssert, 14 holdStarted, 15 stopAfterHold, 16 upright (standing medicUp state in use), 17 moving animation rate
 // Stages: -1 waiting for the one weapon stow, -2 playing the BI stance transition into the crouch,
 //          0 legacy immediate start, 1 requested state entering, 2 running, 3 frozen hold.
 private _state = [_epoch, _mode, _main, -1, _actionStarted, -1, clientOwner, _exclusion,
-    _prepUntil, _window, _actionStarted, _holdAt, -1, -1, -1, _stopAfterHold, _upright];
+    _prepUntil, _window, _actionStarted, _holdAt, -1, -1, -1, _stopAfterHold, _upright, _rate];
 _medic setVariable ["ACME_treatmentPoseState", _state];
 
 // Retire stale ACE/ACME pose requests. This episode is the only ACME owner.
@@ -154,7 +127,7 @@ private _fnEnter = {
     [_medic, _transition, 1] call ACME_fnc_doAnim;
     _state set [3, -2];
     _state set [4, CBA_missionTime];
-    _state set [8, CBA_missionTime + _length];
+    _state set [8, CBA_missionTime + (_length / (_state param [17, 1]))];
 };
 
 if (_prepDelay <= 0) then {
@@ -192,6 +165,7 @@ private _pfh = [{
     private _actionStarted = _state param [10, CBA_missionTime];
     private _holdAt = _state param [11, -1];
     private _stopAfterHold = _state param [15, -1];
+    private _rate = _state param [17, 1];
     private _current = toLower animationState _medic;
     private _now = CBA_missionTime;
 
@@ -229,13 +203,13 @@ private _pfh = [{
             if (_current == toLower _main) then {
                 _state set [3, 2];
                 private _elapsed = 0;
-                if (_mode == "chestAccess") then {
+                if (_holdAt >= 0) then {
                     private _nativeElapsed = _medic getUnitMovesInfo 1;
                     if (_nativeElapsed isEqualType 0 && {finite _nativeElapsed} && {_nativeElapsed >= 0}) then {
                         _elapsed = _nativeElapsed;
                     };
                 };
-                _state set [4, _now - _elapsed];
+                _state set [4, _now - (_elapsed / _rate)];
             } else {
                 // Do not replay the requested state while it is entering. The former 0.10 s replay loop caused the
                 // rapid repeating reported after TSP integration. Modes that freeze must reach the exact state.
@@ -263,8 +237,8 @@ private _pfh = [{
             };
             if (_current != toLower _main && {_mode != "chestAccess"}) exitWith {};
             // Owner-clock time since the requested state was first reported. This is the freeze rule the user set.
-            private _elapsed = _now - _stageStarted;
-            if (_mode == "chestAccess" && {_current == toLower _main}) then {
+            private _elapsed = (_now - _stageStarted) * _rate;
+            if (_current == toLower _main) then {
                 private _nativeElapsed = _medic getUnitMovesInfo 1;
                 if (_nativeElapsed isEqualType 0 && {finite _nativeElapsed} && {_nativeElapsed >= 0}) then {
                     _elapsed = _nativeElapsed;
@@ -311,15 +285,12 @@ private _pfh = [{
             };
             private _stateDrift = _current != toLower _main;
             private _speedDrift = getAnimSpeedCoef _medic != 0;
-            if ((_stateDrift || {_speedDrift}) && {_now - _lastAssert >= 0.25}) then {
+            if (_stateDrift || {_speedDrift}) then {
                 // A speed-only disturbance does not need another switchMove. Re-seeking the exact frame every time
                 // an external system nudged animSpeedCoef was visible as an auscultation camera snap. Only restore
                 // the move when the animation state itself actually changed.
                 if (_stateDrift && {_phase >= 0}) then {_medic switchMove [_main, _phase, 1, false];};
                 _medic setAnimSpeedCoef 0;
-                private _jip = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
-                ["ACME_treatmentPoseSync", [_medic, _epoch, "hold", _main, _phase, clientOwner], _jip] call CBA_fnc_globalEventJIP;
-                [_jip, _medic] call CBA_fnc_removeGlobalEventJIP;
                 _state set [13, _now];
             };
         };

@@ -14,6 +14,7 @@ def holder_setup():
     native=(F.parents[1]/'circulation/functions/fnc_setLocalUiState.sqf').read_text()
     return setup()+function('vialHolder')+'private _uiNative={'+adapt(native, 'circulation')+'};'+'''
         private _uiWrites=[];
+        ACME_fnc_treatmentSupplyOrder={_this};
         ACM_circulation_fnc_setLocalUiState={_uiWrites pushBack _this; _this call _uiNative};
     '''
 

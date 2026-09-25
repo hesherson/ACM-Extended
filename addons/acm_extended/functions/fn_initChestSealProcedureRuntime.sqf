@@ -4,7 +4,7 @@
 // counts as on the hole by aspect-corrected distance. expect to tune chestregion and the radii in game once the
 // chest image position is on screen, the same as the iv-pose and syringe-dialog coordinate passes.
 // the chest-seal mini-game is drag-to-find holes. it is wound-driven, flips front to back, and is 32:9 safe.
-ACME_CS_rollTime = 1.85;
+ACME_CS_rollTime = 1.85 / (missionNamespace getVariable ["ACME_choreographyAnimSpeed", 1.50]);
 ACME_rollProviderDuration = 2.2;
 // B54 provider pose freeze rules. Seconds on the native RTM timeline, measured on the owner's clock from the frame
 // the requested state is first reported. A mode with no entry plays at native speed until its action ends it.

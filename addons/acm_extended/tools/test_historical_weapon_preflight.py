@@ -65,6 +65,9 @@ def setup(ace=True):
         private _actualSide = "front";
         private _clock = 10;
         ACME_fnc_animBlocked = {!(_providerParent isEqualTo objNull)};
+        ACME_fnc_treatmentPoseStop = {};
+        ACME_fnc_menuPoseStop = {};
+        ACME_fnc_providerStanceOwned = {false};
         CBA_fnc_waitUntilAndExecute = {_timers pushBack _this;};
         CBA_fnc_execNextFrame = {_waits pushBack _this;};
         ACME_fnc_procedureActionAllowed = {_permitted};
@@ -137,7 +140,7 @@ def test_unrelated_or_short_reservation_does_not_block_initial_request(record):
 
 @pytest.mark.parametrize('animation', [
     'AmovPknlMstpSnonWnonDnon', 'ACME_ChestSealWorkspace',
-    'ACME_StethoscopeWork', 'ACME_DirectPressureHold',
+    'ACME_StethoscopeWork', 'ACME_DirectPressureHold', 'ACM_GenericContinuous', 'ACM_ProneContinuous',
 ])
 def test_logical_and_visible_empty_hands_finish_without_another_holster(animation):
     execute(setup() + r'''

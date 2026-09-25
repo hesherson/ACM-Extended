@@ -66,9 +66,12 @@ def setup():
         private _positions=[]; private _seeks=[]; private _speedWrites=[];
         private _speed=1; private _duration=12; private _nativeElapsed=-1; private _nativeFinite=true;
         private _visiblePhase=0; private _configSpeed=-12;
-        private _testPrepDelay=0; private _preps=0; private _blocked=false; private _removedJip=[];
+        private _speedWaits=[]; private _testPrepDelay=0; private _preps=0; private _blocked=false; private _removedJip=[];
         private _getDefault={params ["_map","_key","_default"]; if (_key in _map) then {_map get _key} else {_default}};
-        CBA_fnc_waitAndExecute={_waits pushBack [_this select 0,_this select 1,_this select 2];};
+        CBA_fnc_waitAndExecute={
+            private _job=[_this select 0,_this select 1,_this select 2];
+            if ((str (_this select 0) find "ACME_treatmentPoseRemote") >= 0) then {_speedWaits pushBack _job;} else {_waits pushBack _job;};
+        };
         CBA_fnc_waitUntilAndExecute={_waits pushBack [_this select 1,_this select 2,_this select 3,_this select 0];};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
         CBA_fnc_globalEvent={_events pushBack _this;};
@@ -202,7 +205,7 @@ def test_ordinary_cleanup_remains_bounded_and_releases_temporary_stance(stance):
         [_waits select 0] call _deliver;
         [_waits select 1] call _deliver;
         [(count _waits)==2,"cleanup was not bounded"] call _check;
-        [(_waits select 0) select 2==0.12 && {(_waits select 1) select 2==0.85},"existing cleanup delays changed"] call _check;
+        [(_waits select 0) select 2==0.12 && {(_waits select 1) select 2==(0.85 / 1.5)},"existing cleanup delays changed"] call _check;
         [(_positions select (count _positions-1))=="AUTO","stance left locked"] call _check;
     '''+f'[count _moves=={int(stance=="STAND")},"unnecessary/missing crouch correction"] call _check;')
 
@@ -215,9 +218,9 @@ def test_owner_freeze_uses_current_mode_timeline_despite_frame_overshoot(mode,ho
         private _id=_state select 5; _animation=toLower (_state select 2);
         [_id] call _poseTick;
         [(_state select 3)==2,"entry not observed"] call _check;
-        CBA_missionTime=10+_expectedHold-0.001; [_id] call _poseTick;
-        [_seeks isEqualTo [] && {_speed==1},"premature freeze"] call _check;
-        CBA_missionTime=10+_expectedHold+0.07; [_id] call _poseTick;
+        CBA_missionTime=10+(_expectedHold/1.5)-0.001; [_id] call _poseTick;
+        [_seeks isEqualTo [] && {_speed==1.5},"premature freeze"] call _check;
+        CBA_missionTime=10+(_expectedHold/1.5)+0.07; [_id] call _poseTick;
         [count _seeks==1 && {_speed==0} && {(_state select 3)==3},"freeze/seek missing"] call _check;
         [abs (((_seeks select 0) select 1)*_duration-_expectedHold)<0.000001,"overshoot changed sample phase"] call _check;
         [(_events select 0) select 0=="ACME_treatmentPoseSync","observer hold not sent"] call _check;
@@ -248,11 +251,13 @@ def test_owner_hold_reasserts_only_observed_drift_and_never_replays_running_acti
         _seeks=[]; _moves=[]; _events=[]; _speedWrites=[];
     '''+({'none':'','speed':'_speed=1;','state':'_animation="other";'}[disturbance])+r'''
         CBA_missionTime=10.6; [_id] call _poseTick;
-        [count _events==0 && {count _seeks==0},"hold drift was not rate limited"] call _check;
+        [count _events==0 && {_speed==0},"hold repair broadcast or allowed visible motion"] call _check;
+        // The engine fixture acknowledges the requested state before the next tick.
+        _animation=toLower (_state select 2);
         CBA_missionTime=10.8; [_id] call _poseTick;
         [count _moves==0,"hold restarted ordinary work"] call _check;
         [_speed==0,"hold speed not restored"] call _check;
-    '''+f'[count _seeks=={int(disturbance=="state")} && {{count _events=={int(disturbance!="none")}}},"incorrect drift repair"] call _check;')
+    '''+f'[count _seeks=={int(disturbance=="state")} && {{count _events==0}},"incorrect drift repair"] call _check;')
 
 
 @pytest.mark.parametrize('mode',['response','airway','torsoBandage'])
@@ -261,7 +266,7 @@ def test_finite_work_enters_once_without_a_fixed_replay_loop(mode):
         private _state=_medic getVariable ["ACME_treatmentPoseState",[]]; private _id=_state select 5;
         _animation=toLower (_state select 2); [_id] call _poseTick;
         for "_i" from 1 to 8 do {CBA_missionTime=10+_i; [_id] call _poseTick;};
-        [count _moves==1 && {count _seeks==0} && {_speed==1},"finite work restarted or froze"] call _check;
+        [count _moves==1 && {count _seeks==0} && {_speed==1.5},"finite work restarted or froze"] call _check;
         [_preps==1,"repeated weapon preflight"] call _check;
     ''')
 
@@ -291,7 +296,7 @@ def test_deleted_provider_retires_only_its_handler_jip_and_fatigue_exclusion():
         [_medic,"inspect",6,_patient] call ACME_fnc_treatmentPoseStart;
         private _state=_medic getVariable ["ACME_treatmentPoseState",[]]; private _id=_state select 5;
         private _args=+((_handlers select _id) select 1); _args set [0,objNull];
-        _events=[]; _moves=[];
+        _events=[]; _moves=[]; _removedJip=[];
         [_args,_id] call ((_handlers select _id) select 0);
         [_id in _removed,"deleted provider handler retained"] call _check;
         [ace_advanced_fatigue_setAnimExclusions isEqualTo ["unrelated"],"deleted provider removed wrong exclusion"] call _check;
@@ -411,10 +416,10 @@ def test_work_wrappers_keep_authored_entry_exit_and_weapon_restrictions(name,par
 def test_invalid_provider_stop_releases_freeze_without_forcing_an_exit_move(change):
     execute(setup()+r'''
         private _epoch=[_medic,"stethoscope",-1,_patient] call ACME_fnc_treatmentPoseStart;
-        _speed=0; _moves=[]; _positions=[];
+        _speed=0; _moves=[]; _positions=[]; _events=[];
     '''+change+r'''
         [_medic,"stethoscope",_epoch] call ACME_fnc_treatmentPoseStop;
         [count _moves==0 && {count _positions==0} && {count _waits==0},"invalid provider received exit theatre"] call _check;
         [(_medic getVariable ["ACME_treatmentPoseState",[0]]) isEqualTo [],"invalid provider retained pose state"] call _check;
-        [(_events select 0) isEqualTo ["ace_common_setAnimSpeedCoef",[_medic,1]],"freeze release not sent"] call _check;
+        [_speed==1 && {((_medic getVariable ["ACME_treatmentPoseRemote",[]]) param [1,""])=="release"},"ordered freeze release not applied"] call _check;
     ''')

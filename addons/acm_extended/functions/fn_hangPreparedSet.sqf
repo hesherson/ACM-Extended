@@ -141,7 +141,7 @@ private _epoch = [_target] call ACME_fnc_clinicalEpoch;
 private _serial = (missionNamespace getVariable ["ACME_preparedHangSerial", 0]) + 1;
 missionNamespace setVariable ["ACME_preparedHangSerial", _serial];
 private _requestId = format ["preparedHang:%1:%2:%3", clientOwner, _serial, floor (diag_tickTime * 1000)];
-private _warmer = ([ACE_player, "ACME_BloodWarmer"] call ace_common_fnc_getCountOfItem) >= 1;
+private _warmer = ([ACE_player, _target, "ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount) >= 1;
 private _args = [_target, ACE_player, _requestId, _id, _bodyPart, _iv, _site, _epoch, _warmer, _freshEntry];
 _pending set [_requestId, [_target, _args, CBA_missionTime, false]];
 missionNamespace setVariable ["ACME_preparedHangPending", _pending];

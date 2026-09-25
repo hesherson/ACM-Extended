@@ -30,6 +30,7 @@ if (!isNull _target && {_target getVariable ["ACME_vent_recovering", false]}) ex
     ["This ventilator is being recovered from the patient.", 3] call ace_common_fnc_displayTextStructured;
 };
 private _affixed = !isNull _target && {_target getVariable ["ACME_vent_onPatient", false]};
+// An unattached panel presets the provider's own carried device. Shared equipment enters through Connect.
 if (!_affixed && {([ACE_player, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
     ["No ventilator in your kit.", 2] call ace_common_fnc_displayTextStructured;
 };

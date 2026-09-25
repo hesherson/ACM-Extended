@@ -33,8 +33,8 @@ if (_needFrontFirst) exitWith {
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
         [_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85;};
+        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
+        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
         _delay = (_rollTime max 0.1) + 0.08;
     } else {
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
@@ -100,8 +100,8 @@ _patient setVariable ["ACME_headElev_visualActive", false, true];
 // re-worn during a suspension: support gear stays out for every temporary flat maneuver.
 if (_keepVestOut) then {_patient setVariable ["ACME_headElev_suspendKeepVestOut", true, true];};
 
-private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-if (!(_lowerTime isEqualType 0) || {_lowerTime < 0.2}) then {_lowerTime = 1.4;};
+private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4 / (call ACME_fnc_choreographyRate)];
+if (!(_lowerTime isEqualType 0) || {_lowerTime < 0.2}) then {_lowerTime = 1.4 / (call ACME_fnc_choreographyRate);};
 _patient setVariable ["ACME_headElev_suspendReadyAt", CBA_missionTime + _lowerTime, false];
 
 private _suspendVest = [];

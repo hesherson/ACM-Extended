@@ -57,7 +57,13 @@ def setup():
         CBA_fnc_waitUntilAndExecute={_waits pushBack ["condition",_this select 1,_this select 2,_this param [3,-1],_this select 0,_this param [4,{}]];};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
-        ACME_fnc_patientAnimRequest={_animRequests pushBack _this; if (_leaseAllowed) then {_this select 7} else {""};};
+        ACME_fnc_patientAnimRequest={
+            _animRequests pushBack _this;
+            if (!_leaseAllowed) exitWith {""};
+            private _tok=_this select 7;
+            (_this select 0) setVariable ["ACME_patientAnimLock",[_tok,_this select 3,"provider",_this select 6,100]];
+            _tok
+        };
         ACME_fnc_patientAnimRelease={_releases pushBack _this;};
         ACME_fnc_headElevYieldForRoll={_yielded=_yielded+1;};
         ACME_fnc_headElevTryResume={_headResume pushBack _this;};
@@ -267,7 +273,7 @@ def test_roll_uses_priority_one_lease_then_only_a_scoped_fallback_and_requested_
         [(_request select 2)==1,"initial roll did not use transition priority one"] call _check;
         [_yielded==0,"preserved head elevation was yielded"] call _check;
         private _fallback=_waits select 0; private _rest=_waits select 1;
-        [(_fallback select 3)==0.15 && {(_rest select 3)==1.85},"roll timing was changed"] call _check;
+        [(_fallback select 3)==0.15 && {(_rest select 3)==(1.85/1.5)},"roll timing was changed"] call _check;
     '''+f'_animation="{transition if engine_started else "not-started"}";'+'''
         [_fallback] call _deliver;
     '''+f'[count _moves=={int(not engine_started)},"unnecessary or missing scoped fallback"] call _check;'+

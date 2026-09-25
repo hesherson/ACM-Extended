@@ -56,6 +56,8 @@ def setup():
         private _local=true; private _parent=objNull; private _blocked=false;
         private _weapon="rifle"; private _anim="idle"; private _stances=[];
         private _jobs=[]; private _prep=0; private _stanceOwned=false;
+        ACME_fnc_treatmentPoseStop={};
+        ACME_fnc_menuPoseStop={};
         ACME_fnc_animBlocked={_blocked};
         ACME_fnc_medicAnimationPrep={_prep=_prep+1;0.1};
         ACME_fnc_providerStanceOwned={_stanceOwned};

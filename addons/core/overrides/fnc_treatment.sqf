@@ -420,8 +420,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
     // and the visible Wnon/Snon skeleton must agree; sidearms can clear one before the other.
     private _animNow = if (!isNull _medic) then {toLowerANSI animationState _medic} else {""};
     private _visuallyEmptyNow = !isNull _medic
-        && {((_animNow find "wnon") >= 0)}
-        && {((_animNow find "snon") >= 0)};
+        && {(((_animNow find "wnon") >= 0) && {(_animNow find "snon") >= 0})
+            || {_animNow in ["acm_genericcontinuous", "acm_pronecontinuous"]}};
     private _emptyHandsNow = !isNull _medic
         && {(currentWeapon _medic == "")}
         && {_visuallyEmptyNow};
@@ -440,6 +440,11 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         private _args = +_this;
         private _token = format ["%1:%2:%3", clientOwner, netId _medic, diag_tickTime];
         _medic setVariable ["ACME_treatmentPreflightToken", _token, false];
+        [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
+        [_medic, true] call ACME_fnc_menuPoseStop;
+        private _rate = call ACME_fnc_choreographyRate;
+        _medic setAnimSpeedCoef _rate;
+        ["ace_common_setAnimSpeedCoef", [_medic, _rate]] call CBA_fnc_globalEvent;
 
         // Phase 1: issue exactly one holster request and wait until the handgun/long gun is both logically gone
         // and visually in Wnon/Snon. Do not start a stance transition while the weapon-away RTM still owns the arms.
@@ -450,8 +455,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 || {(_m getVariable ["ACME_treatmentPreflightToken", ""]) != _tok}) exitWith {true};
             private _anim = toLowerANSI animationState _m;
             (currentWeapon _m == "")
-                && {((_anim find "wnon") >= 0)}
-                && {((_anim find "snon") >= 0)}
+                && {(((_anim find "wnon") >= 0) && {(_anim find "snon") >= 0})
+                    || {_anim in ["acm_genericcontinuous", "acm_pronecontinuous"]}}
         }, {
             params ["_m", "_args", "_tok"];
             if (isNull _m || {!alive _m} || {!local _m}
@@ -460,6 +465,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                     _m setVariable ["ACME_treatmentPreflightActive", false, false];
                     _m setVariable ["ACME_treatmentPreflightToken", "", false];
                     _m setUnitPos "AUTO";
+                    _m setAnimSpeedCoef 1;
+                    ["ace_common_setAnimSpeedCoef", [_m, 1]] call CBA_fnc_globalEvent;
                 };
             };
 
@@ -478,8 +485,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                     || {(_u getVariable ["ACME_treatmentPreflightToken", ""]) != _token}) exitWith {true};
                 private _anim2 = toLowerANSI animationState _u;
                 (currentWeapon _u == "")
-                    && {((_anim2 find "wnon") >= 0)}
-                    && {((_anim2 find "snon") >= 0)}
+                    && {(((_anim2 find "wnon") >= 0) && {(_anim2 find "snon") >= 0})
+                        || {_anim2 in ["acm_genericcontinuous", "acm_pronecontinuous"]}}
                     && {stance _u == "CROUCH"}
             }, {
                 params ["_u", "_callArgs", "_token"];
@@ -489,6 +496,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                         _u setVariable ["ACME_treatmentPreflightActive", false, false];
                         _u setVariable ["ACME_treatmentPreflightToken", "", false];
                         _u setUnitPos "AUTO";
+                    _u setAnimSpeedCoef 1;
+                    ["ace_common_setAnimSpeedCoef", [_u, 1]] call CBA_fnc_globalEvent;
                     };
                 };
 
@@ -509,6 +518,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 _u setVariable ["ACME_treatmentPreflightBypass", [], false];
                 _u setVariable ["ACME_treatmentPreflightToken", "", false];
                 _u setUnitPos "AUTO";
+                    _u setAnimSpeedCoef 1;
+                    ["ace_common_setAnimSpeedCoef", [_u, 1]] call CBA_fnc_globalEvent;
             }] call CBA_fnc_waitUntilAndExecute;
         }, [_medic, _args, _token], 3.0, {
             params ["_m", "_args", "_tok"];
@@ -517,6 +528,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             _m setVariable ["ACME_treatmentPreflightBypass", [], false];
             _m setVariable ["ACME_treatmentPreflightToken", "", false];
             _m setUnitPos "AUTO";
+                    _m setAnimSpeedCoef 1;
+                    ["ace_common_setAnimSpeedCoef", [_m, 1]] call CBA_fnc_globalEvent;
         }] call CBA_fnc_waitUntilAndExecute;
         true
     };
@@ -544,6 +557,21 @@ if (_classname != "ACME_ConnectETVent") exitWith {
     if (_ownsProviderAnim && {local _medic}) then {
         _medic setVariable ["ACME_suppressNativeTreatmentAnim", true, false];
     };
+        // Ordinary ACE work has no treatmentPose controller of its own. Its existing completion events
+        // retire this animation-only rate without changing native treatment/progress-bar duration.
+    private _nativeRateRecord = [];
+    if (_mode == "" && {!_headOwned} && {local _medic} && {isNull objectParent _medic}) then {
+            [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
+            [_medic, true] call ACME_fnc_menuPoseStop;
+            private _serial = (_medic getVariable ["ACME_nativeTreatmentRateSerial", 0]) + 1;
+            _medic setVariable ["ACME_nativeTreatmentRateSerial", _serial, false];
+            _nativeRateRecord = [_serial, _patient, _bodyPart, _classname, _medic getVariable ["ACME_treatmentPoseEpoch", -1]];
+            _medic setVariable ["ACME_nativeTreatmentRate", _nativeRateRecord, true];
+            private _rate = call ACME_fnc_choreographyRate;
+            _medic setAnimSpeedCoef _rate;
+            ["ace_common_setAnimSpeedCoef", [_medic, _rate]] call CBA_fnc_globalEvent;
+        };
+
     private _started = _nativeArgs call ACM_core_fnc_treatmentNative;
     if (local _medic) then {
         _medic setVariable ["ACME_suppressNativeTreatmentAnim", false, false];
@@ -554,6 +582,15 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             _medic setVariable ["ACME_DP_Paused", false, false];
             _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
         };
+    };
+
+    if (!_started && {_nativeRateRecord isNotEqualTo []}
+        && {(_medic getVariable ["ACME_nativeTreatmentRate", []]) isEqualTo _nativeRateRecord}) then {
+        _medic setVariable ["ACME_nativeTreatmentRate", [], true];
+    };
+    if (!_started && {local _medic} && {!([_medic] call ACME_fnc_providerStanceOwned)}) then {
+        _medic setAnimSpeedCoef 1;
+        ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
     };
 
     if (_started && {local _medic} && {!isNull _medic} && {isNull objectParent _medic}) then {

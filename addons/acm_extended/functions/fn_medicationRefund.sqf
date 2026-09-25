@@ -3,7 +3,8 @@
    Missing ACK is NOT a refund: an already delivered dose may merely have a delayed reply. */
 params ["_medic", ["_payload",[]], ["_accepted",false]];
 if (isNull _medic || {!local _medic} || {_payload isEqualTo []}) exitWith {};
-_payload params [["_mags",[]],["_drawn",[]],["_successItems",[]]];
+_payload params [["_mags",[]],["_drawn",[]],["_successItems",[]],["_supplyReceipts",[]]];
+{[_x,!_accepted] call ACME_fnc_treatmentSupplyRefund;} forEach _supplyReceipts;
 if (_accepted) exitWith {
     {[_medic,_x] call ace_common_fnc_addToInventory;} forEach _successItems;
 };

@@ -5,6 +5,11 @@ private _serviceParent = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (_this isNotEqualTo [] && {_closing isNotEqualTo _serviceParent}) exitWith {};
 uiNamespace setVariable ["ACME_vent_openSerial", 1 + (uiNamespace getVariable ["ACME_vent_openSerial", 0])];
 uiNamespace setVariable ["ACME_vent_openPending", false];
+// A submitted exchange is settled only by its ACK; an unfinished hatch animation is safe to cancel.
+private _batterySupply = uiNamespace getVariable ["ACME_vent_batterySupply", []];
+uiNamespace setVariable ["ACME_vent_batterySupply", []];
+uiNamespace setVariable ["ACME_vent_swapUntil", -1];
+if !(_batterySupply isEqualTo []) then {[_batterySupply] call ACME_fnc_treatmentSupplyRefund;};
 if (!isNull _serviceParent) then {
     private _prompt = _serviceParent getVariable ["ACME_vent_techPrompt", displayNull];
     if (!isNull _prompt) then { _prompt closeDisplay 2; };

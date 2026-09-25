@@ -11,6 +11,9 @@ params [
 ];
 if (isNull _holder || {_token == ""}) exitWith {};
 if (!local _holder) exitWith {[_holder, "vialLease", [_medic,_op,_token]] call ACME_fnc_ownerDispatch;};
+// Settle queued source deltas before an expired/released holder can grant a new
+// drawer. A still-live lease leaves them queued until its release or expiry.
+[_holder] call ACME_fnc_vialRefundLocal;
 
 private _now = serverTime;
 private _lease = +(_holder getVariable ["ACME_vialLease", [objNull,"",0]]);
@@ -38,6 +41,7 @@ switch (toLowerANSI _op) do {
     case "release": {
         if (_leaseMedic isEqualTo _medic && {_leaseToken isEqualTo _token}) then {
             _holder setVariable ["ACME_vialLease", nil, true];
+            [_holder] call ACME_fnc_vialRefundLocal;
             _accepted = true;
             _until = 0;
         };

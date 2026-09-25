@@ -24,8 +24,8 @@ uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
     private _count = -1;
     private _allowed = true;
 
-    // A tube row from an older/reused display must disappear completely for non-doctors, including its hitbox.
-    if (_tool == "tube" && {!_canTube}) then {
+    // Hide unavailable tube rows, but retain a held tool long enough for its provider to put it down.
+    if (_tool == "tube" && {!_canTube} && {_held != "tube"}) then {
         _bg ctrlShow false;
         if (!isNull _ic) then {_ic ctrlShow false;};
         if (!isNull _btn) then {_btn ctrlEnable false; _btn ctrlShow false;};
@@ -51,11 +51,11 @@ uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
 
     if (_tool == "tube") then {
         _allowed = _canTube && {!_closed} && {!_sealed};
-        _count = if (_allowed) then {[_medic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem} else {0};
+        _count = if (_allowed) then {[_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestTubeKit"] call ACME_fnc_treatmentSupplyCount} else {0};
     };
     if (_tool == "seal") then {
         _allowed = _canSeal && {!_closed} && {!_sealed};
-        _count = if (_allowed) then {[_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem} else {0};
+        _count = if (_allowed) then {[_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount} else {0};
     };
     private _locked = (_tool in ["tube", "seal"]) && {!_allowed || {_count <= 0}};
     private _selected = _held == _tool;

@@ -11,6 +11,13 @@ private _existingTube = _patient getVariable ["ACME_ETT_Inserted", false];
 if !([_medic, "intubation", _existingTube] call ACME_fnc_procedureAllowed) exitWith {};
 if (uiNamespace getVariable ["ACME_laryngo_done", false]) exitWith {};
 if (uiNamespace getVariable ["ACME_laryngo_tubePassed", false]) exitWith {};
+// Reserve before applying any airway consequence. Existing in-patient tubes need no new item.
+if (!_existingTube && {([_medic, _patient, "ACME_ETTube"] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
+    ["No ET tube available.", 2, _medic] call ace_common_fnc_displayTextStructured;
+};
+private _receipt = if (_existingTube) then {[]} else {[_medic, _patient, ["ACME_ETTube"]] call ACME_fnc_treatmentSupplyTake};
+if (!_existingTube && {_receipt isEqualTo []}) exitWith {};
+if (!_existingTube) then {[_receipt, false] call ACME_fnc_treatmentSupplyRefund;};
 uiNamespace setVariable ["ACME_laryngo_tubePassed", true];
 
 // Sample the live procedural reflex, but do not hard-block passage.  SAI/DSI can work with adequate hypnotic
@@ -30,8 +37,6 @@ private _gagged = _gagChance > 0 && {!_arrest} && {!_paralyzed} && {_underSedate
 // Through the cords; cuff and securement still require completion.
 // the tube is committed. it is through the cords, so it stops being a thing in your hand and comes off the count,
 // because it belongs to the patient now. it keeps drawing seated and is simply not carried any more.
-private _med = uiNamespace getVariable ["ACME_laryngo_medic", ACE_player];
-if (!isNull _med && {!_existingTube}) then { _med removeItem "ACME_ETTube"; };
 uiNamespace setVariable ["ACME_laryngo_tubeInHand", false];
 uiNamespace setVariable ["ACME_laryngo_tubeGrip", false];
 uiNamespace setVariable ["ACME_laryngo_tubeAnchored", false];

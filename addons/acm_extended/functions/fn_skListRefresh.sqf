@@ -18,7 +18,7 @@ private _carousel = _view == "carousel";
 private _infusion = !((_d getVariable ["ACME_SK_Return", []]) isEqualTo []);
 // B69: enforce preparation-page ownership on every list refresh as well as skSetView. Native ACM callbacks can
 // touch their source captions while this dialog stays open; Body Map must remain visually clean until Draw Syringe.
-(_d displayCtrl 84007) ctrlShow (!_infusion && {!_body});
+(_d displayCtrl 84007) ctrlShow (!_body);
 (_d displayCtrl 84008) ctrlShow (!_body);
 (_d displayCtrl 84129) ctrlShow (!_body);
 (_d displayCtrl 84131) ctrlShow (!_infusion && {!_body});
@@ -283,7 +283,7 @@ private _fnStockInfo = {
         private _stockInfo = if (_kind == "medication") then {[_data, _reserved, _item] call _fnStockInfo} else {["", -1, 0, 0, ""]};
         _stockInfo params ["_stockLabel", "_vialCount", "_curMl", "_totalMl", "_countLabel"];
 
-        private _available = if (_item != "") then {([ACE_player, _item] call ace_common_fnc_getCountOfItem) > 0} else {true};
+        private _available = if (_item != "") then {([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], _item] call ACME_fnc_treatmentSupplyCount) > 0} else {true};
         if (_kind == "medication") then {
             // Keep the last vial row alive while its staged draw is still in the syringe, so the medic can push it back.
             _available = (_totalMl > 0.000001) || {_reserved > 0.000001};

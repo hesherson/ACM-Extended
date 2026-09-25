@@ -1,4 +1,4 @@
-params ["_patient", "_medic", "_on", ["_hasO2", false], ["_quiet", false]];
+params ["_patient", "_medic", "_on", ["_hasO2", false], ["_quiet", false], ["_oxygenSource", objNull]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_on && {_patient getVariable ["ACME_nrb_on", false]}) exitWith {
     ["NRB is already on this patient.", 2, _medic] call ACME_fnc_netNotice;
@@ -21,6 +21,7 @@ if (_on) then {
     _patient setVariable ["ACME_nrb_session", _session, true];
     _patient setVariable ["ACME_nrb_drawSeq", 0, true];
     _patient setVariable ["ACME_nrb_medic", _medic, true];
+    _patient setVariable ["ACME_nrb_oxygenSource", if (isNull _oxygenSource) then {_medic} else {_oxygenSource}, true];
     _patient setVariable ["ACME_nrb_nextO2", CBA_missionTime, true];
     [_patient] call ACME_fnc_ownerRegister;
     if (_hasO2) then {
@@ -31,6 +32,7 @@ if (_on) then {
     };
 } else {
     _patient setVariable ["ACME_nrb_session", "", true];
+    _patient setVariable ["ACME_nrb_oxygenSource", objNull, true];
     ACME_nrb_activePatients = (missionNamespace getVariable ["ACME_nrb_activePatients", []]) - [_patient];
     if (!_quiet) then {
         ["NRB removed.", 2, _medic] call ACME_fnc_netNotice;

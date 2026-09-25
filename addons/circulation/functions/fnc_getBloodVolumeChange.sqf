@@ -812,4 +812,8 @@ _unit setVariable [QEGVAR(circulation,Saline_Volume), _salineVolume, _syncValues
 private _circulatingVolume = ((_bloodVolume + _plasmaVolume + _salineVolume) min DEFAULT_BLOOD_VOLUME) max 0;
 _unit setVariable ["ACME_circulatingVolume", _circulatingVolume, _syncValues];
 
+// B156: new fluid/platelet changes enter the 5 Hz coagulation set on this owner immediately.
+// Recompute after all compartments commit so no discovery sweep delays treatment response.
+if (!isNil "ACME_fnc_coagulationTick") then {[[_unit]] call ACME_fnc_coagulationTick;};
+
 _circulatingVolume;

@@ -25,10 +25,10 @@ if (_tool == "tube" && {
     isNull _medic
     || {!([_medic, 2] call ace_medical_treatment_fnc_isMedic)}
     || {!([_medic, "chestTube"] call ACME_fnc_procedureAllowed)}
-    || {([_medic, "ACM_ChestTubeKit"] call ace_common_fnc_getCountOfItem) < 1}
+    || {([_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestTubeKit"] call ACME_fnc_treatmentSupplyCount) < 1}
 }) exitWith {};
 if (_tool == "seal" && {isNull _medic || {!([_medic, "thoracostomySeal"] call ACME_fnc_procedureAllowed)}
-    || {([_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) < 1}}) exitWith {};
+    || {([_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount) < 1}}) exitWith {};
 
 uiNamespace setVariable ["ACME_Thora_Held", _tool];
 uiNamespace setVariable ["ACME_Thora_TubeSnap", false];

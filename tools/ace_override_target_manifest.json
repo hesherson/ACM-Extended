@@ -323,6 +323,14 @@
     },
     {
       "tag": "ace_medical_status",
+      "function": "getAllMedicationCount",
+      "owner_addon": "core",
+      "local": "core/overrides/fnc_getAllMedicationCount.sqf",
+      "upstream": "addons/medical_status/functions/fnc_getAllMedicationCount.sqf",
+      "upstream_present": true
+    },
+    {
+      "tag": "ace_medical_status",
       "function": "addMedicationAdjustment",
       "owner_addon": "core",
       "local": "core/overrides/fnc_addMedicationAdjustment.sqf",

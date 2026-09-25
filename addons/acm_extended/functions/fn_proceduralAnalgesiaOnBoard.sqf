@@ -9,7 +9,7 @@ private _parts = ["head","body","leftarm","rightarm","leftleg","rightleg"];
 private _pi = _parts find _bodyPart;
 private _localLid = 0;
 if (_pi >= 0) then {
-    private _v = [_patient,"Lidocaine",false,_pi] call ace_medical_status_fnc_getMedicationCount;
+    private _v = [_patient,"Lidocaine",false,_pi] call ACME_fnc_medicationCountCompat;
     if (_v isEqualType 0 && {finite _v}) then {_localLid = _v max 0;};
 };
 private _ketNorm = ([_patient] call ACME_fnc_ketamineOnBoard)

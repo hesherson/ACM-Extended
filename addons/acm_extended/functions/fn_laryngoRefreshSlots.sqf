@@ -9,8 +9,8 @@ private _held  = uiNamespace getVariable ["ACME_laryngo_held", ""];
 private _patient = uiNamespace getVariable ["ACME_laryngo_patient", objNull];
 private _trayVisible = !(uiNamespace getVariable ["ACME_suction_standalone", false]);
 
-private _scopeN = [_medic, "ACME_Laryngoscope"] call ace_common_fnc_getCountOfItem;
-private _tubeN  = [_medic, "ACME_ETTube"] call ace_common_fnc_getCountOfItem;
+private _scopeN = [_medic, _patient, "ACME_Laryngoscope"] call ACME_fnc_treatmentSupplyCount;
+private _tubeN  = [_medic, _patient, "ACME_ETTube"] call ACME_fnc_treatmentSupplyCount;
 (_dlg displayCtrl 87862) ctrlSetText format ["x%1", _scopeN];
 (_dlg displayCtrl 87866) ctrlSetText format ["x%1", _tubeN];
 

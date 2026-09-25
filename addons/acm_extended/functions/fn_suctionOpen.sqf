@@ -1,5 +1,5 @@
 // Open the shared airway screen in suction-only mode after ACE finishes its action.
-// Keep the legacy type argument for callers. Provider inventory selects the actual device.
+// Keep the legacy type argument for callers. Eligible shared equipment selects the actual device.
 params ["_medic", "_patient", ["_type", 1]];
 
 if (!hasInterface) exitWith {  };
@@ -7,8 +7,8 @@ if (isNull _patient) exitWith {  };
 
 // Keep an unspent manual bag in inventory until the first squeeze.
 if (isNull _medic || {!local _medic}) exitWith {};
-if (([_medic, "ACM_ACCUVAC"] call ace_common_fnc_getCountOfItem) < 1 && {
-    ([_medic, "ACM_SuctionBag"] call ace_common_fnc_getCountOfItem) < 1
+if (([_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount) < 1 && {
+    ([_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount) < 1
 }) exitWith {["No suction device carried.", 2] call ace_common_fnc_displayTextStructured;};
 uiNamespace setVariable ["ACME_suction_bagOwner", []];
 uiNamespace setVariable ["ACME_suction_resume", []];

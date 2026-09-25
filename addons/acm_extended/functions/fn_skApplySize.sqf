@@ -6,7 +6,7 @@ params [["_size",10,[0]]];
 if !(_size in [1,3,5,10]) exitWith {false};
 private _d = findDisplay 84000;
 if (isNull _d) exitWith {false};
-if (([ACE_player, format ["ACM_Syringe_%1",_size]] call ace_common_fnc_getCountOfItem) < 1) exitWith {false};
+if (([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], format ["ACM_Syringe_%1",_size]] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {false};
 if (uiNamespace getVariable ["ACME_SK_InjectionBusy",false]) exitWith {false};
 
 private _current = uiNamespace getVariable ["ACME_SK_CurSize",10];

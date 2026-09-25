@@ -10,7 +10,11 @@ if (_selection < 0) then {
 };
 
 private _holder = switch (_selection) do {
-    case 1: {missionNamespace getVariable ['ACM_circulation_SyringeDraw_Target', objNull]};
+    case 1: {
+        private _target = missionNamespace getVariable ['ACM_circulation_SyringeDraw_Target', objNull];
+        if (isNull _target) then {_target = uiNamespace getVariable ['ACME_SK_Patient',objNull];};
+        _target
+    };
     case 2: {objectParent _medic};
     default {_medic};
 };
@@ -20,6 +24,7 @@ private _holder = switch (_selection) do {
 if (_selection == 1 && {!isNull _holder} && {_holder isNotEqualTo _medic}) then {
     private _sameVehicle = !isNull (objectParent _medic) && {(objectParent _medic) isEqualTo (objectParent _holder)};
     if (!_sameVehicle && {_medic distance _holder > 5}) then {_holder = objNull;};
+    if (!isNull _holder && {!(_holder in ([_medic,_holder] call ACME_fnc_treatmentSupplyOrder))}) then {_holder = objNull;};
 };
 
 // Mirror ACM's own inventory-switch fail-safe. A genuinely stale patient/vehicle source is not a valid reason

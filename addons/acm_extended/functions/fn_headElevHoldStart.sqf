@@ -80,8 +80,17 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
     private _entryLC = toLowerANSI _entry;
     private _holdLC = toLowerANSI _holdState;
 
-    ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
-    _medic setAnimSpeedCoef 1;
+    // Manual support uses the same episode receiver as every other frozen provider pose.
+    [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
+    private _poseEpoch = (_medic getVariable ["ACME_treatmentPoseEpoch", 0]) + 1;
+    _medic setVariable ["ACME_treatmentPoseEpoch", _poseEpoch, true];
+    _medic setVariable ["ACME_treatmentPoseEpisode", [_poseEpoch, true], true];
+    _medic setVariable ["ACME_headElev_manualPoseEpoch", _poseEpoch, false];
+    private _rate = call ACME_fnc_choreographyRate;
+    _medic setAnimSpeedCoef _rate;
+    private _jip = format ["ACME_treatmentPose_%1_%2", netId _medic, _poseEpoch];
+    ["ACME_treatmentPoseSync", [_medic, _poseEpoch, "run", "", -1, clientOwner, _rate], _jip] call CBA_fnc_globalEventJIP;
+    [_jip, _medic] call CBA_fnc_removeGlobalEventJIP;
 
     private _prepDelay = [_medic] call ACME_fnc_medicAnimationPrep;
     if !(_prepDelay isEqualType 0) then {_prepDelay = 0;};
@@ -89,10 +98,11 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
 
     private _pfh = [{
         params ["_args","_handle"];
-        _args params ["_m","_p","_poseToken","_animToken","_entry","_entryLC","_holdState","_holdLC","_prepUntil","_stage","_stageAt","_lastAssert"];
+        _args params ["_m","_p","_poseToken","_animToken","_entry","_entryLC","_holdState","_holdLC","_prepUntil","_stage","_stageAt","_lastAssert","_poseEpoch"];
 
         if (isNull _m || {!local _m}
             || {(_m getVariable ["ACME_headElev_manualAnimToken",""]) != _animToken}
+            || {!((_m getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [_poseEpoch, true])}
             || {!alive _m}
             || {_m getVariable ["ACE_isUnconscious",false]}
             || {!(missionNamespace getVariable ["ACM_core_ContinuousAction_Active",false])}) exitWith {
@@ -125,7 +135,9 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
             // force the authored end state once after a bounded entry window instead of replaying the transition.
             if (_state == _holdLC) then {
                 _m setAnimSpeedCoef 0;
-                ["ace_common_setAnimSpeedCoef", [_m,0]] call CBA_fnc_globalEvent;
+                private _jip = format ["ACME_treatmentPose_%1_%2", netId _m, _poseEpoch];
+                ["ACME_treatmentPoseSync", [_m, _poseEpoch, "hold", _holdState, 0, clientOwner], _jip] call CBA_fnc_globalEventJIP;
+                [_jip, _m] call CBA_fnc_removeGlobalEventJIP;
                 _args set [9,1];
                 _args set [10,_now];
                 _args set [11,_now];
@@ -142,14 +154,13 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
             // on real state/speed drift; flattening interventions cancel the maneuver through the clinical PFH below.
             private _stateDrift = _state != _holdLC;
             private _speedDrift = getAnimSpeedCoef _m != 0;
-            if ((_stateDrift || {_speedDrift}) && {_now - _lastAssert >= 0.20}) then {
+            if (_stateDrift || {_speedDrift}) then {
                 if (_stateDrift) then {[_m, _holdState, 2] call ACME_fnc_doAnim;};
                 _m setAnimSpeedCoef 0;
-                ["ace_common_setAnimSpeedCoef", [_m,0]] call CBA_fnc_globalEvent;
                 _args set [11,_now];
             };
         };
-    }, 0, [_medic,_patient,_token,_animToken,_entry,_entryLC,_holdState,_holdLC,_prepUntil,-1,CBA_missionTime,-1]] call CBA_fnc_addPerFrameHandler;
+    }, 0, [_medic,_patient,_token,_animToken,_entry,_entryLC,_holdState,_holdLC,_prepUntil,-1,CBA_missionTime,-1,_poseEpoch]] call CBA_fnc_addPerFrameHandler;
     _medic setVariable ["ACME_headElev_manualAnimPFH", _pfh, false];
 }, {
     params ["_medic", "_patient", "_bodyPart", "_extra"];
@@ -172,11 +183,21 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
     private _animToken = _medic getVariable ["ACME_headElev_manualAnimToken", ""];
     _medic setVariable ["ACME_headElev_manualAnimToken", "", false];
 
-    ["ace_common_setAnimSpeedCoef", [_medic,1]] call CBA_fnc_globalEvent;
-    _medic setAnimSpeedCoef 1;
+    private _poseEpoch = _medic getVariable ["ACME_headElev_manualPoseEpoch", -1];
+    _medic setVariable ["ACME_headElev_manualPoseEpoch", -1, false];
+    private _ownsPose = local _medic && {(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [_poseEpoch, true]};
+    if (_ownsPose) then {
+        _medic setVariable ["ACME_treatmentPoseEpisode", [_poseEpoch, false], true];
+        [format ["ACME_treatmentPose_%1_%2", netId _medic, _poseEpoch]] call CBA_fnc_removeGlobalEventJIP;
+        private _canExit = alive _medic && {isNull objectParent _medic} && {!(_medic getVariable ["ACE_isUnconscious",false])};
+        private _rate = if (_canExit) then {call ACME_fnc_choreographyRate} else {1};
+        private _packet = [_medic, _poseEpoch, ["release", "exit"] select _canExit, "", 2.1 / _rate, clientOwner, _rate];
+        _packet call ACME_fnc_treatmentPoseSync;
+        ["ACME_treatmentPoseSync", _packet] call CBA_fnc_globalEvent;
+    };
 
     // Use the authored Putdown exit, the same provider animation family used to return a patient to supine.
-    if (alive _medic && {local _medic} && {isNull objectParent _medic}
+    if (_ownsPose && {alive _medic} && {local _medic} && {isNull objectParent _medic}
         && {!(_medic getVariable ["ACE_isUnconscious",false])}) then {
         private _exit = "AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon";
         private _rest = "AmovPknlMstpSnonWnonDnon";
@@ -185,8 +206,8 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
         _medic setUnitPos "MIDDLE";
         [_medic,_exit,2] call ACME_fnc_doAnim;
 
-        private _releaseTime = missionNamespace getVariable ["ACME_headElev_seqReleaseTime",2.1];
-        if !(_releaseTime isEqualType 0 && {finite _releaseTime} && {_releaseTime > 0.2}) then {_releaseTime = 2.1;};
+        private _releaseTime = missionNamespace getVariable ["ACME_headElev_seqReleaseTime", 2.1 / (call ACME_fnc_choreographyRate)];
+        if !(_releaseTime isEqualType 0 && {finite _releaseTime} && {_releaseTime > 0.2}) then {_releaseTime = 2.1 / (call ACME_fnc_choreographyRate);};
         [{
             params ["_m","_serial","_rest"];
             if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}

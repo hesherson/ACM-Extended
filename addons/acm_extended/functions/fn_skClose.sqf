@@ -30,6 +30,7 @@ if (!_switch && {!_infusion} && {(uiNamespace getVariable ["ACME_SK_WasteStage",
     call ACME_fnc_skCompoundCommit;
 };
 uiNamespace setVariable ["ACME_SK_WasteStage", ""];
+uiNamespace setVariable ["ACME_SK_VialHolder",objNull];
 uiNamespace setVariable ["ACME_SK_WasteMoving", false];
 uiNamespace setVariable ["ACME_SK_TagEditMode", false];
 uiNamespace setVariable ["ACME_SK_CarouselZoneHover", false];

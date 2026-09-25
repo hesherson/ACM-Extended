@@ -64,7 +64,7 @@ if (!_frontNormalized) then {
                 [_patient,"front",false,_medic,_preserveHead] call ACME_fnc_chestSealRoll;
             };
 
-            private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
+            private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
             if !(_patientRoll isEqualType 0 && {finite _patientRoll}) then {_patientRoll = 1.85;};
             private _providerRoll = missionNamespace getVariable ["ACME_rollProviderDuration",2.2];
             if !(_providerRoll isEqualType 0 && {finite _providerRoll}) then {_providerRoll = 2.2;};
@@ -306,14 +306,13 @@ if (!_canAnimate) exitWith {
     true
 };
 
-private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftTime", 0.70];
-if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 0.70;};
-private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestLowerTime", 0.78];
-if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 0.78;};
+private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftTime", 1.2 / (call ACME_fnc_choreographyRate)];
+if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2 / (call ACME_fnc_choreographyRate);};
+private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestLowerTime", 1.4 / (call ACME_fnc_choreographyRate)];
+if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 1.4 / (call ACME_fnc_choreographyRate);};
 private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftHold", 0.04];
 if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.04;};
-private _removeAnimSpeed = missionNamespace getVariable ["ACME_chestAccess_vestRemoveAnimSpeed", 1.80];
-if (!(_removeAnimSpeed isEqualType 0) || {!finite _removeAnimSpeed} || {_removeAnimSpeed < 1}) then {_removeAnimSpeed = 1.80;};
+private _removeAnimSpeed = call ACME_fnc_choreographyRate;
 
 // No synthetic settle gap after the casualty is back down. The queued intervention may launch on the first
 // readiness frame instead of waiting while the provider is frozen with hands on the chest.
@@ -344,7 +343,7 @@ private _beginPatient = {
 
     private _claim = [_p, "ACME_HeadElevPatientGrab", 2, "chest-access-vest", _medic, _sequenceTime + 0.5, 4, _token]
         call ACME_fnc_patientAnimRequest;
-    if (_ctx == "chestseal" && {_claim == ""}) exitWith {
+    if (_claim == "") exitWith {
         // Retain a valid competing lease. Resume this exact preparation only
         // once it releases; cancellation clears the busy token and retires us.
         [{
@@ -392,7 +391,8 @@ private _beginPatient = {
             _p setVariable ["ACME_patientAnimLock", [], true];
         };
 
-        if (alive _p && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
+        if ((_lock param [0, ""]) in ["", _token]
+            && {alive _p} && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp", "ACM_LyingState"];
             if ((toLowerANSI animationState _p) != (toLowerANSI _faceUp)) then {
                 ["ace_common_switchMove", [_p, _faceUp]] call CBA_fnc_globalEvent;
@@ -402,7 +402,7 @@ private _beginPatient = {
 
         if ((_p getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _token) then {
             _p setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
-            ["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;
+            [_p, _token] call ACME_fnc_patientAnimRelease;
         };
 
         _p setVariable [_busyVar, "", false];
@@ -426,7 +426,7 @@ private _beginPatient = {
         if (alive _p && {isNull objectParent _p}) then {
             private _releaseClaim = [_p, "ACME_HeadElevPatientRelease", 2, "chest-access-vest", _medic, _lowerTime + 0.4, 4, _token]
                 call ACME_fnc_patientAnimRequest;
-            if (_ctx != "chestseal" || {_releaseClaim != ""}) then {
+            if (_releaseClaim != "") then {
                 [_p, _lowerTime + 0.2] call ACME_fnc_headElevPinPose;
             };
         };
@@ -445,7 +445,7 @@ private _beginPatient = {
         if (isNull _p || {!local _p}) exitWith {};
         if ((_p getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _tok) then {
             _p setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
-            ["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;
+            [_p, _tok] call ACME_fnc_patientAnimRelease;
         };
         }, [_p,_token], _sequenceTime + 0.25] call CBA_fnc_waitAndExecute;
     };

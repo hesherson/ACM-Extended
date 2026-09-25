@@ -96,13 +96,14 @@ def test_medic_thoracostomy_and_doctor_only_chest_tube_tray():
     assert 'private _isDoctor = !isNull _medic && {[_medic, 2] call ace_medical_treatment_fnc_isMedic};' in thora
     assert 'private _toolCount = if (_canTube) then {6} else {5};' in thora
     assert 'if (_canTube) then {_tools pushBack ["tube"' in thora
-    assert 'if (_tool == "tube" && {!_canTube}) then {' in refresh
+    # A held tool remains available only for stowing after permission changes.
+    assert 'if (_tool == "tube" && {!_canTube} && {_held != "tube"}) then {' in refresh
     assert '!([_medic, 2] call ace_medical_treatment_fnc_isMedic)' in select
 
 
 def test_hotfix_keeps_stable_123_debug_identity():
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_buildBatch = "B155";' in startup
+    assert 'ACME_buildBatch = "B156";' in startup
     assert 'ACME_debugRevision = "";' in startup
 
 

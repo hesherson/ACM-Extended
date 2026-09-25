@@ -134,3 +134,30 @@
         [_patient, "aajtGrace", [0.9]] call ACME_fnc_ownerDispatch;
     }] call CBA_fnc_addEventHandler;
 } forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];
+
+// ACE-only finite treatments share the choreography rate but keep ACE's real clinical timer.
+// Their exit retains that rate briefly, then releases only the exact still-owned presentation.
+{
+    [_x, {
+        params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
+        if (isNull _medic || {!local _medic}) exitWith {};
+        private _record = _medic getVariable ["ACME_nativeTreatmentRate", []];
+        if (count _record < 5 || {(_record select 1) isNotEqualTo _patient}
+            || {(_record select 2) != _bodyPart} || {(_record select 3) != _classname}) exitWith {};
+        if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]} || {!isNull objectParent _medic}) exitWith {
+            _medic setVariable ["ACME_nativeTreatmentRate", [], true];
+            _medic setAnimSpeedCoef 1;
+            ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+        };
+        [{
+            params ["_medic", "_record"];
+            if (isNull _medic || {!local _medic}) exitWith {};
+            if ((_medic getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo _record) exitWith {};
+            _medic setVariable ["ACME_nativeTreatmentRate", [], true];
+            if ((_medic getVariable ["ACME_treatmentPoseEpoch", -1]) != (_record select 4)) exitWith {};
+            if ([_medic] call ACME_fnc_providerStanceOwned) exitWith {};
+            _medic setAnimSpeedCoef 1;
+            ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+        }, [_medic, +_record], 0.85 / (call ACME_fnc_choreographyRate)] call CBA_fnc_waitAndExecute;
+    }] call CBA_fnc_addEventHandler;
+} forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];

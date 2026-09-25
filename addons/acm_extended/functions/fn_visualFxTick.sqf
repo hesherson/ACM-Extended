@@ -319,8 +319,8 @@ _blurV = _blurV max _dbgBlur;
 // diplopia/vibration texture on top numerically. No second PP effect is enabled.
 private _legacyChromEq = 0;
 if (_ketDoseNorm > 0 && {!isNil "ace_medical_status_fnc_getMedicationCount"}) then {
-    private _imLegacy = [_u,"Ketamine",false] call ace_medical_status_fnc_getMedicationCount;
-    private _ivLegacy = [_u,"Ketamine_IV",false] call ace_medical_status_fnc_getMedicationCount;
+    private _imLegacy = [_u,"Ketamine",false] call ACME_fnc_medicationCountCompat;
+    private _ivLegacy = [_u,"Ketamine_IV",false] call ACME_fnc_medicationCountCompat;
     if !(_imLegacy isEqualType 0 && {finite _imLegacy}) then {_imLegacy = 0;};
     if !(_ivLegacy isEqualType 0 && {finite _ivLegacy}) then {_ivLegacy = 0;};
     private _legacyEffect = (((_imLegacy max 0) * 0.5) + ((_ivLegacy max 0) * 0.8)) min 1;

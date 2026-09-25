@@ -29,7 +29,7 @@ if (alive _patient && {alive _medic} && {(_medic distance _patient) <= 5}
         if (_hasDrug == _allowDrug && {_eligible} && {(_found param [1, 0]) > 0.5}) then {
             private _cuffs = _patient getVariable ["ACME_piCuffs", createHashMap];
             private _already = _bagId in _cuffs;
-            if (_already || {_isNewCuff}) then {
+            if (_already || {_isNewCuff && {([_medic, _patient, "ACME_PressureInfuser"] call ACME_fnc_treatmentSupplyCount) > 0}}) then {
                 _cuffs set [_bagId, [CBA_missionTime, 1.0]];
                 [_patient, "cuffs", _cuffs] call ACME_fnc_pressureInfuserStateCommit;
                 _ok = true;

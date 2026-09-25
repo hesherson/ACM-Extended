@@ -3,7 +3,19 @@
 params [["_medic", objNull, [objNull]], ["_mode", "", [""]], ["_epoch", -1, [0]], ["_handoff", false, [false]]];
 if (isNull _medic) exitWith {};
 private _state = _medic getVariable ["ACME_treatmentPoseState", []];
-if (_state isEqualTo []) exitWith {};
+if (_state isEqualTo []) exitWith {
+    // The finite work can be gone while its accelerated exit still owns a timer.
+    // A different controller must retire that timer before applying its own rate.
+    private _remote = _medic getVariable ["ACME_treatmentPoseRemote", []];
+    private _oldEpoch = _remote param [0, -1];
+    if (!_handoff || {_epoch >= 0 && {_epoch != _oldEpoch}}) exitWith {};
+    if (local _medic && {(_remote param [1, ""]) == "exit"}
+        && {(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [_oldEpoch, false]}) then {
+        private _packet = [_medic, _oldEpoch, "release"];
+        _packet call ACME_fnc_treatmentPoseSync;
+        ["ACME_treatmentPoseSync", _packet] call CBA_fnc_globalEvent;
+    };
+};
 private _currentEpoch = _state param [0, -1];
 private _currentMode = _state param [1, ""];
 private _main = _state param [2, ""];
@@ -23,15 +35,16 @@ if (local _medic && {(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEq
 };
 if (_pfh >= 0) then {[_pfh] call CBA_fnc_removePerFrameHandler;};
 
-// Reset any finite-action speed scaling or the stethoscope's zero-speed hold everywhere first.
-["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
-if (local _medic) then {_medic setAnimSpeedCoef 1;};
-
-// B54: every mode may have been frozen by the hold table, so always retire the JIP hold and release peers.
+// Every phase, including accelerated preparation, is retired through the same ordered receiver.
+// A handoff releases immediately; a normal exit blends at the shared rate and has a bounded speed reset.
+private _canExit = !_handoff && {local _medic} && {alive _medic}
+    && {!(_medic getVariable ["ACE_isUnconscious", false])} && {!([_medic] call ACME_fnc_animBlocked)};
+private _operation = ["release", "exit"] select _canExit;
+private _rate = if (_canExit) then {call ACME_fnc_choreographyRate} else {1};
 [format ["ACME_treatmentPose_%1_%2", netId _medic, _currentEpoch]] call CBA_fnc_removeGlobalEventJIP;
-if (_stage >= 3 || {_currentMode in ["stethoscope","pulse"]}) then {
-    ["ACME_treatmentPoseSync", [_medic, _currentEpoch, "release"]] call CBA_fnc_globalEvent;
-};
+private _packet = [_medic, _currentEpoch, _operation, "", -1, clientOwner, _rate];
+_packet call ACME_fnc_treatmentPoseSync;
+if (local _medic) then {["ACME_treatmentPoseSync", _packet] call CBA_fnc_globalEvent;};
 
 if (!isNil "ace_advanced_fatigue_setAnimExclusions" && {_exclusion != ""}) then {
     private _index = ace_advanced_fatigue_setAnimExclusions find _exclusion;
@@ -94,7 +107,7 @@ if (!_handoff
                 // treatmentPoseEpoch. Never let the old delayed stance release break that newer pose.
                 if ([_u] call ACME_fnc_providerStanceOwned) exitWith {};
                 _u setUnitPos "AUTO";
-            }, [_unit, _endedEpoch], 0.85] call CBA_fnc_waitAndExecute;
+            }, [_unit, _endedEpoch], 0.85 / (call ACME_fnc_choreographyRate)] call CBA_fnc_waitAndExecute;
         }, [_medic, _currentEpoch], 0.12] call CBA_fnc_waitAndExecute;
     };
 };

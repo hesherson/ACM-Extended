@@ -58,18 +58,18 @@ def test_late_lift_does_not_publish_future_readiness_or_finish_on_same_frame():
         [count _commits==1 && {count _waits==1},"late lift failed to schedule actual lower interval"] call _check;
         [(_patient getVariable ["ACME_CS_vestReadyServer",0]) == -1,"late removal declared unfinished lower ready"] call _check;
         private _lower=call _take;
-        [(_lower select 3)==0.78,"lower duration was measured from stale lift start"] call _check;
+        [abs ((_lower select 3)-(1.4/1.5))<0.0001,"lower duration was measured from stale lift start"] call _check;
         _serverClock=1205; [_lower] call _deliver;
         [(_patient getVariable ["ACME_CS_vestReadyServer",0])==1205,"ready clock is not actual server completion"] call _check;
         [(_patient getVariable ["ACME_CS_vestBusy","bad"])=="","completion retained transaction"] call _check;
     ''')
 
 
-def test_generic_access_retains_its_existing_callback_intervals():
+def test_generic_access_callback_intervals_follow_shared_rate():
     execute(setup() + worn_acquire('access') + r'''
         private _start=call _take; [_start] call _deliver;
         private _times=_waits apply {_x select 3};
-        [(_times select 0)==0.74 && {abs ((_times select 1)-1.52)<0.0001} && {abs ((_times select 2)-1.77)<0.0001},"generic access choreography timing changed"] call _check;
+        [abs ((_times select 0)-(1.2/1.5+0.04))<0.0001 && {abs ((_times select 1)-(2.6/1.5+0.04))<0.0001} && {abs ((_times select 2)-(2.6/1.5+0.04+0.25))<0.0001},"generic access choreography timing changed"] call _check;
         call _drain;
         [count _commits==1 && {(_patient getVariable ["ACME_chestAccess_readyServer",0])==1000},"generic access lost completion"] call _check;
     ''')

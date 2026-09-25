@@ -59,7 +59,7 @@ if (_fromUsed) exitWith {
     _used deleteAt _ui; ACE_player setVariable ["ACME_usedBags",_used,true];
     private _requestId=format ["rehang:%1:%2:%3",clientOwner,diag_frameNo,floor(diag_tickTime*1000)];
     private _pending=uiNamespace getVariable ["ACME_usedRehangPending",createHashMap]; _pending set [_requestId,_record]; uiNamespace setVariable ["ACME_usedRehangPending",_pending]; uiNamespace setVariable ["ACME_usedRowSig","__force__"];
-    private _warmer=([ACE_player,"ACME_BloodWarmer"] call ace_common_fnc_getCountOfItem)>=1;
+    private _warmer=([ACE_player,_target2,"ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount)>=1;
     [_target2,"rehangUsedBag",[_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer]] call ACME_fnc_ownerDispatch;
 };
 
@@ -136,7 +136,7 @@ private _requestYRefill = {
     private _inventoryMode = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory", 0];
     // Cooler rows were materialized into the medic's inventory above before this claim is requested.
     if (_fromCooler) then {_inventoryMode = 0;};
-    private _warmer = ([ACE_player, "ACME_BloodWarmer"] call ace_common_fnc_getCountOfItem) >= 1;
+    private _warmer = ([ACE_player, _target, "ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount) >= 1;
     private _epoch = [_target] call ACME_fnc_clinicalEpoch;
     private _requestId = format ["yrefill:%1:%2:%3", clientOwner, diag_frameNo, floor (diag_tickTime * 1000)];
     private _pending = uiNamespace getVariable ["ACME_yRefillPending", createHashMap];
@@ -164,7 +164,7 @@ if (_isBlood && _lineYd && {!isNull _target}) exitWith {
     if (_dirtyNow) exitWith {
         ["Flush the line (Flush Line) before hanging the next unit.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _target, _class] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
         ["Blood unit not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
     ["blood"] call _requestYRefill;
@@ -183,7 +183,7 @@ if (_isSaline && _lineYd && {!isNull _target}) then {
     }) >= 0;
 };
 if (_isSaline && _lineYd && {!isNull _target} && {!_yReserveLive}) exitWith {
-    if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+    if (([ACE_player, _target, _class] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
         ["Bag not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
     ["saline"] call _requestYRefill;
@@ -192,10 +192,10 @@ if (_isSaline && _lineYd && {!isNull _target} && {!_yReserveLive}) exitWith {
 // spike into stage. any bag not caught above is spiked and staged into the prepared iv sets.
 private _setItem = "ACME_IVLine";
 private _setName = "an IV line (administration set)";
-if (([ACE_player, _setItem] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _target, _setItem] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
     [format ["You need %1 to spike this bag.", _setName], 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
-if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
+if (([ACE_player, _target, _class] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
     ["Bag not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 // do not start a second spike while one is running.
@@ -205,16 +205,21 @@ if (count (missionNamespace getVariable ["ACME_spikingActive", []]) > 0) exitWit
 // single-bag set.
 missionNamespace setVariable ["ACME_spikingActive", [_class, diag_tickTime + 1.6]];
 [{
-    params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold"];
+    params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold", "_medic", "_target"];
     missionNamespace setVariable ["ACME_spikingActive", []];
-    if (([ACE_player, _setItem] call ace_common_fnc_getCountOfItem) < 1) exitWith {
-        [format ["%1 is no longer available.", _setName], 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    if (isNull _medic || {!local _medic} || {!alive _medic}
+        || {!isNull _target && {_medic distance _target > 5}}) exitWith {};
+    if (([_medic, _target, _setItem] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
+        [format ["%1 is no longer available.", _setName], 2, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) exitWith {
-        ["The bag is no longer on hand.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    if (([_medic, _target, _class] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
+        ["The bag is no longer on hand.", 2, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
-    ACE_player removeItem _setItem;
-    ACE_player removeItem _class;
+    private _receipts = [_medic, _target, [_setItem, [_class, _cold]]] call ACME_fnc_treatmentSupplyTakeMany;
+    if (_receipts isEqualTo []) exitWith {
+        ["The bag or administration set is no longer available.", 2, _medic, 13] call ace_common_fnc_displayTextStructured;
+    };
+    {[_x, false] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
 
     private _cfg = configFile >> "CfgWeapons" >> _class;
     private _nm = [getText (_cfg >> "displayName"), getText (_cfg >> "shortName")] select (isText (_cfg >> "shortName"));
@@ -223,14 +228,14 @@ missionNamespace setVariable ["ACME_spikingActive", [_class, diag_tickTime + 1.6
 
     private _id = format ["set_%1_%2", floor (diag_tickTime * 1000), floor (random 100000)];
     private _rec = [_id, _class, _action, "", "", "", _label, _cold, _kind];
-    private _sets = ACE_player getVariable ["ACME_preparedIVSets", []];
+    private _sets = _medic getVariable ["ACME_preparedIVSets", []];
     _sets pushBack _rec;
-    ACE_player setVariable ["ACME_preparedIVSets", _sets, true];
+    _medic setVariable ["ACME_preparedIVSets", _sets, true];
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 
-    ["Bag spiked and staged to Prepared IV sets.", 2, ACE_player] call ace_common_fnc_displayTextStructured;
+    ["Bag spiked and staged to Prepared IV sets.", 2, _medic] call ace_common_fnc_displayTextStructured;
 
     if (!isNil "ACM_circulation_fnc_TransfusionMenu_UpdateBagList") then {
         [false] call ACM_circulation_fnc_TransfusionMenu_UpdateBagList;
     };
-}, [_class, _action, _setItem, _setName, _kind, (_isBlood && _fromCooler)], 1.6] call CBA_fnc_waitAndExecute;
+}, [_class, _action, _setItem, _setName, _kind, (_isBlood && _fromCooler), ACE_player, _target], 1.6] call CBA_fnc_waitAndExecute;

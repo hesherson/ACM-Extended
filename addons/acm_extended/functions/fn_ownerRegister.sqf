@@ -25,6 +25,9 @@ if (!alive _patient) exitWith {
     [_patient] call ACME_fnc_deadPhysiologyFreeze;
     if (_headState) then {[_patient] call ACME_fnc_headElevDeathRelease;};
 };
+// Rebuild coagulation immediately on treatment enrollment and ownership recovery.
+[[_patient]] call ACME_fnc_coagulationTick;
+
 // Same-object recovery/debug resurrection must be able to arm a future death freeze again.
 _patient setVariable ["ACME_deadPhysiologyFrozenLocal", false, false];
 if (_patient getVariable ["ACME_headElevated", false]) then {[_patient] call ACME_fnc_headElevWatch;};
@@ -92,6 +95,17 @@ if (count (_patient getVariable ["ACME_infusion_BagMedications", []]) > 0) then 
 // owner/loaded episode. Existing contents or a procedural miss never enroll one.
 if (_patient getVariable ["ACME_nativeVomitActive", false]) then {
     [_patient] call ACM_airway_fnc_handleAirwayObstruction_Vomit;
+};
+
+// Resume only native physiology workers that were already running before ownership moved.
+if (_patient getVariable ["ACME_nativeCollapseActive", false]) then {
+    [_patient] call ACM_airway_fnc_handleAirwayCollapse;
+};
+if (_patient getVariable ["ACME_nativeBloodObstructionActive", false]) then {
+    [_patient] call ACM_airway_fnc_handleAirwayObstruction_Blood;
+};
+if (_patient getVariable ["ACME_nativeHemolysisActive", false]) then {
+    [_patient, true] call ACM_circulation_fnc_handleHemolyticReaction;
 };
 
 // Recovery is keyed by actual worker absence, not a once-per-owner attempt.

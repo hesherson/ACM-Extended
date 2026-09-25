@@ -49,6 +49,15 @@ def transaction_setup():
             if (_field=="volume") then {10} else {if (_med=="Ketamine") then {50} else {10}}};
         ace_common_fnc_getCountOfItem={[_inventoryCounts,[_this select 1,0]] call _mapDefault};
         ace_common_fnc_addToInventory={params ["_p","_item"]; _inventoryCounts set [_item,([_inventoryCounts,[_item,0]] call _mapDefault)+1];};
+        ACME_fnc_vialHolder={_medic};
+        ACME_fnc_treatmentSupplyCount={[_this select 0,_this select 2] call ace_common_fnc_getCountOfItem};
+        ACME_fnc_treatmentSupplyTake={params ["_m","_p","_items"]; private _item=_items select 0;
+            if (([_m,_item] call ace_common_fnc_getCountOfItem)<1) exitWith {[]};
+            [_m,_item] call _removeItem; [_m,_item,objNull,"item-receipt"]};
+        ACME_fnc_treatmentSupplyRefund={params ["_receipt",["_refund",true]];
+            if (_refund) then {[_receipt select 0,_receipt select 1] call ace_common_fnc_addToInventory;}; true};
+        ACME_fnc_ownerDispatch={_events pushBack _this; params ["_holder","_op","_args"];
+            if (_op=="vialRefund") then {[_holder,_args param [0,""],_args param [1,[]]] call ACME_fnc_vialRefundLocal;};};
     '''+''.join(prep_function(n) for n in ('medicationTakeSources','infusionTakeSupplies','infusionRefundSupplies'))
 
 
@@ -99,7 +108,7 @@ def test_late_component_failure_refunds_previously_debited_solution_and_preserve
 def test_preparation_receipt_refunds_original_provider_after_control_switch(reusable):
     execute(transaction_setup()+f'missionNamespace setVariable ["ACM_circulation_reusableSyringe",{str(reusable).lower()}];'+'''
         private _receipt=[_medic,"Ketamine",3,10] call ACME_fnc_infusionTakeSupplies;
-        [count _receipt==3,"supplies receipt missing"] call _check;
+        [count _receipt==4,"supplies receipt missing"] call _check;
         [([_medic,"Ketamine"] call ACME_fnc_infusionVialVolume)==17,"supplies not debited"] call _check;
         ACE_player=_patient;
         [_receipt] call ACME_fnc_infusionRefundSupplies;
@@ -243,7 +252,7 @@ def inject_setup():
         ACME_fnc_registerPreparedBag={_bagWrites pushBack _this;_bagAccept};
         ACME_fnc_infusionRefreshTally={};
         private _context=["prepared"];
-        _context resize 22;_context set [20,"bag-1"];
+        _context resize 22;_context set [1,_patient];_context set [20,"bag-1"];
         _medic setVariable ["ACME_preparedIVSets",[["bag-1"]]];
         missionNamespace setVariable ["ACME_infusion_pendingContext",_context];
         missionNamespace setVariable ["ACME_infusion_allowedMedications",["Ketamine","Propofol"]];

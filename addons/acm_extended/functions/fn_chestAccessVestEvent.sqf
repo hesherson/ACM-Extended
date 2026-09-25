@@ -60,7 +60,7 @@ if (_start) then {
         if ((_busy find "vest:access:") == 0) then {
             if ((_patient getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _busy) then {
                 _patient setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
-                ["ace_common_setAnimSpeedCoef", [_patient, 1]] call CBA_fnc_globalEvent;
+                [_patient, _busy] call ACME_fnc_patientAnimRelease;
             };
             _patient setVariable ["ACME_chestAccess_vestBusy", "", false];
             _patient setVariable ["ACME_chestAccess_readyServer", serverTime, true];

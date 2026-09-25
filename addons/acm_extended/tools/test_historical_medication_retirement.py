@@ -123,6 +123,7 @@ def suction_setup():
         ACME_fnc_clinicalEpoch={1};
         ACME_fnc_setVarNet={params ["_p","_k","_v"];_p setVariable [_k,_v];};
         ace_common_fnc_getCountOfItem={_equipment};
+        ACME_fnc_treatmentSupplyCount={[_this select 0,_this select 2] call ace_common_fnc_getCountOfItem};
         private _session={params ["_mode"];["suction",_medic,1000,_mode,1,0,[.1,.2]]};
     '''+'ACME_fnc_suctionPhysiologyTick={'+code(text)+'};'+\
         'private _oxygenTarget={'+code(fragment,'core')+'_desiredOxygenSaturation};'

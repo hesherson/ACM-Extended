@@ -18,7 +18,7 @@ def test_123_release_identity_and_hemtt_version():
     assert 'version = "1.2.3";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
     assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B155";' in startup
+    assert 'ACME_buildBatch = "B156";' in startup
     assert 'ACME_debugRevision = "";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
     for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
@@ -200,37 +200,28 @@ def test_new_intervention_queues_behind_inflight_carrier_return():
     assert 'CBA_fnc_waitUntilAndExecute' in event
 
 
-def test_carrier_off_choreography_finishes_before_medic4_freeze():
+def test_carrier_off_choreography_uses_shared_rate_and_matching_callback_windows():
+    from test_menu_death_lifecycle import execute
     cfg = acme("functions/fn_initPatientPositioningConfig.sqf")
+    execute(cfg + r'''
+        [ACME_chestAccess_vestRemoveAnimSpeed==1.5 && {ACME_chestAccess_providerAnimSpeed==1.5},"carrier/provider rates diverged"] call _check;
+        [abs (ACME_chestAccess_vestLiftTime*1.5-1.2)<0.0001 && {abs (ACME_chestAccess_vestLowerTime*1.5-1.4)<0.0001},"carrier timeline truncated native motion"] call _check;
+        [ACME_chestAccess_vestLiftHold==0.04,"carrier placement hold changed"] call _check;
+    ''')
     acquire = acme("functions/fn_chestAccessVestAcquire.sqf")
-    pose = acme("functions/fn_initChestSealProcedureRuntime.sqf")
-    for token in (
-        'ACME_chestAccess_vestLiftTime = 0.70;',
-        'ACME_chestAccess_vestLowerTime = 0.78;',
-        'ACME_chestAccess_vestLiftHold = 0.04;',
-        'ACME_chestAccess_vestRemoveAnimSpeed = 1.80;',
-        'ACME_chestAccess_providerAnimSpeed = 1.50;',
-    ):
-        assert token in cfg
-    assert 'ACME_chestAccess_removeSpeedToken' in acquire
-    assert '["ace_common_setAnimSpeedCoef", [_p, _removeAnimSpeed]] call CBA_fnc_globalEvent;' in acquire
+    assert 'private _removeAnimSpeed = call ACME_fnc_choreographyRate;' in acquire
     assert 'private _sequenceTime = _liftTime + _holdTime + _lowerTime;' in acquire
-    assert '["chestAccess", 2.2]' in pose
-    assert (0.70 + 0.04 + 0.78) < 2.2
 
 
-def test_carrier_return_uses_faster_patient_animation_and_guaranteed_reset():
+def test_carrier_return_uses_shared_rate_and_token_owned_reset():
+    from test_menu_death_lifecycle import execute
     cfg = acme("functions/fn_initPatientPositioningConfig.sqf")
+    execute(cfg + r'''
+        [ACME_chestAccess_vestRestoreAnimSpeed==1.5 && {ACME_headElev_providerAnimSpeed==1.5},"return/head rates diverged"] call _check;
+        [abs (ACME_chestAccess_vestRestoreLiftTime*1.5-1.2)<0.0001 && {abs (ACME_chestAccess_vestRestoreLowerTime*1.5-1.4)<0.0001},"return timeline truncated native motion"] call _check;
+        [ACME_chestAccess_vestRestoreHold==0.02,"carrier return hold changed"] call _check;
+    ''')
     restore = acme("functions/fn_chestAccessVestRestore.sqf")
-    for token in (
-        'ACME_chestAccess_vestRestoreLiftTime = 0.75;',
-        'ACME_chestAccess_vestRestoreLowerTime = 0.88;',
-        'ACME_chestAccess_vestRestoreHold = 0.02;',
-        'ACME_chestAccess_vestRestoreAnimSpeed = 1.60;',
-    ):
-        assert token in cfg
-    assert '["ace_common_setAnimSpeedCoef", [_p, _animSpeed]] call CBA_fnc_globalEvent;' in restore
-    assert 'ACME_chestAccess_restoreSpeedToken' in restore
-    assert '["ace_common_setAnimSpeedCoef", [_p, 1]] call CBA_fnc_globalEvent;' in restore
-    assert 'private _total = _liftTime + _holdTime + _lowerTime;' in restore
-    assert (0.75 + 0.02 + 0.88) < (1.20 + 0.18 + 1.40 + 0.08)
+    assert 'private _animSpeed = call ACME_fnc_choreographyRate;' in restore
+    assert '[_p, _token] call ACME_fnc_patientAnimRelease;' in restore
+    assert '[_p, _tok] call ACME_fnc_patientAnimRelease;' in restore

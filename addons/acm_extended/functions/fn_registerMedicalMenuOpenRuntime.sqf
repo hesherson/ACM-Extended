@@ -29,12 +29,15 @@
     // inherits this event's _this array and previously treated the medic as the optional patient argument.
     [_target] call ACME_fnc_syncPremixedBags;
 
-    // B57: another person's menu only stows the weapon and transitions into the normal unarmed crouch. No
-    // medic-over-patient animation is held, so the player's head/camera remains free and there is no root drift.
+    // Bind Unload to its original provider and generation, never a later ACE_player/menu.
     if (_medic isEqualTo ACE_player) then {
         [_medic, _target, _display] call ACME_fnc_menuPoseStart;
         if (!isNull _display) then {
-            _display displayAddEventHandler ["Unload", {[ACE_player, false] call ACME_fnc_menuPoseStop;}];
+            _display displayAddEventHandler ["Unload", {
+                params ["_display"];
+                private _owner = _display getVariable ["ACME_menuPoseOwner", []];
+                if (count _owner == 2) then {[_owner select 0, false, _owner select 1] call ACME_fnc_menuPoseStop;};
+            }];
         };
     };
 

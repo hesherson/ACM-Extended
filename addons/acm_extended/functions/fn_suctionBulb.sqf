@@ -48,12 +48,10 @@ switch (_mode) do {
         private _medic = uiNamespace getVariable ["ACME_laryngo_medic", objNull];
         if (isNull _medic || {!local _medic}) exitWith {};
         if !((uiNamespace getVariable ["ACME_suction_bagOwner", []]) isEqualTo [_medic, _pat]) then {
-            private _before = [_medic, "ACM_SuctionBag"] call ace_common_fnc_getCountOfItem;
-            if (_before > 0) then {
-                _medic removeItem "ACM_SuctionBag";
-                if (([_medic, "ACM_SuctionBag"] call ace_common_fnc_getCountOfItem) < _before) then {
-                    uiNamespace setVariable ["ACME_suction_bagOwner", [_medic, _pat]];
-                };
+            private _receipt = [_medic, _pat, ["ACM_SuctionBag"]] call ACME_fnc_treatmentSupplyTake;
+            if (_receipt isNotEqualTo []) then {
+                [_receipt, false] call ACME_fnc_treatmentSupplyRefund;
+                uiNamespace setVariable ["ACME_suction_bagOwner", [_medic, _pat]];
             };
         };
         if !((uiNamespace getVariable ["ACME_suction_bagOwner", []]) isEqualTo [_medic, _pat]) exitWith {};

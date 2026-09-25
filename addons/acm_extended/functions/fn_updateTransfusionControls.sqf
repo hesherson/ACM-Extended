@@ -921,8 +921,7 @@ if (!isNull _ctrlRightList) then {
 // hung or dropped bag drops the count, so its spike clears. that is the until-used-or-removed rule, for
 // free.
 if (_selClass != "") then {
-    private _avail = [ACE_player, _selClass] call ace_common_fnc_getCountOfItem;
-    if (!isNull _targetPatient) then { _avail = _avail + ([_targetPatient, _selClass] call ace_common_fnc_getCountOfItem); };
+    private _avail = [ACE_player, _targetPatient, _selClass] call ACME_fnc_treatmentSupplyCount;
     if ((_spiked getOrDefault [_selClass, 0]) > _avail) then {
         _spiked set [_selClass, _avail];
         ACE_player setVariable ["ACME_spikedBags", _spiked, true];

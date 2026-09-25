@@ -17,10 +17,10 @@ uiNamespace setVariable ["ACME_IV_PullIdx", -1];  // any pull in progress is aba
 uiNamespace setVariable ["ACME_IV_NeedleTipPos", []];
 uiNamespace setVariable ["ACME_IV_NeedleTipUV", []];
 
-// only allow grabbing a gauge the medic is actually carrying. any size works, 14, 16, 18 or 20, and you simply need at
+// only allow grabbing a gauge available under ACE equipment sharing. any size works, 14, 16, 18 or 20, and you simply need at
 // least one of that size on hand. putting a needle down, handled above, is always allowed.
 private _grabMedic = uiNamespace getVariable ["ACME_IV_Medic", objNull];
-if (isNull _grabMedic || {([_grabMedic, format ["ACM_IV_%1g", _gauge]] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
+if (isNull _grabMedic || {([_grabMedic, uiNamespace getVariable ["ACME_IV_Patient", objNull], format ["ACM_IV_%1g", _gauge]] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
     [format ["No %1g catheter on hand.", _gauge], 2, ACE_player] call ace_common_fnc_displayTextStructured;
 };
 

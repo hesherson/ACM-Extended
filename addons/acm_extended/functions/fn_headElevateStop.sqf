@@ -63,8 +63,8 @@ if (_needFrontFirst) exitWith {
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
         [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85;};
+        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
+        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
         _delay = (_rollTime max 0.1) + 0.08;
     } else {
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
@@ -117,20 +117,25 @@ private _visibleLower = !_quiet && {!_wasSuspended} && {isNull objectParent _pat
 if (_visibleLower) then {
     // Patient and provider start together. The carrier stays as the physical bolster until the authored release has
     // finished, then it returns to the chest. That prevents a loadout change from cutting the lay-flat animation short.
-    [_patient, false] call ACME_fnc_headElevCollision;
-    [_patient, "ACME_HeadElevPatientRelease", 2] call ACME_fnc_doAnim;
-    private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-    [_patient, _lowerTime] call ACME_fnc_headElevPinPose;
+    private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4 / (call ACME_fnc_choreographyRate)];
+    private _animToken = [_patient, "ACME_HeadElevPatientRelease", 2, "head-elev-lower", _medic, _lowerTime + 0.3, 1]
+        call ACME_fnc_patientAnimRequest;
+    if (_animToken != "") then {
+        [_patient, false] call ACME_fnc_headElevCollision;
+        [_patient, _lowerTime] call ACME_fnc_headElevPinPose;
+    };
     // Manual/unsupported Semi-Fowler owns its provider exit through fn_headElevHoldStart. Starting the ordinary
     // Lower Head provider sequence here would make two animation controllers fight over the same medic.
     if (!isNull _medic && {!_wasManualUnsupported}) then {[_medic, "lower"] call ACME_fnc_headElevMedicSeq;};
     private _rest = [_patient] call ACME_fnc_headElevRestAnim;
     [{
-        params ["_patient", "_rest"];
+        params ["_patient", "_rest", "_animToken"];
         if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
         if (_patient getVariable ["ACME_headElevated", false]) exitWith {};
+        private _ownsAnim = _animToken != "" && {((_patient getVariable ["ACME_patientAnimLock", []]) param [0, ""]) == _animToken};
+        if (_ownsAnim) then {[_patient, _animToken] call ACME_fnc_patientAnimRelease;};
         // A newer elevation must finish its own lift before normal collision returns.
-        [_patient, true] call ACME_fnc_headElevCollision;
+        if (_ownsAnim) then {[_patient, true] call ACME_fnc_headElevCollision;};
         // This is a true Lower Head action: the support carrier may finally return to the body. A separate
         // backpack-supported chest-access carrier still waits for its own action lease to end.
         [_patient] call ACME_fnc_headElevVestRestore;
@@ -138,8 +143,8 @@ if (_visibleLower) then {
         private _propObj = _patient getVariable ["ACME_headElev_propObj", objNull];
         if (!isNull _propObj) then {detach _propObj; deleteVehicle _propObj;};
         _patient setVariable ["ACME_headElev_propObj", objNull, true];
-        if (isNull objectParent _patient && {_rest != ""}) then {[_patient, _rest, 2] call ACME_fnc_doAnim;};
-    }, [_patient, _rest], _lowerTime] call CBA_fnc_waitAndExecute;
+        if (_ownsAnim && {isNull objectParent _patient} && {_rest != ""}) then {[_patient, _rest, 2] call ACME_fnc_doAnim;};
+    }, [_patient, _rest, _animToken], _lowerTime] call CBA_fnc_waitAndExecute;
 } else {
     [_patient, true] call ACME_fnc_headElevCollision;
     [_patient] call ACME_fnc_headElevVestRestore;

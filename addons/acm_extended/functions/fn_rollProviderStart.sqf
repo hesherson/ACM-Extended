@@ -1,7 +1,7 @@
 /* Provider theatre for every physical front/back patient roll.
  *
  * B48 routes the roll through the same transition owner as the examination actions. B54: the provider crouches
- * first if needed, then plays the exact requested AinvPknlMstpSnonWnonDnon_medic4 state at native speed, frozen at
+ * first if needed, then plays AinvPknlMstpSnonWnonDnon_medic4 at the shared rate, frozen at native
  * 2.2 s and blended back to the crouch by the controller. Empty hands are selected once at episode entry; there is
  * no TSP sling chain, repeated holster request, or automatic weapon redraw.
  * Movement cancels the provider theatre immediately. The patient roll itself remains owned by the action that
@@ -30,7 +30,7 @@ if (_poseEpoch < 0) exitWith {
 
 private _finish = {
     params ["_unit", "_tok", "_epoch", ["_cancelled", false]];
-    if (isNull _unit || {!local _unit}) exitWith {};
+    if (isNull _unit) exitWith {};
     if ((_unit getVariable ["ACME_rollProviderToken", ""]) != _tok) exitWith {};
     private _id = _unit getVariable ["ACME_rollProviderPFH", -1];
     if (_id >= 0) then {[_id] call CBA_fnc_removePerFrameHandler;};
@@ -51,7 +51,14 @@ private _pfh = [{
     params ["_args", "_id"];
     _args params ["_unit", "_tok", "_epoch", "_fnFinish"];
     if (isNull _unit || {!local _unit} || {!alive _unit} || {(_unit getVariable ["ACME_rollProviderToken", ""]) != _tok}) exitWith {
+        if (!isNull _unit) then {[_unit, _tok, _epoch, true] call _fnFinish;};
         [_id] call CBA_fnc_removePerFrameHandler;
+    };
+    // The treatment controller ends at the held sample. Retire its roll ownership on the next frame,
+    // so a completed roll cannot block menu return or the bounded exit-speed/stance release.
+    private _pose = _unit getVariable ["ACME_treatmentPoseState", []];
+    if ((_pose param [0, -1]) != _epoch) exitWith {
+        [_unit, _tok, _epoch, false] call _fnFinish;
     };
     private _move =
         (inputAction "MoveForward" > 0.05) || (inputAction "MoveBack" > 0.05) ||

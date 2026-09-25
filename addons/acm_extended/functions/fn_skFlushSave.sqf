@@ -16,7 +16,7 @@ private _valid=(_cap isEqualType 0) && {finite _cap} && {_cap==10} && {(_nsMl is
     if (!(_x isEqualType []) || {count _x != 2} || {!((_x select 0) isEqualType "")} || {(_x select 0)==""} || {!((_x select 1) isEqualType 0)} || {!finite (_x select 1)} || {(_x select 1)<=0}) then {_valid=false;} else {_totalDrug=_totalDrug+(_x select 1);};
 } forEach _components;
 if (!_valid || {_nsMl+_totalDrug > _cap+0.001}) exitWith {};
-if (([ACE_player,_flushClass] call ace_common_fnc_getCountOfItem)<1) exitWith {["The saline flush is no longer in inventory.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;};
+if (([ACE_player,uiNamespace getVariable ["ACME_SK_Patient",objNull],_flushClass] call ACME_fnc_treatmentSupplyCount)<1) exitWith {["The saline flush is no longer in inventory.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;};
 
 // Revalidate the exact explicitly selected vial sessions before any source or flush is consumed.
 private _needByMed=createHashMap;
@@ -45,6 +45,14 @@ if (_specialEpi) then {
     };
 };
 if (!_saved) exitWith {["Insufficient source medication or saline flush. Nothing was consumed or saved.",3,ACE_player] call ace_common_fnc_displayTextStructured;};
+
+// Retire the funded draw before delayed feedback. A queued Save event must never
+// create another syringe from the same components while the first is displayed.
+uiNamespace setVariable ["ACME_SK_CompoundComponents",[]];
+uiNamespace setVariable ["ACME_SK_CompoundVials",[]];
+uiNamespace setVariable ["ACME_SK_WasteStage","saved"];
+uiNamespace setVariable ["ACME_SK_WasteMoving",false];
+["clear","",0,_dlg] call ACME_fnc_vialSession;
 
 call ACME_fnc_skRefreshDrawn;
 private _size=10;

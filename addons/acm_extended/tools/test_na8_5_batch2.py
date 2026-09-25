@@ -55,8 +55,8 @@ class SuctionSource(unittest.TestCase):
     def test_selection_uses_treating_provider(self):
         s=sqf('suctionSelectDevice')
         self.assertIn('ACME_laryngo_medic',s)
-        self.assertIn('[_medic, "ACM_ACCUVAC"]',s)
-        self.assertIn('[_medic, "ACM_SuctionBag"]',s)
+        self.assertIn('[_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount',s)
+        self.assertIn('[_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount',s)
         self.assertNotIn('[_patient, "ACM_ACCUVAC"]',s)
     def test_accuvac_precedes_bag(self):
         s=sqf('suctionSelectDevice')
@@ -80,13 +80,13 @@ class SuctionSource(unittest.TestCase):
     def test_last_bag_is_not_consumed_by_action(self):
         block=read('config.cpp').split('class UseSuctionBag: CheckAirway {',1)[1].split('class UseAccuvac:',1)[0]
         self.assertIn('consumeItem = 0;',block)
-        self.assertIn('_medic removeItem "ACM_SuctionBag"',sqf('suctionBulb'))
+        self.assertIn('[_medic, _pat, ["ACM_SuctionBag"]] call ACME_fnc_treatmentSupplyTake',sqf('suctionBulb'))
     def test_consumption_is_verified_and_session_bound(self):
         s=sqf('suctionBulb')
         self.assertIn('!local _medic',s)
-        self.assertIn('< _before',s)
+        self.assertIn('_receipt isNotEqualTo []',s)
         self.assertIn('isEqualTo [_medic, _pat]',s)
-        self.assertEqual(s.count('_medic removeItem "ACM_SuctionBag"'),1)
+        self.assertEqual(s.count('call ACME_fnc_treatmentSupplyTake'),1)
     def test_opening_does_not_spend_disposable(self):
         self.assertNotIn('removeItem',tokens('suctionOpen'))
         self.assertNotIn('removeItem',tokens('laryngoOpen'))

@@ -18,16 +18,10 @@ if !([_patient] call ACME_fnc_nrbAirwayCompatible) exitWith {
     ["Cannot apply NRB with an i-gel, ET tube, or surgical airway in place. Use BVM or ventilator support.", 3, _medic] call ace_common_fnc_displayTextStructured;
 };
 
-// does the provider have an oxygen tank with reserve? it mirrors ACM's own tank lookup: an ACM_OxygenTank_425
-// magazine in any worn container with ammo above 0.
-private _hasO2 = false;
-{
-    {
-        _x params ["_mag", "_count"];
-        if (_mag == "ACM_OxygenTank_425" && {_count > 0}) exitWith { _hasO2 = true; };
-    } forEach (magazinesAmmoCargo _x);
-    if (_hasO2) exitWith {};
-} forEach [uniformContainer _medic, vestContainer _medic, backpackContainer _medic];
+// Recheck reusable mask possession at completion, then retain the actual cylinder donor.
+if (([_medic, _patient, "ACM_NRBMask"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {};
+private _oxygenSource = [_medic, _patient] call ACME_fnc_nrbOxygenSource;
+private _hasO2 = !isNull _oxygenSource;
 
 private _hardcore = missionNamespace getVariable ["ACME_hcEff_nrb", false];
 
@@ -40,4 +34,4 @@ if (!_hasO2 && {!_hardcore}) exitWith {
 };
 
 // Authoritative patient state is applied on its owner; medic cargo stays on the medic owner.
-["ACME_ownerCommand", [_patient, "nrbState", [_patient, _medic, true, _hasO2]], _patient] call CBA_fnc_targetEvent;
+["ACME_ownerCommand", [_patient, "nrbState", [_patient, _medic, true, _hasO2, false, _oxygenSource]], _patient] call CBA_fnc_targetEvent;

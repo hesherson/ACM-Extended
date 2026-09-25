@@ -57,7 +57,7 @@ private _py = _sy + _insetY;
 private _badgeRect = [_px,_py,_pw,_ph];
 
 private _medic = uiNamespace getVariable ['ACME_IV_Medic',objNull];
-private _count = if (isNull _medic) then {0} else {[_medic,format ['ACM_IV_%1g',_gauge]] call ace_common_fnc_getCountOfItem};
+private _count = if (isNull _medic) then {0} else {[_medic,uiNamespace getVariable ['ACME_IV_Patient',objNull],format ['ACM_IV_%1g',_gauge]] call ACME_fnc_treatmentSupplyCount};
 private _shown = (_count min 5) max 0;
 // Preserve the original catheter colors. Only opacity changes with distance from the main logo.
 private _alphas = [0.72,0.52,0.34,0.18];

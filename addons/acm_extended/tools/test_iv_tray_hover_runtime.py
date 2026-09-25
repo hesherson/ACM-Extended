@@ -76,9 +76,10 @@ def setup(gauge, stock):
             for "_i" from 0 to 3 do {{if (abs ((_actual select _i)-(_expected select _i))>0.00001) then {{_same=false;}};}};
             _same
         }};
-        ace_common_fnc_getCountOfItem={{_stockReads pushBack _this; _stock}};
+        ACME_fnc_treatmentSupplyCount={{_stockReads pushBack _this; _stock}};
         uiNamespace setVariable ["ACME_IV_DLG",_display];
         uiNamespace setVariable ["ACME_IV_Medic",_medic];
+        uiNamespace setVariable ["ACME_IV_Patient",_patient];
         uiNamespace setVariable ["ACME_IV_NeedleRects",[[{gauge},_staleSlot,_base,88000]]];
         _positions set ["{background}",+_slot];
         _positions set ["88000",+_base];
@@ -98,7 +99,7 @@ def test_hover_stock_count_badge_uses_live_tile_and_collapses_on_exit(gauge, sto
         [(_fades get str _badge)=={0 if stock > 5 else 1},"wrong badge stock threshold"] call _check;
         private _shownClones=(_fan select [0,4]) select {{(_fades get str _x)==0}};
         [count _shownClones=={max(0, min(stock, 5) - 1)},"wrong stock fan size"] call _check;
-        [(_stockReads select 0) isEqualTo [_medic,"ACM_IV_{gauge}g"],"stock read used wrong medic/item"] call _check;
+        [(_stockReads select 0) isEqualTo [_medic,_patient,"ACM_IV_{gauge}g"],"stock read used wrong treatment/item"] call _check;
         ["needle",{gauge},false] call ACME_fnc_ivTrayHover;
         [count _created==1,"exit recreated fan controls"] call _check;
         {{[(_fades get str _x)==1,"exit left fan visible"] call _check;}} forEach _fan;

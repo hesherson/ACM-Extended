@@ -20,8 +20,8 @@ if (_needFrontFirst) exitWith {
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
         [_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85;};
+        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
+        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
         _delay = (_rollTime max 0.1) + 0.08;
     } else {
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];

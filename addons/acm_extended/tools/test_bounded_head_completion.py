@@ -30,6 +30,7 @@ def code(name):
         text = text.replace('deleteVehicle ' + var + ';', '_deleted pushBack ' + var + ';')
         text = text.replace('detach ' + var + ';', '_detached pushBack ' + var + ';')
     text = text.replace('canSuspend', 'false')
+    text = text.replace('netId _provider', '"provider"')
     # SQF-VM does not implement serverTime. Keep its fixture separate from
     # CBA_missionTime so cross-machine handoff deadlines use the correct clock.
     text = re.sub(r'\bserverTime\b', '_serverClock', text)
@@ -45,13 +46,17 @@ def setup():
         private _parks=[]; private _animRequests=[]; private _provider=[];
         private _death=[]; private _holdClears=[]; private _releases=[];
         private _masses=[]; private _deleted=[]; private _detached=[];
-        private _blocked=false; private _rolls=[];
+        private _blocked=false; private _rolls=[]; private _leaseWaits=[];
         ACME_fnc_headElevCollision={_collisions pushBack _this;};
         ACME_fnc_headElevPinPose={_pins pushBack _this;};
         ACME_fnc_headElevVestRestore={_restores pushBack ["support",_this];};
         ACME_fnc_chestAccessVestRestore={_restores pushBack ["access",_this];};
         ACME_fnc_chestAccessVestPark={_parks pushBack _this;};
-        ACME_fnc_patientAnimRequest={_animRequests pushBack _this; "anim:one"};
+        ACME_fnc_patientAnimRequest={
+            _animRequests pushBack _this;
+            private _recordingLeaseExpiry=true;
+            _this call ACME_test_patientAnimRequest;
+        };
         ACME_fnc_headElevMedicSeq={_provider pushBack _this;};
         ACME_fnc_headElevDeathRelease={_death pushBack _this;};
         ACME_fnc_headElevHoldClear={_holdClears pushBack _this;};
@@ -65,12 +70,19 @@ def setup():
         ACM_core_fnc_bvmActive={false};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
-        CBA_fnc_waitAndExecute={_waits pushBack [_this select 0,_this select 1,_this select 2];};
+        CBA_fnc_waitAndExecute={
+            private _job=[_this select 0,_this select 1,_this select 2];
+            if (!isNil "_recordingLeaseExpiry" && {_recordingLeaseExpiry}) then {
+                _leaseWaits pushBack _job;
+            } else {_waits pushBack _job;};
+        };
         _patient setVariable ["ACME_headElevated",true];
         _patient setVariable ["ACME_headElev_poseToken","placement:one"];
         private _deliver={params ["_job"]; (_job select 1) call (_job select 0);};
     '''
-    return pre + ''.join('ACME_fnc_' + n + '={' + code(n) + '};\n' for n in (
+    return pre + 'ACME_test_patientAnimRequest={' + code('patientAnimRequest') + '};\n' + \
+        'ACME_fnc_patientAnimRelease={' + code('patientAnimRelease') + '};\n' + \
+        ''.join('ACME_fnc_' + n + '={' + code(n) + '};\n' for n in (
         'headElevateStop', 'headElevSuspend', 'headElevApplyTilt'))
 
 
@@ -119,7 +131,7 @@ def test_completion_retains_owner_and_life_guards(kind,change):
 @pytest.mark.parametrize('vehicle',[False,True])
 def test_current_completion_preserves_collision_and_gear_handoff(kind,vehicle):
     execute(setup() + begin(kind) + ('_parent=missionNamespace;' if vehicle else '') + '''
-        [(_pending select 2)==1.4,"authored lower delay changed"] call _check;
+        [abs ((_pending select 2)-(1.4/1.5))<.000001,"authored lower delay changed"] call _check;
         [_pending] call _deliver;
         [_collisions isEqualTo [[_patient,true]],"current completion failed to restore collision once"] call _check;
     ''' + (f'''

@@ -1,6 +1,7 @@
 /* Acknowledged item transfer. An acknowledged return enters finalization before another request can act. */
 params ["_op", "_id", "_medic", "_ok", ["_settings", []]];
 if (!isServer) exitWith {};
+_settings = +_settings;
 private _records = missionNamespace getVariable ["ACME_vent_custody", createHashMap];
 private _r = _records getOrDefault [_id, createHashMap];
 if (count _r == 0) exitWith {};
@@ -12,10 +13,20 @@ if (_op == "take") exitWith {
         _records deleteAt _id;
         ["ACME_ventCustodyNotice", [_medic, _patient, false], _medic] call CBA_fnc_targetEvent;
     };
+    _r set ["recoveryOperator", _medic];
+    _r set ["recoveryOperatorUID", getPlayerUID _medic];
+    private _originIndex = _settings findIf {(_x param [0, ""]) == "ACME_supplyOrigin"};
+    if (_originIndex >= 0) then {
+        private _origin = (_settings select _originIndex) select 1;
+        _r set ["supplyOrigin", _origin];
+        _r set ["supplier", _origin select 0];
+        _r set ["supplierUID", getPlayerUID (_origin select 0)];
+        _settings deleteAt _originIndex;
+    };
     _r set ["settings", _settings];
     _r set ["phase", "attached"];
     if (!isNull _patient) then {
-        _patient setVariable ["ACME_vent_supplier", _medic, true];
+        _patient setVariable ["ACME_vent_supplier", _r get "supplier", true];
         _patient setVariable ["ACME_vent_supplierUID", _r get "supplierUID", true];
         _patient setVariable ["ACME_vent_operator", _medic, true];
         _patient setVariable ["ACME_vent_onPatient", true, true];

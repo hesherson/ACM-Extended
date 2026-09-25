@@ -27,7 +27,9 @@ if (_dt <= 0) exitWith {[] call ACME_fnc_hardcorePushOverlay;};
 private _carry = (_job getOrDefault ["carryMl",0]) + (_job getOrDefault ["rateMlSec",0]) * _dt;
 private _targetLeft = ((_job getOrDefault ["targetMl",0]) - (_job getOrDefault ["pushedMl",0])) max 0;
 private _step = (floor ((_carry + 0.000001) * 100)) / 100;
-if (_targetLeft <= 0.0101 && {_targetLeft > 0}) then {_step = _targetLeft;};
+// A final fraction of a hundredth still owes its share of the selected duration.
+// Only snap that endpoint after enough flow has accrued to move it.
+if (_targetLeft <= 0.0101 && {_targetLeft > 0} && {_carry + 0.000001 >= _targetLeft}) then {_step = _targetLeft;};
 _step = _step min _targetLeft;
 if (_step > 0.000001) then {
     private _store = +(_medic getVariable ["ACME_narcStore",[]]);

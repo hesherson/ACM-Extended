@@ -3,16 +3,14 @@ if (isNull _patient || {isNull _medic} || {!local _medic} || {!alive _medic}
     || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
 
 if !(missionNamespace getVariable ["ACME_sys_chestSeal", true]) exitWith {
+    private _item = ["ACM_ChestSeal", "ACME_NARSPEAR"] select (_startTool == "spear");
+    private _receipt = [_medic, _patient, [_item]] call ACME_fnc_treatmentSupplyTake;
+    if (_receipt isEqualTo []) exitWith {};
+    [_receipt, false] call ACME_fnc_treatmentSupplyRefund;
     if (_startTool == "spear") then {
-        if (([_medic, "ACME_NARSPEAR"] call ace_common_fnc_getCountOfItem) > 0) then {
-            _medic removeItem "ACME_NARSPEAR";
-            [_medic, _patient] call ACM_breathing_fnc_performNCD;
-        };
+        [_medic, _patient] call ACM_breathing_fnc_performNCD;
     } else {
-        if (([_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem) > 0) then {
-            _medic removeItem "ACM_ChestSeal";
-            [_medic, _patient] call ACM_breathing_fnc_applyChestSeal;
-        };
+        [_medic, _patient] call ACM_breathing_fnc_applyChestSeal;
     };
 };
 

@@ -8,9 +8,9 @@ private _size = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size"
 private _ml = (round ((missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0]) * 100)) / 100;
 if (!(_size in [1,3,5,10]) || {_ml <= 0} || {_ml > _size}) exitWith {};
 private _empty = format ["ACM_Syringe_%1", _size];
-if (([ACE_player, _empty] call ace_common_fnc_getCountOfItem) < 1) exitWith {["An empty syringe is required.", 2, ACE_player] call ace_common_fnc_displayTextStructured;};
-if !([ACE_player, _ml] call ACME_fnc_epinephrineTakeSource) exitWith {["Not enough 1:10,000 epinephrine in your kit.", 3, ACE_player] call ace_common_fnc_displayTextStructured;};
-if !(missionNamespace getVariable ["ACM_circulation_reusableSyringe", false]) then {ACE_player removeItem _empty;};
+if !([ACE_player,[["EpinephrineCardiac",_ml]],_empty,!(missionNamespace getVariable ["ACM_circulation_reusableSyringe",false])] call ACME_fnc_medicationTakeSources) exitWith {
+    ["Not enough 1:10,000 epinephrine or an empty syringe is missing.",3,ACE_player] call ace_common_fnc_displayTextStructured;
+};
 private _class = format ["ACM_Syringe_%1_EpinephrineCardiac", _size];
 private _result = [ACE_player, _class, "", round (_ml * 100)] call ace_common_fnc_addToInventory;
 if !(_result param [0, false]) exitWith {

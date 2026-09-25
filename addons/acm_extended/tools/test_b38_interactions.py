@@ -168,7 +168,7 @@ class InteractionBehavior(unittest.TestCase):
 class InteractionIntegration(unittest.TestCase):
     def test_only_current_native_effect_records_are_read(self):
         text = source("functions/fn_medicationInteractions.sqf")
-        self.assertIn('[_patient, _class, false] call ace_medical_status_fnc_getMedicationCount', text)
+        self.assertIn('[_patient, _class, false] call ACME_fnc_medicationCountCompat', text)
         for forbidden in ('ACME_medicationAdmitted', 'ACME_infusions', 'ACME_Narc', 'ACME_serum_'):
             self.assertNotIn(forbidden, text)
 

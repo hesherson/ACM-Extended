@@ -10,14 +10,44 @@
  * collapse to zero. True severe collapse still stops the worker at state 3 while the patient remains unconscious.
  */
 
-params ["_patient"];
+params ["_patient", ["_epoch", -1]];
+if (isNull _patient) exitWith {};
+if (_epoch < 0) then {_epoch = [_patient] call ACME_fnc_clinicalEpoch;};
+if (!local _patient) exitWith {
+    [QGVAR(handleAirwayCollapse), [_patient, _epoch], _patient] call CBA_fnc_targetEvent;
+};
+if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)
+    || {!alive _patient} || {_patient getVariable ["ACME_clinicalRestoring", false]}) exitWith {};
+
 private _acmeReconcile = "B125:airwayCollapseWakeClear";
 
 if (_patient getVariable [QGVAR(AirwayCollapse_PFH), -1] != -1) exitWith {};
 
+if (!(IS_UNCONSCIOUS(_patient))) exitWith {
+    if ((_patient getVariable [QGVAR(AirwayCollapse_State), 0]) != 0) then {
+        _patient setVariable [QGVAR(AirwayCollapse_State), 0, true];
+    };
+    _patient setVariable ["ACME_nativeCollapseActive", false, true];
+};
+_patient setVariable ["ACME_nativeCollapseActive", true, true];
 private _PFH = [{
     params ["_args", "_idPFH"];
-    _args params ["_patient"];
+    _args params ["_patient", "_epoch"];
+    // A departed/reset worker may remove itself, never the new owner's or new episode's handle/evidence.
+    if (isNull _patient || {!local _patient}
+        || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}
+        || {_patient getVariable ["ACME_clinicalRestoring", false]}
+        || {(_patient getVariable [QGVAR(AirwayCollapse_PFH), -1]) != _idPFH}) exitWith {
+        [_idPFH] call CBA_fnc_removePerFrameHandler;
+        if (!isNull _patient && {(_patient getVariable [QGVAR(AirwayCollapse_PFH), -1]) == _idPFH}) then {
+            _patient setVariable [QGVAR(AirwayCollapse_PFH), -1];
+        };
+    };
+    if (!alive _patient) exitWith {
+        [_idPFH] call CBA_fnc_removePerFrameHandler;
+        _patient setVariable [QGVAR(AirwayCollapse_PFH), -1];
+        _patient setVariable ["ACME_nativeCollapseActive", false, true];
+    };
 
     private _collapseState = _patient getVariable [QGVAR(AirwayCollapse_State), 0];
 
@@ -27,12 +57,14 @@ private _PFH = [{
             _patient setVariable [QGVAR(AirwayCollapse_State), 0, true];
         };
         _patient setVariable [QGVAR(AirwayCollapse_PFH), -1];
+        _patient setVariable ["ACME_nativeCollapseActive", false, true];
         [_idPFH] call CBA_fnc_removePerFrameHandler;
     };
 
     if (_collapseState > 2) exitWith {
         _patient setVariable [QGVAR(AirwayCollapse_State), 3, true];
         _patient setVariable [QGVAR(AirwayCollapse_PFH), -1];
+        _patient setVariable ["ACME_nativeCollapseActive", false, true];
         [_idPFH] call CBA_fnc_removePerFrameHandler;
     };
 
@@ -51,6 +83,6 @@ private _PFH = [{
         _patient setVariable [QGVAR(AirwayCollapse_State), (_collapseState + 1), true];
     };
 
-}, (30 + (random 15)), [_patient]] call CBA_fnc_addPerFrameHandler;
+}, (30 + (random 15)), [_patient, _epoch]] call CBA_fnc_addPerFrameHandler;
 
 _patient setVariable [QGVAR(AirwayCollapse_PFH), _PFH];

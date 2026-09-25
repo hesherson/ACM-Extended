@@ -6,7 +6,7 @@ params [["_patient", objNull, [objNull]]];
 if (isNull _patient || {isNil "ace_medical_status_fnc_getMedicationCount"}) exitWith {0};
 private _get = {
     params ["_class"];
-    private _v = [_patient, _class, false] call ace_medical_status_fnc_getMedicationCount;
+    private _v = [_patient, _class, false] call ACME_fnc_medicationCountCompat;
     if !(_v isEqualType 0 && {finite _v}) exitWith {0};
     _v max 0
 };

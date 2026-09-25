@@ -72,15 +72,16 @@ if (_gauge == 14) then { _type = 2; };  // 14g, a faster flow.
 if (_gauge == 18) then { _type = 5; };  // 18g, a slower, smaller-bore flow.
 if (_gauge == 20) then { _type = 6; };  // 20g, the smallest bore and the slowest flow.
 
-// consume one catheter from the inventory of the medic, which is the item of the iv action.
-if (!isNull _medic) then {
-    private _cl = format ["ACM_IV_%1g", _gauge];  // the 14g, 16g and 18g each consume their own catheter.
-    if (([_medic, _cl] call ace_common_fnc_getCountOfItem) > 0) then { _medic removeItem _cl; };
+// Recheck and consume one catheter at commitment, using ACE's patient/medic order.
+// A displayed catheter cannot produce an IV after another treatment used the last item.
+private _receipt = [_medic, _patient, [format ["ACM_IV_%1g", _gauge]]] call ACME_fnc_treatmentSupplyTake;
+if (_receipt isEqualTo []) exitWith {
+    ["No catheter available.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
 // Owner/episode-checked single-site commit. No delayed whole-row repair.
 [_patient, "ivSite", [_medic, _patient, _bodyPart, _type, _accessSite,
-    [_patient] call ACME_fnc_clinicalEpoch]] call ACME_fnc_ownerDispatch;
+    [_patient] call ACME_fnc_clinicalEpoch, _receipt]] call ACME_fnc_ownerDispatch;
 
 // The log uses anatomical shorthand only with Clinical Descriptors enabled. Otherwise it names the limb and site.
 if (!isNil "ace_medical_treatment_fnc_addToLog") then {

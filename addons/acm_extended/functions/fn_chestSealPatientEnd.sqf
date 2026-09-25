@@ -33,7 +33,7 @@ if ((_prepareBusy find "vest:chestseal:") == 0) then {
     _patient setVariable ["ACME_CS_vestBusy", "", false];
     if ((_patient getVariable ["ACME_chestAccess_removeSpeedToken", ""]) == _prepareBusy) then {
         _patient setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
-        ["ace_common_setAnimSpeedCoef", [_patient, 1]] call CBA_fnc_globalEvent;
+        [_patient, _prepareBusy] call ACME_fnc_patientAnimRelease;
     };
     private _prepareLock = _patient getVariable ["ACME_patientAnimLock", []];
     if ((_prepareLock param [0, ""]) == _prepareBusy

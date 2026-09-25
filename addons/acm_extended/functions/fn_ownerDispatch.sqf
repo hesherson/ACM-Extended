@@ -8,6 +8,10 @@ if (!local _patient) exitWith {
     } else {  };
 };
 switch (_operation) do {
+    case "vialRefund": {
+        _args params [["_id",""],["_components",[]]];
+        [_patient,_id,_components] call ACME_fnc_vialRefundLocal;
+    };
     case "vialLease": {
         _args params [["_medic",objNull,[objNull]],["_op","claim",[""]],["_token","",[""]]];
         [_patient,_medic,_op,_token] call ACME_fnc_vialLeaseCommit;
@@ -386,7 +390,7 @@ switch (_operation) do {
             // Long enough to reject a second provider who completed the same 4.375 s physical hatch exchange.
             _patient setVariable ["ACME_vent_batterySwapLockUntil", serverTime + 1.0, true];
         };
-        ["ACME_ventBatteryExchangeResult", [_patient, _requestId, _accepted, _returned, (_sparePct max 0) min 100], _medic] call CBA_fnc_targetEvent;
+        ["ACME_ventBatteryExchangeResult", [_patient, _requestId, _accepted, _returned, (_sparePct max 0) min 100], parseNumber ((_requestId splitString ":") select 0)] call CBA_fnc_ownerEvent;
     };
     case "treatmentPatientSettle": {_args call ACME_fnc_treatmentPatientSettle;};
 };

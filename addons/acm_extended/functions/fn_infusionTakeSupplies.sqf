@@ -10,8 +10,7 @@ private _reusable = missionNamespace getVariable ["ACM_circulation_reusableSyrin
 
 // ACME_fnc_medicationTakeSources is the Narc Box's validated exact-source debit. A one-component batch is
 // therefore the same transaction for Prep Infusion, with no guessed classname and no second medication ledger.
-if !([_medic, [[_med, _ml]], _syringe, !_reusable] call ACME_fnc_medicationTakeSources) exitWith {[]};
-
-// If owner-side bag registration rejects the injection, this receipt restores exactly what this transaction took.
-private _refundItems = if (_reusable) then {[]} else {[_syringe]};
-[_medic, _refundItems, [_med, _ml]]
+private _patient = (missionNamespace getVariable ["ACME_infusion_pendingContext",[]]) param [1,objNull];
+// The receipt captures the vial holder and container donor independently. ACKs
+// can settle it after the source selector changes or its UI lease is released.
+[_medic, [[_med, _ml]], _syringe, !_reusable, true, _patient] call ACME_fnc_medicationTakeSources

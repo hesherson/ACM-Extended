@@ -7,5 +7,5 @@ if ((missionNamespace getVariable ["ACME_infusion_pendingInject", ""]) == _uid) 
 if (!_ok) then {
     [_row select 2] call ACME_fnc_infusionRefundSupplies;
     [(_row select 2) select 0, "Injection was not accepted because the bag or access changed. Supplies returned."] call ACME_fnc_clinicalNotice;
-};
+} else {[_row select 2,false] call ACME_fnc_infusionRefundSupplies;};
 [] call ACME_fnc_infusionRefreshTally;

@@ -89,8 +89,12 @@ if (_isDialog) then {
 
 // A finite assessment can still own a zero-speed hold when the next maneuver starts.
 // Retire that owner before this action takes over, including its observer/JIP freeze.
-if (!isNil "ACME_fnc_treatmentPoseStop") then {[_medic] call ACME_fnc_treatmentPoseStop;};
-[QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
+if (!isNil "ACME_fnc_treatmentPoseStop") then {[_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;};
+private _choreographyRate = if (isNil "ACME_fnc_choreographyRate") then {1.5} else {call ACME_fnc_choreographyRate};
+if (!_suppressProviderAnim) then {
+    _medic setAnimSpeedCoef _choreographyRate;
+    [QACEGVAR(common,setAnimSpeedCoef), [_medic, _choreographyRate]] call CBA_fnc_globalEvent;
+};
 
 private _notInVehicle = isNull objectParent _medic;
 
@@ -105,10 +109,11 @@ if (_notInVehicle && {!_suppressProviderAnim}) then {
             [{
                 params ["_medic", "_epoch", "_playerBound"];
                 if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
+                    && {local _medic} && {alive _medic} && {isNull objectParent _medic}
                     && {!_playerBound || {_medic isEqualTo ACE_player}}) then {
                     [_medic, "ACM_GenericContinuous", 2] call ACEFUNC(common,doAnimation);
                 };
-            }, [_medic, _epoch, _playerBound], 0.65] call CBA_fnc_waitAndExecute;
+            }, [_medic, _epoch, _playerBound], 0.65 / _choreographyRate] call CBA_fnc_waitAndExecute;
         };
         case "PRONE": {
             if (_allowProne) then {
@@ -119,10 +124,11 @@ if (_notInVehicle && {!_suppressProviderAnim}) then {
                 [{
                     params ["_medic", "_epoch", "_playerBound"];
                     if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
+                    && {local _medic} && {alive _medic} && {isNull objectParent _medic}
                     && {!_playerBound || {_medic isEqualTo ACE_player}}) then {
-                        [_medic, "ACM_GenericContinuous", 2] call ACEFUNC(common,doAnimation);
+                            [_medic, "ACM_GenericContinuous", 2] call ACEFUNC(common,doAnimation);
                     };
-                }, [_medic, _epoch, _playerBound], 1.116] call CBA_fnc_waitAndExecute;
+                }, [_medic, _epoch, _playerBound], 1.116 / _choreographyRate] call CBA_fnc_waitAndExecute;
             };
         };
         case "CROUCH": {
@@ -194,11 +200,29 @@ private _pfh = [{
 
         [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle] call _onCancel;
 
-        if (_notInVehicle && {!_medicCondition} && {isNull objectParent _medic} && {!_suppressProviderAnim}) then {
-            [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
+        if (_notInVehicle && {!_medicCondition} && {isNull objectParent _medic} && {!_suppressProviderAnim}
+            && {GVAR(ContinuousAction_Epoch) == _epoch} && {!GVAR(ContinuousAction_Active)}) then {
+            private _rate = if (isNil "ACME_fnc_choreographyRate") then {1.5} else {call ACME_fnc_choreographyRate};
+            _medic setAnimSpeedCoef _rate;
+            [QACEGVAR(common,setAnimSpeedCoef), [_medic, _rate]] call CBA_fnc_globalEvent;
             _medic setUnitPos "AUTO";
             private _animation = ["AmovPknlMstpSnonWnonDnon", "AmovPpneMstpSnonWnonDnon"] select _isProne;
             [_medic, _animation, 2] call ACEFUNC(common,doAnimation);
+            [{
+                params ["_medic", "_epoch", "_poseEpoch"];
+                if (isNull _medic || {!local _medic}) exitWith {};
+                if (GVAR(ContinuousAction_Epoch) != _epoch || {GVAR(ContinuousAction_Active)}) exitWith {};
+                if ((_medic getVariable ["ACME_treatmentPoseEpoch", -1]) != _poseEpoch) exitWith {};
+                if (!isNil "ACME_fnc_providerStanceOwned" && {[_medic] call ACME_fnc_providerStanceOwned}) exitWith {};
+                _medic setAnimSpeedCoef 1;
+                [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
+            }, [_medic, _epoch, _medic getVariable ["ACME_treatmentPoseEpoch", -1]], 0.85 / _rate] call CBA_fnc_waitAndExecute;
+        } else {
+            if (!_suppressProviderAnim && {local _medic} && {GVAR(ContinuousAction_Epoch) == _epoch}
+                && {!GVAR(ContinuousAction_Active)}) then {
+                _medic setAnimSpeedCoef 1;
+                [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
+            };
         };
 
         ["ace_treatmentFailed", [_medic, _patient, _bodyPart, "ACM_ContinuousAction", "", "", false]] call CBA_fnc_localEvent;

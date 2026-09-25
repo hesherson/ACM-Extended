@@ -15,7 +15,7 @@ if (_snapshot isEqualType [] && {count _snapshot >= 5}) then {
 };
 uiNamespace setVariable ["ACME_CS_SpearHeld", false];
 private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
-uiNamespace setVariable ["ACME_CS_SpearsLeft", if (isNull _medic) then {0} else {[_medic, "ACME_NARSPEAR"] call ace_common_fnc_getCountOfItem}];
+uiNamespace setVariable ["ACME_CS_SpearsLeft", if (isNull _medic) then {0} else {[_medic, uiNamespace getVariable ["ACME_CS_Patient", objNull], "ACME_NARSPEAR"] call ACME_fnc_treatmentSupplyCount}];
 // B52: successful NAR SPEAR seating gets exactly one requested NCD gesture.
 if (!isNull _medic && {local _medic}) then {[_medic,"ncdSeat",2.0] call ACME_fnc_treatmentGesture;};
 
