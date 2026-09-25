@@ -50,9 +50,10 @@ def test_measurement_uses_wrapped_content_height_without_changing_font(metric_he
 
 def test_common_base_font_is_safezone_relative_and_uniform_across_resolutions():
     source = read("debugMenuClinical")
-    assert 'private _fontH = safeZoneH * 0.0116;' in source
+    assert 'private _fontH = safeZoneH * 0.0096;' in source
     assert 'pixelH' not in source
     assert '{_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS, _ctrlM];' in source
+    assert 'safeZoneWAbs * 0.235' in source
     assert "size='" not in source
     assert '_measureBlock' not in source and '_fit' not in source
 
@@ -61,7 +62,7 @@ def test_section_color_spacing_and_values_survive_shared_formatting():
     source = ''.join(definition(n) for n in ("_safe", "_padRight", "_alignValue", "_pair", "_wrapValue", "_formatRow", "_sect"))
     execute('private _cTitle="#D9A441";private _cSect=_cTitle;private _cLabel="label";' + source + '''
         private _section=["PERFUSION / BLEEDING"] call _sect;
-        [(_section find "<br/>")==0,"missing space before section"] call _check;
+        [(_section find "<br/>")==-1,"compact section inserted a blank spacer"] call _check;
         [(_section find _cTitle)>0,"section title color differs from main title"] call _check;
         private _row=[["HR",103,"good","BP","120/80","good"] call _pair,12] call _formatRow;
         [(_row find "103")>=0 && {(_row find "120/80")>=0},"paired value changed"] call _check;
@@ -106,31 +107,29 @@ def test_disabling_cleans_up_backing_header_all_sections_and_hidden_measurement(
     ''')
 
 
-@pytest.mark.parametrize("header,top,clinical,network", [
-    (0.035,0.08,0.30,0.12),
-    (0.050,0.10,0.42,0.14),
-    (0.030,0.07,0.18,0.10),
+@pytest.mark.parametrize("header,body", [
+    (0.025,0.38),
+    (0.035,0.62),
+    (0.020,0.24),
 ])
-def test_layout_uses_top_metadata_tab_and_anchors_runtime_to_safearea_bottom(header, top, clinical, network):
+def test_layout_is_content_driven_single_column_without_screen_filling_gap(header, body):
     source=definition("_layout")
     source=re.sub(r'(_ctrl\\w+) ctrlSetPosition (\\[[^;]+\\]);', r'_positions pushBack [\\1,\\2];',source)
-    source=source.replace('{_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS];','')
+    source=source.replace('{_x ctrlShow false;} forEach [_ctrlT, _ctrlR, _ctrlS];','_hidden append [_ctrlT,_ctrlR,_ctrlS];')
+    source=source.replace('{_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlT, _ctrlR, _ctrlS];','')
     execute('''
-        private _ctrlB="back";private _ctrlH="head";private _ctrlT="top";private _ctrlL="left";private _ctrlR="right";private _ctrlS="net";
-        private _positions=[];private _x=-1;private _y=-0.16;private _panelBottom=0.84;
-        private _totalW=0.60;private _w=0.295;private _gap=0.01;
-    '''+source+f'[{header},{top},{clinical},{network}] call _layout;'+'''
+        private _ctrlB="back";private _ctrlH="head";private _ctrlT="top";private _ctrlL="body";private _ctrlR="right";private _ctrlS="net";
+        private _positions=[];private _hidden=[];private _x=-1;private _y=-0.16;
+        private _totalW=0.21;private _gap=0.0025;private _fontH=0.0096;
+    '''+source+f'[{header},{body}] call _layout;'+'''
+        [count _positions==3,"compact layout created extra visible regions"] call _check;
         private _back=(_positions select 0) select 1;
         private _head=(_positions select 1) select 1;
-        private _top=(_positions select 2) select 1;
-        private _left=(_positions select 3) select 1;
-        private _right=(_positions select 4) select 1;
-        private _net=(_positions select 5) select 1;
-        [abs ((_top select 1)-(_head select 1)-(_head select 3)-0.0045)<0.00001,"metadata tab is not directly beneath header"] call _check;
-        [abs ((_net select 1)+(_net select 3)-0.84)<0.00001,"runtime footer is not anchored to safe-area bottom"] call _check;
-        [abs ((_back select 1)+(_back select 3)-0.84)<0.00001,"backing does not span top-to-bottom safe area"] call _check;
-        [abs ((_left select 1)+(_left select 3)+0.01-(_net select 1))<0.00001,"clinical columns were not given the remaining vertical space"] call _check;
-        [abs ((_right select 0)+(_right select 2)-(_back select 0)-(_back select 2))<0.00001,"columns outside backing"] call _check;
+        private _body=(_positions select 2) select 1;
+        [abs ((_body select 0)-(_back select 0))<0.00001 && {abs ((_body select 2)-(_back select 2))<0.00001},"body is not one full-width column"] call _check;
+        [abs ((_body select 1)-(_head select 1)-(_head select 3)-0.0025)<0.00001,"body is not directly beneath header"] call _check;
+        [abs ((_back select 3)-(_head select 3)-0.0025-(_body select 3)-0.00192)<0.00001,"backing contains unused vertical space"] call _check;
+        [_hidden isEqualTo ["top","right","net"],"B162 secondary columns were not retired"] call _check;
     ''')
 
 
@@ -184,36 +183,31 @@ def test_normal_readings_stay_complete_on_one_row_with_fixed_label_positions(val
     ''')
 
 
-def test_extended_device_lists_wrap_without_moving_columns_or_shrinking_unrelated_sections():
+def test_extended_device_lists_wrap_without_reintroducing_a_second_major_column():
     source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_pair','_one','_formatRow','_renderAll'))
     execute('''
-        private _cLabel="label";private _valueW=20;private _fontH=0.018;
-        private _totalW=0.60;private _w=0.295;
-        private _ctrlH="head";private _ctrlT="top";private _ctrlL="left";private _ctrlR="right";private _ctrlS="net";
+        private _cLabel="label";private _valueW=14;private _fontH=0.018;
+        private _totalW=0.21;
+        private _ctrlH="head";private _ctrlL="body";
         private _renders=[];private _sizes=[];private _heights=[];
-        private _measureRows={_heights pushBack _this;[0.035,0.08,0.51,0.62,0.27] select ((count _heights)-1)};
+        private _measureRows={_heights pushBack _this;[0.025,0.58] select ((count _heights)-1)};
         private _layout={_sizes=+_this;};
         private _renderBlock={_renders pushBack _this;};
     '''+source+'''
-        private _header=["ACME DEBUG B162","Patient: Complete Long Name"];
+        private _header=["ACME DEBUG B163 | Patient: Complete Long Name"];
         private _top=[["Role","client","good","MP","yes","good"] call _pair];
         private _left=[["HR",103,"good","BP","120/80","good"] call _pair];
         private _right=[["AAJT","Z3+Ing-left+AxL+AxR+additional device","good","XStat","no","good"] call _pair];
-        private _network=[["Chest/Own","S1/E1","good","Revision","B162","good"] call _pair];
+        private _network=[["Chest/Own","S1/E1","good","Revision","NA2-1.2.3-stable","good"] call _pair];
         call _renderAll;
-        [count _renders==5 && {count _heights==5},"not all regions rendered/measured"] call _check;
-        {[count _x==2,"region used its own font size"] call _check;} forEach _renders;
-        [_fontH==0.018 && {_sizes isEqualTo [0.035,0.08,0.62,0.27]},"long state shrank font instead of sizing content"] call _check;
-        private _topRow=((_renders select 1) select 1) select 0;
-        private _leftRow=((_renders select 2) select 1) select 0;
-        private _rightRow=((_renders select 3) select 1) select 0;
-        [(_leftRow find "BP      ")==(_rightRow find "XStat   "),"long state moved paired label"] call _check;
-        [(_leftRow find "BP      ")==(_topRow find "MP      "),"metadata columns differ from clinical"] call _check;
-        private _parts=["Z3+Ing-left+AxL+AxR+additional device",20] call _wrapValue;
+        [count _renders==2 && {count _heights==2},"compact renderer still painted multiple major columns"] call _check;
+        [_sizes isEqualTo [0.025,0.58],"content-driven layout did not receive one combined body height"] call _check;
+        private _rows=(_renders select 1) select 1;
+        [count _rows==4,"logical sections were lost while serializing the single column"] call _check;
+        private _long=_rows select 2;
+        [(_long find "<br/>")>=0,"long device list did not wrap inside narrow panel"] call _check;
+        private _parts=["Z3+Ing-left+AxL+AxR+additional device",14] call _wrapValue;
         [(_parts joinString "")=="Z3+Ing-left+AxL+AxR+additional device","wrapping dropped device text"] call _check;
-        {[(count _x)<=20,"continuation overruns fixed field"] call _check;} forEach _parts;
-        [(_rightRow find "<br/>")>=0,"long value did not continue at readable size"] call _check;
-        private _single=[["Owner",0,"good"] call _one,_valueW] call _formatRow;
-        [(_single find "       0")==(_topRow find "  client"),"single and paired rows use different value anchors"] call _check;
+        {[(count _x)<=14,"continuation overruns compact field"] call _check;} forEach _parts;
     ''')
 
