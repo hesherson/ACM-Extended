@@ -9,9 +9,10 @@ Updated 24 September 2026.
 - RC2 makes the chest-access preflight a single-click state: the medical menu closes immediately, a top-center **Preparing...** banner appears, and repeated CPR/BVM clicks cannot enqueue duplicate carrier animations.
 - Escape/F0 during Preparing cancels that exact generation, releases only its chest-access lease, clears the banner and reopens the medical menu.
 - Direct Pressure now yields before carrier/head/intervention animation ownership and remains animation-passive for the full native CPR/BVM lifetime instead of resuming when the short launcher treatment ends.
+- RC3 preserves the Direct Pressure episode itself across CPR/BVM: its PFH, input ownership and target remain intact while the clinical marker/provider pose yield, then resume only after CPR, BVM and their bounded transfer window are all clear.
 - Semi-Fowler suspension is lower priority than active intervention patient animation/physics and will not re-elevate during CPR, BVM or the CPR/BVM transfer window.
 - CPR/BVM use one stable maneuver-family chest-access lease across repeated middle-mouse swaps. Provider-local and patient-owner transfer windows both prevent carrier restoration in the gap.
-- Carrier restoration now has its own faster patient choreography: 0.50 s lift + 0.02 s hold + 0.55 s lower, with a token-scoped 1.60x patient animation speed and guaranteed reset to 1.0.
+- Carrier restoration now has its own accelerated patient choreography: 0.75 s lift + 0.02 s hold + 0.88 s lower, with a token-scoped 1.60x patient animation speed and guaranteed reset to 1.0.
 - A new chest intervention clicked during the short carrier-return animation queues behind that restore instead of waiting until the 12-second fail-open timeout.
 - CPR and all BVM variants now use the same plate-carrier chest-access preflight.
 - Plate-carrier custody remains active while either CPR or BVM is active, including repeated middle-mouse swaps between the two interventions.
@@ -24,7 +25,7 @@ Updated 24 September 2026.
 
 - Public/debug version advanced to 1.2.3.
 - HEMTT package version advanced to 1.2.3.0.
-- Internal build batch advanced to B144 and the release-candidate debug revision reset to rc1.
+- Internal build batch advanced to B146 and the release-candidate debug revision is rc3.
 
 ## 1.2.2 cumulative update
 
@@ -73,7 +74,7 @@ These notes describe the combined current behavior. Later corrections take prece
 ### CPR and BVM on servers
 
 - Restored ACM BVM control flow and removed the added heartbeat, server expiry worker and per-frame replicated session check. Native breath timing, oxygen use, pause/resume and CPR compatibility are retained.
-- Starting BVM fully releases that provider's Direct Pressure, including its worker, keys and pressure marker. Rejected BVM starts preserve pressure. Start pressure again after finishing BVM.
+- In 1.2.2, starting BVM fully released that provider's Direct Pressure. In 1.2.3 RC3 this is superseded: CPR/BVM now temporarily yield the same-provider pressure episode and allow it to resume after the maneuver family ends.
 - Prevented new pressure on any body region during an active maneuver. Stale pressure callbacks and earlier queued menu/stance callbacks cannot cancel BVM or replace its controls.
 - Fixed CPR cancellation leaving the provider in the compression animation. Cancellation disables animation re-entry and releases the patient before removing input handlers, then plays the existing exit animation and queues a normal movable crouch. CPR loop states now include native exit connections, and stale assessment holds are retired before a new maneuver starts.
 - Pausing CPR disables the compression loop before changing pose. Repeated starts, respawn, disconnect and abandoned CPR sessions now receive session cleanup without stopping another provider's BVM.
