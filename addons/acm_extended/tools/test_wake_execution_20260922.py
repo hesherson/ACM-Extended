@@ -40,6 +40,13 @@ def setup():
     return text
 
 
+def test_can_wake_accepts_cba_state_machine_direct_object_call():
+    execute(setup() + '''
+        private _result = _patient call ACM_core_fnc_canWake;
+        [_result,"direct CBA list-item call rejected an eligible patient"] call _check;
+    ''')
+
+
 @pytest.mark.parametrize('state', ['Default','Injured','Unconscious','CardiacArrest','FatalInjury','Dead','','CustomState'])
 @pytest.mark.parametrize('stable', [True,False])
 def test_actual_machine_state_is_required_for_a_repair(state, stable):
