@@ -16,7 +16,7 @@ if (isNull _patient) exitWith {false};
 private _identity = [_patient,_body,_site] call ACME_fnc_medicationLineIdentity;
 if (_identity isEqualTo []) exitWith {false};
 if ([_patient,_body,_site] call ACME_fnc_medicationLineBloodBusy) exitWith {
-    ["Blood is actively flowing through that line. Stop or finish the transfusion before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
+    ["Blood is present in that line. Finish or remove the blood bag before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
     false
 };
 private _leash = missionNamespace getVariable ["ACM_circulation_AEDDistanceLimit",5];
