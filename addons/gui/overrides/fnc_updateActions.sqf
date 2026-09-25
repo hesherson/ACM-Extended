@@ -18,7 +18,8 @@ private _selectedCategory = missionNamespace getVariable ['ace_medical_gui_selec
 // ACE calls the menu painter from a 0-delay PFH. Re-evaluating every grouped action, inventory count, tooltip,
 // handler and control on every rendered frame is unnecessary and disproportionately hurts lower-FPS clients.
 // Patient/body-part/category changes bypass the throttle and repaint immediately.
-private _paintKey = [_target, _bodyPart, _selectedCategory];
+// Death/revival changes the visible action set even when the selected limb/category did not move.
+private _paintKey = [_target, _bodyPart, _selectedCategory, !isNull _target && {alive _target}];
 private _lastPaintKey = _display getVariable ['ACME_menuPaintKey', []];
 private _nextPaint = _display getVariable ['ACME_menuNextPaint', 0];
 if (_paintKey isEqualTo _lastPaintKey && {diag_tickTime < _nextPaint}) exitWith {};
@@ -93,12 +94,24 @@ if (_showTriage) exitWith {
 // Build display-local headers only when grouping is enabled. The collected actions already
 // carry the correct categories and order for both grouped and flat menus.
 private _menuActions = missionNamespace getVariable ['ace_medical_gui_actions', []];
-// Check Airway and Check Breathing are head-only assessments. canTreatCached deliberately keeps these evidence
-// checks available on corpses for AAR/training continuity, so the paint layer must not reintroduce a death-only
-// gate which leaks patient death. Re-apply anatomy only because grouped children replace their condition after collection.
+
+// Re-apply each treatment class's configured anatomy at paint time before any dropdown can replace a child
+// condition with {true}. ACE's canTreatCached normally enforces allowedSelections too, but this independent
+// presentation gate prevents stale/death-transition cache entries from ever exposing a Chest, Airway, IV,
+// medication or other body-specific submenu on the wrong body region.
+private _bodyPartNames = ['head', 'body', 'leftarm', 'rightarm', 'leftleg', 'rightleg'];
+private _selectedBodyName = if (_bodyPart >= 0 && {_bodyPart < count _bodyPartNames}) then {
+    _bodyPartNames select _bodyPart
+} else {
+    ''
+};
 _menuActions = _menuActions select {
-    private _class = toLower (_x param [8, '']);
-    !(_class in ['checkairway', 'checkbreathing']) || {_bodyPart == 0 && {!isNull _target}}
+    private _className = _x param [8, ''];
+    if (_className == '') exitWith {true}; // native drag/carry rows have no treatment config class
+    private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;
+    if !(isClass _cfg) exitWith {true};    // preserve foreign non-treatment rows we cannot authoritatively classify
+    private _allowed = getArray (_cfg >> 'allowedSelections') apply {toLowerANSI _x};
+    _selectedBodyName != '' && {'all' in _allowed || {_selectedBodyName in _allowed}}
 };
 
 // Do not retain a cached positioning row after the casualty stands up.
