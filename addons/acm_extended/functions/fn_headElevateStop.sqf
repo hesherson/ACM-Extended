@@ -66,6 +66,17 @@ if (!_quiet && {!_wasSuspended} && {!_wasManualUnsupported}
     [_medic, "lower"] call ACME_fnc_headElevMedicSeq;
 };
 
+// If Lower Head is requested while the lift tail still owns the patient, retire that exact lease synchronously.
+// The lay-flat release can then acquire the casualty immediately instead of silently losing to our own old lock.
+private _activePatientLock = _patient getVariable ["ACME_patientAnimLock", []];
+if ((count _activePatientLock) >= 5
+    && {(_activePatientLock param [1, ""]) == "head-elev-lift"}
+    && {(_activePatientLock param [4, -1]) > serverTime}) then {
+    private _liftToken = _activePatientLock param [0, ""];
+    if (_liftToken != "") then {[_patient, _liftToken] call ACME_fnc_patientAnimRelease;};
+    [_patient, true] call ACME_fnc_headElevCollision;
+};
+
 _patient setVariable ["ACME_CS_facing","front",true];
 _patient setVariable ["ACME_headElev_poseToken", "", true];
 _patient setVariable ["ACME_headElevated", false, true];
