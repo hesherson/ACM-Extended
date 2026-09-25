@@ -15,7 +15,15 @@ def test_both_debug_pages_render_cfgpatches_version():
     for rel in [
         "functions/fn_debugMenuClinical.sqf",
         "functions/fn_debugMenuNetwork.sqf",
+        "functions/fn_debugMenuCore.sqf",
     ]:
         text = read(rel)
         assert 'configFile >> "CfgPatches" >> "ACM_Extended" >> "version"' in text
         assert "ACME DEBUG v%2" in text
+
+
+def test_stable_123_debug_identity_has_no_rc_suffix():
+    startup = read("functions/fn_initForkStartupRuntime.sqf")
+    assert 'ACME_buildBatch = "B149";' in startup
+    assert 'ACME_debugRevision = "";' in startup
+    assert 'ACME_networkAuditRevision = "NA2-1.2.3-stable";' in startup
