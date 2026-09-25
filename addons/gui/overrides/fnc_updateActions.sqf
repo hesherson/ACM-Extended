@@ -96,23 +96,37 @@ if (_showTriage) exitWith {
 private _menuActions = missionNamespace getVariable ['ace_medical_gui_actions', []];
 
 // Re-apply each treatment class's configured anatomy at paint time before any dropdown can replace a child
-// condition with {true}. ACE's canTreatCached normally enforces allowedSelections too, but this independent
-// presentation gate prevents stale/death-transition cache entries from ever exposing a Chest, Airway, IV,
-// medication or other body-specific submenu on the wrong body region.
+// condition with {true}. Do not use exitWith from a select{} predicate here: on the live engine that can make
+// the select expression itself return a BOOL, which turned _menuActions into false/true and removed every button.
 private _bodyPartNames = ['head', 'body', 'leftarm', 'rightarm', 'leftleg', 'rightleg'];
 private _selectedBodyName = if (_bodyPart >= 0 && {_bodyPart < count _bodyPartNames}) then {
     _bodyPartNames select _bodyPart
 } else {
     ''
 };
-_menuActions = _menuActions select {
-    private _className = _x param [8, ''];
-    if (_className == '') exitWith {true}; // native drag/carry rows have no treatment config class
-    private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;
-    if !(isClass _cfg) exitWith {true};    // preserve foreign non-treatment rows we cannot authoritatively classify
-    private _allowed = getArray (_cfg >> 'allowedSelections') apply {toLowerANSI _x};
-    _selectedBodyName != '' && {'all' in _allowed || {_selectedBodyName in _allowed}}
-};
+private _anatomyFiltered = [];
+{
+    private _row = _x;
+    private _keep = true;
+    private _className = _row param [8, ''];
+
+    // Native drag/carry rows and foreign rows without a treatment config stay under their own conditions.
+    if (_className != '') then {
+        private _cfg = configFile >> 'ace_medical_treatment_actions' >> _className;
+        if (isClass _cfg) then {
+            private _allowed = (getArray (_cfg >> 'allowedSelections')) apply {toLowerANSI _x};
+            // An absent/empty declaration means there is no extra anatomy restriction to add here.
+            if (_allowed isNotEqualTo []) then {
+                _keep = _selectedBodyName != '' && {
+                    ('all' in _allowed) || {_selectedBodyName in _allowed}
+                };
+            };
+        };
+    };
+
+    if (_keep) then {_anatomyFiltered pushBack _row;};
+} forEach _menuActions;
+_menuActions = _anatomyFiltered;
 
 // Do not retain a cached positioning row after the casualty stands up.
 _menuActions = _menuActions select {
