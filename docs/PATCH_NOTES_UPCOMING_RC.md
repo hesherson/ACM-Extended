@@ -1,16 +1,16 @@
-# ACM Extended — Upcoming Release Candidate Patch Notes
+# ACM Extended — 1.2.3 Release Notes
 
-These notes cover the cumulative backlog/stability work through the validated 1.2.2.1 baseline plus the first 1.2.3 runtime patch. This is still an RC/testing build until live multiplayer acceptance is completed.
+These notes cover the cumulative 1.2.3 changes promoted from the release-candidate series into the stable 1.2.3 build.
 
-## 1.2.3 RC5 wake posture restoration
+## Wake posture restoration
 
 - Successful on-foot wake requests now restore consciousness into ACM's lying state rather than immediately playing the ordinary ACE wake/get-out animation.
 - `WasTreated` and `Lying_State` are armed before the WakeUp event because ACE calls `setUnconsciousAnim(false)` before publishing `ace_unconscious`.
 - The existing ACM `onUnconscious(false)` flow then consumes `WasTreated`, retains `Lying_State`, and exposes the normal separate Get Up action.
 - Vehicle wake behavior is intentionally unchanged.
-- Runtime identity is **1.2.3 / B148 / rc5**.
+- Runtime identity is **1.2.3 / B149** with no RC suffix in the debug menu.
 
-## 1.2.3 RC4 consciousness wake repair
+## Consciousness wake repair
 
 - Fixed the shared wake path used by ammonia inhalant, Slap Awake, Shake Awake, spontaneous waking and painful fracture stimulation.
 - CBA state-machine conditions execute with the patient object as the direct call context. The September 22 wake gate incorrectly treated that context as an argument array, which could terminate the WakeUp transition before the casualty became conscious.
@@ -20,7 +20,7 @@ These notes cover the cumulative backlog/stability work through the validated 1.
 - Clinical blockers are preserved: active anesthetic sedation, rocuronium paralysis, active seizure, cardiac arrest and other explicit forced-unconscious states still prevent inappropriate waking.
 - Runtime identity is **1.2.3 / B147 / rc4**.
 
-## 1.2.3 RC3 persistent Direct Pressure under CPR / BVM
+## Persistent Direct Pressure under CPR / BVM
 
 - Direct BVM start no longer tears down the provider's existing Direct Pressure episode on the same casualty.
 - Direct CPR and BVM entry both mark Direct Pressure as paused, retire only its visual hold generation, and leave the DP worker, inputs, target and accumulated hold state intact.
