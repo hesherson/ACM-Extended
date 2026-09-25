@@ -52,6 +52,20 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
 
     _medic setVariable ["ACME_headElev_holding", [_patient, _token], true];
 
+    // Match CPR/BVM's mouse-cancel behavior. Bind the handler to this exact continuous-action generation so a
+    // stale F0 callback is harmless even if CBA delivers it after another maneuver has taken ownership.
+    private _oldCancelID = _medic getVariable ["ACME_headElev_manualCancelID", -1];
+    if (!(_oldCancelID isEqualTo -1) && {!(_oldCancelID isEqualTo "")}) then {
+        [_oldCancelID, "keydown"] call CBA_fnc_removeKeyHandler;
+    };
+    private _continuousEpoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
+    private _cancelCode = compile format [
+        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch',-2]) == %1) then {missionNamespace setVariable ['ACM_core_ContinuousAction_Active',false];}; false",
+        _continuousEpoch
+    ];
+    private _cancelID = [0xF0, [false,false,false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
+    _medic setVariable ["ACME_headElev_manualCancelID", _cancelID, false];
+
     // Retire only an older manual-hold presentation owned by this provider.
     private _oldPFH = _medic getVariable ["ACME_headElev_manualAnimPFH", -1];
     if (_oldPFH isEqualType 0 && {_oldPFH >= 0}) then {[_oldPFH] call CBA_fnc_removePerFrameHandler;};
@@ -85,6 +99,11 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
             [_handle] call CBA_fnc_removePerFrameHandler;
             if (!isNull _m && {local _m} && {(_m getVariable ["ACME_headElev_manualAnimToken",""]) == _animToken}) then {
                 _m setVariable ["ACME_headElev_manualAnimPFH",-1,false];
+                private _cancelID = _m getVariable ["ACME_headElev_manualCancelID",-1];
+                if (!(_cancelID isEqualTo -1) && {!(_cancelID isEqualTo "")}) then {
+                    [_cancelID, "keydown"] call CBA_fnc_removeKeyHandler;
+                };
+                _m setVariable ["ACME_headElev_manualCancelID",-1,false];
             };
         };
 
@@ -143,6 +162,12 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
     private _pfh = _medic getVariable ["ACME_headElev_manualAnimPFH", -1];
     if (_pfh isEqualType 0 && {_pfh >= 0}) then {[_pfh] call CBA_fnc_removePerFrameHandler;};
     _medic setVariable ["ACME_headElev_manualAnimPFH", -1, false];
+
+    private _cancelID = _medic getVariable ["ACME_headElev_manualCancelID",-1];
+    if (!(_cancelID isEqualTo -1) && {!(_cancelID isEqualTo "")}) then {
+        [_cancelID, "keydown"] call CBA_fnc_removeKeyHandler;
+    };
+    _medic setVariable ["ACME_headElev_manualCancelID",-1,false];
 
     private _animToken = _medic getVariable ["ACME_headElev_manualAnimToken", ""];
     _medic setVariable ["ACME_headElev_manualAnimToken", "", false];
