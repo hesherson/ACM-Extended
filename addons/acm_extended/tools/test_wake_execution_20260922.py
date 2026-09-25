@@ -8,6 +8,10 @@ def source(name):
     text = (ROOT / 'addons/core/functions' / ('fnc_' + name + '.sqf')).read_text()
     text = text.replace('local _patient', '_patientLocal').replace('serverTime', 'CBA_missionTime')
     text = adapt(text)
+    # SQF-VM uses profileNamespace as the patient stand-in. Mirror the runtime OBJECT type check
+    # so direct CBA list-item calls exercise the same normalization branch in this fixture.
+    if name == 'canWake':
+        text = text.replace('_this isEqualType objNull', '_this isEqualType profileNamespace')
     # Namespace stand-ins have no public-broadcast argument, including multiline writes.
     return re.sub(r'(setVariable \[[^;]*\n[^;]*),\s*(?:true|false)(\];)', r'\1\2', text)
 
