@@ -15,6 +15,14 @@
  * Public: No
  */
 
+// Release while the original display still exists. Relying only on an added
+// display Unload handler can miss teardown through other UI/mod close paths.
+private _display = _this param [0, displayNull];
+if (!isNull _display && {!isNil "ACME_fnc_menuPoseStop"}) then {
+    private _owner = _display getVariable ["ACME_menuPoseOwner", []];
+    if (count _owner == 2) then {[_owner select 0, false, _owner select 1] call ACME_fnc_menuPoseStop;};
+};
+
 if (ACEGVAR(interact_menu,menuBackground) == 1) then {[QACEGVAR(medical_gui,id), false] call ACEFUNC(common,blurScreen)};
 if (ACEGVAR(interact_menu,menuBackground) == 2) then {(uiNamespace getVariable [QACEGVAR(interact_menu,menuBackground), displayNull]) closeDisplay 0};
 

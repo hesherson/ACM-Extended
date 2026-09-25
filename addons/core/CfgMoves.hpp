@@ -19,7 +19,9 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             //ConnectAs = "";
             ConnectTo[] = {"AmovPknlMstpSnonWnonDnon", 0.1};
             forceAim = 1;
-            //InterpolateFrom[] = {};
+            // playMoveNow must have an authored incoming edge. Priority 2's
+            // switchMove fallback bypasses interpolation and snaps the provider.
+            InterpolateFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.2};
             //InterpolateWith[] = {};
             InterpolateTo[] = {
                 "AmovPknlMstpSnonWnonDnon", 0.1,
@@ -28,6 +30,7 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             };
         };
         class ACM_ProneContinuous: ACM_GenericContinuous {
+            InterpolateFrom[] = {"AmovPpneMstpSnonWnonDnon", 0.2};
             file = "\a3\anims_f\data\anim\sdr\idl\pne\stp\non\non\AidlPpneMstpSnonWnonDnon_G02.rtm";
             ConnectTo[] = {"AmovPpneMstpSnonWnonDnon", 0.1};
             InterpolateTo[] = {"AmovPpneMstpSnonWnonDnon", 0.1, "Unconscious", 0.02};

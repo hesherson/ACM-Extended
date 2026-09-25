@@ -27,7 +27,7 @@ private _control = {
     _c
 };
 private _ctrlB = ["ACME_DebugMenuBackdrop"] call _control;
-_ctrlB ctrlSetBackgroundColor [0, 0, 0, 0.20];
+_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.86];
 _ctrlB ctrlEnable false;
 private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
 private _ctrlL = ["ACME_DebugMenuCtrlL"] call _control;
@@ -36,7 +36,7 @@ private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
 private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 
 // Slightly wider than the original 0.42 UI overlay. Two clinical columns retain its compact footprint;
-// the network block spans their combined width below them, inside the same lightly shaded panel.
+// the network block spans their combined width below them, inside the same original navy panel.
 private _gap = 0.010;
 private _totalW = 0.54 min (safeZoneWAbs - 0.020);
 private _w = (_totalW - _gap) / 2;
@@ -44,7 +44,9 @@ private _x = safeZoneXAbs + 0.008;
 private _y = safeZoneY + 0.012;
 private _headerH = 0.075 min (safeZoneH * 0.14);
 private _h = safeZoneH - _headerH - 0.030;
-private _clinicalH = _h * 0.65;
+// Normal clinical/network blocks contain about 32/20 lines including section gaps.
+// Give them proportional heights so the network block does not unnecessarily shrink the shared font.
+private _clinicalH = _h * 0.61;
 private _networkH = _h - _clinicalH - _gap;
 private _bodyY = _y + _headerH;
 _ctrlB ctrlSetPosition [_x, _y, _totalW, _headerH + _h];
@@ -57,8 +59,8 @@ _ctrlS ctrlSetPosition [_x, _bodyY + _clinicalH + _gap, _totalW, _networkH];
 _ctrlM ctrlSetPosition [_x, _y, safeZoneWAbs * 8, safeZoneH * 8];
 {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
 private _scale = 0.58;
-private _renderBlock = {
-    params ["_ctrl", "_rows", "_size", "_width", "_height"];
+private _measureBlock = {
+    params ["_rows", "_size", "_width", "_height"];
     private _body = _rows joinString "<br/>";
     private _template = "<t size='%1' font='EtelkaMonospacePro' shadow='1'>%2</t>";
     private _needW = 0.001;
@@ -68,8 +70,11 @@ private _renderBlock = {
     } forEach _rows;
     _ctrlM ctrlSetStructuredText parseText format [_template, _size, _body];
     private _needH = (ctrlTextHeight _ctrlM) max 0.001;
-    private _fit = _size * (1 min (((_width - 0.020) max 0.001) / _needW) min ((_height * 0.98) / _needH));
-    _ctrl ctrlSetStructuredText parseText format [_template, _fit, _body];
+    _size * (1 min (((_width - 0.020) max 0.001) / _needW) min ((_height * 0.98) / _needH))
+};
+private _renderBlock = {
+    params ["_ctrl", "_rows", "_size"];
+    _ctrl ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro' shadow='1'>%2</t>", _size, _rows joinString "<br/>"];
 };
 
 private _cTitle = "#D9A441";
@@ -91,40 +96,54 @@ private _safe = {
 };
 private _yn = {params ["_v"]; if (_v) then {"yes"} else {"no"};};
 private _ynCol = {params ["_v", ["_badWhenTrue", false]]; if (_badWhenTrue) exitWith {if (_v) then {_cBad} else {_cGood}}; if (_v) then {_cGood} else {_cMute};};
+// Format every section using the same label/value fields. Rows remain data until render time so
+// unusually long values can widen the shared field instead of shifting only that row's second column.
 private _padRight = {
     params ["_s", "_w"];
     if !(_s isEqualType "") then {_s = str _s;};
     while {count _s < _w} do {_s = _s + " ";};
-    if ((count _s) > _w) then {_s = _s select [0, _w];};
     _s
 };
 private _alignValue = {
-    params ["_v", ["_w", 5]];
+    params ["_v", ["_w", 12]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
-    // Match the original debug layout: right-align the integer/whole-token side so ones, tens and hundreds share
-    // one vertical column. Decimal/unit suffixes then trail to the right inside a constant-width value field.
-    private _integerW = (_w - 2) max 1;
-    private _dot = _s find ".";
-    private _integer = if (_dot > -1) then {_s select [0, _dot]} else {_s};
-    private _suffix = if (_dot > -1) then {_s select [_dot]} else {""};
-    while {count _integer < _integerW} do {_integer = " " + _integer;};
-    private _txt = _integer + _suffix;
-    while {count _txt < _w} do {_txt = _txt + " ";};
-    _txt
+    // Right-align the integer part of numbers, preserving decimal points and units. Text values are
+    // left-aligned; strings such as 120/80 and 99% use the same numeric anchor as ordinary vitals.
+    private _chars = toArray _s;
+    private _end = 0;
+    if ((count _chars) > 0 && {(_chars select 0) in [43, 45]}) then {_end = 1;};
+    private _firstDigit = _end;
+    while {_end < count _chars && {(_chars select _end) >= 48} && {(_chars select _end) <= 57}} do {_end = _end + 1;};
+    if (_end > _firstDigit) then {
+        private _integer = _s select [0, _end];
+        while {count _integer < 5} do {_integer = " " + _integer;};
+        _s = _integer + (_s select [_end]);
+    };
+    [_s, _w] call _padRight
 };
 private _pair = {
     params ["_a", "_av", "_ac", "_b", "_bv", "_bc"];
-    private _aTxt = [_a, 7] call _padRight;
-    private _bTxt = [_b, 7] call _padRight;
-    private _avTxt = [([_av, 5] call _alignValue)] call _safe;
-    private _bvTxt = [([_bv, 5] call _alignValue)] call _safe;
-    format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aTxt, _avTxt, _ac, _bTxt, _bvTxt, _bc, _cLabel]
+    [_a, _av, _ac, _b, _bv, _bc]
 };
 private _one = {
     params ["_a", "_av", "_ac"];
-    private _aTxt = [_a, 7] call _padRight;
-    private _avTxt = [([_av, 5] call _alignValue)] call _safe;
-    format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
+    [_a, _av, _ac]
+};
+private _formatRow = {
+    params ["_row", "_valueW"];
+    if (_row isEqualType "") exitWith {_row};
+    _row params ["_a", "_av", "_ac"];
+    private _aTxt = [([_a, 8] call _padRight)] call _safe;
+    private _avTxt = [([_av, _valueW] call _alignValue)] call _safe;
+    if (count _row == 3) exitWith {
+        format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
+    };
+    private _b = _row select 3;
+    private _bv = _row select 4;
+    private _bc = _row select 5;
+    private _bTxt = [([_b, 8] call _padRight)] call _safe;
+    private _bvTxt = [([_bv, _valueW] call _alignValue)] call _safe;
+    format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aTxt, _avTxt, _ac, _bTxt, _bvTxt, _bc, _cLabel]
 };
 private _sect = {params ["_s"]; format ["<br/><t color='%1'>%2</t>", _cSect, _s];};
 private _arr = {params ["_name"]; private _v = missionNamespace getVariable [_name, []]; if (_v isEqualType []) then {_v} else {[]};};
@@ -159,10 +178,26 @@ private _header = [
     format ["<t color='%1'>Patient: %2</t>", _cLabel, [_pName] call _safe]
 ];
 private _renderAll = {
-    [_ctrlH, _header, _scale * 1.10, _totalW, _headerH] call _renderBlock;
-    [_ctrlL, _left, _scale, _w, _clinicalH] call _renderBlock;
-    [_ctrlR, _right, _scale, _w, _clinicalH] call _renderBlock;
-    [_ctrlS, _network, _scale, _totalW, _networkH] call _renderBlock;
+    private _valueW = 12;
+    {
+        if (_x isEqualType [] && {count _x == 6}) then {
+            _valueW = _valueW max (count ([_x select 1, 0] call _alignValue)) max (count ([_x select 4, 0] call _alignValue));
+        };
+    } forEach (_left + _right + _network);
+    private _blocks = [
+        [_ctrlH, _header, _totalW, _headerH],
+        [_ctrlL, _left apply {[_x, _valueW] call _formatRow}, _w, _clinicalH],
+        [_ctrlR, _right apply {[_x, _valueW] call _formatRow}, _w, _clinicalH],
+        [_ctrlS, _network apply {[_x, _valueW] call _formatRow}, _totalW, _networkH]
+    ];
+    // One fit for the entire overlay, including the title and machine/transport rows. Independent
+    // fitting previously gave each block a different font size and broke their shared tab stops.
+    private _fit = _scale;
+    {
+        _x params ["_ctrl", "_rows", "_width", "_height"];
+        _fit = _fit min ([_rows, _scale, _width, _height] call _measureBlock);
+    } forEach _blocks;
+    {[_x select 0, _x select 1, _fit] call _renderBlock;} forEach _blocks;
 };
 _network pushBack (["MACHINE"] call _sect);
 private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
@@ -174,7 +209,7 @@ private _own = if (isNull _patient) then {-1} else {owner _patient};
 private _loc = !isNull _patient && {local _patient};
 private _netId = if (isNull _patient) then {"-"} else {netId _patient};
 _network pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
-_network pushBack format ["<t color='%1'>NetID</t> <t color='%2'>%3</t>", _cLabel, _cMute, [_netId] call _safe];
+_network pushBack (["NetID", _netId, _cMute] call _one);
 private _epoch = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_clinicalEpoch};
 _network pushBack (["Epoch", _epoch, _cLabel, "Alive", if (!isNull _patient && {alive _patient}) then {"yes"} else {"no"}, if (!isNull _patient && {alive _patient}) then {_cGood} else {_cWarn}] call _pair);
 
@@ -183,7 +218,7 @@ private _naChest = missionNamespace getVariable ["ACME_NA2_chestInstalled", fals
 private _naOwner = missionNamespace getVariable ["ACME_NA2_ownerInstalled", false];
 _network pushBack (["Chest", if (_naChest) then {"on"} else {"off"}, if (_naChest) then {_cGood} else {_cBad}, "Owner", if (_naOwner) then {"on"} else {"off"}, if (_naOwner) then {_cGood} else {_cBad}] call _pair);
 private _rev = missionNamespace getVariable ["ACME_networkAuditRevision", "none"];
-_network pushBack format ["<t color='%1'>Revision</t> <t color='%2'>%3</t>", _cLabel, _cMute, [_rev] call _safe];
+_network pushBack (["Revision", _rev, _cMute] call _one);
 
 _network pushBack (["CHEST-SEAL TRANSPORT"] call _sect);
 private _pend = 0;

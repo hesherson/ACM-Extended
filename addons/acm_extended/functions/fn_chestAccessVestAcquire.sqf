@@ -4,14 +4,16 @@
 //   provider fully holsters > medic4 body-handling theatre
 //   patient Grab/Hold > carrier removed and parked once beyond head > patient Release to supine
 //
-// Clinical actions never wait on provider animation bookkeeping. ACME_chestAccess_readyServer is casualty-side
-// transaction readiness only. If the provider pose cannot start, the patient/gear transaction still completes.
+// ACME_chestAccess_readyServer acknowledges casualty-side gear/body work. Check Breathing separately requires
+// its provider's frozen frame and acknowledges removal before lowering; other actions retain the final lower
+// boundary. A failed provider presentation does not prevent the patient/gear transaction from completing.
 params [
     ["_patient", objNull, [objNull]],
     ["_medic", objNull, [objNull]],
     ["_context", "access", [""]],
     ["_frontNormalized", false, [false]],
-    ["_treatmentClass", "", [""]]
+    ["_treatmentClass", "", [""]],
+    ["_preparationToken", "", [""]]
 ];
 if (isNull _patient || {!local _patient}) exitWith {false};
 _context = toLowerANSI _context;
@@ -25,7 +27,7 @@ private _readyVar = ["ACME_chestAccess_readyServer","ACME_CS_vestReadyServer"] s
 private _busyVar = ["ACME_chestAccess_vestBusy","ACME_CS_vestBusy"] select (_context == "chestseal");
 private _pfhVar = ["ACME_chestAccess_vestPFH","ACME_CS_vestPFH"] select (_context == "chestseal");
 private _frontBusyVar = ["ACME_chestAccess_frontBusy","ACME_CS_frontBusy"] select (_context == "chestseal");
-private _workspaceToken = _patient getVariable ["ACME_CS_PreparationToken", ""];
+private _workspaceToken = if (_context == "chestseal") then {_patient getVariable ["ACME_CS_PreparationToken", ""]} else {_preparationToken};
 if (_context == "chestseal" && {
     _workspaceToken == "" || {(_patient getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}
 }) exitWith {false};
@@ -71,15 +73,15 @@ if (!_frontNormalized) then {
             private _wait = (_patientRoll + 0.15) max (_providerRoll + 0.40);
 
             private _afterFrontRoll = {
-                params ["_p","_m","_ctx","_busyVar","_token","_treatmentClass"];
+                params ["_p","_m","_ctx","_busyVar","_token","_treatmentClass","_preparationToken"];
                 if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
                 _p setVariable [_busyVar,"",false];
                 if (_ctx != "chestseal") then {_p setVariable ["ACME_CS_facing","front",true];};
                 // A denied roll leaves the body posterior-up. Recheck physical
                 // eligibility/side instead of treating the nominal delay as a roll.
-                [_p,_m,_ctx,_ctx != "chestseal",_treatmentClass] call ACME_fnc_chestAccessVestAcquire;
+                [_p,_m,_ctx,_ctx != "chestseal",_treatmentClass,_preparationToken] call ACME_fnc_chestAccessVestAcquire;
             };
-            private _frontArgs = [_patient,_medic,_context,_frontBusyVar,_frontToken,_treatmentClass];
+            private _frontArgs = [_patient,_medic,_context,_frontBusyVar,_frontToken,_treatmentClass,_preparationToken];
             if (_context == "chestseal") then {
                 [{
                     params ["_args","","_earliest"];
@@ -327,7 +329,7 @@ _patient setVariable [_readyVar, -1, true];
 private _beginPatient = {
     params [
         "_p","_medic","_ctx","_savedVar","_propVar","_pfhVar","_busyVar","_readyVar","_token",
-        "_commit","_liftTime","_holdTime","_lowerTime","_removeAnimSpeed","_sequenceTime","_begin"
+        "_commit","_liftTime","_holdTime","_lowerTime","_removeAnimSpeed","_sequenceTime","_begin","_readyOnRemoval"
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
@@ -418,10 +420,13 @@ private _beginPatient = {
     // Start the lower interval from the callback that actually removes the
     // carrier. A late lift callback must not share a frame with its completion.
     [{
-        params ["_p","_medic","_ctx","_savedVar","_propVar","_pfhVar","_busyVar","_readyVar","_token","_commit","_lowerTime","_finish"];
+        params ["_p","_medic","_ctx","_savedVar","_propVar","_pfhVar","_busyVar","_readyVar","_token","_commit","_lowerTime","_finish","_readyOnRemoval"];
         if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
-        [_p,_ctx,_savedVar,_propVar,_pfhVar] call _commit;
+        private _removed = [_p,_ctx,_savedVar,_propVar,_pfhVar] call _commit;
+        // Check Breathing retains the provider's frozen hold and starts its native timer at real carrier removal.
+        // Other chest actions keep their existing readiness-after-lowering boundary.
+        if (_readyOnRemoval && {_removed}) then {_p setVariable [_readyVar, serverTime, true];};
 
         if (alive _p && {isNull objectParent _p}) then {
             private _releaseClaim = [_p, "ACME_HeadElevPatientRelease", 2, "chest-access-vest", _medic, _lowerTime + 0.4, 4, _token]
@@ -430,14 +435,14 @@ private _beginPatient = {
                 [_p, _lowerTime + 0.2] call ACME_fnc_headElevPinPose;
             };
         };
-        if (_ctx == "chestseal") then {
+        if (_ctx == "chestseal" || {_readyOnRemoval}) then {
             [_finish, [_p,_medic,_ctx,_busyVar,_readyVar,_token,_finish], _lowerTime] call CBA_fnc_waitAndExecute;
         };
-    }, [_p,_medic,_ctx,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,_commit,_lowerTime,_finish],
+    }, [_p,_medic,_ctx,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,_commit,_lowerTime,_finish,_readyOnRemoval],
        _liftTime + _holdTime] call CBA_fnc_waitAndExecute;
 
     // Existing non-modal access transactions retain their established timing.
-    if (_ctx != "chestseal") then {
+    if (_ctx != "chestseal" && {!_readyOnRemoval}) then {
         [_finish, [_p,_medic,_ctx,_busyVar,_readyVar,_token,_finish], _sequenceTime] call CBA_fnc_waitAndExecute;
 
         [{
@@ -456,13 +461,13 @@ private _beginPatient = {
 private _startProvider = {
     params [
         "_p","_medic","_ctx","_savedVar","_propVar","_pfhVar","_busyVar","_readyVar","_token",
-        "_commit","_liftTime","_holdTime","_lowerTime","_removeAnimSpeed","_sequenceTime","_beginPatient","_preparationToken"
+        "_commit","_liftTime","_holdTime","_lowerTime","_removeAnimSpeed","_sequenceTime","_beginPatient","_preparationToken","_readyOnRemoval"
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
     private _args = [
         _p,_medic,_ctx,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,
-        _commit,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient
+        _commit,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient,_readyOnRemoval
     ];
 
     if (isNull _medic || {_medic isEqualTo _p} || {!alive _medic}) exitWith {
@@ -490,7 +495,7 @@ private _startProvider = {
 };
 private _providerArgs = [
     _patient,_medic,_context,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,
-    _commitRemoval,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient,_workspaceToken
+    _commitRemoval,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient,_workspaceToken,_treatmentClass == "checkbreathing"
 ];
 if (_context == "chestseal") then {
     [{

@@ -43,6 +43,10 @@ _medic setVariable [QGVAR(ContinuousAction_LastSeen), CBA_missionTime, true];
 private _isDialog = (_dialogID != -1);
 GVAR(ContinuousAction_IsDialog) = _isDialog;
 GVAR(ContinuousAction_Active) = true;
+// This accepted maneuver is patient-specific care, so its reopened medical menu
+// may retain ACM's animated crouch. Merely opening a menu never enables it.
+_medic setVariable ["ACME_menuPoseAfterTreatment", _patient];
+if (!isNil "ACME_fnc_menuPoseStop") then {[_medic, true] call ACME_fnc_menuPoseStop;};
 GVAR(ContinuousAction_ShouldReopen) = false;
 
 ACEGVAR(medical_gui,pendingReopen) = false; // Prevent medical menu from reopening
@@ -104,35 +108,35 @@ private _isProne = (_medicStance == "PRONE") && _allowProne;
 if (_notInVehicle && {!_suppressProviderAnim}) then {
     switch (stance _medic) do {
         case "STAND": {
-            [_medic, "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 2] call ACEFUNC(common,doAnimation); // 0.650
+            [_medic, "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1] call ACEFUNC(common,doAnimation); // 0.650
 
             [{
                 params ["_medic", "_epoch", "_playerBound"];
                 if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
                     && {local _medic} && {alive _medic} && {isNull objectParent _medic}
                     && {!_playerBound || {_medic isEqualTo ACE_player}}) then {
-                    [_medic, "ACM_GenericContinuous", 2] call ACEFUNC(common,doAnimation);
+                    [_medic, "ACM_GenericContinuous", 1] call ACEFUNC(common,doAnimation);
                 };
             }, [_medic, _epoch, _playerBound], 0.65 / _choreographyRate] call CBA_fnc_waitAndExecute;
         };
         case "PRONE": {
             if (_allowProne) then {
-                [_medic, "ACM_ProneContinuous", 2] call ACEFUNC(common,doAnimation);
+                [_medic, "ACM_ProneContinuous", 1] call ACEFUNC(common,doAnimation);
             } else {
-                [_medic, "AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 2] call ACEFUNC(common,doAnimation); // 1.116
+                [_medic, "AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1] call ACEFUNC(common,doAnimation); // 1.116
 
                 [{
                     params ["_medic", "_epoch", "_playerBound"];
                     if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
                     && {local _medic} && {alive _medic} && {isNull objectParent _medic}
                     && {!_playerBound || {_medic isEqualTo ACE_player}}) then {
-                            [_medic, "ACM_GenericContinuous", 2] call ACEFUNC(common,doAnimation);
+                            [_medic, "ACM_GenericContinuous", 1] call ACEFUNC(common,doAnimation);
                     };
                 }, [_medic, _epoch, _playerBound], 1.116 / _choreographyRate] call CBA_fnc_waitAndExecute;
             };
         };
         case "CROUCH": {
-            [_medic, "ACM_GenericContinuous", 2] call ACEFUNC(common,doAnimation);
+            [_medic, "ACM_GenericContinuous", 1] call ACEFUNC(common,doAnimation);
         };
         default {};
     };
@@ -207,7 +211,7 @@ private _pfh = [{
             [QACEGVAR(common,setAnimSpeedCoef), [_medic, _rate]] call CBA_fnc_globalEvent;
             _medic setUnitPos "AUTO";
             private _animation = ["AmovPknlMstpSnonWnonDnon", "AmovPpneMstpSnonWnonDnon"] select _isProne;
-            [_medic, _animation, 2] call ACEFUNC(common,doAnimation);
+            [_medic, _animation, 1] call ACEFUNC(common,doAnimation);
             [{
                 params ["_medic", "_epoch", "_poseEpoch"];
                 if (isNull _medic || {!local _medic}) exitWith {};

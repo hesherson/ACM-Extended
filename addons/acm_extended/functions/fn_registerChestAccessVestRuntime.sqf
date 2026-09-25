@@ -6,6 +6,22 @@ private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest"] + _
 missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
 missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClasses];
 
+// The clinical timer owns Check Breathing's frozen provider episode. No wall-clock pose exit may end it early.
+{
+    [_x, {
+        params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
+        if (isNull _medic || {!local _medic} || {(toLowerANSI _classname) != "checkbreathing"}) exitWith {};
+        private _record = _medic getVariable ["ACME_checkBreathingPose", []];
+        if ((_record param [0, objNull]) isNotEqualTo _patient) exitWith {};
+        _medic setVariable ["ACME_checkBreathingPose", [], false];
+        private _entry = _medic getVariable ["ACME_chestAccessProvider", []];
+        if ((_entry param [0, objNull]) isEqualTo _patient
+            && {(_entry param [1, -1]) == (_record param [1, -2])}) then {
+            [_medic, _patient, "stop", false, _entry param [2, ""]] call ACME_fnc_chestAccessVestProvider;
+        };
+    }] call CBA_fnc_addEventHandler;
+} forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];
+
 ["ace_treatmentStarted", {
     params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
     if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {};

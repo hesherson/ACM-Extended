@@ -89,6 +89,11 @@ private _prepUntil = _actionStarted + (_prepDelay max 0);
 private _state = [_epoch, _mode, _main, -1, _actionStarted, -1, clientOwner, _exclusion,
     _prepUntil, _window, _actionStarted, _holdAt, -1, -1, -1, _stopAfterHold, _upright, _rate];
 _medic setVariable ["ACME_treatmentPoseState", _state];
+// An accepted physical examination/preparation is actual care; merely viewing
+// the initial medical menu never reaches this controller.
+if (!isNull _patient && {_patient isNotEqualTo _medic}) then {
+    _medic setVariable ["ACME_menuPoseAfterTreatment", _patient];
+};
 
 // Retire stale ACE/ACME pose requests. This episode is the only ACME owner.
 _medic setVariable ["ACME_animQ", []];
@@ -173,7 +178,8 @@ private _pfh = [{
         case -1: {
             // Do not enter the medical RTM until both the logical selection and the visible skeleton are truly
             // empty-handed. In particular, currentWeapon can clear before a sidearm has visually left the hand.
-            private _visuallyEmpty = ((_current find "wnon") >= 0) && {((_current find "snon") >= 0)};
+            private _visuallyEmpty = (((_current find "wnon") >= 0) && {((_current find "snon") >= 0)})
+                || {_current in ["acm_genericcontinuous", "acm_pronecontinuous"]};
             private _weaponReady = (currentWeapon _medic == "") && {_visuallyEmpty};
             if (_weaponReady && {_now >= _waitUntil}) then {
                 [_medic, _main, _state, _fnStartMain] call _fnEnter;

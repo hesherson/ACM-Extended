@@ -48,3 +48,26 @@
     // this also fixes a real defect: the PFH only started when hardcore was ALREADY on at the moment the menu
     // opened, so toggling the setting with the menu up appeared to do nothing.
 }] call CBA_fnc_addEventHandler;
+
+// Eligibility is patient-specific and only follows a real started treatment. Menu
+// inspection and failed availability checks do not turn first contact into empty hands.
+["ace_treatmentStarted", {
+    params ["_medic", "_patient", ["_bodyPart", ""], ["_classname", ""]];
+    if (!isNull _medic && {local _medic} && {!isNull _patient} && {_medic isNotEqualTo _patient}) then {
+        _medic setVariable ["ACME_menuPoseAfterTreatment", _patient];
+        _medic setVariable ["ACME_menuPoseCare", [_patient, _classname]];
+    };
+}] call CBA_fnc_addEventHandler;
+
+// Some treatments close their source menu before their next-frame pose starts.
+// Re-arm only the matching, genuinely started care on completion/cancellation.
+{
+    [_x, {
+        params ["_medic", "_patient", ["_bodyPart", ""], ["_classname", ""]];
+        if (isNull _medic || {!local _medic}) exitWith {};
+        if ((_medic getVariable ["ACME_menuPoseCare", []]) isEqualTo [_patient, _classname]) then {
+            _medic setVariable ["ACME_menuPoseCare", []];
+            _medic setVariable ["ACME_menuPoseAfterTreatment", _patient];
+        };
+    }] call CBA_fnc_addEventHandler;
+} forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];

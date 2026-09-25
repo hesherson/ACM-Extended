@@ -9,6 +9,9 @@ def menu_code(name):
     # Display/object commands are the only substituted boundaries. All episode,
     # provider-ownership and callback logic remains the checked-out SQF source.
     source = source.replace('stance _medic', '_menuStance')
+    source = source.replace('animationState _medic', '_menuAnimation')
+    for command in ('primaryWeapon', 'secondaryWeapon', 'handgunWeapon', 'binocular', 'currentWeapon'):
+        source = source.replace(command + ' _medic', '_' + command)
     source = source.replace('_patient isKindOf "CAManBase"', 'true')
     source = source.replace('_medic setUnitPos "MIDDLE";', '_stanceMiddle=true;')
     source = source.replace('_display displayAddEventHandler', '_display setVariable')
@@ -20,6 +23,10 @@ def menu_code(name):
 def setup():
     return """
         private _menuStance="CROUCH";
+        private _menuAnimation="amovpknlmstpsnonwnondnon";
+        private _primaryWeapon=""; private _secondaryWeapon="";
+        private _handgunWeapon=""; private _binocular=""; private _currentWeapon="";
+        _medic setVariable ["ACME_menuPoseAfterTreatment",_patient];
         private _stanceMiddle=false;
         private _display=missionNamespace;
         private _prepDelay=.2;
@@ -27,7 +34,8 @@ def setup():
         ACME_fnc_animBlocked={false};
         ace_common_fnc_isSwimming={false};
         ACME_fnc_medicAnimationPrep={_prepDelay};
-        ACME_fnc_doAnim={_moves pushBack (_this select 1);};
+        private _priorities=[];
+        ACME_fnc_doAnim={_moves pushBack (_this select 1); _priorities pushBack (_this select 2);};
         ACME_fnc_syncPremixedBags={};
         CBA_fnc_waitAndExecute={_waits pushBack _this;};
         CBA_fnc_globalEvent={_events pushBack _this;};

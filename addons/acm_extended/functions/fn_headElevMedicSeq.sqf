@@ -69,7 +69,7 @@ private _menuPatient = missionNamespace getVariable ["ace_medical_gui_target", o
     disableSerialization;
 
     private _finalize = {
-        params ["_u", "_pfh", "_rest", "_token"];
+        params ["_u", "_pfh", "_rest", "_token", ["_handoff", false]];
         [_pfh] call CBA_fnc_removePerFrameHandler;
         if (isNull _u) exitWith {};
         // A newer provider sequence owns the unit now. Retire this PFH without touching the new sequence.
@@ -81,14 +81,17 @@ private _menuPatient = missionNamespace getVariable ["ace_medical_gui_target", o
         if ((_u getVariable ["ACME_DP_Active", false]) && {_dpPauseClass in ["acme_elevatehead", "acme_lowerhead"]}) then {
             _u setVariable ["ACME_DP_Paused", false, false];
             _u setVariable ["ACME_DP_PauseTreatmentClass", "", false];
-            _u setVariable ["ACME_DP_TreatmentBusy", false, false];
+            // The new treatment's Started event already owns Busy on a handoff.
+            // Retire only this old head-position pause; preserve the new treatment's exclusion.
+            if (!_handoff) then {_u setVariable ["ACME_DP_TreatmentBusy", false, false];};
             _u setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
             _u setVariable ["ACME_DP_LastPoseAssert", 0, false];
         };
         _u setVariable ["ACME_headElev_pinToken", (_u getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
         // Local-only bookkeeping above must retire even after locality is lost, so it cannot
         // strand this machine on a later return. Only the current owner may publish animation cleanup.
-        if (!local _u) exitWith {};
+        if (!local _u || {_handoff}) exitWith {};
+        if ([_u] call ACME_fnc_providerStanceOwned) exitWith {};
         ["ace_common_setAnimSpeedCoef", [_u, 1]] call CBA_fnc_globalEvent;
 
         if (alive _u && {local _u} && {isNull objectParent _u}
@@ -126,6 +129,20 @@ private _menuPatient = missionNamespace getVariable ["ace_medical_gui_target", o
     if (!alive _u || {!local _u} || {_u getVariable ["ACE_isUnconscious", false]}
         || {[_u] call ACME_fnc_animBlocked}) exitWith {
         [_u, _pfh, _rest, _token] call _finalize;
+    };
+
+    // A new treatment may close the menu while the last Putdown frames are still running.
+    // Retire this old sequence without its normal crouch/speed reset; that reset used to
+    // overwrite the newly accepted airway hold or minigame and could leave its animation frozen.
+    private _continuousOwns = !((_u getVariable ["ACM_core_ContinuousAction_Session", []]) isEqualTo [])
+        && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]};
+    private _treatmentOwns = (_u getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []
+        || {(_u getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []}
+        || {_u getVariable ["ACME_treatmentPreflightActive", false]}
+        || {_u getVariable ["ACME_chestAccessPreflightActive", false]}
+        || {_u getVariable ["ACM_circulation_isPerformingCPR", false]};
+    if (_continuousOwns || {_treatmentOwns}) exitWith {
+        [_u, _pfh, _rest, _token, true] call _finalize;
     };
 
     // Check token/life/locality above before cancellation can retire any controller.

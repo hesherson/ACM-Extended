@@ -12,11 +12,18 @@ _medic setVariable ["ACME_headElev_medicAnimToken", _cancelToken, false];
 _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
 _medic setVariable ["ACME_headElev_seqMode", "", false];
 
+private _handoff = (_medic getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []
+    || {(_medic getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []}
+    || {_medic getVariable ["ACME_treatmentPreflightActive", false]}
+    || {_medic getVariable ["ACME_chestAccessPreflightActive", false]}
+    || {_medic getVariable ["ACM_circulation_isPerformingCPR", false]}
+    || {(!((_medic getVariable ["ACM_core_ContinuousAction_Session", []]) isEqualTo []))
+        && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}};
 private _dpPauseClass = _medic getVariable ["ACME_DP_PauseTreatmentClass", ""];
 if ((_medic getVariable ["ACME_DP_Active", false]) && {_dpPauseClass in ["acme_elevatehead", "acme_lowerhead"]}) then {
     _medic setVariable ["ACME_DP_Paused", false, false];
     _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
-    _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
+    if (!_handoff) then {_medic setVariable ["ACME_DP_TreatmentBusy", false, false];};
     _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
     _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
 };
@@ -29,6 +36,9 @@ if (_kh >= 0 && {!isNull _disp}) then {
 _medic setVariable ["ACME_headElev_seqKey", -1, false];
 
 _medic setVariable ["ACME_headElev_pinToken", (_medic getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
+// Closing the source menu can be the start of another treatment. This cancelled
+// head-position sequence has retired its state and must now yield to the new owner.
+if ([_medic] call ACME_fnc_providerStanceOwned) exitWith {};
 ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
 
 // Retire the cancelled controller above, but leave an unconscious provider's pose to ACE.

@@ -4,7 +4,8 @@ params [
     ["_medic", objNull, [objNull]],
     ["_id", "", [""]],
     ["_start", true, [false]],
-    ["_classname", "", [""]]
+    ["_classname", "", [""]],
+    ["_preparationToken", "", [""]]
 ];
 if (isNull _patient || {_id == ""}) exitWith {};
 if (!local _patient) exitWith {[_patient, "chestAccessVestEvent", _this] call ACME_fnc_ownerDispatch;};
@@ -33,7 +34,7 @@ _patient setVariable ["ACME_Thora_ChestAccessActive", _thoraActive, true];
 
 if (_start) then {
     private _busyBefore = _patient getVariable ["ACME_chestAccess_vestBusy", ""];
-    [_patient, _medic, "access", false, _classname] call ACME_fnc_chestAccessVestAcquire;
+    [_patient, _medic, "access", false, _classname, _preparationToken] call ACME_fnc_chestAccessVestAcquire;
 
     // A new intervention outranks a carrier-return animation, but do not tear the patient's current RTM/physics
     // out from underneath it. Queue the same exact lease immediately behind the short restore. The lease-id check
@@ -46,14 +47,16 @@ if (_start) then {
                 || {!(_id in keys (_p getVariable ["ACME_chestAccess_leases", createHashMap]))}
                 || {(_p getVariable ["ACME_chestAccess_vestBusy", ""]) == ""}
         }, {
-            params ["_p","_id","_m","_class"];
+            params ["_p","_id","_m","_class","_preparationToken"];
             if (isNull _p || {!local _p}) exitWith {};
             if !(_id in keys (_p getVariable ["ACME_chestAccess_leases", createHashMap])) exitWith {};
-            [_p, _m, "access", false, _class] call ACME_fnc_chestAccessVestAcquire;
-        }, [_patient,_id,_medic,_classname], 2.5] call CBA_fnc_waitUntilAndExecute;
+            [_p, _m, "access", false, _class, _preparationToken] call ACME_fnc_chestAccessVestAcquire;
+        }, [_patient,_id,_medic,_classname,_preparationToken], 2.5] call CBA_fnc_waitUntilAndExecute;
     };
 } else {
     if ((count _leases) == 0) then {
+        // Retire the front-roll continuation too: an old roll completion cannot reacquire gear after cancel.
+        _patient setVariable ["ACME_chestAccess_frontBusy", "", false];
         // Cancel only an unfinished ACCESS removal episode. Clearing its exact busy token makes every delayed
         // lift/remove/lower callback fail its generation check before it can touch gear or patient animation.
         private _busy = _patient getVariable ["ACME_chestAccess_vestBusy", ""];

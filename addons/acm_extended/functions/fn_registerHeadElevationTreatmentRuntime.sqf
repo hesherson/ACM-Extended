@@ -7,6 +7,9 @@
     params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
     if (isNull _patient || {!local _medic} || {!(_patient getVariable ["ACME_headElevated", false])}) exitWith {};
     private _classLC = toLowerANSI _classname;
+    // HTCL changes the airway, not the torso posture. In particular, another medic may
+    // maintain manual support while this provider holds the airway. Never borrow a flat lease.
+    if (_classLC == "beginheadtiltchinlift") exitWith {};
     // Recovery position and CPR REPLACE Semi-Fowler. They never borrow a temporary flat-treatment lease and
     // never auto-resume. If chest preparation already laid the casualty flat, permanent cancellation detects the
     // suspended state and does not replay another release animation.

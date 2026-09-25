@@ -24,6 +24,11 @@ if (_op == "stop") exitWith {
     private _token = _entry param [2, ""];
     private _pose = _medic getVariable ["ACME_treatmentPoseState", []];
 
+    // Callers resolve their already-validated preflight/clinical episode to its
+    // provider token before stopping. Never infer ownership from patient identity:
+    // an old same-patient callback may arrive while a newer preparation is running.
+    if (_episodeToken == "" || {_episodeToken != _token}) exitWith {-1};
+
     if ((_entryPatient isEqualTo _patient)
         && {_epoch >= 0}
         && {(_pose param [0, -2]) == _epoch}
@@ -59,14 +64,24 @@ if (_chestSealEntry && {
     || {(uiNamespace getVariable ["ACME_CS_EntryCancelToken", ""]) == _preparationToken}
 }) exitWith {-1};
 
+// Ordinary chest-access start is routed through the casualty owner as well. Its
+// preflight can be cancelled or handed to clinical work before this packet reaches
+// the provider. Other callers (for example thoracostomy) have no preflight token.
+if ((_episodeToken find "vest:access:") == 0 && {_preparationToken != ""} && {
+    !(_medic getVariable ["ACME_chestAccessPreflightActive", false])
+    || {(_medic getVariable ["ACME_chestAccessPreflightToken", ""]) != _preparationToken}
+    || {((_medic getVariable ["ACME_chestAccess_treatment", []]) param [0, objNull]) isNotEqualTo _patient}
+}) exitWith {-1};
+
 private _armReadyProbe = {
     params ["_m","_epoch","_token"];
     if (_token == "") exitWith {};
 
     _m setVariable ["ACME_chestAccessProviderReady", [_token, -1], true];
+    private _requiredStage = [1, 3] select (((_m getVariable ["ACME_chestAccess_treatment", []]) param [1, ""]) == "checkbreathing");
 
     [{
-        params ["_m","_epoch","_token"];
+        params ["_m","_epoch","_token","_requiredStage"];
         if (isNull _m || {!local _m} || {!alive _m}
             || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {true};
 
@@ -76,20 +91,21 @@ private _armReadyProbe = {
         private _state = _m getVariable ["ACME_treatmentPoseState", []];
         (_state param [0,-2]) == _epoch
             && {(_state param [1,""]) == "chestAccess"}
-            && {(_state param [3,-2]) >= 1}
+            && {(_state param [3,-2]) >= _requiredStage}
             && {(toLowerANSI animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"}
     }, {
-        params ["_m","_epoch","_token"];
+        params ["_m","_epoch","_token","_requiredStage"];
         if (isNull _m || {!local _m} || {!alive _m}
             || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {};
         private _entry = _m getVariable ["ACME_chestAccessProvider", []];
         private _state = _m getVariable ["ACME_treatmentPoseState", []];
         if ((_entry param [2,""]) == _token && {(_entry param [1,-1]) == _epoch}
             && {(_state param [0,-2]) == _epoch} && {(_state param [1,""]) == "chestAccess"}
+            && {(_state param [3,-2]) >= _requiredStage}
             && {(toLowerANSI animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"}) then {
             _m setVariable ["ACME_chestAccessProviderReady", [_token, serverTime], true];
         };
-    }, [_m,_epoch,_token], 4.5, {
+    }, [_m,_epoch,_token,_requiredStage], 4.5, {
         params ["_m","_epoch","_token"];
         if (isNull _m || {!local _m} || {!alive _m}
             || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {};

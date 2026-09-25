@@ -34,6 +34,9 @@ class ACEGVAR(medical_treatment,actions) {
         treatmentTime = 0.001;
         condition = QUOTE(GVAR(enable) && !(_patient call ACEFUNC(common,isAwake)) && !(_patient getVariable [ARR_2(QQGVAR(HeadTilt_State),false)]) && (_patient getVariable [ARR_2(QQGVAR(AirwayItem_Oral),'')] != 'SGA'));
         callbackSuccess = QUOTE([ARR_2(_medic,_patient)] call FUNC(beginHeadTiltChinLift));
+        // Head tilt is compatible with supported Semi-Fowler. The inherited roll flag
+        // previously lowered the casualty and started a competing provider roll for a 1 ms launcher.
+        ACM_rollToBack = 0;
         ACM_cancelRecovery = 1;
     };
 
