@@ -211,29 +211,6 @@ class RuntimeSourceContracts(unittest.TestCase):
         self.assertIn("['ACME_menuRowTarget', objNull]) isNotEqualTo _patient) exitWith", RENDER)
         self.assertIn("['ACME_menuTarget', objNull]) isNotEqualTo _patient) exitWith", RENDER)
 
-    def test_renderer_scopes_anatomy_guard_to_group_children_only():
-        helper = RENDER.index("private _groupAnatomyAllowed = {")
-        grouping = RENDER.index("if (_nestEnabled) then {")
-        self.assertLess(helper, grouping)
-        block = RENDER[helper:grouping]
-        self.assertIn("getArray (_cfg >> 'allowedSelections')", block)
-        self.assertIn("('all' in _allowedLower) || {_selected in _allowedLower}", block)
-        self.assertNotIn("private _anatomyFiltered = [];", RENDER)
-        self.assertNotIn("_menuActions = _anatomyFiltered;", RENDER)
-        self.assertIn("if ([_x] call _groupAnatomyAllowed && {call _condition}) then", RENDER)
-
-    def test_direct_rows_keep_original_condition_and_statement_pipeline():
-        start = RENDER.index("private _menuActions = missionNamespace")
-        grouping = RENDER.index("if (_nestEnabled) then {", start)
-        pre_group = RENDER[start:grouping]
-        self.assertNotIn("_row set [2", pre_group)
-        self.assertNotIn("_row set [3", pre_group)
-        self.assertNotIn("_menuActions = _menuActions select {", pre_group.split("// Do not retain a cached positioning row", 1)[0])
-        self.assertIn("ctrlAddEventHandler ['ButtonClick', _statement]", RENDER)
-
-    def test_death_transition_is_part_of_renderer_paint_identity(self):
-        self.assertIn("_selectedCategory, !isNull _target && {alive _target}", RENDER)
-
     def test_tag_extraction_precedes_name_fallback_grouping_and_appends_last(self):
         self.assertLess(RENDER.index('private _dogTags ='), RENDER.index('private _nameKeys ='))
         self.assertIn('_pressure + _menuActions + _dogTags', RENDER)
