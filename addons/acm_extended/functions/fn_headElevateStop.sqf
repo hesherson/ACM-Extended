@@ -53,44 +53,17 @@ if !(_patient getVariable ["ACME_headElevated", false]) exitWith {
     [_patient] call ACME_fnc_chestAccessVestRestore;
 };
 
-// Lowering Semi-Fowler also starts from the back. If something externally left the casualty posterior-up, roll
-// front/supine first and only then play ACME_HeadElevPatientRelease.
-private _actualBeforeLower = [_patient, _patient getVariable ["ACME_CS_facing","front"]]
-    call ACME_fnc_chestSealActualSide;
-private _needFrontFirst = !_frontNormalized && {_actualBeforeLower != "front"};
+// An active Semi-Fowler placement is already anterior-up by construction. Lowering must never classify the
+// transient release geometry as prone and start a second body roll. The release animation itself returns the
+// casualty directly to the stable face-up rest.
+_patient setVariable ["ACME_CS_facing","front",true];
 
-if (_needFrontFirst) exitWith {
-    private _delay = 0.08;
-
-    if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
-        [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
-        _delay = (_rollTime max 0.1) + 0.08;
-    } else {
-        private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
-        _patient setVariable ["ACME_CS_facing","front",true];
-        ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
-    };
-
-    // The roll belongs to this placement. A later elevation or a completed lower
-    // must not be retired by this old retry, even when the patient is local again.
-    private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
-    [{
-        params ["_m","_p","_quiet","_poseToken","_preserveSupportForChest"];
-        if (isNull _p || {!local _p}) exitWith {};
-        if ((_p getVariable ["ACME_headElev_poseToken", ""]) != _poseToken) exitWith {};
-        _p setVariable ["ACME_CS_facing","front",true];
-        [_m,_p,_quiet,true,_preserveSupportForChest] call ACME_fnc_headElevateStop;
-    }, [_medic,_patient,_quiet,_poseToken,_preserveSupportForChest], _delay] call CBA_fnc_waitAndExecute;
-};
-
-// An explicit supported Lower Head waits for the medic's actual reach. Automatic suspension,
-// manual-hold release and CPR still use their existing patient-only handoff.
-if (!_providerReady && {!_quiet} && {!_wasSuspended} && {!_wasManualUnsupported}
+// Supported Lower Head starts provider and patient motion on the same frame. Provider theatre does not gate
+// patient state or the lay-flat animation. Automatic suspension and manual-held Semi-Fowler keep their own paths.
+if (!_quiet && {!_wasSuspended} && {!_wasManualUnsupported}
     && {!isNull _medic} && {!([_medic] call ACME_fnc_animBlocked)}
-    && {!([_patient] call ACME_fnc_animBlocked)}) exitWith {
-    [_medic, "lower", _patient, _patient getVariable ["ACME_headElev_poseToken", ""]] call ACME_fnc_headElevMedicSeq;
+    && {!([_patient] call ACME_fnc_animBlocked)}) then {
+    [_medic, "lower"] call ACME_fnc_headElevMedicSeq;
 };
 
 _patient setVariable ["ACME_CS_facing","front",true];
