@@ -103,5 +103,62 @@ def test_medic_thoracostomy_and_doctor_only_chest_tube_tray():
 
 def test_hotfix_keeps_stable_123_debug_identity():
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_buildBatch = "B151";' in startup
+    assert 'ACME_buildBatch = "B152";' in startup
     assert 'ACME_debugRevision = "";' in startup
+
+
+def test_patient_spawner_equips_plate_carrier_inside_spawn_transaction():
+    generated = addon("mission", "functions/fnc_generatePatient.sqf")
+    custom = addon("mission", "functions/fnc_spawnCustomPatient.sqf")
+    for src in (generated, custom):
+        assert 'private _patient = GVAR(TrainingCasualtyGroup) createUnit' in src
+        assert 'ACME_patientSpawnerVestClass' in src
+        assert '"V_PlateCarrier1_rgr"' in src
+        assert '_patient addVest _spawnVestClass;' in src
+        assert src.index('_patient addVest _spawnVestClass;') < src.index('ACEFUNC(medical,setUnconscious)')
+
+
+def test_unsupported_semifowler_is_provider_held_active_maneuver():
+    start = acme("functions/fn_headElevateStart.sqf")
+    hold = acme("functions/fn_headElevHoldStart.sqf")
+    cont = addon("core", "functions/fnc_beginContinuousAction.sqf")
+    stop = acme("functions/fn_headElevateStop.sqf")
+
+    assert 'ACME_headElev_manualUnsupported' in start
+    assert '"AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown"' in hold
+    assert '"AinvPknlMstpSnonWnonDnon_Putdown"' in hold
+    assert '"AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon"' in hold
+    assert 'setAnimSpeedCoef 0' in hold
+    assert 'ACME_headElev_manualAnimPFH' in hold
+    assert 'inputAction _x' in hold
+    assert 'ACM_core_fnc_cprActive' in hold
+    assert 'ACM_core_fnc_bvmActive' in hold
+    assert '}, false, -1, true] call ACM_core_fnc_beginContinuousAction;' in hold
+
+    assert '["_suppressProviderAnim", false, [false]]' in cont
+    assert '_notInVehicle && {!_suppressProviderAnim}' in cont
+    assert '&& {!_suppressProviderAnim}) then {' in cont
+
+    assert 'private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];' in stop
+    assert 'private _visibleLower = !_quiet && {!_wasSuspended}' in stop
+
+
+def test_manual_semifowler_never_auto_resumes_after_provider_yields():
+    resume = acme("functions/fn_headElevTryResume.sqf")
+    runtime = acme("functions/fn_registerHeadElevationTreatmentRuntime.sqf")
+    bvm = addon("breathing", "functions/fnc_useBVM.sqf")
+
+    assert 'if (_patient getVariable ["ACME_headElev_manualUnsupported", false]) exitWith {' in resume
+    assert 'if (_patient getVariable ["ACME_headElev_manualUnsupported", false]) exitWith {' in runtime
+    assert 'ACME_headElev_manualUnsupported' in bvm
+    assert '"headElevStop"' in bvm
+
+
+def test_direct_cpr_waits_for_single_semifowler_lower_and_never_resumes_it():
+    cpr = addon("circulation", "functions/fnc_beginCPR.sqf")
+    assert '["_headLowered", false, [false]]' in cpr
+    assert 'ACME_headElevated' in cpr
+    assert 'ACME_headElev_Suspended' in cpr
+    assert 'ACME_headElev_lowerAnimTime' in cpr
+    assert '[_m,_p,true] call ACM_circulation_fnc_beginCPR;' in cpr
+    assert '"headElevStop", [_medic, _patient, false, false]' in cpr
