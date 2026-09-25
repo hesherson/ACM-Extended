@@ -46,7 +46,7 @@ assert '"obtunded"' in obt
 assert 'CBA_statemachine_fnc_manualTransition' not in obt
 assert obt.index('call ACM_core_fnc_requestWake') < obt.index('call ACME_fnc_obtundedStateCommit')
 
-assert 'ACME_buildBatch = "B147";' in startup
-assert 'ACME_debugRevision = "rc4";' in startup
+assert 'ACME_buildBatch = "B148";' in startup
+assert 'ACME_debugRevision = "rc5";' in startup
 
-print("PASS rc4: wake events self-heal state-machine desync and CBA object payloads stay synchronized")
+print("PASS rc5: wake repair preserves CBA state synchronization and ACM lying-state recovery")
