@@ -2,6 +2,15 @@
 
 These notes cover the cumulative backlog/stability work through the validated 1.2.2.1 baseline plus the first 1.2.3 runtime patch. This is still an RC/testing build until live multiplayer acceptance is completed.
 
+## 1.2.3 RC3 persistent Direct Pressure under CPR / BVM
+
+- Direct BVM start no longer tears down the provider's existing Direct Pressure episode on the same casualty.
+- Direct CPR and BVM entry both mark Direct Pressure as paused, retire only its visual hold generation, and leave the DP worker, inputs, target and accumulated hold state intact.
+- The Direct Pressure worker now treats both provider-local and patient-owner CPR/BVM handoff clocks as higher-priority maneuver ownership, preventing a brief pressure-marker or pose reassertion during the BVM -> CPR delayed swap.
+- Normal BVM treatment-bridge entry now uses the same pre-launch DP pause contract as CPR even when no plate-carrier/Semi-Fowler chest preparation is required.
+- When CPR/BVM and their handoff window are truly finished, Direct Pressure resumes from the existing episode rather than requiring a second Apply Direct Pressure action.
+- Runtime identity is **1.2.3 / B146 / rc3**.
+
 ## 1.2.3 RC2 intervention priority and preparation
 
 - Long chest-access preparation is now one-click. The medical menu closes immediately and a top-center **Preparing...** banner owns the transition so CPR/BVM cannot be spam queued.
@@ -10,7 +19,7 @@ These notes cover the cumulative backlog/stability work through the validated 1.
 - Direct Pressure explicitly recognizes native CPR/BVM ownership. It yields its pose and clinical marker before higher-priority choreography and cannot reassert because the short launcher treatment finished.
 - Semi-Fowler patient choreography uses lower animation-lock priority than interventions, does not seize collision/pin ownership when a higher-priority patient animation is live, and remains suspended until CPR/BVM plus the transfer window are clear.
 - Repeated CPR <-> BVM swaps reuse one stable chest-access lease, reinforced by a patient-owner server-time handoff deadline.
-- Plate-carrier return is faster on the casualty itself: 0.50 s lift, 0.02 s hold, 0.55 s lower with a token-scoped 1.60x animation coefficient.
+- Plate-carrier return is accelerated on the casualty itself: 0.75 s lift, 0.02 s hold, 0.88 s lower with a token-scoped 1.60x animation coefficient.
 - Starting another intervention during carrier return is queued immediately after the short restore instead of becoming stranded in preparation.
 
 ## 1.2.3 CPR / BVM chest access
@@ -64,7 +73,7 @@ These notes cover the cumulative backlog/stability work through the validated 1.
 ## Direct pressure and procedure interaction
 
 - Preserved Direct Pressure as a non-exclusive treatment state where compatible actions can pause/resume pressure without incorrectly granting clotting time.
-- Retained BVM integration behavior where an accepted BVM interaction ends that provider's pressure episode.
+- CPR/BVM now temporarily yield a same-provider Direct Pressure episode instead of ending it; the pressure marker and provider pose remain suppressed until both maneuver roles and their bounded transfer window are clear.
 - Reconciled pressure ownership and cleanup tests with the current controller model.
 
 ## Medical menu presentation
