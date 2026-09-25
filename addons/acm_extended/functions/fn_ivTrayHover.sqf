@@ -46,6 +46,14 @@ if (!isNull _bg) then {
     private _liveSlot = ctrlPosition _bg;
     if ((count _liveSlot) >= 4) then {_slot = +_liveSlot;};
 };
+_slot params ['_sx','_sy','_sw','_sh'];
+private _pw = _sw * 0.18;
+private _ph = _sh * 0.22;
+private _insetX = _sw * 0.08;
+private _insetY = _sh * 0.055;
+private _px = _sx + _insetX;
+private _py = _sy + _insetY;
+private _badgeRect = [_px,_py,_pw,_ph];
 
 private _medic = uiNamespace getVariable ['ACME_IV_Medic',objNull];
 private _count = if (isNull _medic) then {0} else {[_medic,format ['ACM_IV_%1g',_gauge]] call ace_common_fnc_getCountOfItem};
@@ -71,12 +79,17 @@ if (_fan isEqualTo []) then {
         _fan pushBack _c;
     };
     private _plus = _d ctrlCreate ['RscStructuredText',-1];
-    _plus ctrlSetStructuredText parseText "<t align='center' valign='middle'>+</t>";
+    // New controls start at UI (0,0). Commit their tray location while hidden,
+    // before assigning text or easing their fade, so the first hover cannot fly
+    // a visible + across the patient's body.
+    _plus ctrlShow false;
+    _plus ctrlSetPosition _badgeRect;
     _plus ctrlSetTextColor [0.94,0.91,0.82,0.90];
     _plus ctrlSetBackgroundColor [0,0,0,0];
     _plus ctrlSetFade 1;
     _plus ctrlEnable false;
     _plus ctrlCommit 0;
+    _plus ctrlShow true;
     _fan pushBack _plus;
     _d setVariable [_fanKey,_fan];
 };
@@ -87,7 +100,6 @@ private _plus = _fan param [4,controlNull];
 _logo ctrlSetPosition ([_base, if (_enter && {_shown > 0}) then {1.06} else {1}] call _scaleRect);
 _logo ctrlCommit _ease;
 
-_slot params ['_sx','_sy','_sw','_sh'];
 _base params ['_bx','_by','_bw','_bh'];
 private _cloneCount = ((_shown - 1) max 0) min 4;
 for '_i' from 0 to 3 do {
@@ -110,13 +122,9 @@ if (!isNull _plus) then {
     // >5 badge belongs INSIDE the live gauge tile, at its TOP-LEFT corner. It is deliberately anchored to the
     // background slot rather than the oversized catheter canvas, so aspect changes and hover scaling cannot push it
     // outside the tray icon.
-    private _pw = _sw * 0.18;
-    private _ph = _sh * 0.22;
-    private _insetX = _sw * 0.08;
-    private _insetY = _sh * 0.055;
-    private _px = _sx + _insetX;
-    private _py = _sy + _insetY;
-    _plus ctrlSetPosition [_px,_py,_pw,_ph];
+    // Position is never animated, even if the tray was relaid out between hovers.
+    _plus ctrlSetPosition _badgeRect;
+    _plus ctrlCommit 0;
     _plus ctrlSetStructuredText parseText format ["<t align='center' size='%1' color='#F0E7D2'>+</t>", 0.95];
     _plus ctrlSetFade (if (_enter && {_count > 5}) then {0} else {1});
     _plus ctrlCommit _ease;

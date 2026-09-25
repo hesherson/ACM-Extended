@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CFG = ROOT / 'addons/acm_extended/config.cpp'
 START = ROOT / 'addons/acm_extended/functions/fn_initForkStartupRuntime.sqf'
 DEBUG = [ROOT / 'addons/acm_extended/functions' / name for name in (
-    'fn_debugMenuClinical.sqf', 'fn_debugMenuNetwork.sqf'
+    'fn_debugMenuClinical.sqf',
 )]
 EXPECTED = '1.2.3'
 

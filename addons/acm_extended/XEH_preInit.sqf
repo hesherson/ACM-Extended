@@ -336,45 +336,15 @@ private _settings = [
     // debug, which is client-side.
     [
         "ACME_debug_enabled", "CHECKBOX",
-        ["Debug menu", "Master switch for the on-screen ACME debug menu."],
+        ["Debug menu", "Show the transparent clinical, treatment and network diagnostics in one overlay."],
         [_cDbg, "Overlay"],
         false, 2, {
             missionNamespace setVariable ["ACME_debug_enabled", _this, false];
             uiNamespace setVariable ["ACME_debug_enabled", _this];
             ACME_debug_enabled = _this;
             if (!isNil "ACME_debug_registerWatchdog") then {call ACME_debug_registerWatchdog};
-            if (_this && {!isNil "ACME_fnc_debugMenu"}) then {call ACME_fnc_debugMenu};
+            if (!isNil "ACME_fnc_debugMenu") then {call ACME_fnc_debugMenu};
         }
-    ],
-    [
-        "ACME_debug_showInfusions", "CHECKBOX",
-        ["Debug: infusions section", "Per-bag medication, volume, drip rate, clamp position, dose, and flow state."],
-        [_cDbg, "Overlay"],
-        true, 2, {}
-    ],
-    [
-        "ACME_debug_showTBI", "CHECKBOX",
-        ["Debug: TBI section", "MAP/ICP/CPP, severity, sodium, volume gate, Cushing/herniation state, pupils, GCS-M."],
-        [_cDbg, "Overlay"],
-        true, 2, {}
-    ],
-    [
-        "ACME_debug_showAutoBP", "CHECKBOX",
-        ["Debug: auto BP section", "Tracked auto-BP patients and countdown to next reading."],
-        [_cDbg, "Overlay"],
-        true, 2, {}
-    ],
-    [
-        "ACME_debug_showCirc", "CHECKBOX",
-        ["Debug: circulation section", "bpOffset, shock severity, pressor/push-dose support, ICH risk, medic push-dose charges."],
-        [_cDbg, "Overlay"],
-        true, 2, {}
-    ],
-    [
-        "ACME_debug_scale", "SLIDER",
-        ["Debug menu text scale", "Multiplier on debug menu text size."],
-        [_cDbg, "Overlay"],
-        [0.7, 1.5, 1, 1], 2, {}
     ],
     // OBTUNDATION, ALL OF IT, IN ONE PLACE AND IN THE ORDER YOU WOULD READ IT.
     // it used to be three settings in two top level categories and three subcategories, and none of them said the
@@ -488,14 +458,6 @@ private _settings = [
     // MOTION and nothing else.
     // ACME uses BI's GestureSpasm3-6 as dedicated 1.35x seizure gestures. Each gesture finishes before the next
     // begins. The old heading tremor, random yaw jitter and repeated ragdoll-flop loop are no longer used.
-    // the network block of the debug overlay. first place to look when a treatment is not taking on a patient
-    // another machine owns. on by default and costs nothing while the overlay itself is off.
-    [
-        "ACME_debug_showNetwork", "CHECKBOX",
-        ["Debug overlay: network section", "Adds a NETWORK block to the right column of the debug overlay: this machine's role, who owns the patient, whether the network layers installed, outstanding edit requests, live gesture viewers and the send interval. Requires the debug overlay itself to be on."],
-        [_cDbg, "Overlay"],
-        true, 2, {}
-    ],
     [
         "ACME_seizure_animEnabled", "CHECKBOX",
         ["Seizure body motion", "The convulsion ANIMATION only. ON: active seizures cycle BI GestureSpasm3-6 at 1.35x, allowing each spasm to finish before the next begins. OFF: a seizing casualty lies still, while loss of consciousness, apnea, vitals, postictal state and treatment remain unchanged. Takes effect immediately, including on a seizure already running."],

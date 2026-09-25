@@ -2,6 +2,14 @@
 
 These notes cover the cumulative 1.2.3 changes promoted from the release-candidate series into the stable 1.2.3 build.
 
+## B154 IV tray and debug menu repair
+
+- Rebuilt all 20 IV tray textures with HEMTT. B153's handwritten PAA containers omitted the mipmap offset table; an independent loader reported zero images despite the custom pixel decoder displaying them.
+- The extra-stock `+` is positioned and committed inside its tile before becoming visible. Its position no longer animates from the UI origin.
+- Consolidated the debug display into one transparent overlay, with a wider full-width identity header, yellow section headings and section spacing. Removed debug pages and their navigation controls.
+- The Debug settings category now has one menu toggle. All diagnostic sections appear together.
+- Runtime identity is **1.2.3 / B154**. See [patch details](patch-notes/2026-09-25-1.2.3-b154-ui.md).
+
 ## B153 runtime continuation
 
 - Patient spawners create a carrier-equipped unit class directly and retire delayed armor repair before treatment begins.

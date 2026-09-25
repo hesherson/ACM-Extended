@@ -67,7 +67,7 @@ def test_shipped_fan_rotates_up_from_tip_without_changing_length(gauge):
         assert mask[250:263, 30:40].any()
         kind, mips = parse_paa(ROOT / f"ui/iv/tray/iv_tray_{gauge}g_{pose}_ca.paa")
         assert kind == 0xFF05
-        assert [(w, h) for w, h, _ in mips] == [(s, s) for s in (512, 256, 128, 64, 32, 16, 8, 4)]
+        assert [(w & 0x7FFF, h) for w, h, _ in mips] == [(s, s) for s in (512, 256, 128, 64, 32, 16, 8, 4)]
     assert max(principal_lengths) / min(principal_lengths) < 1.025
 
 

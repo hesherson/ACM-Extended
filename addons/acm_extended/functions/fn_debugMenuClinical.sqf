@@ -1,7 +1,4 @@
-/*
- * ACME debug page 1/2: compact clinical overview.
- * Designed for a single screenshot on 16:9 while retaining the high-value state needed for bug reports.
- */
+// The single ACME debug overlay. Clinical, treatment and transport state share one patient and one toggle.
 disableSerialization;
 
 private _cleanup = {
@@ -9,59 +6,65 @@ private _cleanup = {
         private _c = uiNamespace getVariable [_x, controlNull];
         if (!isNull _c) then {ctrlDelete _c;};
         uiNamespace setVariable [_x, controlNull];
-    } forEach ["ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrl"];
+    } forEach ["ACME_DebugMenuCtrl", "ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrlMeasure"];
 };
-
 if (!(call ACME_fnc_debugEnabled)) exitWith {call _cleanup;};
-
 private _display = findDisplay 46;
 if (isNull _display) then {_display = uiNamespace getVariable ["RscDisplayMission", displayNull];};
-if (isNull _display) exitWith {};
+if (isNull _display) exitWith {call _cleanup;};
 
-private _ctrlL = uiNamespace getVariable ["ACME_DebugMenuCtrlL", controlNull];
-if (!isNull _ctrlL && {!((ctrlParent _ctrlL) isEqualTo _display)}) then {ctrlDelete _ctrlL; _ctrlL = controlNull;};
-private _ctrlR = uiNamespace getVariable ["ACME_DebugMenuCtrlR", controlNull];
-if (!isNull _ctrlR && {!((ctrlParent _ctrlR) isEqualTo _display)}) then {ctrlDelete _ctrlR; _ctrlR = controlNull;};
-private _ctrlS = uiNamespace getVariable ["ACME_DebugMenuCtrlS", controlNull];
-if (!isNull _ctrlS) then {_ctrlS ctrlShow false;};
-private _old = uiNamespace getVariable ["ACME_DebugMenuCtrl", controlNull];
-if (!isNull _old) then {ctrlDelete _old; uiNamespace setVariable ["ACME_DebugMenuCtrl", controlNull];};
-
-if (isNull _ctrlL) then {
-    _ctrlL = _display ctrlCreate ["RscStructuredText", -1];
-    _ctrlL ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.88];
-    _ctrlL ctrlShow true;
-    uiNamespace setVariable ["ACME_DebugMenuCtrlL", _ctrlL];
+private _control = {
+    params ["_key", ["_visible", true]];
+    private _c = uiNamespace getVariable [_key, controlNull];
+    if (!isNull _c && {!((ctrlParent _c) isEqualTo _display)}) then {ctrlDelete _c; _c = controlNull;};
+    if (isNull _c) then {_c = _display ctrlCreate ["RscStructuredText", -1];};
+    uiNamespace setVariable [_key, _c];
+    _c ctrlSetBackgroundColor [0, 0, 0, 0];
+    _c ctrlShow _visible;
+    _c
 };
-if (isNull _ctrlR) then {
-    _ctrlR = _display ctrlCreate ["RscStructuredText", -1];
-    _ctrlR ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.88];
-    _ctrlR ctrlShow true;
-    uiNamespace setVariable ["ACME_DebugMenuCtrlR", _ctrlR];
+private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
+private _ctrlL = ["ACME_DebugMenuCtrlL"] call _control;
+private _ctrlR = ["ACME_DebugMenuCtrlR"] call _control;
+private _ctrlS = ["ACME_DebugMenuCtrlS"] call _control;
+private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
+
+// Physical left edge also works on ultrawide screens. Compact paired values need less whitespace than
+// the old 12-character value fields; the overall overlay remains a modest part of an ultrawide display.
+private _gap = 0.010;
+private _totalW = 1.05 min (safeZoneWAbs - 0.020);
+private _w = (_totalW - 2 * _gap) / 3;
+private _x = safeZoneXAbs + 0.008;
+private _y = safeZoneY + 0.012;
+private _headerH = 0.075 min (safeZoneH * 0.14);
+private _h = safeZoneH - _headerH - 0.030;
+private _bodyY = _y + _headerH;
+_ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
+_ctrlL ctrlSetPosition [_x, _bodyY, _w, _h];
+_ctrlR ctrlSetPosition [_x + _w + _gap, _bodyY, _w, _h];
+_ctrlS ctrlSetPosition [_x + 2 * (_w + _gap), _bodyY, _w, _h];
+// A hidden, wide control measures unwrapped text before it is drawn. Fit both dimensions rather than
+// shrinking only after wrapping has already doubled the row count. Long patient names remain complete.
+_ctrlM ctrlSetPosition [_x, _y, safeZoneWAbs * 8, safeZoneH * 8];
+{_x ctrlCommit 0;} forEach [_ctrlH, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
+private _scale = 0.62;
+private _renderBlock = {
+    params ["_ctrl", "_rows", "_size", "_width", "_height"];
+    private _body = _rows joinString "<br/>";
+    private _template = "<t size='%1' font='EtelkaMonospacePro' shadow='1'>%2</t>";
+    private _needW = 0.001;
+    {
+        _ctrlM ctrlSetStructuredText parseText format [_template, _size, _x];
+        _needW = _needW max (ctrlTextWidth _ctrlM);
+    } forEach _rows;
+    _ctrlM ctrlSetStructuredText parseText format [_template, _size, _body];
+    private _needH = (ctrlTextHeight _ctrlM) max 0.001;
+    private _fit = _size * (1 min (((_width - 0.020) max 0.001) / _needW) min ((_height * 0.98) / _needH));
+    _ctrl ctrlSetStructuredText parseText format [_template, _fit, _body];
 };
-_ctrlL ctrlShow true;
-_ctrlR ctrlShow true;
-
-private _canvas = call ACME_fnc_uiCanvas;
-_canvas params ["_uiX", "_uiY", "_uiW", "_uiH"];
-private _gap = 0.0035;
-// B116: keep the entire clinical snapshot on one screenshot. The panel is narrower than B114 and the font
-// starts smaller; only the network/engineering page is allowed to live elsewhere.
-private _totalW = ((_uiW * 0.36) max 0.34) min 0.42;
-private _w = (_totalW - _gap) / 2;
-private _x = safeZoneXAbs + 0.002;
-private _y = safeZoneY + 0.014;
-private _h = (safeZoneH - 0.024) max 0.30;
-_ctrlL ctrlSetPosition [_x, _y, _w, _h];
-_ctrlR ctrlSetPosition [_x + _w + _gap, _y, _w, _h];
-_ctrlL ctrlCommit 0;
-_ctrlR ctrlCommit 0;
-
-private _userScale = missionNamespace getVariable ["ACME_debug_scale", 1];
-private _scale = (((_userScale max 0.50) min 1.15) * 0.54) max 0.39 min 0.62;
 
 private _cTitle = "#D9A441";
-private _cSect  = "#F0E7D2";
+private _cSect  = _cTitle;
 private _cLabel = "#C0B7A2";
 private _cGood  = "#5FB56E";
 private _cWarn  = "#D9A441";
@@ -87,11 +90,11 @@ private _padRight = {
     _s
 };
 private _alignValue = {
-    params ["_v", ["_w", 12]];
+    params ["_v", ["_w", 5]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
     // Match the original debug layout: right-align the integer/whole-token side so ones, tens and hundreds share
     // one vertical column. Decimal/unit suffixes then trail to the right inside a constant-width value field.
-    private _integerW = (_w - 4) max 1;
+    private _integerW = (_w - 2) max 1;
     private _dot = _s find ".";
     private _integer = if (_dot > -1) then {_s select [0, _dot]} else {_s};
     private _suffix = if (_dot > -1) then {_s select [_dot]} else {""};
@@ -104,21 +107,21 @@ private _pair = {
     params ["_a", "_av", "_ac", "_b", "_bv", "_bc"];
     private _aTxt = [_a, 7] call _padRight;
     private _bTxt = [_b, 7] call _padRight;
-    private _avTxt = [([_av, 12] call _alignValue)] call _safe;
-    private _bvTxt = [([_bv, 12] call _alignValue)] call _safe;
+    private _avTxt = [([_av, 5] call _alignValue)] call _safe;
+    private _bvTxt = [([_bv, 5] call _alignValue)] call _safe;
     format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aTxt, _avTxt, _ac, _bTxt, _bvTxt, _bc, _cLabel]
 };
 private _one = {
     params ["_a", "_av", "_ac"];
     private _aTxt = [_a, 7] call _padRight;
-    private _avTxt = [([_av, 12] call _alignValue)] call _safe;
+    private _avTxt = [([_av, 5] call _alignValue)] call _safe;
     format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
 };
-private _sect = {params ["_s"]; format ["<t color='%1'>%2</t>", _cSect, _s];};
+private _sect = {params ["_s"]; format ["<br/><t color='%1'>%2</t>", _cSect, _s];};
 private _arr = {params ["_name"]; private _v = missionNamespace getVariable [_name, []]; if (_v isEqualType []) then {_v} else {[]};};
 private _pushUnique = {params ["_a", "_o"]; if (!isNull _o && {!(_o in _a)}) then {_a pushBack _o;}; _a};
 
-// Same target selection contract as the full debug page.
+// One target selection is shared by every section.
 private _patient = missionNamespace getVariable ["ACME_debug_target", objNull];
 if (!isNull _patient && {!(_patient isKindOf "CAManBase")}) then {_patient = objNull;};
 if (isNull _patient) then {
@@ -140,16 +143,73 @@ if (_rc isEqualType "" && {_rc != ""}) then {_ver = format ["%1-%2", _ver, _rc];
 private _batch = missionNamespace getVariable ["ACME_buildBatch", "?"];
 private _left = [];
 private _right = [];
+private _network = [];
 private _pName = if (isNull _patient) then {"NO PATIENT"} else {name _patient};
-_left pushBack format ["<t color='%1' size='1.02'>ACME DEBUG v%2</t>  <t color='%1'>CLINICAL 1/2</t>", _cTitle, _ver];
-_left pushBack format ["<t color='%1'>%2  |  %3  |  Ctrl+PgUp/PgDn</t>", _cMute, [_pName] call _safe, _batch];
-_right pushBack format ["<t color='%1' size='1.02'>AT A GLANCE</t>", _cTitle];
-_right pushBack format ["<t color='%1'>Page 2: NETWORK 2/2</t>", _cTitle];
+private _header = [
+    format ["<t color='%1'>ACME DEBUG v%2 | %3</t>", _cTitle, [_ver] call _safe, [_batch] call _safe],
+    format ["<t color='%1'>Patient: %2</t>", _cLabel, [_pName] call _safe]
+];
+private _renderAll = {
+    [_ctrlH, _header, _scale * 1.10, _totalW, _headerH] call _renderBlock;
+    [_ctrlL, _left, _scale, _w, _h] call _renderBlock;
+    [_ctrlR, _right, _scale, _w, _h] call _renderBlock;
+    [_ctrlS, _network, _scale, _w, _h] call _renderBlock;
+};
+_network pushBack (["MACHINE"] call _sect);
+private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
+_network pushBack (["Role", _role, if (isServer) then {_cGood} else {_cLabel}, "MP", if (isMultiplayer) then {"yes"} else {"no"}, if (isMultiplayer) then {_cGood} else {_cMute}] call _pair);
+_network pushBack (["Client", clientOwner, _cLabel, "Server", if (isServer) then {"local"} else {"remote"}, if (isServer) then {_cGood} else {_cLabel}] call _pair);
+
+_network pushBack (["PATIENT OWNERSHIP"] call _sect);
+private _own = if (isNull _patient) then {-1} else {owner _patient};
+private _loc = !isNull _patient && {local _patient};
+private _netId = if (isNull _patient) then {"-"} else {netId _patient};
+_network pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
+_network pushBack format ["<t color='%1'>NetID</t> <t color='%2'>%3</t>", _cLabel, _cMute, [_netId] call _safe];
+private _epoch = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_clinicalEpoch};
+_network pushBack (["Epoch", _epoch, _cLabel, "Alive", if (!isNull _patient && {alive _patient}) then {"yes"} else {"no"}, if (!isNull _patient && {alive _patient}) then {_cGood} else {_cWarn}] call _pair);
+
+_network pushBack (["NETWORK LAYERS"] call _sect);
+private _naChest = missionNamespace getVariable ["ACME_NA2_chestInstalled", false];
+private _naOwner = missionNamespace getVariable ["ACME_NA2_ownerInstalled", false];
+_network pushBack (["Chest", if (_naChest) then {"on"} else {"off"}, if (_naChest) then {_cGood} else {_cBad}, "Owner", if (_naOwner) then {"on"} else {"off"}, if (_naOwner) then {_cGood} else {_cBad}] call _pair);
+private _rev = missionNamespace getVariable ["ACME_networkAuditRevision", "none"];
+_network pushBack format ["<t color='%1'>Revision</t> <t color='%2'>%3</t>", _cLabel, _cMute, [_rev] call _safe];
+
+_network pushBack (["CHEST-SEAL TRANSPORT"] call _sect);
+private _pend = 0;
+private _pendMap = missionNamespace getVariable ["ACME_CS_pending", nil];
+if (!isNil "_pendMap" && {(typeName _pendMap) isEqualTo "HASHMAP"}) then {_pend = count (keys _pendMap);};
+private _sessTxt = "n/a";
+private _sessCol = _cMute;
+if (isServer) then {
+    private _sess = 0;
+    private _sessMap = missionNamespace getVariable ["ACME_CS_sessions", nil];
+    if (!isNil "_sessMap" && {(typeName _sessMap) isEqualTo "HASHMAP"}) then {_sess = count (keys _sessMap);};
+    _sessTxt = str _sess;
+    _sessCol = if (_sess > 0) then {_cLabel} else {_cGood};
+};
+_network pushBack (["Pending", _pend, if (_pend > 0) then {_cWarn} else {_cGood}, "Sessions", _sessTxt, _sessCol] call _pair);
+private _roster = uiNamespace getVariable ["ACME_CS_presenceTargets", []];
+if !(_roster isEqualType []) then {_roster = [];};
+_roster = _roster - [uiNamespace getVariable ["ACME_CS_presenceViewer", player]];
+private _rate = missionNamespace getVariable ["ACME_CS_presenceRate", 0.07];
+if (!(_rate isEqualType 0) || {!finite _rate}) then {_rate = 0.07;};
+_network pushBack (["Viewers", count _roster, if ((count _roster) > 0) then {_cGood} else {_cMute}, "Rate", format ["%1s", _rate toFixed 2], _cLabel] call _pair);
+
+_network pushBack (["COMPATIBILITY"] call _sect);
+private _missing = missionNamespace getVariable ["ACME_compatMissing", []];
+if !(_missing isEqualType []) then {_missing = [];};
+_network pushBack (["Issues", count _missing, if (_missing isEqualTo []) then {_cGood} else {_cBad}, "Checked", if (missionNamespace getVariable ["ACME_compatChecked", false]) then {"yes"} else {"no"}, if (missionNamespace getVariable ["ACME_compatChecked", false]) then {_cGood} else {_cWarn}] call _pair);
+{
+    _network pushBack format ["<t color='%1'>%2</t>", _cBad, [_x] call _safe];
+} forEach (_missing select [0, (count _missing) min 8]);
+if ((count _missing) > 8) then {_network pushBack format ["<t color='%1'>+%2 more compatibility issues</t>", _cWarn, (count _missing) - 8];};
+
 
 if (isNull _patient) exitWith {
     _left pushBack (["Patient", "none", _cWarn] call _one);
-    _ctrlL ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _scale, _left joinString "<br/>"];
-    _ctrlR ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _scale, _right joinString "<br/>"];
+    call _renderAll;
 };
 
 // Core vitals.
@@ -274,7 +334,7 @@ _left pushBack (["PTX", _ptx, if (_ptx > 0) then {_cWarn} else {_cGood}, "TPTX",
 _left pushBack (["Hemo", format ["%1 / %2L", _hemo, _hemoFluid toFixed 2], if (_hemo > 0 || {_hemoFluid > 0.3}) then {_cWarn} else {_cGood}, "Seal", [_seal] call _yn, if (_seal) then {_cGood} else {_cMute}] call _pair);
 _left pushBack (["Thora", format ["L:%1 R:%2", _thoraL, _thoraR], if (_tubeL || {_tubeR} || {_closedL} || {_closedR} || {_openL} || {_openR}) then {_cGood} else {_cMute}, "Support", format ["BVM:%1 V:%2", if (_bvm) then {"Y"} else {"-"}, if (_vent) then {"Y"} else {"-"}], if (_bvm || {_vent}) then {_cGood} else {_cMute}] call _pair);
 
-// Neuro/TBI occupies main page because screenshots need to explain consciousness and ICP-related arrest.
+// Neuro/TBI explains consciousness and ICP-related arrest on the same overlay.
 private _tbi = _patient getVariable ["ACME_tbi_State", createHashMap];
 private _icp = _tbi getOrDefault ["icp", 0];
 private _cpp = _map - _icp;
@@ -404,7 +464,7 @@ _right pushBack (["FLUIDS / INFUSIONS"] call _sect);
 if (_fluidRows isEqualTo []) then {
     _right pushBack (["Bags", 0, _cGood, "Pressor", _pressor toFixed 2, if (_pressor > 0) then {_cGood} else {_cMute}] call _pair);
 } else {
-    // Every active bag stays on the clinical screenshot. Font fitting below handles unusually busy patients.
+    // Every active bag stays visible. Width and height fitting handles unusually busy patients.
     for "_i" from 0 to ((count _fluidRows) - 1) do {
         (_fluidRows select _i) params ["_what", "_where", "_rem", "_rate"];
         private _tail = if (_rate >= 0) then {format ["%1mL/%2g", _rem toFixed 0, round _rate]} else {format ["%1mL", _rem toFixed 0]};
@@ -428,14 +488,6 @@ if (_cbrnExp || {_cbrnCont} || {_cbrnAir > 0} || {_cbrnLung > 0}) then {
     _right pushBack (["CBRN", format ["E:%1 C:%2", if (_cbrnExp) then {"Y"} else {"-"}, if (_cbrnCont) then {"Y"} else {"-"}], _cWarn, "Air/Lung", format ["%1/%2", _cbrnAir toFixed 1, _cbrnLung toFixed 1], _cWarn] call _pair);
 };
 
-private _render = {
-    params ["_s"];
-    _ctrlL ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _s, _left joinString "<br/>"];
-    _ctrlR ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _s, _right joinString "<br/>"];
-};
-[_scale] call _render;
-private _need = (ctrlTextHeight _ctrlL) max (ctrlTextHeight _ctrlR);
-if (_need > _h) then {
-    private _fit = ((_scale * (((_h * 0.985) / _need) min 1)) max 0.34) min _scale;
-    [_fit] call _render;
-};
+
+
+call _renderAll;

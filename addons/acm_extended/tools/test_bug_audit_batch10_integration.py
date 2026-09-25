@@ -35,25 +35,20 @@ def test_removed_acre_babel_runtime_does_not_reappear():
 
 
 def test_debug_circulation_reads_authoritative_state_hashmap():
-    core = source("debugMenuCore")
     clinical = source("debugMenuClinical")
-    for text in (core, clinical):
-        assert 'getOrDefault ["pressorSupport", 0]' in text
-        assert 'getOrDefault ["shockSeverity", 0]' in text
-        assert 'getVariable ["ACME_circ_pressorSupport"' not in text
-        assert 'getVariable ["ACME_circ_shockSeverity"' not in text
+    assert 'call ACME_fnc_debugMenuClinical;' in source("debugMenuCore")
+    assert 'getOrDefault ["pressorSupport", 0]' in clinical
+    assert 'getOrDefault ["shockSeverity", 0]' in clinical
+    assert 'getVariable ["ACME_circ_pressorSupport"' not in clinical
+    assert 'getVariable ["ACME_circ_shockSeverity"' not in clinical
 
 
 def test_debug_aed_visual_matches_real_monitor_precedence():
     gen = read(ADDONS / "circulation/functions/fnc_displayAEDMonitor_generateEKG.sqf")
-    core = source("debugMenuCore")
     clinical = source("debugMenuClinical")
     assert '_effective >= 100 && {!(_rhythm in [-1,1,2])}' in gen
-    assert 'ACM_circulation_AED_EKGRhythm' in core
     assert 'ACM_circulation_AED_EKGRhythm' in clinical
-    assert '_customRhythm >= 100 && {!(_aedRhythm in [-1,1,2])}' in core
     assert '_activeRh >= 100 && {!(_aedRh in [-1,1,2])}' in clinical
-    assert 'ACME_AED_VisualRhythm' not in core
     assert 'ACME_AED_VisualRhythm' not in clinical
 
 

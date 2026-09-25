@@ -1847,7 +1847,6 @@ class CfgFunctions {
             class megacodeAARShow {};
             class megacodeAARTick {};
             class registerDebugWatchdogRuntime {};
-            class registerDebugPageKeybindRuntime {};
             class registerThoracicMenuPresentationRuntime {};
             class registerMedicalMenuOpenRuntime {};
             class registerClinicalMenuPresentationRuntime {};
