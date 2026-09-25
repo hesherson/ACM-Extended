@@ -54,7 +54,8 @@ if (_needFrontFirst) exitWith {
                 // A different non-empty token means another/newer roll superseded this normalization. Do not let the
                 // old Semi-Fowler continuation steal that patient's animation generation.
                 if ((_p getVariable ["ACME_CS_rollToken", ""]) != "") exitWith {};
-                _p setVariable ["ACME_CS_facing","front",true];
+                // Re-enter through the normal owner-side eligibility gate. The completed roll itself owns the
+                // physical side; this continuation must not write patient state before canStart revalidates.
                 [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
             }, [_patient,_rollToken,_startPoseToken,_medic,_bodyPart,_auto], 4.5, {
                 params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
