@@ -103,5 +103,5 @@ def test_medic_thoracostomy_and_doctor_only_chest_tube_tray():
 
 def test_hotfix_keeps_stable_123_debug_identity():
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_buildBatch = "B150";' in startup
+    assert 'ACME_buildBatch = "B151";' in startup
     assert 'ACME_debugRevision = "";' in startup
