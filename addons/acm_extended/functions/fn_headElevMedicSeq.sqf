@@ -30,6 +30,8 @@ _medic setVariable ["ACME_headElev_medicAnimToken", _token, false];
 _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
 _medic setVariable ["ACME_headElev_seqActive", true, false];
 _medic setVariable ["ACME_headElev_seqMode", _mode, false];
+_medic setVariable ["ACME_headElev_seqLastSeen", CBA_missionTime, false];
+_medic setVariable ["ACME_headElev_seqPFH", -1, false];
 // Retire the old cross-owner handshake variable. It is not part of the provider-only contract in B166.
 _medic setVariable ["ACME_headElev_pendingMove", [], false];
 
@@ -45,7 +47,7 @@ private _prepUntil = CBA_missionTime + ((_prepDelay max 0) max 0.05);
 // This is a fail-safe only. Normal authored playback completes well before it.
 private _hardDeadline = CBA_missionTime + 6.0;
 
-[{
+private _providerPFH = [{
     params ["_args", "_pfh"];
     _args params ["_u", "_token", "_mode", "_forcePose", "_first", "_second", "_rest",
         "_stage", "_seen", "_stageAt", "_prepUntil", "_hardDeadline"];
@@ -60,6 +62,8 @@ private _hardDeadline = CBA_missionTime + 6.0;
         _u setVariable ["ACME_headElev_medicAnimStage", -1, false];
         _u setVariable ["ACME_headElev_seqActive", false, false];
         _u setVariable ["ACME_headElev_seqMode", "", false];
+        _u setVariable ["ACME_headElev_seqPFH", -1, false];
+        _u setVariable ["ACME_headElev_seqLastSeen", CBA_missionTime, false];
 
         private _dpPauseClass = _u getVariable ["ACME_DP_PauseTreatmentClass", ""];
         if ((_u getVariable ["ACME_DP_Active", false]) && {_dpPauseClass in ["acme_elevatehead", "acme_lowerhead"]}) then {
@@ -103,6 +107,7 @@ private _hardDeadline = CBA_missionTime + 6.0;
         || {[_u] call ACME_fnc_animBlocked}) exitWith {
         [_u, _pfh, _rest, _token] call _finalize;
     };
+    _u setVariable ["ACME_headElev_seqLastSeen", CBA_missionTime, false];
 
     private _continuousOwns = !((_u getVariable ["ACM_core_ContinuousAction_Session", []]) isEqualTo [])
         && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]};
@@ -185,3 +190,4 @@ private _hardDeadline = CBA_missionTime + 6.0;
     };
 }, 0, [_medic, _token, _mode, _forcePose, _first, _second, _rest, -1, false,
     CBA_missionTime, _prepUntil, _hardDeadline]] call CBA_fnc_addPerFrameHandler;
+_medic setVariable ["ACME_headElev_seqPFH", _providerPFH, false];
