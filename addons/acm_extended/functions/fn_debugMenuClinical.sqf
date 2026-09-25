@@ -41,12 +41,13 @@ private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
 private _fontH = safeZoneH * 0.0096;
 {_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
 private _gap = safeZoneH * 0.0025;
-private _marginX = safeZoneWAbs * 0.003;
+private _marginX = safeZoneWAbs * 0.0025;
 private _x = safeZoneXAbs + _marginX;
-private _y = safeZoneY + safeZoneH * 0.006;
-// Most values fit comfortably in fourteen characters; exceptional device/revision strings wrap inside this
-// single column instead of forcing the panel to grow horizontally.
-private _valueW = 14;
+private _y = safeZoneY + safeZoneH * 0.004;
+private _panelBottom = safeZoneY + safeZoneH - (safeZoneH * 0.004);
+// B165 deliberately narrows the strip. Long device/revision strings wrap vertically rather than buying more
+// horizontal canvas. This is a diagnostic overlay, not a dashboard.
+private _valueW = 11;
 private _renderBlock = {
     params ["_ctrl", "_rows"];
     _ctrl ctrlSetStructuredText parseText format ["<t font='EtelkaMonospacePro' shadow='1'>%1</t>", _rows joinString "<br/>"];
@@ -62,9 +63,9 @@ private _charW = ((ctrlTextWidth _ctrlM) - _shortW) / 16;
 // this width by two for left/right clinical columns and then forced a large minimum panel width; that is the unused
 // horizontal space visible in the screenshot.
 private _rowChars = 2 * (8 + 1 + _valueW) + 2;
-private _maxPanelW = (safeZoneWAbs * 0.235) min (safeZoneH * 0.62);
-private _measuredW = (_rowChars * _charW) + (safeZoneWAbs * 0.006);
-private _totalW = ((_measuredW max (safeZoneWAbs * 0.14)) min _maxPanelW)
+private _maxPanelW = (safeZoneWAbs * 0.130) min (safeZoneH * 0.46);
+private _measuredW = (_rowChars * _charW) + (safeZoneWAbs * 0.004);
+private _totalW = ((_measuredW max (safeZoneWAbs * 0.105)) min _maxPanelW)
     min (safeZoneWAbs - 2 * _marginX);
 private _measureRows = {
     params ["_rows", "_width"];
@@ -76,12 +77,14 @@ private _measureRows = {
 private _layout = {
     params ["_headerH", "_bodyH"];
     private _bodyY = _y + _headerH + _gap;
-    private _panelH = _headerH + _gap + _bodyH + (_fontH * 0.20);
+    private _panelH = _panelBottom - _y;
+    private _bodyAvail = (_panelBottom - _bodyY) max _bodyH;
 
-    // Content owns the height. Do not stretch a sparse diagnostic panel to the bottom of the screen.
+    // The debug strip always spans the safe-area height. Structured text stays top-aligned inside the body;
+    // section spacing below consumes the available vertical room naturally instead of widening the panel.
     _ctrlB ctrlSetPosition [_x, _y, _totalW, _panelH];
     _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH];
-    _ctrlL ctrlSetPosition [_x, _bodyY, _totalW, _bodyH];
+    _ctrlL ctrlSetPosition [_x, _bodyY, _totalW, _bodyAvail];
 
     // Retire B162's separate top/right/footer regions in-place so an already running mission cannot leave one visible.
     {_x ctrlShow false;} forEach [_ctrlT, _ctrlR, _ctrlS];
@@ -176,7 +179,7 @@ private _formatRow = {
     };
     _lines joinString "<br/>"
 };
-private _sect = {params ["_s"]; format ["<t color='%1'>%2</t>", _cSect, _s];};
+private _sect = {params ["_s"]; format ["<br/><t color='%1'>%2</t>", _cSect, _s];};
 private _arr = {params ["_name"]; private _v = missionNamespace getVariable [_name, []]; if (_v isEqualType []) then {_v} else {[]};};
 private _pushUnique = {params ["_a", "_o"]; if (!isNull _o && {!(_o in _a)}) then {_a pushBack _o;}; _a};
 
@@ -220,6 +223,11 @@ private _renderAll = {
     _allRows append _right;
     _allRows append _network;
     private _bodyRows = _allRows apply {[_x, _valueW] call _formatRow};
+    // Section rows intentionally carry one leading break, which plus the row separator creates one empty line
+    // between sections. Remove only the very first one so the body starts directly beneath the header.
+    if (count _bodyRows > 0 && {((_bodyRows select 0) select [0,5]) == "<br/>"}) then {
+        _bodyRows set [0, (_bodyRows select 0) select [5]];
+    };
 
     private _headerH = [_header, _totalW] call _measureRows;
     private _bodyH = [_bodyRows, _totalW] call _measureRows;
