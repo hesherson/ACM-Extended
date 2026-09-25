@@ -59,14 +59,17 @@ if (!_frontNormalized) then {
             private _existingRoll = _context == "chestseal"
                 && {(_patient getVariable ["ACME_CS_rollToken", ""]) != ""};
 
-            // Use the same staged Flip choreography as the open chest-seal workspace. The provider enters literal
-            // medic4 first; that provider-local owner command dispatches the canonical patient roll only after the
-            // work state is observed. If no usable provider exists, still use chestSealRoll so the casualty RTM is
-            // the same roll-to-back animation rather than a pose snap.
+            // Chest-seal entry intentionally stages provider medic4 before the patient roll so it matches the
+            // in-menu Flip choreography. Ordinary chest access retains its historical parallel presentation:
+            // provider theatre is presentation-only and the patient owner starts exactly one canonical roll.
             if (!_existingRoll) then {
-                if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
-                    [_medic,"chestAccessFrontRoll",[_medic,_patient,_preserveHead,_context,_workspaceToken]] call ACME_fnc_ownerDispatch;
+                private _hasProvider = !isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic};
+                if (_context == "chestseal" && {_hasProvider}) then {
+                    [_medic,"chestSealEntryFrontRoll",[_medic,_patient,_preserveHead,_workspaceToken]] call ACME_fnc_ownerDispatch;
                 } else {
+                    if (_hasProvider) then {
+                        [_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;
+                    };
                     [_patient,"front",false,_medic,_preserveHead] call ACME_fnc_chestSealRoll;
                 };
             };
