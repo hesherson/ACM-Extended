@@ -2,6 +2,16 @@
 
 These notes cover the cumulative backlog/stability work through the validated 1.2.2.1 baseline plus the first 1.2.3 runtime patch. This is still an RC/testing build until live multiplayer acceptance is completed.
 
+## 1.2.3 RC4 consciousness wake repair
+
+- Fixed the shared wake path used by ammonia inhalant, Slap Awake, Shake Awake, spontaneous waking and painful fracture stimulation.
+- CBA state-machine conditions execute with the patient object as the direct call context. The September 22 wake gate incorrectly treated that context as an argument array, which could terminate the WakeUp transition before the casualty became conscious.
+- `canWake` now explicitly accepts both direct-object state-machine calls and normal array calls.
+- The ACME WakeUp observer now normalizes the direct object event payload before reading it.
+- Fracture-pressure waking now uses the same `requestWake` authority as ammonia/slap instead of publishing its own parallel event.
+- Clinical blockers are preserved: active anesthetic sedation, rocuronium paralysis, active seizure, cardiac arrest and other explicit forced-unconscious states still prevent inappropriate waking.
+- Runtime identity is **1.2.3 / B147 / rc4**.
+
 ## 1.2.3 RC3 persistent Direct Pressure under CPR / BVM
 
 - Direct BVM start no longer tears down the provider's existing Direct Pressure episode on the same casualty.
