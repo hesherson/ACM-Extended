@@ -85,3 +85,11 @@ def test_obsolete_pending_lift_watchdog_is_gone():
     watch=read("headElevWatch")
     assert 'headElevMedicReady' not in watch
     assert 'ACME_headElev_pendingLift' not in watch
+
+
+def test_stale_stance_ownership_is_heartbeat_bounded():
+    stance=(FUN/"fn_providerStanceOwned.sqf").read_text(encoding="utf-8")
+    assert 'ACME_headElev_seqLastSeen' in stance
+    assert '(CBA_missionTime - _headSeen) <= 1' in stance
+    assert 'ACM_core_ContinuousAction_LastSeen' in stance
+    assert '(CBA_missionTime - _lastSeen) <= 4' in stance
