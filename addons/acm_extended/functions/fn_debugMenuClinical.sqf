@@ -43,7 +43,9 @@ private _fontH = (safeZoneH * 0.0125) max (14 * pixelH);
 private _gap = 0.010;
 private _x = safeZoneXAbs + 0.008;
 private _y = safeZoneY + 0.012;
-private _valueW = 8;
+// Keep the original eight-character whole-value/decimal anchor. Reserve room after
+// it for complete units and compound readings, rather than wrapping ordinary vitals.
+private _valueW = 20;
 private _renderBlock = {
     params ["_ctrl", "_rows"];
     _ctrl ctrlSetStructuredText parseText format ["<t font='EtelkaMonospacePro' shadow='1'>%1</t>", _rows joinString "<br/>"];
@@ -56,7 +58,7 @@ private _shortW = ctrlTextWidth _ctrlM;
 [_ctrlM, ["00000000000000000000000000000000"]] call _renderBlock;
 private _charW = ((ctrlTextWidth _ctrlM) - _shortW) / 16;
 // Two fixed label/value pairs per clinical column. Grow the panel to fit the font,
-// rather than reducing the font to fit padded fields. Long values wrap within their field.
+// rather than reducing the font to fit padded fields. Only extended device lists wrap.
 private _rowChars = 2 * (8 + 1 + _valueW) + 2;
 private _totalW = (0.54 max (2 * (_rowChars * _charW + 0.020) + _gap)) min (safeZoneWAbs - 0.020);
 private _w = (_totalW - _gap) / 2;
@@ -98,8 +100,8 @@ private _safe = {
 };
 private _yn = {params ["_v"]; if (_v) then {"yes"} else {"no"};};
 private _ynCol = {params ["_v", ["_badWhenTrue", false]]; if (_badWhenTrue) exitWith {if (_v) then {_cBad} else {_cGood}}; if (_v) then {_cGood} else {_cMute};};
-// Keep fixed label/value columns. Long values continue on another line without moving
-// the next column or changing the font size of unrelated clinical and machine rows.
+// Restore the pre-redesign value alignment for clinical and machine rows alike.
+// Paired fields have a fixed width, so a state or unit cannot move the next label.
 private _padRight = {
     params ["_s", "_w"];
     if !(_s isEqualType "") then {_s = str _s;};
@@ -107,21 +109,16 @@ private _padRight = {
     _s
 };
 private _alignValue = {
-    params ["_v", ["_w", 8]];
+    params ["_v", ["_w", 12]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
-    // Right-align the integer part of numbers, preserving decimal points and units. Text values are
-    // left-aligned; strings such as 120/80 and 99% use the same numeric anchor as ordinary vitals.
-    private _chars = toArray _s;
-    private _end = 0;
-    if ((count _chars) > 0 && {(_chars select 0) in [43, 45]}) then {_end = 1;};
-    private _firstDigit = _end;
-    while {_end < count _chars && {(_chars select _end) >= 48} && {(_chars select _end) <= 57}} do {_end = _end + 1;};
-    if (_end > _firstDigit) then {
-        private _integer = _s select [0, _end];
-        while {count _integer < 4} do {_integer = " " + _integer;};
-        _s = _integer + (_s select [_end]);
-    };
-    [_s, _w] call _padRight
+    // Original layout: right-align the whole token, or the part before its decimal.
+    // This also aligns yes/no, none, OPEN and client/host with integer readings.
+    private _integerW = (_w - 4) max 1;
+    private _dot = _s find ".";
+    private _integer = if (_dot > -1) then {_s select [0, _dot]} else {_s};
+    private _suffix = if (_dot > -1) then {_s select [_dot]} else {""};
+    while {count _integer < _integerW} do {_integer = " " + _integer;};
+    [_integer + _suffix, _w] call _padRight
 };
 private _pair = {
     params ["_a", "_av", "_ac", "_b", "_bv", "_bc"];
@@ -153,15 +150,15 @@ private _formatRow = {
     if (_row isEqualType "") exitWith {_row};
     _row params ["_a", "_av", "_ac"];
     private _aTxt = [([_a, 8] call _padRight)] call _safe;
-    private _avTxt = [([_av, 0] call _alignValue)] call _safe;
+    private _avTxt = [([_av] call _alignValue)] call _safe;
     if (count _row == 3) exitWith {
         format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
     };
     private _b = _row select 3;
     private _bv = _row select 4;
     private _bc = _row select 5;
-    private _aLines = [([_av, 0] call _alignValue), _valueW] call _wrapValue;
-    private _bLines = [([_bv, 0] call _alignValue), _valueW] call _wrapValue;
+    private _aLines = [([_av] call _alignValue), _valueW] call _wrapValue;
+    private _bLines = [([_bv] call _alignValue), _valueW] call _wrapValue;
     private _lines = [];
     for "_i" from 0 to (((count _aLines) max (count _bLines)) - 1) do {
         private _aLabel = [([if (_i == 0) then {_a} else {""}, 8] call _padRight)] call _safe;

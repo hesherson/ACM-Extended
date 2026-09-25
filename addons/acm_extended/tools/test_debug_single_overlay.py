@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from test_menu_death_lifecycle import ROOT, adapt, execute, read
+from test_menu_death_lifecycle import ROOT, execute, read
 from test_historical_core_boundaries import block_at
 
 
@@ -134,7 +134,7 @@ def test_original_navy_backing_is_created_below_all_text_and_ignores_mouse_input
     assert 'if (isNull _backdrop || {!((ctrlParent _backdrop) isEqualTo _display)}) then {call _cleanup;};' in before
 
 
-def test_number_anchor_preserves_digits_decimals_units_and_full_text():
+def test_original_number_and_state_anchors_preserve_digits_decimals_units_and_full_text():
     source = definition('_padRight') + definition('_alignValue')
     execute(source + '''
         private _hr=[103] call _alignValue;
@@ -142,19 +142,42 @@ def test_number_anchor_preserves_digits_decimals_units_and_full_text():
         private _temp=["37.5 C"] call _alignValue;
         private _negative=["-0.42"] call _alignValue;
         private _bleed=["1200 mL/min"] call _alignValue;
-        [(_hr find "3")==3 && {(_map find "5")==3},"integer ones do not align"] call _check;
-        [(_temp find ".")==4 && {(_negative find ".")==4},"decimal values do not share the integer anchor"] call _check;
-        [count _hr==8 && {count _temp==8} && {count _bleed==11},"normal values shift the paired column"] call _check;
+        [(_hr find "3")==7 && {(_map find "5")==7},"original integer ones anchor changed"] call _check;
+        [(_temp find ".")==8 && {(_negative find ".")==8},"original decimal anchor changed"] call _check;
+        [count _hr==12 && {count _temp==12} && {count _bleed==12},"original minimum value width changed"] call _check;
+        {
+            private _aligned=[_x] call _alignValue;
+            [(_aligned find _x)+(count _x)==8,"text state does not end at original value anchor"] call _check;
+        } forEach ["yes","no","none","OPEN","awake","client","host","n/a","120/80","99%"];
         [(_temp find "37.5 C")>=0 && {(_bleed find "1200 mL/min")>=0},"units or numbers were truncated"] call _check;
         private _long=["CONDITION VALUE LONGER THAN TWELVE"] call _alignValue;
         [_long=="CONDITION VALUE LONGER THAN TWELVE","long state text lost data"] call _check;
     ''')
 
 
-def test_long_values_wrap_without_moving_columns_or_shrinking_unrelated_sections():
+@pytest.mark.parametrize("value", [
+    "7.3 L/min", "0 mL/min", "1200 mL/min", "37.0 C", "6.00L",
+    "0 / 0.00L", "1.00 / 0.00", "1.00 / -1.00", "-0.42",
+    "BVM:- V:-", "BVM:Y V:Y", "OBSTRUCTED", "ETT+cuff", "OPA+NPA",
+    "postictal", "C0 V0 B0", "Z3+Ing-left+AxL+AxR",
+])
+def test_normal_readings_stay_complete_on_one_row_with_fixed_label_positions(value):
+    source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_formatRow'))
+    # Use the actual renderer's width, not an independently chosen test width.
+    width=re.search(r'private _valueW = (\d+);',read('debugMenuClinical'))[1]
+    execute('private _cLabel="label";' + source + f'private _value="{value}";private _valueW={width};' + '''
+        private _row=[["Reading",_value,"good","Other",0,"good"],_valueW] call _formatRow;
+        private _baseline=[["Reading",0,"good","Other",0,"good"],_valueW] call _formatRow;
+        [(_row find "<br/>")==-1,"ordinary reading split onto another line"] call _check;
+        [(_row find _value)>=0,"reading or unit was split/truncated"] call _check;
+        [(_row find "Other")==(_baseline find "Other"),"reading moved the next label"] call _check;
+    ''')
+
+
+def test_extended_device_lists_wrap_without_moving_columns_or_shrinking_unrelated_sections():
     source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_pair','_one','_formatRow','_renderAll'))
     execute('''
-        private _cLabel="label";private _valueW=8;private _fontH=0.018;
+        private _cLabel="label";private _valueW=20;private _fontH=0.018;
         private _totalW=0.60;private _w=0.295;
         private _ctrlH="head";private _ctrlL="left";private _ctrlR="right";private _ctrlS="net";
         private _renders=[];private _sizes=[];private _heights=[];
@@ -162,9 +185,9 @@ def test_long_values_wrap_without_moving_columns_or_shrinking_unrelated_sections
         private _layout={_sizes=+_this;};
         private _renderBlock={_renders pushBack _this;};
     '''+source+'''
-        private _header=["ACME DEBUG B158","Patient: Complete Long Name"];
+        private _header=["ACME DEBUG B160","Patient: Complete Long Name"];
         private _left=[["HR",103,"good","BP","120/80","good"] call _pair];
-        private _right=[["AAJT","Z3+Ing-left+AxL+AxR","good","XStat","no","good"] call _pair];
+        private _right=[["AAJT","Z3+Ing-left+AxL+AxR+additional device","good","XStat","no","good"] call _pair];
         private _network=[["Role","client","good","MP","yes","good"] call _pair];
         call _renderAll;
         [count _renders==4 && {count _heights==4},"not all regions rendered/measured"] call _check;
@@ -175,8 +198,10 @@ def test_long_values_wrap_without_moving_columns_or_shrinking_unrelated_sections
         private _netRow=((_renders select 3) select 1) select 0;
         [(_leftRow find "BP      ")==(_rightRow find "XStat   "),"long state moved paired label"] call _check;
         [(_leftRow find "BP      ")==(_netRow find "MP      "),"machine columns differ from clinical"] call _check;
-        private _parts=["Z3+Ing-left+AxL+AxR",8] call _wrapValue;
-        [(_parts joinString "")=="Z3+Ing-left+AxL+AxR","wrapping dropped device text"] call _check;
-        {[(count _x)<=8,"continuation overruns fixed field"] call _check;} forEach _parts;
+        private _parts=["Z3+Ing-left+AxL+AxR+additional device",20] call _wrapValue;
+        [(_parts joinString "")=="Z3+Ing-left+AxL+AxR+additional device","wrapping dropped device text"] call _check;
+        {[(count _x)<=20,"continuation overruns fixed field"] call _check;} forEach _parts;
         [(_rightRow find "<br/>")>=0,"long value did not continue at readable size"] call _check;
+        private _single=[["Owner",0,"good"] call _one,_valueW] call _formatRow;
+        [(_single find "       0")==(_netRow find "  client"),"single and paired rows use different value anchors"] call _check;
     ''')
