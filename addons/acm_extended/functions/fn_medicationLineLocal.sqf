@@ -26,6 +26,11 @@ if ((_doses findIf {!(_x isEqualType []) || {count _x < 4} || {!((_x select 1) i
     || {!([_x select 0,_x select 2,true,_x param [5,false]] call ACME_fnc_medicationRouteAllowed)}}) >= 0) exitWith {[false,"unsupported component"] call _reply};
 private _iv = _operation == "flush" || {(_doses findIf {_x select 2}) >= 0};
 if (_iv && {!(_identity isEqualTo ([_patient,_bodyPart,_site] call ACME_fnc_medicationLineIdentity)) || {_identity isEqualTo []}}) exitWith {[false,"catheter removed or replaced"] call _reply};
+// Re-check on the patient owner at settlement time. A blood unit can be opened after the provider pressed Push;
+// this prevents that multiplayer race from mixing a medication bolus into a line now carrying blood.
+if (_operation == "administer" && {_iv} && {[_patient,_bodyPart,_site] call ACME_fnc_medicationLineBloodBusy}) exitWith {
+    [false,"blood actively flowing on selected catheter"] call _reply
+};
 // B123: all treatment actions remain callable on corpses, but a truly dead patient has no medication physiology
 // to evolve. Acknowledge the transaction so provider inventory/syringe accounting completes, then stop here.
 // Do not add ACE medication records, line-rate queues, sedation state, IO pain, saline physiology or active-patient
