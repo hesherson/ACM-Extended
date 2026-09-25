@@ -20,6 +20,8 @@ def start_contract(text=None):
         'if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {',
         '[_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;',
         '[_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;',
+        'private _rollToken = _patient getVariable ["ACME_CS_rollToken", ""];',
+        'call CBA_fnc_waitUntilAndExecute;',
         '[_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;',
         '_patient setVariable ["ACME_headElevated", true, true];',
         '[_patient] call ACME_fnc_headElevApplyTilt;',
@@ -43,12 +45,21 @@ def start_setup():
         private _tilts=[]; private _starts=[]; private _watches=[];
         ACME_fnc_headElevateCanStart={_canStart};
         ACME_fnc_chestSealCanPhysicalRoll={_canRoll};
-        private _providerRolls=[];
-        // Generic chestAccessFrontRoll is presentation-only in B164. The patient roll is a separate owner request.
+        private _providerRolls=[]; private _untils=[];
+        // Generic chestAccessFrontRoll is presentation-only. The patient roll owns one explicit token.
         ACME_fnc_ownerDispatch={
             params ["_owner","_op","_args"];
             if (_op=="chestAccessFrontRoll") then {_providerRolls pushBack _args;};
         };
+        ACME_fnc_chestSealRoll={
+            _rolls pushBack _this;
+            _patient setVariable ["ACME_CS_rollToken","roll:test"];
+        };
+        ACME_fnc_patientRollCancel={
+            _patient setVariable ["ACME_CS_rollToken",""];
+            true
+        };
+        CBA_fnc_waitUntilAndExecute={_untils pushBack _this;};
         ACME_fnc_headElevApplyTilt={_tilts pushBack _this; true};
         ACME_fnc_headElevMedicStart={_starts pushBack _this;};
         ACME_fnc_headElevWatch={_watches pushBack _this;};
@@ -65,16 +76,23 @@ def test_actual_side_not_cached_label_decides_initial_normalization(actual,cache
         _actualSide="{actual}"; _canRoll={str(rollable).lower()};
         _patient setVariable ["ACME_CS_facing","{cached}"];
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
-        [count _waits=={int(actual=='back')},"cached side incorrectly scheduled normalization"] call _check;
         [count _rolls=={int(actual=='back' and rollable)},"incorrect physical roll count"] call _check;
     ''' + (f'''
-        [count _tilts==0 && {{count _starts==0}},"lift started before normalization retry"] call _check;
-        private _retry=_waits select 0; _waits=[];
-        [abs ((_retry select 2)-{2.45 if rollable else .08})<0.0001,"normalization delay changed"] call _check;
+        [count _tilts==0 && {{count _starts==0}},"lift started before normalization completed"] call _check;
         _actualSide="front";
-        [_retry] call _deliver;
-        [count _waits==0,"retry queued another normalization"] call _check;
-    ''' if actual=='back' else '') + '''
+        ''' + (
+            '''
+        [count _untils==1 && {count _waits==0},"rollable normalization used a nominal sleep"] call _check;
+        private _job=_untils select 0;
+        _patient setVariable ["ACME_CS_rollToken",""];
+        [(_job select 2)] call (_job select 1);
+        '''
+            if rollable else
+            '''
+        [count _untils==0 && {count _waits==1} && {abs (((_waits select 0) select 2)-0.05)<0.0001},"non-rollable stabilization did not retry next slice"] call _check;
+        [_waits select 0] call _deliver;
+        '''
+        ) if actual=='back' else '') + '''
         [_patient getVariable ["ACME_headElevated",false],"accepted startup lost logical elevation"] call _check;
         [count _tilts==1 && {count _starts==1} && {count _watches==1},"accepted startup lost authored dispatch"] call _check;
         [(_patient getVariable ["ACME_CS_facing",""])=="front","accepted startup lost front cache"] call _check;
@@ -99,24 +117,25 @@ def test_start_retry_retains_existing_owner_life_and_eligibility_checks(change):
     execute(start_setup()+'''
         _actualSide="back";
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
-        private _retry=_waits select 0; _waits=[];
+        private _job=_untils select 0; _untils=[];
+        _patient setVariable ["ACME_CS_rollToken",""];
     '''+change+'''
-        [_retry] call _deliver;
+        [(_job select 2)] call (_job select 1);
         [count _tilts==0 && {count _starts==0} && {count _restores==0},"invalid retry started elevation"] call _check;
     ''')
 
 
-@pytest.mark.parametrize('patient,provider,expected',[
-    ('1.85','2.2',2.45), ('4','2.2',4.10), ('1.85','5',5.25),
-    ('"bad"','"bad"',2.45),
+@pytest.mark.parametrize('patient,provider',[
+    ('1.85','2.2'), ('4','2.2'), ('1.85','5'), ('"bad"','"bad"'),
 ])
-def test_normalization_waits_for_the_longer_patient_or_provider_move(patient,provider,expected):
+def test_normalization_waits_for_actual_roll_retirement_not_nominal_durations(patient,provider):
     execute(start_setup()+f'''
         _actualSide="back";
         missionNamespace setVariable ["ACME_CS_rollTime",{patient}];
         missionNamespace setVariable ["ACME_rollProviderDuration",{provider}];
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
-        [count _waits==1 && {{abs (((_waits select 0) select 2)-{expected})<0.0001}},"patient/provider delay contract changed"] call _check;
+        [count _untils==1 && {count _waits==0},"normalization fell back to fixed animation delay"] call _check;
+        [abs (((_untils select 0) select 3)-4.5)<0.0001,"roll completion fail-safe changed"] call _check;
     ''')
 
 
