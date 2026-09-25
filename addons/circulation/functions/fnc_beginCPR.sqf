@@ -17,7 +17,6 @@
  */
 
 params ["_medic", "_patient", ["_headLowered", false, [false]]];
-scopeName "ACME_BEGIN_CPR_HEADLOWER";
 
 if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {};
 private _reserved = _patient getVariable [QGVAR(CPR_Medic), objNull];
@@ -31,21 +30,24 @@ private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
 // CPR is the one supported-patient maneuver that permanently replaces Semi-Fowler. A normal chest-access preflight
 // may already have laid the patient flat; finalize that logical posture without replaying another set-down. Direct
 // starts such as BVM -> CPR have no preflight, so play the authored release once and start CPR after it finishes.
-if (!_headLowered && {_patient getVariable ["ACME_headElevated", false]}) then {
-    if (_patient getVariable ["ACME_headElev_Suspended", false]) then {
-        [_patient, "headElevStop", [_medic, _patient, true, false]] call ACME_fnc_ownerDispatch;
-    } else {
-        [_patient, "headElevStop", [_medic, _patient, false, false]] call ACME_fnc_ownerDispatch;
-        private _lowerDelay = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-        if !(_lowerDelay isEqualType 0 && {finite _lowerDelay} && {_lowerDelay >= 0.2}) then {_lowerDelay = 1.4;};
-        [{
-            params ["_m","_p"];
-            if (!isNull _m && {!isNull _p} && {alive _m} && {local _m}) then {
-                [_m,_p,true] call ACM_circulation_fnc_beginCPR;
-            };
-        }, [_medic,_patient], _lowerDelay + 0.05] call CBA_fnc_waitAndExecute;
-        breakOut "ACME_BEGIN_CPR_HEADLOWER";
-    };
+if (!_headLowered
+    && {_patient getVariable ["ACME_headElevated", false]}
+    && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
+    [_patient, "headElevStop", [_medic, _patient, false, false]] call ACME_fnc_ownerDispatch;
+    private _lowerDelay = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
+    if !(_lowerDelay isEqualType 0 && {finite _lowerDelay} && {_lowerDelay >= 0.2}) then {_lowerDelay = 1.4;};
+    [{
+        params ["_m","_p"];
+        if (!isNull _m && {!isNull _p} && {alive _m} && {local _m}) then {
+            [_m,_p,true] call ACM_circulation_fnc_beginCPR;
+        };
+    }, [_medic,_patient], _lowerDelay + 0.05] call CBA_fnc_waitAndExecute;
+};
+
+if (!_headLowered
+    && {_patient getVariable ["ACME_headElevated", false]}
+    && {_patient getVariable ["ACME_headElev_Suspended", false]}) then {
+    [_patient, "headElevStop", [_medic, _patient, true, false]] call ACME_fnc_ownerDispatch;
 };
 
 // CPR outranks Direct Pressure for provider animation and clinical hand use without destroying the persistent
