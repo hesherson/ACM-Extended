@@ -23,7 +23,7 @@
  * Public: No
  */
 
-params ["_args", "_onStart", "_onCancel", "_perFrame", ["_allowProne", false], ["_dialogID", -1]];
+params ["_args", "_onStart", "_onCancel", "_perFrame", ["_allowProne", false], ["_dialogID", -1], ["_suppressProviderAnim", false, [false]]];
 _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
 
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
@@ -97,7 +97,7 @@ private _notInVehicle = isNull objectParent _medic;
 private _medicStance = stance _medic;
 private _isProne = (_medicStance == "PRONE") && _allowProne;
 
-if (_notInVehicle) then {
+if (_notInVehicle && {!_suppressProviderAnim}) then {
     switch (stance _medic) do {
         case "STAND": {
             [_medic, "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 2] call ACEFUNC(common,doAnimation); // 0.650
@@ -138,7 +138,7 @@ if (currentWeapon _medic != "") then {
 
 private _pfh = [{
     params ["_args", "_idPFH"];
-    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound"];
+    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim"];
 
     // Superseded action. Retire only this PFH and its own key id. Never run the old cancellation/reopen path against
     // the newer generation.
@@ -194,7 +194,7 @@ private _pfh = [{
 
         [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle] call _onCancel;
 
-        if (_notInVehicle && {!_medicCondition} && {isNull objectParent _medic}) then {
+        if (_notInVehicle && {!_medicCondition} && {isNull objectParent _medic} && {!_suppressProviderAnim}) then {
             [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
             _medic setUnitPos "AUTO";
             private _animation = ["AmovPknlMstpSnonWnonDnon", "AmovPpneMstpSnonWnonDnon"] select _isProne;
@@ -212,7 +212,7 @@ private _pfh = [{
         _medic setVariable [QGVAR(ContinuousAction_LastSeen), CBA_missionTime, true];
     };
     _args call _perFrame;
-}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim]] call CBA_fnc_addPerFrameHandler;
 
 GVAR(ContinuousAction_PFH) = _pfh;
 _args call _onStart;
