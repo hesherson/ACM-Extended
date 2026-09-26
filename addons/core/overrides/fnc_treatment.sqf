@@ -30,30 +30,9 @@ if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} 
         call ACME_fnc_headElevateCancelSeq;
     };
 
-    // If a medical button is clickable, the provider has explicitly returned to the medical menu. Yield only the
-    // two non-dialog hands-on holds that are supposed to end when the provider resumes other care. This is scoped
-    // by exact continuous-action generation so BVM/CPR/stethoscope ownership is never cleared here.
-    if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) then {
-        private _activeSession = _medic getVariable ["ACM_core_ContinuousAction_Session", []];
-        private _activePatient = _activeSession param [0, objNull];
-        private _activeEpoch = _activeSession param [1, -1];
-        private _headTiltSession = if (!isNull _patient) then {
-            _patient getVariable ["ACM_airway_HeadTilt_State_Session", []]
-        } else {
-            []
-        };
-        private _sfHold = _medic getVariable ["ACME_headElev_holding", []];
-
-        private _ownsHeadTilt = _activePatient isEqualTo _patient
-            && {_activeEpoch >= 0}
-            && {_headTiltSession isEqualTo [_medic, _activeEpoch]};
-        private _ownsManualSemiFowler = (_sfHold param [0, objNull]) isEqualTo _patient
-            && {(_sfHold param [1, ""]) != ""};
-
-        if (_ownsHeadTilt || {_ownsManualSemiFowler}) then {
-            missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
-        };
-    };
+    // Non-dialog continuous hands-on holds are cancelled by the medical-menu-open event before buttons become
+    // interactive. Do not clear them again here: starting a successor treatment in the same frame could increment
+    // the continuous-action epoch before the old PFH runs its onCancel callback, leaking the old patient reservation.
 };
 
 // This debug command has no physical treatment or provider animation. Execute directly,
