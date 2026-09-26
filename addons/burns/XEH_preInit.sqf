@@ -61,16 +61,6 @@ PREP_RECOMPILE_END;
     [10, 60, 25, 0],
     true
 ] call CBA_fnc_addSetting;
-
-[
-    QGVAR(hardcorePersistentBurns),
-    "CHECKBOX",
-    ["[HARDCORE] Persistent Major Burns", "Major adult burns can leave a field-unresolved systemic burden. The casualty can be stabilized, but a residual preload/thermal burden and evacuation requirement remain until full heal or definitive care."],
-    [ACM_SETTINGS_CATEGORY, "Hardcore"],
-    [false],
-    true
-] call CBA_fnc_addSetting;
-
 [
     QGVAR(hardcoreEvacBurden),
     "SLIDER",
