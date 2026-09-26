@@ -16,8 +16,7 @@ private _releasePatient = {
 };
 
 if (!hasInterface || {!isPlayer _medic} || {_medic != ACE_player} || {!alive _medic} || {isNull _patient}
-    || {!alive _patient} || {_medic getVariable ["ACE_isUnconscious", false]}
-    || {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) exitWith {call _releasePatient;};
+    || {!alive _patient} || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {call _releasePatient; false};
 
 if (!_ready) exitWith {
     // Let the treatment that created the posture close its own dialog first. This generation remains bound to the
@@ -46,7 +45,7 @@ private _hold = _patient getVariable ["ACME_headElev_hold", []];
 if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
     || {(_hold param [1,"",[""]]) != _token}) exitWith {call _releasePatient;};
 
-[[ _medic, _patient, _bodyPart, [_token] ], {
+private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
     params ["_medic", "_patient", "_bodyPart", "_extra"];
     private _token = _extra select 0;
 
@@ -251,4 +250,12 @@ if ((_hold param [0,objNull,[objNull]]) isNotEqualTo _medic
         || {[_patient] call ACM_core_fnc_bvmActive}) then {
         ACM_core_ContinuousAction_Active = false;
     };
-}, false, -1, true] call ACM_core_fnc_beginContinuousAction;
+}, false, -1, true, true] call ACM_core_fnc_beginContinuousAction;
+
+if !(_started isEqualTo true) then {
+    // A genuinely live continuous action still owns the provider. If the shared gate was merely stale,
+    // beginContinuousAction recovered it and returned true. Only a real competing owner tears down this unsupported
+    // Semi-Fowler episode.
+    call _releasePatient;
+};
+_started
