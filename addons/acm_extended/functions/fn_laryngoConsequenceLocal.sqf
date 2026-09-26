@@ -12,6 +12,61 @@ _receipts pushBack _id;
 if (count _receipts > 64) then {_receipts deleteAt 0;};
 _patient setVariable ["ACME_laryngoEventReceipts", _receipts, true];
 
+// Adult vagal airway reflex. Routine laryngoscopy is sympathetic; this is deliberately uncommon.
+// Deep cord/tracheal manipulation is the main opportunity. Hypoxemia and repeated instrumentation
+// raise the probability substantially. No live HR/BP value is written here: this event only publishes
+// a short source state that the authoritative HR/SVR writers consume.
+if (!(_patient getVariable ["ace_medical_inCardiacArrest", false])) then {
+    private _passChance = missionNamespace getVariable ["ACME_laryngo_vagalPassChance",0.015];
+    private _manipChance = missionNamespace getVariable ["ACME_laryngo_vagalManipChance",0.025];
+    private _baseChance = switch (_reason) do {
+        case "success": {_passChance};
+        case "gag": {_manipChance * 1.15};
+        case "awakeTube": {_manipChance};
+        case "tubeManip": {_manipChance};
+        case "trauma": {_manipChance * 0.80};
+        case "jerk": {_manipChance * 0.80};
+        case "esophageal": {_passChance * 0.50};
+        case "blocked": {_passChance * 0.35};
+        case "miss": {_passChance * 0.25};
+        default {0};
+    };
+
+    if (_baseChance > 0) then {
+        private _spo2 = (_patient getVariable ["ace_medical_spo2",97]) max 0 min 100;
+        private _hypFrac = linearConversion [92,65,_spo2,0,1,true];
+        private _hypAdd = _hypFrac * (missionNamespace getVariable ["ACME_laryngo_vagalHypoxiaAddMax",0.12]);
+        private _tries = (_patient getVariable ["ACME_laryngo_failCount",0]) max 0;
+        private _repeatAdd = ((_tries * (missionNamespace getVariable ["ACME_laryngo_vagalRepeatAddPerTry",0.003]))
+            min (missionNamespace getVariable ["ACME_laryngo_vagalRepeatAddMax",0.03]));
+
+        private _chance = (_baseChance + _hypAdd + _repeatAdd) min 0.25;
+
+        // Existing atropine can blunt but not rewrite the event model.
+        private _atropine = 0;
+        if (!isNil "ACME_fnc_medicationCountCompat") then {
+            _atropine = ([_patient,"Atropine",false] call ACME_fnc_medicationCountCompat)
+                + ([_patient,"Atropine_IV",false] call ACME_fnc_medicationCountCompat);
+        };
+        if (_atropine > 0) then {_chance = _chance * 0.35;};
+
+        if (random 1 < _chance) then {
+            private _severity = (0.45 + (0.45 * _hypFrac) + random 0.10) min 1;
+            if (_atropine > 0) then {_severity = _severity * 0.55;};
+            private _duration = (missionNamespace getVariable ["ACME_laryngo_vagalDurationSec",12])
+                * random [0.75,1,1.25];
+            _patient setVariable ["ACME_laryngo_vagalSeverity",
+                (_patient getVariable ["ACME_laryngo_vagalSeverity",0]) max _severity,true];
+            _patient setVariable ["ACME_laryngo_vagalUntil",
+                CBA_missionTime + _duration,true];
+
+            private _active = missionNamespace getVariable ["ACME_clinical_activePatients",[]];
+            _active pushBackUnique _patient;
+            missionNamespace setVariable ["ACME_clinical_activePatients",_active];
+        };
+    };
+};
+
 // B39: an awake patient does not calmly accept an oral ET tube, and moving a tube without a fully
 // exposed airway provokes an immediate wet gag/emesis episode. These are explicit manipulation events,
 // not accumulated placement misses, so they bypass the 3..5 miss tolerance while retaining owner authority.
