@@ -1,6 +1,9 @@
 /* Shared simulation clock; pure read. This is a game response envelope. */
 params ["_patient"];
 if (isNull _patient || {!alive _patient} || {_patient getVariable ["ace_medical_inCardiacArrest", false]}) exitWith {0};
+// If the rare vagal reflex fires, it supersedes the ordinary sympathetic laryngoscopy envelope
+// for the duration of that event rather than creating simultaneous tachycardia and bradycardia.
+if (CBA_missionTime < (_patient getVariable ["ACME_laryngo_vagalUntil",-1])) exitWith {0};
 private _at = _patient getVariable ["ACME_laryngoStimulusAt", -1];
 private _strength = _patient getVariable ["ACME_laryngoStimulusStrength", 0];
 if (!(_at isEqualType 0) || {!finite _at} || {!(_strength isEqualType 0)} || {!finite _strength}) exitWith {0};
