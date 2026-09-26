@@ -79,6 +79,15 @@ private _settings = [
     ["ACME_hc_vent", "CHECKBOX",
         ["[HARDCORE] Ventilation", "Enable the existing ventilator-induced lung-injury model for excessive tidal volumes. Disabling this stops additional injury from this mode; it does not heal injury already present. Takes effect immediately."],
         [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
+    ["ACME_hc_burns", "CHECKBOX",
+        ["[HARDCORE] Major Burns", "Major burns can leave a residual field-unresolved systemic burden after the acute capillary-leak and heat-loss phase. The casualty can be stabilized but requires evacuation/definitive care. OFF: systemic burn physiology is game-reversible; burn wounds and infection risk still remain."],
+        [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
+    ["ACME_hc_infection", "CHECKBOX",
+        ["[HARDCORE] Infection / Sepsis", "Prolonged septic shock can leave residual organ dysfunction and an evacuation requirement even after antibiotics control the infection. OFF: infection and sepsis can fully regress in the field on the game-compressed timeline."],
+        [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
+    ["ACME_hc_ophthalmology", "CHECKBOX",
+        ["[HARDCORE] Ocular Trauma", "Structural ocular trauma becomes a stabilization-and-evacuation problem. Eye shields protect the injury but do not field-heal it. OFF: structural ocular injury recovers on a game-compressed timeline; dust and irritant injury remain eyewash-reversible in either mode."],
+        [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
 
     // infusion, which is global because it affects the flow math.
     [
