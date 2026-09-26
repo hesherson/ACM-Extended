@@ -18,6 +18,87 @@
 ["ace_medicalMenuOpened", {
     params ["_medic", "_target", "_display"];
 
+    // B169 renderer ownership: do not rely on ACE's single global menuPFH lifetime. The stock onLoad/onUnload pair
+    // is final in this runtime and rapid medical-menu replacement can let an older display's unload retire the PFH
+    // which a newer display is using. That leaves a visible menu with stale/unbound action rows until some unrelated
+    // control forces updateActions. Own one independent renderer driver per concrete display generation instead.
+    if (!isNull _display && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+        private _rendererEpoch = (uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0]) + 1;
+        uiNamespace setVariable ["ACME_medicalMenuRendererEpoch", _rendererEpoch];
+        _display setVariable ["ACME_medicalMenuRendererEpoch", _rendererEpoch];
+
+        private _oldRenderer = uiNamespace getVariable ["ACME_medicalMenuRendererPFH", -1];
+        if (_oldRenderer isEqualType 0 && {_oldRenderer >= 0}) then {
+            [_oldRenderer] call CBA_fnc_removePerFrameHandler;
+        };
+
+        // Bind action rows immediately. The persistent PFH below then keeps the complete ACE menu lifecycle current.
+        if (!isNil "ace_medical_gui_fnc_updateActions") then {
+            [_display] call ace_medical_gui_fnc_updateActions;
+        };
+
+        private _rendererPFH = [{
+            params ["_args", "_idPFH"];
+            _args params ["_display", "_epoch"];
+
+            private _currentDisplay = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+            private _currentEpoch = uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", -1];
+            if (isNull _display || {_display isNotEqualTo _currentDisplay} || {_epoch != _currentEpoch}) exitWith {
+                [_idPFH] call CBA_fnc_removePerFrameHandler;
+                if ((uiNamespace getVariable ["ACME_medicalMenuRendererPFH", -1]) == _idPFH) then {
+                    uiNamespace setVariable ["ACME_medicalMenuRendererPFH", -1];
+                };
+            };
+
+            if (!isNil "ace_medical_gui_fnc_menuPFH") then {
+                call ace_medical_gui_fnc_menuPFH;
+            } else {
+                if (!isNil "ace_medical_gui_fnc_updateActions") then {
+                    [_display] call ace_medical_gui_fnc_updateActions;
+                };
+            };
+        }, 0, [_display, _rendererEpoch]] call CBA_fnc_addPerFrameHandler;
+
+        _display setVariable ["ACME_medicalMenuRendererPFH", _rendererPFH];
+        uiNamespace setVariable ["ACME_medicalMenuRendererPFH", _rendererPFH];
+
+        // Once ACE's onLoad has finished, retire its unqualified global renderer PFH. From this point forward only
+        // the display-generation driver above paints the menu, so a late stock onUnload can clear menuPFH without
+        // affecting the live renderer.
+        [{
+            params ["_display", "_epoch", "_rendererPFH"];
+            if (isNull _display
+                || {_epoch != (uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", -1])}
+                || {_rendererPFH != (uiNamespace getVariable ["ACME_medicalMenuRendererPFH", -1])}) exitWith {};
+
+            private _acePFH = missionNamespace getVariable ["ace_medical_gui_menuPFH", -1];
+            if (_acePFH isEqualType 0 && {_acePFH >= 0} && {_acePFH != _rendererPFH}) then {
+                [_acePFH] call CBA_fnc_removePerFrameHandler;
+            };
+            missionNamespace setVariable ["ace_medical_gui_menuPFH", -1];
+
+            if (call ACME_fnc_debugEnabled) then {
+                diag_log format ["[ACME MENU RENDERER] owner epoch=%1 renderer=%2 retiredACE=%3 target=%4",
+                    _epoch, _rendererPFH, _acePFH,
+                    if (isNull (missionNamespace getVariable ["ace_medical_gui_target", objNull])) then {"null"} else {
+                        netId (missionNamespace getVariable ["ace_medical_gui_target", objNull])
+                    }];
+            };
+        }, [_display, _rendererEpoch, _rendererPFH]] call CBA_fnc_execNextFrame;
+
+        _display displayAddEventHandler ["Unload", {
+            params ["_display"];
+            private _epoch = _display getVariable ["ACME_medicalMenuRendererEpoch", -1];
+            if (_epoch != (uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", -2])) exitWith {};
+            private _pfh = _display getVariable ["ACME_medicalMenuRendererPFH", -1];
+            if (_pfh isEqualType 0 && {_pfh >= 0}
+                && {_pfh == (uiNamespace getVariable ["ACME_medicalMenuRendererPFH", -1])}) then {
+                [_pfh] call CBA_fnc_removePerFrameHandler;
+                uiNamespace setVariable ["ACME_medicalMenuRendererPFH", -1];
+            };
+        }];
+    };
+
     private _cancelledHandsOn = false;
     if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
         // A valid continuous action refreshes LastSeen every <=2 s. If that heartbeat disappeared, release only
