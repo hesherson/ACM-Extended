@@ -18,6 +18,7 @@
 ["ace_medicalMenuOpened", {
     params ["_medic", "_target", "_display"];
 
+    private _cancelledHandsOn = false;
     if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
         // A valid continuous action refreshes LastSeen every <=2 s. If that heartbeat disappeared, release only
         // the orphaned global gate before the menu evaluates treatment eligibility.
@@ -38,6 +39,32 @@
                 call ACME_fnc_headElevateCancelSeq;
             };
         };
+
+        // Opening the medical menu is an explicit request to leave these two non-dialog hands-on maneuvers.
+        // Cancel the exact current generation synchronously so its global continuous-action gate cannot make the
+        // freshly opened menu's buttons appear dead while waiting for the PFH cleanup on the next frame.
+        if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) then {
+            private _session = _medic getVariable ["ACM_core_ContinuousAction_Session", []];
+            private _epoch = _session param [1, -1];
+            private _sessionPatient = _session param [0, objNull];
+            private _headTiltSession = if (!isNull _target) then {
+                _target getVariable ["ACM_airway_HeadTilt_State_Session", []]
+            } else {
+                []
+            };
+            private _manualHold = _medic getVariable ["ACME_headElev_holding", []];
+
+            private _ownsHeadTilt = _sessionPatient isEqualTo _target
+                && {_epoch >= 0}
+                && {_headTiltSession isEqualTo [_medic, _epoch]};
+            private _ownsManualSemiFowler = (_manualHold param [0, objNull]) isEqualTo _target
+                && {(_manualHold param [1, ""]) != ""};
+
+            if (_ownsHeadTilt || {_ownsManualSemiFowler}) then {
+                missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+                _cancelledHandsOn = true;
+            };
+        };
     };
 
     // Pulse palpation is a modal cutRsc. Opening the medical menu must retire it immediately; otherwise the pulse
@@ -53,7 +80,11 @@
 
     // Bind Unload to its original provider and generation, never a later ACE_player/menu.
     if (_medic isEqualTo ACE_player) then {
-        [_medic, _target, _display] call ACME_fnc_menuPoseStart;
+        // Let the cancelled hands-on controller run its exact onCancel/provider-exit cleanup first. The menu itself
+        // is already live and fully interactive; it does not need to seize a crouch animation on this same frame.
+        if (!_cancelledHandsOn) then {
+            [_medic, _target, _display] call ACME_fnc_menuPoseStart;
+        };
         if (!isNull _display) then {
             _display displayAddEventHandler ["Unload", {
                 params ["_display"];
