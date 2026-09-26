@@ -821,6 +821,10 @@ private _getMedEffect = {
     if (missionNamespace getVariable ["ACME_sys_do2", true]) then {
         private _do2v = [_patient] call ACME_fnc_oxygenDelivery;
         _state set ["do2", _do2v];
+        // DO2 remains oxygen supply. Infection raises demand, so anaerobic debt keys on supply/demand adequacy.
+        private _metabolicDemand = (_patient getVariable ["ACM_infection_Metabolic_Demand", 1]) max 1;
+        private _do2Adequacy = _do2v / _metabolicDemand;
+        _state set ["do2Adequacy", _do2Adequacy];
 
         // guard 1. a casualty who is awake and saturating is winning. if they are conscious and their SpO2 meets what
         // ACM needs to keep them up, they are perfusing their brain by definition, whatever the delivery arithmetic
@@ -859,12 +863,12 @@ private _getMedEffect = {
         private _clear = missionNamespace getVariable ["ACME_do2_clearFrac", 0.58];
         private _inDeficit = _state getOrDefault ["do2Deficit", false];
         if (_inDeficit) then {
-            if (_do2v >= _clear) then {
+            if (_do2Adequacy >= _clear) then {
                 _inDeficit = false;
                 _state set ["do2RecoveredAt", _now];  // start the reperfusion window.
             };
         } else {
-            if (_do2v < _crit) then { _inDeficit = true; };
+            if (_do2Adequacy < _crit) then { _inDeficit = true; };
         };
         _state set ["do2Deficit", _inDeficit];
         // on ROSC, open the reperfusion window. delivery is climbing back and the tissue is repaying, so the moments
@@ -881,7 +885,7 @@ private _getMedEffect = {
         private _inReperf = (_now - (_state getOrDefault ["do2RecoveredAt", -1e9])) < _reperfWin;
 
         if (_inDeficit && {!_awakeOK} && {!_inReperf} && {!_arrestNow}) then {
-            private _deficit = linearConversion [_crit, (missionNamespace getVariable ["ACME_do2_lethalFrac", 0.2]), _do2v, 0, 1, true];
+            private _deficit = linearConversion [_crit, (missionNamespace getVariable ["ACME_do2_lethalFrac", 0.2]), _do2Adequacy, 0, 1, true];
             _metabolicAcidosis = (_metabolicAcidosis
                 + ((missionNamespace getVariable ["ACME_do2_acidosisPerSec", 0.0009]) * _deficit * _acidDt)) min 1;
         };
