@@ -4,7 +4,7 @@ params ["_medic", "_patient", "_item"];
 private _total = 0;
 private _vehicles = [];
 {
-    _total = _total + ([_x, _item] call ace_common_fnc_getCountOfItem);
+    _total = _total + ([_x, _item] call ACME_fnc_itemCount);
     private _vehicle = objectParent _x;
     if (!isNull _vehicle && {!(_vehicle in _vehicles)}) then {
         _vehicles pushBack _vehicle;

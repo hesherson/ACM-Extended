@@ -2819,6 +2819,9 @@ class CfgFunctions {
             class vialClass {};
             class vialMedication {};
             class vialItemCount {};
+            class itemCount {};
+            class itemTake {};
+            class itemList {};
             class vialCapacity {};
             class vialPreview {};
             class medicationSourceRows {};
