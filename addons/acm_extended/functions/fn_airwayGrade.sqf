@@ -37,7 +37,10 @@ private _occluded = ((_patient getVariable ["ACM_airway_AirwayCollapse_State", 0
     || {(_patient getVariable ["ACM_airway_AirwayObstructionVomit_State", 0]) > 0};
 if (_occluded) then { _foul = _foul + 0.20; };
 if ((_patient getVariable ["ACM_airway_AirwayObstructionBlood_State", 0]) > 0) then { _foul = _foul + 0.20; };
-if ([_patient] call ACME_fnc_airwayHasFacialBurn) then { _foul = _foul + 0.25; };
+if ([_patient] call ACME_fnc_airwayHasFacialBurn) then {_foul = _foul + 0.25;};
+// Progressive inhalation/burn edema worsens the laryngoscopic view on top of the visible facial burn.
+private _burnInflammation = (_patient getVariable ["ACM_burns_AirwayInflammation",0]) max 0 min 100;
+_foul = _foul + (0.35 * (_burnInflammation / 100));
 
 private _insult = _head + _foul;
 private _bump = switch (true) do {
