@@ -111,7 +111,7 @@ if (_stage == 3) then {
 };
 
 private _permanent = _patient getVariable [QGVAR(Sepsis_Permanent), false];
-if (!_permanent && {_stage == 3} && {GVAR(hardcoreSepsisSequelae)}) then {
+if (!_permanent && {_stage == 3} && {missionNamespace getVariable ["ACME_hcEff_infection",false]}) then {
     private _onset = _patient getVariable [QGVAR(Sepsis_Onset), _now];
     private _limit = (GVAR(hardcoreSepsisEvacMinutes) max 1) * 60;
     if (_onset >= 0 && {_now - _onset >= _limit}) then {
