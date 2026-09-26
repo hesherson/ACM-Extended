@@ -29,10 +29,30 @@ if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} 
     if (_medic getVariable ["ACME_headElev_seqActive", false]) then {
         call ACME_fnc_headElevateCancelSeq;
     };
-    private _sfHold = _medic getVariable ["ACME_headElev_holding", []];
-    if (count _sfHold >= 2 && {(_sfHold select 0) isEqualTo _patient}
-        && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) then {
-        missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+
+    // If a medical button is clickable, the provider has explicitly returned to the medical menu. Yield only the
+    // two non-dialog hands-on holds that are supposed to end when the provider resumes other care. This is scoped
+    // by exact continuous-action generation so BVM/CPR/stethoscope ownership is never cleared here.
+    if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) then {
+        private _activeSession = _medic getVariable ["ACM_core_ContinuousAction_Session", []];
+        private _activePatient = _activeSession param [0, objNull];
+        private _activeEpoch = _activeSession param [1, -1];
+        private _headTiltSession = if (!isNull _patient) then {
+            _patient getVariable ["ACM_airway_HeadTilt_State_Session", []]
+        } else {
+            []
+        };
+        private _sfHold = _medic getVariable ["ACME_headElev_holding", []];
+
+        private _ownsHeadTilt = _activePatient isEqualTo _patient
+            && {_activeEpoch >= 0}
+            && {_headTiltSession isEqualTo [_medic, _activeEpoch]};
+        private _ownsManualSemiFowler = (_sfHold param [0, objNull]) isEqualTo _patient
+            && {(_sfHold param [1, ""]) != ""};
+
+        if (_ownsHeadTilt || {_ownsManualSemiFowler}) then {
+            missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
+        };
     };
 };
 
