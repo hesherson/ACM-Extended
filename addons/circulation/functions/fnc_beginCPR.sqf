@@ -16,7 +16,7 @@
  * Public: No
  */
 
-params ["_medic", "_patient", ["_headLowered", false, [false]]];
+params ["_medic", "_patient"];
 
 if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {};
 private _reserved = _patient getVariable [QGVAR(CPR_Medic), objNull];
@@ -26,48 +26,6 @@ if ([_reserved, _patient] call FUNC(cprSessionValid)) exitWith {
 
 private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
 [_reserved, _patient, _oldSession param [1, -1]] call FUNC(cprRelease);
-
-// CPR is the one supported-patient maneuver that permanently replaces Semi-Fowler. A normal chest-access preflight
-// may already have laid the patient flat; finalize that logical posture without replaying another set-down. Direct
-// starts such as BVM -> CPR have no preflight, so play the authored release once. Its wait belongs to the same CPR
-// session/watchdog as the provider entry, keeping Escape, distance loss and replacement actions effective throughout.
-private _headLowerDelay = 0;
-if (!_headLowered
-    && {_patient getVariable ["ACME_headElevated", false]}
-    && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) then {
-    private _lowerDelay = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-    if !(_lowerDelay isEqualType 0 && {finite _lowerDelay} && {_lowerDelay >= 0.2}) then {_lowerDelay = 1.4;};
-
-    // Publish owner-side open-chest custody BEFORE the support carrier is detached from Semi-Fowler ownership.
-    // The deadline bridges the 1.4 s lay-flat; once CPR starts, live CPR ownership keeps restoration blocked.
-    private _handoffSec = _lowerDelay + 1.00;
-    _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + _handoffSec], false];
-    [_patient, "chestAccessManeuverHandoff", [_handoffSec]] call ACME_fnc_ownerDispatch;
-
-    [_patient, "headElevStop", [objNull, _patient, false, false, true]] call ACME_fnc_ownerDispatch;
-    _headLowerDelay = _lowerDelay + 0.05;
-};
-
-if (!_headLowered
-    && {_patient getVariable ["ACME_headElevated", false]}
-    && {_patient getVariable ["ACME_headElev_Suspended", false]}) then {
-    // A pre-existing suspension already owns open-chest state. Preserve any support carrier under that custody.
-    [_patient, "headElevStop", [objNull, _patient, true, false, true]] call ACME_fnc_ownerDispatch;
-};
-
-// CPR outranks Direct Pressure for provider animation and clinical hand use without destroying the persistent
-// pressure episode. This local guard also covers direct/scripted CPR starts that bypass the ACE treatment bridge.
-private _dpSamePatient = (_medic getVariable ["ACME_DP_Active", false])
-    && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient};
-if (_dpSamePatient) then {
-    _medic setVariable ["ACME_DP_Paused", true, false];
-    _medic setVariable ["ACME_DP_PauseTreatmentClass", "cpr", false];
-    _medic setVariable ["ACME_dah_gen", (_medic getVariable ["ACME_dah_gen", 0]) + 1, false];
-    _medic setVariable ["ACME_DP_InPose", false, false];
-    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
-    _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
-};
-
 // Recover this client's interrupted controller before replacing its captured session.
 private _localSession = missionNamespace getVariable [QGVAR(CPR_LocalSession), []];
 if !(_localSession isEqualTo []) then {_localSession call FUNC(cprCleanupLocal);};
@@ -89,13 +47,6 @@ _medic setVariable [QGVAR(CPR_lastSeen), CBA_missionTime, true];
 _patient setVariable [QGVAR(CPR_session), [_medic, _epoch], true];
 GVAR(CPR_LocalSession) = [_medic, _patient, _epoch];
 [QGVAR(cprTrack), [_medic, _patient, _epoch]] call CBA_fnc_serverEvent;
-
-// 1.2.3: a successful CPR start completes any BVM -> CPR chest-access handoff.
-// The shared carrier lease itself stays owned by the treatment lifecycle until both maneuvers have ended.
-private _chestHandoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
-if ((_chestHandoff param [0, objNull, [objNull]]) isEqualTo _patient) then {
-    _medic setVariable ["ACME_chestAccessManeuverHandoff", [], false];
-};
 
 // Synchronously retire input/EH leftovers before installing new handlers. Never leave an old F0/F1/F2 or
 // AnimDone callback around to operate on the new CPRTarget.
@@ -131,7 +82,7 @@ GVAR(MedicHasBVM) = false;
 GVAR(MedicHasBVMType) = "";
 GVAR(SwapToBVM) = false;
 
-private _uniqueItems = [_medic, 0] call ACEFUNC(common,uniqueItems);
+private _uniqueItems = [_medic, 0] call ACME_fnc_itemList;
 private _itemIndex = _uniqueItems findIf {_x == "ACM_BVM"};
 if (_itemIndex < 0) then {
     _itemIndex = _uniqueItems findIf {_x == "ACM_PocketBVM"};
@@ -188,7 +139,7 @@ if (_initialAnimation in ["amovpercmstpsnonwnondnon", "amovpknlmstpsnonwnondnon_
     _startDelay = 1.8;
 };
 
-private _readyAt = CBA_missionTime + (_startDelay max _headLowerDelay);
+private _readyAt = CBA_missionTime + _startDelay;
 private _CPRStartTime = _readyAt + 0.2;
 
 // Start the watchdog immediately, not after a blind wait. Escape/F0 during the entry animation therefore tears the
@@ -217,14 +168,6 @@ private _controller = [{
         || {_medic getVariable [QGVAR(CPR_Cancel), false]}
         || {_enteredVehicle} || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
         private _started = (_medic getVariable [QGVAR(CPR_StartedEpoch), -1]) == _epoch;
-
-        // Preserve the open-chest lease across the synchronous CPR -> BVM swap. The token is bounded so a failed
-        // replacement cannot strand the carrier off the casualty.
-        if (_swapToBVM && {!isNull _medic} && {!isNull _patient}) then {
-            _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 1.00], false];
-            [_patient, "chestAccessManeuverHandoff", [1.00]] call ACME_fnc_ownerDispatch;
-        };
-
         if !([_medic, _patient, _epoch] call FUNC(cprCleanupLocal)) exitWith {};
 
         if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo ACE_player} && {isNull objectParent _medic}) then {
@@ -305,7 +248,7 @@ private _controller = [{
     private _bvmChanged = _bvmNow isNotEqualTo _bvmWasActive;
 
     if (_cprChanged || _bvmChanged) then {
-        private _uniqueItems = [_medic, 0] call ACEFUNC(common,uniqueItems);
+        private _uniqueItems = [_medic, 0] call ACME_fnc_itemList;
         private _itemIndex = _uniqueItems findIf {_x == "ACM_BVM"};
         if (_itemIndex < 0) then {
             _itemIndex = _uniqueItems findIf {_x == "ACM_PocketBVM"};

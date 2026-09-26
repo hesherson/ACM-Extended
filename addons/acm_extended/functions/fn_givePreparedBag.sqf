@@ -68,7 +68,7 @@ if (_inventoryMode == 2) then {
     private _idx = (_cargo select 0) findIf {_x == _itemClass};
     if (_idx >= 0) then {_available = (_cargo select 1) select _idx};
 } else {
-    _available = [_target, _itemClass] call ace_common_fnc_getCountOfItem;
+    _available = [_target, _itemClass] call ACME_fnc_itemCount;
 };
 
 private _stagedId = _prepared param [15, ""];
@@ -89,7 +89,7 @@ if ([_patient, _bodyPart, _selectedIV, _accessSite] call ACME_fnc_isYLineAccess)
 };
 
 if (!_isStaged) then {
-    if (_inventoryMode == 2) then {_vehicle addItemCargoGlobal [_itemClass, -1];} else {_target removeItem _itemClass;};
+    if (_inventoryMode == 2) then {_vehicle addItemCargoGlobal [_itemClass, -1];} else {[_target, _itemClass] call ACME_fnc_itemTake;};
 };
 
 [[_medic, _patient, _target, _itemClass, _actionClass, _vehicle, _bodyPart, _selectedIV, _accessSite, _volume, _prepared, _preparedIndex, _label], {

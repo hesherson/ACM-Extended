@@ -20,4 +20,4 @@ params ["_medic", "_patient"];
 
 private _targetPatient = _medic getVariable [QGVAR(AED_Target_Patient), objNull];
 
-(('ACM_AED' in (items _medic)) || [_patient] call FUNC(hasAED)) && ((isNull _targetPatient) || (_targetPatient isEqualTo _patient));
+((([_medic, 'ACM_AED'] call ACME_fnc_itemCount) > 0) || [_patient] call FUNC(hasAED)) && ((isNull _targetPatient) || (_targetPatient isEqualTo _patient));

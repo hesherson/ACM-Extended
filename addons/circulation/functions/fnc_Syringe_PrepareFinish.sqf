@@ -1,10 +1,6 @@
 /* B19: exact-volume vial consumption. A physical vial becomes an invisible open-vial balance after first puncture. */
 params ["_medic", "_medication", "_dose", ["_size", 10]];
 if (isNull _medic || {_medication == ""} || {_dose <= 0} || {!finite _dose}) exitWith {false};
-// Filled magazines store hundredths of a milliliter. Debit that same amount,
-// rather than losing the fraction that was previously floored only at storage.
-_dose = (round (_dose * 100)) / 100;
-if (_dose <= 0 || {!(_size in [1,3,5,10])} || {_dose > _size + 0.001}) exitWith {false};
 private _holder = [_medic] call ACME_fnc_vialHolder;
 if (isNull _holder) exitWith {false};
 // B25: the source ledger may contain many identical vials, but the active syringe may only consume vials the
@@ -17,9 +13,14 @@ if (!isNull _dlgVial) then {
     if (_dose > _unlocked + 0.0005) then {_sessionOK = false;};
 };
 if (!_sessionOK) exitWith {false};
+if !([_holder, _medication, _dose, _medic] call ACME_fnc_vialTake) exitWith {false};
 private _empty = format ["ACM_Syringe_%1", _size];
-if !([_medic,[[_medication,_dose]],_empty,true] call ACME_fnc_medicationTakeSources) exitWith {false};
-[_medic, format ["ACM_Syringe_%1_%2", _size, _medication], "", round (_dose * 100)] call ace_common_fnc_addToInventory;
+if (([_medic, _empty] call ACME_fnc_itemCount) < 1) exitWith {
+    [_holder, _medication, _dose, _medic] call ACME_fnc_vialRefund;
+    false
+};
+[_medic, _empty] call ACME_fnc_itemTake;
+[_medic, format ["ACM_Syringe_%1_%2", _size, _medication], "", floor (_dose * 100)] call ace_common_fnc_addToInventory;
 private _dlgB25 = findDisplay 84000; if (!isNull _dlgB25) then {["clear", "", 0, _dlgB25] call ACME_fnc_vialSession;};
 
 // A successful draw returns the plunger to an empty-syringe state. Push/inject and infusion prep retain their state.
