@@ -130,21 +130,44 @@ private _afibChance = missionNamespace getVariable ["ACME_rhythm_afibHypoChance"
         };
     };
 
-    // Apply fever last so an infection's prescribed thermal response is not
-    // overwritten by the same tick's trauma-cooling calculation. Fever recovery
-    // is likewise owned here and returns only a fever-raised temperature to 37 C.
+    // Burns add an independent heat-loss source. The burn module never writes core temperature;
+    // it publishes a heat-loss drive and this single thermal writer integrates it. HPMK greatly attenuates
+    // exposed-surface loss but does not magically erase a major burn.
+    private _burnHeat = (_u getVariable ["ACM_burns_HeatLossDrive", 0]) max 0 min 1;
+    if (_burnHeat > 0.001) then {
+        private _tickSec = missionNamespace getVariable ["ACME_hypo_coolTickSec", 5];
+        private _burnRate = (missionNamespace getVariable ["ACME_burn_heatLossCPerMin", 0.22]) * _burnHeat;
+        if (_hpmkOn) then {_burnRate = _burnRate * 0.25;};
+        private _burnStep = _burnRate * (_tickSec / 60);
+        private _tBurn = _u getVariable ["ACME_hypo_temp", 37];
+        private _burnFloor = missionNamespace getVariable ["ACME_burn_tempFloorC", 31];
+        if (_tBurn > _burnFloor) then {
+            [_u, (_tBurn - _burnStep) max _burnFloor, true, true, false] call ACME_fnc_hypothermiaTemperatureCommit;
+        };
+    };
+
+    // Infection supplies a fever setpoint, not a temperature overwrite. Thermogenesis rises on a game-compressed
+    // minutes scale, and profound shock blunts the response so a septic hemorrhagic casualty can remain cold.
     private _tempAfterTrauma = _u getVariable ["ACME_hypo_temp", 37];
+    private _tickSec = missionNamespace getVariable ["ACME_hypo_coolTickSec", 5];
     if (_feverOffset > 0) then {
         private _feverTarget = (37 + _feverOffset) min 40.5;
         if (_tempAfterTrauma < _feverTarget) then {
-            [_u, (_tempAfterTrauma + (0.25 * (ACME_hypo_coolTickSec / 5))) min _feverTarget, true, true, false] call ACME_fnc_hypothermiaTemperatureCommit;
+            private _bpF = _u call ace_medical_status_fnc_getBloodPressure;
+            _bpF params [["_dF",0],["_sF",0]];
+            private _mapF = _dF + ((_sF - _dF) / 3);
+            private _perfusionHeat = linearConversion [35, 70, _mapF, 0.15, 1, true];
+            private _warmRate = missionNamespace getVariable ["ACM_infection_feverWarmPerMin", 0.18];
+            private _warmStep = _warmRate * (_tickSec / 60) * _perfusionHeat;
+            [_u, (_tempAfterTrauma + _warmStep) min _feverTarget, true, true, false] call ACME_fnc_hypothermiaTemperatureCommit;
         };
         _u setVariable ["ACME_infectionFeverActive", true, false];
     } else {
         if (_feverActive && {_tempAfterTrauma > 37}) then {
-            private _cooled = (_tempAfterTrauma - (0.15 * (ACME_hypo_coolTickSec / 5))) max 37;
+            private _coolRate = missionNamespace getVariable ["ACME_infection_feverResolvePerMin", 0.22];
+            private _cooled = (_tempAfterTrauma - (_coolRate * (_tickSec / 60))) max 37;
             [_u, _cooled, true, true, false] call ACME_fnc_hypothermiaTemperatureCommit;
-            if (_cooled <= 37) then { _u setVariable ["ACME_infectionFeverActive", false, false]; };
+            if (_cooled <= 37) then {_u setVariable ["ACME_infectionFeverActive", false, false];};
         };
     };
 
@@ -164,5 +187,6 @@ private _afibChance = missionNamespace getVariable ["ACME_rhythm_afibHypoChance"
         || {(_x getVariable ["ACME_hypo_temp", 37]) < 36.9}  // already cooling.
         || {(_x getVariable ["ACM_infection_Fever_Offset", 0]) > 0}  // infection fever.
         || {_x getVariable ["ACME_infectionFeverActive", false]}  // fever recovery.
+        || {(_x getVariable ["ACM_burns_HeatLossDrive", 0]) > 0.001}  // burn heat loss.
     }
 });
