@@ -193,13 +193,16 @@ private _pfh = [{
         // The source ACE dialog may still report live for a few frames on locally hosted/listen-server clients.
         // During this bounded startup window the continuous maneuver owns the interface: suppress stale reopen state
         // and keep asking the old dialog to close. After the window expires, any new dialog again cancels normally.
-        if (diag_tickTime < _dialogStartupUntil) then {
+        if (diag_tickTime < _dialogStartupUntil && {GVAR(ContinuousAction_Active)}) then {
             ACEGVAR(medical_gui,pendingReopen) = false;
             // Preserve this episode's explicit end behavior. B166 reset this to false every frame, which meant
             // non-dialog hands-on actions could never return to the medical menu even when they opted in.
             GVAR(ContinuousAction_ShouldReopen) = _reopenOnEnd;
             if (dialog) then {closeDialog 0;};
         } else {
+            // If the provider explicitly reopened the medical menu, the menu-open handler may already have set
+            // Active=false. In that case never close the new display as though it were the stale source progress
+            // dialog; cleanup below will retire the hold while leaving this menu intact.
             _dialogCondition = dialog;
         };
     };
