@@ -1,6 +1,9 @@
 // an endotracheal tube is a definitive airway. a cuffed tube sitting in the trachea is the whole point of
 // intubating someone, because it protects the lower airway from vomit, blood and the tongue. so an intubated
-// casualty must be protected from obstruction exactly the way an i-gel protects them.
+// casualty must be protected from upper-airway obstruction. The i-gel also stents the supraglottic airway,
+// but it is not equivalent: ACME's aspiration model gives a cuffed ETT substantially better lower-airway
+// protection, and progressive laryngeal/burn edema can defeat or prevent an i-gel while a tube already through
+// the cords continues to bypass that upper-airway narrowing.
 // ACM gates that protection on ACM_airway_AirwayItem_Oral being "SGA". see handleairwayobstruction_vomit,
 // handleairwayobstruction_blood and handleairwaycollapse, which all bail out early when it is set, and ACM's own
 // CPR code even comments that check as intubated.
@@ -16,7 +19,8 @@ if (isNull _patient || {!alive _patient} || {!(_patient isKindOf "CAManBase")}) 
 if (!(_patient getVariable ["ACME_ETT_Inserted", false])) exitWith {};
 // and the cuff has to be up. an uninflated cuff neither seals the trachea nor keeps anything out of it, so a tube
 // sitting there with a flat cuff protects nothing. this is the one thing the tube costs over a supraglottic: the
-// prep. once the cuff is inflated the protection below is exactly what an i-gel gives.
+// prep. Once the cuff is inflated it adds the tube's stronger aspiration seal; the airway-state function also
+// preserves the separate advantage of a tracheal tube across severe upper-airway edema.
 if (!(_patient getVariable ["ACME_ETT_Inserted", false]) || {!(_patient getVariable ["ACME_ETT_CuffInflated", false])}) exitWith {};
 if (!(missionNamespace getVariable ["ACME_ett_protectsAirway", true])) exitWith {};
 
