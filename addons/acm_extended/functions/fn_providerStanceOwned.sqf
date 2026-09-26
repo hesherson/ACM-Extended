@@ -7,7 +7,17 @@ if (isNull _unit) exitWith {false};
 
 if ((_unit getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []) exitWith {true};
 if ((_unit getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []) exitWith {true};
-if (_unit getVariable ["ACME_treatmentPreflightActive", false]) exitWith {true};
+private _preflightActive = _unit getVariable ["ACME_treatmentPreflightActive", false];
+private _preflightToken = _unit getVariable ["ACME_treatmentPreflightToken", ""];
+private _preflightStarted = _unit getVariable ["ACME_treatmentPreflightStartedAt", -1e6];
+// Treatment preflight is presentation-only and bounded. A stale Boolean must never retain provider stance or make
+// later medical-menu cleanup believe a dead preparation episode still owns the player.
+private _preflightOwned = _preflightActive
+    && {_preflightToken != ""}
+    && {_preflightStarted isEqualType 0}
+    && {finite _preflightStarted}
+    && {(CBA_missionTime - _preflightStarted) <= 4};
+if (_preflightOwned) exitWith {true};
 if (_unit getVariable ["ACME_chestAccessPreflightActive", false]) exitWith {true};
 if ((_unit getVariable ["ACME_chestAccessProvider", []]) isNotEqualTo []) exitWith {true};
 // A closed progress display can leave ACE's end-animation hint behind. That hint
