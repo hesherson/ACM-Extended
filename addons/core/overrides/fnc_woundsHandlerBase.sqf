@@ -210,7 +210,7 @@ private _bodyPartVisParams = [_unit, false, false, false, false]; // params arra
         _createdWounds = true;
 
         if (_woundTypeToAdd in ["Burn2", "Burn3"]) then {
-            [QEGVAR(burns,burnApplied), [_unit, _bodyPart, _woundTypeToAdd]] call CBA_fnc_localEvent;
+            [QEGVAR(burns,burnApplied), [_unit, _bodyPart, _woundTypeToAdd, _woundDamage]] call CBA_fnc_localEvent;
         };
 
         [_unit, _bodyPart, (10 * _woundClassIDToAdd), _category, _bleeding] call EFUNC(damage,inflictInternalBleeding);
