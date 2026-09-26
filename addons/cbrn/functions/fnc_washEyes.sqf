@@ -20,7 +20,7 @@
 
 params ["_medic", "_patient", ["_usedItem", ""], ["_sourceObject", objNull]];
 
-if (_usedItem != "") then {
+if (_usedItem in ["ACE_WaterBottle", "ACE_WaterBottle_Half", "ACE_Canteen", "ACE_Canteen_Half"]) then {
     private _item = switch (_usedItem) do {
         case "ACE_WaterBottle": {"ACE_WaterBottle_Half"};
         case "ACE_WaterBottle_Half": {"ACE_WaterBottle_Empty"};
@@ -46,6 +46,9 @@ if (_medic != _patient) then {
 [_patient, "activity", LLSTRING(WashEyes_ActionLog), [[_medic, false, true] call ACEFUNC(common,getName)]] call ACEFUNC(medical_treatment,addToLog);
 
 _patient setVariable [QGVAR(EyesWashed), true, true];
+
+private _clearOphthalmologyEyeInjury = missionNamespace getVariable ["ACM_ophthalmology_fnc_clearEyeInjury", {}];
+[_patient] call _clearOphthalmologyEyeInjury;
 
 if ((_patient getVariable [QGVAR(Chemical_Chlorine_Blindness), false]) || (_patient getVariable [QGVAR(Chemical_Lewisite_Blindness), false])) exitWith {};
 

@@ -5,9 +5,12 @@ import re
 ROOT=Path(__file__).resolve().parents[1]
 expected={x.strip().casefold() for x in (ROOT/'tools/upstream_acm_cfgpatches_manifest.txt').read_text().splitlines() if x.strip() and not x.startswith('#')}
 assert len(expected)==12
+expected_components={name.removeprefix('acm_') for name in expected}
 actual=set()
 for addon in sorted((ROOT/'addons').iterdir()):
-    if not addon.is_dir() or addon.name=='acm_extended' or not (addon/'config.cpp').is_file(): continue
+    # This is a preservation test for the supplied ACM source components. MDF
+    # feature PBOs are intentionally additional and must not change this set.
+    if not addon.is_dir() or addon.name not in expected_components or not (addon/'config.cpp').is_file(): continue
     if addon.name=='main': component='main'
     else:
         sc=addon/'script_component.hpp'; assert sc.is_file(),addon

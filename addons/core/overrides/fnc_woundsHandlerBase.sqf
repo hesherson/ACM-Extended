@@ -90,6 +90,12 @@ private _bodyPartVisParams = [_unit, false, false, false, false]; // params arra
         ACEGVAR(medical_damage,woundDetails) get _woundTypeToAdd params ["","_injuryBleedingRate","_injuryPain","_causeLimping","_causeFracture"];
         private _woundClassIDToAdd = ACEGVAR(medical_damage,woundClassNames) find _woundTypeToAdd;
 
+        // Full-thickness burns can be insensate. Resolve this at wound creation so
+        // normal ACE pain decay remains authoritative afterwards.
+        if (_woundTypeToAdd isEqualTo "Burn3" && {random 1 < (missionNamespace getVariable [QEGVAR(burns,burn3PainlessChance), 0.5])}) then {
+            _injuryPain = 0;
+        };
+
         // Add a bit of random variance to wounds
         private _woundDamage = _dmgPerWound * _dmgMultiplier * random [0.9, 1, 1.1];
 
@@ -114,6 +120,9 @@ private _bodyPartVisParams = [_unit, false, false, false, false]; // params arra
         // medium is > LARGE_WOUND_THRESHOLD^2
         // minor is > LARGE_WOUND_THRESHOLD^3
         private _category = 0  max (2 - floor (ln _woundSize / ln LARGE_WOUND_THRESHOLD)) min 2;
+
+        // Depth, not size, is the useful clinical discriminator for a burn.
+        if (_woundTypeToAdd in ["Burn1", "Burn2", "Burn3"]) then { _category = 1; };
 
         private _classComplex = 10 * _woundClassIDToAdd + _category;
 
@@ -199,6 +208,10 @@ private _bodyPartVisParams = [_unit, false, false, false, false]; // params arra
             _existingWounds pushBack _injury;
         };
         _createdWounds = true;
+
+        if (_woundTypeToAdd in ["Burn2", "Burn3"]) then {
+            [QEGVAR(burns,burnApplied), [_unit, _bodyPart, _woundTypeToAdd]] call CBA_fnc_localEvent;
+        };
 
         [_unit, _bodyPart, (10 * _woundClassIDToAdd), _category, _bleeding] call EFUNC(damage,inflictInternalBleeding);
         //[_unit, _bodyPart, _classComplex, _woundDamage] call EFUNC(damage,handleWoundReopening); // TODO test this
