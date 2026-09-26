@@ -97,3 +97,53 @@ def test_lifecycle_model_old_close_cannot_kill_new_renderer():
     close_display(new)
     assert state["pfh"] == -1
     assert new["pfh"] in state["removed"]
+
+
+def test_narc_box_return_uses_normal_medical_menu_open_lifecycle():
+    sk_close = (ROOT / "addons" / "acm_extended" / "functions" / "fn_skClose.sqf").read_text(encoding="utf-8")
+    reopen = (ROOT / "addons" / "acm_extended" / "functions" / "fn_reopenMedicalMenu.sqf").read_text(encoding="utf-8")
+
+    # Narc Box does not own or repair action controls itself. Its close handler returns through ACE's normal
+    # openMenu entry point, so B168's display-generation renderer ownership is the single shared fix.
+    assert '[_patient, "medication"] call ACME_fnc_reopenMedicalMenu;' in sk_close
+    assert '[_patient] call ace_medical_gui_fnc_openMenu;' in reopen
+    assert 'updateActions' not in sk_close
+    assert 'menuPFH' not in sk_close
+    assert 'updateActions' not in reopen
+    assert 'menuPFH' not in reopen
+
+
+def test_narc_box_close_reopen_model_keeps_new_renderer_alive():
+    """Model the exact medical menu -> Narc Box -> returned medical menu lifecycle."""
+    state = {"epoch": 0, "current": None, "pfh": -1, "removed": []}
+
+    def open_medical(name):
+        state["epoch"] += 1
+        epoch = state["epoch"]
+        if state["pfh"] >= 0:
+            state["removed"].append(state["pfh"])
+        pfh = 200 + epoch
+        state["current"] = name
+        state["pfh"] = pfh
+        return {"name": name, "epoch": epoch, "pfh": pfh}
+
+    def unload_medical(display):
+        if display["name"] != state["current"] or display["epoch"] != state["epoch"]:
+            return
+        if display["pfh"] == state["pfh"]:
+            state["removed"].append(display["pfh"])
+        state["pfh"] = -1
+        state["current"] = None
+
+    before_narc = open_medical("before-narc")
+    unload_medical(before_narc)
+    assert state["pfh"] == -1
+
+    returned = open_medical("after-narc")
+    assert state["pfh"] == returned["pfh"]
+
+    # A delayed duplicate unload from the pre-Narc display cannot kill the returned menu.
+    unload_medical(before_narc)
+    assert state["current"] == "after-narc"
+    assert state["pfh"] == returned["pfh"]
+    assert returned["pfh"] not in state["removed"]
