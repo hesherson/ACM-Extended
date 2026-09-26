@@ -1,38 +1,35 @@
 #include "..\script_component.hpp"
 /*
- * Author: INFERNO
- * Clears all infection state variables and stops active PFHs.
- *
- * Arguments:
- * 0: Patient <OBJECT>
- *
- * Return Value:
- * None
- *
- * Example:
- * [player] call ACM_infection_fnc_resetVariables;
- *
- * Public: No
+ * Clear infection state. Legacy per-patient PFHs are retired for hot-reload compatibility.
  */
-
 params ["_patient"];
 
 private _infectionPFH = _patient getVariable [QGVAR(Infection_PFH), -1];
-if (_infectionPFH != -1) then {
-    [_infectionPFH] call CBA_fnc_removePerFrameHandler;
-};
-
+if (_infectionPFH != -1) then {[_infectionPFH] call CBA_fnc_removePerFrameHandler;};
 private _sepsisPFH = _patient getVariable [QGVAR(Sepsis_PFH), -1];
-if (_sepsisPFH != -1) then {
-    [_sepsisPFH] call CBA_fnc_removePerFrameHandler;
-};
+if (_sepsisPFH != -1) then {[_sepsisPFH] call CBA_fnc_removePerFrameHandler;};
 
-_patient setVariable [QGVAR(Infection_PFH),                -1, true];
-_patient setVariable [QGVAR(Sepsis_PFH),                  -1, true];
-_patient setVariable [QGVAR(Infection_Stage),               0, true];
-_patient setVariable [QGVAR(Infection_EligibleTime),       -1, true];
-_patient setVariable [QGVAR(Infection_RiskAccumulator),     0, true];
-_patient setVariable [QGVAR(Infection_NextCheck),           0, true];
-_patient setVariable [QGVAR(Infection_NextStageTime),      -1, true];
-_patient setVariable [QGVAR(Infection_TreatmentAccumulator), 0, true];
-_patient setVariable [QGVAR(Fever_Offset),                  0, true];
+{
+    _x params ["_name","_value","_public"];
+    _patient setVariable [_name,_value,_public];
+} forEach [
+    [QGVAR(Infection_PFH),-1,false],
+    [QGVAR(Sepsis_PFH),-1,false],
+    [QGVAR(Infection_Stage),0,true],
+    [QGVAR(Infection_EligibleTime),-1,true],
+    [QGVAR(Infection_RiskAccumulator),0,true],
+    [QGVAR(Infection_NextCheck),0,false],
+    [QGVAR(Infection_NextStageTime),-1,true],
+    [QGVAR(Infection_TreatmentAccumulator),0,true],
+    [QGVAR(Fever_Offset),0,true],
+    [QGVAR(Sepsis_Onset),-1,true],
+    [QGVAR(Sepsis_NextPain),0,false],
+    [QGVAR(Sepsis_Severity),0,true],
+    [QGVAR(Sepsis_Permanent),false,true],
+    [QGVAR(HR_Adjust),0,true],
+    [QGVAR(RR_Adjust),0,true],
+    [QGVAR(Resistance_Delta),0,true],
+    [QGVAR(Metabolic_Demand),1,true],
+    [QGVAR(Preload_Mult),1,true],
+    [QGVAR(Coag_Mult),1,true]
+];
