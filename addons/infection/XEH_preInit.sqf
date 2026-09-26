@@ -37,4 +37,31 @@ PREP_RECOMPILE_END;
     true
 ] call CBA_fnc_addSetting;
 
+[
+    QGVAR(hardcoreSepsisSequelae),
+    "CHECKBOX",
+    ["[HARDCORE] Persistent Sepsis", "Prolonged septic shock can leave field-unresolved organ dysfunction. Antibiotics can control the infection, but residual physiology and the evacuation requirement remain until full heal or definitive care."],
+    [ACM_SETTINGS_CATEGORY, "Hardcore"],
+    [false],
+    true
+] call CBA_fnc_addSetting;
+
+[
+    QGVAR(hardcoreSepsisEvacMinutes),
+    "SLIDER",
+    ["[HARDCORE] Sepsis evacuation threshold", "Minutes continuously in septic shock before persistent organ dysfunction is latched. Has no effect unless Persistent Sepsis is enabled."],
+    [ACM_SETTINGS_CATEGORY, "Hardcore"],
+    [5, 30, 10, 0],
+    true
+] call CBA_fnc_addSetting;
+
+[
+    QGVAR(feverWarmPerMin),
+    "SLIDER",
+    ["Fever rise rate", "Maximum core-temperature rise in degrees C per minute from infection thermogenesis. Shock can blunt this response; hemorrhage and burn cooling still compete with it."],
+    [ACM_SETTINGS_CATEGORY, "Physiology"],
+    [0.05, 0.40, 0.18, 2],
+    true
+] call CBA_fnc_addSetting;
+
 ADDON = true;
