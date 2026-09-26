@@ -596,12 +596,14 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 && {(((_anim find "wnon") >= 0) && {(_anim find "snon") >= 0})
                     || {_anim in ["acm_genericcontinuous", "acm_pronecontinuous"]}}
         }, {
-            params ["_m", "_args", "_tok"];
+            params ["_m", "_args", "_tok", "_launchAfterPreflight"];
             if (isNull _m || {!alive _m} || {!local _m}
                 || {(_m getVariable ["ACME_treatmentPreflightToken", ""]) != _tok}) exitWith {
                 if (!isNull _m && {local _m} && {(_m getVariable ["ACME_treatmentPreflightToken", ""]) == _tok}) then {
                     _m setVariable ["ACME_treatmentPreflightActive", false, false];
                     _m setVariable ["ACME_treatmentPreflightToken", "", false];
+                    _m setVariable ["ACME_treatmentPreflightBypass", [], false];
+                    _m setVariable ["ACME_treatmentPreflightStartedAt", -1, false];
                     _m setUnitPos "AUTO";
                     _m setAnimSpeedCoef 1;
                     ["ace_common_setAnimSpeedCoef", [_m, 1]] call CBA_fnc_globalEvent;
@@ -633,6 +635,8 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                     if (!isNull _u && {local _u} && {(_u getVariable ["ACME_treatmentPreflightToken", ""]) == _token}) then {
                         _u setVariable ["ACME_treatmentPreflightActive", false, false];
                         _u setVariable ["ACME_treatmentPreflightToken", "", false];
+                        _u setVariable ["ACME_treatmentPreflightBypass", [], false];
+                        _u setVariable ["ACME_treatmentPreflightStartedAt", -1, false];
                         _u setUnitPos "AUTO";
                     _u setAnimSpeedCoef 1;
                     ["ace_common_setAnimSpeedCoef", [_u, 1]] call CBA_fnc_globalEvent;
@@ -668,6 +672,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
 
     if (_isBypass) then {
         _medic setVariable ["ACME_treatmentPreflightActive", false, false];
+        _medic setVariable ["ACME_treatmentPreflightStartedAt", -1, false];
     };
 
     // A newly accepted head-position action replaces the previous finite treatment's exit lease.
