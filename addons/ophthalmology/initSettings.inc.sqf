@@ -102,11 +102,3 @@
     true
 ] call CBA_fnc_addSetting;
 
-[
-    QGVAR(hardcorePersistentOcular),
-    "CHECKBOX",
-    ["[HARDCORE] Persistent Ocular Trauma", "Structural blast/traumatic eye injury does not heal in the field. An eye shield stabilizes/protects the injury, but definitive treatment requires evacuation/full heal. Dust and chemical irritation remain eyewash-reversible."],
-    [CBA_SETTINGS_CAT, LSTRING(setting_subcategory_injury)],
-    [false],
-    true
-] call CBA_fnc_addSetting;
