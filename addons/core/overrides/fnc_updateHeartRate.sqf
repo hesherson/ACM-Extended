@@ -55,6 +55,18 @@ if (_tbiTarget >= 0 && {missionNamespace getVariable ["ACME_sys_tbi", true]}) th
     };
 };
 _desiredHR = _desiredHR + ([_unit] call ACME_fnc_laryngoStimulusEffect) * (missionNamespace getVariable ["ACME_laryngo_hrSurge", 10]);
+
+// A rare adult laryngeal/tracheal vagal reflex supplies a temporary HR ceiling. It is applied
+// again after native pain/hypoxia compensation below so those max() branches cannot erase it.
+private _vagalCeiling = -1;
+private _vagalUntil = _unit getVariable ["ACME_laryngo_vagalUntil",-1];
+if (CBA_missionTime < _vagalUntil) then {
+    private _vagalSeverity = (_unit getVariable ["ACME_laryngo_vagalSeverity",0]) max 0 min 1;
+    private _drop = (missionNamespace getVariable ["ACME_laryngo_vagalBpmDrop",55]) * _vagalSeverity;
+    private _floor = missionNamespace getVariable ["ACME_laryngo_vagalMinTargetHR",28];
+    _vagalCeiling = (_desiredHR - _drop) max _floor;
+};
+
 _desiredHR = (_desiredHR max 0) min (missionNamespace getVariable ["ACME_hrHardMax", 260]);
 _unit setVariable ["ACME_hrWrapLast", CBA_missionTime, false];
 
@@ -121,6 +133,7 @@ if (!(alive _unit) || !(HAS_PULSE(_unit)) || alive (_unit getVariable [QACEGVAR(
             };
         };
         if (_custom == 102) then {_targetHR = _targetHR min (_unit getVariable ["ACME_rhythm_targetHR",210]);};
+        if (_vagalCeiling >= 0) then {_targetHR = _targetHR min _vagalCeiling;};
 
         _hrChange = round(_targetHR - _heartRate) / 2;
     } else {
