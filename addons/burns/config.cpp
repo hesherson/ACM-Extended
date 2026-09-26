@@ -13,6 +13,7 @@ class CfgPatches {
         requiredAddons[] = {
             "ACM_core",
             "ACM_damage",
+            "ACM_Extended",
             "ace_medical",
             "ace_medical_status",
             "ace_medical_treatment",
