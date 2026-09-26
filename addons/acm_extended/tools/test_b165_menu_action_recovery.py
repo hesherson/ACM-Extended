@@ -16,8 +16,11 @@ def test_renderer_is_back_on_b161_action_pipeline():
 
 
 def test_collector_still_compiles_native_treatment_statement_once():
-    assert "ace_medical_treatment_fnc_treatment" in COLLECT
-    assert "private _statement = compile format" in COLLECT
+    # Source keeps ACE's macro form until HEMTT preprocessing. Assert the actual source contract rather than the
+    # post-preprocessor symbol name, which never appears literally in fnc_collectActions.sqf.
+    assert "DACEFUNC(ACE_ADDON(medical_treatment),treatment)" in COLLECT
+    assert COLLECT.count("private _statement = compile format") == 1
+    assert COLLECT.count("DACEFUNC(ACE_ADDON(medical_treatment),treatment)") == 1
     assert "ACEGVAR(medical_gui,actions) pushBack [_displayName, _category, _condition, _statement" in COLLECT
 
 
