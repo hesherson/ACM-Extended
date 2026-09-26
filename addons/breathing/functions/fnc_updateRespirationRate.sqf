@@ -8,6 +8,8 @@ private _base = _unit getVariable ["ACM_core_TargetVitals_RespirationRate", 18];
 private _desired = _base max 1;
 private _blast = if (missionNamespace getVariable ["ACME_sys_blastLung", true]) then {_unit getVariable ["ACME_blastLung_rrDrive", -1]} else {-1};
 if (_blast > 0) then {_desired = _desired max _blast;};
+// Fever/systemic infection raises neural respiratory drive; exact central apnea/TBI/seizure commands below still outrank it.
+_desired = _desired + (_unit getVariable ["ACM_infection_RR_Adjust", 0]);
 private _overload = _unit getVariable ["ACM_circulation_Overload_Volume", 0];
 private _edemaThreshold = missionNamespace getVariable ["ACME_edema_threshold", 0.5];
 if (_overload > _edemaThreshold) then {
