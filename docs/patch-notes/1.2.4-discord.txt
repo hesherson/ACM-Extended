@@ -1,0 +1,55 @@
+@everyone
+# ACM Extended v1.2.4 - Patch
+
+:exclamation~1:Remember to repair your mod:exclamation~1:
+
+## CPR / BVM
+- CPR and BVM now share the same chest-access and equipment-removal sequence
+- Plate carriers remain off through CPR -> BVM -> CPR swaps and are only restored when the intervention family is actually finished
+- CPR/BVM preparation closes the medical menu and shows **Preparing...** while chest access is being established
+- CPR and BVM can no longer be spam clicked during preparation
+- Canceling preparation now returns to the medical menu normally
+- Carrier removal/restoration animations have been sped up
+- Semi-Fowler's automatically yields to CPR/BVM and resumes only after the higher-priority intervention fully ends
+
+## DIRECT PRESSURE
+- Direct Pressure now persists through CPR and BVM instead of being canceled
+- CPR/BVM temporarily yields the pressure animation/effect while preserving the original Direct Pressure episode
+- Direct Pressure stays yielded during CPR <-> BVM swaps and automatically resumes after the intervention ends
+- Fixed cases where treatment/provider state could remain stuck and make later medical-menu actions appear unresponsive
+
+## CHEST SEAL / CHEST ACCESS
+- Fixed Chest Seal Flip taking longer than the actual roll animation before becoming usable again
+- Chest Seal and Auscultation now keep the casualty supine through entry, flipping, cancellation and exit
+- Chest Seal provider animation now transitions cleanly into the hands-on-chest workspace instead of replaying or hanging on the flip animation
+- Fixed stale flip generations reopening/canceling newer chest interactions
+- Carrier handling now yields safely between frames instead of repeatedly retrying in one frame and potentially freezing the game
+- Chest Seal burping and re-entry behavior no longer depend on an unnecessary timer
+
+## SEMI-FOWLER'S / HEAD POSITIONING
+- Semi-Fowler's patient and provider animations now start together instead of waiting on a provider-ready handshake
+- Lower Head no longer performs an extra body roll after the casualty has already been returned supine
+- Prone casualties roll to supine once, then immediately continue into Semi-Fowler's without the previous dead-air delay
+- Interrupted lift/lower animations now release their exact animation lease so later interventions cannot inherit a stuck patient or provider state
+- Head Tilt-Chin Lift and manual Semi-Fowler's now return to the medical menu correctly when canceled
+
+## MEDICAL MENU / NARC BOX
+- Reworked medical-menu treatment ownership to prevent stale provider preflight state from blocking later interventions
+- Presentation/animation preparation can no longer become a global treatment lock
+- New treatment clicks supersede stale preparation generations instead of silently failing
+- Narc Box, CPR and other modal/continuous actions now return through the same bounded treatment/menu lifecycle
+- Failed weapon/crouch preparation now falls through to the actual treatment instead of consuming the click
+
+## SHARED EQUIPMENT
+- Treatment eligibility, item counts and consumption now follow ACE's equipment-sharing rules
+- Eligible supplies can be taken from the medic, patient or supported vehicle inventory where ACE allows it
+- Shared sourcing now applies consistently to IV/IO supplies, airway equipment, chest seals/decompression, thoracostomy, transfusion preparation, warming/monitoring equipment and ventilator supplies
+- Canceled or rejected actions refund the exact original donor once instead of duplicating or losing equipment
+- Reusable equipment keeps its existing custody instead of being consumed
+
+## DEBUG / UI
+- Debug overlay now reports **v1.2.4**
+- Debug layout was tightened and made more resolution-independent while keeping patient ownership/machine data at the top
+- Medical-menu action rendering and provider-state recovery received additional stale-generation protections
+
+-# **[See documentation here](https://hesherson.github.io/ACM-Extended-Wiki/index.html)**
