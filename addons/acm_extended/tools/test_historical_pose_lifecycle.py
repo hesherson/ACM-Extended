@@ -99,7 +99,7 @@ def setup():
 
 
 OWNERS=[
-    ('preflight','_medic setVariable ["ACME_treatmentPreflightActive",true];'),
+    ('preflight','_medic setVariable ["ACME_treatmentPreflightActive",true]; _medic setVariable ["ACME_treatmentPreflightToken","live"]; _medic setVariable ["ACME_treatmentPreflightStartedAt",CBA_missionTime];'),
     ('native','_medic setVariable ["ace_medical_treatment_endInAnim","new-treatment"];'),
     ('roll','_medic setVariable ["ACME_rollProviderActive",true];'),
     ('head','_medic setVariable ["ACME_headElev_seqActive",true];'),
