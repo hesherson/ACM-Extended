@@ -1,7 +1,8 @@
 // Idempotent Direct Pressure teardown for an explicit medic. Safe after distance break, death, menu stop, respawn,
 // a stale PFH, movement, or a partially-started hold. The function intentionally clears only state owned by this
 // Direct Pressure instance. It never owns another maneuver's controller or interface.
-params [["_silent", false, [false]], ["_medic", ACE_player, [objNull]]];
+params [["_silent", false, [false]], ["_medic", objNull, [objNull]]];
+if (isNull _medic && {hasInterface}) then {_medic = call ACME_fnc_controlledProvider;};
 if (isNull _medic) exitWith {};
 
 private _wasActive = _medic getVariable ["ACME_DP_Active", false];

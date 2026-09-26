@@ -45,7 +45,10 @@ if (_remaining > 0 && {random 1 < 0.30}) then {
     private _stage = (_previousVomit + 1 + floor random 2) min 8;
     [_patient, [["vomit", _old + 1], ["vomitCount", (_remaining - 1) max 0], ["vomitGrace", _now]], true] call ACM_airway_fnc_setAirwayState;
     _patient setVariable ["ACME_laryngo_emesis", [_id, _old + 1, _stage], true];
-    _patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, [_id, _old + 1, _stage]], _stage], true];
+    // Persist the exact post-event remaining emesis. The native vomit field is only an event counter;
+    // this compartment ledger prevents a later counter increment from reconstructing already-suctioned volume.
+    _patient setVariable ["ACME_laryngo_poolVomit", [_old + 1, _stage], true];
+    _patient setVariable ["ACME_laryngo_pool", [], true];
     _patient setVariable ["ACME_laryngo_soiled", "vomit", true];
     [_patient] call ACME_fnc_vomitDislodgeOPA;
     playSound3D [format ["acm_extended\sound\wet_gag%1_sfx.ogg", 1 + floor random 3], _patient, false, getPosASL _patient, 1.8, 1, 12];

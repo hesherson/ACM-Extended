@@ -20,7 +20,7 @@ _medic setVariable ["ACME_hang_ClaimRequestedAt", serverTime, false];
 _medic setVariable ["ACME_hang_ClaimAckAt", serverTime, false];
 _medic setVariable ["ACME_hang_ClaimEpoch", [_patient] call ACME_fnc_clinicalEpoch, false];
 _medic setVariable ["ACME_hang_ClaimOwner", owner _medic, false];
-_medic setVariable ["ACME_hang_PlayerBound", hasInterface && {_medic isEqualTo ACE_player}, false];
+_medic setVariable ["ACME_hang_PlayerBound", hasInterface && {_medic isEqualTo (call ACME_fnc_controlledProvider)}, false];
 _medic setVariable ["ACME_hang_Patient", _patient, true];
 _medic setVariable ["ACME_hang_Part", _bodyPart];
 _medic setVariable ["ACME_hang_FluidType", _fluidType, true];

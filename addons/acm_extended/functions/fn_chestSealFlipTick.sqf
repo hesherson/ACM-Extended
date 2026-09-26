@@ -80,9 +80,9 @@ if (_epoch < 0 || {_rollToken == ""}
 private _work = toLowerANSI (_pose param [2,""]);
 // Stage 1 means the work state was requested; its exact animationState must also be observed.
 // Stages -2/-1 are crouch/weapon preparation and can never move the patient.
-if ((_pose param [3,-2]) >= 1
-    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
-    && {(toLowerANSI animationState _provider) == _work}) then {
+private _presentationReady = !(missionNamespace getVariable ["ACME_interventionAnimations", true])
+    || {(_work == "ainvpknlmstpsnonwnondnon_medic4") && {(toLowerANSI animationState _provider) == _work}};
+if ((_pose param [3,-2]) >= 1 && {_presentationReady}) then {
     _args set [9,diag_tickTime]; // Mark before dispatch; at most one patient roll per click.
     uiNamespace setVariable ["ACME_CS_Side",_side];
     uiNamespace setVariable ["ACME_CS_FlipTarget",_side];

@@ -18,7 +18,7 @@ if (_unit getVariable ["ACME_DP_TreatmentBusy", false]) exitWith {true};
 if (_unit getVariable ["ACM_circulation_isPerformingCPR", false]) exitWith {true};
 
 // Continuous actions are client-owned mission state (BVM, stethoscope, etc.), so only read it for the local player.
-if (hasInterface && {!isNil "ACE_player"} && {_unit isEqualTo ACE_player}
+if (hasInterface && {_unit isEqualTo (call ACME_fnc_controlledProvider)}
     && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) exitWith {true};
 
 false

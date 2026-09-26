@@ -86,7 +86,7 @@ ACME_NA2_ownerInstalled = true;
         private _h = _unit getVariable [_x, -1];
         if (_h >= 0) then {[_h] call CBA_fnc_removePerFrameHandler;};
         _unit setVariable [_x, -1, false];
-    } forEach ["ACM_circulation_CardiacArrest_PFH", "ACM_circulation_ReversibleCardiacArrest_PFH", "ACM_airway_AirwayObstructionVomit_PFH", "ACM_breathing_Pneumothorax_PFH"];
+    } forEach ["ACM_circulation_CardiacArrest_PFH", "ACM_circulation_ReversibleCardiacArrest_PFH", "ACM_airway_AirwayObstructionVomit_PFH", "ACM_airway_AirwayObstructionBlood_PFH", "ACM_breathing_Pneumothorax_PFH"];
     {if ((_x find "acme_clock_") == 0) then {_unit setVariable [_x, nil, false];};} forEach allVariables _unit;
     private _juncHandle = _unit getVariable ["ACME_juncPFH", -1];
     if (_juncHandle >= 0) then {[_juncHandle] call CBA_fnc_removePerFrameHandler;};

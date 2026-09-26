@@ -26,7 +26,9 @@ if (_targetIndex < 0) exitWith {};
 
 ((_ctrlInventoryPanel lbData _targetIndex) splitString "|") params ["_itemClassname", "_actionClassname"];
 
-private _medic = ACE_player;
+private _medic = missionNamespace getVariable [QGVAR(TransfusionMenu_Medic), objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic) exitWith {};
 private _patient = GVAR(TransfusionMenu_Target);
 // ACME Y-refill claims are optional. Ordinary Add Bag calls carry an empty context and remain native behavior.
 private _yRefill = +(uiNamespace getVariable ["ACME_yRefillActive", []]);
@@ -36,7 +38,7 @@ private _yRefill = +(uiNamespace getVariable ["ACME_yRefillActive", []]);
 // be hung on a line that will sit at 0 mL forever and look broken to the provider.
 private _isFBTK = (_itemClassname in FBTK_ARRAY) || {_actionClassname in FBTK_ARRAY_DATA};
 if (_isFBTK && {!GVAR(TransfusionMenu_SelectIV)}) exitWith {
-    ["FBTK blood collection requires IV access. It cannot collect through IO.", 3, ACE_player, 13] call ACEFUNC(common,displayTextStructured);
+    ["FBTK blood collection requires IV access. It cannot collect through IO.", 3, _medic, 13] call ACEFUNC(common,displayTextStructured);
 };
 
 private _validAccess = [
@@ -46,7 +48,7 @@ private _validAccess = [
     GVAR(TransfusionMenu_Selected_AccessSite)
 ] call ACME_fnc_transfusionAccessValid;
 if (!_validAccess) exitWith {
-    ["Establish and select an IV or IO before hanging fluid.",2.5,ACE_player,13] call ACEFUNC(common,displayTextStructured);
+    ["Establish and select an IV or IO before hanging fluid.",2.5,_medic,13] call ACEFUNC(common,displayTextStructured);
 };
 
 private _vehicle = objectParent _medic;
@@ -65,7 +67,7 @@ if ((getNumber (_itemCfg >> "uniqueBag")) > 0) then {
     _freshMetadataReady = _freshEntry isEqualType [] && {count _freshEntry >= 3};
 };
 if (!_freshMetadataReady) exitWith {
-    [QGVAR(requestFreshBloodRegistry), [ACE_player]] call CBA_fnc_serverEvent;
+    [QGVAR(requestFreshBloodRegistry), [_medic]] call CBA_fnc_serverEvent;
     ["Donor blood bag data is still synchronizing. Reopen the transfusion menu in a moment.", 2.5] call ACEFUNC(common,displayTextStructured);
 };
 

@@ -35,7 +35,7 @@ if (_progress > 0) then {
         case (!(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_HookInserted), false]) && _progress == 2): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_HookInserted), true, true];
             [SURGICAL_AIRWAY_SELECTED_NONE] call FUNC(SurgicalAirway_select);
-            [LLSTRING(SurgicalAirway_LiftIncision_Complete), 2, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_LiftIncision_Complete), 2, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
 
             (_display displayCtrl IDC_SURGICAL_AIRWAY_VISUAL_INCISIONBIG) ctrlSetText QPATHTOF(ui\surgical_airway\incision_2_0.paa);
             _ctrlPlacedHook ctrlShow true;
@@ -43,20 +43,20 @@ if (_progress > 0) then {
         case (GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_HookInserted), false] && _progress == 4): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_HookInserted), false, true];
             [SURGICAL_AIRWAY_SELECTED_HOOK] call FUNC(SurgicalAirway_select);
-            [LLSTRING(SurgicalAirway_RemoveHook_Complete), 1.5, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_RemoveHook_Complete), 1.5, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
 
             _ctrlPlacedHook ctrlShow false;
         };
         case (!(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_TubeInserted), false]) && _progress == 3): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_TubeInserted), true, true];
             [SURGICAL_AIRWAY_SELECTED_NONE] call FUNC(SurgicalAirway_select);
-            [LLSTRING(SurgicalAirway_InsertTube_Complete), 1.5, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_InsertTube_Complete), 1.5, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
 
             _ctrlPlacedTube ctrlShow true;
         };
         case (_progress > 3 && _type == 4 && GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_TubeInserted), false] && !(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_HookInserted), false])): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_CuffInflated), true, true];
-            [LLSTRING(SurgicalAirway_InflateTubeCuff_Complete), 1.5, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_InflateTubeCuff_Complete), 1.5, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
 
             if (!(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_State), false]) && !(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_StyletInserted), false])) then {
                 GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_State), true, true];
@@ -64,7 +64,7 @@ if (_progress > 0) then {
         };
         case (_progress > 3 && _type == 5 && GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_TubeInserted), false] && !(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_HookInserted), false])): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_StyletInserted), false, true];
-            [LLSTRING(SurgicalAirway_RemoveTubeStylet_Complete), 1.5, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_RemoveTubeStylet_Complete), 1.5, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
 
             if (!(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_State), false]) && GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_CuffInflated), false]) then {
                 GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_State), true, true];
@@ -74,12 +74,12 @@ if (_progress > 0) then {
         };
         case (_progress > 3 && _type == 6 && GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_TubeInserted), false] && !(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_StyletInserted), false])): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_StrapConnected), true, true];
-            [LLSTRING(SurgicalAirway_ConnectStrap_Complete), 1.5, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_ConnectStrap_Complete), 1.5, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
         };
         case (_progress > 3 && _type == 7 && GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_TubeInserted), false] && !(GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_StyletInserted), false]) && GVAR(SurgicalAirway_Target) getVariable [QGVAR(SurgicalAirway_StrapConnected), false]): {
             GVAR(SurgicalAirway_Target) setVariable [QGVAR(SurgicalAirway_StrapSecure), true, true];
             [SURGICAL_AIRWAY_SELECTED_NONE] call FUNC(SurgicalAirway_select);
-            [LLSTRING(SurgicalAirway_SecureStrap_Complete), 1.5, ACE_player] call ACEFUNC(common,displayTextStructured);
+            [LLSTRING(SurgicalAirway_SecureStrap_Complete), 1.5, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
 
             _ctrlPlacedTube ctrlSetText QPATHTOF(ui\surgical_airway\placed_tube_2.paa);
         };

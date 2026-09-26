@@ -1,7 +1,8 @@
 // tear down hang bag locally. it is safe to call repeatedly.
 // on cancel we play the lower-the-bag exit animation and keep the bag and iv line in hand until it finishes, then
 // delete them and restore the weapon, so the bag visibly comes down instead of popping out of existence.
-params [["_silent", false], ["_medic", ACE_player]];
+params [["_silent", false], ["_medic", objNull]];
+if (isNull _medic && {hasInterface}) then {_medic = call ACME_fnc_controlledProvider;};
 if (isNull _medic) exitWith {};
 if !(_medic getVariable ["ACME_hang_Active", false]) exitWith {};
 
@@ -94,7 +95,7 @@ private _teardown = {
         };
     };
 
-    if (_providerCanRestore && {local _medic} && {alive _medic} && {_medic isEqualTo ACE_player}) then {
+    if (_providerCanRestore && {local _medic} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
         _medic enableAI "ANIM";
         // Normal path: the authored out move has already connected itself to crouch. Fallback path: if the move
         // graph never entered/left the out state within the bounded wait below, explicitly recover to crouch so
@@ -125,7 +126,7 @@ private _teardown = {
         _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
     };
 
-    if (!_silent && {!isNull _patient} && {_providerCanRestore} && {alive _medic} && {_medic isEqualTo ACE_player}) then {
+    if (!_silent && {!isNull _patient} && {_providerCanRestore} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
         [{
             params ["_medic", "_patient", "_bp", "_episodeStart"];
             if (isNull _medic || {isNull _patient}) exitWith {};

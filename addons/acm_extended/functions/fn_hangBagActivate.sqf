@@ -176,5 +176,5 @@ if (!isNil "ace_medical_treatment_fnc_addToLog") then {
 // the placement tuner is a debug dev tool, so only auto-open it when debug features are enabled and the toggle is
 // on. in normal play, hanging a bag must not pop the slider dialog.
 if (_debugOn && {missionNamespace getVariable ["ACME_hang_autoTuner", true]}) then {
-    [{ if (ACE_player getVariable ["ACME_hang_Active", false]) then { [] call ACME_fnc_hangBagTuneOpen; }; }, [], 0.8] call CBA_fnc_waitAndExecute;
+    [{ private _medic = call ACME_fnc_controlledProvider; if (!isNull _medic && {_medic getVariable ["ACME_hang_Active", false]}) then { [] call ACME_fnc_hangBagTuneOpen; }; }, [], 0.8] call CBA_fnc_waitAndExecute;
 };

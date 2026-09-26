@@ -5,8 +5,22 @@ private _patient = uiNamespace getVariable ["ACME_CS_Patient", objNull];
 private _now = diag_tickTime;
 private _lockedUntil = uiNamespace getVariable ["ACME_CS_FlipLockedUntil", 0];
 if ((_lockedUntil isEqualType 0) && {_lockedUntil > _now}) exitWith {};
-if ((uiNamespace getVariable ["ACME_CS_ApplyGestureUntil",0]) > _now) exitWith {};
 if (isNull _patient) exitWith {};
+
+// Seal placement is already clinically committed before its medic3 gesture starts. Flip is a higher-order body
+// maneuver, so invalidate every pending placement callback and hand off the current provider pose immediately.
+private _provider = uiNamespace getVariable ["ACME_CS_Medic", objNull];
+uiNamespace setVariable ["ACME_CS_ApplyGestureSerial",
+    (uiNamespace getVariable ["ACME_CS_ApplyGestureSerial",0]) + 1];
+uiNamespace setVariable ["ACME_CS_ApplyGestureUntil",0];
+if (!isNull _provider && {local _provider}) then {
+    private _applyPose = _provider getVariable ["ACME_treatmentPoseState",[]];
+    private _applyMode = _applyPose param [1,""];
+    private _applyEpoch = _applyPose param [0,-1];
+    if (_applyMode == "chestSeal" && {_applyEpoch >= 0}) then {
+        [_provider,"chestSeal",_applyEpoch,true] call ACME_fnc_treatmentPoseStop;
+    };
+};
 
 private _uiCurrent = uiNamespace getVariable ["ACME_CS_Side", "front"];
 private _newSide = if (_uiCurrent == "front") then {"back"} else {"front"};
@@ -31,10 +45,17 @@ if (!_willAnimate) exitWith {
     uiNamespace setVariable ["ACME_CS_FlipLockedUntil", 0];
     uiNamespace setVariable ["ACME_CS_VirtualFlip", true];
     [] call ACME_fnc_chestSealRender;
+
+    // We invalidated the placement callback above. Reacquire the normal workspace pose explicitly for a virtual
+    // side change; a physical roll below will acquire its own provider theatre instead.
+    if (!isNull _provider && {local _provider}) then {
+        private _holdEpoch = [_provider,_patient] call ACME_fnc_chestSealProviderHoldStart;
+        _provider setVariable ["ACME_CS_providerHoldEpoch",_holdEpoch,false];
+        uiNamespace setVariable ["ACME_CS_ProviderHoldEpoch",_holdEpoch];
+    };
 };
 
 // Keep the current side until the provider actually enters the roll RTM.
-private _provider = uiNamespace getVariable ["ACME_CS_Medic", objNull];
 private _display = uiNamespace getVariable ["ACME_CS_DLG", displayNull];
 if (isNull _provider || {!local _provider} || {isNull _display}) exitWith {};
 private _session = uiNamespace getVariable ["ACME_CS_SessionToken", ""];

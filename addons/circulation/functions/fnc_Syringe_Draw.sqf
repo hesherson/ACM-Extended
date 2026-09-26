@@ -28,6 +28,10 @@ if (isNull _patient) then {
     _patient = _medic;
 };
 
+// Keep the provider which opened this exact syringe session. Child controls must never fall back to a stale
+// curator avatar while a Zeus-controlled NPC is drawing or administering medication.
+GVAR(SyringeDraw_Medic) = _medic;
+
 GVAR(SyringeDraw_MedicationList) = [];
 GVAR(SyringeDraw_InventorySelection) = 0;
 

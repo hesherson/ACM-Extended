@@ -52,6 +52,12 @@ private _armReadyProbe = {
 
     _m setVariable ["ACME_chestAccessProviderReady", [_token, -1], true];
 
+    // With intervention theatre disabled, the ownership episode itself is the readiness acknowledgement.
+    // Do not wait 4.5 seconds for an animationState that is intentionally suppressed.
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+        _m setVariable ["ACME_chestAccessProviderReady", [_token, serverTime], true];
+    };
+
     [{
         params ["_m","_epoch","_token"];
         if (isNull _m || {!local _m} || {!alive _m}) exitWith {true};

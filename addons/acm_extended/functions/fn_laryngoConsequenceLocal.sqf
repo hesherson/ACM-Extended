@@ -27,7 +27,10 @@ if (_reason in ["awakeTube", "tubeManip"]) exitWith {
     private _stage = (_previousVomit + _amount) min 8;
     [_patient, [["vomit", _old + 1], ["vomitCount", (_remaining - 1) max 0], ["vomitGrace", CBA_missionTime]], true] call ACM_airway_fnc_setAirwayState;
     _patient setVariable ["ACME_laryngo_emesis", [_id, _old + 1, _stage], true];
-    _patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, [_id, _old + 1, _stage]], _stage], true];
+    // Persist the exact post-event remaining emesis. The native vomit field is only an event counter;
+    // this compartment ledger prevents a later counter increment from reconstructing already-suctioned volume.
+    _patient setVariable ["ACME_laryngo_poolVomit", [_old + 1, _stage], true];
+    _patient setVariable ["ACME_laryngo_pool", [], true];
     _patient setVariable ["ACME_laryngo_soiled", "vomit", true];
     _patient setVariable ["ACME_laryngo_gagMisses", 0, true];
     [_patient] call ACME_fnc_vomitDislodgeOPA;
@@ -119,7 +122,8 @@ private _stage = (_previousVomit + _amount) min 8;
 [_patient, [["vomit", _old + 1], ["vomitCount", (_remaining - 1) max 0], ["vomitGrace", CBA_missionTime]], true] call ACM_airway_fnc_setAirwayState;
 // Atomic, event-specific visual volume; all open views use the same randomized amount.
 _patient setVariable ["ACME_laryngo_emesis", [_id, _old + 1, _stage], true];
-_patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, [_id, _old + 1, _stage]], _stage], true];
+_patient setVariable ["ACME_laryngo_poolVomit", [_old + 1, _stage], true];
+_patient setVariable ["ACME_laryngo_pool", [], true];
 _patient setVariable ["ACME_laryngo_soiled", "vomit", true];
 _patient setVariable ["ACME_laryngo_gagMisses", 0, true];
 _patient setVariable ["ACME_laryngo_missTolerance", 3 + floor random 3, true];

@@ -7,6 +7,10 @@
 params [["_type", 0]];
 ACME_lastSyringeBtnType = _type;
 
+private _medic = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medic", objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic || {!local _medic}) exitWith {};
+
 if ((missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0]) <= 0) exitWith {};
 if (_type > 0 && {isNull (missionNamespace getVariable ["ACM_circulation_SyringeDraw_Target", objNull])}) exitWith {};
 
@@ -31,10 +35,10 @@ if (_type > 0) then {
     if (!isNull _push) then { _push ctrlSetText "Drawing..."; };
 
     [{
-        _this params ["_display", "_push", "_orig", "_iv", "_pushSec"];
+        _this params ["_display", "_push", "_orig", "_iv", "_pushSec", "_medic"];
         // finalize the drawn syringe, the same call the draw path of ACM makes, then show the push phase.
         private _prepared = [
-            ACE_player,
+            _medic,
             missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medication", ""],
             missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0],
             missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 10]
@@ -46,9 +50,9 @@ if (_type > 0) then {
         if (!isNull _push) then { _push ctrlSetText "Pushing..."; };
 
         [{
-            _this params ["_display", "_push", "_orig", "_iv"];
+            _this params ["_display", "_push", "_orig", "_iv", "_medic"];
             [
-                ACE_player,
+                _medic,
                 missionNamespace getVariable ["ACM_circulation_SyringeDraw_Target", objNull],
                 missionNamespace getVariable ["ACM_circulation_SyringeDraw_TargetPart", ""],
                 missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medication", ""],
@@ -58,8 +62,8 @@ if (_type > 0) then {
             ] call ACM_circulation_fnc_Syringe_Inject;
             if (!isNull _push) then { _push ctrlSetText _orig; };
             { private _c = _display displayCtrl _x; if (!isNull _c) then {_c ctrlEnable true}; } forEach [84003, 84004];
-        }, [_display, _push, _orig, _iv], _pushSec] call CBA_fnc_waitAndExecute;
-    }, [_display, _push, _orig, _iv, _pushSec], _drawSec] call CBA_fnc_waitAndExecute;
+        }, [_display, _push, _orig, _iv, _medic], _pushSec] call CBA_fnc_waitAndExecute;
+    }, [_display, _push, _orig, _iv, _pushSec, _medic], _drawSec] call CBA_fnc_waitAndExecute;
 } else {
     // draw only: "Drawing..." for _drawSec, then finalize. the button re-enables so the next drug can be drawn.
     playSound "ACME_SyringeDraw";
@@ -68,26 +72,26 @@ if (_type > 0) then {
     if (!isNull _draw) then { _draw ctrlSetText "Drawing..."; };
 
     [{
-        _this params ["_display", "_draw", "_orig", "_medicationName", "_customName"];
+        _this params ["_display", "_draw", "_orig", "_medicationName", "_customName", "_medic"];
         // capture the draw before preparefinish, which may clear the syringedraw vars, then store it.
         call ACME_fnc_skPendingTagCommit;
         private _med  = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medication", ""];
         private _size = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 10];
         private _amt  = missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0];
-        private _prepared = [ACE_player, _med, _amt, _size] call ACM_circulation_fnc_Syringe_PrepareFinish;
+        private _prepared = [_medic, _med, _amt, _size] call ACM_circulation_fnc_Syringe_PrepareFinish;
 
         // the drawn drugs land in the "Drawn" list only after exact source solution was successfully reserved.
         if (_prepared && {_med != ""}) then {
-            private _store = ACE_player getVariable ["ACME_narcStore", []];
+            private _store = _medic getVariable ["ACME_narcStore", []];
             private _entry = [[_med, _size, _amt, _customName]] call ACME_fnc_skApplyPendingTag;
             _store pushBack _entry;
-            ACE_player setVariable ["ACME_narcStore", _store, true];
+            _medic setVariable ["ACME_narcStore", _store, true];
             call ACME_fnc_skRefreshDrawn;
             call ACME_fnc_skAfterSaveOpenBody;
         };
 
-        [format [localize "STR_ACM_Circulation_Syringe_Drawn", _medicationName], 1.5, ACE_player] call ace_common_fnc_displayTextStructured;
+        [format [localize "STR_ACM_Circulation_Syringe_Drawn", _medicationName], 1.5, _medic] call ace_common_fnc_displayTextStructured;
         if (!isNull _draw) then { _draw ctrlSetText _orig; };
         { private _c = _display displayCtrl _x; if (!isNull _c) then {_c ctrlEnable true}; } forEach [84003, 84004];
-    }, [_display, _draw, _orig, _medicationName, _customName], _drawSec] call CBA_fnc_waitAndExecute;
+    }, [_display, _draw, _orig, _medicationName, _customName, _medic], _drawSec] call CBA_fnc_waitAndExecute;
 };

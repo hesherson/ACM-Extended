@@ -1,6 +1,6 @@
 // B88 cancel/release for the provider-only head-position sequence.
 // The patient head position is never changed here. Provider animation control always resolves to the unarmed crouch.
-private _medic = ACE_player;
+private _medic = call ACME_fnc_controlledProvider;
 if (isNull _medic || {!local _medic}) exitWith {};
 if !(_medic getVariable ["ACME_headElev_seqActive", false]) exitWith {};
 

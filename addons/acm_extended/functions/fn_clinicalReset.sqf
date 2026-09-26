@@ -27,6 +27,16 @@ if (_phase == "begin") exitWith {
     {private _h = _patient getVariable [_x, -1]; if (_h isEqualType 0 && {_h >= 0}) then {[_h] call CBA_fnc_removePerFrameHandler;}; _patient setVariable [_x, -1, false];} forEach ["ACME_juncPFH", "ACME_thora_drainPFH"];
     _patient setVariable ["ACME_juncWorker", [], false];
     _patient setVariable ["ACME_nativeVomitWorker", [], false];
+
+    // Airway contamination ledgers are tied to this clinical epoch. A full heal/new life must not let a partially
+    // suctioned old episode seed the first vomit or blood event of the new epoch.
+    {
+        _patient setVariable [_x, nil, true];
+    } forEach [
+        "ACME_laryngo_pool", "ACME_laryngo_poolVomit", "ACME_laryngo_poolBlood",
+        "ACME_laryngo_emesis", "ACME_laryngo_secretions", "ACME_airwayBloodEventSerial"
+    ];
+
     _patient setVariable ["ACME_alt_ptxSample", nil, false];
     _patient setVariable ["ACME_nativeVomitActive", false, true];
     _patient setVariable ["ACME_JuncBleedActive", false, false];

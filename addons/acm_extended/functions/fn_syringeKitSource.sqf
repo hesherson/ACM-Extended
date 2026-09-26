@@ -4,7 +4,9 @@ params ["_ctrl", "_index"];
 if (uiNamespace getVariable ["ACME_SK_Suppress", false]) exitWith {};
 private _key = _ctrl lbData _index;
 if (_key == "") exitWith {};
-private _player = ACE_player;
+private _player = uiNamespace getVariable ["ACME_SK_Medic", objNull];
+if (isNull _player) then {_player = call ACME_fnc_controlledProvider;};
+if (isNull _player) exitWith {};
 
 switch (_key) do {
     // a saline flush is a 10 ml prefilled barrel, so force size 10 and load it full, with the plunger all the way up.

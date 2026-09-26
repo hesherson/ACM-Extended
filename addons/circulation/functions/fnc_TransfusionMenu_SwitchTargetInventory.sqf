@@ -16,15 +16,19 @@
  * Public: No
  */
 
+private _medic = missionNamespace getVariable [QGVAR(TransfusionMenu_Medic), objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic) exitWith {};
+
 private _targetInventory = GVAR(TransfusionMenu_Selected_Inventory);
 
 _targetInventory = _targetInventory + 1;
 
-private _vehicle = objectParent ACE_player;
+private _vehicle = objectParent _medic;
 
 switch (_targetInventory) do {
     case 1: {
-        if (ACE_player == GVAR(TransfusionMenu_Target)) then {
+        if (_medic == GVAR(TransfusionMenu_Target)) then {
             if !(isNull _vehicle) then {
                 _targetInventory = 2;
             } else {
@@ -52,7 +56,7 @@ private _ctrlInventorySelectText = _display displayCtrl IDC_TRANSFUSIONMENU_SELE
 
 private _text = [LLSTRING(Common_Self), LLSTRING(Common_Patient), LLSTRING(Common_Vehicle)] select GVAR(TransfusionMenu_Selected_Inventory);
 
-private _target = [ACE_player, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
+private _target = [_medic, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
 
 _ctrlInventorySelectText ctrlSetText (format [LLSTRING(Common_InventoryTarget), _text]);
 

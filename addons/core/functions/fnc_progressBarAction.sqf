@@ -52,4 +52,9 @@ if (!_inVehicle && stance _medic in ["STAND","CROUCH"]) then {
     private _distanceCondition = (_patient distance2D _medic <= ACEGVAR(medical_gui,maxDistance));
 
     (_patientCondition && _medicCondition && ((_inVehicle && _vehicleCondition) || (!_inVehicle && _distanceCondition)));
-}, {true}] select _condition), ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ACEFUNC(common,progressBar);
+}, {true}] select _condition),
+([["isNotInside", "isNotSwimming", "isNotInZeus"], ["isNotInside", "isNotSwimming"]] select (
+    hasInterface
+    && {_medic isEqualTo (call ACME_fnc_controlledProvider)}
+    && {_medic isNotEqualTo player}
+))] call ACEFUNC(common,progressBar);

@@ -17,6 +17,14 @@ if !(missionNamespace getVariable ["ACME_sys_chestSeal", true]) exitWith {
 
 if (!isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])
     || {(uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != ""}) exitWith {};
+
+// This workspace owns input from here until its close handler returns to ACE. Do not leave ACE's automatic
+// treatment-success reopen or its medical-menu PFH armed while casualty-owner preparation is running. A stale
+// menu PFH can execute closeDialog after this panel is created and close the new dialog instead of the old menu.
+ace_medical_gui_pendingReopen = false;
+call ACM_GUI_fnc_pauseMedicalMenuPFH;
+private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+if (!isNull _medicalMenu) then {_medicalMenu closeDisplay 2;};
 uiNamespace setVariable ["ACME_CS_Medic", _medic];
 uiNamespace setVariable ["ACME_CS_Patient", _patient];
 uiNamespace setVariable ["ACME_CS_BodyPart", _bodyPart];

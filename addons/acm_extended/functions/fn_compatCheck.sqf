@@ -51,6 +51,9 @@ private _hasMarker = {
     _x params ["_name", "_marker"];
     if !([_name, _marker] call _hasMarker) then { _missing pushBack format ["STALE/OVERRIDDEN %1", _name]; };
 } forEach [
+    // Modal ACME procedures require ACM's treatment bridge. If ACE or another addon wins this symbol later,
+    // chest-seal/thoracostomy/IV launchers fall back into generic ACE treatment/menu semantics.
+    ["ace_medical_treatment_fnc_treatment", "ACME_ApplyChestSeal"],
     ["ACM_circulation_fnc_getBloodVolumeChange", "B106:volumeCanonical"],
     ["ace_medical_vitals_fnc_handleUnitVitals", "B106:vasoconstrictionPersist"],
     ["ACM_circulation_fnc_setIV", "B106:setIVReconciled"],

@@ -17,6 +17,13 @@
 
 params ["_display"];
 
+private _controlledProvider = call ACME_fnc_controlledProvider;
+if (!isNull _controlledProvider) then {
+    ACE_player = _controlledProvider;
+} else {
+    _controlledProvider = ACE_player;
+};
+
 // Create background effects based on interact menu setting
 if (ACEGVAR(interact_menu,menuBackground) == 1) then {[QACEGVAR(medical_gui,id), true] call ACEFUNC(common,blurScreen)};
 if (ACEGVAR(interact_menu,menuBackground) == 2) then {0 cutRsc [QACEGVAR(interact_menu,menuBackground), "PLAIN", 1, false]};
@@ -35,7 +42,7 @@ _ctrlTitle ctrlSetText ([ACEGVAR(medical_gui,target)] call ACEFUNC(common,getNam
 
 // Store display and add PFH to update it
 uiNamespace setVariable [QACEGVAR(medical_gui,menuDisplay), _display];
-["ace_medicalMenuOpened", [ACE_player, ACEGVAR(medical_gui,target), _display]] call CBA_fnc_localEvent;
+["ace_medicalMenuOpened", [_controlledProvider, ACEGVAR(medical_gui,target), _display]] call CBA_fnc_localEvent;
 
 if (ACEGVAR(medical_gui,menuPFH) != -1) exitWith {
     TRACE_1("Menu PFH already running",ACEGVAR(medical_gui,menuPFH));
@@ -95,7 +102,7 @@ if (GVAR(showPatientSideLabels)) then {
 
 // Set toggle button icon and tooltip
 private _ctrl = _display displayCtrl IDC_TOGGLE;
-if (ACEGVAR(medical_gui,target) == ACE_player) then {
+if (ACEGVAR(medical_gui,target) == _controlledProvider) then {
     _ctrl ctrlSetText QACEPATHTOF(medical_gui,data\categories\toggle_to_other.paa);
     _ctrl ctrlSetTooltip ACELLSTRING(medical_gui,ToggleToOther);
 } else {

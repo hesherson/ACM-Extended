@@ -55,14 +55,14 @@ _display displayAddEventHandler ["MouseButtonUp",_up];
     _x ctrlAddEventHandler ["MouseButtonUp",_up];
 } forEach ((allControls _display) select {!(ctrlIDC _x in [81002,81006])});
 
-// Independent local emitters preserve each playing clip's phase as the bell crosses the chest.
-// say3D follows its emitter. Moving each emitter along the camera's vertical axis changes
-// native distance attenuation continuously, without restarting samples or fading the world mixer.
+// A stethoscope is a local diagnostic transducer, not a sound source in world space. World-space emitters made
+// diagnostic audio subject to camera position, stereo spatialization and chest/gear geometry. Store only local UI
+// sound IDs plus the bell-derived gain. Right/left anatomy still selects the clinical clip; playback itself is
+// centered in the listener's headset.
 private _channels = [];
 // Right/left breath, heart A, right/left basal crackles, then heart B/C/D.
 for "_i" from 0 to 7 do {
-    private _emitter = "#particlesource" createVehicleLocal (positionCameraToWorld [0,22,0]);
-    _channels pushBack [_emitter,objNull,0];
+    _channels pushBack [-1,0];
 };
 _display setVariable ["ACME_stethChannels",_channels];
 

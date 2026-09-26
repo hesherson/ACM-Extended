@@ -21,7 +21,7 @@ params ["_medic", "_patient", "_bodyPart"];
 
 [_patient, "activity", LLSTRING(FractureRealignment_ActionLog), [[_medic, false, true] call ACEFUNC(common,getName)]] call ACEFUNC(medical_treatment,addToLog);
 
-if (ACE_player == _medic) then {
+if ((call ACME_fnc_controlledProvider) == _medic) then {
     addCamShake [5, 0.4, 10];
 };
 

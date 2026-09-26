@@ -91,24 +91,35 @@ private _targets = [
     _gains select 2
 ];
 {
-    _x params ["_emitter","_sound","_gain"];
-    private _target = _targets select _forEachIndex;
-    _gain = _gain + (_target - _gain) * (1 - exp (-_dt / 0.08));
-    // Zero means actual silence, including the lower lateral chest and a lifted bell.
-    if (_target <= 0.0001) then {_gain = 0;};
-    _x set [2,_gain];
-    private _distance = if (_gain <= 0.0001) then {22} else {1 + 19 * (1 - _gain)};
-    _emitter setPosASL (AGLToASL (positionCameraToWorld [0,_distance,0]));
+    _x params ["_soundId","_gain"];
+    private _target = ((_targets select _forEachIndex) max 0) min 1;
+    _x set [1,_target];
+
+    // Lifting the bell or leaving an auscultation zone is immediate silence. A clip already in flight is stopped
+    // instead of being left audible at its old world position.
+    if (_target <= 0.0001 && {_soundId isEqualType 0} && {_soundId >= 0}) then {
+        stopSound _soundId;
+        _x set [0,-1];
+    };
 } forEach _channels;
 
 private _play = {
     params ["_index","_class",["_pitch",1]];
     private _channel = _channels select _index;
-    _channel params ["_emitter","_oldSound"];
-    if (!isNull _oldSound) then {deleteVehicle _oldSound;};
-    // Speech routing bypasses ACE's environmental fadeSound while retaining distance crossfades.
-    private _sound = _emitter say3D [_class,20,_pitch,true];
-    _channel set [1,_sound];
+    _channel params ["_oldSoundId","_gain"];
+
+    if (_oldSoundId isEqualType 0 && {_oldSoundId >= 0}) then {
+        stopSound _oldSoundId;
+    };
+
+    // UI-channel playback is intentionally non-positional. Bell position still controls _gain and which lung/heart
+    // finding is selected, but a plate carrier, camera side or world occluder can no longer suppress or pan the
+    // diagnostic signal.
+    private _soundId = -1;
+    if (_gain > 0.0001) then {
+        _soundId = playSoundUI [_class, (_gain max 0) min 1, _pitch, false];
+    };
+    _channel set [0,_soundId];
 };
 if (alive _patient && {_hr > 0} && {!(_patient getVariable ["ace_medical_inCardiacArrest",false])}
     && {_now >= (_display getVariable ["ACME_stethNextBeat",-1])}) then {

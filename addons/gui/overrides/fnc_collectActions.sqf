@@ -18,12 +18,19 @@
 
 ACEGVAR(medical_gui,actions) = [];
 
+// Normalize provider identity before ACE/ACM action collection. This makes all treatment classes, including
+// third-party actions using ACE's medical-treatment contract, evaluate against a Zeus-controlled NPC medic.
+private _controlledProvider = call ACME_fnc_controlledProvider;
+if (!isNull _controlledProvider && {hasInterface}) then {
+    ACE_player = _controlledProvider;
+};
+
 {
     private _configName = configName _x;
     private _displayName = getText (_x >> "displayName");
     private _category = getText (_x >> "category");
-    private _condition = compile format [QUOTE([ARR_4(ACE_player,ACEGVAR(medical_gui,target),%1 select ACEGVAR(medical_gui,selectedBodyPart),'%2')] call DACEFUNC(ACE_ADDON(medical_treatment),canTreatCached)), ALL_BODY_PARTS, _configName];
-    private _statement = compile format [QUOTE([ARR_4(ACE_player,ACEGVAR(medical_gui,target),%1 select ACEGVAR(medical_gui,selectedBodyPart),'%2')] call DACEFUNC(ACE_ADDON(medical_treatment),treatment)), ALL_BODY_PARTS, _configName];
+    private _condition = compile format [QUOTE([ARR_4((call ACME_fnc_controlledProvider),ACEGVAR(medical_gui,target),%1 select ACEGVAR(medical_gui,selectedBodyPart),'%2')] call DACEFUNC(ACE_ADDON(medical_treatment),canTreatCached)), ALL_BODY_PARTS, _configName];
+    private _statement = compile format [QUOTE([ARR_4((call ACME_fnc_controlledProvider),ACEGVAR(medical_gui,target),%1 select ACEGVAR(medical_gui,selectedBodyPart),'%2')] call DACEFUNC(ACE_ADDON(medical_treatment),treatment)), ALL_BODY_PARTS, _configName];
     private _items = getArray (_x >> "items");
     private _menuIcon = (["",getText (_x >> "ACM_menuIcon")] select GVAR(showActionItemIcons));
 
@@ -35,50 +42,50 @@ if ("ace_dragging" call ACEFUNC(common,isModLoaded)) then {
     ACEGVAR(medical_gui,actions) pushBack [
         ACELLSTRING(dragging,Drag), "drag",
         {
-            ACE_player != ACEGVAR(medical_gui,target) && {[ACE_player, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,canDrag)}
+            private _medic = call ACME_fnc_controlledProvider; !isNull _medic && {_medic != ACEGVAR(medical_gui,target)} && {[_medic, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,canDrag)}
         },
         {
             ACEGVAR(medical_gui,pendingReopen) = false;
-            [ACE_player, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,startDrag);
+            [call ACME_fnc_controlledProvider, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,startDrag);
         }
     ];
 
     ACEGVAR(medical_gui,actions) pushBack [
         ACELLSTRING(dragging,Carry), "drag",
         {
-            ACE_player != ACEGVAR(medical_gui,target) && {[ACE_player, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,canCarry)}
+            private _medic = call ACME_fnc_controlledProvider; !isNull _medic && {_medic != ACEGVAR(medical_gui,target)} && {[_medic, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,canCarry)}
         },
         {
             ACEGVAR(medical_gui,pendingReopen) = false;
-            [ACE_player, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,startCarry);
+            [call ACME_fnc_controlledProvider, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,startCarry);
         }
     ];
 
     ACEGVAR(medical_gui,actions) pushBack [
         LLSTRING(AssistCarry), "drag",
         {
-            ACE_player != ACEGVAR(medical_gui,target) && {[ACE_player, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,canCarry) && {!(ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,CarryAssist_State), false])}}
+            private _medic = call ACME_fnc_controlledProvider; !isNull _medic && {_medic != ACEGVAR(medical_gui,target)} && {[_medic, ACEGVAR(medical_gui,target)] call ACEFUNC(dragging,canCarry) && {!(ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,CarryAssist_State), false])}}
         },
         {
             ACEGVAR(medical_gui,pendingReopen) = false;
-            [ACE_player, ACEGVAR(medical_gui,target)] call EFUNC(core,beginCarryAssist);
+            [call ACME_fnc_controlledProvider, ACEGVAR(medical_gui,target)] call EFUNC(core,beginCarryAssist);
         }
     ];
 
     ACEGVAR(medical_gui,actions) pushBack [
         LELSTRING(evacuation,ConvertCasualty), "drag",
         {
-            ACE_player != ACEGVAR(medical_gui,target) && {[ACE_player, ACEGVAR(medical_gui,target)] call EFUNC(evacuation,canConvert)}
+            private _medic = call ACME_fnc_controlledProvider; !isNull _medic && {_medic != ACEGVAR(medical_gui,target)} && {[_medic, ACEGVAR(medical_gui,target)] call EFUNC(evacuation,canConvert)}
         },
         {
-            [ACE_player, ACEGVAR(medical_gui,target)] call EFUNC(evacuation,convertCasualtyAction);
+            [call ACME_fnc_controlledProvider, ACEGVAR(medical_gui,target)] call EFUNC(evacuation,convertCasualtyAction);
         }
     ];
 
     ACEGVAR(medical_gui,actions) pushBack [
         LELSTRING(core,SupinePosition_Action), "drag",
         {
-            [ACEGVAR(medical_gui,target)] call ACEFUNC(common,isAwake) && ACE_player != ACEGVAR(medical_gui,target) && {!(ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,Lying_State), false]) && stance ACEGVAR(medical_gui,target) == "PRONE" && currentWeapon ACEGVAR(medical_gui,target) == ""}
+            [ACEGVAR(medical_gui,target)] call ACEFUNC(common,isAwake) && (call ACME_fnc_controlledProvider) != ACEGVAR(medical_gui,target) && {!(ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,Lying_State), false]) && stance ACEGVAR(medical_gui,target) == "PRONE" && currentWeapon ACEGVAR(medical_gui,target) == ""}
         },
         {
             if (ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,Lying_State), false]) exitWith {};
@@ -89,7 +96,7 @@ if ("ace_dragging" call ACEFUNC(common,isModLoaded)) then {
                 [QACEGVAR(common,switchMove), [ACEGVAR(medical_gui,target), "ACM_LyingState"]] call CBA_fnc_globalEvent;
                 [QEGVAR(core,getUpPrompt), [ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
                 [QACEGVAR(common,displayTextStructured), [LELSTRING(core,SupinePosition_Hint), 2, ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
-                [LELSTRING(core,SupinePosition_Complete), 2, ACE_player] call ACEFUNC(common,displayTextStructured);
+                [LELSTRING(core,SupinePosition_Complete), 2, call ACME_fnc_controlledProvider] call ACEFUNC(common,displayTextStructured);
             }, [], 1.85] call CBA_fnc_waitAndExecute;
         }
     ];

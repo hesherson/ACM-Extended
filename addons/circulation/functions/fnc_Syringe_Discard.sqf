@@ -61,5 +61,10 @@ private _containers = [uniformContainer _medic, vestContainer _medic, backpackCo
     _args params ["_medic", "_medication", "_size", "_amount"];
 
     [_medic, (format ["ACM_Syringe_%1_%2", _size, _medication]), "", _amount] call ACEFUNC(common,addToInventory);
-}, (format [LLSTRING(Syringe_Discard_Progress), _medication, _size]), {true}, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ACEFUNC(common,progressBar);
+}, (format [LLSTRING(Syringe_Discard_Progress), _medication, _size]), {true},
+([["isNotInside", "isNotSwimming", "isNotInZeus"], ["isNotInside", "isNotSwimming"]] select (
+    hasInterface
+    && {_medic isEqualTo (call ACME_fnc_controlledProvider)}
+    && {_medic isNotEqualTo player}
+))] call ACEFUNC(common,progressBar);
 

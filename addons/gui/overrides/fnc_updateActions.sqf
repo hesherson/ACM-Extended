@@ -104,7 +104,7 @@ _menuActions = _menuActions select {
 // Do not retain a cached positioning row after the casualty stands up.
 _menuActions = _menuActions select {
     (toLower (_x param [8, ''])) != 'acme_elevatehead'
-        || {[_target, ACE_player] call ACME_fnc_headElevateCanStart}
+        || {[_target, call ACME_fnc_controlledProvider] call ACME_fnc_headElevateCanStart}
 };
 
 // Dog tags always remain the last standalone examination, even if another addon

@@ -5,6 +5,14 @@
 params ["_medic", "_patient", ["_bodyPart", ""]];
 if (isNull _patient || {isNull _medic}) exitWith {};
 if !([_medic, _patient] call ACME_fnc_thoraCanOpen) exitWith {};
+
+// Thoracostomy becomes the sole modal UI owner before any remote casualty preparation starts. Suppress ACE's
+// treatment-success menu reopen and retire the old menu PFH now; otherwise a late ACE closeDialog can destroy
+// the thoracostomy dialog on the frame it appears.
+ace_medical_gui_pendingReopen = false;
+call ACM_GUI_fnc_pauseMedicalMenuPFH;
+private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+if (!isNull _medicalMenu) then {_medicalMenu closeDisplay 2;};
 private _ecgJostleKey = "ui:thora:" + str clientOwner;
 [_patient, _ecgJostleKey, true] call ACME_fnc_ecgJostleRequest;
 
@@ -26,8 +34,9 @@ private _open = {
     params ["_p","_m","_lease"];
     if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease",""]) != _lease) exitWith {};
     if (isNull _p || {isNull _m} || {!alive _m} || {!local _m}) exitWith {
-        uiNamespace setVariable ["ACME_Thora_ChestAccessLease",""];
-        if (!isNull _p) then {[_p,_m,_lease,false,"thoracostomy"] call ACME_fnc_chestAccessVestEvent;};
+        // No display exists yet, but fn_thoraClose is also the authoritative pre-open abort cleanup: it releases
+        // the exact chest-access lease, restores the medical-menu lifecycle and clears ECG jostle state.
+        [] call ACME_fnc_thoraClose;
     };
 
     ["ACME_Thoracostomy_Dialog"] call ACME_fnc_minigameOpen;
@@ -36,8 +45,9 @@ private _open = {
         params ["_p","_m","_lease"];
         if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease",""]) != _lease) exitWith {};
         if (isNull (findDisplay 86600)) then {
-            uiNamespace setVariable ["ACME_Thora_ChestAccessLease",""];
-            if (!isNull _p) then {[_p,_m,_lease,false,"thoracostomy"] call ACME_fnc_chestAccessVestEvent;};
+            // createDialog failed or another UI closed us before onLoad. Run the same cleanup as a normal close so
+            // the provider is never stranded in chest-access theatre with the medical menu disabled.
+            [] call ACME_fnc_thoraClose;
         };
     }, [_p,_m,_lease], 0.25] call CBA_fnc_waitAndExecute;
 };
@@ -53,6 +63,5 @@ private _open = {
     params ["_p","_m","_lease"];
     if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease",""]) != _lease) exitWith {};
     diag_log format ["[ACME THORACOSTOMY] Chest-access preparation timed out on %1.", netId _p];
-    uiNamespace setVariable ["ACME_Thora_ChestAccessLease",""];
-    if (!isNull _p) then {[_p,_m,_lease,false,"thoracostomy"] call ACME_fnc_chestAccessVestEvent;};
+    [] call ACME_fnc_thoraClose;
 }] call CBA_fnc_waitUntilAndExecute;

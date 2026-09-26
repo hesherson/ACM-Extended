@@ -1,5 +1,20 @@
 #include "script_component.hpp"
 
+//
+// The treatment bridge is not an optional presentation hook: ACME launcher actions depend on it to own the
+// medical-menu handoff and to bypass ACE's generic treatment animation for modal workspaces.  ACE and third-party
+// medical addons may PREP/recompile ace_medical_treatment_fnc_treatment during startup, after CfgFunctions has
+// selected ACM's override. Reconcile once in postInit, after ACE (a required addon) has completed its startup.
+//
+// "ACME_ApplyChestSeal" is a stable marker present in ACM's bridge and absent from ACE's native treatment function.
+private _acmTreatmentBridge = missionNamespace getVariable ["ace_medical_treatment_fnc_treatment", {}];
+private _acmTreatmentBridgeOwned = _acmTreatmentBridge isEqualType {}
+    && {(toLowerANSI (str _acmTreatmentBridge) find "acme_applychestseal") >= 0};
+if (!_acmTreatmentBridgeOwned) then {
+    ace_medical_treatment_fnc_treatment = compile preprocessFileLineNumbers QPATHTOF(overrides\fnc_treatment.sqf);
+    diag_log "[ACM] (core) Reconciled ace_medical_treatment_fnc_treatment to ACM treatment bridge.";
+};
+
 if (GVAR(ignoreIncompatibleAddonWarning)) then {
     WARNING("Incompatible Addon Warning Disabled");
 } else {

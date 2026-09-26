@@ -34,26 +34,44 @@ if (_manual) then {_total set [2, (_total select 2) + _ml];};
 _totals set [_ti, _total];
 if (count _totals > 64) then {_totals deleteAt 0;};
 _patient setVariable ["ACME_suctionTotals", _totals, true];
-// Persist partial secretion debits in their compartment as well as the active
-// ledger, so a later native blood/vomit event cannot restore already-suctioned fluid.
-if (_kind == "s") then {
-    private _secretions = _patient getVariable ["ACME_laryngo_secretions", []];
-    _patient setVariable ["ACME_laryngo_secretions", [_secretions param [0, ""], _remaining], true];
+// Persist the exact remaining amount in the compartment that was physically debited. Native obstruction values
+// are event counters; they are retained until the compartment reaches zero, while this ledger carries volume.
+switch (_kind) do {
+    case "v": {
+        private _native = (_patient getVariable ["ACM_airway_AirwayObstructionVomit_State", 0]) max 0;
+        _patient setVariable ["ACME_laryngo_poolVomit", [_native, _remaining], true];
+    };
+    case "b": {
+        private _eventSerial = (_patient getVariable ["ACME_airwayBloodEventSerial", 0]) max 0;
+        if (_eventSerial <= 0) then {
+            _eventSerial = (_patient getVariable ["ACM_airway_AirwayObstructionBlood_State", 0]) max 0;
+        };
+        _patient setVariable ["ACME_laryngo_poolBlood", [_eventSerial, _remaining], true];
+    };
+    case "s": {
+        private _secretions = _patient getVariable ["ACME_laryngo_secretions", []];
+        _patient setVariable ["ACME_laryngo_secretions", [_secretions param [0, ""], _remaining], true];
+    };
 };
+// Once the new compartment ledgers have been touched, retire the legacy shared ledger so it cannot be migrated
+// again on a later event.
+_patient setVariable ["ACME_laryngo_pool", [], true];
 if (_remaining <= 0) then {
     if (_kind == "v") then {
+        _patient setVariable ["ACME_laryngo_poolVomit", [], true];
         [_patient, [["vomit", 0], ["vomitGrace", CBA_missionTime]], true] call ACM_airway_fnc_setAirwayState;
         _patient setVariable ["ACME_laryngo_emesis", [], true];
     } else {
-        if (_kind == "b") then {[_patient, [["blood", 0]], true] call ACM_airway_fnc_setAirwayState;};
+        if (_kind == "b") then {
+            // Preserve the last event serial at zero volume. A later genuine bleeding event increments the serial
+            // and therefore contributes exactly one new contamination delta. Clearing this ledger would make the
+            // monotonic serial look like total current volume and could refill a freshly suctioned airway to the cap.
+            private _eventSerial = (_patient getVariable ["ACME_airwayBloodEventSerial", 0]) max 0;
+            _patient setVariable ["ACME_laryngo_poolBlood", [_eventSerial, 0], true];
+            [_patient, [["blood", 0]], true] call ACM_airway_fnc_setAirwayState;
+        };
         if (_kind == "s") then {_patient setVariable ["ACME_laryngo_secretions", [], true];};
     };
     [_patient, true] call ACM_airway_fnc_clearAirwayCheckedTime;
-    _patient setVariable ["ACME_laryngo_pool", [], true];
-    // The next compartment has its own initial volume; clearing vomit does not clear blood.
-    private _next = [_patient] call ACME_fnc_laryngoFluidState;
-    _stamp = _next select 0;
-    _remaining = _next select 2;
 };
-_patient setVariable ["ACME_laryngo_pool", [_stamp, _remaining], true];
 // Miss streaks end on successful placement, not on every squeeze or dialog reopen.

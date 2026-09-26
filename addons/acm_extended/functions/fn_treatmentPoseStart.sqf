@@ -87,6 +87,29 @@ if !(_stopAfterHold isEqualType 0) then {_stopAfterHold = -1;};
 private _epoch = (_medic getVariable ["ACME_treatmentPoseEpoch", 0]) + 1;
 _medic setVariable ["ACME_treatmentPoseEpoch", _epoch, true];
 _medic setVariable ["ACME_treatmentPoseEpisode", [_epoch, true], true];
+
+// Presentation-disabled mode still creates the same ownership generation. Callers can therefore retain their
+// existing token/timing logic without waiting for an RTM state that will intentionally never be played.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    private _nowNoAnim = CBA_missionTime;
+    private _stateNoAnim = [_epoch, _mode, "", 3, _nowNoAnim, -1, clientOwner, "",
+        _nowNoAnim, _window, _nowNoAnim, -1, -1, _nowNoAnim, _nowNoAnim, -1, false];
+    _medic setVariable ["ACME_treatmentPoseState", _stateNoAnim];
+
+    if (_window isEqualType 0 && {_window > 0}) then {
+        [{
+            params ["_m","_mode","_epoch"];
+            if (!isNull _m && {local _m}) then {
+                private _s = _m getVariable ["ACME_treatmentPoseState",[]];
+                if ((_s param [0,-2]) == _epoch && {(_s param [1,""]) == _mode}) then {
+                    [_m,_mode,_epoch,true] call ACME_fnc_treatmentPoseStop;
+                };
+            };
+        }, [_medic,_mode,_epoch], _window] call CBA_fnc_waitAndExecute;
+    };
+    _epoch
+};
+
 private _exclusion = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
 private _actionStarted = CBA_missionTime;
 // B101: when another intervention takes animation ownership from an active Direct Pressure hold, the provider is

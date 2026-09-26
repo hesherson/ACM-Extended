@@ -96,20 +96,20 @@ if !(GVAR(MedicHasBVM)) then {GVAR(MedicHasBVMType) = "";};
 // Every input callback carries the literal CPR epoch. It resolves the casualty from the provider's episode variable,
 // never from the mutable client-global CPRTarget used by the presentation layer.
 private _cancelCode = compile format [
-    "private _m = ACE_player; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; _m setVariable ['ACM_circulation_CPR_Loop', false]; _m setVariable ['ACM_circulation_CPR_Cancel', true]; false",
+    "private _m = call ACME_fnc_controlledProvider; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; _m setVariable ['ACM_circulation_CPR_Loop', false]; _m setVariable ['ACM_circulation_CPR_Cancel', true]; false",
     _epoch
 ];
 GVAR(CPRCancel_EscapeID) = [0x01, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 GVAR(CPRCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
 private _toggleCode = compile format [
-    "private _m = ACE_player; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; private _p = _m getVariable ['ACM_circulation_CPR_Patient', objNull]; if (isNull _p) exitWith {false}; private _owner = _p getVariable ['ace_medical_CPR_provider', objNull]; if (isNull _owner) then {_p setVariable ['ace_medical_CPR_provider', _m, true];} else {if (_owner isEqualTo _m) then {_p setVariable ['ace_medical_CPR_provider', objNull, true];};}; false",
+    "private _m = call ACME_fnc_controlledProvider; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; private _p = _m getVariable ['ACM_circulation_CPR_Patient', objNull]; if (isNull _p) exitWith {false}; private _owner = _p getVariable ['ace_medical_CPR_provider', objNull]; if (isNull _owner) then {_p setVariable ['ace_medical_CPR_provider', _m, true];} else {if (_owner isEqualTo _m) then {_p setVariable ['ace_medical_CPR_provider', objNull, true];};}; false",
     _epoch
 ];
 GVAR(CPRToggle_MouseID) = [0xF1, [false, false, false], _toggleCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
 private _swapCode = compile format [
-    "private _m = ACE_player; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; private _p = _m getVariable ['ACM_circulation_CPR_Patient', objNull]; if (isNull _p) exitWith {false}; if (isNull (_p getVariable ['ace_medical_CPR_provider', objNull]) && {isNull (_p getVariable ['ACM_breathing_BVM_Medic', objNull])} && {missionNamespace getVariable ['ACM_circulation_MedicHasBVM', false]}) then {missionNamespace setVariable ['ACM_circulation_SwapToBVM', true];}; false",
+    "private _m = call ACME_fnc_controlledProvider; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; private _p = _m getVariable ['ACM_circulation_CPR_Patient', objNull]; if (isNull _p) exitWith {false}; if (isNull (_p getVariable ['ace_medical_CPR_provider', objNull]) && {isNull (_p getVariable ['ACM_breathing_BVM_Medic', objNull])} && {missionNamespace getVariable ['ACM_circulation_MedicHasBVM', false]}) then {missionNamespace setVariable ['ACM_circulation_SwapToBVM', true];}; false",
     _epoch
 ];
 GVAR(CPRSwap_MouseID) = [0xF2, [false, false, false], _swapCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
@@ -170,7 +170,7 @@ private _controller = [{
         private _started = (_medic getVariable [QGVAR(CPR_StartedEpoch), -1]) == _epoch;
         if !([_medic, _patient, _epoch] call FUNC(cprCleanupLocal)) exitWith {};
 
-        if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo ACE_player} && {isNull objectParent _medic}) then {
+        if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo (call ACME_fnc_controlledProvider)} && {isNull objectParent _medic}) then {
             [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
             _medic setUnitPos "AUTO";
             // Play the release, then queue a controllable native idle. medicEnd alone can stop at its last frame.
@@ -187,7 +187,7 @@ private _controller = [{
         };
 
         // A dead/replaced provider must not close or reopen the new player's interface.
-        if (_medicCondition || {!(_medic isEqualTo ACE_player)}) exitWith {};
+        if (_medicCondition || {!(_medic isEqualTo (call ACME_fnc_controlledProvider))}) exitWith {};
         closeDialog 0;
         if (_swapToBVM && {!_medicCondition} && {!isNull _patient}) then {
             [LLSTRING(CPR_SwappedToBVM), 1.5, _medic] call ACEFUNC(common,displayTextStructured);

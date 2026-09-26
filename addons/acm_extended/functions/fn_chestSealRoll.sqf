@@ -8,6 +8,7 @@ params [
     ["_preserveSuspendedHeadElevation", false, [false]]
 ];
 if (isNull _patient || {!(_target in ["front", "back"])}) exitWith {};
+private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];
 
 if (!local _patient) exitWith {
     [_patient, "chestSealRoll", [_patient, _target, _force, _provider, _preserveSuspendedHeadElevation]] call ACME_fnc_ownerDispatch;
@@ -60,6 +61,7 @@ _patient setVariable ["ACME_CS_rollUntil", CBA_missionTime + _rollTime, false];
     if (isNull _p || {!local _p} || {!alive _p} || {!isNull objectParent _p}) exitWith {};
     if ((_p getVariable ["ACME_CS_rollToken", ""]) != _tok) exitWith {};
     if !([_p] call ACME_fnc_chestSealCanPhysicalRoll) exitWith {};
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
     if ((toLower animationState _p) != (toLower _trans)) then {
         [_p, _trans, 2] call ACME_fnc_doAnim;
     };
@@ -74,7 +76,9 @@ _patient setVariable ["ACME_CS_rollUntil", CBA_missionTime + _rollTime, false];
     if (!alive _p || {!isNull objectParent _p}) exitWith {};
     private _stillRollable = [_p] call ACME_fnc_chestSealCanPhysicalRoll;
     if (_needsHold && {_stillRollable}) then {
-        ["ace_common_switchMove", [_p, _hold]] call CBA_fnc_globalEvent;
+        if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+            ["ace_common_switchMove", [_p, _hold]] call CBA_fnc_globalEvent;
+        };
         // Cache only while the patient is still legitimately under the authored lying/unconscious pose.
         _p setVariable ["ACME_CS_facing", _target, true];
     };

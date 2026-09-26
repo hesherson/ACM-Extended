@@ -16,7 +16,9 @@
  */
 params [["_infusion", false, [false]]];
 
-private _holder = [ACE_player] call ACME_fnc_vialHolder;
+private _medic = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medic", objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+private _holder = [_medic] call ACME_fnc_vialHolder;
 if (isNull _holder) exitWith {[]};
 
 // Native ACM registry first. ACME's immutable snapshot is only a repair source if another script mutates the live list.

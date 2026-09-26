@@ -26,7 +26,7 @@ private _partIndex = ALL_BODY_PARTS find toLowerANSI _bodyPart;
 private _tourniquets = GET_TOURNIQUETS(_patient);
 
 if (_tourniquets select _partIndex == 0) exitWith {
-    if (_medic == ACE_player) then {
+    if (_medic == (call ACME_fnc_controlledProvider)) then {
         [ACELSTRING(medical_treatment,noTourniquetOnBodyPart), 1.5] call ACEFUNC(common,displayTextStructured);
     };
 };

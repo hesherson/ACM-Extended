@@ -19,9 +19,8 @@ _display setVariable ["ACME_stethFlipToken", ""];
 _display setVariable ["ACME_stethFlipActive", false];
 
 {
-    _x params ["_emitter","_sound"];
-    if (!isNull _sound) then {deleteVehicle _sound;};
-    if (!isNull _emitter) then {deleteVehicle _emitter;};
+    _x params ["_soundId"];
+    if (_soundId isEqualType 0 && {_soundId >= 0}) then {stopSound _soundId;};
 } forEach (_display getVariable ["ACME_stethChannels",[]]);
 _display setVariable ["ACME_stethChannels",[]];
 _display setVariable ["ACME_stethPressed",false];

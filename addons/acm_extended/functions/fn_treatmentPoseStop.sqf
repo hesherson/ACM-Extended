@@ -2,6 +2,7 @@
 // Every ACME-owned treatment pose exits to a movable, unarmed crouch. Weapons are never automatically reselected.
 params [["_medic", objNull, [objNull]], ["_mode", "", [""]], ["_epoch", -1, [0]], ["_handoff", false, [false]]];
 if (isNull _medic) exitWith {};
+private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];
 private _state = _medic getVariable ["ACME_treatmentPoseState", []];
 if (_state isEqualTo []) exitWith {};
 private _currentEpoch = _state param [0, -1];
@@ -56,7 +57,8 @@ private _ownsEntry = _stage <= 1 && {
 
 // Use playMoveNow through the move graph, never switchMove, so the work state blends back into the normal
 // unarmed crouch. Weapon selection is not touched here; the start preflight already cleared it exactly once.
-if (!_handoff
+if (_animationsEnabled
+    && {!_handoff}
     && {local _medic}
     && {alive _medic}
     && {!(_medic getVariable ["ACE_isUnconscious", false])}

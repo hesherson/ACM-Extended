@@ -31,10 +31,17 @@
 
     // B57: another person's menu only stows the weapon and transitions into the normal unarmed crouch. No
     // medic-over-patient animation is held, so the player's head/camera remains free and there is no root drift.
-    if (_medic isEqualTo ACE_player) then {
+    if (_medic isEqualTo (call ACME_fnc_controlledProvider)) then {
         [_medic, _target, _display] call ACME_fnc_menuPoseStart;
         if (!isNull _display) then {
-            _display displayAddEventHandler ["Unload", {[ACE_player, false] call ACME_fnc_menuPoseStop;}];
+            // Store the exact provider which opened this display. Remote-control can end during teardown;
+            // cleanup must release the NPC which owned the pose rather than whichever unit is controlled later.
+            _display setVariable ["ACME_menuPoseProvider", _medic];
+            _display displayAddEventHandler ["Unload", {
+                params ["_display"];
+                private _provider = _display getVariable ["ACME_menuPoseProvider", objNull];
+                if (!isNull _provider) then {[_provider, false] call ACME_fnc_menuPoseStop;};
+            }];
         };
     };
 

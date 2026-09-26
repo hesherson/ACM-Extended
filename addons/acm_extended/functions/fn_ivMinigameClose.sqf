@@ -88,6 +88,10 @@ uiNamespace setVariable ["ACME_IV_Shade_n", -1];
 // the flashlights self-action is gated on this. left set, ACE would offer it forever.
 uiNamespace setVariable ["ACME_minigame_open", false];
 
+// Restore ACE's menu PFH if the underlying medical menu survived the procedure. If it did not, openMenu will
+// install its normal PFH when the captured page is restored below.
+call ACM_GUI_fnc_resumeMedicalMenuPFH;
+
 // The same return applies after complete placement, partial work, or Escape.
 // Flashlight rebuilding preserves the captured page without opening it underneath.
 if (count _return == 3 && {count _session == 3} && {[_session] call ACME_fnc_ivUiValid}) then {

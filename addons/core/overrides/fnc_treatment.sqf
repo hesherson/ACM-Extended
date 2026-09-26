@@ -4,6 +4,18 @@
  * Native ACM/ACE remains authoritative for treatment timing, inventory, callbacks, cancellation and patient state.
  */
 params ["_medic", "_patient", "_bodyPart", "_classname"];
+private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];
+
+// A Zeus remote-controlled NPC is the client's active medical provider, not the curator avatar.
+// ACE's isNotInZeus requirement is correct for the curator interface itself, but it must not block
+// interventions performed while actually controlling an NPC medic. Keep every other interaction gate.
+private _controlledProvider = if (hasInterface) then {call ACME_fnc_controlledProvider} else {objNull};
+private _remoteControlledMedic = hasInterface
+    && {!isNull _controlledProvider}
+    && {_medic isEqualTo _controlledProvider}
+    && {_medic isNotEqualTo player};
+private _providerInteractChecks = ["isNotInside", "isNotSwimming"];
+if (!_remoteControlledMedic) then {_providerInteractChecks pushBack "isNotInZeus";};
 
 // This debug command has no physical treatment or provider animation. Execute directly,
 // so empty-hands preflight, the progress bar and the generic patient settle cannot consume the click.
@@ -20,7 +32,7 @@ if (_classname == "ACME_DebugInduceSeizure") exitWith {
 // preflight before callbackSuccess. Apply/Stop therefore execute here and repaint the existing menu in place.
 private _fnc_refreshDirectPressureMenu = {
     params ["_m", "_p"];
-    if (!hasInterface || {isNil "ACE_player"} || {_m isNotEqualTo ACE_player}) exitWith {};
+    if (!hasInterface || {_m isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
     ace_medical_gui_pendingReopen = false;
     [{
         params ["_patient"];
@@ -65,7 +77,7 @@ if !([_medic, _classname] call ACME_fnc_procedureActionAllowed) exitWith {false}
 if (_classname in ["ACME_ApplyChestSeal", "ACME_PerformNARSPEAR", "ACME_VentOpenPatient"]) exitWith {
     if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
     if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
-    if !([_medic, _patient, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith) exitWith {false};
+    if !([_medic, _patient, _providerInteractChecks] call ace_common_fnc_canInteractWith) exitWith {false};
     if ((_medic distance _patient) > ace_medical_gui_maxDistance) exitWith {false};
     ace_medical_gui_pendingReopen = false;
     if (_classname == "ACME_VentOpenPatient") then {
@@ -129,7 +141,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
     if (_needsChestAccess && {_needsPhysicalPrep} && {!_alreadyPrepared}
         && {local _medic} && {!isNull _medic} && {alive _medic}) exitWith {
         if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
-        if !([_medic, _patient, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith) exitWith {false};
+        if !([_medic, _patient, _providerInteractChecks] call ace_common_fnc_canInteractWith) exitWith {false};
         if ((_medic distance _patient) > ace_medical_gui_maxDistance) exitWith {false};
         if (_medic getVariable ["ACME_chestAccessPreflightActive", false]) exitWith {false};
 
@@ -289,7 +301,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
     };
     private _preflightReady = _dpPoseReady || {_emptyHandsNow && {stance _medic == "CROUCH"}};
 
-    if (!_isBypass && {!_headOwned} && {!_preflightReady} && {local _medic} && {!isNull _medic} && {alive _medic} && {isNull objectParent _medic}) exitWith {
+    if (_animationsEnabled && {!_isBypass} && {!_headOwned} && {!_preflightReady} && {local _medic} && {!isNull _medic} && {alive _medic} && {isNull objectParent _medic}) exitWith {
         if (_medic getVariable ["ACME_treatmentPreflightActive", false]) exitWith {false};
 
         _medic setVariable ["ACME_treatmentPreflightActive", true, false];
@@ -353,7 +365,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
                 _callArgs call ace_medical_treatment_fnc_treatment;
                 // This recursive call starts the progress dialog after the original ButtonClick event has already
                 // finished. Mirror ACE's native event order by arming reopen AFTER progressBar closes the medical menu.
-                if (hasInterface && {!isNil "ACE_player"} && {_u isEqualTo ACE_player}) then {
+                if (hasInterface && {_u isEqualTo (call ACME_fnc_controlledProvider)}) then {
                     ace_medical_gui_pendingReopen = true;
                 };
                 _u setVariable ["ACME_treatmentPreflightBypass", [], false];
@@ -412,7 +424,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
         };
     };
 
-    if (_started && {local _medic} && {!isNull _medic} && {isNull objectParent _medic}) then {
+    if (_animationsEnabled && {_started} && {local _medic} && {!isNull _medic} && {isNull objectParent _medic}) then {
         if (_mode != "") then {
             [{
                 params ["_m", "_mode", "_window"];
@@ -441,7 +453,7 @@ if (uiNamespace getVariable ["ace_interact_menu_cursorMenuOpened", false]) exitW
     true
 };
 if !(_this call ace_medical_treatment_fnc_canTreat) exitWith {false};
-if !([_medic, _patient, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith) exitWith {false};
+if !([_medic, _patient, _providerInteractChecks] call ace_common_fnc_canInteractWith) exitWith {false};
 if !([_medic, _patient] call ACME_fnc_ventRecoveryNear) exitWith {false};
 [_medic, _patient] call ACME_fnc_ventConnectPatient;
 true

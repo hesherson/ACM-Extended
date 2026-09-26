@@ -25,7 +25,7 @@ private _displays = +allDisplays;
     if (uiNamespace getVariable ["ace_interact_menu_cursorMenuOpened", false]) exitWith {};
     // This also protects third-party createDisplay menus, which are not dialogs.
     if ((allDisplays findIf {!(_x in _displays)}) >= 0) exitWith {};
-    if (!isNil "ace_medical_gui_fnc_canOpenMenu" && {!([ACE_player, _patient] call ace_medical_gui_fnc_canOpenMenu)}) exitWith {};
+    if (!isNil "ace_medical_gui_fnc_canOpenMenu" && {!([call ACME_fnc_controlledProvider, _patient] call ace_medical_gui_fnc_canOpenMenu)}) exitWith {};
     ace_medical_gui_selectedCategory = _category;
     if (_bodyPart >= 0 && {_bodyPart <= 5} && {_bodyPart == floor _bodyPart}) then {
         ace_medical_gui_selectedBodyPart = _bodyPart;

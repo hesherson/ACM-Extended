@@ -21,6 +21,9 @@ private _ctrlBagPanel = _display displayCtrl IDC_TRANSFUSIONMENU_LEFTLISTPANEL;
 private _selectionIndex = lbCurSel _ctrlBagPanel;
 if (_selectionIndex < 0) exitWith {};
 
+private _medic = missionNamespace getVariable [QGVAR(TransfusionMenu_Medic), objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic) exitWith {};
 private _patient = GVAR(TransfusionMenu_Target);
 private _part = GVAR(TransfusionMenu_Selected_BodyPart);
 private _targetIndex = (GVAR(TransfusionMenu_Selection_IVBags) select _selectionIndex) select 8;
@@ -45,7 +48,7 @@ private _itemName = getText (configFile >> "CfgWeapons" >> _itemClass >> "displa
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 private _requestId = format ["txrm:%1:%2:%3", clientOwner, diag_frameNo, floor (diag_tickTime * 1000)];
 
-[[ACE_player, _patient, _part, _bagUid, _targetIndex, _expectedSig, _epoch, _requestId], {
+[[_medic, _patient, _part, _bagUid, _targetIndex, _expectedSig, _epoch, _requestId], {
     params ["_medic", "_patient", "_part", "_bagUid", "_targetIndex", "_expectedSig", "_epoch", "_requestId"];
     uiNamespace setVariable ["ACME_txRemovePending", _requestId];
     [_patient, "transfusionRemoveBag", [_patient, _medic, _part, _bagUid, _targetIndex, _expectedSig, _epoch, _requestId]] call ACME_fnc_ownerDispatch;

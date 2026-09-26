@@ -72,6 +72,8 @@ uiNamespace setVariable ["ACME_CS_Dragging", false];
 uiNamespace setVariable ["ACME_CS_DragPt", []];
 uiNamespace setVariable ["ACME_CS_DragLast", -1];
 uiNamespace setVariable ["ACME_CS_FlipLockedUntil", 0];
+uiNamespace setVariable ["ACME_CS_ApplyGestureSerial",
+    (uiNamespace getVariable ["ACME_CS_ApplyGestureSerial",0]) + 1];
 uiNamespace setVariable ["ACME_CS_ApplyGestureUntil", 0];
 uiNamespace setVariable ["ACME_CS_VirtualFlip", false];
 uiNamespace setVariable ["ACME_CS_FingerGlow", []];

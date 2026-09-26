@@ -66,7 +66,7 @@ private _onBody = _mx >= _bx && {_mx <= _bx + _bw} && {_my >= _by} && {_my <= _b
 private _heldSpear = uiNamespace getVariable ["ACME_CS_SpearHeld", false];
 if (_heldSpear) exitWith {
     if (_side != "front") exitWith {
-        ["NCD placement is anterior. Flip the patient to the front.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+        ["NCD placement is anterior. Flip the patient to the front.", 2.5, (call ACME_fnc_controlledProvider), 13] call ace_common_fnc_displayTextStructured;
         false
     };
     if (!_onBody) exitWith {false};
@@ -144,7 +144,7 @@ if (_heldSpear) exitWith {
             [] call ACME_fnc_chestSealPrompt;
             // there is no miss message. the revealed hole and the reveal sound are the feedback.
         } else {
-            ["Locate the 5th intercostal space.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+            ["Locate the 5th intercostal space.", 2.5, (call ACME_fnc_controlledProvider), 13] call ace_common_fnc_displayTextStructured;
         };
         false
     };
@@ -194,7 +194,7 @@ if (_heldSeal) exitWith {
         if (!_queued) exitWith {false};
         uiNamespace setVariable ["ACME_CS_Held", false];
         uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, "ACM_ChestSeal"] call ace_common_fnc_getCountOfItem}];
-        ["Seal misplaced. center it directly over the found hole.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+        ["Seal misplaced. center it directly over the found hole.", 2.5, (call ACME_fnc_controlledProvider), 13] call ace_common_fnc_displayTextStructured;
         [] call ACME_fnc_chestSealRefreshSlot;
         [] call ACME_fnc_chestSealRender;
         [] call ACME_fnc_chestSealPrompt;

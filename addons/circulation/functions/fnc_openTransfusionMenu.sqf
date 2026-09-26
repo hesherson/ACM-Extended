@@ -45,6 +45,7 @@ private _closeID = [_medicalMenuKeybind, [false, false, false], { // H to close 
 GVAR(TransfusionMenu_CloseID) = _closeID;
 
 GVAR(TransfusionMenu_Target) = _patient;
+GVAR(TransfusionMenu_Medic) = _medic;
 
 GVAR(TransfusionMenu_Selection_IVBags_LastUpdate) = CBA_missionTime;
 GVAR(TransfusionMenu_Selection_IVBags) = [];

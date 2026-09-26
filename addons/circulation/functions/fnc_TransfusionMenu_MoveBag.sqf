@@ -17,6 +17,9 @@
  */
 
 private _display = uiNamespace getVariable [QGVAR(TransfusionMenu_DLG), displayNull];
+private _medic = missionNamespace getVariable [QGVAR(TransfusionMenu_Medic), objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic) exitWith {};
 private _ctrlBagPanel = _display displayCtrl IDC_TRANSFUSIONMENU_LEFTLISTPANEL;
 private _selectionIndex = lbCurSel _ctrlBagPanel;
 
@@ -27,7 +30,7 @@ private _ctrlMoveButton = _display displayCtrl IDC_TRANSFUSIONMENU_BUTTON_MOVEBA
 if (GVAR(TransfusionMenu_Move_Active)) then {
     private _validDestination = [GVAR(TransfusionMenu_Target),GVAR(TransfusionMenu_Selected_BodyPart),GVAR(TransfusionMenu_SelectIV),GVAR(TransfusionMenu_Selected_AccessSite)] call ACME_fnc_transfusionAccessValid;
     if (!_validDestination) exitWith {
-        ["Select an established IV or IO before placing the bag.",2.5,ACE_player,13] call ACEFUNC(common,displayTextStructured);
+        ["Select an established IV or IO before placing the bag.",2.5,_medic,13] call ACEFUNC(common,displayTextStructured);
     };
     _ctrlMoveButton ctrlSetText LLSTRING(TransfusionMenu_MoveBag_Display);
     _ctrlMoveButton ctrlSetTooltip LLSTRING(TransfusionMenu_MoveBag_ToolTip);
@@ -54,7 +57,7 @@ if (GVAR(TransfusionMenu_Move_Active)) then {
 
     private _itemClassNameString = getText (configFile >> "CfgWeapons" >> ([_type, _volume, _bloodType] call FUNC(formatFluidBagName)) >> "displayName");
 
-    [[ACE_player, GVAR(TransfusionMenu_Target), _fnc_completeMove], {
+    [[_medic, GVAR(TransfusionMenu_Target), _fnc_completeMove], {
         params ["_medic", "_patient", "_fnc_completeMove"];
 
         [_medic, _patient] call _fnc_completeMove;
@@ -94,9 +97,9 @@ if (GVAR(TransfusionMenu_Move_Active)) then {
     GVAR(TransfusionMenu_Move_IVBagContents) params ["_type", "", "", "", "", "_bloodType", "_volume", "_id"];
 
     private _itemClassNameString = getText (configFile >> "CfgWeapons" >> ([_type, _volume, _bloodType] call FUNC(formatFluidBagName)) >> "displayName");
-    [(format [LLSTRING(TransfusionMenu_MoveBag_Hint), _itemClassNameString]), 2, ACE_player] call ACEFUNC(common,displayTextStructured);
+    [(format [LLSTRING(TransfusionMenu_MoveBag_Hint), _itemClassNameString]), 2, _medic] call ACEFUNC(common,displayTextStructured);
 
     private _bagUid = GVAR(TransfusionMenu_Move_IVBagContents) param [8, ""];
     ACME_moveEpoch = [GVAR(TransfusionMenu_Target)] call ACME_fnc_clinicalEpoch;
-    [GVAR(TransfusionMenu_Target), "bagMove", [GVAR(TransfusionMenu_Target), ACE_player, _bagUid, "reserve", GVAR(TransfusionMenu_Selected_BodyPart), GVAR(TransfusionMenu_SelectIV), GVAR(TransfusionMenu_Selected_AccessSite), ACME_moveEpoch]] call ACME_fnc_ownerDispatch;
+    [GVAR(TransfusionMenu_Target), "bagMove", [GVAR(TransfusionMenu_Target), _medic, _bagUid, "reserve", GVAR(TransfusionMenu_Selected_BodyPart), GVAR(TransfusionMenu_SelectIV), GVAR(TransfusionMenu_Selected_AccessSite), ACME_moveEpoch]] call ACME_fnc_ownerDispatch;
 };

@@ -71,6 +71,9 @@ private _eligibleIDs = keys _injuryMap;
 private _maxPerSide = missionNamespace getVariable ["ACME_CS_maxHolesPerSide", 4];
 if !(_maxPerSide isEqualType 0 && {finite _maxPerSide} && {_maxPerSide >= 1}) then {_maxPerSide = 4;};
 _maxPerSide = (floor _maxPerSide) min 4;
+// Hard anatomical/UX ceiling. Penetrating trauma may be severe, but the chest-seal workspace never creates more
+// than six total external wound sites. Treatment-created holes already present count against the same visual budget.
+private _maxTotalHoles = 6;
 
 private _fnc_mkHole = {
     params ["_side", ["_sealed", false]];
@@ -211,6 +214,7 @@ private _exitFactor = missionNamespace getVariable ["ACME_CS_exitFactor", 0.6];
 if !(_exitFactor isEqualType 0 && {finite _exitFactor} && {_exitFactor >= 0}) then {_exitFactor = 0.6;};
 private _frontCount = {(_x select 0) == "front"} count _holes;
 private _backCount = {(_x select 0) == "back"} count _holes;
+private _totalCount = count _holes;
 
 for "_recordIndex" from _processed to ((count _tracked) - 1) do {
     private _record = _tracked select _recordIndex;
@@ -224,23 +228,28 @@ for "_recordIndex" from _processed to ((count _tracked) - 1) do {
     private _curve = _injuryMap getOrDefault [_id, [0.25, 0, 1, 0.3]];
     _curve params ["_minDamage", "_minChance", "_maxDamage", "_maxChance"];
 
-    private _injuryChance = _maxChance;
+    // Exact live impacts scale exit-wound probability from their actual damage. Historical ACE backfill has no
+    // trustworthy damage value, so use the midpoint of that wound type instead of pretending every old wound was
+    // maximum-energy trauma.
+    private _injuryChance = (_minChance + _maxChance) * 0.5;
     if (_damage isEqualType 0 && {finite _damage} && {_damage >= 0}) then {
         _injuryChance = linearConversion [_minDamage, _maxDamage, _damage, _minChance, _maxChance, true];
     };
     if !(_injuryChance isEqualType 0 && {finite _injuryChance}) then {_injuryChance = _maxChance;};
 
-    // The visual cap bounds historical backfill, not new genuine impacts. A
-    // later penetrating hit must remain treatable even when four sites exist.
-    if (_frontCount < _maxPerSide || {!_historical}) then {
+    // Every eligible penetrating event can contribute an entrance wound, but neither live impacts nor historical
+    // backfill may bypass the chest-wide visual cap. Damage affects whether the same track also produces an exit.
+    if (_totalCount < _maxTotalHoles && {_frontCount < _maxPerSide}) then {
         _holes pushBack ((["front", _coveredRecord] call _fnc_mkHole) + [controlNull, controlNull]);
         _frontCount = _frontCount + 1;
+        _totalCount = _totalCount + 1;
     };
 
     private _exitChance = (_injuryChance * _exitFactor) max 0 min 1;
-    if (_backCount < _maxPerSide && {random 1 < _exitChance}) then {
+    if (_totalCount < _maxTotalHoles && {_backCount < _maxPerSide} && {random 1 < _exitChance}) then {
         _holes pushBack ((["back", _coveredRecord] call _fnc_mkHole) + [controlNull, controlNull]);
         _backCount = _backCount + 1;
+        _totalCount = _totalCount + 1;
     };
 };
 _processed = count _tracked;

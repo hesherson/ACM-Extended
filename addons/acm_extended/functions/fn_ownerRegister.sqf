@@ -94,6 +94,13 @@ if (_patient getVariable ["ACME_nativeVomitActive", false]) then {
     [_patient] call ACM_airway_fnc_handleAirwayObstruction_Vomit;
 };
 
+// Airway blood is a source worker, not persisted scheduler state. Rebuild it on the new patient owner only when
+// its actual source still exists. Existing pooled blood remains suctionable even if the wound has since stopped.
+if ((_patient getVariable ["ACE_isUnconscious", false])
+    && {[_patient, "head"] call ACM_damage_fnc_isBodyPartBleeding}) then {
+    [_patient] call ACM_airway_fnc_handleAirwayObstruction_Blood;
+};
+
 // Recovery is keyed by actual worker absence, not a once-per-owner attempt.
 // Inspect the raw native rhythm; a presentation overlay must not select the worker.
 if (_patient getVariable ["ace_medical_inCardiacArrest", false]) then {

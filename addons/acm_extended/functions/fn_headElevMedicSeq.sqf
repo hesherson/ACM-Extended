@@ -27,6 +27,15 @@ if (!local _medic) exitWith {
 };
 if ([_medic] call ACME_fnc_animBlocked) exitWith {};
 
+// Clinical head-position timing/state is owned elsewhere. With presentation disabled, do not enter the provider
+// RTM state machine or its animation-state watchdogs at all.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    _medic setVariable ["ACME_headElev_medicAnimToken", (_medic getVariable ["ACME_headElev_medicAnimToken", 0]) + 1, false];
+    _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
+    _medic setVariable ["ACME_headElev_seqActive", false, false];
+    _medic setVariable ["ACME_headElev_seqMode", "", false];
+};
+
 private _rest = "AmovPknlMstpSnonWnonDnon";
 private _forcePose = _rest;
 private _first = "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown";

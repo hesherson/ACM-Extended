@@ -232,7 +232,8 @@ private _beginRestore = {
 
         if (alive _p && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
-            if ((toLowerANSI animationState _p) != (toLowerANSI _faceUp)) then {
+            if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+                && {(toLowerANSI animationState _p) != (toLowerANSI _faceUp)}) then {
                 ["ace_common_switchMove",[_p,_faceUp]] call CBA_fnc_globalEvent;
             };
             _p setVariable ["ACME_CS_facing","front",true];

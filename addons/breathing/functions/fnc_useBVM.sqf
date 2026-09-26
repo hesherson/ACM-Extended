@@ -91,7 +91,7 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
     GVAR(BVMCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
     private _toggleCode = compile format [
-        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (isNull _t) exitWith {false}; if ((_t getVariable ['ACM_breathing_BVM_provider', objNull]) isEqualTo objNull) then {_t setVariable ['ACM_breathing_BVM_provider', ACE_player, true];} else {_t setVariable ['ACM_breathing_BVM_provider', objNull, true];}; false",
+        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _m = call ACME_fnc_controlledProvider; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (isNull _m || {isNull _t}) exitWith {false}; if ((_t getVariable ['ACM_breathing_BVM_provider', objNull]) isEqualTo objNull) then {_t setVariable ['ACM_breathing_BVM_provider', _m, true];} else {_t setVariable ['ACM_breathing_BVM_provider', objNull, true];}; false",
         _epoch
     ];
     GVAR(BVMToggle_MouseID) = [0xF1, [false, false, false], _toggleCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
@@ -154,7 +154,7 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
     if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
     // Death/respawn/locality loss releases ownership without reopening menus on the replacement player.
     if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
-        || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {};
+        || {!(_medic isEqualTo (call ACME_fnc_controlledProvider))} || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {};
 
     [_patient, "activity", LLSTRING(BVM_ActionLog_Stop), [[_medic, false, true] call ACEFUNC(common,getName), GVAR(BVM_BreathCount)]] call ACEFUNC(medical_treatment,addToLog);
 

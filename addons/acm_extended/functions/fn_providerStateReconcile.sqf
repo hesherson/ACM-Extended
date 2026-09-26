@@ -1,7 +1,7 @@
 /* Provider-local safety net for stale controllers that can make later actions appear unavailable. */
-if (!hasInterface || {isNil "ACE_player"} || {isNull ACE_player}) exitWith {0};
-private _medic = ACE_player;
-if (!local _medic) exitWith {0};
+if (!hasInterface) exitWith {0};
+private _medic = call ACME_fnc_controlledProvider;
+if (isNull _medic || {!local _medic}) exitWith {0};
 
 private _repairs = 0;
 private _active = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
