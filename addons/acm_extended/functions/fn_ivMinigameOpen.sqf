@@ -44,10 +44,36 @@ uiNamespace setVariable ["ACME_IV_Patient", _patient];
 uiNamespace setVariable ["ACME_IV_BodyPart", toLower _bodyPart];
 uiNamespace setVariable ["ACME_IV_Site", toLower _site];
 [_patient, "ui:iv:" + str clientOwner, true] call ACME_fnc_ecgJostleRequest;
-// This dialog supplies its own return. Suppress ACE's treatment-success reopen.
+// This dialog supplies its own return. Suppress ACE's treatment-success reopen and retire the medical-menu PFH
+// before replacing the menu. Without this handoff, a stale ACE menu tick can closeDialog the IV panel that was
+// just created, which presents as a one-frame flash.
 ace_medical_gui_pendingReopen = false;
+call ACM_GUI_fnc_pauseMedicalMenuPFH;
 
-// close the medical menu first, so it is not fighting the dialog. it mirrors the chest-seal open.
-private _med = findDisplay 38580;
-if (!isNull _med) then { _med closeDisplay 2; };
-[{if ([_this] call ACME_fnc_ivUiValid) then {["ACME_IVMinigame_Dialog"] call ACME_fnc_minigameOpen;};}, uiNamespace getVariable ["ACME_IV_Session", []]] call CBA_fnc_execNextFrame;
+// Close the medical menu first, so it is not fighting the dialog. It mirrors the chest-seal open.
+private _med = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+if (isNull _med) then {_med = findDisplay 38580;};
+if (!isNull _med) then {_med closeDisplay 2;};
+
+private _session = +(uiNamespace getVariable ["ACME_IV_Session", []]);
+[{
+    params ["_session"];
+
+    // A remote casualty can legitimately change clinical generation between callbackStart and this next-frame UI
+    // handoff. The old path silently did nothing here, leaving ACE's menu closed and the provider apparently stuck.
+    if !([_session] call ACME_fnc_ivUiValid) exitWith {
+        private _patient = uiNamespace getVariable ["ACME_IV_Patient", objNull];
+        if (!isNull _patient) then {[_patient, "ui:iv:" + str clientOwner, false] call ACME_fnc_ecgJostleRequest;};
+
+        private _return = +(uiNamespace getVariable ["ACME_IV_ReturnMenu", []]);
+        uiNamespace setVariable ["ACME_IV_Session", []];
+        uiNamespace setVariable ["ACME_minigame_open", false];
+        call ACM_GUI_fnc_resumeMedicalMenuPFH;
+
+        // The captured IV session is intentionally omitted here because the generation changed. Restore only the
+        // patient's captured page; the user may click the action again against the new generation.
+        if (count _return == 3) then {_return call ACME_fnc_reopenMedicalMenu;};
+    };
+
+    ["ACME_IVMinigame_Dialog"] call ACME_fnc_minigameOpen;
+}, _session] call CBA_fnc_execNextFrame;
