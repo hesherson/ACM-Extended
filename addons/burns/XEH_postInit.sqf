@@ -1,50 +1,69 @@
 #include "script_component.hpp"
 
-// Reset burn markers on full heal.
+// Reset burn-owned state on full heal. CBRN-owned inflammation is never cleared here.
 [QACEGVAR(medical_treatment,fullHealLocalMod), LINKFUNC(fullHealLocal)] call CBA_fnc_addEventHandler;
 
-// 2nd/3rd-degree burns (raised from ACM_core fnc_woundsHandlerBase) cause a discrete blood-volume loss
-// (hypotension) and, on the head, a chance of an airway burn. Runs where the unit is local.
+// Burn wound intake. The wound system supplies depth, location and magnitude. We retain the worst
+// depth/magnitude seen on each adult body region and derive one bounded whole-body burden from it.
+// This replaces the old flat "subtract 0.2/0.3 L blood per burn" model.
 [QGVAR(burnApplied), {
-    params ["_patient", "_bodyPart", "_woundType"];
-    if (!GVAR(burnsEnabled)) exitWith {};
+    params ["_patient", "_bodyPart", "_woundType", ["_magnitude",0.25]];
+    if (!GVAR(burnsEnabled) || {isNull _patient} || {!local _patient} || {!alive _patient}) exitWith {};
 
-    // Hypotension: small per-burn blood-volume loss, floored so burns alone don't exsanguinate.
-    // Cumulative over repeated burns; countered by normal saline/plasma/whole-blood IV pathways.
-    private _loss = [BURN_BLOODLOSS_2, BURN_BLOODLOSS_3] select (_woundType isEqualTo "Burn3");
-    private _blood = _patient getVariable [QEGVAR(circulation,Blood_Volume), 6];
-    _patient setVariable [QEGVAR(circulation,Blood_Volume), (_blood - _loss) max (BURN_BLOOD_FLOOR min _blood), true];
+    private _parts = ["head","body","leftarm","rightarm","leftleg","rightleg"];
+    private _idx = _parts find (toLowerANSI _bodyPart);
+    if (_idx < 0) exitWith {};
 
-    // Airway burn: BINARY. Once burned it stays burned (no stacking). Each head burn is a chance to
-    // burn it; on the first success set a fixed severity into the existing CBRN airway-inflammation
-    // pathway (max, so it never reduces any CBRN inflammation), which a surgical airway (cric) treats.
-    // The marker drives the "Airway Burned" exam label and is the one-shot guard.
-    if (_bodyPart isEqualTo "head" && {!(_patient getVariable [QGVAR(AirwayBurned), false])} && {random 1 < GVAR(headBurnAirwayChance)}) then {
-        private _inflammation = _patient getVariable [QEGVAR(CBRN,AirwayInflammation), 0];
-        _patient setVariable [QEGVAR(CBRN,AirwayInflammation), (_inflammation max BURN_AIRWAY_SEVERITY), true];
-        _patient setVariable [QGVAR(AirwayBurned), true, true];
+    private _surface = _patient getVariable [QGVAR(BurnSurface), [0,0,0,0,0,0]];
+    if !(_surface isEqualType [] && {count _surface == 6}) then {_surface = [0,0,0,0,0,0];};
+
+    private _depth = if (_woundType isEqualTo "Burn3") then {1.0} else {0.65};
+    private _mag = linearConversion [0.05,1.0,_magnitude,0.45,1,true];
+    private _regional = (_depth * _mag) max 0 min 1;
+    _surface set [_idx, (_surface select _idx) max _regional];
+
+    // Adult surface-area weighting. This is a bounded gameplay burden used for physiology;
+    // it is deliberately not exposed as a bedside TBSA calculator.
+    private _weights = [0.09,0.36,0.09,0.09,0.18,0.18];
+    private _burden = 0;
+    { _burden = _burden + ((_surface select _forEachIndex) * _x); } forEach _weights;
+    _burden = _burden max 0 min 1;
+
+    _patient setVariable [QGVAR(BurnSurface),_surface,true];
+    _patient setVariable [QGVAR(BurnBurden),_burden,true];
+    _patient setVariable [QGVAR(SystemicBurden),(_patient getVariable [QGVAR(SystemicBurden),0]) max _burden,true];
+    _patient setVariable [QGVAR(LastBurnAt),CBA_missionTime,true];
+    _patient setVariable [QGVAR(InfectionRiskMult),1 + (1.5 * _burden),true];
+
+    // Airway injury is source-separated from CBRN. The burn worker progressively develops edema;
+    // a later CBRN reset can no longer erase the burn, and healing a burn cannot erase chemical inflammation.
+    if (
+        _idx == 0 &&
+        {!(_patient getVariable [QGVAR(AirwayBurned),false])} &&
+        {random 1 < GVAR(headBurnAirwayChance)}
+    ) then {
+        _patient setVariable [QGVAR(AirwayBurned),true,true];
+        _patient setVariable [QGVAR(AirwayBurnOnset),CBA_missionTime,true];
     };
+
+    [_patient] call FUNC(tickPatient);
 }] call CBA_fnc_addEventHandler;
 
-// Improper care: bandaging a 2nd/3rd-degree burn with anything other than the silver nylon dressing
-// (or burn cream) causes additional pain.
-[QACEGVAR(medical_treatment,bandageLocal), {
-    params ["_patient", "_bodyPart", "_bandageClass"];
-    if (!GVAR(burnsEnabled)) exitWith {};
-    if (_bandageClass in ["ACM_SilverNylonDressing", "ACM_BurnCream"]) exitWith {};
+// One locality-safe worker. No per-casualty PFH survives ownership migration.
+if (isNil QGVAR(runtimePFH)) then {
+    GVAR(runtimePFH) = [{
+        {
+            if (local _x && {alive _x} && {_x isKindOf "CAManBase"}) then {
+                private _needs = (_x getVariable [QGVAR(BurnBurden),0]) > 0.001
+                    || {(_x getVariable [QGVAR(AirwayInflammation),0]) > 0.001}
+                    || {_x getVariable [QGVAR(PermanentInjury),false]};
+                if (_needs) then {[_x] call FUNC(tickPatient);};
+            };
+        } forEach allUnits;
+    }, 2, []] call CBA_fnc_addPerFrameHandler;
+};
 
-    private _woundNames = ACEGVAR(medical_damage,woundClassNames);
-    private _partKey = toLower _bodyPart;
-    private _wounds = ((_patient getVariable [VAR_OPEN_WOUNDS, createHashMap]) getOrDefault [_partKey, []])
-                    + ((_patient getVariable [VAR_BANDAGED_WOUNDS, createHashMap]) getOrDefault [_partKey, []]);
-
-    if ((_wounds findIf {(_woundNames param [floor ((_x select 0) / 10), ""]) in ["Burn2", "Burn3"]}) > -1) then {
-        [_patient, BURN_WRONG_DRESSING_PAIN] call ACEFUNC(medical_status,adjustPainLevel);
-    };
-}] call CBA_fnc_addEventHandler;
-
-// Burn sources hook in once CBA settings are available. ACE fire already produces burns on its own;
-// here we add nearby explosions via the built-in "explosion" event (fires per unit close to a blast).
+// ACE fire already produces burns. Add nearby explosion burns from the engine/CBA per-unit event.
 ["CBA_settingsInitialized", {
     if (!GVAR(sourcesEnabled)) exitWith {};
     ["CAManBase", "explosion", LINKFUNC(handleExplosion)] call CBA_fnc_addClassEventHandler;
