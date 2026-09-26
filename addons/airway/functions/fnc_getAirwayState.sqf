@@ -77,7 +77,13 @@ if (((_patient getVariable ["ACM_airway_AirwayObstructionVomit_State", 0]) + (_p
     };
 };
 
-private _airwayInflammation = (_patient getVariable ["ACM_CBRN_AirwayInflammation", 0]);
+// CBRN and burns own separate inflammation sources. Compose them here so neither subsystem
+// can erase the other. A tracheal ETT/cric has already exited above and therefore bypasses this
+// upper-airway edema; an i-gel remains supraglottic and does not.
+private _airwayInflammation = (
+    (_patient getVariable ["ACM_CBRN_AirwayInflammation", 0]) +
+    (_patient getVariable ["ACM_burns_AirwayInflammation", 0])
+) min 100;
 
 if (_airwayInflammation > 10) then {
     if (_airwayInflammation >= 100) then {
