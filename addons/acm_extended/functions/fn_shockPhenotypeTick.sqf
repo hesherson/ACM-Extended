@@ -42,10 +42,17 @@ private _now = CBA_missionTime;
                     _sev = _sepsis;
                     _externalDrive = true;
                 } else {
+                    private _burnShock = (_u getVariable ["ACM_burns_ShockSeverity",0]) max 0 min 1;
+                    if (_burnShock > 0.05) then {
+                        _type = "burn";
+                        _sev = _burnShock;
+                        _externalDrive = true;
+                    } else {
                     private _circ = _u getVariable ["ACME_circ_State", createHashMap];
                     if (_circ isEqualType createHashMap && {_circ getOrDefault ["shockActive",false]} && {!(_u getVariable ["ACME_shock_ownsCirc",false])}) then {
                         _type = "distributive";
                         _sev = (_circ getOrDefault ["shockSeverity",0.4]) max 0 min 1;
+                    };
                     };
                 };
             };
