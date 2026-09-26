@@ -19,7 +19,7 @@ _patient setVariable [QGVAR(LastTickLocal), _now, false];
 
 private _systemic = (_patient getVariable [QGVAR(SystemicBurden),_burden]) max 0 min 1;
 private _lastBurn = _patient getVariable [QGVAR(LastBurnAt),_now];
-private _hardcore = GVAR(hardcorePersistentBurns);
+private _hardcore = missionNamespace getVariable ["ACME_hcEff_burns",false];
 
 if (!_permanent && {_hardcore} && {_burden >= GVAR(hardcoreEvacBurden)}) then {
     _permanent = true;
