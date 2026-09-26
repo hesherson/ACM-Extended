@@ -15,13 +15,13 @@ def raw(path: Path) -> str:
 
 def test_123_release_identity_and_hemtt_version():
     assert_release_identity()
-    assert 'version = "1.2.3";' in acme("config.cpp")
+    assert 'version = "1.2.4";' in acme("config.cpp")
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_infusion_version = "1.2.3";' in startup
-    assert 'ACME_buildBatch = "B170";' in startup
+    assert 'ACME_infusion_version = "1.2.4";' in startup
+    assert 'ACME_buildBatch = "B171";' in startup
     assert 'ACME_debugRevision = "";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
-    for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 3", "#define BUILD 0"):
+    for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 4", "#define BUILD 0"):
         assert line in script
 
 
