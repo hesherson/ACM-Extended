@@ -5,3 +5,4 @@ PREP(handleExplosion);
 PREP(handleRespawn);
 PREP(initUnit);
 PREP(resetVariables);
+PREP(tickPatient);
