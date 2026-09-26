@@ -29,6 +29,9 @@ _patient setVariable ["ACME_obtunded_sprintRagdollToken", [], true];
 // This function is intentionally a hard reset; normal death no longer routes through it.
 _patient setVariable ["ACME_NA2_resetTime", CBA_missionTime, true];
 _patient setVariable ["ACME_CS_blockedEffectEpoch", _patient getVariable ["ACME_CS_netEpoch", ""], true];
+// Transient airway-reflex physiology never survives a definitive reset.
+_patient setVariable ["ACME_laryngo_vagalUntil", nil, true];
+_patient setVariable ["ACME_laryngo_vagalSeverity", nil, true];
 _patient setVariable ["ACME_ncd_tensionEpoch", "", true];
 if (_patient getVariable ["ACME_nrb_on", false]) then { [_patient, objNull, false, false, true] call ACME_fnc_nrbStateLocal; };
 ["ACME_CS_reset", [_patient, CBA_missionTime]] call CBA_fnc_serverEvent;
