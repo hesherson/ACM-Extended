@@ -1,41 +1,14 @@
 #include "..\script_component.hpp"
 /*
- * Author: INFERNO
- * Sepsis deterioration loop. Runs every 60 seconds while stage 3 is active.
- * Vitals deterioration (HR, RR, BP) is handled naturally by the fever temperature pipeline.
- * This PFH only manages pain and antibiotic regression.
- *
- * Arguments:
- * 0: Patient <OBJECT>
- *
- * Return Value:
- * None
- *
- * Example:
- * [player] call ACM_infection_fnc_handleSepsisPFH;
- *
- * Public: No
+ * 1.3.0 sepsis adjunct. This is a single owner-local tick, not a PFH creator.
+ * Stage progression/regression remains in the main infection worker.
  */
-
 params ["_patient"];
+if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+if ((_patient getVariable [QGVAR(Infection_Stage), 0]) < 3) exitWith {};
 
-if (_patient getVariable [QGVAR(Sepsis_PFH), -1] != -1) exitWith {};
-
-private _id = [{
-    params ["_args", "_idPFH"];
-    _args params ["_patient"];
-
-    private _stage = _patient getVariable [QGVAR(Infection_Stage), 0];
-
-    if (!alive _patient || {_stage < 3}) exitWith {
-        _patient setVariable [QGVAR(Sepsis_PFH), -1];
-        [_idPFH] call CBA_fnc_removePerFrameHandler;
-    };
-
-    // Agonising pain - patient needs both antibiotics and pain management to function.
-    // Stage regression is handled by the main infection PFH via treatment accumulator.
-    [_patient, 0.20] call ACEFUNC(medical,adjustPainLevel);
-
-}, 60, [_patient]] call CBA_fnc_addPerFrameHandler;
-
-_patient setVariable [QGVAR(Sepsis_PFH), _id];
+private _next = _patient getVariable [QGVAR(Sepsis_NextPain), 0];
+if (CBA_missionTime >= _next) then {
+    [_patient, 0.12] call ACEFUNC(medical,adjustPainLevel);
+    _patient setVariable [QGVAR(Sepsis_NextPain), CBA_missionTime + 60, false];
+};
