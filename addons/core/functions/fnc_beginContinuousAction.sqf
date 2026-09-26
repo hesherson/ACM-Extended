@@ -13,9 +13,11 @@
  * 3: Per Frame Code <CODE>
  * 4: Allowed Prone <BOOL>
  * 5: Dialog ID <NUMBER>
+ * 6: Suppress provider animation <BOOL>
+ * 7: Reopen medical menu when this action ends <BOOL>
  *
  * Return Value:
- * None
+ * Started <BOOL>
  *
  * Example:
  * [[player, cursorTarget, "Head"], {}, {}, {}] call ACM_core_fnc_beginContinuousAction;
@@ -23,7 +25,13 @@
  * Public: No
  */
 
-params ["_args", "_onStart", "_onCancel", "_perFrame", ["_allowProne", false], ["_dialogID", -1], ["_suppressProviderAnim", false, [false]]];
+params [
+    "_args", "_onStart", "_onCancel", "_perFrame",
+    ["_allowProne", false],
+    ["_dialogID", -1],
+    ["_suppressProviderAnim", false, [false]],
+    ["_reopenOnEnd", false, [false]]
+];
 _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
 
 // A stale shared gate used to make every later continuous action silently no-op. A live generation publishes a
@@ -41,7 +49,7 @@ if (!isNull _medic && {local _medic} && {GVAR(ContinuousAction_Active)}) then {
 };
 
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
-    || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}) exitWith {};
+    || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}) exitWith {false};
 
 // Bind only a session started by the local controlled unit. AI/local scripted
 // providers retain their existing behavior when the player changes units.
@@ -61,7 +69,7 @@ GVAR(ContinuousAction_Active) = true;
 // may retain ACM's animated crouch. Merely opening a menu never enables it.
 _medic setVariable ["ACME_menuPoseAfterTreatment", _patient];
 if (!isNil "ACME_fnc_menuPoseStop") then {[_medic, true] call ACME_fnc_menuPoseStop;};
-GVAR(ContinuousAction_ShouldReopen) = false;
+GVAR(ContinuousAction_ShouldReopen) = _reopenOnEnd;
 
 ACEGVAR(medical_gui,pendingReopen) = false; // Prevent medical menu from reopening
 
@@ -162,7 +170,7 @@ if (currentWeapon _medic != "") then {
 
 private _pfh = [{
     params ["_args", "_idPFH"];
-    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim"];
+    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim", "_reopenOnEnd"];
 
     // Superseded action. Retire only this PFH and its own key id. Never run the old cancellation/reopen path against
     // the newer generation.
@@ -187,7 +195,9 @@ private _pfh = [{
         // and keep asking the old dialog to close. After the window expires, any new dialog again cancels normally.
         if (diag_tickTime < _dialogStartupUntil) then {
             ACEGVAR(medical_gui,pendingReopen) = false;
-            GVAR(ContinuousAction_ShouldReopen) = false;
+            // Preserve this episode's explicit end behavior. B166 reset this to false every frame, which meant
+            // non-dialog hands-on actions could never return to the medical menu even when they opted in.
+            GVAR(ContinuousAction_ShouldReopen) = _reopenOnEnd;
             if (dialog) then {closeDialog 0;};
         } else {
             _dialogCondition = dialog;
@@ -246,15 +256,29 @@ private _pfh = [{
         ["ace_treatmentFailed", [_medic, _patient, _bodyPart, "ACM_ContinuousAction", "", "", false]] call CBA_fnc_localEvent;
 
         if (GVAR(ContinuousAction_ShouldReopen) && {!isNull _patient} && {!_medicCondition} && {!_identityChanged}) then {
-            [QGVAR(openMedicalMenu), _patient] call CBA_fnc_localEvent;
+            disableSerialization;
+            private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+            private _medicalTarget = missionNamespace getVariable ["ace_medical_gui_target", objNull];
+            // Opening the medical menu is itself a valid way to leave a hands-on hold. Do not destroy/recreate an
+            // already-live menu just to satisfy the reopen contract.
+            if (isNull _medicalMenu || {_medicalTarget isNotEqualTo _patient}) then {
+                [QGVAR(openMedicalMenu), _patient] call CBA_fnc_localEvent;
+            };
         };
     };
 
-    if (CBA_missionTime - (_medic getVariable [QGVAR(ContinuousAction_LastSeen), -100]) >= 2) then {
+    _args call _perFrame;
+
+    // Publish the liveness heartbeat only after this generation's per-frame body completed successfully. If an
+    // action-specific callback throws, the heartbeat now ages out and the B166/B167 stale-gate recovery can clear
+    // the orphan instead of considering a broken PFH healthy forever.
+    if (GVAR(ContinuousAction_Active)
+        && {GVAR(ContinuousAction_Epoch) == _epoch}
+        && {CBA_missionTime - (_medic getVariable [QGVAR(ContinuousAction_LastSeen), -100]) >= 2}) then {
         _medic setVariable [QGVAR(ContinuousAction_LastSeen), CBA_missionTime, true];
     };
-    _args call _perFrame;
-}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim, _reopenOnEnd]] call CBA_fnc_addPerFrameHandler;
 
 GVAR(ContinuousAction_PFH) = _pfh;
 _args call _onStart;
+true
