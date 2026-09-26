@@ -66,7 +66,11 @@ if ((_patient getVariable [QGVAR(AirwayObstructionVomit_State), 0]) + (_patient 
     [_medic, _classname] call ACEFUNC(common,addToInventory);
 };
 
-if (_type == "SGA" && GET_AIRWAY_INFLAMMATION(_patient) > AIRWAY_INFLAMMATION_THRESHOLD_SERIOUS) exitWith {
+private _effectiveInflammation = (
+    GET_AIRWAY_INFLAMMATION(_patient) +
+    (_patient getVariable ["ACM_burns_AirwayInflammation",0])
+) min 100;
+if (_type == "SGA" && {_effectiveInflammation > AIRWAY_INFLAMMATION_THRESHOLD_SERIOUS}) exitWith {
     private _hint = format [LLSTRING(Adjunct_Failed), _item];
     [format ["%1<br />%2", _hint, LLSTRING(Adjunct_Failed_Inflammation)], 2, _medic] call ACEFUNC(common,displayTextStructured);
     [_medic, _classname] call ACEFUNC(common,addToInventory);
