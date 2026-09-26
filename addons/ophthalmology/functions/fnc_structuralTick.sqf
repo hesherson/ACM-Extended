@@ -31,7 +31,7 @@ private _last = _patient getVariable [QGVAR(structuralLastTick),_now - 1];
 private _dt = ((_now - _last) max 0) min 5;
 _patient setVariable [QGVAR(structuralLastTick),_now,false];
 
-private _hardcore = GVAR(hardcorePersistentOcular);
+private _hardcore = missionNamespace getVariable ["ACME_hcEff_ophthalmology",false];
 if (_hardcore) then {
     // Structural ocular trauma is stabilized, not field-cured. This setting is explicitly the
     // evacuation variant, so latch only TRUE here and let full-heal/definitive-care reset it.
