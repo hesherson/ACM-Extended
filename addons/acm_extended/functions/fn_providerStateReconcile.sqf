@@ -74,22 +74,22 @@ if (_active) then {
 };
 
 if (_medic getVariable ["ACME_treatmentPreflightActive", false]) then {
-    private _seen = _medic getVariable ["ACME_reconcilePreflightSeen", -1];
-    if !(_seen isEqualType 0 && {finite _seen}) then {_seen = -1;};
-    if (_seen < 0) then {
-        _medic setVariable ["ACME_reconcilePreflightSeen", diag_tickTime, false];
-    } else {
-        if (diag_tickTime - _seen > 4) then {
-            _medic setVariable ["ACME_treatmentPreflightActive", false, false];
-            _medic setVariable ["ACME_treatmentPreflightToken", "", false];
-            _medic setVariable ["ACME_treatmentPreflightBypass", [], false];
-            _medic setVariable ["ACME_reconcilePreflightSeen", -1, false];
-            _repairs = _repairs + 1;
-            diag_log "[ACME STATE RECONCILE] Cleared stale treatment preflight.";
-        };
+    private _token = _medic getVariable ["ACME_treatmentPreflightToken", ""];
+    private _startedAt = _medic getVariable ["ACME_treatmentPreflightStartedAt", -1];
+    private _stale = (_token == "")
+        || {!(_startedAt isEqualType 0 && {finite _startedAt})}
+        || {_startedAt < 0}
+        || {(CBA_missionTime - _startedAt) > 4};
+
+    if (_stale) then {
+        _medic setVariable ["ACME_treatmentPreflightActive", false, false];
+        _medic setVariable ["ACME_treatmentPreflightToken", "", false];
+        _medic setVariable ["ACME_treatmentPreflightBypass", [], false];
+        _medic setVariable ["ACME_treatmentPreflightStartedAt", -1, false];
+        _repairs = _repairs + 1;
+        diag_log format ["[ACME STATE RECONCILE] Cleared stale treatment preflight token=%1 age=%2.",
+            _token, if (_startedAt isEqualType 0) then {CBA_missionTime - _startedAt} else {-1}];
     };
-} else {
-    _medic setVariable ["ACME_reconcilePreflightSeen", -1, false];
 };
 
 if !(_medic getVariable ["ACME_DP_Active", false]) then {
