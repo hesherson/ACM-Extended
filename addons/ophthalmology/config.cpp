@@ -23,7 +23,8 @@ class CfgPatches {
             "ACM_main",
             "ACM_core",
             "ACM_gui",
-            "ACM_cbrn"
+            "ACM_cbrn",
+            "ACM_Extended"
         };
         author = AUTHOR;
         authors[] = {"Katalam", "MiszczuZPolski", "Mazinski", "Inferno"};
