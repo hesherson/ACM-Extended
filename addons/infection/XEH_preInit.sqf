@@ -36,16 +36,6 @@ PREP_RECOMPILE_END;
     [0.1, 3, 1, 1],
     true
 ] call CBA_fnc_addSetting;
-
-[
-    QGVAR(hardcoreSepsisSequelae),
-    "CHECKBOX",
-    ["[HARDCORE] Persistent Sepsis", "Prolonged septic shock can leave field-unresolved organ dysfunction. Antibiotics can control the infection, but residual physiology and the evacuation requirement remain until full heal or definitive care."],
-    [ACM_SETTINGS_CATEGORY, "Hardcore"],
-    [false],
-    true
-] call CBA_fnc_addSetting;
-
 [
     QGVAR(hardcoreSepsisEvacMinutes),
     "SLIDER",
