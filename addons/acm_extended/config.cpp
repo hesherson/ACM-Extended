@@ -336,7 +336,7 @@ class CfgMovesMaleSdr: CfgMovesBasic {
 
 class CfgPatches {
     class ACM_Extended {
-        name = "ACM Extended";
+        name = "ACM Extended [DEV Branch]";
         units[] = {"ACME_ModuleMegacodeKelly", "ACME_ModuleBloodFridge", "ACME_BloodFridge_Closed", "ACME_BloodFridge_Open",
             // zeus enumerates units[]. a module that is not in this list does not exist as far as the curator is
             // concerned, however correctly it is built and whatever its scopecurator says. these five were fully
@@ -381,7 +381,7 @@ class CfgPatches {
         // Public release identity is stored in CfgPatches.version because every debug-overlay page reads this
         // exact value. It lets testers prove which PBO Arma actually loaded instead of guessing from a workshop
         // timestamp or repository state.
-        version = "1.2.4";
+        version = "1.3.0";
         // Only HEMTT dev/launch output enables experimental development actions.
         acme_developmentBuild = 0;
     };
@@ -393,7 +393,7 @@ class CfgPatches {
 // supplied ACME artwork instead of an empty or generic addon mark.
 class CfgMods {
     class ACM_Extended {
-        dir = "@ACM Extended";
+        dir = "@ACM Extended [DEV Branch]";
         name = "ACM Extended";
         picture = "\acm_extended\ui\ACME_logo.paa";
         logo = "\acm_extended\ui\ACME_logo.paa";
@@ -401,11 +401,11 @@ class CfgMods {
         logoSmall = "\acm_extended\ui\ACME_logo_small.paa";
         hidePicture = 0;
         hideName = 0;
-        tooltip = "ACM Extended";
-        tooltipOwned = "ACM Extended";
+        tooltip = "ACM Extended [DEV Branch]";
+        tooltipOwned = "ACM Extended [DEV Branch]";
         actionName = "";
         action = "";
-        overview = "ACM Extended";
+        overview = "ACM Extended [DEV Branch]";
         author = "mavis";
     };
 };
