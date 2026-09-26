@@ -215,17 +215,17 @@ def test_native_treatment_waits_for_logical_and_visible_holster_then_crouch(stan
 
 
 @pytest.mark.parametrize('phase', [0, 1])
-def test_preflight_timeout_releases_its_own_reservation_without_starting_treatment(phase):
+def test_preflight_timeout_fails_open_to_native_treatment(phase):
     execute(setup() + r'''
         [_medic,_patient,"LeftArm","FieldDressing"] call ace_medical_treatment_fnc_treatment;
     ''' + (r'''
         _weaponNow=""; _animNowFixture="AmovPercMstpSnonWnonDnon"; 0 call _deliver;
     ''' if phase else '') + f'{phase} call _timeout;' + r'''
-        [count _nativeCalls==0,"timeout launched treatment"] call _check;
+        [count _nativeCalls==1,"presentation timeout consumed the accepted treatment click"] call _check;
         [!(_medic getVariable ["ACME_treatmentPreflightActive",true]),"timeout kept active reservation"] call _check;
         [(_medic getVariable ["ACME_treatmentPreflightToken","bad"])=="","timeout kept token"] call _check;
         [(_positions select (count _positions-1))=="AUTO","timeout left stance locked"] call _check;
-        [!ace_medical_gui_pendingReopen,"timeout armed menu reopen"] call _check;
+        [ace_medical_gui_pendingReopen,"fail-open treatment lost menu handoff"] call _check;
     ''')
 
 
@@ -270,11 +270,14 @@ def test_genuinely_empty_crouch_fast_path_keeps_dead_patient_treatment_available
     ''')
 
 
-def test_repeated_click_cannot_queue_a_second_generic_preflight():
+def test_new_click_supersedes_stale_presentation_preflight_without_reholstering():
     execute(setup() + r'''
         [_medic,_patient,"LeftArm","FieldDressing"] call ace_medical_treatment_fnc_treatment;
+        private _oldToken=_medic getVariable ["ACME_treatmentPreflightToken",""];
         private _again=[_medic,_patient,"LeftArm","FieldDressing"] call ace_medical_treatment_fnc_treatment;
-        [!_again && {count _timers==1} && {count _holsters==1},"duplicate click queued preflight"] call _check;
+        private _newToken=_medic getVariable ["ACME_treatmentPreflightToken",""];
+        [_again && {count _timers==2} && {count _holsters==1},"latest click did not replace presentation preflight cleanly"] call _check;
+        [_oldToken!="" && {_newToken!=""} && {_newToken!=_oldToken},"preflight generation was not replaced"] call _check;
     ''')
 
 
@@ -344,7 +347,7 @@ def test_second_phase_does_not_bypass_readiness_after_weapon_or_stance_changes(c
     '''+change+r'''
         [!(1 call _condition),"second phase accepted incorrect logical/visual/stance state"] call _check;
         1 call _timeout;
-        [count _nativeCalls==0,"unready second phase launched treatment"] call _check;
+        [count _nativeCalls==1,"unready second phase consumed treatment instead of failing open"] call _check;
     ''')
 
 
