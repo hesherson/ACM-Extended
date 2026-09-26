@@ -79,3 +79,15 @@ ACME_laryngo_proceduralSedation = 0.75; // sedation load at/above this suppresse
 ACME_laryngo_irritationSec = 45;        // duration after an awake/under-sedated tube attempt.
 ACME_laryngo_irritationPulseMin = 2.0;
 ACME_laryngo_irritationPulseMax = 3.5;
+
+// 1.3.0 adult vagal airway reflex. Routine adult laryngoscopy remains predominantly sympathetic.
+// These are rare-event gameplay probabilities, not pediatric values and not clinical incidence claims.
+ACME_laryngo_vagalPassChance       = missionNamespace getVariable ["ACME_laryngo_vagalPassChance",0.015];
+ACME_laryngo_vagalManipChance      = missionNamespace getVariable ["ACME_laryngo_vagalManipChance",0.025];
+ACME_laryngo_vagalHypoxiaAddMax    = missionNamespace getVariable ["ACME_laryngo_vagalHypoxiaAddMax",0.12];
+ACME_laryngo_vagalRepeatAddPerTry  = missionNamespace getVariable ["ACME_laryngo_vagalRepeatAddPerTry",0.003];
+ACME_laryngo_vagalRepeatAddMax     = missionNamespace getVariable ["ACME_laryngo_vagalRepeatAddMax",0.03];
+ACME_laryngo_vagalDurationSec      = missionNamespace getVariable ["ACME_laryngo_vagalDurationSec",12];
+ACME_laryngo_vagalBpmDrop          = missionNamespace getVariable ["ACME_laryngo_vagalBpmDrop",55];
+ACME_laryngo_vagalMinTargetHR      = missionNamespace getVariable ["ACME_laryngo_vagalMinTargetHR",28];
+ACME_laryngo_vagalResistDrop       = missionNamespace getVariable ["ACME_laryngo_vagalResistDrop",28];
