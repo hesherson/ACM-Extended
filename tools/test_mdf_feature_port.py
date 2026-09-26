@@ -4,7 +4,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-for addon in ("burns", "infection", "ophthalmology", "card", "card_main"):\n    assert (ROOT / "addons" / addon).is_dir(), addon\nfor addon in ("FAK-core", "FAK-main"):\n    assert not (ROOT / "addons" / addon).exists(), f"bundled EFAK must remain external: {addon}"
+for addon in ("burns", "infection", "ophthalmology", "card", "card_main"):
+    assert (ROOT / "addons" / addon).is_dir(), addon
+for addon in ("FAK-core", "FAK-main"):
+    assert not (ROOT / "addons" / addon).exists(), f"bundled EFAK must remain external: {addon}"
 
 injuries = (ROOT / "addons/damage/ACE_Medical_Injuries.hpp").read_text(encoding="utf-8")
 wounds = (ROOT / "addons/core/overrides/fnc_woundsHandlerBase.sqf").read_text(encoding="utf-8")
