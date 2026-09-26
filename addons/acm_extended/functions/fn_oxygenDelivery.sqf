@@ -64,6 +64,8 @@ private _sao2   = ((_unit getVariable ["ace_medical_spo2", 97]) / 100) max 0 min
 // so the exponent below is what stops compensation outrunning the injury.
 private _volFrac = (_total / _normal) min (missionNamespace getVariable ["ACME_do2_preloadCeiling", 1.1]);
 private _svFrac = _volFrac ^ (missionNamespace getVariable ["ACME_do2_preloadExponent", 1.6]);
+// Septic capillary leak/relative hypovolemia is a preload effect, not a fake loss of red-cell mass.
+_svFrac = _svFrac * ((_unit getVariable ["ACM_infection_Preload_Mult", 1]) max 0.55 min 1);
 
 // positive pressure ventilation against preload.
 // spontaneous breathing draws air in by making the chest negative relative to atmosphere, and that same negative
