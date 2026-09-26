@@ -16,3 +16,4 @@ PREP(showEyeShieldOverlay);
 PREP(treatmentAdvanced_eyeShield);
 PREP(treatmentAdvanced_eyewash);
 PREP(updateVisualEffects);
+PREP(structuralTick);
