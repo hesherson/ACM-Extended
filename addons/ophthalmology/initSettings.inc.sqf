@@ -89,3 +89,24 @@
     true
 ] call CBA_fnc_addSetting;
 
+
+// ACME 1.3.0 structural ocular-trauma behavior.
+// Ordinary mode is game-compressed: structural injury can resolve over a useful mission timescale,
+// especially when protected. Hardcore converts structural trauma into a stabilization/evacuation problem.
+[
+    QGVAR(structuralRecoveryMinutes),
+    "SLIDER",
+    ["Structural eye recovery time", "Minutes for structural eye trauma to recover in normal mode while protected by an eye shield. Unshielded recovery is slower. Has no field-healing effect when Persistent Ocular Trauma is enabled."],
+    [CBA_SETTINGS_CAT, LSTRING(setting_subcategory_injury)],
+    [5, 30, 12, 0],
+    true
+] call CBA_fnc_addSetting;
+
+[
+    QGVAR(hardcorePersistentOcular),
+    "CHECKBOX",
+    ["[HARDCORE] Persistent Ocular Trauma", "Structural blast/traumatic eye injury does not heal in the field. An eye shield stabilizes/protects the injury, but definitive treatment requires evacuation/full heal. Dust and chemical irritation remain eyewash-reversible."],
+    [CBA_SETTINGS_CAT, LSTRING(setting_subcategory_injury)],
+    [false],
+    true
+] call CBA_fnc_addSetting;
