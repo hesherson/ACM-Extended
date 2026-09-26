@@ -41,7 +41,7 @@ def test_heartbeat_is_published_only_after_action_perframe_returns():
 
 def test_head_tilt_uses_shared_stale_recovery_and_reopens_on_cancel():
     source = read(AIRWAY)
-    entry = source[:source.index("if ((_patient getVariable [QGVAR(HeadTilt_State), false])")]
+    entry = source[:source.index("if (_patient getVariable [QGVAR(HeadTilt_State), false])")]
     assert 'ContinuousAction_Active' not in entry
     assert '}, false, -1, false, true] call EFUNC(core,beginContinuousAction)' in source
     assert 'continuousHoldRelease' in source
