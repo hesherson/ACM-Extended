@@ -29,6 +29,8 @@ private _rawRisk = (_clotted  * 0.040)
                 + (_stitched * 0.006);
 
 _rawRisk = _rawRisk * GVAR(infectionRiskMultiplier);
+// Burns compromise the skin barrier but do not own infection progression.
+_rawRisk = _rawRisk * (_patient getVariable ["ACM_burns_InfectionRiskMult", 1]);
 
 private _abLevel = (
     ([_patient, "Ertapenem_IV", false] call ACEFUNC(medical_status,getMedicationCount)) +
