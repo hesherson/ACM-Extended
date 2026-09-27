@@ -1,4 +1,4 @@
-// B120: refresh the six independent thoracostomy tray rows.  Tube and seal are full-width vertical slots;
+// Refresh the role-filtered thoracostomy tray rows. Tube exists only for Doctor; seal remains a full-width row;
 // this function never resizes/rebuilds controls, so repeated refreshes cannot squash either icon.
 disableSerialization;
 private _display = uiNamespace getVariable ["ACME_Thora_DLG", displayNull];
@@ -9,7 +9,8 @@ private _patient = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
 private _held = uiNamespace getVariable ["ACME_Thora_Held", ""];
 private _closed = !isNull _patient && {_patient getVariable [format ["ACME_thora_closed_%1", _side], false]};
 private _sealed = !isNull _patient && {_patient getVariable [format ["ACME_thora_sealed_%1", _side], false]};
-private _canTube = !isNull _medic && {[_medic, "chestTube"] call ACME_fnc_procedureAllowed};
+private _isDoctor = !isNull _medic && {[_medic, 2] call ace_medical_treatment_fnc_isMedic};
+private _canTube = _isDoctor && {[_medic, "chestTube"] call ACME_fnc_procedureAllowed};
 private _canSeal = !isNull _medic && {[_medic, "thoracostomySeal"] call ACME_fnc_procedureAllowed};
 uiNamespace setVariable ["ACME_Thora_CanTube", _canTube];
 uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
@@ -22,6 +23,20 @@ uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
     private _countCtrl = _bg getVariable ["thoraCount", controlNull];
     private _count = -1;
     private _allowed = true;
+
+    // Hide unavailable tube rows, but retain a held tool long enough for its provider to put it down.
+    if (_tool == "tube" && {!_canTube} && {_held != "tube"}) then {
+        _bg ctrlShow false;
+        if (!isNull _ic) then {_ic ctrlShow false;};
+        if (!isNull _btn) then {_btn ctrlEnable false; _btn ctrlShow false;};
+        if (!isNull _countCtrl) then {_countCtrl ctrlShow false;};
+        continue;
+    } else {
+        _bg ctrlShow true;
+        if (!isNull _ic) then {_ic ctrlShow true;};
+        if (!isNull _btn) then {_btn ctrlShow true;};
+        if (!isNull _countCtrl) then {_countCtrl ctrlShow true;};
+    };
 
     private _tex = switch (_tool) do {
         case "chlorhexidine": {format ["\acm_extended\ui\items\chlorhexidine_%1_ca.paa", _side]};
@@ -36,11 +51,11 @@ uiNamespace setVariable ["ACME_Thora_SeparateClosureSlots", true];
 
     if (_tool == "tube") then {
         _allowed = _canTube && {!_closed} && {!_sealed};
-        _count = if (_allowed) then {[_medic, "ACM_ChestTubeKit"] call ACME_fnc_itemCount} else {0};
+        _count = if (_allowed) then {[_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestTubeKit"] call ACME_fnc_treatmentSupplyCount} else {0};
     };
     if (_tool == "seal") then {
         _allowed = _canSeal && {!_closed} && {!_sealed};
-        _count = if (_allowed) then {[_medic, "ACM_ChestSeal"] call ACME_fnc_itemCount} else {0};
+        _count = if (_allowed) then {[_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount} else {0};
     };
     private _locked = (_tool in ["tube", "seal"]) && {!_allowed || {_count <= 0}};
     private _selected = _held == _tool;

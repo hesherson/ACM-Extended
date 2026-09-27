@@ -21,7 +21,29 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart", "_type", "_state", ["_iv", true], ["_accessSite", -1]];
+params ["_medic", "_patient", "_bodyPart", "_type", "_state", ["_iv", true], ["_accessSite", -1], ["_usedSupply", []]];
+// Native ACE already debited IO equipment before this callback. Capture its exact source at treatment start;
+// an occupied site may reject here after another provider finishes first. Consume the capture once on success
+// or rejection, so a repeated callback cannot refund the same kit twice. Legacy script calls keep native behavior.
+private _refundDonor = _medic;
+private _refundItem = "";
+private _refundVehicle = objNull;
+private _refundConsumed = true;
+private _supplyValid = true;
+if (_usedSupply isNotEqualTo []) then {
+    private _source = _medic getVariable ["ACME_ioSupplySource", []];
+    _usedSupply params [["_itemUser", objNull], ["_usedItem", ""]];
+    _supplyValid = count _source == 6 && {!isNull _itemUser} && {_usedItem != ""}
+        && {(_source select [0,4]) isEqualTo [_patient, _bodyPart, _itemUser, _usedItem]};
+    if (_supplyValid) then {
+        _refundDonor = _itemUser;
+        _refundItem = _usedItem;
+        _refundVehicle = _source select 4;
+        _refundConsumed = _source select 5;
+        _medic setVariable ["ACME_ioSupplySource", nil];
+    };
+};
+if (!_supplyValid) exitWith {};
 private _acmeReconcile = "B106:setIVReconciled";
 
 private _hintState = LELSTRING(core,Common_Inserted);
@@ -148,7 +170,14 @@ if (!_exit && !(random 1 < _successChance)) then {
 };
 
 if (_exit) exitWith {
-    [_medic, _classname] call ACEFUNC(common,addToInventory);
+    if (_refundConsumed) then {
+        if (_refundItem == "") then {_refundItem = _classname;};
+        if (!isNull _refundVehicle) then {
+            _refundVehicle addItemCargoGlobal [_refundItem, 1];
+        } else {
+            [_refundDonor, _refundItem] call ACEFUNC(common,addToInventory);
+        };
+    };
 };
 
 private _setState = _type;

@@ -31,7 +31,7 @@ class LabelsAndOrder(unittest.TestCase):
         c=read_source(ROOT/'config.cpp', encoding='utf-8-sig')
         for name in ('ACME_ElevateHead','ACME_LowerHead'):
             b=c.split('class '+name+':',1)[1].split('\n    };',1)[0]
-            self.assertIn('allowedSelections[] = {"Head", "Body"};',b)
+            self.assertIn('allowedSelections[] = {"Head"};',b)
             self.assertIn('category = "examine";',b)
         self.assertIn('displayName = "Elevate Head to 30°";',c)
 
@@ -49,11 +49,12 @@ class LabelsAndOrder(unittest.TestCase):
         p=src('postInit')
         self.assertIn('ACME_menuHeaderColorDefault = [1, 0.96, 0.84, 1];',p)
         self.assertIn('ACME_menuRowColorDefault = [1, 1, 1, 1];',p)
-        self.assertIn('ACME_menuRowColorAlternate = [1, 0.84, 0.84, 1];',p)
+        self.assertIn('ACME_menuRowColorAlternate = [1, 1, 1, 1];',p)
         settings=read_source(ROOT/'XEH_settings.hpp')
         header=settings.split('"ACME_menuColorHeaders"',1)[1].split('call CBA_fnc_addSetting',1)[0]
         self.assertIn('OFF (default): all dropdown headings use cream text',header)
-        self.assertRegex(header,r'\n\s*false,\n\s*0,')
+        self.assertIn('Regular action rows use uniform white text',header)
+        self.assertRegex(header,r'\n\s*false,\n\s*2,')
         self.assertNotIn('ACME_menuOpenDimFactor =',p)
 
 if __name__=='__main__':unittest.main()

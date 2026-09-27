@@ -1,3 +1,7 @@
+// Atomic patient-owner Direct Pressure claim replies are provider-local. Register once with the other treatment
+// lifecycle handlers so same-site multiplayer starts can never race a replicated marker.
+["ACME_directPressureClaimAck", {_this call ACME_fnc_directPressureClaimAck}] call CBA_fnc_addEventHandler;
+
 // B72 provider stance release. ACME starts ordinary on-foot treatments from empty-hands crouch, but setUnitPos is
 // only an entry guard, never a permanent player lock. Once ACE reports success/failure, release AUTO after the
 // native crouched end-animation handoff. Do not interfere with head-lift or another ACME-owned finite pose.
@@ -34,8 +38,11 @@
         // ACE reports setup success after BVM has taken over the provider. Completing
         // that short setup must not resume pressure or reopen a menu over the maneuver.
         // Its real cancellation emits a later treatment event after releasing the controller.
-        if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
-            && {_medic isEqualTo ACE_player}) exitWith {};
+        if (_medic isEqualTo ACE_player && {
+            (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+            || {!isNull _patient && {[_patient] call ACM_core_fnc_cprActive}}
+            || {!isNull _patient && {[_patient] call ACM_core_fnc_bvmActive}}
+        }) exitWith {};
 
         private _classKey = toLowerANSI _classname;
         private _headOwned = _classname in ["ACME_ElevateHead", "ACME_LowerHead"];
@@ -87,8 +94,11 @@
                         || {(_m getVariable ["ACME_DP_PoseToken", -2]) != _tok}) exitWith {};
                     // A completion callback queued by an earlier treatment can run
                     // after BVM starts. It no longer owns the provider's interface.
-                    if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
-                        && {_m isEqualTo ACE_player}) exitWith {};
+                    if (_m isEqualTo ACE_player && {
+                        (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+                        || {[_p] call ACM_core_fnc_cprActive}
+                        || {[_p] call ACM_core_fnc_bvmActive}
+                    }) exitWith {};
                     private _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
                     private _progress = uiNamespace getVariable ["ace_common_dlgProgress", displayNull];
                     // Do not replace a purpose-built minigame/dialog which a treatment callback intentionally opened.
@@ -126,5 +136,32 @@
         params ["_medic", "_patient"];
         if (isNull _patient || {!(_patient getVariable ["ACME_AAJT_zone3", false])}) exitWith {};
         [_patient, "aajtGrace", [0.9]] call ACME_fnc_ownerDispatch;
+    }] call CBA_fnc_addEventHandler;
+} forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];
+
+// ACE-only finite treatments share the choreography rate but keep ACE's real clinical timer.
+// Their exit retains that rate briefly, then releases only the exact still-owned presentation.
+{
+    [_x, {
+        params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
+        if (isNull _medic || {!local _medic}) exitWith {};
+        private _record = _medic getVariable ["ACME_nativeTreatmentRate", []];
+        if (count _record < 5 || {(_record select 1) isNotEqualTo _patient}
+            || {(_record select 2) != _bodyPart} || {(_record select 3) != _classname}) exitWith {};
+        if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]} || {!isNull objectParent _medic}) exitWith {
+            _medic setVariable ["ACME_nativeTreatmentRate", [], true];
+            _medic setAnimSpeedCoef 1;
+            ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+        };
+        [{
+            params ["_medic", "_record"];
+            if (isNull _medic || {!local _medic}) exitWith {};
+            if ((_medic getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo _record) exitWith {};
+            _medic setVariable ["ACME_nativeTreatmentRate", [], true];
+            if ((_medic getVariable ["ACME_treatmentPoseEpoch", -1]) != (_record select 4)) exitWith {};
+            if ([_medic] call ACME_fnc_providerStanceOwned) exitWith {};
+            _medic setAnimSpeedCoef 1;
+            ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+        }, [_medic, +_record], 0.85 / (call ACME_fnc_choreographyRate)] call CBA_fnc_waitAndExecute;
     }] call CBA_fnc_addEventHandler;
 } forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];

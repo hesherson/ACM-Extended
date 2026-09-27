@@ -29,10 +29,17 @@ class B17Release(unittest.TestCase):
         for visual in [-1,0,1,2,3,4,5]:
             test_custom_ecg_proxy_respects_native_visual_precedence(visual)
         test_rhythm_write_invalidates_both_monitor_caches()
-    def test_procedure_no_forced_unconsciousness(self):
+    def test_procedure_pain_contracts_do_not_force_immediate_unconsciousness(self):
         io=read('functions/fn_ioPainResponse.sqf'); th=read('functions/fn_thoraMouseUp.sqf')
-        self.assertNotIn('setUnconscious',io)
-        # surgical callback can contain unrelated text elsewhere; ensure the incision block uses pain not setUnconscious
+        # IO placement/medication pain itself never hard-drops consciousness. Fluid through an IO
+        # deliberately schedules one delayed owner-local syncope episode under the later B115 contract.
+        placement=io[io.index('if (_mode == "placement") exitWith'):io.index('// Actual IO flow')]
+        self.assertNotIn('setUnconscious',placement)
+        self.assertIn('adjustPainLevel',placement)
+        self.assertIn('if (_mode == "fluid" && {!_isUncon}) then {',io)
+        self.assertIn('ACME_ioSyncopeToken',io)
+        self.assertIn('ace_medical_fnc_setUnconscious',io)
+        # Thoracostomy incision pain remains pain-only.
         block=th[th.index('// Incision pain is real'):th.index('// the score:')]
         self.assertNotIn('setUnconscious',block)
         self.assertIn('adjustPainLevel',block)

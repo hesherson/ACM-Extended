@@ -36,7 +36,12 @@
 
 params ["_location", ["_woundArray", []], ["_fractureArray", [false,false,false,false]], ["_bloodVolumeArray", [6,0,0,3]], ["_airwayStateArray", [0,0]], ["_chestInjuryArray", [0,0,0]]];
 
-private _patient = GVAR(TrainingCasualtyGroup) createUnit ["B_Survivor_F", position _location, [], 0, "FORM"];
+private _patient = GVAR(TrainingCasualtyGroup) createUnit [QGVAR(TrainingPatient), position _location, [], 0, "FORM"];
+
+// The unit class supplies its carrier during creation. Mark the legacy armor
+// watcher complete before any treatment can remove the carrier intentionally.
+_patient setVariable ["ACME_acmSpawnerPlateCarrierDone", true, true];
+_patient setVariable ["ACME_patientSpawnerVestClass", vest _patient, true];
 
 _patient disableAI "MOVE";
 
@@ -98,7 +103,7 @@ _patient setVariable [VAR_INTERNAL_WOUNDS, _internalWounds, true];
 
 [_patient] call ACEFUNC(medical_status,updateWoundBloodLoss);
 
-[_patient, _totalPain] call ACEFUNC(medical_status,fnc_adjustPainLevel);
+[_patient, _totalPain] call ACEFUNC(medical_status,adjustPainLevel);
 
 if (_fractureArray isNotEqualTo [false,false,false,false]) then {
     private _fractureState = GET_FRACTURES(_patient);

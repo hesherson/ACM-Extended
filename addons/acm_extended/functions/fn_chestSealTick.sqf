@@ -8,7 +8,7 @@ private _display = uiNamespace getVariable ["ACME_CS_DLG", displayNull];
 if (isNull _display || {_display isNotEqualTo (_args param [0, displayNull])}
     || {_h != (uiNamespace getVariable ["ACME_CS_PFH", -1])}) exitWith {[_h] call CBA_fnc_removePerFrameHandler;};
 private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
-if (isNull _medic || {!alive _medic} || {_medic isNotEqualTo ACE_player}
+if (isNull _medic || {!alive _medic} || {!local _medic} || {!([_medic] call ace_common_fnc_isPlayer)}
     || {_medic getVariable ["ACE_isUnconscious", false]}
     || {isNull (uiNamespace getVariable ["ACME_CS_Patient", objNull])}) exitWith {
     _display closeDisplay 2;

@@ -17,6 +17,7 @@ LABELS = {
  'ACME_hc_hpmk':'[HARDCORE] Rewarming',
  'ACME_hc_tbi':'[HARDCORE] TBI',
  'ACME_hc_circ':'[HARDCORE] Shock',
+ 'ACME_hc_medications':'[HARDCORE] Medications',
  'ACME_hc_vesicant':'[HARDCORE] Extravasation',
  'ACME_hc_hypothermia':'[HARDCORE] Hypothermia',
  'ACME_hc_flight':'[HARDCORE] Flight Physiology',
@@ -77,7 +78,8 @@ def run(root: Path, baseline: Path | None = None) -> dict:
     check('requested_systems_in_group',all(opts.get(k,{}).get('category')=='[ _cSys , "Systems" ]' for k in ['ACME_sys_junc','ACME_sys_dp','ACME_sys_chestSeal','ACME_sys_hang']))
     check('enable_subcategory_removed','[_cSys, "Enable"]' not in pre)
     mapping=effective_map(hc)
-    check('independent_effective_flags',len(mapping)==15 and set(mapping.values())==set(LABELS))
+    check('independent_effective_flags',
+          len(mapping)==14 and set(mapping.values())==(set(LABELS)-{'ACME_hc_descriptors'}))
     check('hc_initialization_gate_precedes_capture',hc.index('ACME_hcReady')<hc.index('if (isNil "ACME_hcBase_captured")'))
     check('postinit_ready_before_apply','ACME_hcReady = true;\ncall ACME_fnc_applyHardcore;' in post)
     check('no_frame_gap_reset','diag_frameNo' not in rrc and 'ACME_menuLastFrame' not in rrc)

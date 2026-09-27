@@ -13,25 +13,20 @@ def test_version_batch():
     assert_release_identity()
 
 def test_only_torso_direct_pressure_owns_continuous_action():
-    start = txt('functions/fn_directPressureStart.sqf')
-    torso = txt('functions/fn_directPressureTorso.sqf')
-    limb = txt('functions/fn_directPressureLimb.sqf')
-    selfp = txt('functions/fn_directPressureSelf.sqf')
-    assert 'if (_bodyPart == "body") then' in start
-    assert 'ACME_fnc_directPressureTorso' in start
-    assert 'ACM_core_ContinuousAction_Active", true' in torso
-    assert 'ACM_core_ContinuousAction_Active", true' not in limb
-    assert 'ACM_core_ContinuousAction_Active", true' not in selfp
+    from test_bounded_pressure_contracts import assert_nonexclusive_contract
+    # The historical identity is retained; torso now shares nonexclusive ownership.
+    assert_nonexclusive_contract(txt('functions/fn_directPressureStart.sqf'), [
+        txt('functions/fn_directPressureTorso.sqf'),
+        txt('functions/fn_directPressureLimb.sqf'),
+        txt('functions/fn_directPressureSelf.sqf'),
+    ])
 
 def test_non_torso_pressure_is_not_cancelled_by_other_maneuvers():
-    tick = txt('functions/fn_directPressureTick.sqf')
-    assert 'Head/limb/self pressure intentionally coexists' in tick
-    assert '_stop = "maneuver"' not in tick
-    hang = txt('functions/fn_hangBagCanStart.sqf')
-    assert 'ACME_DP_Mode' in hang and '== "torso"' in hang
-    bp = txt('functions/fn_measureBPWrap.sqf')
-    assert 'private _releasedTorso' in bp
-    assert '== "torso"' in bp
+    from test_bounded_pressure_contracts import assert_compatible_work_contract
+    # Compatible work yields/resumes; accepted BVM deliberately releases this DP episode.
+    assert_compatible_work_contract(txt('functions/fn_directPressureTick.sqf'),
+                                    txt('functions/fn_hangBagCanStart.sqf'),
+                                    txt('functions/fn_measureBPWrap.sqf'))
 
 def test_direct_pressure_floating_indicator_is_not_installed():
     limb = txt('functions/fn_directPressureLimb.sqf')
@@ -45,34 +40,24 @@ def test_direct_pressure_floating_indicator_is_not_installed():
     assert 'no-op' in helper
 
 def test_tag_limit_is_exactly_17_and_commits_are_defensive():
-    cfg = txt('config.cpp')
-    tag_class = cfg[cfg.index('class ACME_SK_TagEdit'):cfg.index('class ACME_SK_TagText')]
-    assert 'maxChars = 17;' in tag_class
-    for rel in ['functions/fn_skPendingTagCommit.sqf','functions/fn_skTagCommit.sqf','functions/fn_skApplyPendingTag.sqf']:
-        src = txt(rel)
-        assert 'select [0,17]' in src or 'select [0, 17]' in src
+    # The later 25-character contract supersedes 17; retain the old test identity.
+    from test_bounded_tag_contracts import tag_limits, test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes
+    tag_limits()
+    for length in (0,17,25,26,80):
+        test_three_line_roundtrip_preserves_case_payload_identity_and_other_syringes(length, True)
+    from test_historical_syringe_identity import test_pending_tag_rejects_wrong_metadata_types_without_altering_drug, test_tag_commit_cannot_write_when_display_or_selected_record_is_gone
+    test_pending_tag_rejects_wrong_metadata_types_without_altering_drug(5, '"bad"', '["none","","",""]')
+    for absent in ('display','selection'):
+        test_tag_commit_cannot_write_when_display_or_selected_record_is_gone(absent)
 
 def test_tag_edit_boxes_are_tall_enough_for_ascenders_and_descenders():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    carousel = txt('functions/fn_skCarouselRender.sqf')
-    move = txt('functions/fn_skCarouselMove.sqf')
-    for src in (pending, carousel):
-        assert 'private _lineH = 0.030;' in src
-        assert 'private _lineFontH = 0.024;' in src
-    assert '_h*_lineH' in pending
-    assert '_ah*_lineH' in carousel
-    assert '[0.450,0.482,0.514]' in move
-    assert '_h*0.030' in move
-    assert '_h*0.024' in move
+    from test_bounded_tag_line_layout import layout_contract
+    layout_contract()
 
 def test_main_tag_selector_moves_right_in_pixel_scaled_units():
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    assert '_tagLeft - _gap + (20 * pixelW)' in pending
-    assert '_tagLeft0 - _gap0 + (20 * pixelW)' in ensure
-    # Still native-syringe anchored, not ultrawide safe-zone positioning.
-    assert '_x + _w*0.254' in pending
-    assert '(_r0 select 0) + (_r0 select 2)*0.254' in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 def test_flush_draw_stage_is_multicomponent_and_repeatable():
     commit = txt('functions/fn_skWasteCommit.sqf')

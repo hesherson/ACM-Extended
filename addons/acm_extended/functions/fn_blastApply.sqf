@@ -66,9 +66,22 @@ if (_dose > 0.05) then {
 // posture change and nothing is recorded against the casualty for it.
 if (_dose > (missionNamespace getVariable ["ACME_blast_knockdownDose", 0.18]) && {local _unit}) then {
     if (isNull objectParent _unit && {stance _unit != "PRONE"}) then {
+        private _epoch = [_unit] call ACME_fnc_clinicalEpoch;
+        private _serial = (_unit getVariable ["ACME_blast_stanceSerial", 0]) + 1;
+        private _token = [_epoch, clientOwner, _serial];
+        _unit setVariable ["ACME_blast_stanceSerial", _serial, false];
+        _unit setVariable ["ACME_blast_stanceToken", _token, true];
         if !([_unit] call ACME_fnc_animBlocked) then { _unit playActionNow "AdvL"; };
         _unit setUnitPos "DOWN";
-        [{ params ["_u"]; if (!isNull _u && {alive _u}) then { _u setUnitPos "AUTO" }; }, [_unit], 3] call CBA_fnc_waitAndExecute;
+        [{
+            params ["_u", "_epoch", "_token"];
+            if (isNull _u || {!local _u} || {!alive _u}) exitWith {};
+            if (([_u] call ACME_fnc_clinicalEpoch) != _epoch) exitWith {};
+            if !((_u getVariable ["ACME_blast_stanceToken", []]) isEqualTo _token) exitWith {};
+            // Only this fall may release its stance; a heal or a newer fall retires the old callback.
+            _u setVariable ["ACME_blast_stanceToken", [], true];
+            _u setUnitPos "AUTO";
+        }, [_unit, _epoch, _token], 3] call CBA_fnc_waitAndExecute;
     };
 };
 

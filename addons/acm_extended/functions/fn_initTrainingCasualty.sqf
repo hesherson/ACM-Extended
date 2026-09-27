@@ -1,7 +1,7 @@
-// ACM mission spawner casualty armor.
-// ACM's generatepatient and spawncustompatient create b_survivor_f and strip the gear. a full function override
-// breaks across ACM versions, so this addon applies the carrier after the spawn and watches ACM's own
-// trainingcasualtygroup. this affects ACM training casualties only. players and normal ai stay untouched.
+// Compatibility armor watcher for legacy/external ACM training casualty creation.
+// This fork's two patient spawners use a carrier-equipped unit class and mark
+// PlateCarrierDone during creation, so this fallback never redresses those patients.
+// Only unmarked training-group casualties use the delayed owner-local repair path.
 ACME_acmSpawnerPlateCarrierEnabled = missionNamespace getVariable ["ACME_acmSpawnerPlateCarrierEnabled", true];
 ACME_acmSpawnerPlateCarrierClass   = missionNamespace getVariable ["ACME_acmSpawnerPlateCarrierClass", "V_PlateCarrier1_rgr"];
 

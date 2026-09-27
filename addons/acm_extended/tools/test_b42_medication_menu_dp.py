@@ -39,9 +39,10 @@ def test_vial_parser_keeps_full_suffix():
 def test_auscultate_chest_keeps_group_child_indent():
     s = text('overrides/fn_updateActions.sqf')
     assert "_actionClass == 'usestethoscope'" in s
-    assert "format ['%1Auscultate Chest'" in s
+    assert "_baseName = 'Auscultate Chest';" in s
+    assert "_paintName = if (_wasChild) then" in s
     assert "missionNamespace getVariable ['ACME_menuChildIndent', '        ']" in s
-    assert '["examine_chest", "Chest Inspection"' in text('functions/fn_menuExamineGroups.sqf')
+    assert '"examine_chest"' not in text('functions/fn_menuExamineGroups.sqf')
 
 
 def test_direct_pressure_activity_log_exact_limb_wording():

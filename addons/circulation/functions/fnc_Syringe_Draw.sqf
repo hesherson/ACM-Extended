@@ -224,6 +224,9 @@ private _fnc_updateSelectedMedication = {
     };
 
     if (GVAR(SyringeDraw_Moving)) then {
+        // In-place size changes update the barrel and travel limits without
+        // restarting this continuous action. Use that barrel's current capacity.
+        _size = GVAR(SyringeDraw_Size);
         private _ctrlPlunger = _display displayCtrl IDC_SYRINGEDRAW_PLUNGER;
         private _ctrlPlungerVisual = _display displayCtrl GVAR(SyringeDraw_Ctrl_PlungerVisual);
 

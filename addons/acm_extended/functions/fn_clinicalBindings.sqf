@@ -36,7 +36,6 @@ private _checks = [];
     ["ACM_damage_fnc_wrapBodyPartLocal", "B106:wrappedWoundReopen"],
     ["ace_dragging_fnc_canCarry", "B106:ace321Carry"],
     ["ace_dragging_fnc_canDrag", "B106:ace321Drag"],
-    ["ace_dragging_fnc_dropObject_carry", "B106:ace321CarryDrop"],
     ["ace_interact_menu_fnc_compileMenuSelfAction", "B106:ace321SelfMenu"]
 ];
 private _all = (_checks findIf {!(_x select 1)}) < 0;

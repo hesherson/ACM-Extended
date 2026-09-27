@@ -1,8 +1,27 @@
 // Temporary plate-carrier removal for actions that need a genuinely unobstructed chest while a backpack is worn.
-// This is deliberately class-exact so BVM, airway adjuncts and unrelated descendants do not inherit it merely
-// because they share an ACM parent. Chest-seal and thoracostomy minigames own their separate long procedure scope.
-private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest", "cpr"];
+// This is deliberately class-exact. CPR and every explicit BVM treatment variant now share the same carrier custody
+// so middle-mouse CPR <-> BVM handoffs cannot re-dress the casualty between maneuvers.
+private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
+private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest"] + _maneuverClasses;
 missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
+missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClasses];
+
+// The clinical timer owns Check Breathing's frozen provider episode. No wall-clock pose exit may end it early.
+{
+    [_x, {
+        params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
+        if (isNull _medic || {!local _medic} || {(toLowerANSI _classname) != "checkbreathing"}) exitWith {};
+        private _record = _medic getVariable ["ACME_checkBreathingPose", []];
+        if ((_record param [0, objNull]) isNotEqualTo _patient) exitWith {};
+        _medic setVariable ["ACME_checkBreathingPose", [], false];
+        diag_log format ["[ACME CHECK BREATHING] timer ended; lease %1", _record param [2, ""]];
+        private _entry = _medic getVariable ["ACME_chestAccessProvider", []];
+        if ((_entry param [0, objNull]) isEqualTo _patient
+            && {(_entry param [1, -1]) == (_record param [1, -2])}) then {
+            [_medic, _patient, "stop", false, _entry param [2, ""]] call ACME_fnc_chestAccessVestProvider;
+        };
+    }] call CBA_fnc_addEventHandler;
+} forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];
 
 ["ace_treatmentStarted", {
     params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
@@ -10,12 +29,21 @@ missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
     private _class = toLowerANSI _classname;
     if !(_class in (missionNamespace getVariable ["ACME_chestAccess_classes", []])) exitWith {};
 
-    // The animation preflight reserves custody BEFORE native treatment starts. If this exact provider/patient/class
-    // already owns a lease, keep it; treatmentStarted must not remove the carrier twice or create a second owner.
+    // The animation preflight reserves custody BEFORE native treatment starts. CPR and BVM are one maneuver
+    // family: a swap updates the local class label but deliberately reuses the exact same patient lease ID.
+    private _maneuvers = missionNamespace getVariable [
+        "ACME_chestAccess_maneuverClasses",
+        ["cpr","usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]
+    ];
     private _existing = _medic getVariable ["ACME_chestAccess_treatment", []];
-    if ((_existing param [0,objNull]) isEqualTo _patient
-        && {(_existing param [1,""]) == _class}
-        && {(_existing param [2,""]) != ""}) exitWith {};
+    private _samePatient = (_existing param [0,objNull]) isEqualTo _patient;
+    private _existingClass = _existing param [1,""];
+    private _existingId = _existing param [2,""];
+
+    if (_samePatient && {_existingId != ""} && {_existingClass == _class}) exitWith {};
+    if (_samePatient && {_existingId != ""} && {_existingClass in _maneuvers} && {_class in _maneuvers}) exitWith {
+        _medic setVariable ["ACME_chestAccess_treatment", [_patient, _class, _existingId]];
+    };
 
     private _serial = (missionNamespace getVariable ["ACME_chestAccess_serial", 0]) + 1;
     missionNamespace setVariable ["ACME_chestAccess_serial", _serial];
@@ -36,22 +64,53 @@ missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
     // Stethoscope success only launches its held scope. The continuous-action failure event below is the true end.
     if (_stored == "usestethoscope") exitWith {};
 
-    // CPR success starts the continuous compression session. Keep the chest clear until that session actually ends.
-    if (_stored == "cpr") exitWith {
+    // CPR and BVM are one continuous chest-access family. One watcher owns the stable lease across any number of
+    // middle-mouse swaps. It releases only after both roles, both preflight states and both handoff windows are gone.
+    if (_stored in (missionNamespace getVariable ["ACME_chestAccess_maneuverClasses", ["cpr"]])) exitWith {
+        private _id = _entry param [2, ""];
+        private _watch = _medic getVariable ["ACME_chestAccessManeuverWatch", []];
+        if ((_watch param [0,objNull]) isEqualTo _patient && {(_watch param [1,""]) == _id}) exitWith {};
+
+        _medic setVariable ["ACME_chestAccessManeuverWatch", [_patient, _id, _stored], false];
+
         [{
             params ["_p", "_m", "_id"];
-            isNull _p || {isNull _m} || {!alive _m} || {!([_p] call ACM_core_fnc_cprActive)}
+            if (isNull _p || {isNull _m} || {!alive _m}) exitWith {true};
+
+            private _watch = _m getVariable ["ACME_chestAccessManeuverWatch", []];
+            if !((_watch param [0,objNull]) isEqualTo _p && {(_watch param [1,""]) == _id}) exitWith {true};
+
+            private _handoff = _m getVariable ["ACME_chestAccessManeuverHandoff", []];
+            private _handoffActive = (_handoff param [0, objNull, [objNull]]) isEqualTo _p
+                && {(_handoff param [1, -1, [0]]) > CBA_missionTime};
+
+            private _ownerHandoffUntil = _p getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
+            private _ownerHandoffActive = (_ownerHandoffUntil isEqualType 0) && {serverTime < _ownerHandoffUntil};
+
+            private _preparing = (_m getVariable ["ACME_chestAccessPreflightActive", false])
+                && {((_m getVariable ["ACME_chestAccess_treatment", []]) param [0,objNull]) isEqualTo _p};
+
+            private _maneuverActive = [_p] call ACME_fnc_chestAccessManeuverActive;
+
+            !_maneuverActive && {!_handoffActive} && {!_ownerHandoffActive} && {!_preparing}
         }, {
-            params ["_p", "_m", "_id"];
+            params ["_p", "_m", "_id", "_stored"];
             if (!isNull _m && {local _m}) then {
+                private _watch = _m getVariable ["ACME_chestAccessManeuverWatch", []];
+                if ((_watch param [0,objNull]) isEqualTo _p && {(_watch param [1,""]) == _id}) then {
+                    _m setVariable ["ACME_chestAccessManeuverWatch", [], false];
+                };
+
                 private _cur = _m getVariable ["ACME_chestAccess_treatment", []];
                 if ((_cur param [2, ""]) == _id) then {_m setVariable ["ACME_chestAccess_treatment", []];};
+
+                private _handoff = _m getVariable ["ACME_chestAccessManeuverHandoff", []];
+                if ((_handoff param [0, objNull, [objNull]]) isEqualTo _p) then {
+                    _m setVariable ["ACME_chestAccessManeuverHandoff", [], false];
+                };
             };
-            if (!isNull _p) then {[_p, _m, _id, false, "cpr"] call ACME_fnc_chestAccessVestEvent;};
-        }, [_patient, _medic, _entry param [2, ""]], 600, {
-            params ["_p", "_m", "_id"];
-            if (!isNull _p) then {[_p, _m, _id, false, "cpr"] call ACME_fnc_chestAccessVestEvent;};
-        }] call CBA_fnc_waitUntilAndExecute;
+            if (!isNull _p) then {[_p, _m, _id, false, _stored] call ACME_fnc_chestAccessVestEvent;};
+        }, [_patient, _medic, _id, _stored]] call CBA_fnc_waitUntilAndExecute;
     };
 
     _medic setVariable ["ACME_chestAccess_treatment", []];
@@ -67,6 +126,14 @@ missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
     private _event = toLowerANSI _classname;
     private _scopeEnd = _stored == "usestethoscope" && {_event in ["usestethoscope", "acm_continuousaction"]};
     if (!_scopeEnd && {_stored != _event}) exitWith {};
+
+    // Once a CPR/BVM maneuver watcher exists, it alone owns final release. A short setup/failure event from one
+    // side of a swap must never tear down the stable lease underneath the other side.
+    private _maneuvers = missionNamespace getVariable ["ACME_chestAccess_maneuverClasses", ["cpr"]];
+    private _watch = _medic getVariable ["ACME_chestAccessManeuverWatch", []];
+    if (_stored in _maneuvers && {(_watch param [0,objNull]) isEqualTo _patient}
+        && {(_watch param [1,""]) == (_entry param [2,""])}) exitWith {};
+
     _medic setVariable ["ACME_chestAccess_treatment", []];
     [_patient, _medic, _entry param [2, ""], false, _stored] call ACME_fnc_chestAccessVestEvent;
 }] call CBA_fnc_addEventHandler;

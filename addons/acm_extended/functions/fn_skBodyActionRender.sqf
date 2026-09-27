@@ -58,6 +58,12 @@ if (isNull _durEdit) then {
             _drafts set [_draftId,_clean];
             uiNamespace setVariable ["ACME_SK_PushDurationDrafts",_drafts];
         };
+        // Do not repaint the body-action surface from inside the edit's own keyboard event. Re-rendering here
+        // can move/recreate sibling controls while Arma is resolving focus/caret state, which makes the field appear
+        // to reset on every click or keypress. Mark the surface dirty instead; fn_skUiTick will repaint as soon as
+        // focus leaves this editor.
+        private _display = ctrlParent _ctrl;
+        if (!isNull _display) then {_display setVariable ["ACME_SK_NextBodyAction",0];};
         false
     }];
 };
@@ -128,9 +134,13 @@ if !(_durationDrafts isEqualType createHashMap) then {_durationDrafts = createHa
 private _durationFor = _durEdit getVariable ["ACME_SK_PushDurationFor",""];
 if (_durationFor != _id) then {
     if (_durationFor != "") then {_durationDrafts set [_durationFor,ctrlText _durEdit];};
-    private _restoredDuration = _durationDrafts getOrDefault [_id,""];
-    if ((ctrlText _durEdit) != _restoredDuration) then {_durEdit ctrlSetText _restoredDuration;};
-    _durEdit setVariable ["ACME_SK_PushDurationFor",_id];
+    // Keyboard focus is authoritative. A transient inventory/list refresh must never swap the live editor's
+    // syringe identity underneath the provider's caret. A real carousel selection change takes focus away first.
+    if (!_durFocused || {_durationFor == ""}) then {
+        private _restoredDuration = _durationDrafts getOrDefault [_id,""];
+        if ((ctrlText _durEdit) != _restoredDuration) then {_durEdit ctrlSetText _restoredDuration;};
+        _durEdit setVariable ["ACME_SK_PushDurationFor",_id];
+    };
 } else {
     if (_id != "") then {_durationDrafts set [_id,ctrlText _durEdit];};
 };
@@ -199,9 +209,22 @@ if (_pending isEqualType [] && {count _pending >= 3}) then {
         // Blank or grey-placeholder means "use the 3 s fallback". Only an explicitly typed out-of-range value blocks.
         _validPushTime = !_hasTypedDuration || {_numDur >= 1 && {_numDur <= 300}};
     };
-    _btn ctrlEnable (!_busy && {_total > 0} && {_validPushTime});
-    _btn ctrlSetTooltip (if (_validPushTime) then {"Confirm administration. If no push time is entered, 3 seconds is used."} else {"Push duration must be 1-300 seconds. Grey text is only the recommendation."});
-    _back ctrlSetBackgroundColor (["success",0.82] call ACME_fnc_a11yColor);
+    private _bloodBusy = false;
+    if (_route != "im") then {
+        private _patient = uiNamespace getVariable ["ACME_SK_Patient",objNull];
+        if (isNull _patient) then {_patient = _d getVariable ["ACME_SK_ReturnPatient",objNull];};
+        if (!isNull _patient) then {_bloodBusy = [_patient,_part,_site] call ACME_fnc_medicationLineBloodBusy;};
+    };
+    _btn ctrlEnable (!_busy && {_total > 0} && {_validPushTime} && {!_bloodBusy});
+    _btn ctrlSetTooltip (
+        if (_bloodBusy) then {
+            "Blood is present in this line. Finish or remove the blood bag before pushing medication."
+        } else {
+            if (_validPushTime) then {"Confirm administration. If no push time is entered, 3 seconds is used."}
+            else {"Push duration must be 1-300 seconds. Grey text is only the recommendation."}
+        }
+    );
+    _back ctrlSetBackgroundColor (if (_bloodBusy) then {[0.22,0.08,0.08,0.82]} else {["success",0.82] call ACME_fnc_a11yColor});
     private _showDuration = _route != "im";
     _durLabel ctrlShow _showDuration;
     if ((ctrlShown _durEdit) isNotEqualTo _showDuration) then {_durEdit ctrlShow _showDuration;};

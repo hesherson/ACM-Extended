@@ -27,20 +27,13 @@ def test_tsp_sling_is_latched_and_never_reinvoked_during_same_handoff():
         test_real_pose_handoff_shares_pending_holster_instead_of_restarting_it(weapon)
 
 def test_medication_three_column_overlay_is_restored_and_direct_data_driven():
-    r = txt('functions/fn_skListRefresh.sqf')
-    assert '[84006,84303,"medication"]' in r
-    assert 'ACME_SK_ColumnHeader' in r
-    for cap in ['"Medication"', '"Contents"', '"Vials"']:
-        assert cap in r
-    assert 'ACME_SK_MedicationRows' in r
-    assert '_specs pushBack [_label, _data, 0, _picture, _physicalClass]' in r
-    assert '_countText' in r
-    assert 'private _visible = true;' in r
-    # The medication branch is explicitly sourced from the stored authoritative rows before the generic native-list else.
-    med_branch = r[r.index('if (_kind == "medication") then {'):r.index('} else {', r.index('if (_kind == "medication") then {'))]
-    assert 'ACME_SK_MedicationRows' in med_branch
-    assert 'lbText' not in med_branch
-    assert 'lbPicture' not in med_branch
+    # The native live labels win; metadata joins by medication key and fills missing rows.
+    from test_bounded_medication_presentation import renderer_contract
+    from test_historical_medication_rows import test_visible_rows_keep_native_labels_but_recover_blank_labels_from_metadata, test_visible_rows_bind_metadata_by_key_and_recover_missing_backing_entries, test_stock_preview_uses_reserved_volume_and_the_rows_exact_physical_class
+    renderer_contract()
+    test_visible_rows_keep_native_labels_but_recover_blank_labels_from_metadata()
+    test_visible_rows_bind_metadata_by_key_and_recover_missing_backing_entries('[]')
+    test_stock_preview_uses_reserved_volume_and_the_rows_exact_physical_class()
 
 def test_native_medication_list_is_hidden_backing_selector_everywhere():
     for rel, token in [

@@ -31,11 +31,16 @@ ACME_CS_editResults = createHashMap;
 if (hasInterface) then {
     [{
         private _now = diag_tickTime;
-        if (!isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])) then {
+        // Preparation is a live session too. Slow carrier/animation work must not lose its
+        // patient token to the server's membership timeout before the dialog can open.
+        private _sessionToken = uiNamespace getVariable ["ACME_CS_SessionToken", ""];
+        private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
+        if (_sessionToken != "" && {!isNull _medic} && {local _medic} && {alive _medic}
+            && {!(_medic getVariable ["ACE_isUnconscious", false])}) then {
             if (_now >= (uiNamespace getVariable ["ACME_CS_sessionNextPing", 0])) then {
                 uiNamespace setVariable ["ACME_CS_sessionNextPing", _now + 5];
                 ["ACME_CS_session", [uiNamespace getVariable ["ACME_CS_Patient", objNull],
-                    uiNamespace getVariable ["ACME_CS_presenceViewer", player], "ping"]] call CBA_fnc_serverEvent;
+                    _medic, "ping", _sessionToken]] call CBA_fnc_serverEvent;
             };
         };
         {

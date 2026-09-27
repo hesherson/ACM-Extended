@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """RC16 guard: expensive medical/transfusion UI work is throttled and registration is idempotent."""
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -44,7 +45,9 @@ assert 'ACME_injuryPaintKey' in injury
 assert 'ACME_injuryNextPaint' in injury
 assert 'diag_tickTime + 0.15' in injury
 
-assert 'ACME_buildBatch = "B134";' in startup
-assert 'ACME_debugRevision = "rc18";' in startup
+batch = re.search(r'ACME_buildBatch\s*=\s*"([^"]+)"\s*;', startup)
+revision = re.search(r'ACME_debugRevision\s*=\s*"([^"]+)"\s*;', startup)
+assert batch and batch.group(1), "internal build batch stamp missing"
+assert revision and revision.group(1), "debug revision stamp missing"
 
-print("PASS rc18: medical/transfusion UI repaint work is bounded and declarations are ordered")
+print("PASS 1.2.4: medical/transfusion UI repaint work is bounded and declarations are ordered")

@@ -15,10 +15,10 @@ _medic setVariable ["ACME_DP_ClinicalYield", false];
 _medic setVariable ["ACME_DP_ClinicalYieldStart", 0];
 _medic setVariable ["ACME_DP_OwnsContinuous", false];
 
-private _ids = [];
-_ids pushBack ([0x01, [false,false,false], { [false, ACE_player, false] call ACME_fnc_directPressureStop; false }, "keydown", "", false, 0] call CBA_fnc_addKeyHandler);
-_ids pushBack ([0x23, [false,false,false], { [false, ACE_player, false] call ACME_fnc_directPressureStop; false }, "keydown", "", false, 0] call CBA_fnc_addKeyHandler);
-_medic setVariable ["ACME_DP_KeyIDs", _ids];
+// Direct Pressure has no keyboard cancellation binding. MMB is handled by the mission-display guard; the explicit
+// Stop Direct Pressure menu action is the deliberate UI fallback. Escape/H remain available to the player.
+_medic setVariable ["ACME_DP_KeyIDs", []];
+["", "Stop Direct Pressure", ""] call ace_interaction_fnc_showMouseHint;
 
 [_medic, "activity",
  "%1 started Direct pressure on own %2",

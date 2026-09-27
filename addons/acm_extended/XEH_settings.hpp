@@ -223,7 +223,7 @@
 [
     "ACME_menuColorHeaders",
     "CHECKBOX",
-    ["Use separate colors for medical menu sections", "OFF (default): all dropdown headings use cream text. ON: each section uses its own color. Open headings keep their brightness. Regular action rows alternate white and very pale red. Requires grouped menus for headings. Personal display preference."],
+    ["Use separate colors for medical menu sections", "OFF (default): all dropdown headings use cream text. ON: each section uses its own color. Open headings keep their brightness. Regular action rows use uniform white text. Requires grouped menus for headings. Personal display preference."],
     ["ACM Extended: Accessibility", "Options"],
     false,
     2,

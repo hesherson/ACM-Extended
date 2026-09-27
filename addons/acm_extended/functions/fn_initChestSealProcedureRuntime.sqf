@@ -4,8 +4,11 @@
 // counts as on the hole by aspect-corrected distance. expect to tune chestregion and the radii in game once the
 // chest image position is on screen, the same as the iv-pose and syringe-dialog coordinate passes.
 // the chest-seal mini-game is drag-to-find holes. it is wound-driven, flips front to back, and is 32:9 safe.
-ACME_CS_rollTime = 1.85;
+ACME_CS_rollTime = 1.85 / (missionNamespace getVariable ["ACME_choreographyAnimSpeed", 1.50]);
 ACME_rollProviderDuration = 2.2;
+// Seal placement uses the same accelerated choreography rate as every other provider RTM, but the medic3
+// theatre has an exact wall-clock ownership window. Flip may pre-empt it at any point.
+ACME_CS_applyAnimSeconds = 2.65;
 // B54 provider pose freeze rules. Seconds on the native RTM timeline, measured on the owner's clock from the frame
 // the requested state is first reported. A mode with no entry plays at native speed until its action ends it.
 // ACME_poseStopAfterHold is how long the frozen frame is held before the controller starts the exit blend itself;
@@ -23,21 +26,34 @@ ACME_poseStopAfterHold = createHashMapFromArray [
 // B57 medical-menu provider stance. Opening the menu uses only empty hands plus the normal BI transition into
 // crouch. No medic-over-patient state is held, which keeps root motion and the player's head/camera free.
 ACME_menuPoseEnabled = true;
-// B56 upright patients: candidate standing medicUp states per pose mode, used only when the patient is standing
-// or crouching, conscious and on foot, and only if the state exists on this machine (fn_poseUprightState). Names
-// follow the BI pattern of the kneeling states; correct any entry here without a build.
+// B175 ambulatory patients: explicit BI medicUp states for treatment of a conscious casualty who is standing
+// independently. medicUp is a KNEELING-provider family (AinvPknl...) whose hands work upward/in front instead of
+// down toward a casualty on the ground. fn_poseUprightState validates every candidate with isClass at runtime.
 ACME_poseUprightStates = createHashMapFromArray [
-    ["torsoBandage", "AinvPercMstpSnonWrflDnon_medicUp4"],
-    ["headBandageLeft", "AinvPercMstpSnonWrflDnon_medicUp0"],
-    ["headBandageRight", "AinvPercMstpSnonWrflDnon_medicUp2"],
-    ["directPressureAction", "AinvPercMstpSnonWrflDnon_medicUp5"],
-    ["chestSeal", "AinvPercMstpSnonWnonDnon_medicUp3"],
-    ["ncdSeat", "AinvPercMstpSnonWrflDnon_medicUp1"],
-    ["pulse", "AinvPercMstpSnonWrflDnon_medicUp1"],
-    ["inspect", "AinvPercMstpSnonWnonDnon_medicUp4"],
-    ["response", "AinvPercMstpSnonWrflDnon_medicUp3"],
-    ["airway", "AinvPercMstpSnonWrflDnon_medicUp4"]
+    ["torsoBandage",       "AinvPknlMstpSnonWnonDnon_medicUp4"],
+    ["headBandageLeft",    "AinvPknlMstpSnonWnonDnon_medicUp0"],
+    ["headBandageRight",   "AinvPknlMstpSnonWnonDnon_medicUp2"],
+    ["directPressureAction","AinvPknlMstpSnonWnonDnon_medicUp5"],
+    ["chestSealWorkspace", "AinvPknlMstpSnonWnonDnon_medicUp4"],
+    ["chestSeal",          "AinvPknlMstpSnonWnonDnon_medicUp3"],
+    ["ncdSeat",            "AinvPknlMstpSnonWnonDnon_medicUp1"],
+    ["pulse",              "AinvPknlMstpSnonWnonDnon_medicUp1"],
+    ["inspect",            "AinvPknlMstpSnonWnonDnon_medicUp4"],
+    ["response",           "AinvPknlMstpSnonWnonDnon_medicUp3"],
+    ["airway",             "AinvPknlMstpSnonWnonDnon_medicUp4"]
 ];
+
+// The ordinary inspect/pulse hold times above already transfer directly to their matching medicUp states.
+// The chest-seal workspace is normally a looped custom downed pose, so its ambulatory medicUp4 replacement needs
+// an explicit frozen work sample for the lifetime of the panel.
+ACME_poseUprightHoldAt = createHashMapFromArray [
+    ["chestSealWorkspace", 2.2]
+];
+
+// Standing-casualty auscultation deliberately does not use a generic medicUp state. It uses the same authored
+// Putdown reach as Semi-Fowler provider theatre and freezes while the hand is extended toward the casualty.
+// Native RTM seconds; one constant makes the exact contact frame easy to tune in game without changing control flow.
+ACME_uprightStethoscopeHoldAt = 0.55;
 // the searchable thorax band, as a fraction of the body rect [x,y,w,h]. it sits above the diaphragm and over
 // the lung fields, not the abdomen. nudge it if holes land off the chest on your body image.
 ACME_CS_thoraxZoneFrac = [0.395, 0.205, 0.21, 0.18];

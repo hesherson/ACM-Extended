@@ -23,28 +23,17 @@ def test_rpt_confirmed_pending_tag_renderer_compile_bug_is_removed():
 
 
 def test_main_tag_button_is_compact_and_anchored_left_of_barrel():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    assert 'safeZoneH * 0.165' in render
-    assert 'private _btnRight = _x + _w*0.20;' in render
-    assert 'private _btnX = _btnRight - _btnW;' in render
-    assert 'safeZoneH * 0.165' in ensure
-    assert 'private _btnRight0 = (_r0 select 0) + (_r0 select 2)*0.20;' in ensure
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
 
 
 def test_main_tag_dropdown_is_directly_below_and_full_description_width():
-    render = txt('functions/fn_skPendingTagRender.sqf')
-    ensure = txt('functions/fn_skPendingTagEnsure.sqf')
-    cfg = txt('config.cpp')
-    assert 'private _menuX = _btnX max' in render
-    assert 'private _menuY = _btnY + _btnH + 2*pixelH;' in render
-    assert 'safeZoneW * 0.24' in render
-    assert 'safeZoneH * 0.58' in render
-    assert 'ctrlAddEventHandler ["MouseEnter"' in ensure
-    assert 'ctrlAddEventHandler ["LBSelChanged"' in ensure
-    assert 'ctrlAddEventHandler ["MouseButtonUp"' in ensure
-    assert 'class ACME_SK_TagList: ACME_SK_StyledList' in cfg
-    assert 'colorBackground[] = {0.04,0.04,0.04,0.96};' in cfg
+    # Later B78 geometry/readiness supersedes this historical identifier's older implementation.
+    from test_bounded_selector_geometry import geometry_source_contract
+    geometry_source_contract()
+    from test_bounded_selector_lifetime import selector_contract
+    selector_contract()
 
 
 def test_selected_main_tag_immediately_renders_real_overlay_and_edit_lines():
@@ -66,19 +55,9 @@ def test_draw_save_commits_tag_color_and_three_lines_to_syringe():
 
 
 def test_new_qedavemergens_font_replaces_old_runtime_wiring():
-    cfg = txt('config.cpp')
-    pending = txt('functions/fn_skPendingTagRender.sqf')
-    carousel = txt('functions/fn_skCarouselRender.sqf')
-    assert 'class ACME_QEDaveMergens' in cfg
-    assert r'\acm_extended\ui\fonts\QEDaveMergens\QEDaveMergens96' in cfg
-    assert 'font = "ACME_QEDaveMergens";' in cfg
-    assert 'QEDaveMergens96.fxy' in pending and 'ACME_QEDaveMergens' in pending
-    assert 'QEDaveMergens96.fxy' in carousel and 'ACME_QEDaveMergens' in carousel
-    for src in (cfg, pending, carousel):
-        assert 'ACME_QEPhillips' not in src
-        assert r'ui\fonts\QEPhillips' not in src
-    assert (ROOT / 'B72_QEDAVEMERGENS_LOCAL_SETUP.txt').exists()
-    assert not (ROOT / 'B64_QEPHILLIPS_LOCAL_SETUP.txt').exists()
+    from test_bounded_tag_font_fallback import font_contract, no_outline_fonts
+    from test_bounded_tag_line_layout import layout_contract
+    font_contract(); no_outline_fonts(); layout_contract()
 
 
 def test_chest_reveal_is_not_expired_by_cross_machine_mission_clock():
@@ -104,40 +83,24 @@ def test_chest_reveal_keeps_epoch_revision_idempotence_guards():
 
 
 def test_head_patient_grab_uses_priority_two_and_startup_grace():
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    guard = txt('functions/fn_headElevAnimGuard.sqf')
-    assert 'ACME_headElev_animGraceUntil' in apply
-    assert 'CBA_missionTime + 2.5' in apply
-    assert '[_patient, "AinjPpneMrunSnonWnonDb_grab", 2]' in apply
-    assert 'ACME_headElev_animGraceUntil' in guard
-    assert '_anim == _restAnim' in guard
-    assert 'CBA_missionTime <= _graceUntil' in guard
+    from test_bounded_head_pose_contracts import assert_startup_grace
+    assert_startup_grace()
 
 
 def test_head_patient_release_is_priority_two_and_never_setpos():
-    stop = txt('functions/fn_headElevateStop.sqf')
-    apply = txt('functions/fn_headElevApplyTilt.sqf')
-    assert '[_patient, "AinjPpneMrunSnonWnonDb_release", 2]' in stop
-    assert '_patient setPos' not in stop
-    assert '_patient setPos' not in apply
-    assert '_patient attachTo' not in apply
+    from test_bounded_head_pose_contracts import assert_connected_patient_states, assert_no_patient_teleport
+    assert_connected_patient_states()
+    assert_no_patient_teleport()
 
 
 def test_head_provider_stands_only_for_draggerbase_then_returns_crouched():
-    seq = txt('functions/fn_headElevMedicSeq.sqf')
-    assert 'private _dragger = "DraggerBase";' in seq
-    assert '_medic setUnitPos "AUTO";' in seq
-    stage0 = seq[seq.index('if (_stage == 0) exitWith {'):]
-    assert '_u setUnitPos "MIDDLE";' in stage0
-    assert 'AcinPknlMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon' in seq
-    assert 'private _unarmed = "AmovPknlMstpSnonWnonDnon";' in seq
+    from test_bounded_head_provider_sequence import provider_contract
+    provider_contract()
 
 
 def test_head_elevation_only_rolls_patient_when_actually_prone():
-    start = txt('functions/fn_headElevateStart.sqf')
-    assert 'call ACME_fnc_chestSealActualSide) == "back"' in start
-    assert 'if (_mustRollSupine) exitWith {' in start
-    assert '[_patient, "front"] call ACME_fnc_chestSealRoll;' in start
+    from test_bounded_head_start_contracts import start_contract
+    start_contract()
 
 
 def test_generic_provider_work_preflights_to_empty_hands_and_crouch_once():

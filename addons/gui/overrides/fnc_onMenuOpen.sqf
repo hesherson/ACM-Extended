@@ -33,15 +33,45 @@ _ctrlTitle ctrlSetText ([ACEGVAR(medical_gui,target)] call ACEFUNC(common,getNam
 // Initially hide the triage select buttons
 [_display] call ACEFUNC(medical_gui,toggleTriageSelect);
 
-// Store display and add PFH to update it
+// Store display and give this concrete display its own renderer generation. ACE's stock lifecycle keeps a
+// single global menuPFH handle. During fast close/reopen transitions (CPR/BVM/continuous actions), the new display
+// can open before the old display's onUnload fires. The old onUnload then removes the *new/current* global PFH,
+// leaving a perfectly visible medical menu whose controls never get rebound or refreshed. A one-shot refresh such
+// as Direct Pressure then appears to "fix" every button, while a treatment that recreates the display also recovers
+// it. Own the renderer by display generation instead of by one unqualified global handle.
 uiNamespace setVariable [QACEGVAR(medical_gui,menuDisplay), _display];
+
+private _menuEpoch = (missionNamespace getVariable ["ACME_medicalMenuPFHEpoch", 0]) + 1;
+missionNamespace setVariable ["ACME_medicalMenuPFHEpoch", _menuEpoch];
+_display setVariable ["ACME_medicalMenuPFHEpoch", _menuEpoch];
+
+private _oldPFH = missionNamespace getVariable [QACEGVAR(medical_gui,menuPFH), -1];
+if (_oldPFH isEqualType 0 && {_oldPFH >= 0}) then {
+    [_oldPFH] call CBA_fnc_removePerFrameHandler;
+};
+ACEGVAR(medical_gui,menuPFH) = -1;
+
 ["ace_medicalMenuOpened", [ACE_player, ACEGVAR(medical_gui,target), _display]] call CBA_fnc_localEvent;
 
-if (ACEGVAR(medical_gui,menuPFH) != -1) exitWith {
-    TRACE_1("Menu PFH already running",ACEGVAR(medical_gui,menuPFH));
-};
+private _menuPFH = [{
+    params ["_args", "_idPFH"];
+    _args params ["_display", "_epoch"];
 
-ACEGVAR(medical_gui,menuPFH) = [ACEFUNC(medical_gui,menuPFH), 0, []] call CBA_fnc_addPerFrameHandler;
+    private _currentDisplay = uiNamespace getVariable [QACEGVAR(medical_gui,menuDisplay), displayNull];
+    private _currentEpoch = missionNamespace getVariable ["ACME_medicalMenuPFHEpoch", -1];
+
+    if (isNull _display || {_display isNotEqualTo _currentDisplay} || {_epoch != _currentEpoch}) exitWith {
+        [_idPFH] call CBA_fnc_removePerFrameHandler;
+        if ((missionNamespace getVariable [QACEGVAR(medical_gui,menuPFH), -1]) == _idPFH) then {
+            ACEGVAR(medical_gui,menuPFH) = -1;
+        };
+    };
+
+    call ACEFUNC(medical_gui,menuPFH);
+}, 0, [_display, _menuEpoch]] call CBA_fnc_addPerFrameHandler;
+
+_display setVariable ["ACME_medicalMenuPFH", _menuPFH];
+ACEGVAR(medical_gui,menuPFH) = _menuPFH;
 
 // Hide categories if they don't have any actions (airway)
 private _list = [

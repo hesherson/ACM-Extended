@@ -206,7 +206,7 @@ def test_aajt_application_tamponade_clock_is_patient_owner_local():
     assert config.count("'aajtApplying'") >= 6
     assert 'case "aajtApplying"' in owner
     block = owner.split('case "aajtApplying"', 1)[1].split('case "xstatApply"', 1)[0]
-    assert '[time, toLowerANSI _part]' in block
+    assert '[serverTime, toLowerANSI _part]' in block
     assert '"aajtApplying", ["", false]' in apply
 
 
@@ -354,9 +354,16 @@ def test_hpmk_prep_is_two_phase_and_loser_refunds_provider_item():
     prep = src('functions/fn_hpmkPrep.sqf')
     owner = src('functions/fn_ownerDispatch.sqf')
     init = src('functions/fn_ownerInit.sqf')
-    assert '"hpmkPrep"' in prep and 'true]] call ACME_fnc_ownerDispatch' in prep
+    # Prep now reserves the exact physical supply source first, then forwards that receipt to the casualty owner.
+    # The old direct ACME_hpmkReturnItem refund path could return a kit to the wrong provider/source in multiplayer.
+    assert 'ACME_fnc_treatmentSupplyTake' in prep
+    assert '[_patient, "hpmkPrep", [_medic, _patient, true, _supplyReceipt]] call ACME_fnc_ownerDispatch;' in prep
     assert 'case "hpmkPrep"' in owner
-    assert 'ACME_hpmkReturnItem' in prep and 'ACME_hpmkReturnItem' in init
+    # Losing/invalid prep refunds the exact receipt; the winning owner-side commit settles it without refund.
+    assert '["ACME_supplySettle", [_supplyReceipt, true]' in prep
+    assert '["ACME_supplySettle", [_supplyReceipt, false]' in prep
+    assert '["ACME_supplySettle", {_this call ACME_fnc_treatmentSupplyRefund;}]' in init
+    assert 'ACME_hpmkReturnItem' not in prep
     assert '_occupied' in prep and 'ACME_hpmk_provider' in prep
 
 

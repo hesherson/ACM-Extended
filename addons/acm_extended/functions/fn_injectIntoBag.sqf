@@ -45,7 +45,7 @@ if (_receipt isEqualTo []) exitWith {[ACE_player, "Insufficient medication solut
 private _ok = true;
 if (_mode == "prepared") then {
     _ok = [_context, _med, _ml * _concentration, _ml] call ACME_fnc_registerPreparedBag;
-    if (!_ok) then {[_receipt] call ACME_fnc_infusionRefundSupplies;};
+    [_receipt,!_ok] call ACME_fnc_infusionRefundSupplies;
 } else {
     private _request = [_ctx, _med, _ml * _concentration, -1, -1, -1, -1, _receipt, _ml] call ACME_fnc_registerBagMedication;
     _ok = _request != "";

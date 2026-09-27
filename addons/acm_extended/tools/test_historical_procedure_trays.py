@@ -47,7 +47,15 @@ def ui_code(text):
 
 
 def function(name):
-    return 'ACME_fnc_' + name + '={' + ui_code(source(name)) + '};\n'
+    text=source(name)
+    if name=='thoraUpdateTrayIcons':
+        # This VM lacks continue. An inner call makes exitWith leave only the
+        # current foreach iteration, preserving the original continue semantics.
+        text=text.replace('\n{\n    private _bg = _x;', '\n{\n    call {\n    private _bg = _x;',1)
+        text=text.replace('if (_tool == "tube" && {!_canTube} && {_held != "tube"}) then {', 'if (_tool == "tube" && {!_canTube} && {_held != "tube"}) exitWith {')
+        text=text.replace('        continue;\n    } else {','    };\n    call {',1)
+        text=text.replace('} forEach (uiNamespace getVariable ["ACME_Thora_SlotBGs"','};\n} forEach (uiNamespace getVariable ["ACME_Thora_SlotBGs"',1)
+    return 'ACME_fnc_' + name + '={' + ui_code(text) + '};\n'
 
 
 def controls():
@@ -71,6 +79,8 @@ def setup():
             switch (_which) do {case "chestTube":{_allowTube};case "thoracostomySeal":{_allowSeal};default{_allowOpen}}};
         ace_common_fnc_getCountOfItem={params ["_who","_item"];_countReads pushBack _who;
             if (_item=="ACM_ChestTubeKit") then {_tubeStock} else {_sealStock}};
+        ace_medical_treatment_fnc_isMedic={true};
+        ACME_fnc_treatmentSupplyCount={params ["_who","_patient","_item"];[_who,_item] call ace_common_fnc_getCountOfItem};
         ACME_fnc_thoraKitItem={_kit};
         uiNamespace setVariable ["ACME_Thora_DLG",missionNamespace];
         uiNamespace setVariable ["ACME_Thora_Patient",_patient];

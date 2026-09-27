@@ -23,18 +23,21 @@ def test_replacement_ten_ml_barrel_is_used_in_both_views():
     assert 'idc = 87818;' in c
     assert r'text = "\acm_extended\ui\syringe\syringe_flush_10_barrel_ca.paa";' in c
     assert 'displayCtrl 84012' in d
-    assert r'ctrlSetText "\acm_extended\ui\syringe\syringe_flush_10_barrel_ca.paa"' in d
+    assert 'private _barrelTexture = if (_flushClass != "") then {' in d
+    assert r'"\acm_extended\ui\syringe\syringe_flush_10_barrel_ca.paa"' in d
+    assert r'"\x\ACM\addons\circulation\ui\syringe\syringe_10_barrel_ca.paa"' in d
+    assert '_barrel10B51 ctrlSetText _barrelTexture;' in d
 
 
 def test_cuff_syringe_tip_anchor_target_and_one_second_push():
     c = txt('functions/fn_laryngoCuff.sqf')
-    p = txt('functions/fn_postInit.sqf')
-    assert 'ACME_laryngo_cuffPilotUV = [0.5164, 0.4112]' in p
-    assert 'ACME_laryngo_syrTipUV = [0.50, 0.370]' in p
-    assert 'ACME_laryngo_cuffRunTime = 1.0' in p
-    assert '_pX - (_stU * _sw)' in c and '_pY - (_stV * _sh)' in c
-    assert '_plTravel * (1 - _amtVis)' in c
+    # These are local authored fallbacks now, not mutable postInit globals.
+    assert '["ACME_laryngo_cuffPilotUV", [0.548, 0.455]]' in c
+    assert '["ACME_laryngo_syrTipUV", [0.50, 0.370]]' in c
     assert '["ACME_laryngo_cuffRunTime", 1.0]' in c
+    assert '_pX - (_stU * _sw)' in c and '_pY - (_stV * _sh)' in c
+    assert '_startFrac = _startMl / 10' in c
+    assert '_plTravel * _startFrac * (1 - _amtVis)' in c
 
 
 def test_syringe_stows_when_other_laryngoscopy_tool_selected():

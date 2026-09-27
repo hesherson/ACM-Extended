@@ -2,14 +2,37 @@
  * This is used only by delayed cleanup callbacks. A callback from an ended action must never release setUnitPos
  * underneath a newer treatment, Direct Pressure hold, Hang Bag, CPR, medical-menu crouch or head-position sequence.
  * Clinical state is deliberately not inferred from life state; the provider being alive is checked by the caller. */
-params [["_unit", objNull, [objNull]]];
+params [["_unit", objNull, [objNull]], ["_closingMenu", false, [false]]];
 if (isNull _unit) exitWith {false};
 
 if ((_unit getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []) exitWith {true};
-if (_unit getVariable ["ACME_treatmentPreflightActive", false]) exitWith {true};
-if ((_unit getVariable ["ace_medical_treatment_endInAnim", ""]) != "") exitWith {true};
+if ((_unit getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []) exitWith {true};
+private _preflightActive = _unit getVariable ["ACME_treatmentPreflightActive", false];
+private _preflightToken = _unit getVariable ["ACME_treatmentPreflightToken", ""];
+private _preflightStarted = _unit getVariable ["ACME_treatmentPreflightStartedAt", -1e6];
+// Treatment preflight is presentation-only and bounded. A stale Boolean must never retain provider stance or make
+// later medical-menu cleanup believe a dead preparation episode still owns the player.
+private _preflightOwned = _preflightActive
+    && {_preflightToken != ""}
+    && {_preflightStarted isEqualType 0}
+    && {finite _preflightStarted}
+    && {(CBA_missionTime - _preflightStarted) <= 4};
+if (_preflightOwned) exitWith {true};
+if (_unit getVariable ["ACME_chestAccessPreflightActive", false]) exitWith {true};
+if ((_unit getVariable ["ACME_chestAccessProvider", []]) isNotEqualTo []) exitWith {true};
+// A closed progress display can leave ACE's end-animation hint behind. That hint
+// alone must not trap a medical-menu pose forever. Startup remains protected by
+// the native rate reservation, and all other callers retain the conservative check.
+if ((_unit getVariable ["ace_medical_treatment_endInAnim", ""]) != ""
+    && {!_closingMenu || {!isNull (uiNamespace getVariable ["ace_common_dlgProgress", displayNull])}
+        || {(_unit getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []}}) exitWith {true};
 if (_unit getVariable ["ACME_rollProviderActive", false]) exitWith {true};
-if (_unit getVariable ["ACME_headElev_seqActive", false]) exitWith {true};
+// A crashed/retired provider PFH must not hold every later stance cleanup hostage. Live B166 head-position
+// theatre refreshes this heartbeat every frame; one second is deliberately far beyond a normal scheduling gap.
+private _headSeen = _unit getVariable ["ACME_headElev_seqLastSeen", -1e6];
+private _headOwned = (_unit getVariable ["ACME_headElev_seqActive", false])
+    && {(CBA_missionTime - _headSeen) <= 1};
+if (_headOwned) exitWith {true};
 if ((_unit getVariable ["ACME_menuPose", []]) isNotEqualTo []) exitWith {true};
 if (_unit getVariable ["ACME_hang_Raising", false]) exitWith {true};
 if (_unit getVariable ["ACME_hang_Active", false]) exitWith {true};
@@ -18,7 +41,15 @@ if (_unit getVariable ["ACME_DP_TreatmentBusy", false]) exitWith {true};
 if (_unit getVariable ["ACM_circulation_isPerformingCPR", false]) exitWith {true};
 
 // Continuous actions are client-owned mission state (BVM, stethoscope, etc.), so only read it for the local player.
-if (hasInterface && {!isNil "ACE_player"} && {_unit isEqualTo ACE_player}
-    && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}) exitWith {true};
+// Continuous actions refresh LastSeen at least every two seconds. Ignore an orphaned global flag here so an old
+// BVM/manual-hold generation cannot indefinitely block menu/treatment stance cleanup while the recovery path
+// clears the actual global gate.
+private _session = _unit getVariable ["ACM_core_ContinuousAction_Session", []];
+private _lastSeen = _unit getVariable ["ACM_core_ContinuousAction_LastSeen", -1e6];
+private _continuousOwned = hasInterface && {local _unit} && {[_unit] call ace_common_fnc_isPlayer}
+    && {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}
+    && {(count _session) >= 2}
+    && {(CBA_missionTime - _lastSeen) <= 4};
+if (_continuousOwned) exitWith {true};
 
 false

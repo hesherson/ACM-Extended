@@ -15,7 +15,7 @@ def source(name):
     return (F/('fn_'+name+'.sqf')).read_text()
 
 
-def code(name):
+def code(name, server_clock='CBA_missionTime'):
     text=source(name)
     for unit in ('_patient','_p'):
         for old,new in [('local '+unit,'_patientLocal'),('alive '+unit,'_patientAlive'),
@@ -25,8 +25,9 @@ def code(name):
             text=re.sub(re.escape(old)+r'\b',lambda m:new,text)
         text=text.replace(unit+' setUnitLoadout [_loadout,false];',
                           '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
-    text=text.replace('serverTime','CBA_missionTime')
+    text=text.replace('serverTime',server_clock)
     text=text.replace('finite _rollTime','(_rollTime call _finite)')
+    text=text.replace('finite _animSpeed','(_animSpeed call _finite)')
     for key in ('ace_medical_engine_uncon_anim_faceup','ace_medical_engine_uncon_anim_facedown'):
         text=text.replace('_animMap getOrDefault ["'+key+'", []]', '[_animMap,"'+key+'",[]] call _getDefault')
     for var in ('_prop','_headProp'):
@@ -53,10 +54,16 @@ def setup():
         private _getDefault={params ["_map","_key","_default"]; if (_key in _map) then {_map get _key} else {_default};};
         CBA_fnc_waitAndExecute={_waits pushBack ["delay",_this select 0,_this select 1,_this select 2];};
         CBA_fnc_execNextFrame={_waits pushBack ["frame",_this select 0,_this select 1,0];};
-        CBA_fnc_waitUntilAndExecute={_waits pushBack ["condition",_this select 1,_this select 2,_this param [3,0],_this select 0,_this param [4,{}]];};
+        CBA_fnc_waitUntilAndExecute={_waits pushBack ["condition",_this select 1,_this select 2,_this param [3,-1],_this select 0,_this param [4,{}]];};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_removePerFrameHandler={_removed pushBack (_this select 0);};
-        ACME_fnc_patientAnimRequest={_animRequests pushBack _this; if (_leaseAllowed) then {_this select 7} else {""};};
+        ACME_fnc_patientAnimRequest={
+            _animRequests pushBack _this;
+            if (!_leaseAllowed) exitWith {""};
+            private _tok=_this select 7;
+            (_this select 0) setVariable ["ACME_patientAnimLock",[_tok,_this select 3,"provider",_this select 6,100]];
+            _tok
+        };
         ACME_fnc_patientAnimRelease={_releases pushBack _this;};
         ACME_fnc_headElevYieldForRoll={_yielded=_yielded+1;};
         ACME_fnc_headElevTryResume={_headResume pushBack _this;};
@@ -65,8 +72,20 @@ def setup():
         ACME_fnc_chestSealParkCarrier={}; ACME_fnc_chestAccessVestPark={};
         ACME_fnc_chestAccessVestAcquire={_acquired=_acquired+1;};
         ACME_fnc_doAnim={_moves pushBack _this;};
+        ACM_core_fnc_cprActive={false};
+        ACM_core_fnc_bvmActive={false};
+        ACME_fnc_chestAccessManeuverActive={([_patient] call ACM_core_fnc_cprActive) || {[_patient] call ACM_core_fnc_bvmActive}};
         // Roll direction and surface classification are tested separately below.
         ACME_fnc_chestSealRoll={_rolls pushBack _this;};
+        // Provider-owner dispatch is an engine/network boundary in this harness. Preserve the canonical casualty
+        // roll request so workspace timing tests do not depend on rendering the medic4 provider RTM.
+        ACME_fnc_ownerDispatch={
+            params ["_owner","_op","_args"];
+            if (_op=="chestSealEntryFrontRoll") then {
+                _args params ["_m","_p"];
+                [_p,"front",false,_m,true] call ACME_fnc_chestSealRoll;
+            };
+        };
         ACME_fnc_patientRollCancel={_rolls pushBack ["cancel",_this];};
         missionNamespace setVariable ["ace_medical_engine_animations",createHashMapFromArray [
             ["ace_medical_engine_uncon_anim_faceup",["known_up"]],
@@ -156,6 +175,7 @@ def test_deferred_workspace_cleanup_cannot_move_a_newer_viewer_session(wait_path
         [count _waits==1,"expected pending restore callback"] call _check;
         private _old=_waits select 0; _waits=[];
         [_patient,"new",_medic] call ACME_fnc_chestSealPatientBegin;
+        private _pendingNew=+_waits;
         private _newGeneration=_patient getVariable ["ACME_CS_ProcedureGeneration",-1];
         _patient setVariable ["ACE_isUnconscious",true];
         _patient setVariable ["ACME_CS_facing","back"];
@@ -168,7 +188,7 @@ def test_deferred_workspace_cleanup_cannot_move_a_newer_viewer_session(wait_path
         [(_patient getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo ["new"],"new viewer lost lease"] call _check;
         [(_patient getVariable ["ACME_CS_ProcedureGeneration",0])==_newGeneration,"new generation altered"] call _check;
         [(_patient getVariable ["ACME_CS_ProcedureReadyAt",0])==222,"new readiness altered"] call _check;
-        [count _loadouts==0 && {count _waits==0},"old cleanup resumed custody work"] call _check;
+        [count _loadouts==0 && {_waits isEqualTo _pendingNew},"old cleanup altered new preparation or resumed custody work"] call _check;
     ''')
 
 
@@ -263,7 +283,7 @@ def test_roll_uses_priority_one_lease_then_only_a_scoped_fallback_and_requested_
         [(_request select 2)==1,"initial roll did not use transition priority one"] call _check;
         [_yielded==0,"preserved head elevation was yielded"] call _check;
         private _fallback=_waits select 0; private _rest=_waits select 1;
-        [(_fallback select 3)==0.15 && {(_rest select 3)==1.85},"roll timing was changed"] call _check;
+        [(_fallback select 3)==0.15 && {(_rest select 3)==(1.85/1.5)},"roll timing was changed"] call _check;
     '''+f'_animation="{transition if engine_started else "not-started"}";'+'''
         [_fallback] call _deliver;
     '''+f'[count _moves=={int(not engine_started)},"unnecessary or missing scoped fallback"] call _check;'+

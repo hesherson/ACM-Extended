@@ -22,35 +22,8 @@ if !((_patient getVariable ["ACME_headElev_hold", []]) isEqualTo []) then {
 };
 if !(_patient getVariable ["ACME_headElevated", false]) exitWith {};
 
-// Even temporary lowering starts from anterior-up. An already-correct Semi-Fowler patient is untouched; any stale
-// posterior orientation is normalized first so ACME_HeadElevPatientRelease is never played from the stomach.
-private _actualBeforeSuspend = [_patient, _patient getVariable ["ACME_CS_facing","front"]]
-    call ACME_fnc_chestSealActualSide;
-private _needFrontFirst = !_frontNormalized && {_actualBeforeSuspend != "front"};
-
-if (_needFrontFirst) exitWith {
-    private _delay = 0.08;
-
-    if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
-        [_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85;};
-        _delay = (_rollTime max 0.1) + 0.08;
-    } else {
-        private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
-        _patient setVariable ["ACME_CS_facing","front",true];
-        ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
-    };
-
-    [{
-        params ["_p","_keep"];
-        if (!isNull _p && {local _p} && {alive _p}) then {
-            _p setVariable ["ACME_CS_facing","front",true];
-            [_p,_keep,true] call ACME_fnc_headElevSuspend;
-        };
-    }, [_patient,_keepVestOut], _delay] call CBA_fnc_waitAndExecute;
-};
-
+// A live Semi-Fowler placement is already face-up. Temporary suspension is a direct lay-flat transition;
+// never insert a front/back roll between elevation and the authored release.
 _patient setVariable ["ACME_CS_facing","front",true];
 
 private _parkSupport = {
@@ -100,8 +73,8 @@ _patient setVariable ["ACME_headElev_visualActive", false, true];
 // re-worn during a suspension: support gear stays out for every temporary flat maneuver.
 if (_keepVestOut) then {_patient setVariable ["ACME_headElev_suspendKeepVestOut", true, true];};
 
-private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-if (!(_lowerTime isEqualType 0) || {_lowerTime < 0.2}) then {_lowerTime = 1.4;};
+private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4 / (call ACME_fnc_choreographyRate)];
+if (!(_lowerTime isEqualType 0) || {_lowerTime < 0.2}) then {_lowerTime = 1.4 / (call ACME_fnc_choreographyRate);};
 _patient setVariable ["ACME_headElev_suspendReadyAt", CBA_missionTime + _lowerTime, false];
 
 private _suspendVest = [];
@@ -111,18 +84,42 @@ if (_patient getVariable ["ACME_headElev_vestRemoved", false]) then {
 _patient setVariable ["ACME_headElev_suspendVestLoadout", _suspendVest, false];
 
 private _patientAnimToken = "";
-if (isNull objectParent _patient) then {
+private _animLock = _patient getVariable ["ACME_patientAnimLock", []];
+private _lockSource = _animLock param [1, ""];
+private _lockPriority = _animLock param [3, 0];
+private _lockUntil = _animLock param [4, -1];
+private _interventionOwnsPatient = (_lockUntil isEqualType 0) && {_lockUntil > serverTime}
+    && {_lockPriority >= 2}
+    && {!(_lockSource in ["head-elev-lower","head-elev-flat"])};
+
+if (isNull objectParent _patient && {!_interventionOwnsPatient}) then {
     [_patient, false] call ACME_fnc_headElevCollision;
-    _patientAnimToken = [_patient, "ACME_HeadElevPatientRelease", 2, "head-elev-lower", objNull, _lowerTime + 0.3, 3] call ACME_fnc_patientAnimRequest;
-    [_patient, _lowerTime] call ACME_fnc_headElevPinPose;
+    // Semi-Fowler yields to any already-owned intervention animation. Priority 1 lets chest/airway/treatment
+    // patient choreography win instead of a late suspension request canceling the intervention.
+    _patientAnimToken = [_patient, "ACME_HeadElevPatientRelease", 2, "head-elev-lower", objNull, _lowerTime + 0.3, 1] call ACME_fnc_patientAnimRequest;
+    if (_patientAnimToken != "") then {
+        [_patient, _lowerTime] call ACME_fnc_headElevPinPose;
+    };
 };
 private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
+// Chest-seal preparation must observe this callback's actual completion, not
+// just the nominal lower deadline. A new suspension cannot inherit an old
+// callback when the supported placement itself has kept the same pose token.
+private _suspendSerial = 1 + (_patient getVariable ["ACME_headElev_suspendSerial", 0]);
+_patient setVariable ["ACME_headElev_suspendSerial", _suspendSerial, false];
+private _suspendToken = format ["%1:%2", _poseToken, _suspendSerial];
+_patient setVariable ["ACME_headElev_suspendPending", _suspendToken, false];
 [{
-    params ["_patient", "_poseToken", "_patientAnimToken", "_parkSupport"];
-    if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+    params ["_patient", "_poseToken", "_patientAnimToken", "_parkSupport", "_suspendToken"];
+    if (isNull _patient) exitWith {};
+    if ((_patient getVariable ["ACME_headElev_suspendPending", ""]) != _suspendToken) exitWith {};
+    if (!local _patient || {!alive _patient}
+        || {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}
+        || {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
+        _patient setVariable ["ACME_headElev_suspendPending", "", false];
+    };
+    // A resumed/replaced placement owns its collision recovery, not this retired suspension.
     [_patient, true] call ACME_fnc_headElevCollision;
-    if ((_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken
-        || {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {};
 
     // This is the central B122 behavior: no temporary treatment re-vests the support carrier while the logical
     // elevated-head state still exists. It stays beyond the head until resume or a true Lower Head action.
@@ -131,6 +128,7 @@ private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
 
     private _rest = [_patient] call ACME_fnc_headElevRestAnim;
     if (isNull objectParent _patient && {_rest != ""} && {_patientAnimToken != ""}) then {
-        [_patient, _rest, 2, "head-elev-flat", objNull, 0.8, 3, _patientAnimToken] call ACME_fnc_patientAnimRequest;
+        [_patient, _rest, 2, "head-elev-flat", objNull, 0.8, 1, _patientAnimToken] call ACME_fnc_patientAnimRequest;
     };
-}, [_patient, _poseToken, _patientAnimToken, _parkSupport], _lowerTime] call CBA_fnc_waitAndExecute;
+    _patient setVariable ["ACME_headElev_suspendPending", "", false];
+}, [_patient, _poseToken, _patientAnimToken, _parkSupport, _suspendToken], _lowerTime] call CBA_fnc_waitAndExecute;

@@ -16,14 +16,28 @@ _store set [_i,_entry];
 _c lbSetCurSel -1;
 _c ctrlShow false;
 call ACME_fnc_skCarouselRender;
+// Color selection owns only this display/editor/record's deferred focus request.
+// A later color choice, including None, retires older requests even if the color repeats.
+private _d = findDisplay 84000;
+if (isNull _d) exitWith {};
+private _colorEpoch = (_d getVariable ["ACME_SK_TagColorEpoch", 0]) + 1;
+_d setVariable ["ACME_SK_TagColorEpoch", _colorEpoch];
 if (uiNamespace getVariable ["ACME_SK_TagEditMode",false]) then {
     [{
-        params ["_id"];
+        params ["_d", "_medic", "_syringeId", "_id", "_editEpoch", "_colorEpoch"];
         disableSerialization;
-        private _d = findDisplay 84000;
-        if (!isNull _d && {uiNamespace getVariable ["ACME_SK_TagEditMode",false]}) then {
-            private _focusCtrl = _d displayCtrl (if (_id in ["","none"]) then {84470} else {84460});
-            if (!isNull _focusCtrl) then {ctrlSetFocus _focusCtrl;};
-        };
-    },[_id],0.01] call CBA_fnc_waitAndExecute;
+        if (isNull _d || {!((findDisplay 84000) isEqualTo _d)}
+            || {!(ACE_player isEqualTo _medic)}
+            || {(uiNamespace getVariable ["ACME_SK_View", "syringe"]) != "body"}
+            || {!(uiNamespace getVariable ["ACME_SK_TagEditMode",false])}
+            || {(_d getVariable ["ACME_SK_TagEditEpoch", 0]) != _editEpoch}
+            || {(_d getVariable ["ACME_SK_TagColorEpoch", -1]) != _colorEpoch}) exitWith {};
+        private _store = [_medic] call ACME_fnc_skStoreEnsureIds;
+        private _index = [_store,false] call ACME_fnc_skSelectedIndex;
+        if (_index < 0) exitWith {};
+        private _entry = _store select _index;
+        if ((_entry param [11, ""]) != _syringeId || {(_entry param [7, "none"]) != _id}) exitWith {};
+        private _focusCtrl = _d displayCtrl (if (_id in ["","none"]) then {84470} else {84460});
+        if (!isNull _focusCtrl) then {ctrlSetFocus _focusCtrl;};
+    },[_d,ACE_player,_entry param [11,""],_id,_d getVariable ["ACME_SK_TagEditEpoch",0],_colorEpoch],0.01] call CBA_fnc_waitAndExecute;
 };

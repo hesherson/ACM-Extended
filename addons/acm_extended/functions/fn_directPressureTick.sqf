@@ -57,27 +57,56 @@ if (_moving) exitWith {
     [_pfhId] call CBA_fnc_removePerFrameHandler;
 };
 
-// Stationary torso/head/limb pressure shares the same yield/resume pose controller. Other medical treatments can
-// temporarily own the provider animation, but an actual attempt to move has already ended Direct Pressure above.
-if (_mode in ["torso", "limb"]) then {[_medic, _patient] call ACME_fnc_directPressurePose;};
-private _maneuverActive = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
+// Higher-priority interventions win BEFORE Direct Pressure gets any chance to reassert its decorative hold.
+// This includes chest-access preparation and head-position/provider choreography, not just an already-active
+// continuous action. DP remains clinically alive and resumes later; it never cancels or overwrites the maneuver.
+private _nativeCpr = [_patient] call ACM_core_fnc_cprActive;
+private _nativeBvm = [_patient] call ACM_core_fnc_bvmActive;
+private _handoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
+private _providerHandoffActive = ((_handoff param [0, objNull, [objNull]]) isEqualTo _patient)
+    && {(_handoff param [1, -1, [0]]) > CBA_missionTime};
+private _ownerHandoffUntil = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
+private _ownerHandoffActive = (_ownerHandoffUntil isEqualType 0) && {serverTime < _ownerHandoffUntil};
+private _maneuverActive = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+    || {_nativeCpr} || {_nativeBvm} || {_providerHandoffActive} || {_ownerHandoffActive};
 private _manualPause = _medic getVariable ["ACME_DP_Paused", false];
 private _pauseClass = _medic getVariable ["ACME_DP_PauseTreatmentClass", ""];
-if (_manualPause && {_maneuverActive} && {_pauseClass in ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]}) then {
+private _chestPrep = _medic getVariable ["ACME_chestAccessPreflightActive", false]
+    || {(_medic getVariable ["ACME_chestAccessProvider", []]) isNotEqualTo []};
+private _headProvider = _medic getVariable ["ACME_headElev_seqActive", false];
+private _treatmentBusy = _medic getVariable ["ACME_DP_TreatmentBusy", false]
+    || {_medic getVariable ["ACME_treatmentPreflightActive", false]};
+
+private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
+// CPR's launcher treatment ends long before compressions do. Keep the DP pause through the real native role and
+// the bounded CPR <-> BVM transfer window; clear it only after both roles and both handoff clocks have ended.
+if (!_maneuverActive && {_pauseClass in _maneuverClasses}) then {
     _medic setVariable ["ACME_DP_Paused", false, false];
     _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
+    _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
+    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
     _manualPause = false;
+    _pauseClass = "";
+    _treatmentBusy = _medic getVariable ["ACME_treatmentPreflightActive", false];
 };
-private _mustYieldClinical = _maneuverActive || {_manualPause};
+private _mustYieldClinical = _maneuverActive || {_manualPause} || {_chestPrep} || {_headProvider} || {_treatmentBusy};
 private _yieldedClinical = _medic getVariable ["ACME_DP_ClinicalYield", false];
 
 if (_mustYieldClinical) exitWith {
+    // Kill only DP's own visual generation. Never inject a neutral pose; the incoming intervention owns animation.
+    _medic setVariable ["ACME_dah_gen", (_medic getVariable ["ACME_dah_gen", 0]) + 1, false];
+    _medic setVariable ["ACME_DP_InPose", false, false];
+    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+    _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
     if (!_yieldedClinical) then {
         [_patient, "directPressureMarker", [_medic, _bodyPart, false]] call ACME_fnc_ownerDispatch;
         _medic setVariable ["ACME_DP_ClinicalYield", true];
         _medic setVariable ["ACME_DP_ClinicalYieldStart", CBA_missionTime];
     };
 };
+
+// Only a provider with no higher-priority intervention may adopt/reassert the visible Direct Pressure pose.
+if (_mode in ["torso", "limb"]) then {[_medic, _patient] call ACME_fnc_directPressurePose;};
 
 // Reapply the synchronized pressure marker once the incompatible activity ends. Shift both clot timers by the exact
 // yielded duration so time spent walking, assessing, or performing another maneuver never counts as pressure time.

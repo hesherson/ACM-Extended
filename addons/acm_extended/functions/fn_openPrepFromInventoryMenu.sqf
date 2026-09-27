@@ -32,7 +32,8 @@ if !([_itemClass, _actionClass] call ACME_fnc_isSalineItem) exitWith {
 };
 
 // the kit checks come before un-staging, so a failed check leaves the staged set exactly where it was.
-private _size = [ACE_player] call ACME_fnc_findBestSyringe;
+private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
+private _size = [ACE_player,_patient] call ACME_fnc_findBestSyringe;
 if (_size < 0) exitWith {
     ["You need an empty ACM syringe.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
@@ -43,7 +44,8 @@ if (_allowedVials isEqualTo []) then {
 };
 private _hasAllowedMedication = false;
 {
-    if (([ACE_player, (_x splitString "_") select 2] call ACME_fnc_infusionVialVolume) > 0) exitWith {_hasAllowedMedication = true};
+    private _med = [_x] call ACME_fnc_vialMedication;
+    if ((([ACE_player,_patient] call ACME_fnc_treatmentSupplyOrder) findIf {([_x,_med] call ACME_fnc_infusionVialVolume) > 0}) >= 0) exitWith {_hasAllowedMedication = true};
 } forEach _allowedVials;
 
 if (!_hasAllowedMedication) exitWith {
@@ -54,7 +56,6 @@ if (!_hasAllowedMedication) exitWith {
 private _pending = missionNamespace getVariable ["ACME_preparedPending", createHashMap];
 if (((values _pending) findIf {(!(_x select 2)) && {(((_x select 0) select 10) select 0) == _sid}}) >= 0) exitWith {};
 
-private _patient    = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
 private _bodyPart   = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""];
 private _selectedIV = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true];
 private _accessSite = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite", -1];

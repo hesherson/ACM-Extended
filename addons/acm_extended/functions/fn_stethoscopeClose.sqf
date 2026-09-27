@@ -42,6 +42,10 @@ if (_flipWasActive) then {
 };
 private _poseEpoch = _display getVariable ["ACME_stethPoseEpoch",-1];
 private _continuousEpoch = _display getVariable ["ACME_continuousEpoch",-1];
+private _poseStateAtClose = if (isNull _medic) then {[]} else {_medic getVariable ["ACME_treatmentPoseState", []]};
+private _ambulatoryContact = (_poseStateAtClose param [0,-2]) == _poseEpoch
+    && {(_poseStateAtClose param [1,""]) == "stethoscope"}
+    && {_poseStateAtClose param [19,false]};
 
 // Release this provider's casualty animation lease immediately. The normal onCancel path sees the cleared lease
 // and becomes a no-op, so a missed PFH frame can never leave the patient pinned by a dead stethoscope session.
@@ -101,11 +105,15 @@ if (!isNull _medic && {_poseEpoch >= 0}
     };
 };
 
-if (!isNull _medic && {local _medic} && {alive _medic}
+// A superseded display must not start its exit over a newer continuous action.
+// Use the scope generation here: an active Flip legitimately owns a newer roll pose epoch.
+if (_continuousEpoch >= 0
+    && {(missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch",-2]) == _continuousEpoch}
+    && {!isNull _medic} && {local _medic} && {alive _medic}
     && {!(_medic getVariable ["ACE_isUnconscious",false])}
     && {isNull objectParent _medic}
     && {!(_medic getVariable ["ACME_headElev_seqActive",false])}) then {
-    [_medic,"lower"] call ACME_fnc_headElevMedicSeq;
+    [_medic, ["lower", "contactexit"] select _ambulatoryContact] call ACME_fnc_headElevMedicSeq;
 };
 
 if ((uiNamespace getVariable ["ACM_breathing_Stethoscope_DLG",displayNull]) isEqualTo _display) then {

@@ -6,6 +6,11 @@ params [["_patient", objNull, [objNull]], ["_medic", objNull, [objNull]], ["_cla
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {[_patient, "treatmentPatientSettle", [_patient, _medic, _classname]] call ACME_fnc_ownerDispatch;};
 if (!alive _patient || {!isNull objectParent _patient}) exitWith {};
+private _independentlyConscious = !(_patient getVariable ["ACE_isUnconscious", false])
+    && {!(_patient getVariable ["ace_medical_unconscious", false])}
+    && {!(_patient getVariable ["ACME_obtunded", false])}
+    && {(stance _patient) in ["STAND", "CROUCH", "PRONE"]};
+if (_independentlyConscious) exitWith {};
 if (_patient getVariable ["ACME_headElevated", false] || {_patient getVariable ["ACME_headElev_Suspended", false]}) exitWith {};
 if (_patient getVariable ["ACM_airway_RecoveryPosition_State", false]) exitWith {};
 if ((_patient getVariable ["ACME_lido_seizureState", ""]) == "active") exitWith {};

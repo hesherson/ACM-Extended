@@ -36,17 +36,13 @@ if (isNull objectParent _medic) then {
     _medic setVariable ["ACME_DP_LastPoseAssert", CBA_missionTime];
 };
 
-// Chest pressure keeps the medical menu available, so LMB remains free for treatment buttons. RMB is the dedicated
-// cancellation input and is already consumed by ACME's persistent RMB guard; expose that binding exactly like the
-// BVM/CPR continuous-action hints do.
+// Chest pressure keeps the medical menu available, so LMB/RMB remain normal. MMB is the dedicated cancellation
+// input consumed by ACME's mission-display guard; expose that binding exactly like the BVM/CPR hints do.
 ["", "Stop Direct Pressure", ""] call ace_interaction_fnc_showMouseHint;
 
-// Never swallow the key that is trying to close the medical UI or return control to the player. The handler releases
-// pressure, then returns false so the original ESC/RMB/H input continues through the normal ACE/CBA path.
-private _ids = [];
-_ids pushBack ([0x01, [false,false,false], { [false, ACE_player, false] call ACME_fnc_directPressureStop; false }, "keydown", "", false, 0] call CBA_fnc_addKeyHandler);
-_ids pushBack ([0x23, [false,false,false], { [false, ACE_player, false] call ACME_fnc_directPressureStop; false }, "keydown", "", false, 0] call CBA_fnc_addKeyHandler);
-_medic setVariable ["ACME_DP_KeyIDs", _ids];
+// Direct Pressure has no keyboard cancellation binding. MMB is handled by the mission-display guard; the explicit
+// Stop Direct Pressure menu action is the deliberate UI fallback. Escape/H remain available to the player.
+_medic setVariable ["ACME_DP_KeyIDs", []];
 
 [_patient, "activity", "%1 started Direct pressure on %2", "%1 started Direct pressure on %2", [[_medic, false, true] call ace_common_fnc_getName, ([_bodyPart, "abbr"] call ACME_fnc_bodyPartName)]] call ACME_fnc_medLog;
 

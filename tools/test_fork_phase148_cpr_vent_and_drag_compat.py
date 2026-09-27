@@ -9,6 +9,8 @@ vent = (ROOT / "addons/acm_extended/functions/fn_ventDriveTick.sqf").read_text(e
 compat = (ROOT / "addons/acm_extended/functions/fn_compatCheck.sqf").read_text(encoding="utf-8", errors="ignore")
 startup = (ROOT / "addons/acm_extended/functions/fn_initForkStartupRuntime.sqf").read_text(encoding="utf-8", errors="ignore")
 core_cfg = (ROOT / "addons/core/CfgFunctions.hpp").read_text(encoding="utf-8", errors="ignore")
+core_prestart = (ROOT / "addons/core/XEH_preStart.sqf").read_text(encoding="utf-8", errors="ignore")
+bindings = (ROOT / "addons/acm_extended/functions/fn_clinicalBindings.sqf").read_text(encoding="utf-8", errors="ignore")
 
 # The ventilator may legitimately move ACM_breathing_BVM_provider in and out while CPR continues.
 assert '[["bvmProvider", _patient]' in vent
@@ -25,6 +27,8 @@ assert '"ace_dragging_stoppedCarry"' in startup
 assert '"ACM_LyingState"' in startup
 assert '"ACM_core_getUpPrompt"' in startup
 assert "class dropObject_carry" not in core_cfg
-assert "ace_dragging_fnc_dropObject_carry" not in compat
+assert '"ace_dragging_fnc_dropObject_carry"' not in compat
+assert "ace_dragging_fnc_dropObject_carry =" not in core_prestart
+assert '"ace_dragging_fnc_dropObject_carry"' not in bindings
 
 print("PASS phase148: CPR/vent isolation and event-based carry-drop reconciliation")

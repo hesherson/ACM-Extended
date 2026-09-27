@@ -120,11 +120,21 @@ def test_dead_patient_freezes_workers_but_keeps_interventions_and_old_corpse():
 
 def test_dead_patient_treatment_paths_do_not_reject_because_patient_is_dead():
     # These are high-use custom treatment paths whose former alive checks made death inferable from the menu/action.
-    for name in ("directPressureStart", "directPressureTick", "medicationRequest", "medicationLineLocal",
+    for name in ("directPressureStart", "directPressureTick", "medicationRequest",
                  "skBeginInjection", "skConfirmInjection", "skInjectSite", "salineFlush",
                  "epinephrinePushStored", "administerPushDoseEpi"):
         src = acme(name)
         assert '!alive _patient' not in src, f"dead-patient treatment rejection remains in {name}"
+
+    # Owner settlement accepts a corpse transaction so provider inventory/syringe accounting completes,
+    # then exits before any medication physiology can be created.
+    line = acme("medicationLineLocal")
+    dead = line.index("if (!alive _patient) exitWith")
+    physiology = line.index("private _pending", dead)
+    postmortem = line[dead:physiology]
+    assert '[true, "postmortem: no physiology"]' in postmortem
+    assert 'ACME_medicationAck' in postmortem
+    assert 'ace_medical_treatment_fnc_medicationLocal' not in postmortem
     syringe = text("addons/circulation/functions/fnc_Syringe_Inject.sqf")
     first_guard = syringe[:syringe.find('if (alive _patient') if 'if (alive _patient' in syringe else len(syringe)]
     assert '!alive _patient' not in first_guard

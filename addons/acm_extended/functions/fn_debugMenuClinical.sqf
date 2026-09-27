@@ -1,7 +1,4 @@
-/*
- * ACME debug page 1/2: compact clinical overview.
- * Designed for a single screenshot on 16:9 while retaining the high-value state needed for bug reports.
- */
+// The single ACME debug overlay. Clinical, treatment and transport state share one patient and one toggle.
 disableSerialization;
 
 private _cleanup = {
@@ -9,59 +6,98 @@ private _cleanup = {
         private _c = uiNamespace getVariable [_x, controlNull];
         if (!isNull _c) then {ctrlDelete _c;};
         uiNamespace setVariable [_x, controlNull];
-    } forEach ["ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrl"];
+    } forEach ["ACME_DebugMenuBackdrop", "ACME_DebugMenuCtrl", "ACME_DebugMenuCtrlTop", "ACME_DebugMenuCtrlL", "ACME_DebugMenuCtrlR", "ACME_DebugMenuCtrlS", "ACME_DebugMenuCtrlMeasure"];
 };
-
 if (!(call ACME_fnc_debugEnabled)) exitWith {call _cleanup;};
-
 private _display = findDisplay 46;
 if (isNull _display) then {_display = uiNamespace getVariable ["RscDisplayMission", displayNull];};
-if (isNull _display) exitWith {};
+if (isNull _display) exitWith {call _cleanup;};
 
-private _ctrlL = uiNamespace getVariable ["ACME_DebugMenuCtrlL", controlNull];
-if (!isNull _ctrlL && {!((ctrlParent _ctrlL) isEqualTo _display)}) then {ctrlDelete _ctrlL; _ctrlL = controlNull;};
-private _ctrlR = uiNamespace getVariable ["ACME_DebugMenuCtrlR", controlNull];
-if (!isNull _ctrlR && {!((ctrlParent _ctrlR) isEqualTo _display)}) then {ctrlDelete _ctrlR; _ctrlR = controlNull;};
-private _ctrlS = uiNamespace getVariable ["ACME_DebugMenuCtrlS", controlNull];
-if (!isNull _ctrlS) then {_ctrlS ctrlShow false;};
-private _old = uiNamespace getVariable ["ACME_DebugMenuCtrl", controlNull];
-if (!isNull _old) then {ctrlDelete _old; uiNamespace setVariable ["ACME_DebugMenuCtrl", controlNull];};
-
-if (isNull _ctrlL) then {
-    _ctrlL = _display ctrlCreate ["RscStructuredText", -1];
-    _ctrlL ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.88];
-    _ctrlL ctrlShow true;
-    uiNamespace setVariable ["ACME_DebugMenuCtrlL", _ctrlL];
+// Recreate older overlays before adding the backing, so it is always below every text control.
+private _backdrop = uiNamespace getVariable ["ACME_DebugMenuBackdrop", controlNull];
+if (isNull _backdrop || {!((ctrlParent _backdrop) isEqualTo _display)}) then {call _cleanup;};
+private _control = {
+    params ["_key", ["_visible", true]];
+    private _c = uiNamespace getVariable [_key, controlNull];
+    if (!isNull _c && {!((ctrlParent _c) isEqualTo _display)}) then {ctrlDelete _c; _c = controlNull;};
+    if (isNull _c) then {_c = _display ctrlCreate ["RscStructuredText", -1];};
+    uiNamespace setVariable [_key, _c];
+    _c ctrlSetBackgroundColor [0, 0, 0, 0];
+    _c ctrlShow _visible;
+    _c
 };
-if (isNull _ctrlR) then {
-    _ctrlR = _display ctrlCreate ["RscStructuredText", -1];
-    _ctrlR ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.88];
-    _ctrlR ctrlShow true;
-    uiNamespace setVariable ["ACME_DebugMenuCtrlR", _ctrlR];
+private _ctrlB = ["ACME_DebugMenuBackdrop"] call _control;
+_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.74];
+_ctrlB ctrlEnable false;
+private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
+private _ctrlT = ["ACME_DebugMenuCtrlTop", false] call _control;
+private _ctrlL = ["ACME_DebugMenuCtrlL"] call _control;
+private _ctrlR = ["ACME_DebugMenuCtrlR", false] call _control;
+private _ctrlS = ["ACME_DebugMenuCtrlS", false] call _control;
+private _ctrlM = ["ACME_DebugMenuCtrlMeasure", false] call _control;
+
+// B176 resolution invariant: the debug overlay is one fixed-proportion strip pinned to the absolute left safe edge.
+// Resolution, aspect ratio and UI scale may change the engine safe-zone coordinates, but every visible dimension below
+// derives from the SAME safe-zone box and every text control receives the SAME final font scale.
+private _baseFontH = safeZoneH * 0.0092;
+private _fontH = _baseFontH;
+private _applyFont = {
+    {_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS, _ctrlM];
 };
-_ctrlL ctrlShow true;
-_ctrlR ctrlShow true;
+call _applyFont;
 
-private _canvas = call ACME_fnc_uiCanvas;
-_canvas params ["_uiX", "_uiY", "_uiW", "_uiH"];
-private _gap = 0.0035;
-// B116: keep the entire clinical snapshot on one screenshot. The panel is narrower than B114 and the font
-// starts smaller; only the network/engineering page is allowed to live elsewhere.
-private _totalW = ((_uiW * 0.36) max 0.34) min 0.42;
-private _w = (_totalW - _gap) / 2;
-private _x = safeZoneXAbs + 0.002;
-private _y = safeZoneY + 0.014;
-private _h = (safeZoneH - 0.024) max 0.30;
-_ctrlL ctrlSetPosition [_x, _y, _w, _h];
-_ctrlR ctrlSetPosition [_x + _w + _gap, _y, _w, _h];
-_ctrlL ctrlCommit 0;
-_ctrlR ctrlCommit 0;
+private _gapFactor = 0.26;
+private _gap = _fontH * _gapFactor;
+private _marginX = safeZoneH * 0.0025;
+private _marginY = safeZoneH * 0.004;
+private _x = safeZoneXAbs + _marginX;
+private _y = safeZoneY + _marginY;
+private _panelBottom = safeZoneY + safeZoneH - _marginY;
 
-private _userScale = missionNamespace getVariable ["ACME_debug_scale", 1];
-private _scale = (((_userScale max 0.50) min 1.15) * 0.54) max 0.39 min 0.62;
+// Fixed horizontal proportion on every display. B176 is intentionally a little wider than B165 so normal values,
+// revision strings and paired columns never need to word-wrap. Width does NOT change based on aspect ratio.
+private _totalW = (safeZoneH * 0.255) min (safeZoneWAbs - (2 * _marginX));
+private _valueW = 11;
+
+private _renderBlock = {
+    params ["_ctrl", "_rows"];
+    _ctrl ctrlSetStructuredText parseText format ["<t font='EtelkaMonospacePro' shadow='1'>%1</t>", _rows joinString "<br/>"];
+};
+private _measureRows = {
+    params ["_rows", "_width"];
+    _ctrlM ctrlSetPosition [_x, _y, _width, safeZoneH * 4];
+    _ctrlM ctrlCommit 0;
+    [_ctrlM, _rows] call _renderBlock;
+    (ctrlTextHeight _ctrlM) + (_fontH * 0.18)
+};
+private _measureNaturalWidth = {
+    params ["_rows"];
+    // Give the hidden measurement control deliberately excessive width so this pass measures the natural longest
+    // line rather than a wrapped line. The final common font scale is then reduced until that line fits _totalW.
+    _ctrlM ctrlSetPosition [_x, _y, safeZoneWAbs * 8, safeZoneH * 4];
+    _ctrlM ctrlCommit 0;
+    [_ctrlM, _rows] call _renderBlock;
+    (ctrlTextWidth _ctrlM) + (safeZoneH * 0.005)
+};
+private _layout = {
+    params ["_headerH", "_bodyH"];
+    private _bodyY = _y + _headerH + _gap;
+    private _panelH = (_panelBottom - _y) max 0;
+    // Never allow the structured-text control itself to extend below the panel. The previous layout expanded
+    // the body to its measured content height, which is exactly how 1680x1050 drew text past the bottom edge.
+    private _bodyAvail = (_panelBottom - _bodyY) max 0;
+
+    _ctrlB ctrlSetPosition [_x, _y, _totalW, _panelH];
+    _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH min _panelH];
+    _ctrlL ctrlSetPosition [_x, _bodyY min _panelBottom, _totalW, _bodyAvail];
+
+    // Retire B162's separate top/right/footer regions in-place so an already running mission cannot leave one visible.
+    {_x ctrlShow false;} forEach [_ctrlT, _ctrlR, _ctrlS];
+    {_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlT, _ctrlR, _ctrlS];
+};
 
 private _cTitle = "#D9A441";
-private _cSect  = "#F0E7D2";
+private _cSect  = _cTitle;
 private _cLabel = "#C0B7A2";
 private _cGood  = "#5FB56E";
 private _cWarn  = "#D9A441";
@@ -79,46 +115,80 @@ private _safe = {
 };
 private _yn = {params ["_v"]; if (_v) then {"yes"} else {"no"};};
 private _ynCol = {params ["_v", ["_badWhenTrue", false]]; if (_badWhenTrue) exitWith {if (_v) then {_cBad} else {_cGood}}; if (_v) then {_cGood} else {_cMute};};
+// Restore the pre-redesign value alignment for clinical and machine rows alike.
+// Paired fields have a fixed width, so a state or unit cannot move the next label.
 private _padRight = {
     params ["_s", "_w"];
     if !(_s isEqualType "") then {_s = str _s;};
     while {count _s < _w} do {_s = _s + " ";};
-    if ((count _s) > _w) then {_s = _s select [0, _w];};
     _s
 };
 private _alignValue = {
-    params ["_v", ["_w", 12]];
+    params ["_v", ["_w", 11]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
-    // Match the original debug layout: right-align the integer/whole-token side so ones, tens and hundreds share
-    // one vertical column. Decimal/unit suffixes then trail to the right inside a constant-width value field.
+    // Original layout: right-align the whole token, or the part before its decimal.
+    // This also aligns yes/no, none, OPEN and client/host with integer readings.
     private _integerW = (_w - 4) max 1;
     private _dot = _s find ".";
     private _integer = if (_dot > -1) then {_s select [0, _dot]} else {_s};
     private _suffix = if (_dot > -1) then {_s select [_dot]} else {""};
     while {count _integer < _integerW} do {_integer = " " + _integer;};
-    private _txt = _integer + _suffix;
-    while {count _txt < _w} do {_txt = _txt + " ";};
-    _txt
+    [_integer + _suffix, _w] call _padRight
 };
 private _pair = {
     params ["_a", "_av", "_ac", "_b", "_bv", "_bc"];
-    private _aTxt = [_a, 7] call _padRight;
-    private _bTxt = [_b, 7] call _padRight;
-    private _avTxt = [([_av, 12] call _alignValue)] call _safe;
-    private _bvTxt = [([_bv, 12] call _alignValue)] call _safe;
-    format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aTxt, _avTxt, _ac, _bTxt, _bvTxt, _bc, _cLabel]
+    [_a, _av, _ac, _b, _bv, _bc]
 };
 private _one = {
     params ["_a", "_av", "_ac"];
-    private _aTxt = [_a, 7] call _padRight;
-    private _avTxt = [([_av, 12] call _alignValue)] call _safe;
-    format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
+    [_a, _av, _ac]
 };
-private _sect = {params ["_s"]; format ["<t color='%1'>%2</t>", _cSect, _s];};
+private _wrapValue = {
+    params ["_s", "_width"];
+    private _lines = [];
+    while {count _s > _width} do {
+        private _cut = _width;
+        // Prefer a word/device boundary; keep all characters, including signs, units and separators.
+        for "_i" from (_width - 1) to 1 step -1 do {
+            if ((_s select [_i, 1]) in [" ", "+", ",", "/"]) exitWith {_cut = _i + 1;};
+        };
+        // Numeric left padding is not a useful wrap point.
+        if ((_s select [0, _cut]) == (["", _cut] call _padRight)) then {_cut = _width;};
+        _lines pushBack (_s select [0, _cut]);
+        _s = _s select [_cut];
+    };
+    _lines pushBack _s;
+    _lines
+};
+private _formatRow = {
+    params ["_row", "_valueW"];
+    if (_row isEqualType "") exitWith {_row};
+    _row params ["_a", "_av", "_ac"];
+    private _aTxt = [([_a, 8] call _padRight)] call _safe;
+    private _avTxt = [([_av, _valueW] call _alignValue)] call _safe;
+    if (count _row == 3) exitWith {
+        format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
+    };
+    private _b = _row select 3;
+    private _bv = _row select 4;
+    private _bc = _row select 5;
+    private _aLines = [([_av, _valueW] call _alignValue), _valueW] call _wrapValue;
+    private _bLines = [([_bv, _valueW] call _alignValue), _valueW] call _wrapValue;
+    private _lines = [];
+    for "_i" from 0 to (((count _aLines) max (count _bLines)) - 1) do {
+        private _aLabel = [([if (_i == 0) then {_a} else {""}, 8] call _padRight)] call _safe;
+        private _bLabel = [([if (_i == 0) then {_b} else {""}, 8] call _padRight)] call _safe;
+        private _aValue = [([_aLines param [_i, ""], _valueW] call _padRight)] call _safe;
+        private _bValue = [([_bLines param [_i, ""], _valueW] call _padRight)] call _safe;
+        _lines pushBack format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aLabel, _aValue, _ac, _bLabel, _bValue, _bc, _cLabel];
+    };
+    _lines joinString "<br/>"
+};
+private _sect = {params ["_s"]; format ["<br/><t color='%1'>%2</t>", _cSect, _s];};
 private _arr = {params ["_name"]; private _v = missionNamespace getVariable [_name, []]; if (_v isEqualType []) then {_v} else {[]};};
 private _pushUnique = {params ["_a", "_o"]; if (!isNull _o && {!(_o in _a)}) then {_a pushBack _o;}; _a};
 
-// Same target selection contract as the full debug page.
+// One target selection is shared by every section.
 private _patient = missionNamespace getVariable ["ACME_debug_target", objNull];
 if (!isNull _patient && {!(_patient isKindOf "CAManBase")}) then {_patient = objNull;};
 if (isNull _patient) then {
@@ -138,18 +208,132 @@ if (_ver == "") then {_ver = missionNamespace getVariable ["ACME_infusion_versio
 private _rc = missionNamespace getVariable ["ACME_debugRevision", ""];
 if (_rc isEqualType "" && {_rc != ""}) then {_ver = format ["%1-%2", _ver, _rc];};
 private _batch = missionNamespace getVariable ["ACME_buildBatch", "?"];
+private _top = [];
 private _left = [];
 private _right = [];
+private _network = [];
 private _pName = if (isNull _patient) then {"NO PATIENT"} else {name _patient};
-_left pushBack format ["<t color='%1' size='1.02'>ACME DEBUG v%2</t>  <t color='%1'>CLINICAL 1/2</t>", _cTitle, _ver];
-_left pushBack format ["<t color='%1'>%2  |  %3  |  Ctrl+PgUp/PgDn</t>", _cMute, [_pName] call _safe, _batch];
-_right pushBack format ["<t color='%1' size='1.02'>AT A GLANCE</t>", _cTitle];
-_right pushBack format ["<t color='%1'>Page 2: NETWORK 2/2</t>", _cTitle];
+private _header = [
+    format [
+        "<t color='%1'>ACME DEBUG v%2 | %3</t><t color='%4'> | Patient: %5</t>",
+        _cTitle, [_ver] call _safe, [_batch] call _safe, _cLabel, [_pName] call _safe
+    ]
+];
+private _renderAll = {
+    // Preserve the existing logical section builders, but serialize them into one compact vertical stream.
+    private _allRows = [];
+    _allRows append _top;
+    _allRows append _left;
+    _allRows append _right;
+    _allRows append _network;
+
+    // Use one value-field width large enough for EVERY paired value in the current snapshot. This keeps the second
+    // label at the same column and prevents value wrapping instead of trying to repair it after formatting.
+    _valueW = 11;
+    {
+        if (_x isEqualType [] && {count _x >= 3}) then {
+            private _vA = _x param [1, ""];
+            private _sA = if (_vA isEqualType "") then {_vA} else {str _vA};
+            _valueW = _valueW max (count _sA);
+            if (count _x >= 6) then {
+                private _vB = _x param [4, ""];
+                private _sB = if (_vB isEqualType "") then {_vB} else {str _vB};
+                _valueW = _valueW max (count _sB);
+            };
+        };
+    } forEach _allRows;
+
+    private _bodyRows = _allRows apply {[_x, _valueW] call _formatRow};
+    // Section rows intentionally carry one leading break, which plus the row separator creates one empty line
+    // between sections. Remove only the very first one so the body starts directly beneath the header.
+    if (count _bodyRows > 0 && {((_bodyRows select 0) select [0,5]) == "<br/>"}) then {
+        _bodyRows set [0, (_bodyRows select 0) select [5]];
+    };
+
+    // Every refresh starts from the exact same reference font. First fit the natural longest line to the fixed
+    // panel width, then fit the complete vertical stream to the fixed panel height. Because both passes multiply
+    // the SAME _fontH, width/height/text/spacing preserve one uniform scale on every resolution.
+    _fontH = _baseFontH;
+    call _applyFont;
+    _gap = _fontH * _gapFactor;
+
+    private _naturalW = ([ _header ] call _measureNaturalWidth) max ([_bodyRows] call _measureNaturalWidth);
+    if (_naturalW > _totalW && {_naturalW > 0}) then {
+        _fontH = _fontH * ((_totalW / _naturalW) min 1);
+        call _applyFont;
+        _gap = _fontH * _gapFactor;
+    };
+
+    private _headerH = [_header, _totalW] call _measureRows;
+    private _bodyH = [_bodyRows, _totalW] call _measureRows;
+    private _availableH = (_panelBottom - _y) max 0;
+    private _neededH = _headerH + _gap + _bodyH;
+    if (_neededH > _availableH && {_neededH > 0}) then {
+        // Small guard keeps the last descender inside the panel despite engine text-metric rounding.
+        _fontH = _fontH * ((_availableH / _neededH) * 0.992);
+        call _applyFont;
+        _gap = _fontH * _gapFactor;
+        _headerH = [_header, _totalW] call _measureRows;
+        _bodyH = [_bodyRows, _totalW] call _measureRows;
+    };
+
+    [_headerH, _bodyH] call _layout;
+    [_ctrlH, _header] call _renderBlock;
+    [_ctrlL, _bodyRows] call _renderBlock;
+};
+
+_top pushBack (["MACHINE / PATIENT OWNERSHIP"] call _sect);
+private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
+_top pushBack (["Role", _role, if (isServer) then {_cGood} else {_cLabel}, "MP", if (isMultiplayer) then {"yes"} else {"no"}, if (isMultiplayer) then {_cGood} else {_cMute}] call _pair);
+_top pushBack (["Client", clientOwner, _cLabel, "Server", if (isServer) then {"local"} else {"remote"}, if (isServer) then {_cGood} else {_cLabel}] call _pair);
+private _own = if (isNull _patient) then {-1} else {owner _patient};
+private _loc = !isNull _patient && {local _patient};
+private _netId = if (isNull _patient) then {"-"} else {netId _patient};
+_top pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
+private _epoch = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_clinicalEpoch};
+_top pushBack (["NetID", _netId, _cMute, "Epoch", _epoch, _cLabel] call _pair);
+
+_network pushBack (["RUNTIME / NETWORK"] call _sect);
+private _naChest = missionNamespace getVariable ["ACME_NA2_chestInstalled", false];
+private _naOwner = missionNamespace getVariable ["ACME_NA2_ownerInstalled", false];
+_network pushBack (["Chest", if (_naChest) then {"on"} else {"off"}, if (_naChest) then {_cGood} else {_cBad}, "Owner", if (_naOwner) then {"on"} else {"off"}, if (_naOwner) then {_cGood} else {_cBad}] call _pair);
+private _rev = missionNamespace getVariable ["ACME_networkAuditRevision", "none"];
+_network pushBack (["Revision", _rev, _cMute] call _one);
+
+_network pushBack (["CHEST-SEAL TRANSPORT"] call _sect);
+private _pend = 0;
+private _pendMap = missionNamespace getVariable ["ACME_CS_pending", nil];
+if (!isNil "_pendMap" && {(typeName _pendMap) isEqualTo "HASHMAP"}) then {_pend = count (keys _pendMap);};
+private _sessTxt = "n/a";
+private _sessCol = _cMute;
+if (isServer) then {
+    private _sess = 0;
+    private _sessMap = missionNamespace getVariable ["ACME_CS_sessions", nil];
+    if (!isNil "_sessMap" && {(typeName _sessMap) isEqualTo "HASHMAP"}) then {_sess = count (keys _sessMap);};
+    _sessTxt = str _sess;
+    _sessCol = if (_sess > 0) then {_cLabel} else {_cGood};
+};
+_network pushBack (["Pending", _pend, if (_pend > 0) then {_cWarn} else {_cGood}, "Sessions", _sessTxt, _sessCol] call _pair);
+private _roster = uiNamespace getVariable ["ACME_CS_presenceTargets", []];
+if !(_roster isEqualType []) then {_roster = [];};
+_roster = _roster - [uiNamespace getVariable ["ACME_CS_presenceViewer", player]];
+private _rate = missionNamespace getVariable ["ACME_CS_presenceRate", 0.07];
+if (!(_rate isEqualType 0) || {!finite _rate}) then {_rate = 0.07;};
+_network pushBack (["Viewers", count _roster, if ((count _roster) > 0) then {_cGood} else {_cMute}, "Rate", format ["%1s", _rate toFixed 2], _cLabel] call _pair);
+
+_network pushBack (["COMPATIBILITY"] call _sect);
+private _missing = missionNamespace getVariable ["ACME_compatMissing", []];
+if !(_missing isEqualType []) then {_missing = [];};
+_network pushBack (["Issues", count _missing, if (_missing isEqualTo []) then {_cGood} else {_cBad}, "Checked", if (missionNamespace getVariable ["ACME_compatChecked", false]) then {"yes"} else {"no"}, if (missionNamespace getVariable ["ACME_compatChecked", false]) then {_cGood} else {_cWarn}] call _pair);
+{
+    _network pushBack format ["<t color='%1'>%2</t>", _cBad, [_x] call _safe];
+} forEach (_missing select [0, (count _missing) min 8]);
+if ((count _missing) > 8) then {_network pushBack format ["<t color='%1'>+%2 more compatibility issues</t>", _cWarn, (count _missing) - 8];};
+
 
 if (isNull _patient) exitWith {
     _left pushBack (["Patient", "none", _cWarn] call _one);
-    _ctrlL ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _scale, _left joinString "<br/>"];
-    _ctrlR ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _scale, _right joinString "<br/>"];
+    call _renderAll;
 };
 
 // Core vitals.
@@ -274,7 +458,7 @@ _left pushBack (["PTX", _ptx, if (_ptx > 0) then {_cWarn} else {_cGood}, "TPTX",
 _left pushBack (["Hemo", format ["%1 / %2L", _hemo, _hemoFluid toFixed 2], if (_hemo > 0 || {_hemoFluid > 0.3}) then {_cWarn} else {_cGood}, "Seal", [_seal] call _yn, if (_seal) then {_cGood} else {_cMute}] call _pair);
 _left pushBack (["Thora", format ["L:%1 R:%2", _thoraL, _thoraR], if (_tubeL || {_tubeR} || {_closedL} || {_closedR} || {_openL} || {_openR}) then {_cGood} else {_cMute}, "Support", format ["BVM:%1 V:%2", if (_bvm) then {"Y"} else {"-"}, if (_vent) then {"Y"} else {"-"}], if (_bvm || {_vent}) then {_cGood} else {_cMute}] call _pair);
 
-// Neuro/TBI occupies main page because screenshots need to explain consciousness and ICP-related arrest.
+// Neuro/TBI explains consciousness and ICP-related arrest on the same overlay.
 private _tbi = _patient getVariable ["ACME_tbi_State", createHashMap];
 private _icp = _tbi getOrDefault ["icp", 0];
 private _cpp = _map - _icp;
@@ -404,7 +588,7 @@ _right pushBack (["FLUIDS / INFUSIONS"] call _sect);
 if (_fluidRows isEqualTo []) then {
     _right pushBack (["Bags", 0, _cGood, "Pressor", _pressor toFixed 2, if (_pressor > 0) then {_cGood} else {_cMute}] call _pair);
 } else {
-    // Every active bag stays on the clinical screenshot. Font fitting below handles unusually busy patients.
+    // Every active bag retains the common readable font; the measured block grows with wrapped rows.
     for "_i" from 0 to ((count _fluidRows) - 1) do {
         (_fluidRows select _i) params ["_what", "_where", "_rem", "_rate"];
         private _tail = if (_rate >= 0) then {format ["%1mL/%2g", _rem toFixed 0, round _rate]} else {format ["%1mL", _rem toFixed 0]};
@@ -428,14 +612,6 @@ if (_cbrnExp || {_cbrnCont} || {_cbrnAir > 0} || {_cbrnLung > 0}) then {
     _right pushBack (["CBRN", format ["E:%1 C:%2", if (_cbrnExp) then {"Y"} else {"-"}, if (_cbrnCont) then {"Y"} else {"-"}], _cWarn, "Air/Lung", format ["%1/%2", _cbrnAir toFixed 1, _cbrnLung toFixed 1], _cWarn] call _pair);
 };
 
-private _render = {
-    params ["_s"];
-    _ctrlL ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _s, _left joinString "<br/>"];
-    _ctrlR ctrlSetStructuredText parseText format ["<t size='%1' font='EtelkaMonospacePro'>%2</t>", _s, _right joinString "<br/>"];
-};
-[_scale] call _render;
-private _need = (ctrlTextHeight _ctrlL) max (ctrlTextHeight _ctrlR);
-if (_need > _h) then {
-    private _fit = ((_scale * (((_h * 0.985) / _need) min 1)) max 0.34) min _scale;
-    [_fit] call _render;
-};
+
+
+call _renderAll;

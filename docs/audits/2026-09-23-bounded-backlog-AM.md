@@ -1,0 +1,11 @@
+# Bounded AM: Body Map click ownership and interaction locks
+
+Parent: `8df66dfb5f9701c960bf352ba1f41d16dcd77fc8` (AK-AL).
+
+The site-click handler validated the old control's patient/access, then wrote the shared site and could dispatch a flush before checking whether this was still the active Body Map. A queued click during a push, tag edit, layout transition, or after a route/display change could therefore mutate selection or flush while current controls were meant to be blocked. BeginInjection's later guard did not protect the earlier site write or separate flush branch.
+
+Only skSiteClick changes runtime. It rejects null controls/parents, a replaced display, unregistered/retired workspace generations, a non-body page, tag editing, injection/carousel locks, an unsettled layout, and an icon whose vascular/IM route no longer matches. These checks precede the existing access query and every shared write/delegate. Current exact IV/IO checks, IM staging and separate flush dispatch are unchanged. The existing CloseEpoch and LayoutBusyUntil are reused. No new state, timer, handler, network operation, patient-life restriction, medication formula or inventory algorithm is added.
+
+Thirty-one new cases execute the entire click function with actual staging/confirmation or flush/worker paths and explicit engine substitutes. Original runtime: 26 failing cases and 5 passing controls. Two failing cases specifically exercise invalid control/parent handling; the others expose forbidden writes or dispatch. Candidate: all 31 pass. The suite includes queued flush events during an actual normal push, current IV/IO handoffs at the layout deadline, and IM without vascular access. Existing click/flush fixtures now explicitly supply their already-injected Body Map state and current-display lookup; no existing assertion is weakened.
+
+No original H entry is closed by AM. Live input scheduling, actual control destruction, same-display control reuse after reinitialization, provider changes within a workspace, same-context round trips, malformed target payloads, direct calls bypassing skSiteClick, and real inventory/network effects remain unverified. This does not certify all stale UI events or complete multiplayer correctness. No stable-release approval.

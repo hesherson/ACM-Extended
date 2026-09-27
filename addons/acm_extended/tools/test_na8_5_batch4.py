@@ -179,9 +179,9 @@ class ThoracostomySource(unittest.TestCase):
         self.assertNotIn('Thoracostomy_insertChestTube',s);self.assertNotIn('thoraPassiveDrain',s)
         self.assertNotIn('ACME_thora_tube_%1',s);self.assertIn('\"thoraSeal\"',s);self.assertNotIn('ACM_breathing_fnc_applyChestSeal',s)
     def test_seal_consumed_and_verified(self):
-        s=src('thoraMouseDown');self.assertIn('_medS removeItem "ACM_ChestSeal"',s);self.assertIn('>= _before) exitWith',s)
+        s=src('thoraMouseDown');self.assertIn('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',s);self.assertIn('if (_receipt isEqualTo []) exitWith',s)
     def test_repeat_dressing_checks_precede_consumption(self):
-        s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');self.assertLess(s.index('ACME_thora_sealed_%1',a),s.index('_medS removeItem',a))
+        s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');self.assertLess(s.index('ACME_thora_sealed_%1',a),s.index('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',a))
     def test_hover_selects_shared_slot(self):
         # Retain the historical identity, not the retired shared-slot alias. The current
         # separate tube/seal rows must never claim each other's held-tool shadow.

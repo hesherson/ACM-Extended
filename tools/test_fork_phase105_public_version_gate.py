@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 105: keep public/runtime/debug version identity set to v1.2.2."""
+"""Phase 105: keep public/runtime/debug version identity set to v1.2.4."""
 from pathlib import Path
 import re
 
@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CFG = ROOT / 'addons/acm_extended/config.cpp'
 START = ROOT / 'addons/acm_extended/functions/fn_initForkStartupRuntime.sqf'
 DEBUG = [ROOT / 'addons/acm_extended/functions' / name for name in (
-    'fn_debugMenuClinical.sqf', 'fn_debugMenuNetwork.sqf'
+    'fn_debugMenuClinical.sqf',
 )]
-EXPECTED = '1.2.2'
+EXPECTED = '1.2.4'
 
 
 def main() -> None:
@@ -21,7 +21,7 @@ def main() -> None:
     start = START.read_text(encoding='utf-8', errors='replace')
     assert 'getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version")' in start
     assert f'ACME_infusion_version = "{EXPECTED}"' in start
-    batch = re.search(r'ACME_buildBatch\s*=\s*"(B\d+)"\s*;', start)
+    batch = re.search(r'ACME_buildBatch\s*=\s*"([A-Za-z0-9._-]+)"\s*;', start)
     assert batch, 'internal build batch stamp missing or malformed'
 
     for page in DEBUG:

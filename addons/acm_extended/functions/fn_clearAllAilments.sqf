@@ -12,6 +12,20 @@ if (!alive _patient && {
     || {(_patient getVariable ["ACME_headElev_propVest", ""]) != ""}
 }) then {[_patient] call ACME_fnc_headElevDeathRelease;};
 [_patient, "begin", _preserveDeathInterventions] call ACME_fnc_clinicalReset;
+// Retire the exact casualty speed lease before a new procedure can acquire one.
+if ((_patient getVariable ["ACME_patientAnimSpeedToken", ""]) != "") then {_patient setAnimSpeedCoef 1;};
+_patient setVariable ["ACME_patientAnimSpeedToken", "", false];
+// B156 owned fall cleanup: retire only blast stance and obtundation ragdoll from this episode.
+if !((_patient getVariable ["ACME_blast_stanceToken", []]) isEqualTo []) then {
+    _patient setUnitPos "AUTO";
+};
+_patient setVariable ["ACME_blast_stanceToken", [], true];
+if (_patient getVariable ["ACME_obtunded_sprintRagdollActive", false]) then {
+    _patient setVariable ["ACME_obtunded_sprintRagdollActive", false, true];
+    if (!(_patient getVariable ["ACE_isUnconscious", false])) then {_patient setUnconscious false;};
+};
+_patient setVariable ["ACME_obtunded_sprintRagdollToken", [], true];
+// End B156 owned fall cleanup.
 // This function is intentionally a hard reset; normal death no longer routes through it.
 _patient setVariable ["ACME_NA2_resetTime", CBA_missionTime, true];
 _patient setVariable ["ACME_CS_blockedEffectEpoch", _patient getVariable ["ACME_CS_netEpoch", ""], true];
@@ -305,7 +319,13 @@ _patient setVariable ["ACME_vesicant_painApplied", nil, true];
 
 // shock, plus the circulation chemistry and state, which fn_circhandle rebuilds fresh.
 [_patient, createHashMap] call ACME_fnc_circStateCommit;
+_patient setVariable ["ACME_ca_coagBaseMult", 1, true];
 _patient setVariable ["ACME_ca_coagMult", 1, true];
+_patient setVariable ["ACME_coag_clotStrength", 1, true];
+_patient setVariable ["ACME_coag_dilutionSeverity", 0, true];
+_patient setVariable ["ACME_coag_extraMult", 1, true];
+_patient setVariable ["ACME_coag_lastBase", nil, false];
+_patient setVariable ["ACME_coag_lastPublished", nil, false];
 [_patient, 0, "clear", true, false] call ACME_fnc_calciumCreditCommit;
 {
     _patient setVariable [_x, nil, true];

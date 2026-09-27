@@ -22,7 +22,8 @@ def test_fbtk_is_rejected_on_io_before_inventory_is_consumed():
 def test_fbtk_full_boundary_yields_nominal_bag_size():
     s = read(CIRC / "fnc_TransfusionMenu_RemoveBag.sqf")
     assert 'ACME_fbtk_fullToleranceMl' in s
-    assert '_remainingVolume >= ((_volume - _fullTolerance) max 0)' in s
+    assert '_tol = (_tol max 0) min 5;' in s
+    assert '_remainingVolume >= ((_volume - _tol) max 0)' in s
     assert 'format ["ACM_FieldBloodTransfusionKit_%1", _volume]' in s
 
 

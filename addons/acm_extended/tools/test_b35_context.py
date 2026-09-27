@@ -126,8 +126,10 @@ class ContextSourceContracts(unittest.TestCase):
     def test_ppv_needs_actual_delivery_and_recent_active_bvm(self):
         s = source('ptxContext')
         for key in ('ACME_vent_connected', 'ACME_vent_driving', 'ACME_vent_pip',
-                    'ACM_breathing_BVM_provider', 'ACM_breathing_BVM_lastBreath'):
+                    'ACM_breathing_BVM_provider', 'ACME_bvm_lastBreathServer'):
             self.assertIn(key, s)
+        self.assertIn('serverTime - _lastBreath', s)
+        self.assertIn('_breathAge <= 12', s)
         self.assertIn('call ACME_fnc_ventEffectiveSettings', s)
         self.assertIn('alive _provider && {_breathAge >= 0} && {_breathAge <= 12}', s)
         for forbidden in ('ACE_isUnconscious', 'hasStableVitals', 'respirationRate', 'bloodPressure', 'ACME_vent_mode'):

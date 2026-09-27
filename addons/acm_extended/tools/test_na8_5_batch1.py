@@ -44,15 +44,27 @@ class QuietOutput(unittest.TestCase):
     def test_no_unapproved_rpt_emitters_in_shipped_sqf_or_callbacks(self):
         # B22 restores the pre-B20 quiet debug overlay. No shipped runtime SQF or config callback may
         # emit RPT traffic; diagnostic dumping/tracing was explicitly reverted with the tabbed overlay.
-        approved=set()
-        failures=[]
-        emitters=[]
+        # Later reliability work added a small, explicit set of event/error diagnostics.
+        # Keep the whitelist exact by file and emitter count so new runtime chatter still fails closed.
+        approved={
+            'functions/fn_chestSealOpen.sqf':1,
+            'functions/fn_compatCheck.sqf':2,
+            'functions/fn_debugDumpToClipboard.sqf':1,
+            'functions/fn_expansionRegisterRuntime.sqf':1,
+            'functions/fn_megacodeMenu.sqf':1,
+            'functions/fn_megacodeModuleInit.sqf':2,
+            'functions/fn_megacodeOpenPanel.sqf':2,
+            'functions/fn_megacodePanelLoad.sqf':2,
+            'functions/fn_providerStateReconcile.sqf':2,
+            'functions/fn_thoraOpen.sqf':1,
+            'functions/fn_transientStateReconcile.sqf':1,
+        }
+        emitters={}
         for p in source_files(R):
-            if logs(read_source(p, encoding='utf-8-sig'),p.suffix.lower() in {'.cpp','.hpp','.inc'}):
-                rel=str(p.relative_to(R)); emitters.append(rel)
-                if rel not in approved: failures.append(rel)
-        self.assertEqual(failures,[])
-        self.assertEqual(set(emitters),approved)
+            found=logs(read_source(p, encoding='utf-8-sig'),p.suffix.lower() in {'.cpp','.hpp','.inc'})
+            if found:
+                emitters[p.relative_to(R).as_posix()]=len(found)
+        self.assertEqual(emitters,approved)
     def test_scan_finds_quoted_config_callback(self):
         self.assertEqual(logs('onLoad = "diag_log \'message\';";',True),['diag_log'])
     def test_scan_ignores_comments_and_messages(self):
@@ -110,10 +122,13 @@ class DescriptorSource(unittest.TestCase):
         self.assertEqual(hits,[])
     def test_all_previous_consumer_surfaces_read_effective_checkbox(self):
         files=['medDescriptor','clinTerm','skinSigns','bleedStatusRelabel','tbiAssessPupils','medLog','bodyPartName',
-               'junctionalInflict','ivSiteRelabel','ivLogRelabel','updateEJTransfusionMenu','skSiteName',
+               'junctionalInflict','ivSiteRelabel','ivLogRelabel','skSiteName',
                'junctionalInjuryEntry','inspectForFracture','ivLogSite']
         for f in files:
             with self.subTest(f=f):self.assertIn('getVariable ["ACME_hc_descriptors", false]',read('functions/fn_'+f+'.sqf'))
+        # EJ is now a thin compatibility entry point; the hotspot renderer owns the live descriptor wording.
+        self.assertIn('ACME_fnc_updateTransfusionAccessHotspots',read('functions/fn_updateEJTransfusionMenu.sqf'))
+        self.assertIn('getVariable ["ACME_hc_descriptors", false]',read('functions/fn_updateTransfusionAccessHotspots.sqf'))
     def test_map_gate_precedes_cached_lookup(self):
         s=read('functions/fn_clinTerm.sqf')
         self.assertLess(s.index('getVariable ["ACME_hc_descriptors"'),s.index('getVariable ["ACME_clinTermMap"'))

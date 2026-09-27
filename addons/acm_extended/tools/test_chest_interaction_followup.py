@@ -12,19 +12,21 @@ def fn(name):
     return (ADDON / "functions" / f"fn_{name}.sqf").read_text(encoding="utf-8-sig")
 
 
-def test_patient_flip_cannot_dispatch_from_the_button_or_prep_state():
+def test_patient_flip_preempts_old_pose_then_uses_standard_medic4_sequence():
     request = fn("chestSealFlip")
     wait = fn("chestSealFlipTick")
     assert "call ACME_fnc_chestSealRoll" not in request
     assert wait.count("call ACME_fnc_chestSealRoll") == 1
+    assert '[_provider, "chestSealFlip", _patient] call ACME_fnc_rollProviderStart' in request
+    assert '[_provider, "chestSealFlip", _patient, true] call ACME_fnc_rollProviderStart' not in request
+    assert request.index('ACME_CS_ApplyAnimSerial') < request.index('call ACME_fnc_rollProviderStart')
+    assert request.index('call ACME_fnc_treatmentPoseStop') < request.index('call ACME_fnc_rollProviderStart')
     dispatch = wait.index("call ACME_fnc_chestSealRoll")
-    assert wait.index("(toLowerANSI animationState _provider) == _work") < dispatch
-    assert wait.index('(_pose param [3,-2]) >= 1') < dispatch
-    assert wait.index("_args set [9,diag_tickTime]") < dispatch
-    for guard in ("ACME_CS_SessionToken", "ACME_CS_FlipPendingToken",
-                  "ACME_rollProviderToken", '(_pose param [0,-2]) != _epoch',
-                  "diag_tickTime >= _deadline"):
-        assert guard in wait[:dispatch]
+    assert '_work == "ainvpknlmstpsnonwnondnon_medic4"' in wait[:dispatch]
+    assert '(toLowerANSI animationState _provider) == _work' in wait[:dispatch]
+    assert '[_patient,_side,false,_provider,false] call ACME_fnc_chestSealRoll;' in wait
+    assert '[_provider,"roll",_epoch] call ACME_fnc_treatmentPoseStop;' in wait
+    assert '[_provider,"roll",_epoch,true] call ACME_fnc_treatmentPoseStop;' not in wait
 
 
 def test_closing_a_panel_invalidates_pending_roll_before_restoration():
@@ -34,19 +36,25 @@ def test_closing_a_panel_invalidates_pending_roll_before_restoration():
 
 
 def test_both_burp_paths_check_patient_ownership_without_a_timer():
-    for name in ("chestSealBurp", "thoraAftercareLocal"):
-        source = fn(name)
+    traumatic = fn("chestSealBurp")
+    surgical = fn("thoraAftercareLocal")
+    assert 'if (!local _patient) exitWith' in traumatic
+    assert 'if (isNull _patient || {!local _patient}' in surgical
+    for source in (traumatic, surgical):
         gate = source.index("call ACME_fnc_chestSealBurpReady")
         assert gate < source.index("call ACME_fnc_ptxTreat")
         assert gate < source.index("call ACME_fnc_chestSealLogOnce")
-        assert gate < source.index('"chestSealBurpGesture"')
     gate = fn("chestSealBurpReady")
     assert "local _patient" in gate
     assert not any(t.kind == "ident" and t.value in ("serverTime", "CBA_missionTime", "diag_tickTime") for t in lex(gate))
     assert "ACME_CS_burpCooldown" not in gate
-    assert '_medic, 0] call ACME_fnc_chestSealLogOnce' in fn("chestSealBurp")
-    assert '_medic,0] call ACME_fnc_chestSealLogOnce' in fn("thoraAftercareLocal")
-    assert 'case "chestSealBurpGesture"' in fn("ownerDispatch")
+    assert '_medic, 0] call ACME_fnc_chestSealLogOnce' in traumatic
+    assert '_medic,0] call ACME_fnc_chestSealLogOnce' in surgical
+    # Burping never reuses the seal-placement medic3 theatre. Traumatic seal work stays in the
+    # persistent workspace; thoracostomy aftercare performs its owner-authoritative clinical transaction in place.
+    assert '"chestSealBurpGesture"' not in traumatic
+    assert '"chestSealBurpGesture"' not in surgical
+    assert 'case "chestSealBurpGesture"' not in fn("ownerDispatch")
 
 
 def test_seal_validation_still_allows_laying_the_corner_flat():

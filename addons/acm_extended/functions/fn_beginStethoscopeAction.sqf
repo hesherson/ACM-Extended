@@ -58,7 +58,7 @@ if (_isDialog && {isNull _scopeDisplay}) exitWith {
 };
 
 // The provider pose is presentation only and starts after the minigame exists.
-private _poseEpoch = [_medic, "stethoscope"] call ACME_fnc_treatmentPoseStart;
+private _poseEpoch = [_medic, "stethoscope", -1, _patient] call ACME_fnc_treatmentPoseStart;
 
 private _dialogKeyEH = -1;
 private _keyID = -1;

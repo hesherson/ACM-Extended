@@ -24,8 +24,12 @@ def test_chestseal_opens_on_frozen_medic4_to_workspace_handoff():
     acquire = read("addons/acm_extended/functions/fn_chestAccessVestAcquire.sqf")
     open_fn = read("addons/acm_extended/functions/fn_chestSealOpen.sqf")
     hold = read("addons/acm_extended/functions/fn_chestSealProviderHoldStart.sqf")
-    assert '{_ctx != "chestseal"}' in acquire
-    assert '_mode == "chestAccess" && {_stage >= 3}' in open_fn
+    assert 'if (_ctx != "chestseal") then' in acquire
+    # After casualty preparation is owner-confirmed, normal entry waits for the exact frozen chestAccess hold.
+    # Presentation has a bounded fail-open so a missed animation sample can never strand the clinical panel.
+    assert 'private _stage = _pose param [3,-2];' in open_fn
+    assert 'if (_mode == "chestAccess" && {_stage < 3} && {CBA_missionTime < _presentationUntil}) exitWith {};' in open_fn
+    assert '_presentationUntil = CBA_missionTime + 4.5;' in open_fn
     assert open_fn.index("ACME_fnc_chestSealProviderHoldStart") < open_fn.index('"ACME_ChestSeal_Dialog"')
     assert '[_medic, "chestAccess", _accessEpoch, true] call ACME_fnc_treatmentPoseStop' in hold
 
@@ -38,22 +42,47 @@ def test_workspace_is_hands_on_chest_without_medic3():
 
 def test_medic3_is_reserved_for_actual_seal_placement():
     pose = read("addons/acm_extended/functions/fn_treatmentPoseStart.sqf")
+    init = read("addons/acm_extended/functions/fn_initChestSealProcedureRuntime.sqf")
     apply = read("addons/acm_extended/functions/fn_chestSealApply.sqf")
     burp = read("addons/acm_extended/functions/fn_chestSealBurp.sqf")
+    thora = read("addons/acm_extended/functions/fn_thoraAftercareLocal.sqf")
     dispatch = read("addons/acm_extended/functions/fn_ownerDispatch.sqf")
-    assert 'case "chestSeal": {"AinvPknlMstpSnonWrflDnon_medic3"};' in pose
-    assert '[_medic,"chestSeal",2.0,_patient] call ACME_fnc_treatmentPoseStart' in apply
+    assert 'case "chestSeal": {"AinvPknlMstpSnonWnonDnon_medic3"};' in pose
+    assert 'ACME_CS_applyAnimSeconds = 2.65;' in init
+    assert '[_medic, "chestSeal", _duration, _patient] call ACME_fnc_treatmentPoseStart' in apply
+    assert '"AinvPknlMstpSnonWnonDnon_medic3", 1] call ACME_fnc_doAnim' in apply
+    assert '}, [_medic, _patient, _placeEpoch, _serial], _duration] call CBA_fnc_waitAndExecute;' in apply
     assert "ACME_fnc_chestSealProviderHoldStart" in apply
     assert "chestSealBurpGesture" not in burp
+    assert "chestSealBurpGesture" not in thora
     assert 'case "chestSealBurpGesture"' not in dispatch
+    ncd = read("addons/acm_extended/functions/fn_chestSealApplyNCD.sqf")
+    assert '[_medic,"ncdSeat",2.0] call ACME_fnc_treatmentGesture' in ncd
+    assert 'call ACME_fnc_treatmentGesture' not in apply
+    assert '[_medic,"ncdSeat"' not in apply
+    assert '[_medic, "ncdSeat"' not in apply
 
 def test_flip_never_turns_provider_failure_into_patient_noop():
+    # Provider acquisition failure now aborts the physical Flip instead of bypassing medic4.
+    # The workspace is restored and the user can retry without moving the casualty out of sequence.
     flip = read("addons/acm_extended/functions/fn_chestSealFlip.sqf")
     assert "if (!_started) exitWith" in flip
-    fallback = flip.split("if (!_started) exitWith", 1)[1]
-    assert '[_patient,_newSide,false,_provider] call ACME_fnc_chestSealRoll' in fallback
+    fallback = flip.split("if (!_started) exitWith", 1)[1].split("// Patient motion is dispatched by chestSealFlipTick",1)[0]
+    assert 'call ACME_fnc_chestSealRoll' not in fallback
+    assert '["ACME_CS_FlipPendingToken", ""]' in fallback
+    assert '["ACME_CS_FlipLockedUntil", 0]' in fallback
+    assert '["ACME_CS_FlipTarget", ""]' in fallback
     assert "ACME_fnc_chestSealProviderHoldStart" in fallback
+    assert 'ACME_DP_PauseTreatmentClass' in fallback
+    assert 'ACME_DP_Paused", false' in fallback
     assert "ACME_CS_ApplyGestureUntil" in flip
+    assert 'if ((uiNamespace getVariable ["ACME_CS_ApplyGestureUntil",0]) > _now) exitWith {};' not in flip
+    tick = read("addons/acm_extended/functions/fn_chestSealFlipTick.sqf")
+    assert '[_provider, "chestSealFlip", _patient] call ACME_fnc_rollProviderStart' in flip
+    assert '[_provider, "chestSealFlip", _patient, true] call ACME_fnc_rollProviderStart' not in flip
+    assert 'call ACME_fnc_chestSealRoll' not in flip
+    assert '[_patient,_side,false,_provider,false] call ACME_fnc_chestSealRoll;' in tick
+    assert '_work == "ainvpknlmstpsnonwnondnon_medic4"' in tick
 
 def test_workspace_handoff_is_valid_empty_hands_source():
     prep = read("addons/acm_extended/functions/fn_medicAnimationPrep.sqf")

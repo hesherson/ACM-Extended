@@ -29,34 +29,60 @@ private _actualBeforeElevate = [_patient, _patient getVariable ["ACME_CS_facing"
 private _needFrontFirst = !_afterProneRoll && {_actualBeforeElevate != "front"};
 
 if (_needFrontFirst) exitWith {
-    private _delay = 0.08;
+    // This pre-roll belongs to the still-unstarted placement generation. Use the roll's real ownership token rather
+    // than sleeping for a nominal animation duration: the next Semi-Fowler frame begins as soon as the casualty roll
+    // actually retires, with no dead-air delay and no race against a late roll callback.
+    private _startPoseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
         if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
             [_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;
         };
-
         [_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;
 
-        private _patientRoll = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
-        if !(_patientRoll isEqualType 0 && {finite _patientRoll}) then {_patientRoll = 1.85;};
-        private _providerRoll = missionNamespace getVariable ["ACME_rollProviderDuration",2.2];
-        if !(_providerRoll isEqualType 0 && {finite _providerRoll}) then {_providerRoll = 2.2;};
-        _delay = (_patientRoll + 0.10) max (_providerRoll + 0.25);
+        private _rollToken = _patient getVariable ["ACME_CS_rollToken", ""];
+        if (_rollToken != "") then {
+            [{
+                params ["_p","_rollToken","_startPoseToken"];
+                if (isNull _p || {!local _p} || {!alive _p}
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {true};
+                (_p getVariable ["ACME_CS_rollToken", ""]) != _rollToken
+            }, {
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
+                if (isNull _p || {!local _p} || {!alive _p}
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                // A different non-empty token means another/newer roll superseded this normalization. Do not let the
+                // old Semi-Fowler continuation steal that patient's animation generation.
+                if ((_p getVariable ["ACME_CS_rollToken", ""]) != "") exitWith {};
+                // Re-enter through the normal owner-side eligibility gate. The completed roll itself owns the
+                // physical side; this continuation must not write patient state before canStart revalidates.
+                [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
+            }, [_patient,_rollToken,_startPoseToken,_medic,_bodyPart,_auto], 4.5, {
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
+                if (isNull _p || {!local _p} || {!alive _p}
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                private _currentRoll = _p getVariable ["ACME_CS_rollToken", ""];
+                if (_currentRoll != "" && {_currentRoll != _rollToken}) exitWith {};
+                // Fail closed to the stable supine side. Only the exact wedged roll this start created may be
+                // cancelled; a newer roll generation is never touched.
+                [_p,"front"] call ACME_fnc_patientRollCancel;
+                _p setVariable ["ACME_CS_facing","front",true];
+                [{_this call ACME_fnc_headElevateStart;}, [_m,_p,_body,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+            }] call CBA_fnc_waitUntilAndExecute;
+        } else {
+            // Roll request was denied by an older patient-animation lease. Stabilize to face-up and retry on the
+            // next scheduling slice instead of waiting several seconds for a transition that never started.
+            private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
+            _patient setVariable ["ACME_CS_facing","front",true];
+            ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
+            [{_this call ACME_fnc_headElevateStart;}, [_medic,_patient,_bodyPart,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+        };
     } else {
-        // A stale/non-rollable downed state must still never feed the Semi-Fowler grab from the stomach.
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
         _patient setVariable ["ACME_CS_facing","front",true];
         ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
+        [{_this call ACME_fnc_headElevateStart;}, [_medic,_patient,_bodyPart,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
     };
-
-    [{
-        params ["_m","_p","_body","_auto"];
-        if (!isNull _p && {local _p} && {alive _p}) then {
-            _p setVariable ["ACME_CS_facing","front",true];
-            [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
-        };
-    }, [_medic,_patient,_bodyPart,_auto], _delay] call CBA_fnc_waitAndExecute;
 };
 
 // At this point the patient is definitively anterior-up. All Semi-Fowler patient/provider animations start from it.
@@ -72,7 +98,21 @@ if (_patient getVariable ["ACME_headElev_vestRemoved", false]) exitWith {};
 // back.
 private _hasBag = ((backpack _patient) isNotEqualTo "");
 private _vestClass = vest _patient;
-private _manual = !_hasBag && {_vestClass isEqualTo ""};
+
+// Only an actual armored carrier is accepted as passive Semi-Fowler support. An unarmored chest rig/vest does not
+// physically prop the casualty and therefore uses the same active provider-held mode as no vest at all.
+private _hasCarrier = false;
+if (_vestClass != "") then {
+    private _vestInfo = configFile >> "CfgWeapons" >> _vestClass >> "ItemInfo";
+    private _legacyArmor = getNumber (_vestInfo >> "armor");
+    private _hp = _vestInfo >> "HitpointsProtectionInfo";
+    private _chestArmor = getNumber (_hp >> "Chest" >> "armor");
+    private _diaArmor = getNumber (_hp >> "Diaphragm" >> "armor");
+    private _abdArmor = getNumber (_hp >> "Abdomen" >> "armor");
+    private _carrierArmor = (((_legacyArmor max _chestArmor) max _diaArmor) max _abdArmor);
+    _hasCarrier = _carrierArmor > 0;
+};
+private _manual = !_hasBag && {!_hasCarrier};
 if (_manual && {_auto || {isNull _medic} || {!alive _medic}
     || {_medic getVariable ["ACE_isUnconscious", false]}
     || {([_medic, _patient] call ACME_fnc_patientInteractionDistance) > (missionNamespace getVariable ["ace_medical_gui_maxDistance", 3])
@@ -85,6 +125,10 @@ private _poseToken = format ["%1:%2:%3", clientOwner, CBA_missionTime, _serial];
 _patient setVariable ["ACME_headElev_poseToken", _poseToken, true];
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 _patient setVariable ["ACME_headElevated", true, true];
+_patient setVariable ["ACME_headElev_visualActive", false, true];
+// Unsupported/manual Semi-Fowler is an active maneuver, not a passive posture. Keep this origin flag even if a
+// competing intervention clears the provider hold first; that episode may never auto-resume without a new action.
+_patient setVariable ["ACME_headElev_manualUnsupported", _manual, true];
 _patient setVariable ["ACME_headElev_hold", [[], [_medic, _poseToken, CBA_missionTime]] select _manual, true];
 
 // A backpack or vehicle seat needs no removed vest and no refund record.
@@ -103,29 +147,7 @@ if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}) then {
             _patient setVariable ["ACME_headElev_propVestItems", [], true];
         };
     };
-    // place it after the lift step, so the sequence reads strip, lift, wedge. it is guarded against an early lower or
-    // death.
-    [{
-        params ["_patient", "_vestClass", "_poseToken"];
-        if (isNull _patient || {!local _patient} || {!alive _patient}
-            || {!(_patient getVariable ["ACME_headElevated", false])}
-            || {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}
-            || {!(_patient getVariable ["ACME_headElev_vestRemoved", false])}
-            || {!isNull objectParent _patient}) exitWith {};
-        // render the carrier as a createSimpleObject of the world model of the vest: a static, non-simulated visual that
-        // renders the instant it is created and is pinned by the attachment. that is unlike the old GroundWeaponHolder
-        // plus cargo, whose draped-vest cargo frequently never spawned a visible model and froze invisible. it falls back
-        // to a weapon holder only if the vest exposes no usable model.
-        private _model = getText (configFile >> "CfgWeapons" >> _vestClass >> "model");
-        private _prop = objNull;
-        if (_model != "") then { _prop = createSimpleObject [_model, [0,0,0], false]; };
-        if (isNull _prop) then {
-            _prop = createVehicle ["GroundWeaponHolder", getPosATL _patient, [], 0, "CAN_COLLIDE"];
-            _prop addItemCargoGlobal [_vestClass, 1];
-        };
-        _patient setVariable ["ACME_headElev_propObj", _prop, true];
-        [_patient] call ACME_fnc_headElevPropApply;  // it seats and orients behind the upper back, with no sim toggling needed.
-    }, [_patient, _vestClass, _poseToken], (missionNamespace getVariable ["ACME_headElev_standTime", 0.8]) + 0.4] call CBA_fnc_waitAndExecute;
+
 };
 
 if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}
@@ -135,13 +157,23 @@ if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}
 };
 [_patient] call ACME_fnc_headElevWatch;
 
-// B71 Semi-Fowler: preserve the support-surface reference only for prop bookkeeping.  Do not attach or setPos the
-// casualty. The patient and provider start their requested animations in tandem on this frame.
+// Patient and provider begin the authored Semi-Fowler choreography together. Earlier builds inserted a
+// provider-ready network handshake here; that produced visible dead time and could leave the logical posture set
+// while the patient never moved if the provider episode was interrupted. Patient motion is patient-owned and starts
+// immediately. Provider theatre is presentation-only and can be cancelled/preempted independently.
 _patient setVariable ["ACME_headElev_basePosASL", getPosASL _patient, true];
 _patient setVariable ["ACME_headElev_baseDir", getDir _patient, true];
 _patient setVariable ["ACME_headElev_baseAnim", animationState _patient, true];
+_patient setVariable ["ACME_headElev_pendingLift", [], true];
+_patient setVariable ["ACME_headElev_liftRequestAt", -1, false];
 missionNamespace setVariable ["ACME_headElev_TunePatient", _patient];
-[_patient] call ACME_fnc_headElevApplyTilt;
+
+private _tiltAccepted = [_patient] call ACME_fnc_headElevApplyTilt;
+if !(_tiltAccepted isEqualTo true) exitWith {
+    // The treatment timer completed but another patient animation acquired the casualty in the handoff frame.
+    // Roll the logical placement back immediately rather than leaving Semi-Fowler "on" with no visible posture.
+    [objNull, _patient, true] call ACME_fnc_headElevateStop;
+};
 
 if (_manual) then {
     [_medic, "headElevHoldStart", [_medic, _patient, _bodyPart, _poseToken]] call ACME_fnc_ownerDispatch;

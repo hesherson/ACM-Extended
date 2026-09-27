@@ -46,6 +46,11 @@ def code(text):
     }.items():text=text.replace(old,new)
     # Only finite numeric inputs are supplied in this module.
     text=re.sub(r'\bfinite (_\w+)',r'(\1 call _finite)',text)
+    text=text.replace('finite (_x select 1)','((_x select 1) call _finite)')
+    # This VM retains an explicitly nil namespace slot after setVariable. Arma
+    # removes it; preserve getVariable's default after a source lease release.
+    text=text.replace('_holder getVariable ["ACME_vialLease",[objNull,"",0]]',
+                      '([_holder,"ACME_vialLease",[objNull,"",0]] call _namespaceDefault)')
     text=text.replace('_holder removeItem _consumeClass;', '[_holder,_consumeClass] call _removeItem;')
     text=text.replace('_holder addItemCargoGlobal [_consumeClass, -1];','[_holder,_consumeClass] call _removeItem;')
     text=re.sub(r'configFile >> "ACM_Medication" >> "Concentration" >> (_\w+)',r'\1',text)
@@ -69,6 +74,8 @@ def setup():
         private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
         private _mapDefault={params ["_map","_args"]; _args params ["_key","_default"];
             if (_key in _map) then {_map get _key} else {_default}};
+        private _namespaceDefault={params ["_space","_key","_default"]; private _value=_space getVariable _key;
+            if (isNil "_value") then {_default} else {_value}};
         private _configNumber={params ["_med","_field"]; if (_med=="Ketamine") then {if (_field=="volume") then {10} else {50}} else {0}};
         private _removeItem={params ["_holder","_item"]; _inventoryCounts set [_item,(_inventoryCounts get _item)-1]; _inventoryDebits=_inventoryDebits+1;};
         ACME_fnc_vialCapacity={[_this select 0,"volume"] call _configNumber};
@@ -77,7 +84,7 @@ def setup():
         ACME_fnc_ownerDispatch={_events pushBack _this;};
         _patient setVariable ["ACME_infusion_openVials",createHashMap];
         _medic setVariable ["ACME_infusion_openVials",createHashMap];
-    ''' + ''.join(function(n) for n in ('vialClass','infusionVialVolume','vialTake','vialRefund','vialLeaseEnsure','vialLeaseResult','vialLeaseCommit','vialLeaseRelease'))
+    ''' + ''.join(function(n) for n in ('vialClass','infusionVialVolume','vialTake','vialRefund','vialRefundLocal','vialLeaseEnsure','vialLeaseResult','vialLeaseCommit','vialLeaseRelease'))
 
 
 @pytest.mark.parametrize('refresh',[0.0,0.016,0.2,1.49])

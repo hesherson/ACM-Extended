@@ -128,7 +128,7 @@ def test_repeat_finger_sweep_precedes_disposable_kit_consumption():
         'if (_held in ["seal", "tube"]) exitWith {', 1
     )[0]
     assert finger.index('if (_tract == "finger") exitWith {') < finger.index(
-        "call ace_medical_treatment_fnc_useItem"
+        "call ACME_fnc_treatmentSupplyTake"
     )
     assert '"sweep"' in finger and "ACME_fnc_ownerDispatch" in finger
     for path in ["functions/fn_thoraMouseDown.sqf", "functions/fn_thoraSelectTool.sqf"]:

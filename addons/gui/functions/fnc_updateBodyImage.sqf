@@ -82,7 +82,13 @@ private _hasDetailedSeal = (_sealRows isEqualType []) && {
         _x isEqualType [] && {count _x >= 5} && {(_x select 4) isEqualTo true}
     }) >= 0
 };
-private _hasChestSeal = (_target getVariable [QEGVAR(breathing,ChestSeal_State), false]) || {_hasDetailedSeal};
+// Surgical seals are stored per side; they deliberately do not mark every chest wound sealed.
+// A secured chest tube also uses the sealed flag, so it must retain its own tube artwork.
+private _hasSurgicalSeal = (["left", "right"] findIf {
+    (_target getVariable [format ["ACME_thora_sealed_%1", _x], false])
+    && {!(_target getVariable [format ["ACME_thora_tube_%1", _x], false])}
+}) >= 0;
+private _hasChestSeal = (_target getVariable [QEGVAR(breathing,ChestSeal_State), false]) || {_hasDetailedSeal} || {_hasSurgicalSeal};
 _ctrlChestSeal ctrlShow _hasChestSeal;
 
 if (HAS_PULSEOX(_target,0)) then {

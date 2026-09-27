@@ -73,7 +73,12 @@ private _fnc_generateWounds = {
     [_targetPart,_mechanism,_damageAmount];
 };
 
-private _patient = GVAR(TrainingCasualtyGroup) createUnit ["B_Survivor_F", position _location, [], 0, "FORM"];
+private _patient = GVAR(TrainingCasualtyGroup) createUnit [QGVAR(TrainingPatient), position _location, [], 0, "FORM"];
+
+// The unit class supplies its carrier during creation. Mark the legacy armor
+// watcher complete before any treatment can remove the carrier intentionally.
+_patient setVariable ["ACME_acmSpawnerPlateCarrierDone", true, true];
+_patient setVariable ["ACME_patientSpawnerVestClass", vest _patient, true];
 
 _patient disableAI "MOVE";
 

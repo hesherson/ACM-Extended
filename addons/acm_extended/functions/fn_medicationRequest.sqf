@@ -28,6 +28,9 @@ private _iv = _operation == "flush" || {(_doses findIf {_x select 2}) >= 0};
 private _identity = if (_iv) then {[_patient,_bodyPart,_site] call ACME_fnc_medicationLineIdentity} else {[]};
 if (_iv && {_identity isEqualTo []}) exitWith {call _fail};
 if (_iv) then {_site = _identity select 0;};
+// Never inject medication into an access while blood is actively traversing that exact line.
+// Empty bags, stopped lines and blood on another access do not block the request.
+if (_operation == "administer" && {_iv} && {[_patient,_bodyPart,_site] call ACME_fnc_medicationLineBloodBusy}) exitWith {call _fail};
 private _serial = (missionNamespace getVariable ["ACME_medicationRequestSerial",0]) + 1;
 missionNamespace setVariable ["ACME_medicationRequestSerial",_serial];
 private _id = format ["medicationB14:%1:%2:%3:%4",netId _medic,clientOwner,diag_tickTime,_serial];

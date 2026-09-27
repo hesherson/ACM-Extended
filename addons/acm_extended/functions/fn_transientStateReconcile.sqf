@@ -111,10 +111,46 @@ if (["ACME_reconcileInvalidHangAt", _hangInvalid, 2] call _debouncedInvalid) the
     };
 };
 
-// Direct Pressure markers.
+// Direct Pressure claims and clinical markers. Claims are the atomic site reservation; the marker may disappear
+// temporarily while that provider yields to CPR/BVM/another treatment and therefore must not be treated as the claim.
 {
     private _part = _x;
     private _key = format ["ACME_DP_press_%1", _part];
+    private _claimKey = format ["ACME_DP_claim_%1", _part];
+    private _claim = _patient getVariable [_claimKey, []];
+    private _claimMedic = _claim param [0, objNull, [objNull]];
+    private _claimEpoch = _claim param [2, -1, [0]];
+    private _claimOwner = _claim param [3, -1, [0]];
+    private _claimAt = _claim param [4, -1, [0]];
+    private _claimActive = !isNull _claimMedic
+        && {_claimMedic getVariable ["ACME_DP_Active", false]}
+        && {(_claimMedic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
+        && {toLowerANSI (_claimMedic getVariable ["ACME_DP_Part", ""]) == _part};
+    private _claimPending = !isNull _claimMedic && {_claimAt >= 0}
+        && {(_netNow - _claimAt) <= 3}
+        && {_claimOwner == owner _claimMedic};
+    private _claimInvalid = !(_claim isEqualTo []) && {
+        !(_claim isEqualType [] && {count _claim >= 5})
+        || {isNull _claimMedic}
+        || {!alive _claimMedic}
+        || {_claimMedic getVariable ["ACE_isUnconscious", false]}
+        || {_claimEpoch != ([_patient] call ACME_fnc_clinicalEpoch)}
+        || {!(_claimActive || {_claimPending})}
+    };
+    if ([format ["ACME_reconcileInvalidDPClaim_%1", _part], _claimInvalid, 2] call _debouncedInvalid) then {
+        _patient setVariable [_claimKey, [], true];
+        if ((_patient getVariable [_key, objNull]) isEqualTo _claimMedic) then {
+            _patient setVariable [_key, objNull, true];
+        };
+        if ((_patient getVariable ["ACME_DP_TorsoMedic", objNull]) isEqualTo _claimMedic) then {
+            _patient setVariable ["ACME_DP_TorsoMedic", objNull, true];
+        };
+        if ((_patient getVariable ["ACME_DP_LimbMedic", objNull]) isEqualTo _claimMedic) then {
+            _patient setVariable ["ACME_DP_LimbMedic", objNull, true];
+        };
+        format ["Direct Pressure claim %1", _part] call _mark;
+    };
+
     private _medic = _patient getVariable [_key, objNull];
     private _invalid = !isNull _medic && {
         !alive _medic

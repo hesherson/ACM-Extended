@@ -22,7 +22,7 @@ private _base = 84010 + 3 * (([10,5,3,1] find _size) max 0);
 (_display displayCtrl 84005) ctrlEnable _infusion;
 (_display displayCtrl 84006) ctrlShow false;
 // B69: Body Map is a dedicated administration page. Preparation sources return only with Draw Syringe.
-(_display displayCtrl 84007) ctrlShow (!_infusion && {!_body});
+(_display displayCtrl 84007) ctrlShow (!_body);
 (_display displayCtrl 84008) ctrlShow (!_body);
 (_display displayCtrl 84129) ctrlShow (!_body);
 (_display displayCtrl 84131) ctrlShow (!_infusion && {!_body});

@@ -81,7 +81,7 @@ def assert_release_identity(root: Path = ROOT) -> None:
     fallbacks = re.findall(r'ACME_infusion_version\s*=\s*"([^"]+)"', startup)
     assert fallbacks == [version], (version, fallbacks)
     batches = re.findall(r'ACME_buildBatch\s*=\s*"([^"]+)"', startup)
-    assert len(batches) == 1 and re.fullmatch(r"B[0-9]+(?:[-+][A-Za-z0-9.-]+)?", batches[0]), batches
+    assert len(batches) == 1 and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", batches[0]), batches
 
 
 def switch_case_body(text: str, name: str) -> str:

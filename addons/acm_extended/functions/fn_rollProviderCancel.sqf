@@ -26,7 +26,7 @@ _medic setVariable ["ACME_rollProviderSource", ""];
 _medic setVariable ["ACME_rollProviderStarted", -1];
 
 if (_isRollPose && {_epoch >= 0}) then {
-    [_medic, "roll", _epoch] call ACME_fnc_treatmentPoseStop;
+    [_medic, "roll", _epoch, true] call ACME_fnc_treatmentPoseStop;
 };
 
 // The regular pose stop blends out through the authored graph. A user-requested cancel is different: cancel it

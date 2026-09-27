@@ -19,9 +19,25 @@ private _now = CBA_missionTime;
         };
     };
     private _gone = isNull _patient || {_deleted};
+    // An automatically recovered vehicle-sourced device returns to that exact cargo.
+    // Explicit removal still transfers custody to the provider who removes it.
+    private _origin = _r getOrDefault ["supplyOrigin", []];
+    private _originVehicle = _origin param [1, objNull];
+    if (_phase == "attached" && {_gone} && {!isNull _originVehicle}) then {
+        _originVehicle addItemCargoGlobal ["ACME_Ventilator", 1];
+        {_originVehicle setVariable [_x select 0, _x select 1, true];} forEach (_r get "settings");
+        _r set ["phase", "finalizing"];
+        _phase = "finalizing";
+    };
     if (_phase == "attached" && {_gone}) then {
         private _supplier = _r getOrDefault ["supplier", objNull];
         private _uid = _r getOrDefault ["supplierUID", ""];
+        // A deleted AI donor has no entity or UID to receive the item. Keep the original
+        // origin record, but recover through the captured operator near the last device position.
+        if (isNull _supplier && {_uid == ""}) then {
+            _supplier = _r getOrDefault ["recoveryOperator", objNull];
+            _uid = _r getOrDefault ["recoveryOperatorUID", ""];
+        };
         if ((isNull _supplier || {!alive _supplier} || {_uid != "" && {getPlayerUID _supplier != _uid}}) && {_uid != ""}) then {
             if (_now >= (_r getOrDefault ["nextResolve", 0])) then {
                 _r set ["nextResolve", _now + 2];

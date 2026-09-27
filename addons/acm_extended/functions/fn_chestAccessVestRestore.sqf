@@ -29,14 +29,21 @@ if (!_force) then {
         } else {
             private _workspaceBusy = (_patient getVariable ["ACME_CS_ProcedureActive", false])
                 || {_patient getVariable ["ACME_Thora_ChestAccessActive", false]};
-            if (_workspaceBusy) then {
+            private _maneuverBusy = [_patient] call ACME_fnc_chestAccessManeuverActive;
+            private _handoffUntil = _patient getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
+            private _handoffBusy = (_handoffUntil isEqualType 0) && {serverTime < _handoffUntil};
+
+            if (_workspaceBusy || {_maneuverBusy} || {_handoffBusy}) then {
                 _restoreBlocked = true;
-                // A final ordinary chest lease may end while a chest-seal/thoracostomy workspace still owns the
-                // open chest. Retry after that workspace closes; do not fall through and restore underneath it.
+                // A final lease can disappear during provider cleanup, but active CPR/BVM or an owner-authoritative
+                // swap window still owns an open chest. Defer restoration until every owner is genuinely gone.
                 [{
                     params ["_p"];
+                    private _until = _p getVariable ["ACME_chestAccess_maneuverHandoffUntil", -1];
                     !(_p getVariable ["ACME_CS_ProcedureActive", false])
                         && {!(_p getVariable ["ACME_Thora_ChestAccessActive", false])}
+                        && {!([_p] call ACME_fnc_chestAccessManeuverActive)}
+                        && {!((_until isEqualType 0) && {serverTime < _until})}
                         && {(count (_p getVariable ["ACME_chestAccess_leases", createHashMap])) == 0}
                 }, {
                     _this call ACME_fnc_chestAccessVestRestore;
@@ -74,8 +81,8 @@ if (_needFrontNormalize) exitWith {
     private _canRollFront = [_patient] call ACME_fnc_chestSealCanPhysicalRoll;
     if (_canRollFront) then {
         [_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;
-        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime",1.85];
-        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85;};
+        private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
+        if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
         [{
             params ["_p","_force","_medic","_ctx"];
             if (!isNull _p && {local _p}) then {
@@ -160,13 +167,14 @@ if (!_canAnimate) exitWith {
 if (_context == "chestseal") then {[_patient] call ACME_fnc_chestSealParkCarrier}
 else {[_patient] call ACME_fnc_chestAccessVestPark};
 
-private _liftTime = missionNamespace getVariable ["ACME_headElev_liftAnimTime", 1.2];
-if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2;};
-private _lowerTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
-if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 1.4;};
-private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestLiftHold", 0.18];
-if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.18;};
-private _total = _liftTime + _holdTime + _lowerTime + 0.08;
+private _liftTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLiftTime", 1.2 / (call ACME_fnc_choreographyRate)];
+if (!(_liftTime isEqualType 0) || {_liftTime <= 0}) then {_liftTime = 1.2 / (call ACME_fnc_choreographyRate);};
+private _lowerTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreLowerTime", 1.4 / (call ACME_fnc_choreographyRate)];
+if (!(_lowerTime isEqualType 0) || {_lowerTime <= 0}) then {_lowerTime = 1.4 / (call ACME_fnc_choreographyRate);};
+private _holdTime = missionNamespace getVariable ["ACME_chestAccess_vestRestoreHold", 0.02];
+if (!(_holdTime isEqualType 0) || {_holdTime < 0}) then {_holdTime = 0.02;};
+private _animSpeed = call ACME_fnc_choreographyRate;
+private _total = _liftTime + _holdTime + _lowerTime;
 
 private _serial = (_patient getVariable ["ACME_chestAccess_restoreSerial",0]) + 1;
 _patient setVariable ["ACME_chestAccess_restoreSerial",_serial,false];
@@ -177,15 +185,44 @@ _patient setVariable [_readyVar,-1,true];
 private _beginRestore = {
     params [
         "_p","_medic","_ctx","_saved","_savedVar","_propVar","_busyVar","_readyVar","_pfhVar","_token",
-        "_liftTime","_holdTime","_lowerTime","_total","_finish"
+        "_liftTime","_holdTime","_lowerTime","_animSpeed","_total","_finish","_begin"
     ];
     if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
-    _p setVariable [_readyVar,serverTime + _total,true];
+    // Re-evaluate after a competing lease/provider delay. The outer restore path
+    // handles dead, seated and mobile casualties without requesting a lift.
+    if (!alive _p || {!isNull objectParent _p}
+        || {!([_p] call ACME_fnc_chestSealCanPhysicalRoll)}) exitWith {
+        _p setVariable [_busyVar,"",false];
+        [_p,false,_medic,_ctx,true] call ACME_fnc_chestAccessVestRestore;
+    };
+
+    private _claim = [_p,"ACME_HeadElevPatientGrab",2,"chest-access-vest-restore",_medic,_total + 0.5,4,_token]
+        call ACME_fnc_patientAnimRequest;
+    if (_claim == "") exitWith {
+        // A newer/stronger patient controller keeps both animation and speed. Resume only this
+        // still-owned custody transaction after the competing finite lease has ended.
+        [{
+            params ["_args"];
+            _args params ["_p","","","","","","_busyVar","","","_token"];
+            if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {true};
+            private _lock = _p getVariable ["ACME_patientAnimLock", []];
+            (count _lock) < 5 || {(_lock param [4,-1]) <= serverTime}
+        }, {
+            params ["_args","_begin"];
+            // Never append another immediately-ready retry to CBA's live
+            // wait-until iteration. Let clocks, cancellation and cleanup advance.
+            [_begin, _args, 0.05] call CBA_fnc_waitAndExecute;
+        }, [+_this,_begin]] call CBA_fnc_waitUntilAndExecute;
+    };
+    _p setVariable [_readyVar,-1,true];
+
+    // Speed only this restoration episode. A failsafe below resets the coefficient even if a newer patient owner
+    // invalidates the restore token before the normal completion callback runs.
+    _p setVariable ["ACME_chestAccess_restoreSpeedToken", _token, false];
+    ["ace_common_setAnimSpeedCoef", [_p, _animSpeed]] call CBA_fnc_globalEvent;
 
     [_p,false] call ACME_fnc_headElevCollision;
-    [_p,"ACME_HeadElevPatientGrab",2,"chest-access-vest-restore",_medic,_total + 0.5,4,_token]
-        call ACME_fnc_patientAnimRequest;
     [_p,_liftTime + _holdTime + 0.25] call ACME_fnc_headElevPinPose;
 
     // At the top of the lift, put the exact saved carrier back on before the casualty is lowered.
@@ -212,9 +249,9 @@ private _beginRestore = {
         _p setVariable [_propVar,objNull,true];
 
         if (alive _p && {isNull objectParent _p}) then {
-            [_p,"ACME_HeadElevPatientRelease",2,"chest-access-vest-restore",_medic,_lowerTime + 0.4,4,_token]
+            private _claim = [_p,"ACME_HeadElevPatientRelease",2,"chest-access-vest-restore",_medic,_lowerTime + 0.4,4,_token]
                 call ACME_fnc_patientAnimRequest;
-            [_p,_lowerTime + 0.2] call ACME_fnc_headElevPinPose;
+            if (_claim != "") then {[_p,_lowerTime + 0.2] call ACME_fnc_headElevPinPose;};
         };
     }, [_p,_ctx,_saved,_propVar,_busyVar,_token,_lowerTime,_medic], _liftTime + _holdTime] call CBA_fnc_waitAndExecute;
 
@@ -223,14 +260,14 @@ private _beginRestore = {
         params ["_p","_medic","_savedVar","_propVar","_busyVar","_readyVar","_pfhVar","_token","_finish"];
         if (isNull _p || {!local _p} || {(_p getVariable [_busyVar,""]) != _token}) exitWith {};
 
-        [_p,true] call ACME_fnc_headElevCollision;
-
         private _lock = _p getVariable ["ACME_patientAnimLock",[]];
+        if ((_lock param [0, ""]) in ["", _token]) then {[_p,true] call ACME_fnc_headElevCollision;};
         if ((_lock param [0,""]) == _token && {(_lock param [1,""]) == "chest-access-vest-restore"}) then {
             _p setVariable ["ACME_patientAnimLock",[],true];
         };
 
-        if (alive _p && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
+        if ((_lock param [0, ""]) in ["", _token]
+            && {alive _p} && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
             if ((toLowerANSI animationState _p) != (toLowerANSI _faceUp)) then {
                 ["ace_common_switchMove",[_p,_faceUp]] call CBA_fnc_globalEvent;
@@ -238,9 +275,23 @@ private _beginRestore = {
             _p setVariable ["ACME_CS_facing","front",true];
         };
 
+        if ((_p getVariable ["ACME_chestAccess_restoreSpeedToken",""]) == _token) then {
+            _p setVariable ["ACME_chestAccess_restoreSpeedToken", "", false];
+            [_p, _token] call ACME_fnc_patientAnimRelease;
+        };
+
         [_p,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar] call _finish;
     }, [_p,_medic,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar,_token,_finish], _total]
         call CBA_fnc_waitAndExecute;
+
+    [{
+        params ["_p","_tok"];
+        if (isNull _p || {!local _p}) exitWith {};
+        if ((_p getVariable ["ACME_chestAccess_restoreSpeedToken",""]) == _tok) then {
+            _p setVariable ["ACME_chestAccess_restoreSpeedToken", "", false];
+            [_p, _tok] call ACME_fnc_patientAnimRelease;
+        };
+    }, [_p,_token], _total + 0.25] call CBA_fnc_waitAndExecute;
 };
 
 // Provider exit is owned by the minigame/action that is closing. Chest Seal and Auscultation both use the
@@ -248,7 +299,7 @@ private _beginRestore = {
 // starting another medic4 episode here was the unwanted extra animation seen after closing the panels.
 [
     _patient,_medic,_context,_saved,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar,_token,
-    _liftTime,_holdTime,_lowerTime,_total,_finishBookkeeping
+    _liftTime,_holdTime,_lowerTime,_animSpeed,_total,_finishBookkeeping,_beginRestore
 ] call _beginRestore;
 
 true

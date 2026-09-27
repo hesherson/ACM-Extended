@@ -37,7 +37,7 @@ uiNamespace setVariable ["ACME_CS_presenceLastState", _stateNow];
 // Roster changes occur on join/leave, not on every cursor sample. No distance cutoff.
 private _viewer = uiNamespace getVariable ["ACME_CS_presenceViewer", player];
 private _targets = (uiNamespace getVariable ["ACME_CS_presenceTargets", []]) - [_viewer];
-private _packet = [netId _patient, netId _viewer, name ACE_player, _side, _tool, _pts, _burp];
+private _packet = [netId _patient, netId _viewer, name _viewer, _side, _tool, _pts, _burp];
 uiNamespace setVariable ["ACME_CS_presencePacket", _packet];
 if !(_targets isEqualTo []) then {
     ["ACME_CS_presence", _packet, _targets] call CBA_fnc_targetEvent;

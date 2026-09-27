@@ -175,12 +175,6 @@ def test_true_client_preferences_are_local_only_and_non_overridable():
         "ACME_infusion_clampScrollInvert",
         "ACME_infusion_clampSfxEnabled",
         "ACME_debug_enabled",
-        "ACME_debug_showInfusions",
-        "ACME_debug_showTBI",
-        "ACME_debug_showAutoBP",
-        "ACME_debug_showCirc",
-        "ACME_debug_scale",
-        "ACME_debug_showNetwork",
         "ACME_hang_useRope",
         "ACME_seizure_animEnabled",
     ]

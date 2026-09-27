@@ -1,12 +1,80 @@
 # ACM Extended patch notes
 
-## Unreleased
+## 1.2.4
 
-### Inventory mods and Enhanced First Aid Kits
+Updated 26 September 2026.
 
-- Every read and take of a medic's or patient's supplies goes through `ACME_fnc_itemCount`, `ACME_fnc_itemTake` and `ACME_fnc_itemList` instead of `ace_common_fnc_getCountOfItem`, `removeItem` and `ace_common_fnc_uniqueItems`. Without an inventory mod nothing changes. See [docs/inventory-api.md](docs/inventory-api.md).
-- With Enhanced First Aid Kits loaded, supplies packed in an IFAK, AFAK or MFAK work in every ACME window and action - chest seal, IV, syringe kit, laryngoscopy, suction, thoracostomy, ventilator, transfusion, EMMA, vials, CPR with a BVM, AED, syringes - and are taken straight out of the kit.
-- Portable oxygen and the NRB draw from an oxygen tank packed in a kit; the tank stays in the kit, opened. Refilling an empty tank at a medical vehicle takes the empty one out of a kit as well.
+### Stable release identity
+
+- Public and debug version is 1.2.4.
+- HEMTT package version is 1.2.4.0.
+- Stable runtime identity uses internal build B176 with no RC or hotfix suffix in the debug menu.
+- Conscious casualties who are independently standing or crouched retain their worn plate carrier during chest-access interventions; if they wake and return to either stance while a carrier is already parked, it is restored immediately.
+- Chest Seal, NAR SPEAR, Thoracostomy and shared chest-access preparation recognize locally controlled NPC/Zeus medics through ACE's player-control predicate rather than requiring the provider object to equal the cached ACE_player object.
+- Conscious independently standing or crouched casualties use provider-only ambulatory treatment presentation instead of downed-casualty poses. Explicit treatments select validated vanilla `AinvPknl...medicUp0-5` empty-hands states and fall back safely if a state is unavailable.
+- Conscious prone casualties deliberately return to the normal downed-target provider animation family, but ACME does not take over or settle the patient's animation while that casualty remains independently conscious.
+- Standing/crouched auscultation uses the existing Semi-Fowler Putdown reach, freezes at the hand-out contact frame for the lifetime of the stethoscope, then resumes directly through the authored Putdown return animation on close.
+- Chest Seal placement uses the selected ambulatory `medicUp3` pose when appropriate. NAR SPEAR temporarily hands off from the chest workspace to `medicUp1`, then restores the workspace pose when the seating gesture ends.
+- The debug overlay is now pinned to the absolute left safe edge and uses one height-based reference geometry across aspect ratios. Its panel width, typography and spacing scale uniformly instead of widening on ultrawide displays.
+- Debug rows dynamically expand their value columns before rendering, then the entire overlay receives one common width/height fit. Normal values no longer word-wrap, and the body control is hard-bounded to the panel bottom so 1680x1050 and other short safe areas cannot clip the final sections.
+- Launcher metadata now identifies the package as ACM Extended rather than the development fork.
+- The current stable thoracostomy preparation lifecycle and its providerless menu handoff are included in this release.
+
+## 1.2.3
+
+Updated 24 September 2026.
+
+### Player-facing hotfix
+
+- IV tray catheter stacks are centered on the visible catheter artwork, fan upward only, use lighter overlap opacity, and keep the extra-stock `+` badge inside the tray tile.
+- Tibial IO flow is now occluded by a tourniquet on that leg and by Zone 3 AAJT-S/REBOA occlusion.
+- Narc Box syringe carousel hover no longer forces repeated full-opacity repaints, and typed push-duration seconds remain stable while editing and across syringe selection changes.
+- Medication cannot be pushed through an IV/IO line that still contains a non-empty Blood, FreshBlood, or FBTK bag. The blood bag must be empty or removed; blood on a different access does not block the selected line.
+- Medic-role providers retain thoracostomy access but no longer receive a chest-tube tray option. Doctor-role providers retain thoracostomy plus chest-tube access.
+- Check Breathing / Inspect Chest no longer enter a redundant ACME roll-only `Preparing...` stage when native ACM already owns the patient roll.
+- Leaving interaction range during `Preparing...` now permanently cancels that preparation generation; it cannot later launch when range changes again.
+- `Preparing...` is now text-only with no black background panel.
+- Patient-spawner casualties now receive their plate carrier inside the initial spawn/loadout transaction, before unconsciousness or injuries are applied.
+- Semi-Fowler can now be initiated with no backpack or plate carrier as a true provider-held continuous maneuver. The provider freezes in the authored Putdown support pose and releasing/moving/leaving range or losing the maneuver lays the casualty back down.
+- Unsupported/manual Semi-Fowler never auto-resumes after the provider yields; it must be initiated again.
+- Supported Semi-Fowler remains compatible with BVM. CPR permanently cancels Semi-Fowler and direct BVM -> CPR swaps perform one authored lay-flat before compressions while keeping the chest-access lease alive.
+
+### Wake posture
+
+- Successful on-foot clinical wakes now pre-arm ACM's treatment/lying contract before ACE clears unconsciousness, so the casualty wakes into `ACM_LyingState` instead of immediately exiting to a normal prone/get-up animation.
+- `Get Up` remains a separate patient action after consciousness returns. Vehicle wake behavior is unchanged.
+
+### Consciousness and wake stimuli
+
+- Fixed a CBA state-machine calling-convention regression introduced by the September 22 wake refactor. CBA invokes transition conditions with the casualty object directly, while the new wake gate expected an argument array; this could abort every normal wake transition.
+- `ACM_core_fnc_canWake` now accepts both CBA's direct casualty-object call and normal array-style calls.
+- The `ace_medical_WakeUp` observer now accepts the actual direct-object event payload instead of running `params` on an object.
+- Ammonia inhalant, Slap Awake, Shake Awake, spontaneous wake and fracture-pressure stimulation now reach the same functioning canonical wake path again.
+- Fracture-pressure stimulation now calls `ACM_core_fnc_requestWake` directly instead of manually publishing a parallel WakeUp event.
+- Sedation, paralysis, active seizure, cardiac arrest and other explicit forced-unconscious blockers remain authoritative; the fix restores eligible waking rather than bypassing those gates.
+
+### CPR / BVM chest access
+
+- The chest-access preflight is now a single-click state: the medical menu closes immediately, a top-center **Preparing...** banner appears, and repeated CPR/BVM clicks cannot enqueue duplicate carrier animations.
+- Escape/F0 during Preparing cancels that exact generation, releases only its chest-access lease, clears the banner and reopens the medical menu.
+- Direct Pressure now yields before carrier/head/intervention animation ownership and remains animation-passive for the full native CPR/BVM lifetime instead of resuming when the short launcher treatment ends.
+- Direct Pressure episodes now persist across CPR/BVM: its PFH, input ownership and target remain intact while the clinical marker/provider pose yield, then resume only after CPR, BVM and their bounded transfer window are all clear.
+- Semi-Fowler suspension is lower priority than active intervention patient animation/physics and will not re-elevate during CPR, BVM or the CPR/BVM transfer window.
+- CPR/BVM use one stable maneuver-family chest-access lease across repeated middle-mouse swaps. Provider-local and patient-owner transfer windows both prevent carrier restoration in the gap.
+- Carrier restoration now has its own accelerated patient choreography: 0.75 s lift + 0.02 s hold + 0.88 s lower, with a token-scoped 1.60x patient animation speed and guaranteed reset to 1.0.
+- A new chest intervention clicked during the short carrier-return animation queues behind that restore instead of waiting until the 12-second fail-open timeout.
+- CPR and all BVM variants now use the same plate-carrier chest-access preflight.
+- Plate-carrier custody remains active while either CPR or BVM is active, including repeated middle-mouse swaps between the two interventions.
+- CPR -> BVM and BVM -> CPR handoffs use a bounded provider-local transfer token so the carrier cannot be restored during the transition gap. If the replacement maneuver fails to start, normal restoration resumes automatically.
+- Patient-owner restoration also refuses to put the carrier back while live CPR or BVM is present, providing a second guard against stale provider cleanup.
+- Carrier-off choreography now uses dedicated faster chest-access timing: 0.70 s lift, 0.04 s top hold and 0.78 s lower. These values do not change Semi-Fowler/head-elevation timing.
+- Removed the extra synthetic settle delay after carrier removal/lowering. The queued intervention may launch on the first readiness frame, before the medic4 provider pose reaches its 2.2 s frozen hold.
+
+### Version identity
+
+- Public/debug version advanced to 1.2.3.
+- HEMTT package version advanced to 1.2.3.0.
+- Stable 1.2.3 runtime identity uses internal build B152 with no RC suffix in the debug menu.
 
 ## 1.2.2 cumulative update
 
@@ -55,7 +123,7 @@ These notes describe the combined current behavior. Later corrections take prece
 ### CPR and BVM on servers
 
 - Restored ACM BVM control flow and removed the added heartbeat, server expiry worker and per-frame replicated session check. Native breath timing, oxygen use, pause/resume and CPR compatibility are retained.
-- Starting BVM fully releases that provider's Direct Pressure, including its worker, keys and pressure marker. Rejected BVM starts preserve pressure. Start pressure again after finishing BVM.
+- In 1.2.2, starting BVM fully released that provider's Direct Pressure. In 1.2.3 RC3 this is superseded: CPR/BVM now temporarily yield the same-provider pressure episode and allow it to resume after the maneuver family ends.
 - Prevented new pressure on any body region during an active maneuver. Stale pressure callbacks and earlier queued menu/stance callbacks cannot cancel BVM or replace its controls.
 - Fixed CPR cancellation leaving the provider in the compression animation. Cancellation disables animation re-entry and releases the patient before removing input handlers, then plays the existing exit animation and queues a normal movable crouch. CPR loop states now include native exit connections, and stale assessment holds are retired before a new maneuver starts.
 - Pausing CPR disables the compression loop before changing pose. Repeated starts, respawn, disconnect and abandoned CPR sessions now receive session cleanup without stopping another provider's BVM.

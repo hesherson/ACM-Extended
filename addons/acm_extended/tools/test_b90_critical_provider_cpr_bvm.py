@@ -47,7 +47,7 @@ def test_head_position_provider_releases_stance_lock_after_crouched_finish():
 
 def test_cpr_and_bvm_are_native_acm_owned():
     cfg = txt('config.cpp')
-    treatment = txt('overrides/fn_treatment.sqf')
+    treatment = read_source(ROOT.parent / 'core/overrides/fnc_treatment.sqf', encoding='utf-8', errors='replace')
 
     # No compile-time replacement of the ACM continuous-action functions.
     assert 'class beginCPR { file = "\\acm_extended\\overrides\\fn_beginCPR.sqf"; };' not in cfg
@@ -56,18 +56,19 @@ def test_cpr_and_bvm_are_native_acm_owned():
     assert not (ROOT / 'overrides/fn_beginCPR.sqf').exists()
     assert not (ROOT / 'overrides/fn_canUseBVM.sqf').exists()
     assert not (ROOT / 'overrides/fn_useBVM.sqf').exists()
-
-    # Do not restate/loosen ACM's CPR treatment condition.
     assert 'class CPR {' not in cfg
-    assert 'One CPR provider and one BVM provider may work simultaneously' not in cfg
 
-    # Generic ACME provider preflight must bypass native continuous actions before any setUnitPos/holster logic.
+    # BVM and CPR are routed directly into ACM's native treatment function before generic provider preflight.
     guard = treatment.index('private _nativeContinuousClass')
     preflight = treatment.index('private _bypass')
-    assert guard < preflight
+    bridge = treatment[guard:preflight]
     for cls in ['"cpr"', '"usebvm"', '"usebvm_oxygen"', '"usebvm_vehicleoxygen"', '"usebvm_portableoxygen"']:
-        assert cls in treatment[guard:preflight]
-    assert '_this call ACME_native_fnc_treatment' in treatment[guard:preflight]
+        assert cls in bridge
+    bvm = bridge.split('if (_nativeContinuousClass in ["usebvm"',1)[1].split('// Preserve the existing Direct Pressure handoff for CPR.',1)[0]
+    assert '_this call ACM_core_fnc_treatmentNative' in bvm
+    cpr = bridge.split('if (_nativeContinuousClass == "cpr") exitWith {',1)[1]
+    assert '_this call ACM_core_fnc_treatmentNative' in cpr
+    assert 'ACME_fnc_doAnim' not in bvm and 'ACME_fnc_doAnim' not in cpr
 
 
 def test_bvm_visual_cue_is_read_only_native_observer():

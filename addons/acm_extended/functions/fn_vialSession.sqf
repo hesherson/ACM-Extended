@@ -18,11 +18,22 @@ params [
 ];
 if (isNull _display) then {_display = findDisplay 84000;};
 if (isNull _display) exitWith {if (_mode == "preview") then {[0,0,0,0]} else {0}};
-if (_mode == "clear") exitWith {_display setVariable ["ACME_SK_VialSessions", createHashMap]; 0};
+if (_mode == "clear") exitWith {
+    _display setVariable ["ACME_SK_VialSessions", createHashMap];
+    _display setVariable ["ACME_SK_VialHolder",objNull];
+    uiNamespace setVariable ["ACME_SK_VialHolder",objNull];
+    0
+};
 if (_med == "") exitWith {if (_mode == "preview") then {[0,0,0,0]} else {0}};
 
 private _holder = [ACE_player] call ACME_fnc_vialHolder;
 if (isNull _holder) exitWith {if (_mode == "preview") then {[0,0,0,0]} else {0}};
+private _boundHolder = _display getVariable ["ACME_SK_VialHolder",objNull];
+if (!isNull _boundHolder && {!(_holder isEqualTo _boundHolder)}) exitWith {if (_mode == "preview") then {[0,0,0,0]} else {0}};
+_display setVariable ["ACME_SK_VialHolder",_holder];
+// Unload may have retired findDisplay before its autosave runs. Preserve the
+// donor binding through that callback, then skClose clears it after settlement.
+uiNamespace setVariable ["ACME_SK_VialHolder",_holder];
 private _cap = [_med] call ACME_fnc_vialCapacity;
 if (_cap <= 0) exitWith {if (_mode == "preview") then {[0,0,0,0]} else {0}};
 private _vialClass = [_med] call ACME_fnc_vialClass;

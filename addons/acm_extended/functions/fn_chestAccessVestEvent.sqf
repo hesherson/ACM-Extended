@@ -4,7 +4,8 @@ params [
     ["_medic", objNull, [objNull]],
     ["_id", "", [""]],
     ["_start", true, [false]],
-    ["_classname", "", [""]]
+    ["_classname", "", [""]],
+    ["_preparationToken", "", [""]]
 ];
 if (isNull _patient || {_id == ""}) exitWith {};
 if (!local _patient) exitWith {[_patient, "chestAccessVestEvent", _this] call ACME_fnc_ownerDispatch;};
@@ -32,9 +33,53 @@ private _thoraActive = false;
 _patient setVariable ["ACME_Thora_ChestAccessActive", _thoraActive, true];
 
 if (_start) then {
-    [_patient, _medic, "access"] call ACME_fnc_chestAccessVestAcquire;
+    private _busyBefore = _patient getVariable ["ACME_chestAccess_vestBusy", ""];
+    [_patient, _medic, "access", false, _classname, _preparationToken] call ACME_fnc_chestAccessVestAcquire;
+
+    // A new intervention outranks a carrier-return animation, but do not tear the patient's current RTM/physics
+    // out from underneath it. Queue the same exact lease immediately behind the short restore. The lease-id check
+    // makes the retry harmless if the provider cancels Preparing... before restoration finishes.
+    if ((_busyBefore find "restore:access:") == 0) then {
+        [{
+            params ["_p","_id"];
+            isNull _p
+                || {!local _p}
+                || {!(_id in keys (_p getVariable ["ACME_chestAccess_leases", createHashMap]))}
+                || {(_p getVariable ["ACME_chestAccess_vestBusy", ""]) == ""}
+        }, {
+            params ["_p","_id","_m","_class","_preparationToken"];
+            if (isNull _p || {!local _p}) exitWith {};
+            if !(_id in keys (_p getVariable ["ACME_chestAccess_leases", createHashMap])) exitWith {};
+            [_p, _m, "access", false, _class, _preparationToken] call ACME_fnc_chestAccessVestAcquire;
+        }, [_patient,_id,_medic,_classname,_preparationToken], 2.5] call CBA_fnc_waitUntilAndExecute;
+    };
 } else {
     if ((count _leases) == 0) then {
+        // Retire the front-roll continuation too: an old roll completion cannot reacquire gear after cancel.
+        _patient setVariable ["ACME_chestAccess_frontBusy", "", false];
+        // Cancel only an unfinished ACCESS removal episode. Clearing its exact busy token makes every delayed
+        // lift/remove/lower callback fail its generation check before it can touch gear or patient animation.
+        private _busy = _patient getVariable ["ACME_chestAccess_vestBusy", ""];
+        if ((_busy find "vest:access:") == 0) then {
+            if ((_patient getVariable ["ACME_chestAccess_removeSpeedToken",""]) == _busy) then {
+                _patient setVariable ["ACME_chestAccess_removeSpeedToken", "", false];
+                [_patient, _busy] call ACME_fnc_patientAnimRelease;
+            };
+            _patient setVariable ["ACME_chestAccess_vestBusy", "", false];
+            _patient setVariable ["ACME_chestAccess_readyServer", serverTime, true];
+        };
+
         [_patient, false, _medic, "access"] call ACME_fnc_chestAccessVestRestore;
+
+        // A preparation canceled before ACE treatmentStarted has no head-elevation treatment lease to release.
+        // If it temporarily flattened Semi-Fowler, explicitly arm the ordinary deferred resume instead of leaving
+        // the patient flat or replaying elevation under another intervention.
+        if ((_patient getVariable ["ACME_headElevated", false])
+            && {_patient getVariable ["ACME_headElev_Suspended", false]}
+            && {(count (_patient getVariable ["ACME_headElev_treatments", createHashMap])) == 0}) then {
+            _patient setVariable ["ACME_headElev_ResumePending", true, true];
+            private _poseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
+            [{_this call ACME_fnc_headElevTryResume;}, [_patient, _poseToken], 0.20] call CBA_fnc_waitAndExecute;
+        };
     };
 };

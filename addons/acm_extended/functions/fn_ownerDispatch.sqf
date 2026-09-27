@@ -8,6 +8,10 @@ if (!local _patient) exitWith {
     } else {  };
 };
 switch (_operation) do {
+    case "vialRefund": {
+        _args params [["_id",""],["_components",[]]];
+        [_patient,_id,_components] call ACME_fnc_vialRefundLocal;
+    };
     case "vialLease": {
         _args params [["_medic",objNull,[objNull]],["_op","claim",[""]],["_token","",[""]]];
         [_patient,_medic,_op,_token] call ACME_fnc_vialLeaseCommit;
@@ -63,10 +67,73 @@ switch (_operation) do {
     case "headElevTreatment": {_args call ACME_fnc_headElevTreatmentEvent;};
     case "chestAccessVestEvent": {_args call ACME_fnc_chestAccessVestEvent;};
     case "chestAccessVestProvider": {_args call ACME_fnc_chestAccessVestProvider;};
+    case "chestAccessManeuverHandoff": {
+        _args params [["_duration", 1.0, [0]]];
+        if (!(_duration isEqualType 0) || {!finite _duration}) then {_duration = 1.0;};
+        _duration = (_duration max 0) min 3;
+        _patient setVariable ["ACME_chestAccess_maneuverHandoffUntil", serverTime + _duration, true];
+    };
+    // Historical generic chest-access operation: provider theatre only. Callers that need the casualty to move
+    // own their patient roll separately. Keeping this contract avoids turning an animation presentation request
+    // into a second patient-state mutation for Semi-Fowler and ordinary chest-access preparation.
     case "chestAccessFrontRoll": {
         _args params [["_medic",objNull,[objNull]],["_casualty",objNull,[objNull]]];
         if (!isNull _medic && {local _medic} && {alive _medic} && {!isNull _casualty}) then {
             [_medic,"chestAccessFront",_casualty] call ACME_fnc_rollProviderStart;
+        };
+    };
+
+    // Chest-seal workspace entry is the one place that intentionally stages provider medic4 BEFORE the casualty
+    // starts the canonical roll. This is separate from chestAccessFrontRoll so no other caller inherits that
+    // sequencing or patient mutation accidentally.
+    case "chestSealEntryFrontRoll": {
+        _args params [
+            ["_medic",objNull,[objNull]],
+            ["_casualty",objNull,[objNull]],
+            ["_preserveHead",true,[false]],
+            ["_prep","",[""]]
+        ];
+        if (!isNull _medic && {local _medic} && {alive _medic} && {!isNull _casualty}) then {
+            private _started = [_medic,"chestAccessFront",_casualty] call ACME_fnc_rollProviderStart;
+            if (!_started) exitWith {
+                [_casualty, "chestSealRoll", [_casualty,"front",false,_medic,_preserveHead]] call ACME_fnc_ownerDispatch;
+            };
+
+            private _pose = _medic getVariable ["ACME_treatmentPoseState",[]];
+            private _epoch = _pose param [0,-1];
+            private _rollToken = _medic getVariable ["ACME_rollProviderToken",""];
+            private _deadline = diag_tickTime + 3.0;
+            [{
+                params ["_state","_handle"];
+                _state params ["_m","_p","_epoch","_rollToken","_preserve","_prep","_deadline"];
+                if (isNull _m || {isNull _p} || {!local _m} || {!alive _m}) exitWith {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                };
+                if (_prep != "" && {
+                    (_p getVariable ["ACME_CS_PreparationToken",""]) != _prep
+                    || {(_p getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo []}
+                }) exitWith {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                };
+
+                private _completed = (_m getVariable ["ACME_rollProviderCompletedEpoch",-1]) == _epoch;
+                if (((_m getVariable ["ACME_rollProviderToken",""]) != _rollToken || {_rollToken == ""}) && {!_completed}) exitWith {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                };
+
+                private _poseNow = _m getVariable ["ACME_treatmentPoseState",[]];
+                private _work = toLowerANSI (_poseNow param [2,""]);
+                private _atWork = (_poseNow param [0,-2]) == _epoch
+                    && {(_poseNow param [1,""]) == "roll"}
+                    && {(_poseNow param [3,-2]) >= 1}
+                    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
+                    && {(toLowerANSI animationState _m) == _work};
+
+                if (_atWork || {_completed} || {diag_tickTime >= _deadline}) then {
+                    [_handle] call CBA_fnc_removePerFrameHandler;
+                    [_p, "chestSealRoll", [_p,"front",false,_m,_preserve]] call ACME_fnc_ownerDispatch;
+                };
+            }, 0, [_medic,_casualty,_epoch,_rollToken,_preserveHead,_prep,_deadline]] call CBA_fnc_addPerFrameHandler;
         };
     };
     case "headElevTilt": {_args call ACME_fnc_headElevApplyTilt;};
@@ -77,6 +144,7 @@ switch (_operation) do {
     case "headElevStart": {_args call ACME_fnc_headElevateStart;};
     case "headElevStop": {_args call ACME_fnc_headElevateStop;};
     case "headElevDeath": {[_patient] call ACME_fnc_headElevDeathRelease;};
+    case "headElevMedicReady": {_args call ACME_fnc_headElevMedicReady;};
     case "headElevMedicStart": {_args call ACME_fnc_headElevMedicStart;};
     case "headElevMedicSeq": {_args call ACME_fnc_headElevMedicSeq;};
     case "airwayGradeState": {
@@ -206,6 +274,10 @@ switch (_operation) do {
         [_medic, _patient, _part] call ACME_fnc_xstatApply;
     };
     case "aajtFlow": {_args call ACME_fnc_aajtSetLegTQ;};
+    case "directPressureClaim": {
+        _args params [["_op","claim",[""]],["_claimArgs",[],[[]]]];
+        [_patient,_op,_claimArgs] call ACME_fnc_directPressureClaimLocal;
+    };
     case "directPressureMarker": {
         _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]], ["_active", false, [false]]];
         private _part = toLower _bodyPart;
@@ -380,7 +452,7 @@ switch (_operation) do {
             // Long enough to reject a second provider who completed the same 4.375 s physical hatch exchange.
             _patient setVariable ["ACME_vent_batterySwapLockUntil", serverTime + 1.0, true];
         };
-        ["ACME_ventBatteryExchangeResult", [_patient, _requestId, _accepted, _returned, (_sparePct max 0) min 100], _medic] call CBA_fnc_targetEvent;
+        ["ACME_ventBatteryExchangeResult", [_patient, _requestId, _accepted, _returned, (_sparePct max 0) min 100], parseNumber ((_requestId splitString ":") select 0)] call CBA_fnc_ownerEvent;
     };
     case "treatmentPatientSettle": {_args call ACME_fnc_treatmentPatientSettle;};
 };

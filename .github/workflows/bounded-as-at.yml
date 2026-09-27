@@ -1,0 +1,129 @@
+name: Bounded AS-AT audit
+on:
+  push:
+    branches: [audit/bounded-backlog-as-at-20260923]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bounded-as-at-20260923
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b5cdb5b0b6c322df37f8b50143bb38b4197b606c
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-tools
+          curl -fLsS --retry 1 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          curl -fLsS --retry 1 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+          python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
+      - name: Validate AS-AT against AM-AR
+        env:
+          HEMTT: /tmp/acme-tools/hemtt
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: |
+          python - <<'PY'
+          import subprocess, pathlib, xml.etree.ElementTree as ET
+          from concurrent.futures import ThreadPoolExecutor
+          from collections import Counter
+          BASE='6b84cc4024d394a4c31523fd7c4d386bb14680ef'
+          CAND='b5cdb5b0b6c322df37f8b50143bb38b4197b606c'
+          root=pathlib.Path.cwd()
+          before=pathlib.Path('/tmp/acme-asat-before')
+          after=pathlib.Path('/tmp/acme-asat-after')
+          out=pathlib.Path('/tmp/acme-as-at-results'); out.mkdir(exist_ok=True)
+          def cmd(args,cwd=root,timeout=480,check=True):
+              r=subprocess.run(args,cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=timeout)
+              if check and r.returncode: raise RuntimeError(str(args)+'\n'+r.stdout[-12000:])
+              return r
+          cmd(['git','fetch','--depth=1','origin',BASE])
+          cmd(['git','fetch','--depth=1','origin',CAND])
+          cmd(['git','worktree','add','--detach',str(before),BASE])
+          cmd(['git','worktree','add','--detach',str(after),CAND])
+          focused=[
+            'addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_posture_actions_are_head_only_and_stay_in_examine',
+            'addons/acm_extended/tools/test_b37_labels_and_order.py::LabelsAndOrder::test_default_palette_and_optional_separate_colors',
+            'addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_clinical_chest_wording',
+            'addons/acm_extended/tools/test_b41_ui_airway_medication.py::test_uniform_white_action_rows_are_runtime_default',
+            'addons/acm_extended/tools/test_b42_medication_menu_dp.py::test_auscultate_chest_preserves_existing_child_indent_without_forcing_a_group',
+          ]
+          r=cmd(['python','-m','pytest',*focused,'-q'],after,180,False)
+          (out/'focused.log').write_text(r.stdout)
+          assert r.returncode==0,r.stdout[-8000:]
+          h=cmd([__import__('os').environ['HEMTT'],'check'],after,180,False)
+          (out/'hemtt.log').write_text(h.stdout)
+          assert h.returncode==0,h.stdout[-8000:]
+          assert cmd(['git','diff','--check',BASE,CAND],after,60,False).returncode==0
+          def suite(label,cwd,paths):
+              xml=out/(label+'.xml')
+              r=cmd(['python','-m','pytest',*paths,'-q','--tb=no','--continue-on-collection-errors','--junitxml='+str(xml)],cwd,430,False)
+              d={}
+              for c in ET.parse(xml).iter('testcase'):
+                  k=(c.get('classname',''),c.get('name',''))
+                  s='error' if c.find('error') is not None else 'failed' if c.find('failure') is not None else 'skipped' if c.find('skipped') is not None else 'passed'
+                  d[k]=s
+              return r.returncode,d,Counter(d.values()),r.stdout
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              a=ex.submit(suite,'addon-before',before,['addons/acm_extended/tools'])
+              b=ex.submit(suite,'addon-after',after,['addons/acm_extended/tools'])
+              rb,db,cb,lb=a.result(); ra,da,ca,la=b.result()
+          (out/'addon-before.log').write_text(lb); (out/'addon-after.log').write_text(la)
+          assert rb==ra==1
+          missing=set(db)-set(da); regress=[]
+          fixed=[]
+          for k,v in db.items():
+              if k not in da: continue
+              if v=='failed' and da[k]=='passed': fixed.append(k)
+              elif v!=da[k]: regress.append((k,v,da[k]))
+          expected={
+            'test_both_posture_actions_remain_on_head_and_chest',
+            'test_default_palette_and_optional_separate_colors',
+            'test_clinical_chest_wording',
+            'test_requested_alternating_pale_red_is_runtime_default',
+            'test_auscultate_chest_keeps_group_child_indent',
+          }
+          assert not missing and not regress,(missing,regress)
+          assert {k[1] for k in fixed}==expected,fixed
+          assert ca['failed']==cb['failed']-5,(cb,ca)
+          with ThreadPoolExecutor(max_workers=2) as ex:
+              a=ex.submit(suite,'root-before',before,['tools'])
+              b=ex.submit(suite,'root-after',after,['tools'])
+              _,db2,cb2,lb2=a.result(); _,da2,ca2,la2=b.result()
+          (out/'root-before.log').write_text(lb2); (out/'root-after.log').write_text(la2)
+          assert db2==da2 and cb2==ca2,(cb2,ca2)
+          report={
+            'base':BASE,'candidate':CAND,
+            'focused_passed':5,
+            'addon_before':dict(cb),'addon_after':dict(ca),
+            'fixed_original_ids':['H120','H121','H139','H140','H148'],
+            'remaining_original_entries':59,
+            'root_before':dict(cb2),'root_after':dict(ca2),
+            'hemtt_exit':0,'runtime_behavior_changed':False,
+            'user_visible_text_changed':['ACME_menuColorHeaders setting description'],
+            'live_arma_tested':False,'stable_release_approved':False
+          }
+          import json
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acme-bounded-AS-AT-evidence
+          path: /tmp/acme-as-at-results
+          retention-days: 30

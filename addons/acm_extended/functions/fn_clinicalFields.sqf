@@ -60,6 +60,10 @@
   ["ACME_laryngo_pool", "", true],
   ["ACME_laryngo_secretions", "", true],
   ["ACME_nativeVomitActive", "", true],
+  ["ACME_nativeCollapseActive", "", true],
+  ["ACME_nativeBloodObstructionActive", "", true],
+  ["ACME_nativeHemolysisActive", "", true],
+  ["ACME_nrb_oxygenSource", "", true, false],
   ["ACME_laryngo_bloody", "", true],
   ["ACME_laryngoStimulusAt", "cba", true],
   ["ACME_laryngoStimulusStrength", "", true],
@@ -435,6 +439,11 @@
   ],
   [
     "ACME_ca_coagMaxMult",
+    "",
+    true
+  ],
+  [
+    "ACME_ca_coagBaseMult",
     "",
     true
   ],

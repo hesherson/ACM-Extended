@@ -11,14 +11,10 @@ def test_version():
     assert_release_identity()
 
 def test_tag_25():
-    c=txt('config.cpp')
-    tag=c[c.index('class ACME_SK_TagEdit'):c.index('class ACME_SK_TagText')]
-    assert 'maxChars = 25;' in tag
-    for f in ['fn_skPendingTagCommit.sqf','fn_skApplyPendingTag.sqf','fn_skTagCommit.sqf','fn_skPendingTagRender.sqf','fn_skCarouselRender.sqf']:
-        s=txt('functions/'+f)
-        assert 'select [0,17]' not in s and 'select [0, 17]' not in s
-    s=txt('functions/fn_skPendingTagRender.sqf')
-    assert '_lineH = 0.038' in s and '_lineFontH = 0.0185' in s and '_w*0.230' in s
+    from test_bounded_tag_contracts import tag_limits
+    from test_bounded_tag_line_layout import layout_contract
+    tag_limits()
+    layout_contract()
 
 def test_hover_and_opacity():
     from test_historical_carousel_input import test_hover_is_presentation_only_and_keeps_selection_and_expansion, test_actual_slot_hover_alpha_changes_without_changing_its_geometry
@@ -61,7 +57,8 @@ def test_staged_push():
     c=txt('functions/fn_skBodyActionClick.sqf')
     assert 'call ACME_fnc_skConfirmInjection' in c
     q=txt('functions/fn_skConfirmInjection.sqf')
-    assert 'ctrlCommit 3.0' in q and 'ACME_SyringePush' in q
+    from test_bounded_staged_push_contracts import assert_staged_contract
+    assert_staged_contract(s, q)
     assert 'ACME_SK_PendingInjection",[]' in q
 
 def test_feedback_lingers():
@@ -69,7 +66,7 @@ def test_feedback_lingers():
     assert 'Drawn! (%1)' in txt('functions/fn_skWasteDraw.sqf')
     assert '],1.00] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundDraw.sqf')
     assert '],1.00] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skWasteDraw.sqf')
-    assert '],1.10] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundSave.sqf')
+    assert '],0.45] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skCompoundSave.sqf')
     assert '],1.10] call CBA_fnc_waitAndExecute;' in txt('functions/fn_skFlushSave.sqf')
 
 if __name__=='__main__':

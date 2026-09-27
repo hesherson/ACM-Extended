@@ -19,6 +19,7 @@ missionNamespace setVariable ["ACME_compatChecked", true];
 
 private _missing = [];
 private _version = missionNamespace getVariable ["ACME_infusion_version", "?"];
+private _batch = missionNamespace getVariable ["ACME_buildBatch", "?"];
 
 private _hasMarker = {
     params ["_name", "_marker"];
@@ -88,13 +89,17 @@ if (_missing isEqualTo []) exitWith {
     diag_log "[ACME COMPAT] OK: required runtime functions/markers verified";
 };
 
-diag_log format ["[ACME COMPAT] FAILED (%1): %2", count _missing, _missing joinString " | "];
+// A partial update can leave only ACM_acm_extended.pbo beside the upstream ACM components. Those functions
+// exist, but their fork markers are correctly absent. Keep every failed check and explain the installation
+// check instead of trying to replace another mod's runtime functions or suppressing the warning.
+private _installAdvice = "Verify the complete ACM Extended fork is installed on the server and all clients. Disable the separate Advanced Combat Medicine mod, update every fork PBO, then restart Arma.";
+diag_log format ["[ACME COMPAT] FAILED (%1), version %2 batch %3: %4 | %5", count _missing, _version, _batch, _missing joinString " | ", _installAdvice];
 
 if (hasInterface) then {
     [{
-        params ["_issues"];
+        params ["_issues", "_installAdvice"];
         private _detail = _issues joinString " | ";
-        [format ["ACM Extended: %1 compatibility problem(s). Missing/stale required functions or overrides detected. %2", count _issues, _detail], 8]
+        [format ["ACM Extended: %1 compatibility problem(s). %2 Missing/stale functions: %3", count _issues, _installAdvice, _detail], 8]
             call ace_common_fnc_displayTextStructured;
-    }, [+_missing], 12] call CBA_fnc_waitAndExecute;
+    }, [+_missing, _installAdvice], 12] call CBA_fnc_waitAndExecute;
 };

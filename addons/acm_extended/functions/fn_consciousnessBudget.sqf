@@ -15,12 +15,16 @@ private _now = CBA_missionTime;
 private _applyMercyObtunded = {
     params ["_u"];
     [{
-        params ["_p"];
+        params ["_p", "_epoch", "_owner", "_locality"];
         if (!isNull _p && {alive _p} && {local _p}
+            && {_epoch == ([_p] call ACME_fnc_clinicalEpoch)}
+            && {owner _p == _owner}
+            && {_locality == (_p getVariable ["ACME_wakeRepairTicket", 0])}
+            && {!(_p getVariable ["ACME_clinicalRestoring", false])}
             && {!(_p getVariable ["ACE_isUnconscious", false])}) then {
             [_p, true, false, "free", "mercy"] call ACME_fnc_obtundedSet;
         };
-    }, [_u], 0.20] call CBA_fnc_waitAndExecute;
+    }, [_u, [_u] call ACME_fnc_clinicalEpoch, owner _u, _u getVariable ["ACME_wakeRepairTicket", 0]], 0.20] call CBA_fnc_waitAndExecute;
 };
 
 {

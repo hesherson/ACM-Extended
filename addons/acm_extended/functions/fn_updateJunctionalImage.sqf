@@ -22,11 +22,13 @@ private _ref = _ctrlGroup controlsGroupCtrl 70113;  // idc_body_torso_io, the fu
 //   treatment overlay (combat gauze or XStat, visible on top of the base wound),
 //   pressure wrap (wrapped state only).
 // Packing therefore never replaces or hides the underlying wound art.
+// 7290020/21 belong to the EJ icons and their access-site hit targets.
+// Packing needs its own control IDs so handler order cannot replace device artwork.
 private _limbs = [
-    ["leftarm",  7290000, 7290004, 7290020, "junctionalwrap_leftarm_ca.paa",  "junctionalwound_leftarm_ca.paa",  "junctionalwound_packed_leftarm_ca.paa",  "junctionalwound_xstat_leftarm_ca.paa"],
-    ["rightarm", 7290001, 7290005, 7290021, "junctionalwrap_rightarm_ca.paa", "junctionalwound_rightarm_ca.paa", "junctionalwound_packed_rightarm_ca.paa", "junctionalwound_xstat_rightarm_ca.paa"],
-    ["leftleg",  7290002, 7290006, 7290022, "junctionalwrap_leftleg_ca.paa",  "junctionalwound_leftleg_ca.paa",  "junctionalwound_packed_leftleg_ca.paa",  "junctionalwound_xstat_leftleg_ca.paa"],
-    ["rightleg", 7290003, 7290007, 7290023, "junctionalwrap_rightleg_ca.paa", "junctionalwound_rightleg_ca.paa", "junctionalwound_packed_rightleg_ca.paa", "junctionalwound_xstat_rightleg_ca.paa"]
+    ["leftarm",  7290000, 7290004, 7290040, "junctionalwrap_leftarm_ca.paa",  "junctionalwound_leftarm_ca.paa",  "junctionalwound_packed_leftarm_ca.paa",  "junctionalwound_xstat_leftarm_ca.paa"],
+    ["rightarm", 7290001, 7290005, 7290041, "junctionalwrap_rightarm_ca.paa", "junctionalwound_rightarm_ca.paa", "junctionalwound_packed_rightarm_ca.paa", "junctionalwound_xstat_rightarm_ca.paa"],
+    ["leftleg",  7290002, 7290006, 7290042, "junctionalwrap_leftleg_ca.paa",  "junctionalwound_leftleg_ca.paa",  "junctionalwound_packed_leftleg_ca.paa",  "junctionalwound_xstat_leftleg_ca.paa"],
+    ["rightleg", 7290003, 7290007, 7290043, "junctionalwrap_rightleg_ca.paa", "junctionalwound_rightleg_ca.paa", "junctionalwound_packed_rightleg_ca.paa", "junctionalwound_xstat_rightleg_ca.paa"]
 ];
 
 // israeli pressure bandage olive green. the wrap depicts a physical bandage rather than a status, so it no longer

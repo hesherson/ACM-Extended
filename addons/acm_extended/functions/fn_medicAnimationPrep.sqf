@@ -9,11 +9,14 @@ if (isNull _medic || {!local _medic} || {!alive _medic} || {[_medic] call ACME_f
 // Empty hands are not ready until BOTH Arma's logical weapon selection and the visible animation agree.
 // This matters most for sidearms: selectWeapon "" can clear currentWeapon before the pistol model/hand pose has
 // actually finished holstering, which lets a medical RTM play underneath a still-visible handgun.
+private _rate = (getAnimSpeedCoef _medic) max 1;
 private _state = toLowerANSI animationState _medic;
 private _ownedEmptyState = _state in [
     "acme_chestsealworkspace",
     "acme_stethoscopework",
-    "acme_directpressurehold"
+    "acme_directpressurehold",
+    "acm_genericcontinuous",
+    "acm_pronecontinuous"
 ];
 private _visuallyEmpty = (((_state find "wnon") >= 0) && {((_state find "snon") >= 0)}) || {_ownedEmptyState};
 private _weapon = currentWeapon _medic;
@@ -35,7 +38,7 @@ private _elapsed = if (_previous isEqualType [] && {count _previous >= 2}
 if (_elapsed >= 0 && {_elapsed < 3.2}) exitWith {
     private _requested = _previous param [2, ""];
     private _minSettle = if (_requested != "" && {_requested == handgunWeapon _medic}) then {0.95} else {0.70};
-    (_minSettle - _elapsed) max 0.05
+    ((_minSettle / _rate) - _elapsed) max 0.05
 };
 
 // If the logical weapon is already clear but the holster animation is still finishing, just wait for the visible
@@ -51,4 +54,4 @@ _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_once", CBA_missionT
 
 // Sidearm holsters need a little more minimum settle time than long-gun Wnon transitions. The caller still waits
 // for the actual logical+visual empty-hands state, so these are minimum delays rather than guessed completion times.
-if (_weapon == handgunWeapon _medic) then {0.95} else {0.70}
+(if (_weapon == handgunWeapon _medic) then {0.95} else {0.70}) / _rate

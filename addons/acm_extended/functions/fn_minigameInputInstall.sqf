@@ -6,6 +6,7 @@ _display setVariable ["ACME_InputInstalled", true];
 _display setVariable ["ACME_InputHeld", createHashMap];
 _display setVariable ["ACME_InputTaps", createHashMap];
 _display setVariable ["ACME_InputMods", [false,false,false]];
+_display setVariable ["ACME_InputLastAt", diag_tickTime];
 _display displayAddEventHandler ["KeyDown", {_this call ACME_fnc_minigameInput;}];
 _display displayAddEventHandler ["KeyUp", {(_this + [true]) call ACME_fnc_minigameInput;}];
 _display displayAddEventHandler ["MouseButtonDown", {[_this,"down"] call ACME_fnc_minigameInputMouse;}];

@@ -19,6 +19,18 @@
 
 params ["_medic", "_patient"];
 
+// Revalidate the short native launcher at callback time. Rejected entries must never
+// install input handlers or publish a reservation for a continuous controller that did not start.
+if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
+    || {IS_UNCONSCIOUS(_medic)}) exitWith {false};
+if ((_patient getVariable [QGVAR(AirwayItem_Oral), ""]) == "SGA"
+    || {_patient getVariable [QGVAR(SurgicalAirway_InProgress), false]}
+    || {_patient getVariable [QGVAR(SurgicalAirway_State), false]}
+    || {_patient getVariable ["ACME_ETT_Inserted", false]}
+    || {_patient getVariable [QGVAR(RecoveryPosition_State), false]}
+    || {_patient call ACEFUNC(common,isBeingDragged)}
+    || {_patient call ACEFUNC(common,isBeingCarried)}) exitWith {};
+
 if (_patient getVariable [QGVAR(HeadTilt_State), false]) exitWith {
     [LLSTRING(HeadTiltChinLift_Already), 2, _medic] call ACEFUNC(common,displayTextStructured);
 };
@@ -105,7 +117,7 @@ if (_patient getVariable [QGVAR(HeadTilt_State), false]) exitWith {
         missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
     };
 
-    if (_patient getVariable [QGVAR(AirwayItem_Oral), ""] == "SGA" || _patient getVariable [QGVAR(SurgicalAirway_InProgress), false] || _patient getVariable [QGVAR(SurgicalAirway_State), false] || _patient getVariable [QGVAR(RecoveryPosition_State), false] || _patient call ACEFUNC(common,isBeingDragged) || _patient call ACEFUNC(common,isBeingCarried)) then {
+    if (_patient getVariable [QGVAR(AirwayItem_Oral), ""] == "SGA" || _patient getVariable [QGVAR(SurgicalAirway_InProgress), false] || _patient getVariable [QGVAR(SurgicalAirway_State), false] || _patient getVariable ["ACME_ETT_Inserted", false] || _patient getVariable [QGVAR(RecoveryPosition_State), false] || _patient call ACEFUNC(common,isBeingDragged) || _patient call ACEFUNC(common,isBeingCarried)) then {
         EGVAR(core,ContinuousAction_Active) = false;
     };
-}] call EFUNC(core,beginContinuousAction);
+}, false, -1, false, true] call EFUNC(core,beginContinuousAction)

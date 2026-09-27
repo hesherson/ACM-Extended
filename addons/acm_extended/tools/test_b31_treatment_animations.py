@@ -82,7 +82,9 @@ class TreatmentAnimationContracts(unittest.TestCase):
         self.assertNotIn('call ace_common_fnc_doAnimation', CONTINUOUS)
         self.assertIn('ACME_fnc_treatmentPoseStart', CONTINUOUS)
         self.assertIn('ACME_fnc_treatmentPoseStop', CONTINUOUS)
-        self.assertIn('_poseEnded', CONTINUOUS)
+        # Provider-pose retirement is presentation-only and must never close the scope.
+        self.assertNotIn('_poseEnded', CONTINUOUS)
+        self.assertIn('DO NOT include treatmentPoseEpisode here', CONTINUOUS)
         self.assertIn('_enteredVehicle', CONTINUOUS)
         self.assertIn('call _onCancel', CONTINUOUS)
         self.assertIn('CBA_fnc_removeKeyHandler', CONTINUOUS)

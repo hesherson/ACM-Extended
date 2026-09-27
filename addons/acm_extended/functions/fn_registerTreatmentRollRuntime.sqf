@@ -8,7 +8,7 @@
     // roll theatre replace Check Airway/Response/Inspect Chest. UseStethoscope starts its held pose when the
     // minigame opens a frame later, so suppress the generic provider roll there too. Patient rolling remains ACM-owned.
     private _poseOwned = (_medic getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo [];
-    private _isStethoscope = toLower _classname == "usestethoscope";
+    private _isStethoscope = toLower _classname in ["usestethoscope", "beginheadtiltchinlift"];
     private _rollsPatient = (getNumber _cfgRollB39) > 0;
     if (_rollsPatient && {!_poseOwned} && {!_isStethoscope}) then {
         [_medic, _classname, _patient] call ACME_fnc_rollProviderStart;

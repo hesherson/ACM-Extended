@@ -28,15 +28,19 @@ def test_patient_lift_waits_for_real_provider_medic4():
     wait_block = acquire.split("// After any Semi-Fowler lay-flat finishes", 1)[1]
     assert "ACME_chestAccessProviderReady" in wait_block
     assert "_args call _begin;" in wait_block
-    assert '"stop", true, _token' in acquire
+    # Patient-owner completion deliberately does NOT send a late provider stop packet anymore.
+    assert '"stop", true, _token' not in acquire
+    treatment = read("addons/core/overrides/fnc_treatment.sqf")
+    assert '[_m, _p, "stop", true, ((_m getVariable ["ACME_chestAccessProvider", []]) param [2, ""])] call ACME_fnc_chestAccessVestProvider;' in treatment
 
 def test_removal_order_is_lift_remove_park_release():
     s = read("addons/acm_extended/functions/fn_chestAccessVestAcquire.sqf")
-    begin = s.split("private _beginPatient = {", 1)[1]
+    begin = s.split("private _beginPatient = {", 1)[1].split("// After any Semi-Fowler lay-flat finishes", 1)[0]
     grab = begin.index('"ACME_HeadElevPatientGrab"')
-    commit = begin.index("call _commit;")
-    release = begin.index('"ACME_HeadElevPatientRelease"')
-    assert grab < commit < release
+    lower_stage = begin.index("// Start the lower interval from the callback that actually removes the")
+    commit = begin.index("private _removed = [_p,_ctx,_savedVar,_propVar,_pfhVar] call _commit;", lower_stage)
+    release = begin.index('"ACME_HeadElevPatientRelease"', commit)
+    assert grab < lower_stage < commit < release
     commit_fn = s.split("private _commitRemoval = {", 1)[1].split("// Animation is allowed", 1)[0]
     assert commit_fn.index("removeVest _p") < commit_fn.index("ACME_fnc_chestAccessVestPark")
 
@@ -64,18 +68,25 @@ def test_clinical_launch_is_native_and_generation_scoped():
     assert "ACME_chestAccess_readyServer" in block
     assert "ACM_core_fnc_treatmentNative" in block
     assert "ace_medical_treatment_fnc_treatment;" not in block
-    assert "ContinuousAction_" not in block
+    # Chest prep does not acquire/edit the continuous-action controller. A read-only DP handoff guard is allowed.
+    assert "ACM_core_fnc_beginContinuousAction" not in block
+    assert 'missionNamespace setVariable ["ACM_core_ContinuousAction_Active"' not in block
 
-def test_chest_seal_workspace_hands_directly_to_flip_and_back():
+def test_chest_seal_workspace_hands_directly_to_standard_medic4_flip_and_back():
     flip = read("addons/acm_extended/functions/fn_chestSealFlip.sqf")
     tick = read("addons/acm_extended/functions/fn_chestSealFlipTick.sqf")
     close = read("addons/acm_extended/functions/fn_chestSealClose.sqf")
-    assert '"ACME_CS_providerHoldEpoch",-1' in flip
-    assert '[_provider,"chestSealWorkspace",_holdEpoch,true] call ACME_fnc_treatmentPoseStop;' in flip
-    assert '[_provider,"roll",_epoch,_current] call ACME_fnc_treatmentPoseStop;' in tick
+    assert '"ACME_CS_providerHoldEpoch", -1' in flip
+    assert '[_provider, _oldMode, _oldEpoch, true] call ACME_fnc_treatmentPoseStop;' in flip
+    assert '[_provider, "chestSealFlip", _patient] call ACME_fnc_rollProviderStart' in flip
+    assert '[_provider, "chestSealFlip", _patient, true] call ACME_fnc_rollProviderStart' not in flip
+    assert 'call ACME_fnc_chestSealRoll' not in flip
+    assert '[_patient,_side,false,_provider,false] call ACME_fnc_chestSealRoll;' in tick
+    assert '[_provider,"roll",_epoch] call ACME_fnc_treatmentPoseStop;' in tick
+    assert '[_provider,"roll",_epoch,true] call ACME_fnc_treatmentPoseStop;' not in tick
     assert "ACME_fnc_chestSealProviderHoldStart" in tick
-    assert "_providerAtHold" in tick
-    assert '(_poseNow param [3,-2]) >= 3' in tick
+    assert "_providerCompleted" in tick
+    assert "_providerDone" in tick
     assert 'ACME_fnc_headElevMedicSeq' in close
     assert '[_flipMedic,_poseMode,_poseEpoch,true] call ACME_fnc_treatmentPoseStop;' in close
 

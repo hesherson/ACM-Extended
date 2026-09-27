@@ -117,9 +117,12 @@ class DistanceTests(unittest.TestCase):
     def test_upper_floor_anchor(self):self.assertEqual(anchor_distance(3.2,(0,0,10),(2.9,0,10),(2.9,0,10.2),(3.2,0,10)),2.9)
     def test_invalid_anchor_rejected(self):self.assertEqual(anchor_distance(5,(0,0,0),(float('nan'),0,0),(0,0,0),(0,0,0)),5)
     def test_native_nearer_is_retained(self):self.assertEqual(anchor_distance(.5,(0,0,0),(1,0,0),(1,0,0),(1,0,0)),.5)
-    def test_helper_created_at_patient(self):self.assertNotIn('"ACME_RopeHelper" createVehicle [0,0,0]',code(src('headElevApplyTilt')));self.assertIn('"CAN_COLLIDE"',src('headElevApplyTilt'))
+    def test_helper_created_at_patient(self):
+        from test_bounded_head_pose_contracts import assert_legacy_helper_is_retired
+        assert_legacy_helper_is_retired()
     def test_floor_restore_uses_asl(self):
-        for n in ('headElevateStop','headElevSuspend'):self.assertIn('_patient setPosASL _base',src(n))
+        from test_bounded_head_pose_contracts import assert_no_patient_teleport
+        assert_no_patient_teleport()
     def test_no_unconditional_menu_true(self):
         t=read('overrides/fn_canOpenMenu.sqf');self.assertIn('ace_medical_gui_maxDistance',t);self.assertIn('ace_medical_gui_enableMedicalMenu',t);self.assertIn('call ace_common_fnc_isAwake',t)
 

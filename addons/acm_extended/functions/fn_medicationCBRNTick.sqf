@@ -10,7 +10,7 @@ private _dt = [_patient, "medicationCBRN", 0, 2] call ACME_fnc_clinicalTickDelta
 if (_dt <= 0) exitWith {};
 private _arrestFactor = [1, 0.5] select (IN_CRDC_ARRST(_patient));
 private _atropine = 0;
-{_atropine = _atropine + ([_patient, _x, false] call ace_medical_status_fnc_getMedicationCount);} forEach ["Atropine","Atropine_IV","Atropine_L","Atropine_IV_L"];
+{_atropine = _atropine + ([_patient, _x, false] call ACME_fnc_medicationCountCompat);} forEach ["Atropine","Atropine_IV","Atropine_L","Atropine_IV_L"];
 if (_atropine >= 3) then {
     private _buildup = _patient getVariable [QGVAR_BUILDUP(Chemical_Sarin), 0];
     private _reduce = 2 * (_atropine / 3) * _arrestFactor * (_dt / 25);
@@ -19,7 +19,7 @@ if (_atropine >= 3) then {
         _patient setVariable [QEGVAR(CBRN,AirwaySpasm), false, true];
     };
 };
-private _dimercaprol = [_patient, "Dimercaprol", false] call ace_medical_status_fnc_getMedicationCount;
+private _dimercaprol = [_patient, "Dimercaprol", false] call ACME_fnc_medicationCountCompat;
 if (_dimercaprol >= 0.5) then {
     private _buildup = _patient getVariable [QGVAR_BUILDUP(Chemical_Lewisite), 0];
     private _reduce = 8 * (_dimercaprol min 2) * _arrestFactor * (_dt / 25);

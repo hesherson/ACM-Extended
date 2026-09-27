@@ -18,6 +18,7 @@ private _pfh = [{
         [_handle] call CBA_fnc_removePerFrameHandler;
         _patient setVariable ["ACME_headElev_pfh", -1];
     };
+    // B166 has no provider-ready handshake. Patient lift starts immediately on the patient owner.
     private _hold = _patient getVariable ["ACME_headElev_hold", []];
     private _releaseHold = false;
     if !(_hold isEqualTo []) then {

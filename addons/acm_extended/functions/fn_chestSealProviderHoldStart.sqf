@@ -2,7 +2,8 @@
 // Flip temporarily hands off to medic4 and returns directly here.
 params [
     ["_medic", objNull, [objNull]],
-    ["_patient", objNull, [objNull]]
+    ["_patient", objNull, [objNull]],
+    ["_forceImmediate", false, [false]]
 ];
 if (isNull _medic || {!alive _medic} || {_medic isEqualTo _patient}) exitWith {-1};
 if (!local _medic) exitWith {-1};
@@ -25,7 +26,7 @@ if ((_state param [1, ""]) == "chestAccess") then {
     };
 };
 
-private _epoch = [_medic, "chestSealWorkspace", -1, _patient] call ACME_fnc_treatmentPoseStart;
+private _epoch = [_medic, "chestSealWorkspace", -1, _patient, _forceImmediate] call ACME_fnc_treatmentPoseStart;
 if (_epoch >= 0) then {
     _medic setVariable ["ACME_CS_providerHoldEpoch", _epoch, false];
 };

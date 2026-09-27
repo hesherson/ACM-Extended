@@ -4,7 +4,7 @@ if (isNull _display || {!isNil "ACME_infusion_pendingContext" && {!((missionName
 private _list = _display displayCtrl 84006;
 private _row = -1;
 for "_i" from 0 to ((lbSize _list) - 1) do {if ((_list lbData _i) == "EpinephrineCardiac") exitWith {_row = _i;};};
-private _available = [ACE_player, "EpinephrineCardiac"] call ACME_fnc_infusionVialVolume;
+private _available = [[ACE_player] call ACME_fnc_vialHolder, "EpinephrineCardiac"] call ACME_fnc_infusionVialVolume;
 if (_available > 0 && {_row < 0}) then {
     _row = _list lbAdd "Epinephrine 1:10,000 (1 mg / 10 mL)";
     _list lbSetData [_row, "EpinephrineCardiac"];

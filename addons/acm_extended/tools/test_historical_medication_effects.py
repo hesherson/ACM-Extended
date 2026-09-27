@@ -74,7 +74,7 @@ def setup():
             [_name,_added,10,100,0,0,0,_route,20,0,0,0,_dose,"",_part,_uid]};
         CBA_missionTime=100;
     '''+''.join(function(n) for n in ('getMedicationEffect','getCardiacMedicationEffects','getNauseaMedicationEffects'))+\
-        function('medicationAvailability',extended=True)+function('getMedicationCount','core',override=True)+'''
+        function('medicationCountCompat',extended=True)+function('medicationAvailability',extended=True)+function('getMedicationCount','core',override=True)+'''
         ace_medical_status_fnc_getMedicationCount=ACM_core_fnc_getMedicationCount;
     '''
 

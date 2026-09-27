@@ -10,6 +10,7 @@ import shutil
 import subprocess
 
 import pytest
+from test_menu_death_lifecycle import namespace_public_arguments
 
 ROOT = Path(__file__).resolve().parents[3]
 F = ROOT / 'addons/circulation/functions'
@@ -42,10 +43,16 @@ def source(name):
         'closeDialog 0;': '_closed = _closed + 1;',
         'hasInterface': '_hasInterface',
         'isServer': '_isServer',
+        # All configured delay fixtures are finite; the VM lacks this command.
+        'finite _lowerDelay': '(_lowerDelay isEqualType 0)',
         'addMissionEventHandler ["HandleDisconnect",': '_disconnectHandler = (["HandleDisconnect",',
     }.items():
         s = s.replace(a, b)
-    s = re.sub(r'(setVariable \[[^;\n]*,[^;\n]*), (?:true|false)(\])', r'\1\2', s)
+    s = namespace_public_arguments(s)
+    # This fixture represents engine objects with namespaces. SQF-VM also returns
+    # nil for a missing typed-object param, unlike Arma's objNull default. Keep the
+    # actual fallback/ownership logic while adapting only the object type check.
+    s = re.sub(r'(\bparam\s*\[\s*\d+\s*,\s*objNull)\s*,\s*\[objNull\](\s*\])', r'\1\2', s)
     s = re.sub(r'\bisNull (_\w+)', r'(\1 isEqualTo objNull)', s)
     s = re.sub(r'\bdialog\b', '_dialog', s)
     s = re.sub(r'_medic removeEventHandler (\[[^;]+\]);', r'\1 call _removeAnim;', s)
@@ -97,6 +104,7 @@ def execute(scenario, runtime=False):
         private _reopens = 0;
         private _logs = [];
         private _texts = [];
+        private _dispatches = [];
         private _duringSwitch = false;
         private _fireAnimOnSwitch = false;
         CBA_missionTime = 20;
@@ -106,6 +114,7 @@ def execute(scenario, runtime=False):
         ACM_breathing_SwapToCPR = false;
         ACM_core_ContinuousAction_Active = false;
         ace_common_fnc_isAwake = {_awake};
+        ACME_fnc_ownerDispatch = {_dispatches pushBack _this;};
         ace_common_fnc_uniqueItems = {if (_hasBVM) then {["ACM_BVM"]} else {[]}};
         ace_common_fnc_displayTextStructured = {_texts pushBack (_this select 0);};
         ace_common_fnc_getName = {"Provider"};
@@ -183,6 +192,32 @@ def execute(scenario, runtime=False):
     output = result.stdout + result.stderr
     assert result.returncode == 0 and '[ERR]' not in output and '[FAT]' not in output, output
     assert 'CPR_FIX_OK' in output and 'CPR_FIX_FAIL' not in output, output
+
+
+def test_direct_cpr_start_yields_same_patient_direct_pressure_without_destroying_episode():
+    execute('''
+        _medic setVariable ["ACME_DP_Active",true];
+        _medic setVariable ["ACME_DP_Patient",_patient];
+        _medic setVariable ["ACME_DP_PFH",77];
+        _medic setVariable ["ACME_DP_KeyIDs",["dp-key"]];
+        _medic setVariable ["ACME_DP_InPose",true];
+        _medic setVariable ["ACME_DP_PoseToken",4];
+        _medic setVariable ["ACME_dah_gen",9];
+
+        call _start;
+
+        [_medic getVariable ["ACME_DP_Active",false],"CPR destroyed Direct Pressure"] call _check;
+        [(_medic getVariable ["ACME_DP_Patient",objNull]) isEqualTo _patient,"CPR changed DP target"] call _check;
+        [(_medic getVariable ["ACME_DP_PFH",-1]) == 77,"CPR removed DP worker"] call _check;
+        [(_medic getVariable ["ACME_DP_KeyIDs",[]]) isEqualTo ["dp-key"],"CPR removed DP inputs"] call _check;
+        [_medic getVariable ["ACME_DP_Paused",false],"CPR did not pause DP"] call _check;
+        [(_medic getVariable ["ACME_DP_PauseTreatmentClass",""]) == "cpr","CPR used wrong DP pause owner"] call _check;
+        [!(_medic getVariable ["ACME_DP_InPose",true]),"CPR left DP pose active"] call _check;
+        [(_medic getVariable ["ACME_dah_gen",0]) == 10,"CPR did not retire DP pose generation"] call _check;
+
+        call _cancel; call _freed;
+        [_medic getVariable ["ACME_DP_Active",false],"CPR cleanup destroyed DP episode"] call _check;
+    ''')
 
 
 def test_stop_with_string_ids_releases_patient_loop_and_requests_native_exit():

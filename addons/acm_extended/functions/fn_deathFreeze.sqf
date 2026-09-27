@@ -23,5 +23,5 @@ if (!isNil "ACME_fnc_seizureMotion") then {[_patient, false] call ACME_fnc_seizu
     if (_list isEqualType []) then {missionNamespace setVariable [_x, _list - [_patient]];};
 } forEach [
     "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients",
-    "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients"
+    "ACME_coag_activePatients", "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients"
 ];

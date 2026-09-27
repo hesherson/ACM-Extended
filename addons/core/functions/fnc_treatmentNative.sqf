@@ -98,9 +98,10 @@ if (alive _patient) then {
                 _patientAnim = getText (_config >> "animationPatientUnconscious");
             };
         } else {
-            if (isText (_config >> "animationPatient")) then {
-                _patientAnim = getText (_config >> "animationPatient");
-            };
+            // B177: a conscious casualty owns their own body. Provider treatment may use normal downed-target
+            // theatre when the casualty is prone, but native treatment must never seize the conscious patient's
+            // animation merely because animationPatient is configured on the action.
+            _patientAnim = "";
         };
 
         if (!_isSelf && {isNull objectParent _patient}) then {
@@ -218,6 +219,18 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
         // Skip animation enitrely if progress bar too quick.
         if (_animRatio > ANIMATION_SPEED_MAX_COEFFICIENT && {!_ignoreAnimCoef}) exitWith {};
 
+        // The wrapper owns a finite animation-rate lease for this exact action. Do not overwrite its
+        // shared choreography rate with ACE's duration ratio. Keep the native short-action skip above
+        // and leave callers without a matching lease on their original animation policy.
+        private _rateLease = _medic getVariable ["ACME_nativeTreatmentRate", []];
+        if (count _rateLease >= 5
+            && {(_rateLease select 1) isEqualTo _patient}
+            && {(_rateLease select 2) == _bodyPart}
+            && {(_rateLease select 3) == _classname}
+            && {(_rateLease select 4) == (_medic getVariable ["ACME_treatmentPoseEpoch", -1])}) then {
+            _animRatio = call ACME_fnc_choreographyRate;
+            _medic setAnimSpeedCoef _animRatio;
+        };
         [QACEGVAR(common,setAnimSpeedCoef), [_medic, _animRatio]] call CBA_fnc_globalEvent;
 
         // Play animation

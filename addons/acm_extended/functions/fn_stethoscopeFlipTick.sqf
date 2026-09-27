@@ -67,9 +67,10 @@ if (_rollStarted >= 0) exitWith {
     private _providerAtHold = (_poseNow param [0,-2]) == _epoch
         && {(_poseNow param [1,""]) == "roll"}
         && {(_poseNow param [3,-2]) >= 3};
+    private _providerCompleted = (_provider getVariable ["ACME_rollProviderCompletedEpoch",-1]) == _epoch;
     private _patientDone = diag_tickTime >= (_rollStarted + _rollTime + 0.08);
     // Return to the held stethoscope pose only after medic4 reaches its authored 2.2 s hold.
-    if (_patientDone && {_providerAtHold || {diag_tickTime >= _deadline}}) then {call _finish;};
+    if (_patientDone && {_providerAtHold || {_providerCompleted} || {diag_tickTime >= _deadline}}) then {call _finish;};
 };
 
 // Match the chest-seal fallback exactly: if physical eligibility disappears before the roll starts, only switch

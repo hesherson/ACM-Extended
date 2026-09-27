@@ -8,7 +8,7 @@ params ["_patient", ["_components", [0,0,0]], ["_reserve", 1]];
 if (isNull _patient || {!alive _patient} || {isNil "ace_medical_status_fnc_getMedicationCount"}) exitWith {[0,0,0,0]};
 private _get = {
     params ["_class", ["_canonical", ""]];
-    private _value = [_patient, _class, false] call ace_medical_status_fnc_getMedicationCount;
+    private _value = [_patient, _class, false] call ACME_fnc_medicationCountCompat;
     if !(_value isEqualType 0 && {finite _value}) exitWith {0};
     if (_canonical != "") then {
         private _cfg = configFile >> "ACM_Medication" >> "Medications";

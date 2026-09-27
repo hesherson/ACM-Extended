@@ -1,0 +1,63 @@
+@everyone
+# ACM Extended v1.2.4 - Patch
+
+:exclamation~1:Remember to repair your mod:exclamation~1:
+
+## CPR / BVM
+- CPR and BVM now properly share the same chest access sequence when a plate carrier needs to be removed
+- Switching directly between CPR and BVM with middle mouse no longer puts the plate carrier back on the casualty between actions
+- Plate carriers stay off throughout CPR -> BVM -> CPR transitions and are only restored once the intervention is actually finished
+- CPR/BVM preparation now closes the medical menu and displays **Preparing...** while the animation sequence is running
+- CPR and BVM can no longer be spam clicked during preparation and accidentally start overlapping animation sequences
+- Canceling during preparation now returns you to the medical menu normally
+- Plate carrier removal and replacement animations have been sped up
+- Elevate Head/Semi-Fowler's now properly yields to CPR/BVM and only resumes after the intervention has completely ended
+
+## DIRECT PRESSURE
+- Direct Pressure now persists through CPR and BVM instead of being canceled
+- Starting CPR or BVM temporarily yields Direct Pressure while the higher priority intervention is active
+- Once CPR/BVM ends, the original Direct Pressure episode automatically resumes without needing to apply pressure again
+- Direct Pressure stays yielded during CPR <-> BVM swaps so the pressure animation/effect no longer briefly reappears between actions
+
+## CHEST SEAL / AUSCULTATION
+- Chest Seal and Auscultation Flip now recognize the completed patient roll immediately instead of leaving the **Flipping...** button disabled longer than the animation
+- Flip completion is retained even when the provider animation finishes first, preventing the minigame from immediately canceling when reopening or flipping again
+- Chest interactions now keep the casualty supine when the procedure ends and no longer roll the patient back onto their stomach
+- Chest Seal now transitions cleanly from the medic4 preparation animation into the hands-on-chest workspace while the minigame is open
+- Exiting Chest Seal or Auscultation now returns the provider cleanly to a crouch
+- Fixed a carrier removal/restoration retry path that could repeatedly reschedule itself and freeze the game during actions such as Check Breathing
+- Delayed chest-access animations now recheck the patient state before continuing so dead, moved, or invalid patients cannot leave the procedure stuck
+
+## SEMI-FOWLER'S / HEAD POSITIONING
+- Semi-Fowler's patient and provider animations now start together instead of waiting on an extra provider-ready handshake
+- Elevating or lowering the head no longer introduces a long dead-air delay between animation stages
+- Lowering Semi-Fowler's no longer performs an unnecessary body roll after the casualty has already been set down
+- The casualty remains supine after Lower Head, cancellation, CPR/BVM interruption, and other chest-access handoffs
+- Repeated Elevate Head -> Lower Head cycles no longer leave stale patient animation locks behind
+- Manual Semi-Fowler's support and Head Tilt-Chin Lift now release their hands-on action state cleanly when canceled or when the medical menu is reopened
+
+## SHARED EQUIPMENT
+- Medical treatments now correctly follow ACE Shared Equipment rules instead of only checking the provider's inventory
+- Equipment can now be pulled from the patient or an eligible nearby vehicle when the configured ACE equipment-sharing mode allows it
+- Shared equipment support now applies to IV/IO supplies, airway equipment, chest seals and decompression supplies, thoracostomy equipment, transfusion preparation, medication containers, warming/monitoring equipment, and ventilator supplies
+- Canceled or rejected actions return reserved equipment to the same patient, medic, or vehicle inventory it originally came from
+- Reusable equipment keeps its existing custody instead of being duplicated or refunded to the wrong inventory
+- Medication vials retain the explicit Self / Patient / Vehicle source selector and can no longer silently change source during an active draw
+
+## MEDICAL MENU / NARC BOX
+- Fixed a treatment-preparation state that could leave the medical menu visible while most treatment buttons silently stopped responding
+- Closing the Narc Box no longer leaves later treatment clicks blocked by a stale provider preflight
+- Medical-menu treatment preparation is now presentation-only and can no longer consume a clinical action just because the weapon/crouch animation did not settle on the expected frame
+- A newer treatment click safely replaces an older stale presentation sequence instead of being rejected
+- Treatment preparation now clears its ownership before launching the real treatment, preventing Narc Box, CPR/BVM, Head Tilt-Chin Lift, and other modal actions from leaving the menu locked
+- Direct Pressure or a tourniquet should no longer be required to make otherwise unresponsive medical-menu buttons start working again
+
+## DEBUG / UI
+- Version has been bumped to **v1.2.4**
+- The debug overlay now reports **v1.2.4** and the current internal build
+- Debug information scales consistently across resolutions and uses the full safe-area height
+- Patient ownership, machine role, locality, and network information are grouped at the top of the debug display
+- Debug text has been slightly reduced and the blue background made more transparent for better visibility during testing
+
+
+-# **[See documentation here](https://hesherson.github.io/ACM-Extended-Wiki/index.html)**

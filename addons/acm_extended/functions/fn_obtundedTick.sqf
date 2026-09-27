@@ -175,15 +175,24 @@ if (_active) then {
             && {random 1 < (missionNamespace getVariable ["ACME_obtunded_sprintFallChance", 0.35])}) then {
             private _dur = missionNamespace getVariable ["ACME_obtunded_sprintFallDuration", 1.25];
             private _cd = missionNamespace getVariable ["ACME_obtunded_sprintFallCooldown", 2.5];
+            private _epoch = [_p] call ACME_fnc_clinicalEpoch;
+            private _serial = (_p getVariable ["ACME_obtunded_sprintRagdollSerial", 0]) + 1;
+            private _token = [_epoch, clientOwner, _serial];
             uiNamespace setVariable ["ACME_ObtundedSprintNextFall", _now + _cd];
-            _p setVariable ["ACME_obtunded_sprintRagdollActive", true, false];
+            _p setVariable ["ACME_obtunded_sprintRagdollSerial", _serial, false];
+            _p setVariable ["ACME_obtunded_sprintRagdollToken", _token, true];
+            _p setVariable ["ACME_obtunded_sprintRagdollActive", true, true];
             _p setUnconscious true;
             [{
-                params ["_u"];
-                if (isNull _u || {!local _u}) exitWith {};
+                params ["_u", "_epoch", "_token"];
+                if (isNull _u || {!local _u} || {!alive _u}) exitWith {};
+                if (([_u] call ACME_fnc_clinicalEpoch) != _epoch) exitWith {};
+                if !((_u getVariable ["ACME_obtunded_sprintRagdollToken", []]) isEqualTo _token) exitWith {};
+                if !(_u getVariable ["ACME_obtunded_sprintRagdollActive", false]) exitWith {};
                 if (!(_u getVariable ["ACE_isUnconscious", false])) then {_u setUnconscious false;};
-                _u setVariable ["ACME_obtunded_sprintRagdollActive", false, false];
-            }, [_p], _dur] call CBA_fnc_waitAndExecute;
+                _u setVariable ["ACME_obtunded_sprintRagdollActive", false, true];
+                _u setVariable ["ACME_obtunded_sprintRagdollToken", [], true];
+            }, [_p, _epoch, _token], _dur] call CBA_fnc_waitAndExecute;
         };
     };
     uiNamespace setVariable ["ACME_ObtundedSprintWasDown", _sprintDown];
@@ -210,9 +219,10 @@ if (_active) then {
         if (!isNull _p) then {
             _p setAnimSpeedCoef 1;
             if (_p getVariable ["ACME_obtunded_sprintRagdollActive", false]) then {
-                _p setVariable ["ACME_obtunded_sprintRagdollActive", false, false];
+                _p setVariable ["ACME_obtunded_sprintRagdollActive", false, true];
                 if (!(_p getVariable ["ACE_isUnconscious", false])) then {_p setUnconscious false;};
             };
+            _p setVariable ["ACME_obtunded_sprintRagdollToken", [], true];
         };
         private _cc = uiNamespace getVariable ["ACME_Obtunded_CC", -1];
         private _db = uiNamespace getVariable ["ACME_Obtunded_DB", -1];

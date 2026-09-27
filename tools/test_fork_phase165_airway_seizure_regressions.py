@@ -12,7 +12,7 @@ def test_head_tilt_launcher_bypasses_generic_async_preflight():
     direct = s.index('_nativeContinuousClass == "beginheadtiltchinlift"')
     generic = s.index('private _bypass = _medic getVariable ["ACME_treatmentPreflightBypass"')
     assert direct < generic
-    assert '_this call ACM_core_fnc_treatmentNative' in s[direct:direct + 350]
+    assert '_this call ACM_core_fnc_treatmentNative' in s[direct:s.index('if (_nativeContinuousClass in ["usebvm"', direct)]
 
 def test_head_tilt_releases_its_exact_continuous_epoch():
     s = read("addons/airway/functions/fnc_beginHeadTiltChinLift.sqf")

@@ -11,6 +11,9 @@ class CfgFunctions {
             class onMenuOpen {
                 file = QPATHTOF(overrides\fnc_onMenuOpen.sqf); //ace/addons/medical_gui/functions/fnc_onMenuOpen.sqf
             };
+            class onMenuClose {
+                file = QPATHTOF(overrides\fnc_onMenuClose.sqf); //ace/addons/medical_gui/functions/fnc_onMenuClose.sqf
+            };
             class updateActions {
                 file = QPATHTOF(overrides\fnc_updateActions.sqf); //ace/addons/medical_gui/functions/fnc_updateActions.sqf
             };

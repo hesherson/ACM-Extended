@@ -34,10 +34,25 @@ if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
 private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
 [_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);
 
-// BVM needs both hands. End this provider's Direct Pressure before ACM takes over the
-// controls and animation; a paused pressure worker must not keep its own input handlers.
-if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPressureStop"}) then {
-    [true, _medic, false] call ACME_fnc_directPressureStop;
+// A provider-supported Semi-Fowler has no prop and cannot survive the supporting provider yielding to BVM.
+// Supported backpack/carrier Semi-Fowler is compatible with BVM and is intentionally left elevated.
+if ((_patient getVariable ["ACME_headElevated", false])
+    && {_patient getVariable ["ACME_headElev_manualUnsupported", false]}) then {
+    [_patient, "headElevStop", [_medic, _patient, false, false]] call ACME_fnc_ownerDispatch;
+};
+
+// BVM outranks Direct Pressure for provider animation and clinical hand use, but it must not destroy the
+// persistent pressure episode. Yield the same-provider/same-patient hold before BVM takes ownership; the DP PFH
+// keeps the episode alive without its marker/pose and resumes it only after the real native BVM/CPR lifetime ends.
+private _dpSamePatient = (_medic getVariable ["ACME_DP_Active", false])
+    && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient};
+if (_dpSamePatient) then {
+    _medic setVariable ["ACME_DP_Paused", true, false];
+    _medic setVariable ["ACME_DP_PauseTreatmentClass", "usebvm", false];
+    _medic setVariable ["ACME_dah_gen", (_medic getVariable ["ACME_dah_gen", 0]) + 1, false];
+    _medic setVariable ["ACME_DP_InPose", false, false];
+    _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+    _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
 };
 
 [[_medic, _patient, "head", [_useOxygen, _portableOxygen]], { // On Start
@@ -47,6 +62,13 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
     private _epoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
     _extraArgs set [2, _epoch];
     GVAR(BVM_LocalSession) = [_medic, _patient, _epoch];
+
+    // 1.2.3: a successful BVM start completes any CPR -> BVM chest-access handoff.
+    private _chestHandoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
+    if ((_chestHandoff param [0, objNull, [objNull]]) isEqualTo _patient) then {
+        _medic setVariable ["ACME_chestAccessManeuverHandoff", [], false];
+    };
+
     _medic setVariable [QGVAR(BVM_patient), _patient, true];
     _medic setVariable [QGVAR(BVM_epoch), _epoch, true];
     _patient setVariable [QGVAR(BVM_session), [_medic, _epoch], true];
@@ -151,6 +173,18 @@ if (_medic getVariable ["ACME_DP_Active", false] && {!isNil "ACME_fnc_directPres
 
     private _epoch = _extraArgs param [2, -1];
     private _swapToCPR = missionNamespace getVariable [QGVAR(SwapToCPR), false];
+
+    // Preserve the open-chest lease across the deliberate 0.1 s BVM -> CPR handoff. The bounded token lets the
+    // existing lease watchdog restore the carrier if CPR fails to take ownership.
+    if (_swapToCPR && {!isNull _medic} && {!isNull _patient}) then {
+        // A supported Semi-Fowler BVM -> CPR swap has to lower the casualty once before compressions begin.
+        // Keep the existing chest-access lease alive through that authored 1.4 s release so the carrier is not
+        // restored and immediately removed again during the handoff.
+        private _handoffSec = if (_patient getVariable ["ACME_headElevated", false]) then {2.50} else {1.00};
+        _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + _handoffSec], false];
+        [_patient, "chestAccessManeuverHandoff", [_handoffSec]] call ACME_fnc_ownerDispatch;
+    };
+
     if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
     // Death/respawn/locality loss releases ownership without reopening menus on the replacement player.
     if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}

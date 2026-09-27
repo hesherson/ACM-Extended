@@ -2,8 +2,6 @@
 call ACME_fnc_initForkStartupRuntime;
 // Phase 37: debug-menu PFH plus EachFrame fallback registration.
 call ACME_fnc_registerDebugWatchdogRuntime;
-// B114: rebindable two-page debug navigation.
-call ACME_fnc_registerDebugPageKeybindRuntime;
 
 // Medical-menu rendering is owned at compile time by addons/gui.
 call ACME_fnc_initMedicationRegistry;

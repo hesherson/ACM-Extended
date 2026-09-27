@@ -39,7 +39,10 @@ uiNamespace setVariable ["ACME_minigame_openedAsDisplay", true];
 // display mode. it is a child of the mission display, so dialog is false and ACE leaves it alone.
 private _parent = findDisplay 46;
 if (isNull _parent) exitWith {
-    createDialog _dialogClass;  // there is no mission display, which is rare, so fall back rather than fail.
+    // This is a dialog fallback, so do not leave the display-mode flag armed. installLightKey and close/reopen
+    // behavior must follow the object that actually exists, not the requested experimental mode.
+    uiNamespace setVariable ["ACME_minigame_openedAsDisplay", false];
+    createDialog _dialogClass;
 };
 
 // close every open dialog first. this is the whole ballgame, and the first spike missed it.

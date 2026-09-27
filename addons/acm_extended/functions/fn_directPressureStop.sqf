@@ -5,13 +5,26 @@ params [["_silent", false, [false]], ["_medic", ACE_player, [objNull]]];
 if (isNull _medic) exitWith {};
 
 private _wasActive = _medic getVariable ["ACME_DP_Active", false];
+private _pending = _medic getVariable ["ACME_DP_ClaimPending", []];
 private _patient = _medic getVariable ["ACME_DP_Patient", objNull];
 private _part = _medic getVariable ["ACME_DP_Part", ""];
+private _claimToken = _medic getVariable ["ACME_DP_ClaimToken", ""];
+private _claimEpoch = _medic getVariable ["ACME_DP_ClaimEpoch", -1];
+if (!_wasActive && {_pending isEqualType []} && {count _pending >= 4}) then {
+    _patient = _pending select 0;
+    _part = _pending select 1;
+    _claimToken = _pending select 2;
+    _claimEpoch = _pending select 3;
+};
 private _wasInPose = _medic getVariable ["ACME_DP_InPose", false];
 private _stateBefore = toLower animationState _medic;
-private _otherManeuver = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
-// An already dispatched DP cancel can arrive after BVM has taken over.
-if (!_wasActive && {_otherManeuver}) exitWith {};
+private _otherManeuver = (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false])
+    || {_medic getVariable ["ACM_circulation_isPerformingCPR", false]}
+    || {_medic getVariable ["ACM_breathing_isUsingBVM", false]}
+    || {!isNull _patient && {[_patient] call ACM_core_fnc_cprActive}}
+    || {!isNull _patient && {[_patient] call ACM_core_fnc_bvmActive}};
+// An already dispatched DP cancel can arrive after CPR/BVM has taken over. It no longer owns hints, stance or pose.
+if (!_wasActive && {_pending isEqualTo []} && {_otherManeuver}) exitWith {};
 
 // Retire every delayed Direct Pressure pose request first. ACME_DP_PoseToken belongs to the DP layer itself;
 // ACME_dah_gen owns ACME_fnc_doAnimHeld's short reassert worker.
@@ -26,7 +39,12 @@ if (_d3 >= 0) then {removeMissionEventHandler ["Draw3D", _d3];};
 if (!_otherManeuver) then {[] call ace_interaction_fnc_hideMouseHint;};
 
 if (!isNull _patient && {_part != ""}) then {
-    [_patient, "directPressureMarker", [_medic, _part, false]] call ACME_fnc_ownerDispatch;
+    if (_claimToken != "") then {
+        [_patient, "directPressureClaim", ["release", [_medic, _part, _claimToken, _claimEpoch, owner _medic]]] call ACME_fnc_ownerDispatch;
+    } else {
+        // Compatibility cleanup for an episode created before atomic claims existed.
+        [_patient, "directPressureMarker", [_medic, _part, false]] call ACME_fnc_ownerDispatch;
+    };
 };
 
 // Break only our decorative hold. Priority 2 remains a narrow safety fallback when the engine is physically still
@@ -61,7 +79,11 @@ if (!_otherManeuver && {local _medic} && {alive _medic} && {isNull objectParent 
     ["ACME_DP_ClinicalYieldStart", 0],
     ["ACME_DP_PauseTreatmentClass", ""],
     ["ACME_DP_TreatmentBusy", false],
-    ["ACME_DP_OwnsContinuous", false]
+    ["ACME_DP_OwnsContinuous", false],
+    ["ACME_DP_ClaimPending", []],
+    ["ACME_DP_ClaimRequestedAt", -1],
+    ["ACME_DP_ClaimToken", "", true],
+    ["ACME_DP_ClaimEpoch", -1, true]
 ];
 
 if (_wasActive) then {

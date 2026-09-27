@@ -4,6 +4,7 @@ SQF-VM verifies packet ordering and handler lifecycle. Arma multiplayer is still
 required to verify rendered motion, interpolation and network timing.
 """
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -26,6 +27,8 @@ def execute(scenario):
         "owner _medic": "(if (_testServer) then {_testOwner} else {0})",
         "clientOwner": "_testClient",
         "isServer": "_testServer",
+        "finite _visiblePhase": "true",
+        "finite _rate": "true",
         "alive _medic": "_testAlive",
         "getAnimSpeedCoef _medic": "_testSpeed",
         "animationState _medic": "_testMove",
@@ -39,6 +42,7 @@ def execute(scenario):
     }
     for original, replacement in substitutions.items():
         source = source.replace(original, replacement)
+    source = re.sub(r"_medic setAnimSpeedCoef ([^;]+);", r"_testSpeed = (\1);", source)
     code = r'''
         private _ok = true;
         private _testNull = false;
@@ -55,6 +59,7 @@ def execute(scenario):
         private _deferSeek = false;
         private _handlers = [];
         private _waits = [];
+        private _delays = [];
         private _removedJIP = 0;
         private _exitMoves = 0;
         CBA_missionTime = 10;
@@ -67,6 +72,7 @@ def execute(scenario):
         };
         CBA_fnc_removePerFrameHandler = {(_handlers select (_this select 0)) set [2, false];};
         CBA_fnc_waitUntilAndExecute = {_waits pushBack _this;};
+        CBA_fnc_waitAndExecute = {_delays pushBack _this;};
         CBA_fnc_removeGlobalEventJIP = {_removedJIP = _removedJIP + 1;};
         ACME_fnc_doAnim = {_exitMoves = _exitMoves + 1;};
         private _tick = {
@@ -101,7 +107,7 @@ def test_remote_hold_survives_delayed_animation_entry_and_repairs_state_and_phas
         _testPhase = 0.4;
         CBA_missionTime = 10.6;
         [] call _tick;
-        [abs (_testPhase - 0.14) < 0.001 && {_seeks == 3}, "phase drift not repaired"] call _check;
+        [abs (_testPhase - 0.14) < 0.001 && {_seeks == 4}, "phase drift not repaired"] call _check;
     ''')
 
 
@@ -218,3 +224,60 @@ def test_new_owner_aborts_old_episode_and_releases_to_crouch():
         [_testSpeed == 1 && {_removedJIP == 1} && {_exitMoves == 1}, "new owner retained old hold"] call _check;
         [(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [1, false], "old episode still active"] call _check;
     """)
+
+
+def test_remote_phase_update_is_repaired_on_next_frame_without_quarter_second_motion():
+    execute('''
+        call _hold;
+        _testPhase = 0.20;
+        CBA_missionTime = 10.016;
+        [] call _tick;
+        [abs (_testPhase - 0.14) < 0.001 && {_seeks == 2} && {_testSpeed == 0}, "remote update visibly escaped held sample"] call _check;
+        [] call _tick;
+        [_seeks == 2, "stable frozen phase was needlessly restarted"] call _check;
+    ''')
+
+
+def test_reordered_run_cannot_unfreeze_hold_or_release():
+    execute('''
+        call _hold;
+        [_medic, 1, "run", "", -1, 7, 1.5] call ACME_fnc_treatmentPoseSync;
+        [_testSpeed == 0, "late run unfroze hold"] call _check;
+        call _release;
+        [_medic, 1, "run", "", -1, 7, 1.5] call ACME_fnc_treatmentPoseSync;
+        [_testSpeed == 1, "late run revived stopped episode"] call _check;
+    ''')
+
+
+def test_new_episode_variable_overtakes_old_release_and_watchdog():
+    execute('''
+        call _hold;
+        _medic setVariable ["ACME_treatmentPoseEpisode", [2, true]];
+        _testSpeed = 1.5;
+        call _release;
+        [] call _tick;
+        [_testSpeed == 1.5, "old cleanup reset new episode speed"] call _check;
+    ''')
+
+
+def test_cancel_before_run_or_hold_stays_terminal():
+    execute('''
+        call _release;
+        [_medic, 1, "run", "", -1, 7, 1.5] call ACME_fnc_treatmentPoseSync;
+        call _hold;
+        [_testSpeed == 1 && {count _handlers == 0}, "cancel-before-entry was revived"] call _check;
+    ''')
+
+
+def test_accelerated_exit_is_bounded_and_old_exit_cannot_reset_next_hold():
+    execute('''
+        call _hold;
+        _medic setVariable ["ACME_treatmentPoseEpisode", [1, false]];
+        [_medic, 1, "exit", "", -1, 7, 1.5] call ACME_fnc_treatmentPoseSync;
+        [_testSpeed == 1.5 && {abs (((_delays select 0) select 2) - (0.85 / 1.5)) < 0.001}, "exit rate/duration mismatch"] call _check;
+        _medic setVariable ["ACME_treatmentPoseEpisode", [2, true]];
+        [_medic, 2, "hold", "ACME_StethoscopeWork", 0.14, 7] call ACME_fnc_treatmentPoseSync;
+        private _job = _delays select 0;
+        (_job select 1) call (_job select 0);
+        [_testSpeed == 0, "old exit reset next hold"] call _check;
+    ''')

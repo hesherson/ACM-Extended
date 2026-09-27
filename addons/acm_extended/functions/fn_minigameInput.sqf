@@ -6,6 +6,16 @@ params [["_display", displayNull, [displayNull]], ["_key", -1, [0]],
     ["_up", false, [true]], ["_device", "KEYBOARD", [""]]];
 if (isNull _display || {!hasInterface} || {!(_display getVariable ["ACME_InputInstalled", false])}) exitWith {false};
 private _held = _display getVariable ["ACME_InputHeld", createHashMap];
+// Arma can lose KeyUp/MouseUp while the game or display loses focus (Alt-Tab, overlay, monitor focus change).
+// A long input silence is therefore a hard episode boundary: discard stale held tokens before interpreting the
+// next physical event. Normal key repeat arrives continuously and never crosses this window.
+private _lastInputAt = _display getVariable ["ACME_InputLastAt", -1];
+if (_lastInputAt >= 0 && {(diag_tickTime - _lastInputAt) > 1.5}) then {
+    _held = createHashMap;
+    _display setVariable ["ACME_InputHeld", _held];
+    _display setVariable ["ACME_InputTaps", createHashMap];
+};
+_display setVariable ["ACME_InputLastAt", diag_tickTime];
 private _token = format ["%1:%2", _device, _key];
 _display setVariable ["ACME_InputMods", [_shift,_ctrl,_alt]];
 if (_up) exitWith {

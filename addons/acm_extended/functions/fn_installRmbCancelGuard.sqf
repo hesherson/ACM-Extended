@@ -1,11 +1,7 @@
-// install one persistent MouseButtonDown handler on the mission display, 46, that swallows the right mouse button,
-// button 1, while any ACME cancelable hold state is active, so RMB cancels the action without the engine also
-// processing it as aim-down-sights.
-// returning true from a display-46 MouseButtonDown handler is the reliable way to block the RMB into ads path,
-// because CBA mouse keyhandlers do not consistently consume it.
-// the covered states, each canceling its own way, are hang iv bag, ACME_hang_Active, which lowers the bag, and
-// direct pressure, ACME_DP_Active, which stops holding pressure.
-// lmb and MMB always pass through. the cancel is fired one frame later, so this handler returns cleanly first.
+// Install one persistent MouseButtonDown handler on mission display 46.
+// Hang Bag keeps RMB as its dedicated lower/cancel input. Direct Pressure uses MMB exclusively, matching the
+// project's interaction contract: aiming (RMB), Escape and H must never silently release hemorrhage control.
+// The cancel is fired one frame later so the display handler can consume only the matching physical click.
 if (!hasInterface) exitWith {};
 
 private _disp = findDisplay 46;
@@ -20,13 +16,14 @@ uiNamespace setVariable ["ACME_RmbGuard_Installed", true];
 
 private _eh = _disp displayAddEventHandler ["MouseButtonDown", {
     params ["_d", "_button"];
-    if !(_button isEqualTo 1) exitWith { false };  // only RMB; lmb/MMB pass through
     private _u = ACE_player;
     if (isNull _u || {!alive _u}) exitWith { false };
 
     private _hang = _u getVariable ["ACME_hang_Active", false];
     private _dp   = _u getVariable ["ACME_DP_Active", false];
-    if !(_hang || _dp) exitWith { false };  // no cancelable hold -> let RMB do its normal thing
+    private _cancelHang = (_button isEqualTo 1) && {_hang};
+    private _cancelDP = (_button isEqualTo 2) && {_dp};
+    if !(_cancelHang || {_cancelDP}) exitWith { false };
 
     // B127: capture the exact hold episode before deferring. Without this, an RMB from an ending hold could execute
     // one frame later after a new hold started and cancel the new episode instead.
@@ -35,21 +32,20 @@ private _eh = _disp displayAddEventHandler ["MouseButtonDown", {
 
     // fire the matching cancel next frame, so this handler returns, and swallows the RMB, cleanly first.
     [{
-        params ["_hangStart", "_dpToken"];
+        params ["_hangStart", "_dpToken", "_cancelHang", "_cancelDP"];
         private _u = ACE_player;
         if (isNull _u) exitWith {};
-        if (_u getVariable ["ACME_hang_Active", false]
+        if (_cancelHang && {_u getVariable ["ACME_hang_Active", false]}
             && {(_u getVariable ["ACME_hang_Start", -2]) == _hangStart}) exitWith {
             [false] call ACME_fnc_hangBagStop;
         };
-        if (_u getVariable ["ACME_DP_Active", false]
+        if (_cancelDP && {_u getVariable ["ACME_DP_Active", false]}
             && {(_u getVariable ["ACME_DP_PoseToken", -2]) == _dpToken}) exitWith {
-            private _reopen = (_u getVariable ["ACME_DP_Mode", ""]) == "torso";
-            [false, _u, _reopen] call ACME_fnc_directPressureStop;
+            [false, _u] call ACME_fnc_directPressureStop;
         };
-    }, [_hangStart, _dpToken]] call CBA_fnc_execNextFrame;
+    }, [_hangStart, _dpToken, _cancelHang, _cancelDP]] call CBA_fnc_execNextFrame;
 
-    true  // swallow RMB -> the weapon does not aim
+    true  // consume only RMB-for-Hang-Bag or MMB-for-Direct-Pressure
 }];
 
 uiNamespace setVariable ["ACME_RmbGuard_EH", _eh];

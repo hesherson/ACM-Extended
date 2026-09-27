@@ -44,11 +44,19 @@ if (isServer && {isNil "ACME_DP_ServerCleanupInstalled"}) then {
         if (isNull _unit) exitWith {};
         private _patient = _unit getVariable ["ACME_DP_Patient", objNull];
         private _part = _unit getVariable ["ACME_DP_Part", ""];
+        private _token = _unit getVariable ["ACME_DP_ClaimToken", ""];
+        private _epoch = _unit getVariable ["ACME_DP_ClaimEpoch", -1];
         if (!isNull _patient && {_part != ""}) then {
-            [_patient, "directPressureMarker", [_unit, _part, false]] call ACME_fnc_ownerDispatch;
+            if (_token != "") then {
+                [_patient, "directPressureClaim", ["release", [_unit, _part, _token, _epoch, owner _unit]]] call ACME_fnc_ownerDispatch;
+            } else {
+                [_patient, "directPressureMarker", [_unit, _part, false]] call ACME_fnc_ownerDispatch;
+            };
         };
         _unit setVariable ["ACME_DP_Active", false, true];
         _unit setVariable ["ACME_DP_Patient", objNull, true];
+        _unit setVariable ["ACME_DP_ClaimToken", "", true];
+        _unit setVariable ["ACME_DP_ClaimEpoch", -1, true];
     };
     addMissionEventHandler ["HandleDisconnect", {
         params ["_unit"];

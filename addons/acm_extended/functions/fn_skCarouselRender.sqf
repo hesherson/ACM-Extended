@@ -27,8 +27,6 @@ private _injectBusy = uiNamespace getVariable ["ACME_SK_InjectionBusy",false];
 private _pushAnimPFH = uiNamespace getVariable ["ACME_SK_PushAnimPFH",-1];
 private _normalPushAnimActive = _pushAnimPFH isEqualType 0 && {_pushAnimPFH >= 0};
 private _carouselBusy = uiNamespace getVariable ["ACME_SK_CarouselBusy",false];
-private _hover = (uiNamespace getVariable ["ACME_SK_CarouselHover",false]) && {!_editMode};
-private _hoverOffset = uiNamespace getVariable ["ACME_SK_CarouselHoverOffset", 99];
 private _rect = _d getVariable ["ACME_SK_CarouselRect", _d getVariable [if (_expanded) then {"ACME_SK_CarouselRectExpanded"} else {"ACME_SK_CarouselRectCompact"}, [_uiX,safeZoneY,_uiW,safeZoneH*0.2]]];
 _rect params ["_rx","_ry","_rw","_rh"];
 
@@ -198,7 +196,7 @@ for "_slot" from 0 to 4 do {
         private _alpha = if (_editMode) then {1} else {_al select _slot};
         // B78: hover is presentation-only. It never changes carousel geometry; the syringe under the pointer simply
         // fades up to full opacity. Expansion remains exclusive to click/A/D (or another explicit click workflow).
-        if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};
+        // Hover does not alter alpha; explicit selection/navigation owns presentation.
 
         private _w = _fullW * _scale; private _h = _fullH * _scale;
         private _x = if (_editMode) then {_editX} else {_centerX + (_off * _dx) - _w/2};
