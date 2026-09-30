@@ -24,7 +24,11 @@ def test_exposed_hpmk_cpr_is_explicitly_body_targeted():
 
     assert '_state == "exposed"' in cached
     assert '(toLowerANSI _className) == "cpr"' in cached
-    assert '[_caller, _target, "Body", _className] call ace_medical_treatment_fnc_canTreat' in cached
+    # Normalize the body selection before common eligibility; do not bypass provider checks.
+    assert '_bodyPart = "body";' in cached
+    assert '_part = "body";' in cached
+    assert '[_caller, _target, toLowerANSI _bodyPart, _className] call ace_medical_treatment_fnc_canTreat' in cached
+    assert cached.index('_bodyPart = "body";') < cached.index('private _allowed =') < cached.rindex('call ace_medical_treatment_fnc_canTreat')
 
     marker = treatment.index("// B190: the exposed HPMK overlay represents a physically open chest.")
     block = treatment[marker:treatment.index("private _medicVehicle", marker)]

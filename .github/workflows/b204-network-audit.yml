@@ -1,7 +1,13 @@
-name: B204 network audit
+name: Stable network audit
 
 on:
   push:
+    branches: [main]
+    paths:
+      - "addons/**"
+      - "tools/**"
+      - ".github/workflows/b204-network-audit.yml"
+  pull_request:
     branches: [main]
     paths:
       - "addons/**"
@@ -13,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: b204-network-audit-main
+  group: stable-network-audit-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,33 +42,93 @@ jobs:
           mkdir -p /tmp/acme-tools
           curl -fLsS --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
           echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
-          chmod +x /tmp/acme-tools/hemtt
+          curl -fLsS --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
           python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
 
       - name: Native-state ownership diagnostic
-        run: python tools/audit_acme_native_owner_writes.py
+        run: python tools/audit_acme_native_owner_writes.py --strict
 
       - name: Focused networking and ownership gates
         run: |
           set -euo pipefail
-          python -m pytest             addons/acm_extended/tools/test_b204_network_full_audit_20260929.py             addons/acm_extended/tools/test_bug_audit_batch09_network.py             addons/acm_extended/tools/test_b203_network_backpressure_20260929.py             addons/acm_extended/tools/test_owner_locality_audit_20260920.py             addons/acm_extended/tools/test_build_version_tag.py             tools/test_fork_phase23_runtime_ownership.py             tools/test_fork_phase48_native_iv_bag_owner.py             tools/test_fork_phase49_airway_state_owner.py             tools/test_fork_phase50_core_state_owner.py             tools/test_fork_phase51_breathing_state_owner.py             tools/test_fork_phase52_circulation_state_owner.py             tools/test_fork_phase67_persistent_state_owner_restore.py             tools/test_fork_phase80_ett_migration_owner.py             tools/test_fork_phase84_thora_side_state_owner.py             tools/test_fork_phase85_thora_output_state_owner.py             tools/test_fork_phase135_remoteexec_whitelist_closure.py             tools/test_fork_phase136_remoteexec_target_registration.py             -q
+          mkdir -p /tmp/acme-network-results
+          pytest_status=0
+          python -m pytest \
+            addons/acm_extended/tools/test_b204_network_full_audit_20260929.py \
+            addons/acm_extended/tools/test_bug_audit_batch09_network.py \
+            addons/acm_extended/tools/test_b203_network_backpressure_20260929.py \
+            addons/acm_extended/tools/test_owner_locality_audit_20260920.py \
+            addons/acm_extended/tools/test_build_version_tag.py \
+            tools/test_fork_phase23_runtime_ownership.py \
+            tools/test_fork_phase48_native_iv_bag_owner.py \
+            tools/test_fork_phase49_airway_state_owner.py \
+            tools/test_fork_phase50_core_state_owner.py \
+            tools/test_fork_phase51_breathing_state_owner.py \
+            tools/test_fork_phase52_circulation_state_owner.py \
+            tools/test_fork_phase67_persistent_state_owner_restore.py \
+            tools/test_fork_phase80_ett_migration_owner.py \
+            tools/test_fork_phase84_thora_side_state_owner.py \
+            tools/test_fork_phase85_thora_output_state_owner.py \
+            tools/test_fork_phase134_named_remote_command_endpoints.py \
+            tools/test_fork_phase135_remoteexec_whitelist_closure.py \
+            tools/test_fork_phase136_remoteexec_target_registration.py \
+            --junitxml=/tmp/acme-network-results/focused-ownership.xml -q || pytest_status=$?
+          python tools/compare_pytest_outcomes.py require-pass \
+            --report /tmp/acme-network-results/focused-ownership.xml \
+            --exit-code "$pytest_status" --label focused-ownership \
+            --json-report /tmp/acme-network-results/focused-ownership-gate.json
+
+      - name: Network execution regressions
+        env:
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/acme-network-results
+          pytest_status=0
+          python -m pytest \
+            tools/test_b207_native_owner_audit_gate.py \
+            tools/test_b207_pytest_outcome_gate.py \
+            addons/acm_extended/tools/test_b205*py \
+            addons/acm_extended/tools/test_b206*py \
+            addons/acm_extended/tools/test_b207*py \
+            addons/acm_extended/tools/test_b208*py \
+            addons/acm_extended/tools/test_debug_single_overlay.py \
+            addons/acm_extended/tools/test_native_bvm_dp.py \
+            addons/acm_extended/tools/test_bounded_pressure_contracts.py \
+            addons/acm_extended/tools/test_network_medication_iv_execution.py \
+            addons/acm_extended/tools/test_ventilator_audio_registry_20260930.py \
+            addons/acm_extended/tools/test_treatment_pose_sync.py \
+            addons/acm_extended/tools/test_head_collision_restore_20260930.py \
+            addons/acm_extended/tools/test_bounded_head_completion.py \
+            addons/acm_extended/tools/test_bounded_head_pose_contracts.py \
+            --junitxml=/tmp/acme-network-results/focused-network.xml -q || pytest_status=$?
+          python tools/compare_pytest_outcomes.py require-pass \
+            --report /tmp/acme-network-results/focused-network.xml \
+            --exit-code "$pytest_status" --label focused-network \
+            --json-report /tmp/acme-network-results/focused-network-gate.json
 
       - name: HEMTT static validation
         run: /tmp/acme-tools/hemtt check
 
-      - name: Compare full regression outcomes to pre-audit B203 baseline
+      # The historical full suite is not green. This comparison preserves and
+      # reports identical baseline failures/errors, while every new case must
+      # pass and no existing test occurrence may disappear or regress.
+      - name: Compare full regression outcomes to B204 baseline
         env:
-          BASE: 2ab84cfcb58d1d24d76295e28db8c0b06dd127af
+          BASE: 133d8bdd2ddefb92990c505ff19af7643d36e694
+          SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
         run: |
           set -euo pipefail
           python - <<'PY'
-          import os, pathlib, subprocess, xml.etree.ElementTree as ET
+          import os, pathlib, subprocess, sys
           from concurrent.futures import ThreadPoolExecutor
-          from collections import Counter
 
           root = pathlib.Path.cwd()
-          before = pathlib.Path("/tmp/acme-b204-before")
-          out = pathlib.Path("/tmp/acme-b204-results")
+          before = pathlib.Path("/tmp/acme-network-before")
+          out = pathlib.Path("/tmp/acme-network-results")
           out.mkdir(exist_ok=True)
           base = os.environ["BASE"]
 
@@ -82,72 +148,45 @@ jobs:
 
           def suite(label, cwd, target):
               xml = out / f"{label}.xml"
-              r = cmd([
-                  "python", "-m", "pytest", target, "-q", "--tb=no",
-                  "--continue-on-collection-errors", f"--junitxml={xml}"
-              ], cwd=cwd, timeout=850)
-              (out / f"{label}.log").write_text(r.stdout)
-              assert xml.exists(), r.stdout[-12000:]
-              states = {}
-              for case in ET.parse(xml).iter("testcase"):
-                  key = (case.get("classname", ""), case.get("name", ""))
-                  state = (
-                      "error" if case.find("error") is not None else
-                      "failed" if case.find("failure") is not None else
-                      "skipped" if case.find("skipped") is not None else
-                      "passed"
-                  )
-                  states[key] = state
-              return r.returncode, states, Counter(states.values())
+              try:
+                  r = cmd([
+                      sys.executable, "-m", "pytest", target, "-q", "--tb=no",
+                      "--continue-on-collection-errors", f"--junitxml={xml}"
+                  ], cwd=cwd, timeout=850)
+                  output, exit_code = r.stdout, r.returncode
+              except subprocess.TimeoutExpired as exc:
+                  output = exc.stdout or ""
+                  if isinstance(output, bytes):
+                      output = output.decode("utf-8", errors="replace")
+                  output += "\nERROR: pytest exceeded the full-suite timeout\n"
+                  exit_code = 124
+              (out / f"{label}.log").write_text(output)
+              (out / f"{label}.exit-code").write_text(str(exit_code) + "\n")
+              return xml, exit_code
 
-          with ThreadPoolExecutor(max_workers=2) as ex:
-              a = ex.submit(suite, "addon-before", before, "addons/acm_extended/tools")
-              b = ex.submit(suite, "addon-after", root, "addons/acm_extended/tools")
-              rb, db, cb = a.result()
-              ra, da, ca = b.result()
-
-          missing = sorted(set(db) - set(da))
-          regressions = []
-          improvements = []
-          for key, old in db.items():
-              if key not in da:
-                  continue
-              new = da[key]
-              if old == "passed" and new != "passed":
-                  regressions.append((key, old, new))
-              elif old == "skipped" and new in {"failed", "error"}:
-                  regressions.append((key, old, new))
-              elif old in {"failed", "error"} and new == "passed":
-                  improvements.append(key)
-              elif old == "failed" and new == "error":
-                  regressions.append((key, old, new))
-
-          assert not missing, f"missing addon tests: {missing[:30]}"
-          assert not regressions, f"addon regressions: {regressions[:30]}"
-
-          with ThreadPoolExecutor(max_workers=2) as ex:
-              a = ex.submit(suite, "root-before", before, "tools")
-              b = ex.submit(suite, "root-after", root, "tools")
-              _, db2, cb2 = a.result()
-              _, da2, ca2 = b.result()
-
-          missing2 = sorted(set(db2) - set(da2))
-          regressions2 = []
-          for key, old in db2.items():
-              if key not in da2:
-                  continue
-              new = da2[key]
-              if old == "passed" and new != "passed":
-                  regressions2.append((key, old, new))
-              elif old == "skipped" and new in {"failed", "error"}:
-                  regressions2.append((key, old, new))
-              elif old == "failed" and new == "error":
-                  regressions2.append((key, old, new))
-
-          assert not missing2, f"missing root tests: {missing2[:30]}"
-          assert not regressions2, f"root regressions: {regressions2[:30]}"
-
-          print("B204 baseline comparison PASS")
-          print("addon before:", dict(cb), "after:", dict(ca), "improvements:", len(improvements))
-          print("root before:", dict(cb2), "after:", dict(ca2))
+          failed = False
+          for label, target in (("addon", "addons/acm_extended/tools"), ("root", "tools")):
+              with ThreadPoolExecutor(max_workers=2) as ex:
+                  old = ex.submit(suite, label + "-before", before, target)
+                  new = ex.submit(suite, label + "-after", root, target)
+                  old_xml, old_exit = old.result()
+                  new_xml, new_exit = new.result()
+              gate = cmd([
+                  sys.executable, "tools/compare_pytest_outcomes.py", "compare",
+                  "--before", str(old_xml), "--before-exit-code", str(old_exit),
+                  "--after", str(new_xml), "--after-exit-code", str(new_exit),
+                  "--label", label, "--json-report", str(out / f"{label}-comparison.json")
+              ], timeout=30)
+              (out / f"{label}-comparison.log").write_text(gate.stdout)
+              print(gate.stdout, end="")
+              failed = failed or gate.returncode != 0
+          raise SystemExit(1 if failed else 0)
           PY
+
+      - name: Preserve validation outcomes and known baseline failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-network-validation-${{ github.run_id }}
+          path: /tmp/acme-network-results/
+          if-no-files-found: warn

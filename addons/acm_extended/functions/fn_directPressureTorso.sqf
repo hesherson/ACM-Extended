@@ -7,7 +7,7 @@ if (isNull _medic || {isNull _patient}) exitWith {};
 // A direct call can bypass fn_directPressureStart, so retain the maneuver guard. Any clinical marker cleanup is
 // owner-routed and cannot erase another provider's replacement hold.
 if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) exitWith {
-    [_patient, "directPressureMarker", [_medic, _bodyPart, false]] call ACME_fnc_ownerDispatch;
+    [_patient, "directPressureMarker", [_medic, _bodyPart, false, _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]] call ACME_fnc_ownerDispatch;
     ["Another active maneuver is already in progress.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 
@@ -47,7 +47,7 @@ _medic setVariable ["ACME_DP_KeyIDs", []];
 [_patient, "activity", "%1 started Direct pressure on %2", "%1 started Direct pressure on %2", [[_medic, false, true] call ace_common_fnc_getName, ([_bodyPart, "abbr"] call ACME_fnc_bodyPartName)]] call ACME_fnc_medLog;
 
 // Publish the clinical pressure marker only after provider-local episode state is fully initialized.
-[_patient, "directPressureMarker", [_medic, _bodyPart, true]] call ACME_fnc_ownerDispatch;
+[_patient, "directPressureMarker", [_medic, _bodyPart, true, _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]] call ACME_fnc_ownerDispatch;
 
 private _pfh = [ACME_fnc_directPressureTick, 0, [_medic, _patient, _bodyPart, "torso"]] call CBA_fnc_addPerFrameHandler;
 _medic setVariable ["ACME_DP_PFH", _pfh];

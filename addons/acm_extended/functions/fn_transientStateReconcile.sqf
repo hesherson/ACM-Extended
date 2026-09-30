@@ -127,11 +127,16 @@ if (["ACME_reconcileInvalidHangAt", _hangInvalid, 2] call _debouncedInvalid) the
     private _claimAt = _claim param [4, -1, [0]];
     private _claimActive = !isNull _claimMedic
         && {_claimMedic getVariable ["ACME_DP_Active", false]}
+        && {(_claimMedic getVariable ["ACME_DP_ClaimToken", ""]) == (_claim param [1, ""])}
+        && {(_claimMedic getVariable ["ACME_DP_ClaimEpoch", -1]) == _claimEpoch}
         && {(_claimMedic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
         && {toLowerANSI (_claimMedic getVariable ["ACME_DP_Part", ""]) == _part};
     private _claimPending = !isNull _claimMedic && {_claimAt >= 0}
         && {(_netNow - _claimAt) <= 3}
-        && {_claimOwner == owner _claimMedic};
+        && {_claimOwner > 0 || {_claimOwner == 0 && {!isMultiplayer} && {local _claimMedic}}}
+        && {if (local _claimMedic) then {_claimOwner == clientOwner} else {
+            isMultiplayer && {!isServer || {_claimOwner == owner _claimMedic}}
+        }};
     private _claimInvalid = !(_claim isEqualTo []) && {
         !(_claim isEqualType [] && {count _claim >= 5})
         || {isNull _claimMedic}

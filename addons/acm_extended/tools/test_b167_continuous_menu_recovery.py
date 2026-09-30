@@ -27,7 +27,7 @@ def test_shared_continuous_controller_has_explicit_reopen_policy_and_bool_result
     assert 'exitWith {false};' in source
     assert source.rstrip().endswith("true")
     # Startup grace must preserve, not erase, the action's opt-in.
-    grace = source[source.index("private _dialogCondition = false;"):source.index("if (_patientCondition", source.index("private _dialogCondition = false;"))]
+    grace = source[source.index("private _dialogCondition = false;"):source.index("if (!_startupComplete || _patientCondition", source.index("private _dialogCondition = false;"))]
     assert 'GVAR(ContinuousAction_ShouldReopen) = _reopenOnEnd;' in grace
     assert 'GVAR(ContinuousAction_ShouldReopen) = false;' not in grace
 

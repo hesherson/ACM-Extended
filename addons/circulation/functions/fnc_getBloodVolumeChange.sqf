@@ -589,6 +589,7 @@ if (_hasFluidBags) then {
     };
 
     if (count _fluidBags < 1) then {
+        _unit setVariable ["ACME_ivBagsPublishedSig", nil, false];
         _unit setVariable [QEGVAR(circulation,IV_Bags), nil, true];  // no bags are left, so clear the variable. always sync this globally.
         _unit setVariable [QEGVAR(circulation,IV_Bags_Active), false, true];
         [_unit, ""] call EFUNC(circulation,updateActiveFluidBags);
@@ -623,7 +624,7 @@ if (_hasFluidBags) then {
             || {_acmeBagUiLastAt < 0}
             || {(CBA_missionTime - _acmeBagUiLastAt) >= 1};
 
-        _unit setVariable [QEGVAR(circulation,IV_Bags), _fluidBags, _acmeBagUiPublish];
+        [_unit, _fluidBags, _acmeBagUiPublish] call FUNC(setIVBagsState);
         if (_acmeBagUiPublish) then {
             _unit setVariable ["ACME_transfusionUiBagStructSig", _acmeBagStructSig, false];
             _unit setVariable ["ACME_transfusionUiBagSyncAt", CBA_missionTime, false];

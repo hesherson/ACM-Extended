@@ -47,7 +47,7 @@ private _partShort = [_bodyPart, "abbr"] call ACME_fnc_bodyPartName;
  [[_medic, false, true] call ace_common_fnc_getName, _partShort]] call ACME_fnc_medLog;
 
 // Publish the clinical pressure marker only after provider-local episode state is fully initialized.
-[_patient, "directPressureMarker", [_medic, _bodyPart, true]] call ACME_fnc_ownerDispatch;
+[_patient, "directPressureMarker", [_medic, _bodyPart, true, _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]] call ACME_fnc_ownerDispatch;
 
 private _pfh = [ACME_fnc_directPressureTick, 0, [_medic, _patient, _bodyPart, "limb"]] call CBA_fnc_addPerFrameHandler;
 _medic setVariable ["ACME_DP_PFH", _pfh];

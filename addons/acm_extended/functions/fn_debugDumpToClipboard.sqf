@@ -22,6 +22,8 @@ if (isNull _patient) then {_patient = _playerRef;};
 private _ver = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");
 if (_ver == "") then {_ver = missionNamespace getVariable ["ACME_infusion_version", "?"];};
 private _build = missionNamespace getVariable ["ACME_buildBatch", "?"];
+private _netCompat = missionNamespace getVariable ["ACME_networkCompatStatus", "pending"];
+private _serverBuild = missionNamespace getVariable ["ACME_networkCompatServerBuild", "unverified"];
 private _normalBlood = missionNamespace getVariable ["ACME_hypo_bloodNormal", 6];
 private _circVol = _patient getVariable ["ace_medical_bloodVolume", _normalBlood];
 private _extBleedDbg = if (!isNil "ace_medical_status_fnc_getBloodLoss") then {(([_patient] call ace_medical_status_fnc_getBloodLoss) max 0) * 60000} else {0};
@@ -48,6 +50,7 @@ private _map = if (_sys > 0) then {(_sys + 2 * _dia) / 3} else {_patient getVari
 private _etco2 = if (!isNil "ACM_breathing_fnc_getEtCO2") then {[_patient] call ACM_breathing_fnc_getEtCO2} else {-1};
 
 [format ["~~~~~~~~~ACM Extended Debug v%1 %2~~~~~~~~~", _ver, _build]] call _out;
+[format ["Network compatibility=%1 serverBuild=%2 issues=%3", _netCompat, _serverBuild, missionNamespace getVariable ["ACME_networkCompatIssues", []]]] call _out;
 [format ["Time=%1 CBA=%2 tick=%3 fps=%4", time toFixed 1, CBA_missionTime toFixed 1, diag_tickTime toFixed 1, diag_fps toFixed 1]] call _out;
 [format ["Patient=%1 type=%2 netId=%3 owner=%4 local=%5 alive=%6", name _patient, typeOf _patient, netId _patient, owner _patient, local _patient, alive _patient]] call _out;
 [""] call _out;

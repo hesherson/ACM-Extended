@@ -1,7 +1,9 @@
+#include "script_build.hpp"
 #include "script_component.hpp"
 
 class CfgPatches {
     class ADDON {
+        ACME_BUILD_CONFIG("main");
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {};

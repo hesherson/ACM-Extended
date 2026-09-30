@@ -115,10 +115,12 @@ def test_manual_plate_carrier_awake_guard_uses_valid_sqf_syntax():
     # This is clearer to HEMTT/SQF parsing and avoids the malformed-brace regression entirely.
     assert 'if (!(alive _medic)) exitWith {false};' in s
     assert 'if (!([_medic] call ace_common_fnc_isAwake)) exitWith {false};' in s
-    assert 'if (!(alive _patient)) exitWith {false};' in s
+    # B208 permits corpse equipment access; only a living, awake patient blocks removal.
+    assert 'if (!(alive _patient)) exitWith {false};' not in s
+    assert 'private _awake = alive _patient && {' in s
 
     # Persistent removal is valid only while the casualty remains medically down.
-    assert 'private _awake = !(_patient getVariable ["ACE_isUnconscious", false])' in s
+    assert 'private _awake = alive _patient && {!(_patient getVariable ["ACE_isUnconscious", false])}' in s
     assert '&& {!(_patient getVariable ["ace_medical_unconscious", false])};' in s
     assert s.rstrip().endswith("!_awake")
 

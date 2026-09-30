@@ -17,7 +17,14 @@ private _helper = _patient getVariable ["ACME_headElev_helper", objNull];
 if (!isNull _helper) then {deleteVehicle _helper;};
 _patient setVariable ["ACME_headElev_helper", objNull, true];
 private _m = _patient getVariable ["ACME_headElev_mass", -1];
-if (_m > 0) then {_patient setMass _m; _patient setVariable ["ACME_headElev_mass", nil, true];};
+// Legacy cleanup must use the same deferred, global restore as ordinary motion completion. A local setMass
+// followed by clearing the saved value strands observers at low mass and defeats the next-frame safety window.
+// An existing moving lease keeps its collision ownership if the replacement lift is rejected below.
+private _motionToken = _patient getVariable ["ACME_patientAnimSpeedToken", ""];
+private _motionLock = _patient getVariable ["ACME_patientAnimLock", []];
+private _motionOwnsCollision = _motionToken != "" && {(_motionLock param [0, ""]) == _motionToken}
+    && {(_motionLock param [4, -1]) > serverTime};
+if (_m > 0 && {!_motionOwnsCollision}) then {[_patient, true] call ACME_fnc_headElevCollision;};
 
 private _visualAccepted = true;
 if (_replayAnim && {isNull objectParent _patient}) then {

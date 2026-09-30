@@ -99,9 +99,12 @@ class B23RouteSelector(unittest.TestCase):
 class B23DeadBagAccess(unittest.TestCase):
     def test_dead_target_can_open_transfusion_menu_if_access_exists(self):
         s = read('overrides/fn_canTreatCached.sqf')
-        self.assertIn('_className == "OpenTransfusionMenu"', s)
-        self.assertIn('ACM_circulation_fnc_hasIV', s)
-        self.assertIn('ACM_circulation_fnc_hasIO', s)
+        self.assertIn('toLowerANSI _bodyPart, _className] call ace_medical_treatment_fnc_canTreat', s)
+        native = (ROOT.parent / "core/ACE_Medical_Treatment_Actions.hpp").read_text()
+        block = native.split("class OpenTransfusionMenu",1)[1].split("class ",1)[0]
+        self.assertIn("hasIV", block)
+        self.assertIn("hasIO", block)
+        self.assertNotIn("alive _patient", block)
 
     def test_hang_bag_does_not_drop_only_because_patient_is_dead(self):
         start = read('functions/fn_hangBagStart.sqf')

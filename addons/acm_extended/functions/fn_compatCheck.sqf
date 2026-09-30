@@ -13,7 +13,7 @@
 // a casualty on the table. that is worth a great deal on a heavily modded server, where the load order is not
 // something anyone fully controls.
 
-if (!isServer && {!hasInterface}) exitWith {};
+// Headless clients own casualty physiology too, so verify the same runtime bindings there.
 if (missionNamespace getVariable ["ACME_compatChecked", false]) exitWith {};
 missionNamespace setVariable ["ACME_compatChecked", true];
 

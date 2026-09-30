@@ -83,9 +83,12 @@ def test_stale_provider_and_continuous_locks_cannot_disable_future_treatments():
     treatment=(CORE/"fnc_treatment.sqf").read_text(encoding="utf-8")
     assert 'ACME_headElev_seqActive' in treatment
     assert 'call ACME_fnc_headElevateCancelSeq;' in treatment
-    assert 'ACM_core_ContinuousAction_LastSeen' in treatment
-    assert '(CBA_missionTime - _lastSeen) > 4' in treatment
-    assert 'missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];' in treatment
+    # Treatment entry must not classify another provider's global controller from this medic's heartbeat.
+    assert 'ACM_core_ContinuousAction_LastSeen' not in treatment
+    reconcile = read("providerStateReconcile")
+    assert 'ACM_core_ContinuousAction_Controller' in reconcile
+    assert '_provider getVariable ["ACM_core_ContinuousAction_LastSeen", -1]' in reconcile
+    assert '[_controller select 4, _controller select 5] call (_controller select 3);' in reconcile
 
 
 def test_obsolete_pending_lift_watchdog_is_gone():
@@ -106,7 +109,7 @@ def test_continuous_action_acquisition_self_heals_only_stale_generation():
     begin=(ROOT.parent/"core"/"functions"/"fnc_beginContinuousAction.sqf").read_text(encoding="utf-8")
     assert 'QGVAR(ContinuousAction_Session)' in begin
     assert 'QGVAR(ContinuousAction_LastSeen)' in begin
-    assert '(CBA_missionTime - _staleSeen) > 4' in begin
-    assert 'GVAR(ContinuousAction_Active) = false;' in begin
-    # Normal exclusivity remains after the bounded stale-state cleanup.
-    assert '|| {GVAR(ContinuousAction_Active)}) exitWith {};' in begin
+    assert '_staleSeen' not in begin
+    assert 'GVAR(ContinuousAction_Controller) = [_medic, _patient, _epoch, _worker, _workerArgs, _pfh];' in begin
+    # Acquisition rejects an occupied native controller; recorded-owner recovery runs its real cleanup.
+    assert '|| {GVAR(ContinuousAction_Active)}) exitWith {false};' in begin

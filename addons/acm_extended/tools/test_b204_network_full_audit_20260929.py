@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+from source_scan import code_streams, matching, split_args
 
 ROOT = Path(__file__).resolve().parents[3]
 ACME = ROOT / "addons" / "acm_extended"
@@ -11,6 +12,50 @@ def read(rel: str) -> str:
 
 def function(name: str) -> str:
     return read(f"addons/acm_extended/functions/fn_{name}.sqf")
+
+
+def network_ops(source: str):
+    """Inspect code tokens, including executable callbacks, never prose/comments."""
+    identifiers = set()
+    zero_targets = []
+    for tokens in code_streams(source):
+        identifiers.update(t.value.lower() for t in tokens if t.kind == "ident")
+        pairs = matching(tokens)
+        for i, token in enumerate(tokens[:-1]):
+            if token.kind != "ident" or token.value.lower() not in {"remoteexec", "remoteexeccall"}:
+                continue
+            opening = i + 1
+            if tokens[opening].value != "[" or opening not in pairs:
+                continue
+            args = split_args(tokens, opening + 1, pairs[opening], pairs)
+            if len(args) >= 2 and len(args[1]) == 1 and args[1][0].value == "0":
+                zero_targets.append(token.line)
+    return identifiers, zero_targets
+
+
+def test_network_scan_detects_real_commands_and_ignores_comment_and_string_decoys():
+    live = '''
+        // a preceding comment must not hide the live commands below
+        publicVariableServer "state";
+        [] remoteExecCall ["handler", 0];
+        [] remoteExec ["handler", 0, true];
+        {call process} forEach allUnits;
+        ["event", []] call CBA_fnc_globalEvent;
+    '''
+    ids, broadcasts = network_ops(live)
+    assert {"publicvariableserver", "allunits", "cba_fnc_globalevent"} <= ids
+    assert len(broadcasts) == 2
+    decoys = '''
+        /* [] remoteExecCall ["handler", 0]; publicVariable "state"; */
+        // allUnits; call CBA_fnc_globalEvent;
+        private _label = "publicVariable allUnits CBA_fnc_globalEvent";
+        [] remoteExecCall ["handler", owner _patient];
+    '''
+    ids, broadcasts = network_ops(decoys)
+    assert not {"publicvariable", "allunits", "cba_fnc_globalevent"} & ids
+    assert not broadcasts
+    ids, broadcasts = network_ops("compile \"[] remoteExecCall ['handler', 0];\";")
+    assert len(broadcasts) == 1
 
 
 def test_approximate_network_helper_rejects_non_finite_scalars():
@@ -25,9 +70,8 @@ def test_jip_events_have_explicit_cleanup_in_same_runtime_module():
     offenders = []
     for path in (ACME / "functions").glob("*.sqf"):
         text = path.read_text(encoding="utf-8-sig", errors="strict")
-        text = re.sub(r"/\\*.*?\\*/", "", text, flags=re.S)
-        code = "\n".join(line.split("//", 1)[0] for line in text.splitlines())
-        if "CBA_fnc_globalEventJIP" in code and "CBA_fnc_removeGlobalEventJIP" not in code:
+        identifiers, _ = network_ops(text)
+        if "cba_fnc_globaleventjip" in identifiers and "cba_fnc_removeglobaleventjip" not in identifiers:
             offenders.append(path.name)
     assert offenders == [], offenders
 
@@ -97,24 +141,20 @@ def test_owner_recovery_is_event_driven_with_only_slow_missing_event_audit():
 
 def test_hot_tick_files_do_not_use_global_broadcast_primitives():
     offenders = []
-    zero_target = re.compile(r'remoteExec(?:Call)?\\s*\\[[^\\]]*,\\s*0(?:\\s*,|\\s*\\])')
     for path in (ACME / "functions").glob("fn_*Tick.sqf"):
         text = path.read_text(encoding="utf-8-sig", errors="strict")
-        text = re.sub(r"/\\*.*?\\*/", "", text, flags=re.S)
-        code = "\n".join(line.split("//", 1)[0] for line in text.splitlines())
-        if "CBA_fnc_globalEvent" in code or "CBA_fnc_globalEventJIP" in code or zero_target.search(code):
+        identifiers, zero_targets = network_ops(text)
+        if {"cba_fnc_globalevent", "cba_fnc_globaleventjip"} & identifiers or zero_targets:
             offenders.append(path.name)
     assert offenders == [], offenders
 
 
 def test_acme_networking_does_not_use_raw_publicvariable_commands():
     offenders = []
-    token = re.compile(r"\\bpublicVariable(?:Server|Client)?\\b", re.I)
     for path in (ACME / "functions").glob("*.sqf"):
         text = path.read_text(encoding="utf-8-sig", errors="strict")
-        text = re.sub(r"/\\*.*?\\*/", "", text, flags=re.S)
-        code = "\n".join(line.split("//", 1)[0] for line in text.splitlines())
-        if token.search(code):
+        identifiers, _ = network_ops(text)
+        if {"publicvariable", "publicvariableserver", "publicvariableclient"} & identifiers:
             offenders.append(path.name)
     assert offenders == [], offenders
 
@@ -127,9 +167,8 @@ def test_hot_medical_ticks_do_not_world_scan_every_run():
     offenders = []
     for path in (ACME / "functions").glob("fn_*Tick.sqf"):
         text = path.read_text(encoding="utf-8-sig", errors="strict")
-        text = re.sub(r"/\\*.*?\\*/", "", text, flags=re.S)
-        code = "\n".join(line.split("//", 1)[0] for line in text.splitlines())
-        if re.search(r"\\ballUnits\\b", code) and path.name not in allowed:
+        identifiers, _ = network_ops(text)
+        if "allunits" in identifiers and path.name not in allowed:
             offenders.append(path.name)
     assert offenders == [], offenders
 
@@ -175,7 +214,9 @@ def test_thoracostomy_painting_never_publishes_a_growing_array_per_frame():
     assert "ACME_fnc_setVarNet" not in paint
     assert "setVariable [_key" not in paint
 
-    assert '"thoraPrepCommit"' in mouse
+    flush = function("thoraPrepFlush")
+    assert "call ACME_fnc_thoraPrepFlush" in mouse
+    assert '"thoraPrepCommit"' in flush
     assert 'case "thoraPrepCommit"' in owner
     assert 'call ACME_fnc_thoraSideStateCommit;' in owner
     assert 'call ACME_fnc_thoraBumpVer;' in owner
@@ -261,14 +302,31 @@ def test_hpmk_server_safety_uses_registry_not_repeated_world_scan():
     assert '"ACME_hpmkServerTrack"' in state
 
 
+def global_sound_calls(source):
+    found = []
+    for tokens in code_streams(source):
+        pairs = matching(tokens)
+        for i, token in enumerate(tokens[:-1]):
+            if token.kind != "ident" or token.value.lower() not in {"remoteexec", "remoteexeccall"}:
+                continue
+            opening = i + 1
+            if tokens[opening].value != "[" or opening not in pairs:
+                continue
+            args = split_args(tokens, opening + 1, pairs[opening], pairs)
+            if (len(args) >= 2 and len(args[0]) == 1 and len(args[1]) == 1
+                    and args[0][0].kind == "string"
+                    and args[0][0].value.lower() in {"say3d", "acme_fnc_remotesay3d"}
+                    and args[1][0].value == "0"):
+                found.append(token.line)
+    return found
+
+
 def test_no_acme_treatment_audio_broadcasts_to_every_client():
-    offenders = []
-    for path in list((ACME / "functions").glob("*.sqf")) + [ACME / "config.cpp"]:
-        text = path.read_text(encoding="utf-8-sig", errors="ignore")
-        if re.search(r'remoteExec(?:Call)?\s*\[\s*["\']say3D["\']\s*,\s*0\s*\]', text):
-            offenders.append(str(path.relative_to(ROOT)))
-        if re.search(r'remoteExec(?:Call)?\s*\[\s*["\']ACME_fnc_remoteSay3D["\']\s*,\s*0\s*\]', text):
-            offenders.append(str(path.relative_to(ROOT)))
+    # The fork's core overrides are runtime code too. Limiting this to the Extended
+    # folder previously missed a second global Direct Pressure sound in treatment.
+    paths = [p for p in (ROOT / "addons").rglob("*") if p.suffix in {".sqf", ".cpp", ".hpp"}]
+    offenders = [str(p.relative_to(ROOT)) for p in paths
+                 if global_sound_calls(p.read_text(encoding="utf-8-sig", errors="strict"))]
     assert offenders == [], offenders
 
     helper = function("worldSfxNearby")
@@ -361,5 +419,5 @@ def test_b204_network_audit_identity():
     startup = function("initForkStartupRuntime")
     config = read("addons/acm_extended/config.cpp")
     assert 'version = "1.2.4.1";' in config
-    assert 'ACME_buildBatch = "B204";' in startup
-    assert 'ACME_networkAuditRevision = "NA4-B204-1.2.4.1-stable";' in startup
+    assert 'ACME_buildBatch = "B208";' in startup
+    assert 'ACME_networkAuditRevision = "NA8-B208-1.2.4.1-stable";' in startup

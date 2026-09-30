@@ -143,6 +143,8 @@ uiNamespace setVariable ["ACME_Thora_Prepping", false];
 // array every UI frame can saturate a multiplayer client's reliable queue. Seed the local working copy from the
 // durable patient state and commit once on mouse-up.
 private _prepPatient = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
+uiNamespace setVariable ["ACME_Thora_PrepEpoch", [_prepPatient] call ACME_fnc_clinicalEpoch];
+uiNamespace setVariable ["ACME_Thora_RibPending", createHashMap];
 private _prepLocal = createHashMap;
 {
     _prepLocal set [_x, if (isNull _prepPatient) then {[]} else {+(_prepPatient getVariable [format ["ACME_thora_prep_%1", _x], []])}];
@@ -341,4 +343,3 @@ _display displayAddEventHandler ["MouseButtonUp", {_this call ACME_fnc_thoraMous
 _display displayAddEventHandler ["MouseZChanged", {_this call ACME_fnc_thoraSealScroll}];
 {_x ctrlAddEventHandler ["MouseZChanged", {_this call ACME_fnc_thoraSealScroll}];} forEach allControls _display;
 _surface ctrlSetTooltip "Chest seal: empty hands, RMB to remove; scroll to lift a corner and burp, reverse to lay it down.";
-

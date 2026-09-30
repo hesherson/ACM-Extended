@@ -25,10 +25,19 @@ if (!_active) exitWith {
 };
 
 // A delayed start may not revive a dead/reset casualty or a now-paralyzed motor layer.
+// owner is authoritative on the server. A client-owned casualty's session is authored with clientOwner;
+// clients cannot validate remote presentation by comparing that ID with their non-authoritative owner result.
+private _sessionOwner = _session param [1, -1];
+private _ownerMatches = if (isServer) then {
+    _sessionOwner == owner _patient
+} else {
+    !local _patient || {_sessionOwner == clientOwner}
+};
 if (!alive _patient
     || {_session isEqualTo []}
     || {(_session param [0,-1]) != ([_patient] call ACME_fnc_clinicalEpoch)}
-    || {(_session param [1,-1]) != owner _patient}) exitWith {false};
+    || {!_ownerMatches}
+    || {local _patient && {!(_session isEqualTo (_patient getVariable ["ACME_seizure_motionSession", []]))}}) exitWith {false};
 if (_patient getVariable ["ACME_roc_paralyzed", false]) exitWith {
     if (((toLowerANSI (gestureState _patient)) find "acme_seizurespasm") == 0) then {
         _patient switchGesture "GestureEmpty";

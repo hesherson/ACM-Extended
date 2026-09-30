@@ -23,6 +23,30 @@ if !(missionNamespace getVariable ["ACME_sys_dp", true]) exitWith {
     [_pfhId] call CBA_fnc_removePerFrameHandler;
 };
 
+// An ACK can arrive before the owner's claim replication. Allow that propagation to settle, but retire a
+// token-bearing hold after sustained loss of its reservation. Owner marker/clot checks reject effects immediately.
+private _claimToken = _medic getVariable ["ACME_DP_ClaimToken", ""];
+private _claimLost = false;
+if (_claimToken != "") then {
+    private _claimEpoch = _medic getVariable ["ACME_DP_ClaimEpoch", -1];
+    private _claim = _patient getVariable [format ["ACME_DP_claim_%1", _bodyPart], []];
+    private _matchesClaim = _claim isEqualType [] && {count _claim >= 5}
+        && {(_claim select 0) isEqualTo _medic} && {(_claim select 1) == _claimToken}
+        && {(_claim select 2) == _claimEpoch} && {_claimEpoch == ([_patient] call ACME_fnc_clinicalEpoch)};
+    private _lostAt = _medic getVariable ["ACME_DP_ClaimLostAt", -1];
+    if (_matchesClaim) then {
+        if (_lostAt >= 0) then {_medic setVariable ["ACME_DP_ClaimLostAt", -1, false];};
+    } else {
+        if (_lostAt < 0) then {
+            _medic setVariable ["ACME_DP_ClaimLostAt", diag_tickTime, false];
+        } else {_claimLost = (diag_tickTime - _lostAt) >= 3;};
+    };
+};
+if (_claimLost) exitWith {
+    [true, _medic, false] call ACME_fnc_directPressureStop;
+    [_pfhId] call CBA_fnc_removePerFrameHandler;
+};
+
 private _stop = "";
 if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]}) then {_stop = "down";};
 if (_stop == "" && {isNull _patient}) then {_stop = "patient";};
@@ -99,7 +123,7 @@ if (_mustYieldClinical) exitWith {
     _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
     _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
     if (!_yieldedClinical) then {
-        [_patient, "directPressureMarker", [_medic, _bodyPart, false]] call ACME_fnc_ownerDispatch;
+        [_patient, "directPressureMarker", [_medic, _bodyPart, false, _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]] call ACME_fnc_ownerDispatch;
         _medic setVariable ["ACME_DP_ClinicalYield", true];
         _medic setVariable ["ACME_DP_ClinicalYieldStart", CBA_missionTime];
     };
@@ -117,7 +141,7 @@ if (_yieldedClinical) then {
     _medic setVariable ["ACME_DP_NextClot", (_medic getVariable ["ACME_DP_NextClot", CBA_missionTime]) + _yieldDuration];
     _medic setVariable ["ACME_DP_ClinicalYield", false];
     _medic setVariable ["ACME_DP_ClinicalYieldStart", 0];
-    [_patient, "directPressureMarker", [_medic, _bodyPart, true]] call ACME_fnc_ownerDispatch;
+    [_patient, "directPressureMarker", [_medic, _bodyPart, true, _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]] call ACME_fnc_ownerDispatch;
 };
 
 private _held = CBA_missionTime - (_medic getVariable ["ACME_DP_Start", CBA_missionTime]);
@@ -128,4 +152,4 @@ _medic setVariable ["ACME_DP_NextClot", CBA_missionTime + 2];
 // Wound arrays belong to the casualty owner. The provider owns only the hold timer/animation; ask the patient
 // owner to perform this clot attempt against its current wound state so simultaneous damage/coagulation cannot
 // race a remote client's read/modify/write.
-[_patient, "directPressureClot", [_medic, _bodyPart]] call ACME_fnc_ownerDispatch;
+[_patient, "directPressureClot", [_medic, _bodyPart, _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]] call ACME_fnc_ownerDispatch;

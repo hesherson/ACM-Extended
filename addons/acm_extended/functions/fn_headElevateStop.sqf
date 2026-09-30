@@ -101,7 +101,13 @@ private _helper = _patient getVariable ["ACME_headElev_helper", objNull];
 if (!isNull _helper) then {deleteVehicle _helper;};
 _patient setVariable ["ACME_headElev_helper", objNull, true];
 private _mass = _patient getVariable ["ACME_headElev_mass", -1];
-if (_mass > 0) then {_patient setMass _mass; _patient setVariable ["ACME_headElev_mass", nil, true];};
+// Preserve the shared original mass until the deferred global restore actually executes. A subsequent accepted
+// lower invalidates that restore; a competing live moving lease still owns collision if our lower is rejected.
+private _motionToken = _patient getVariable ["ACME_patientAnimSpeedToken", ""];
+private _motionLock = _patient getVariable ["ACME_patientAnimLock", []];
+private _motionOwnsCollision = _motionToken != "" && {(_motionLock param [0, ""]) == _motionToken}
+    && {(_motionLock param [4, -1]) > serverTime};
+if (_mass > 0 && {!_motionOwnsCollision}) then {[_patient, true] call ACME_fnc_headElevCollision;};
 
 
 // If the casualty was already physically flat from a temporary suspension, permanent cancellation only retires

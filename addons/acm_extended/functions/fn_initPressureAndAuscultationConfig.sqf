@@ -50,7 +50,7 @@ if (isServer && {isNil "ACME_DP_ServerCleanupInstalled"}) then {
             if (_token != "") then {
                 [_patient, "directPressureClaim", ["release", [_unit, _part, _token, _epoch, owner _unit]]] call ACME_fnc_ownerDispatch;
             } else {
-                [_patient, "directPressureMarker", [_unit, _part, false]] call ACME_fnc_ownerDispatch;
+                [_patient, "directPressureMarker", [_unit, _part, false, _token, _epoch]] call ACME_fnc_ownerDispatch;
             };
         };
         _unit setVariable ["ACME_DP_Active", false, true];

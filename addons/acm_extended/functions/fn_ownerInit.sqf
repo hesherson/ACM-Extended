@@ -93,6 +93,17 @@ ACME_NA2_ownerInstalled = true;
     _unit setVariable ["ACME_net_cacheOwner", [], false];
     _unit setVariable ["ACME_net_approxCache", createHashMap, false];
     _unit setVariable ["ACME_net_approxOwner", [], false];
+    // Every ownership transition starts a new publication epoch, including away/back to the same machine.
+    // These are local suppression caches only; replicated physiology remains intact for the new owner.
+    {
+        _unit setVariable [_x, [], false];
+    } forEach ["ACME_circ_stateNetOwner", "ACME_tbi_stateNetOwner", "ACME_infusion_netOwner", "ACM_circulation_ForkStatePublishOwner", "ACM_breathing_ForkStatePublishOwner"];
+    {
+        _unit setVariable [_x, createHashMap, false];
+    } forEach ["ACM_circulation_ForkStatePublished", "ACM_breathing_ForkStatePublished"];
+    _unit setVariable ["ACME_ivBagsPublishedSig", nil, false];
+    _unit setVariable ["ACME_medicationDriveFlushToken", [], false];
+    _unit setVariable ["ACME_medicationDriveNetAt", -1, false];
     _unit setVariable ["ACME_clinicalLastOwner", -1];
     _unit setVariable ["ACME_nativeWorkerOwner", nil, false];
     _unit setVariable ["ACME_alt_ptxSample", nil, false];
@@ -191,7 +202,8 @@ ACME_NA2_ownerInstalled = true;
         missionNamespace setVariable ["ACME_clinical_ownedUnits", _actualOwned];
         {[_x] call ACME_fnc_ownerRegister;} forEach _missingOwned;
     };
-    if (hasInterface && {!isNil "ACE_player"} && {!isNull ACE_player}) then {
+    if ((hasInterface && {!isNil "ACE_player"} && {!isNull ACE_player})
+        || {!((missionNamespace getVariable ["ACM_core_ContinuousAction_Controller", []]) isEqualTo [])}) then {
         [] call ACME_fnc_providerStateReconcile;
     };
     {

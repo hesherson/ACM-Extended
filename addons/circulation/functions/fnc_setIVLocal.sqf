@@ -76,7 +76,7 @@ private _retained = false;
     };
 } forEach _bags;
 _map set [_bodyPart, _keep];
-[_patient, QGVAR(IV_Bags), _map] call ACME_fnc_setVarNet;
+[_patient, _map, true] call FUNC(setIVBagsState);
 [_patient, "ACME_detachedBags", _detached] call ACME_fnc_setVarNet;
 if (_doseChanged) then {[_patient, "ACME_infusion_BagMedications", _entries] call ACME_fnc_setVarNet;};
 _patient setVariable [format ["ACME_clampRate_%1_%2_%3", _part, _iv, _accessSite], -1, false];

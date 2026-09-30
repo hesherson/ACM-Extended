@@ -282,12 +282,20 @@ switch (_operation) do {
         [_patient,_op,_claimArgs] call ACME_fnc_directPressureClaimLocal;
     };
     case "directPressureMarker": {
-        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]], ["_active", false, [false]]];
+        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]], ["_active", false, [false]],
+            ["_token", "", [""]], ["_epoch", -1, [0]]];
         private _part = toLower _bodyPart;
         if (_part == "") exitWith {};
         private _key = format ["ACME_DP_press_%1", _part];
+        private _claim = _patient getVariable [format ["ACME_DP_claim_%1", _part], []];
+        private _ownsClaim = _token != "" && {_claim isEqualType []} && {count _claim >= 5}
+            && {(_claim select 0) isEqualTo _medic} && {(_claim select 1) == _token}
+            && {(_claim select 2) == _epoch} && {_epoch == ([_patient] call ACME_fnc_clinicalEpoch)};
+        // Both resume and yield carry the originating episode. An old packet from the same provider must not
+        // change a successor hold. Only historical cleanup without any reservation may omit the token.
+        if (!_ownsClaim && {_active || {_token != ""} || {!(_claim isEqualTo [])}}) exitWith {};
         if (_active) then {
-            // Provider-local state identifies the exact hold. The patient owner alone publishes the clinical marker.
+            // The patient-owner claim, rather than replicated provider identity alone, authorizes this marker.
             if (!isNull _medic
                 && {_medic getVariable ["ACME_DP_Active", false]}
                 && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
@@ -315,9 +323,14 @@ switch (_operation) do {
         };
     };
     case "directPressureClot": {
-        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]]];
+        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]],
+            ["_token", "", [""]], ["_epoch", -1, [0]]];
         private _part = toLower _bodyPart;
+        private _claim = _patient getVariable [format ["ACME_DP_claim_%1", _part], []];
         if (!isNull _medic && {_part != ""}
+            && {_token != ""} && {_claim isEqualType []} && {count _claim >= 5}
+            && {(_claim select 0) isEqualTo _medic} && {(_claim select 1) == _token}
+            && {(_claim select 2) == _epoch} && {_epoch == ([_patient] call ACME_fnc_clinicalEpoch)}
             && {_medic getVariable ["ACME_DP_Active", false]}
             && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
             && {(_medic getVariable ["ACME_DP_Part", ""]) == _part}
@@ -400,9 +413,27 @@ switch (_operation) do {
     case "thoraSideState": {_args call ACME_fnc_thoraSideStateCommit;};
     case "thoraBumpVer": {_args call ACME_fnc_thoraBumpVer;};
     case "thoraPrepCommit": {
-        _args params [["_p", objNull, [objNull]], ["_side", "right", [""]], ["_points", [], [[]]]];
-        if (_p isEqualTo _patient && {_points isEqualType []}) then {
-            [_patient, _side, "prep", _points] call ACME_fnc_thoraSideStateCommit;
+        _args params [["_p", objNull, [objNull]], ["_side", "right", [""]],
+            ["_points", [], [[]]], ["_epoch", -1, [0]]];
+        _side = toLower _side;
+        if !(_p isEqualTo _patient && {_side in ["left", "right"]}
+            && {_epoch == ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {};
+        // Each provider may have painted against an older replica. Merge at the single writer so a late or
+        // duplicated packet cannot erase another provider's applied prep or bump the revision unnecessarily.
+        private _current = _patient getVariable [format ["ACME_thora_prep_%1", _side], []];
+        private _merged = +_current;
+        {
+            if (count _merged >= 130) exitWith {};
+            if (_x isEqualType [] && {count _x == 2}
+                && {(_x select 0) isEqualType 0} && {(_x select 1) isEqualType 0}
+                && {finite (_x select 0)} && {finite (_x select 1)}
+                && {(_x select 0) >= 0} && {(_x select 0) <= 1}
+                && {(_x select 1) >= 0} && {(_x select 1) <= 1}) then {
+                _merged pushBackUnique (+_x);
+            };
+        } forEach (_points select [0, 130]);
+        if !(_merged isEqualTo _current) then {
+            [_patient, _side, "prep", _merged] call ACME_fnc_thoraSideStateCommit;
             [_patient] call ACME_fnc_thoraBumpVer;
         };
     };

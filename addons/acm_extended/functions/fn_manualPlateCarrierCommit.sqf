@@ -27,6 +27,7 @@ if (_restore) exitWith {
     };
 
     _patient setVariable ["ACME_manualPlateCarrierState", "restoring", true];
+    ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
     _patient setVariable ["ACME_manualPlateCarrierProvider", _medic, true];
     [_patient, false, _medic, "access", true] call ACME_fnc_chestAccessVestRestore;
 
@@ -46,6 +47,7 @@ if (_restore) exitWith {
         private _success = (vest _p) != "" && {(count (_p getVariable ["ACME_chestAccess_vestLoadout", []])) == 0};
         if (_success) then {
             _p setVariable ["ACME_manualPlateCarrierState", "", true];
+            ["ACME_manualPlateCarrierTrack", [_p]] call CBA_fnc_localEvent;
             _p setVariable ["ACME_manualPlateCarrierLease", "", true];
             _p setVariable ["ACME_manualPlateCarrierProvider", objNull, true];
             _p setVariable ["ACME_manualPlateCarrierOriginASL", [], true];
@@ -69,6 +71,7 @@ _patient setVariable ["ACME_manualPlateCarrierSerial", _serial, false];
 private _lease = format ["manualpc:%1:%2:%3", netId _patient, _serial, round (serverTime * 1000)];
 
 _patient setVariable ["ACME_manualPlateCarrierState", "removing", true];
+["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
 _patient setVariable ["ACME_manualPlateCarrierLease", _lease, true];
 _patient setVariable ["ACME_manualPlateCarrierProvider", _medic, true];
 _patient setVariable ["ACME_manualPlateCarrierOriginASL", getPosASL _patient, true];
@@ -96,6 +99,7 @@ _patient setVariable ["ACME_manualPlateCarrierRemoved", false, true];
     if ((_p getVariable ["ACME_manualPlateCarrierLease", ""]) != _lease) exitWith {};
 
     _p setVariable ["ACME_manualPlateCarrierState", "off", true];
+    ["ACME_manualPlateCarrierTrack", [_p]] call CBA_fnc_localEvent;
     _p setVariable ["ACME_manualPlateCarrierRemoved", true, true];
 
     [_medic, "chestAccessVestProvider", [_medic, _p, "manualstop", false, "", _lease]]

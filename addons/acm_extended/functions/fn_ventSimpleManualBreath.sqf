@@ -18,7 +18,7 @@ if (count _receipts > 64) then {_receipts deleteAt 0;};
 _patient setVariable ["ACME_vent_simpleManualReceipts", _receipts, false];
 if (!(missionNamespace getVariable ["ACME_sys_vent", true])
     || {!(missionNamespace getVariable ["ACME_vent_simpleMode", false])}
-    || {!alive _patient} || {!alive _medic}
+    || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
     || {!([_medic, "ventilator", true] call ACME_fnc_procedureAllowed)}
     || {!([_medic, _patient] call ACME_fnc_ventRecoveryNear)}
     || {_custody == ""} || {_custody != (_patient getVariable ["ACME_vent_custodyId", ""])}
@@ -70,8 +70,9 @@ _volumes pushBack [_now, _vte];
 if (count _volumes > 128) then {_volumes deleteAt 0;};
 _patient setVariable ["ACME_vent_simpleManualVolumes", _volumes, false];
 ["ACME_ventSimpleManualAccepted", [_patient, _medic, _custody], _medic] call CBA_fnc_targetEvent;
+// Mechanical breaths remain possible after death, but cannot restart physiology.
 // A completely ineffective breath cannot establish an oxygenation provider.
-if (_vte > 150) then {
+if (alive _patient && {_vte > 150}) then {
     private _provider = _patient getVariable ["ACM_breathing_BVM_provider", objNull];
     if (isNull _provider || {_provider isEqualTo _patient}) then {
         [_patient, [["bvmProvider", _patient], ["bvmLastBreath", _now], ["bvmConnectedOxygen", true], ["bvmLastBreathOxygen", _now]], true] call ACM_breathing_fnc_setRuntimeState;

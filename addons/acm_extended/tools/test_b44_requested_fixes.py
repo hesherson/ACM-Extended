@@ -45,10 +45,13 @@ def test_death_is_hard_reset_boundary():
 
 def test_dead_assessment_exceptions():
     s=txt('overrides/fn_canTreatCached.sqf')
-    for x in ['CheckAirway','CheckBreathing','UseStethoscope','ACME_InspectChest']:
-        assert x in s
-    for x in ['RemoveOPA','RemoveNPA','RemoveIGel','ACME_Extubate']:
-        assert x in s
+    assert 'toLowerANSI _bodyPart, _className] call ace_medical_treatment_fnc_canTreat' in s
+    cfg=txt('config.cpp')
+    for name in ('CheckAirway','CheckBreathing'):
+        block=cfg.split('class '+name+' {',1)[1].split('\n    };',1)[0]
+        assert 'alive _patient' not in block
+    assert 'class UseStethoscope' in cfg and 'class ACME_InspectChest' in cfg
+
 
 def test_close_holes_independent_seals():
     m=txt('functions/fn_chestSealMouseDown.sqf'); g=txt('functions/fn_chestSealGenHoles.sqf')

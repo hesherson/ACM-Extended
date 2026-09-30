@@ -24,22 +24,8 @@ private _rangeOkay = _sameVehicleTreatment || {(_medic distance _patient) <= ace
 // Semi-Fowler is also an active hands-on maneuver by design; a new intervention cancels that exact hold so a stale
 // continuous-action generation can never leave the rest of the medical menu inert.
 if (!isNull _medic && {local _medic} && {hasInterface} && {[_medic] call ace_common_fnc_isPlayer}) then {
-    // Self-heal a genuinely stale shared continuous-action gate. Live actions refresh LastSeen every <=2 s;
-    // a missing session or >4 s heartbeat gap means no current PFH can legitimately own the global lock.
-    private _continuousActive = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
-    if (_continuousActive) then {
-        private _session = _medic getVariable ["ACM_core_ContinuousAction_Session", []];
-        private _lastSeen = _medic getVariable ["ACM_core_ContinuousAction_LastSeen", -1e6];
-        if ((count _session) < 2 || {(CBA_missionTime - _lastSeen) > 4}) then {
-            missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];
-            _medic setVariable ["ACM_core_ContinuousAction_Session", [], true];
-            if (call ACME_fnc_debugEnabled) then {
-                diag_log format ["[ACME CONTINUOUS] cleared stale provider gate before %1; session=%2 age=%3",
-                    _classname, _session, CBA_missionTime - _lastSeen];
-            };
-        };
-    };
-
+    // Continuous-action recovery belongs to its recorded controller, never the incoming medic.
+    // The shared controller keeps exclusivity until its own cancellation path has released the old action.
     if (_medic getVariable ["ACME_headElev_seqActive", false]) then {
         call ACME_fnc_headElevateCancelSeq;
     };
@@ -54,7 +40,7 @@ if (!isNull _medic && {local _medic} && {hasInterface} && {[_medic] call ace_com
 if (_classname == "ACME_DebugInduceSeizure") exitWith {
     if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
     if !((toLowerANSI _bodyPart) == "head" && {[] call ACME_fnc_debugEnabled}) exitWith {false};
-    if !(_this call ace_medical_treatment_fnc_canTreat) exitWith {false};
+    if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
     [_patient, "debugSeizure", [_medic, _patient]] call ACME_fnc_ownerDispatch;
     true
 };
@@ -81,13 +67,11 @@ if (_classname == "ACME_DirectPressure") exitWith {
     if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
     if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
 
-    // Preserve the existing hands-on-wound one-shot, but do not create a progress bar or treatment animation.
-    [_patient, 0.85] call ACME_fnc_markImportantSfx;
-    [_medic, "ACME_DirectPressure"] remoteExec ["say3D", 0];
-
-    [_medic, _patient, _bodyPart] call ACME_fnc_directPressureStart;
+    // Request acceptance is asynchronous. A queued request is a handled click even before its ACK activates
+    // pressure; the accepted ACK owns the one-shot sound, so rejected clicks neither broadcast nor play twice.
+    private _requested = [_medic, _patient, _bodyPart] call ACME_fnc_directPressureStart;
     [_medic, _patient] call _fnc_refreshDirectPressureMenu;
-    _medic getVariable ["ACME_DP_Active", false]
+    _requested
 };
 
 // Stop Direct Pressure is state teardown, not a new treatment. It must never depend on a progress bar, provider
@@ -325,7 +309,6 @@ if (_classname != "ACME_ConnectETVent") exitWith {
 
             private _cancelled = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
-                || {_classKey == "checkbreathing" && {!alive _p}}
                 || {_m getVariable ["ACE_isUnconscious", false]}
                 || {isNull objectParent _m && {([_m, _p] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}}
                 || {objectParent _m isNotEqualTo objectParent _p};
@@ -336,7 +319,7 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             // Preparation can last several seconds. Revalidate the ACTUAL treatment and interaction now, not the
             // cached menu result from the original click. A casualty/provider state or range change may never turn
             // into a delayed treatment start.
-            private _stillTreatable = _args call ace_medical_treatment_fnc_canTreat;
+            private _stillTreatable = _args call ace_medical_treatment_fnc_canTreatCached;
             private _stillInteractive = [_m, _p, [["isNotInside","isNotSwimming","isNotInZeus"],["isNotSwimming","isNotInZeus"]] select (!isNull objectParent _m && {objectParent _m isEqualTo objectParent _p})] call ace_common_fnc_canInteractWith;
             if (!_stillTreatable || {!_stillInteractive} || {isNull objectParent _m && {([_m, _p] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}}
                 || {objectParent _m isNotEqualTo objectParent _p}) exitWith {
@@ -411,7 +394,6 @@ if (_classname != "ACME_ConnectETVent") exitWith {
             // waitUntilAndExecute so stepping back into range cannot convert an invalidation frame into launch.
             private _invalid = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
-                || {_classKey == "checkbreathing" && {!alive _p}}
                 || {_m getVariable ["ACE_isUnconscious", false]}
                 || {isNull objectParent _m && {([_m, _p] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}}
                 || {objectParent _m isNotEqualTo objectParent _p}
@@ -661,7 +643,7 @@ if (uiNamespace getVariable ["ace_interact_menu_cursorMenuOpened", false]) exitW
     [ace_medical_treatment_fnc_treatment, _this] call CBA_fnc_execNextFrame;
     true
 };
-if !(_this call ace_medical_treatment_fnc_canTreat) exitWith {false};
+if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
 if !([_medic, _patient, _interactionChecks] call ace_common_fnc_canInteractWith) exitWith {false};
 if !([_medic, _patient] call ACME_fnc_ventRecoveryNear) exitWith {false};
 [_medic, _patient] call ACME_fnc_ventConnectPatient;

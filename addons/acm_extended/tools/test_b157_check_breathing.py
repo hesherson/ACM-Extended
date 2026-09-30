@@ -16,7 +16,7 @@ def setup():
         private _patientReady=true; private _heldAtStart=[]; private _eventHandlers=[];
         _weaponNow=""; _animNowFixture="AmovPknlMstpSnonWnonDnon"; _stanceNow="CROUCH";
         ACME_chestAccess_classes=["checkbreathing","cpr"];
-        ace_medical_treatment_fnc_canTreat={_permitted};
+        ace_medical_treatment_fnc_canTreatCached={_permitted};
         ACME_fnc_chestAccessPreparing={_prep pushBack _this;};
         CBA_fnc_addEventHandler={_eventHandlers pushBack _this;};
         ACME_fnc_chestAccessVestEvent={
@@ -87,11 +87,15 @@ def test_preparation_invalidation_does_not_start_breathing_timer(invalidation):
     execute(setup()+r'''
         [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
         0 call _condition;
-    '''+invalidation+r'''
+    '''+invalidation+(r'''
+        call _freeze; 0 call _deliver;
+        [count _nativeCalls==1 && {count _stops==0},"death blocked an otherwise ready breathing assessment"] call _check;
+        [!(_medic getVariable ["ACME_chestAccessPreflightActive",true]),"completed preparation kept its lock"] call _check;
+    ''' if invalidation == '_patientAlive=false;' else r'''
         0 call _deliver;
         [count _nativeCalls==0 && {count _stops==1},"cancelled preparation started or retained hold"] call _check;
         [!(_medic getVariable ["ACME_chestAccessPreflightActive",true]),"cancel retained preparation lock"] call _check;
-    ''')
+    '''))
 
 
 def test_missing_pose_bounded_timeout_aborts_without_unfrozen_timer():

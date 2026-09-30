@@ -1,0 +1,80 @@
+{
+  "build": {
+    "batch": "B208",
+    "hemtt": "1.22.0",
+    "check_passed": true,
+    "release_no_bin_no_archive_passed": true,
+    "verified_pbos": 14,
+    "verified_signatures": 14,
+    "verified_component_configs": 14,
+    "signing_keys": 1,
+    "strict_native_owner_audit_violations": 0
+  },
+  "public_version": "1.2.4.1",
+  "runtime_revision": "NA8-B208-1.2.4.1-stable",
+  "base_commit": "57120f93493df7122f86861325daae34ef70013d",
+  "focused": {
+    "ownership_passed": 75,
+    "execution_passed": 665,
+    "total_passed": 740,
+    "new_b208_tests": 151,
+    "additional_debug_test_cases": 4
+  },
+  "full_suite_green": false,
+  "b207_comparison": {
+    "passed": true,
+    "counts": {
+      "baseline": {
+        "error": 46,
+        "failed": 795,
+        "passed": 5315,
+        "skipped": 29
+      },
+      "current": {
+        "error": 46,
+        "failed": 790,
+        "passed": 5475,
+        "skipped": 29
+      }
+    },
+    "problems": []
+  },
+  "b204_comparison": {
+    "passed": true,
+    "counts": {
+      "baseline": {
+        "error": 47,
+        "failed": 868,
+        "passed": 4879,
+        "skipped": 29
+      },
+      "current": {
+        "error": 46,
+        "failed": 790,
+        "passed": 5475,
+        "skipped": 29
+      }
+    },
+    "problems": []
+  },
+  "known_baseline_failures_and_errors": 836,
+  "new_passing_cases_vs_b207": 155,
+  "improved_existing_cases_vs_b207": 5,
+  "reconciliation": {
+    "runtime_source_changed_after_full_run": false,
+    "measured_test_records_replaced": 43,
+    "modules": [
+      "addons.acm_extended.tools.test_b156_patient_supplies",
+      "tools.test_stable_b184_rpt_cleanup_20260927",
+      "tools.test_stable_b188_carrier_fowler_airway_20260927",
+      "tools.test_stable_b190_hpmk_io_syncope_20260927"
+    ],
+    "all_original_case_identities_preserved": true,
+    "reason": "One newly exercised native alive boundary needed a string-backed object adapter; three source assertions required B208 corpse access and normalized CPR selection. Entire affected modules were rerun, including their inherited failures. Original full report remains preserved."
+  },
+  "unverified": [
+    "Windows asset binarization",
+    "Live Arma UI/rendering and transport",
+    "Dedicated-server/two-client/HC acceptance and representative-load soak"
+  ]
+}

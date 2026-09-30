@@ -85,7 +85,7 @@ _patient setVariable ["ACME_bagSequence", _sequence, true];
 _newBag set [8, format ["%1:%2:%3:%4", netId _patient, [_patient] call ACME_fnc_clinicalEpoch, clientOwner, _sequence]];
 _IVBags set [_bodyPart, _IVBagsBodyPart];
 
-_patient setVariable [QEGVAR(circulation,IV_Bags), _IVBags, true];
+[_patient, _IVBags, true] call EFUNC(circulation,setIVBagsState);
 _patient setVariable [QEGVAR(circulation,IV_Bags_Active), true, true];
 
 [_patient, _bodyPart] call EFUNC(circulation,updateActiveFluidBags);

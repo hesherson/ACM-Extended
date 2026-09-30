@@ -52,6 +52,19 @@ def test_suction_debits_once_and_clears_only_the_current_compartment():
     '_medic setVariable ["ACE_isUnconscious",true];',
 ])
 def test_stale_or_invalid_suction_has_no_receipt_debit_or_native_clear(change):
+    if change == '_patientAlive=false;':
+        # B208 explicitly permits physical removal of retained airway contents
+        # after engine death. Keep this historical case identity while verifying
+        # the newly requested behavior and the one-debit receipt fence.
+        execute(suction_setup()+change+'''
+            [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
+            [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
+            [(_patient getVariable ["ACM_airway_AirwayObstructionVomit_State",-1])==0,"corpse suction did not clear retained vomit"] call _check;
+            [(_patient getVariable ["ACM_airway_AirwayObstructionBlood_State",-1])==1,"corpse suction cleared a different compartment"] call _check;
+            [count (_patient getVariable ["ACME_laryngoEventReceipts",[]])==1,"corpse suction duplicated its receipt"] call _check;
+            [(((_patient getVariable ["ACME_suctionTotals",[]]) select 0) select 1)==200,"corpse suction debited more than retained volume"] call _check;
+        ''')
+        return
     execute(suction_setup()+change+'''
         private _before=[_patient] call ACME_fnc_laryngoFluidState;
         [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;

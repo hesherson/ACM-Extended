@@ -31,7 +31,21 @@ private _settings = [
         [_cTrau, "Pneumothorax"], [120, 1800, 600, 0], 1, {}],
     ["ACME_vent_simpleMode", "CHECKBOX",
         ["Simple Ventilator Mode", "Use the selected breathing rate with automatic supporting settings. Lung and airway problems, circulation, power and circuit failures still affect the patient. Advanced settings are retained for when this mode is disabled."],
-        [_cVent, "Mode"], false, 1, {}],
+        [_cVent, "Mode"], false, 1, {
+            // CBA passes the new Boolean directly. Corpse physiology has no
+            // drive tick, so advance only device protocol metadata on changes.
+            private _simple = _this;
+            {
+                private _patient = _x;
+                if (!isNull _patient && {local _patient} && {!alive _patient}
+                    && {_patient getVariable ["ACME_vent_onPatient", false]}) then {
+                    private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [!_simple, 0]];
+                    if !((_episode select 0) isEqualTo _simple) then {
+                        [_patient, "ACME_vent_simpleEpisode", [_simple, (_episode select 1) + 1]] call ACME_fnc_setVarNet;
+                    };
+                };
+            } forEach allDeadMen;
+        }],
     // systems: enable and disable, plus hardcore.
     // hardcore descriptors. it uses precise anatomical and clinical wording in the assessment text instead of
     // plain-language terms, and appends findings, such as chest-seal counts and NCD laterality, that a trained

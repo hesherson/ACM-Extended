@@ -1,7 +1,9 @@
+#include "../main/script_build.hpp"
 #include "script_component.hpp"
 
 class CfgPatches {
     class ADDON {
+        ACME_BUILD_CONFIG("cbrn");
         name = COMPONENT_NAME;
         units[] = {
             "ACM_HazardObject",

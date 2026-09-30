@@ -29,7 +29,9 @@ def test_manual_carrier_eligibility_uses_unambiguous_hemtt_safe_alive_checks():
     s = read("addons/acm_extended/functions/fn_manualPlateCarrierCanToggle.sqf")
     assert 'if (!(alive _medic)) exitWith {false};' in s
     assert 'if (!([_medic] call ace_common_fnc_isAwake)) exitWith {false};' in s
-    assert 'if (!(alive _patient)) exitWith {false};' in s
+    # B208 permits corpse equipment access; only a living, awake patient blocks removal.
+    assert 'if (!(alive _patient)) exitWith {false};' not in s
+    assert 'private _awake = alive _patient && {' in s
     assert '!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}' not in s
 
 

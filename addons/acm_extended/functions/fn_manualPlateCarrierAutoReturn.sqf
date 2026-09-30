@@ -74,6 +74,7 @@ if (_hadCustody) then {
 };
 
 _patient setVariable ["ACME_manualPlateCarrierState", "", true];
+["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
 _patient setVariable ["ACME_manualPlateCarrierLease", "", true];
 _patient setVariable ["ACME_manualPlateCarrierProvider", objNull, true];
 _patient setVariable ["ACME_manualPlateCarrierOriginASL", [], true];

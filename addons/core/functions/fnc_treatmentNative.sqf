@@ -25,7 +25,9 @@ if (uiNamespace getVariable [QACEGVAR(interact_menu,cursorMenuOpened), false]) e
     [ACEFUNC(medical_treatment,treatment), _this] call CBA_fnc_execNextFrame;
 };
 
-if !(_this call ACEFUNC(medical_treatment,canTreat)) exitWith {false};
+// Re-evaluate the same live ACME policy used by the menu. Despite its ACE name, this override never caches.
+// Calling stock canTreat here discarded the corpse/equipment exceptions after the player clicked a valid action.
+if !(_this call ACEFUNC(medical_treatment,canTreatCached)) exitWith {false};
 
 private _config = configFile >> QACEGVAR(medical_treatment,actions) >> _classname;
 

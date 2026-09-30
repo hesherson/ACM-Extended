@@ -25,7 +25,7 @@ if (_patient getVariable ["ACME_vent_recovering", false]) exitWith {
 // Owner-published mode episode rejects delayed manual commands across live toggles.
 private _simpleNow = missionNamespace getVariable ["ACME_vent_simpleMode", false];
 private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [!_simpleNow, 0]];
-if ((_episode select 0) != _simpleNow) then {
+if !((_episode select 0) isEqualTo _simpleNow) then {
     [_patient, "ACME_vent_simpleEpisode", [_simpleNow, (_episode select 1) + 1]] call ACME_fnc_setVarNet;
 };
 

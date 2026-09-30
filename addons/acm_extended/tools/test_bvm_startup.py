@@ -26,6 +26,7 @@ def setup():
             if (_unit isEqualTo _patient) then {_patientAwake} else {!_unconscious}
         };
         ace_interaction_fnc_hideMouseHint = {};
+        ace_common_fnc_isPlayer = {(_this select 0) isEqualTo _medic};
         ACM_core_fnc_cprActive = {_cprActive};
         ACM_core_fnc_bvmActive = {((_this select 0) getVariable ["ACM_breathing_BVM_provider",objNull]) isNotEqualTo objNull};
         ACM_circulation_SwapToBVM = false;
@@ -38,7 +39,7 @@ def setup():
             };
         };
     '''
-    code += 'ACME_fnc_providerStanceOwned = {' + adapt((ROOT / 'addons/acm_extended/functions/fn_providerStanceOwned.sqf').read_text()) + '};'
+    code += 'ACME_fnc_providerStanceOwned = {' + adapt((ROOT / 'addons/acm_extended/functions/fn_providerStanceOwned.sqf').read_text().replace('local _unit', 'true')) + '};'
     code += 'ACM_core_fnc_beginContinuousAction = {' + core('beginContinuousAction') + '};'
     for name in ('bvmSessionValid', 'bvmRelease', 'bvmCleanupLocal', 'canUseBVM', 'useBVM'):
         code += f'ACM_breathing_fnc_{name} = {{' + breathing(name) + '};'

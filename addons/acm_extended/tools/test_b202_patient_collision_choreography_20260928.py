@@ -51,4 +51,4 @@ def test_b203_keeps_public_stable_version_1241():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     config = read("addons/acm_extended/config.cpp")
     assert 'version = "1.2.4.1";' in config
-    assert 'ACME_buildBatch = "B204";' in startup
+    assert 'ACME_buildBatch = "B208";' in startup

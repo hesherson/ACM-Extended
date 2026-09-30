@@ -16,6 +16,7 @@ private _thPatient = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
 private _invalidContact = isNull _thMedic || {isNull _thPatient} || {!alive _thMedic} || {!local _thMedic}
     || {!([_thMedic] call ace_common_fnc_isPlayer)}
     || {_thMedic getVariable ["ACE_isUnconscious", false]}
+    || {([_thPatient] call ACME_fnc_clinicalEpoch) != (uiNamespace getVariable ["ACME_Thora_PrepEpoch", -1])}
     || {isNull objectParent _thMedic && {(_thMedic distance _thPatient) > ace_medical_gui_maxDistance}}
     || {objectParent _thMedic isNotEqualTo objectParent _thPatient};
 if (_invalidContact) exitWith {
@@ -34,6 +35,7 @@ private _thPat = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
 if (!isNull _thPat) then {
     private _tv = _thPat getVariable ["ACME_thora_ver", 0];
     private _sideSeen = uiNamespace getVariable ["ACME_Thora_Side", "right"];
+    private _prepSeen = [_sideSeen, +(_thPat getVariable [format ["ACME_thora_prep_%1", _sideSeen], []])];
     private _closureSeen = [_sideSeen,
         _thPat getVariable [format ["ACME_thora_tube_%1", _sideSeen], false],
         _thPat getVariable [format ["ACME_thora_sealed_%1", _sideSeen], false],
@@ -43,16 +45,20 @@ if (!isNull _thPat) then {
     };
     // Closure values can arrive separately from the version. Observe the values too.
     if (_tv != (uiNamespace getVariable ["ACME_thora_verSeen", -1])
+        || {!(_prepSeen isEqualTo (_display getVariable ["ACME_Thora_PrepSeen", []]))}
         || {!(_closureSeen isEqualTo (_display getVariable ["ACME_Thora_ClosureSeen", []]))}) then {
         uiNamespace setVariable ["ACME_thora_verSeen", _tv];
         _display setVariable ["ACME_Thora_ClosureSeen", _closureSeen];
-        // Pull another provider's committed prep into our local render buffer only while we are not actively painting.
-        if !(uiNamespace getVariable ["ACME_Thora_Prepping", false]) then {
-            private _prepLocal = uiNamespace getVariable ["ACME_Thora_PrepLocal", createHashMap];
-            if !(_prepLocal isEqualType createHashMap) then {_prepLocal = createHashMap;};
-            _prepLocal set [_sideSeen, +(_thPat getVariable [format ["ACME_thora_prep_%1", _sideSeen], []])];
-            uiNamespace setVariable ["ACME_Thora_PrepLocal", _prepLocal];
-        };
+        _display setVariable ["ACME_Thora_PrepSeen", _prepSeen];
+        // Merge remote applied prep even during a stroke, retaining local points that are still awaiting
+        // submission/acknowledgement. The incision infection gate reads this same combined buffer.
+        private _prepLocal = uiNamespace getVariable ["ACME_Thora_PrepLocal", createHashMap];
+        if !(_prepLocal isEqualType createHashMap) then {_prepLocal = createHashMap;};
+        private _mergedPrep = +(_prepSeen select 1);
+        {_mergedPrep pushBackUnique _x;} forEach (_prepLocal getOrDefault [_sideSeen, []]);
+        if (count _mergedPrep > 130) then {_mergedPrep resize 130;};
+        _prepLocal set [_sideSeen, _mergedPrep];
+        uiNamespace setVariable ["ACME_Thora_PrepLocal", _prepLocal];
         [] call ACME_fnc_thoraRender;
     };
 };
@@ -259,6 +265,11 @@ private _patZ = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
 // accept zone is a thin strip oriented along the rib tangent, narrow perpendicular and more forgiving lengthwise,
 // so the space follows the rib and is genuinely hard to find.
 private _tgt = if (isNull _patZ) then { [] } else { _patZ getVariable [format ["ACME_thora_ribTarget_%1", _side], []] };
+private _targetConfirmed = count _tgt == 4;
+// Keep one proposal while waiting for the owner reply. Regenerating here used to move the palpation target
+// and send another owner command every render frame throughout a network round trip.
+private _ribPending = uiNamespace getVariable ["ACME_Thora_RibPending", createHashMap];
+if (count _tgt != 4) then {_tgt = _ribPending getOrDefault [_side, []];};
 if (count _tgt != 4) then {
     private _rib = missionNamespace getVariable [["ACME_thora_ribRight", "ACME_thora_ribLeft"] select (_side == "left"), [0.5, 0.44, 0.4, 2.0, 0.05]];
     _rib params ["_ruC", "_rvC", "_rslope", "_rcurv", "_ruHalf"];
@@ -268,7 +279,11 @@ if (count _tgt != 4) then {
     private _dvdu = _rslope + (2 * _rcurv * _dt);
     private _tl = sqrt (1 + (_dvdu * _dvdu));
     _tgt = [_uT, _vT, 1 / _tl, _dvdu / _tl];
-    if (!isNull _patZ) then { [_patZ, _side, "ribTarget", _tgt] call ACME_fnc_thoraSideStateCommit; };
+    _ribPending set [_side, _tgt];
+    uiNamespace setVariable ["ACME_Thora_RibPending", _ribPending];
+    if (!isNull _patZ) then {
+        [_patZ, _side, "ribTarget", _tgt, uiNamespace getVariable ["ACME_Thora_PrepEpoch", -1]] call ACME_fnc_thoraSideStateCommit;
+    };
 };
 _tgt params ["_tU", "_tV", "_tTx", "_tTy"];
 private _zAlong = missionNamespace getVariable ["ACME_thora_zoneAlong", 0.045];
@@ -285,7 +300,8 @@ _dot ctrlSetPosition [_ux - (_dw / 2), _uy - (_dh / 2), _dw, _dh];
 _dot ctrlCommit 0;
 _dot ctrlShow true;
 
-private _onZone = _d <= 1;
+// Another viewer's proposal may win at the owner. Do not accept a palpation mark against provisional anatomy.
+private _onZone = _targetConfirmed && {_d <= 1};
 uiNamespace setVariable ["ACME_Thora_OnZone", _onZone];
 uiNamespace setVariable ["ACME_Thora_CurUV", [_u, _v]];
 

@@ -1,5 +1,29 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B207
+
+Updated 30 September 2026.
+
+- Direct Pressure and Hang Bag now share bounded owner-side claim validation and cancellation history. Duplicate replies, cancelled requests arriving late, reordered renewals and old releases cannot reapply or replace a newer action.
+- Direct Pressure acceptance expires with its owner-granted reservation. Patient-side marker and clot updates carry the exact claim token so delayed work cannot overwrite or credit a replacement hold.
+- Fixed Hang Bag episode collisions during rapid restart and long mission uptime. Renewal sequence numbers prevent replayed requests from extending a lease or reapplying flow.
+- Continuous-action recovery tracks the actual provider and generation and runs the original cancellation worker. A second local medic cannot replace a live controller; failed startup and interrupted callbacks release the matching session once.
+- Direct Pressure's medical-menu bridge reports queued requests correctly. Its accepted-claim path owns the one-shot treatment sound, removing the remaining global sound broadcast from the core override.
+- Manual plate-carrier checks use an active patient registry with a 30-second recovery scan. Ventilator alarm discovery runs twice per second while retaining the existing 20 Hz beep scheduler and checking nearby vehicle occupants.
+- Added per-PBO build/protocol stamps and bounded server/client/headless-client verification. Mixed or unverified installations produce diagnostics without kicking players or disabling treatment.
+- Added opt-in, bounded local network diagnostics and a dedicated-server validation runbook. Strengthened CI to reject new failures, new skips, missing tests and incomplete runs while reporting the historical failing baseline separately.
+- Public version remains 1.2.4.1; runtime marker is B207 / NA7-B207-1.2.4.1-stable. Live dedicated-server validation remains required before broad rollout.
+
+## 1.2.4.1 — B206
+
+Updated 30 September 2026.
+
+- Fixed Direct Pressure failing to start on dedicated servers: provider requests now carry the originating client's ID, and acknowledgements target the provider object. Pending reservations remain protected on player and headless-client casualty owners.
+- Fixed the same client ownership mismatch in Hang Bag claims and seizure gesture validation.
+- Fixed HPMK preparation/removal callbacks interpreting ACE treatment arguments as internal transaction flags.
+- Fixed facility and evacuation modules parsing numeric position coordinates as strings.
+- Includes the B205 network snapshot, infusion queue, procedural handoff and cleanup fixes. Public version remains 1.2.4.1; runtime marker is B206 / NA6-B206-1.2.4.1-stable.
+
 ## 1.2.4
 
 Updated 27 September 2026.

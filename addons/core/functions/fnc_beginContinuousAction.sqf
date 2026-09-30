@@ -34,20 +34,8 @@ params [
 ];
 _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
 
-// A stale shared gate used to make every later continuous action silently no-op. A live generation publishes a
-// provider session immediately and refreshes LastSeen at least every two seconds, so a missing session or >4 s
-// heartbeat gap is definitive stale state on this client. Recover before the normal exclusivity guard; valid BVM,
-// CPR, stethoscope, Narc Box and manual Semi-Fowler sessions remain exclusive exactly as before.
-if (!isNull _medic && {local _medic} && {GVAR(ContinuousAction_Active)}) then {
-    private _staleSession = _medic getVariable [QGVAR(ContinuousAction_Session), []];
-    private _staleSeen = _medic getVariable [QGVAR(ContinuousAction_LastSeen), -1e6];
-    if ((count _staleSession) < 2 || {(CBA_missionTime - _staleSeen) > 4}) then {
-        GVAR(ContinuousAction_Active) = false;
-        _medic setVariable [QGVAR(ContinuousAction_Session), [], true];
-        GVAR(ContinuousAction_PFH) = -1;
-    };
-};
-
+// Preserve native exclusivity. An incoming provider's absent heartbeat says nothing about the current owner.
+// The existing reconciliation pass recovers the recorded controller through its own cancellation callback.
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
     || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}) exitWith {false};
 
@@ -168,15 +156,21 @@ if (currentWeapon _medic != "") then {
     [_medic] call ACEFUNC(weaponselect,putWeaponAway);
 };
 
-private _pfh = [{
+private _worker = {
     params ["_args", "_idPFH"];
-    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim", "_reopenOnEnd"];
+    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim", "_reopenOnEnd", "_startupComplete"];
 
     // Superseded action. Retire only this PFH and its own key id. Never run the old cancellation/reopen path against
     // the newer generation.
     if ((missionNamespace getVariable [QGVAR(ContinuousAction_Epoch), -1]) != _epoch) exitWith {
         [_idPFH] call CBA_fnc_removePerFrameHandler;
         if (!(_keyID isEqualTo -1) && {!(_keyID isEqualTo "")}) then {[_keyID, "keydown"] call CBA_fnc_removeKeyHandler;};
+    };
+    // Cancellation retires the local record before callbacks run. A queued/repeated old worker cannot run
+    // the same clinical cancellation twice, even when no successor has incremented the generation yet.
+    private _controller = missionNamespace getVariable [QGVAR(ContinuousAction_Controller), []];
+    if ((_controller param [2, -2]) != _epoch) exitWith {
+        [_idPFH] call CBA_fnc_removePerFrameHandler;
     };
 
     private _patientCondition = (isNull _patient);
@@ -207,7 +201,7 @@ private _pfh = [{
         };
     };
 
-    if (_patientCondition || _medicCondition || _identityChanged || _enteredVehicle || !GVAR(ContinuousAction_Active) || _dialogCondition || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
+    if (!_startupComplete || _patientCondition || _medicCondition || _identityChanged || _enteredVehicle || !GVAR(ContinuousAction_Active) || _dialogCondition || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
         [_idPFH] call CBA_fnc_removePerFrameHandler;
 
         // Release the shared ownership state before touching CBA handler cleanup. CBA currently returns string key-handler
@@ -223,6 +217,7 @@ private _pfh = [{
         };
         // The generation check above guarantees this cleanup still owns the global gate.
         GVAR(ContinuousAction_Active) = false;
+        GVAR(ContinuousAction_Controller) = [];
         if ((_medic getVariable [QGVAR(ContinuousAction_Session), []]) isEqualTo [_patient, _epoch]) then {
             _medic setVariable [QGVAR(ContinuousAction_Session), [], true];
         };
@@ -258,7 +253,8 @@ private _pfh = [{
 
         ["ace_treatmentFailed", [_medic, _patient, _bodyPart, "ACM_ContinuousAction", "", "", false]] call CBA_fnc_localEvent;
 
-        if (GVAR(ContinuousAction_ShouldReopen) && {!isNull _patient} && {!_medicCondition} && {!_identityChanged}) then {
+        if (GVAR(ContinuousAction_Epoch) == _epoch && {!GVAR(ContinuousAction_Active)}
+            && {GVAR(ContinuousAction_ShouldReopen)} && {!isNull _patient} && {!_medicCondition} && {!_identityChanged}) then {
             disableSerialization;
             private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
             private _medicalTarget = missionNamespace getVariable ["ace_medical_gui_target", objNull];
@@ -280,8 +276,14 @@ private _pfh = [{
         && {CBA_missionTime - (_medic getVariable [QGVAR(ContinuousAction_LastSeen), -100]) >= 2}) then {
         _medic setVariable [QGVAR(ContinuousAction_LastSeen), CBA_missionTime, true];
     };
-}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim, _reopenOnEnd]] call CBA_fnc_addPerFrameHandler;
+};
+private _workerArgs = [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim, _reopenOnEnd, false];
+private _pfh = [_worker, 0, _workerArgs] call CBA_fnc_addPerFrameHandler;
 
 GVAR(ContinuousAction_PFH) = _pfh;
+// Machine-local only: record the actual actor and the existing worker, including before OnStart can fail.
+GVAR(ContinuousAction_Controller) = [_medic, _patient, _epoch, _worker, _workerArgs, _pfh];
 _args call _onStart;
+// A surviving PFH must cancel an interrupted OnStart, even if later per-frame callbacks would succeed.
+_workerArgs set [16, true];
 true

@@ -702,6 +702,15 @@ if ((count _snap) >= 14) then {
 
 // Reconcile tray occupancy after secured/migrated/rebuild state has been restored.
 [] call ACME_fnc_laryngoRefreshSlots;
+// Capture the existing tube before the first render/input. This is the comparison baseline for a close
+// immediately after an adjustment, and identifies the insertion if a replacement occurs in transit.
+uiNamespace setVariable ["ACME_laryngo_migrationTubeTime", if (isNull _patient) then {-1} else {_patient getVariable ["ACME_ETT_Time", -1]}];
+if (!isNull _patient && {_patient getVariable ["ACME_ETT_Inserted", false]}) then {
+    private _migrationDepth = _patient getVariable ["ACME_ETT_Depth", 1];
+    uiNamespace setVariable ["ACME_laryngo_migrationSyncLast", [_migrationDepth,
+        _patient getVariable ["ACME_ETT_Frame", 1 + round (_migrationDepth * 7)],
+        _patient getVariable ["ACME_ETT_Mainstem", false]]];
+};
 private _pfh = [{ [] call ACME_fnc_laryngoTick; }, 0, []] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_laryngo_pfh", _pfh];
 

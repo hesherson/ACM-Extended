@@ -115,8 +115,8 @@ private _safe = {
 };
 private _yn = {params ["_v"]; if (_v) then {"yes"} else {"no"};};
 private _ynCol = {params ["_v", ["_badWhenTrue", false]]; if (_badWhenTrue) exitWith {if (_v) then {_cBad} else {_cGood}}; if (_v) then {_cGood} else {_cMute};};
-// Restore the pre-redesign value alignment for clinical and machine rows alike.
-// Paired fields have a fixed width, so a state or unit cannot move the next label.
+// All values start at the same column: words, integers, decimals and units use
+// trailing padding only. The paired field width protects the next label.
 private _padRight = {
     params ["_s", "_w"];
     if !(_s isEqualType "") then {_s = str _s;};
@@ -126,14 +126,7 @@ private _padRight = {
 private _alignValue = {
     params ["_v", ["_w", 11]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
-    // Original layout: right-align the whole token, or the part before its decimal.
-    // This also aligns yes/no, none, OPEN and client/host with integer readings.
-    private _integerW = (_w - 4) max 1;
-    private _dot = _s find ".";
-    private _integer = if (_dot > -1) then {_s select [0, _dot]} else {_s};
-    private _suffix = if (_dot > -1) then {_s select [_dot]} else {""};
-    while {count _integer < _integerW} do {_integer = " " + _integer;};
-    [_integer + _suffix, _w] call _padRight
+    [_s, _w] call _padRight
 };
 private _pair = {
     params ["_a", "_av", "_ac", "_b", "_bv", "_bc"];
@@ -152,7 +145,7 @@ private _wrapValue = {
         for "_i" from (_width - 1) to 1 step -1 do {
             if ((_s select [_i, 1]) in [" ", "+", ",", "/"]) exitWith {_cut = _i + 1;};
         };
-        // Numeric left padding is not a useful wrap point.
+        // Do not create an empty continuation line at a padding boundary.
         if ((_s select [0, _cut]) == (["", _cut] call _padRight)) then {_cut = _width;};
         _lines pushBack (_s select [0, _cut]);
         _s = _s select [_cut];
@@ -164,7 +157,10 @@ private _formatRow = {
     params ["_row", "_valueW"];
     if (_row isEqualType "") exitWith {_row};
     _row params ["_a", "_av", "_ac"];
-    private _aTxt = [([_a, 8] call _padRight)] call _safe;
+    // Twenty label columns place values slightly left of the previous numeric
+    // anchor while reserving a complete 11-character reading (including units).
+    private _labelW = 20;
+    private _aTxt = [([_a, _labelW] call _padRight)] call _safe;
     private _avTxt = [([_av, _valueW] call _alignValue)] call _safe;
     if (count _row == 3) exitWith {
         format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
@@ -176,8 +172,8 @@ private _formatRow = {
     private _bLines = [([_bv, _valueW] call _alignValue), _valueW] call _wrapValue;
     private _lines = [];
     for "_i" from 0 to (((count _aLines) max (count _bLines)) - 1) do {
-        private _aLabel = [([if (_i == 0) then {_a} else {""}, 8] call _padRight)] call _safe;
-        private _bLabel = [([if (_i == 0) then {_b} else {""}, 8] call _padRight)] call _safe;
+        private _aLabel = [([if (_i == 0) then {_a} else {""}, _labelW] call _padRight)] call _safe;
+        private _bLabel = [([if (_i == 0) then {_b} else {""}, _labelW] call _padRight)] call _safe;
         private _aValue = [([_aLines param [_i, ""], _valueW] call _padRight)] call _safe;
         private _bValue = [([_bLines param [_i, ""], _valueW] call _padRight)] call _safe;
         _lines pushBack format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aLabel, _aValue, _ac, _bLabel, _bValue, _bc, _cLabel];
@@ -227,19 +223,18 @@ private _renderAll = {
     _allRows append _right;
     _allRows append _network;
 
-    // Use one value-field width large enough for EVERY paired value in the current snapshot. This keeps the second
-    // label at the same column and prevents value wrapping instead of trying to repair it after formatting.
+    // Size paired fields from paired values only. A full-width revision/device row
+    // must not widen both columns or shift ordinary readings. Left alignment adds
+    // no leading padding beyond these measured strings, so decimals and units fit.
     _valueW = 11;
     {
-        if (_x isEqualType [] && {count _x >= 3}) then {
+        if (_x isEqualType [] && {count _x >= 6}) then {
             private _vA = _x param [1, ""];
             private _sA = if (_vA isEqualType "") then {_vA} else {str _vA};
             _valueW = _valueW max (count _sA);
-            if (count _x >= 6) then {
-                private _vB = _x param [4, ""];
-                private _sB = if (_vB isEqualType "") then {_vB} else {str _vB};
-                _valueW = _valueW max (count _sB);
-            };
+            private _vB = _x param [4, ""];
+            private _sB = if (_vB isEqualType "") then {_vB} else {str _vB};
+            _valueW = _valueW max (count _sB);
         };
     } forEach _allRows;
 
@@ -286,7 +281,7 @@ _top pushBack (["MACHINE / PATIENT OWNERSHIP"] call _sect);
 private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
 _top pushBack (["Role", _role, if (isServer) then {_cGood} else {_cLabel}, "MP", if (isMultiplayer) then {"yes"} else {"no"}, if (isMultiplayer) then {_cGood} else {_cMute}] call _pair);
 _top pushBack (["Client", clientOwner, _cLabel, "Server", if (isServer) then {"local"} else {"remote"}, if (isServer) then {_cGood} else {_cLabel}] call _pair);
-private _own = if (isNull _patient) then {-1} else {owner _patient};
+private _own = if (isNull _patient) then {"-"} else {if (isServer) then {str owner _patient} else {if (local _patient) then {str clientOwner} else {"remote"}}};
 private _loc = !isNull _patient && {local _patient};
 private _netId = if (isNull _patient) then {"-"} else {netId _patient};
 _top pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
@@ -322,6 +317,11 @@ if (!(_rate isEqualType 0) || {!finite _rate}) then {_rate = 0.07;};
 _network pushBack (["Viewers", count _roster, if ((count _roster) > 0) then {_cGood} else {_cMute}, "Rate", format ["%1s", _rate toFixed 2], _cLabel] call _pair);
 
 _network pushBack (["COMPATIBILITY"] call _sect);
+private _networkStatus = missionNamespace getVariable ["ACME_networkCompatStatus", "pending"];
+private _serverBuild = missionNamespace getVariable ["ACME_networkCompatServerBuild", "unverified"];
+private _networkColor = if (_networkStatus == "ok") then {_cGood} else {if (_networkStatus == "pending") then {_cWarn} else {_cBad}};
+_network pushBack (["Network", _networkStatus, _networkColor, "Server", _serverBuild, _networkColor] call _pair);
+
 private _missing = missionNamespace getVariable ["ACME_compatMissing", []];
 if !(_missing isEqualType []) then {_missing = [];};
 _network pushBack (["Issues", count _missing, if (_missing isEqualTo []) then {_cGood} else {_cBad}, "Checked", if (missionNamespace getVariable ["ACME_compatChecked", false]) then {"yes"} else {"no"}, if (missionNamespace getVariable ["ACME_compatChecked", false]) then {_cGood} else {_cWarn}] call _pair);

@@ -304,9 +304,10 @@ def test_direct_pressure_marker_is_patient_owner_authoritative_and_disconnect_sa
     runtime = src('functions/fn_initPressureAndAuscultationConfig.sqf')
     assert '"directPressureMarker"' not in start
     assert '"directPressureMarker"' in torso and '"directPressureMarker"' in limb and '"directPressureMarker"' in self_dp
-    torso_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true]]'
-    limb_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true]]'
-    self_active = '[_medic, "directPressureMarker", [_medic, _bodyPart, true]]'
+    identity = ', _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]]'
+    torso_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true' + identity
+    limb_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true' + identity
+    self_active = '[_medic, "directPressureMarker", [_medic, _bodyPart, true' + identity
     assert torso.index('ACME_DP_Active", true') < torso.index(torso_active)
     assert limb.index('ACME_DP_Active", true') < limb.index(limb_active)
     assert self_dp.index('ACME_DP_Active", true') < self_dp.index(self_active)
@@ -318,6 +319,8 @@ def test_direct_pressure_marker_is_patient_owner_authoritative_and_disconnect_sa
     block = owner.split('case "directPressureMarker"', 1)[1].split('case "directPressureClot"', 1)[0]
     assert '_patient setVariable [_key, _medic, true];' in block
     assert 'isEqualTo _medic' in block
+    assert '(_claim select 1) == _token' in block
+    assert '_epoch == ([_patient] call ACME_fnc_clinicalEpoch)' in block
     assert 'ACME_DP_ServerCleanupInstalled' in runtime
     assert 'HandleDisconnect' in runtime and 'EntityKilled' in runtime
 

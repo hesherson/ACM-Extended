@@ -15,6 +15,12 @@ private _allowed = ["incision","incisionscore","prep","infection","open","ribtar
 if !(_field in _allowed) exitWith {};
 private _name = format ["ACME_thora_%1_%2", _field, _side];
 private _hasValue = (count _this > 3) && {!isNil {_this select 3}};
+private _proposalEpoch = _this param [4, -1];
+if (_field == "ribtarget" && {_hasValue} && {_proposalEpoch >= 0}
+    && {_proposalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {};
+// The randomized anatomy belongs to the casualty. Concurrent viewers may propose an initial target,
+// but only the first owner-side proposal establishes it. Explicit reset clears must still pass through.
+if (_field == "ribtarget" && {_hasValue} && {count (_patient getVariable [_name, []]) == 4}) exitWith {};
 if (_hasValue) then {
     _patient setVariable [_name, _this select 3, true];
 } else {

@@ -27,6 +27,7 @@ def execute(scenario):
         "owner _medic": "(if (_testServer) then {_testOwner} else {0})",
         "clientOwner": "_testClient",
         "isServer": "_testServer",
+        "hasInterface": "_testInterface",
         "finite _visiblePhase": "true",
         "finite _rate": "true",
         "alive _medic": "_testAlive",
@@ -50,6 +51,7 @@ def execute(scenario):
         private _testOwner = 7;
         private _testClient = 8;
         private _testServer = false;
+        private _testInterface = true;
         private _testAlive = true;
         private _testVehicle = false;
         private _testSpeed = 1;
@@ -108,6 +110,28 @@ def test_remote_hold_survives_delayed_animation_entry_and_repairs_state_and_phas
         CBA_missionTime = 10.6;
         [] call _tick;
         [abs (_testPhase - 0.14) < 0.001 && {_seeks == 4}, "phase drift not repaired"] call _check;
+    ''')
+
+
+def test_dedicated_server_skips_remote_provider_rendering():
+    execute('''
+        _testInterface = false;
+        _testServer = true;
+        call _hold;
+        [count _handlers == 0 && {_seeks == 0} && {_testSpeed == 1}, "dedicated remote rendering started"] call _check;
+    ''')
+
+
+def test_dedicated_server_retains_local_ai_provider_speed():
+    execute('''
+        _testInterface = false;
+        _testServer = true;
+        _testLocal = true;
+        _testClient = 7;
+        call _hold;
+        [_testSpeed == 0 && {count _handlers == 0}, "server local provider did not freeze"] call _check;
+        call _release;
+        [_testSpeed == 1, "server local provider did not release"] call _check;
     ''')
 
 

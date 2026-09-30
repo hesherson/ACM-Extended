@@ -1,9 +1,46 @@
 /* Stable B183: UI acknowledgement plus owner-local manual-carrier return watchdog. */
+// Track only casualties with an active manual lease. State commits enroll synchronously; lifecycle events
+// handle ownership/new units and a slow audit recovers missed/late replicated events.
+if (isNil "ACME_manualPlateCarrierTrackEH") then {
+    ACME_manualPlateCarrierPatients = [];
+    ACME_manualPlateCarrierRecoveryAt = -1;
+    ACME_manualPlateCarrierTrackEH = ["ACME_manualPlateCarrierTrack", {
+        params ["_patient"];
+        private _patients = missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []];
+        if (!isNull _patient && {local _patient} && {alive _patient}
+            && {(_patient getVariable ["ACME_manualPlateCarrierState", ""]) != ""}) then {
+            _patients pushBackUnique _patient;
+        } else {
+            _patients = _patients - [_patient];
+        };
+        missionNamespace setVariable ["ACME_manualPlateCarrierPatients", _patients];
+    }] call CBA_fnc_addEventHandler;
+    ["CAManBase", "Local", {
+        params ["_patient"];
+        ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
+        // State replication can arrive just after the ownership event. A departed owner cannot re-enroll here.
+        [{["ACME_manualPlateCarrierTrack", _this] call CBA_fnc_localEvent;}, [_patient], 0.5] call CBA_fnc_waitAndExecute;
+    }] call CBA_fnc_addClassEventHandler;
+    ["CAManBase", "init", {
+        [{["ACME_manualPlateCarrierTrack", _this] call CBA_fnc_localEvent;}, [_this select 0]] call CBA_fnc_execNextFrame;
+    }, true, [], true] call CBA_fnc_addClassEventHandler;
+    ["CAManBase", "Killed", {
+        // Death preserves parked equipment/intervention evidence; retire only this runtime enrollment.
+        params ["_patient"];
+        ACME_manualPlateCarrierPatients = (missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []]) - [_patient];
+    }] call CBA_fnc_addClassEventHandler;
+};
 if (isNil "ACME_manualPlateCarrierWatchPFH") then {
     ACME_manualPlateCarrierWatchPFH = [{
+        private _now = CBA_missionTime;
+        if (_now >= (missionNamespace getVariable ["ACME_manualPlateCarrierRecoveryAt", -1])) then {
+            ACME_manualPlateCarrierRecoveryAt = _now + 30;
+            {["ACME_manualPlateCarrierTrack", [_x]] call CBA_fnc_localEvent;} forEach allUnits;
+        };
+        private _kept = [];
         {
             private _p = _x;
-            if (!local _p) then {continue};
+            if (isNull _p || {!local _p} || {!alive _p}) then {continue};
 
             private _state = _p getVariable ["ACME_manualPlateCarrierState", ""];
             if (_state == "") then {continue};
@@ -30,7 +67,9 @@ if (isNil "ACME_manualPlateCarrierWatchPFH") then {
                 };
                 [_p, _reason] call ACME_fnc_manualPlateCarrierAutoReturn;
             };
-        } forEach allUnits;
+            if ((_p getVariable ["ACME_manualPlateCarrierState", ""]) != "") then {_kept pushBack _p;};
+        } forEach (+(missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []]));
+        ACME_manualPlateCarrierPatients = _kept;
     }, 0.20, []] call CBA_fnc_addPerFrameHandler;
 };
 

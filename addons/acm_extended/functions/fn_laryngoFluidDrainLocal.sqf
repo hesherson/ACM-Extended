@@ -7,7 +7,7 @@ if (isNull _patient || {isNull _medic} || {!alive _medic}
     || {!(_amount isEqualType 0)} || {!finite _amount} || {_amount <= 0} || {_amount > 10}) exitWith {};
 if (_medic distance _patient > 5 && {isNull objectParent _medic || {objectParent _medic != objectParent _patient}}) exitWith {};
 private _session = (_patient getVariable ["ACME_suctionSessions", []]) select {(_x select 0) == _token && {(_x select 1) == _medic} && {(_x select 2) > CBA_missionTime}};
-if (_session isEqualTo [] || {!alive _patient} || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
+if (_session isEqualTo [] || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
 private _receipts = _patient getVariable ["ACME_laryngoEventReceipts", []];
 if (_id in _receipts) exitWith {};
 private _state = [_patient] call ACME_fnc_laryngoFluidState;
