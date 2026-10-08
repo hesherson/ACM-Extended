@@ -88,3 +88,15 @@ def test_external_override_and_modal_ai_path_are_diagnosable():
     assert '[ACME MODAL B263] launch denied' in route and 'ACME_fnc_netNotice' in route
     assert '"ApplyChestSeal", "PerformThoracostomy"' in ai
     assert ai.index("if (_actionName in [") < ai.index("private _anim = getText")
+
+
+def test_delayed_chest_begin_cannot_resurrect_closed_patient_workspace():
+    begin=read("addons/acm_extended/functions/fn_chestSealPatientBegin.sqf")
+    end=read("addons/acm_extended/functions/fn_chestSealPatientEnd.sqf")
+    assert 'ACME_CS_ClosedTokens' in begin and 'ACME_CS_ClosedTokens' in end
+    assert begin.index('ACME_CS_ClosedTokens') < begin.index('private _tokens')
+    assert end.index('ACME_CS_ClosedTokens') < end.index('private _tokens')
+    assert "serverTime + 180" in end
+    assert 'if ((count _retired) > 64)' in end
+    assert '_patient setVariable ["ACME_CS_ClosedTokens", _retired, true];' in end
+    assert '(_x param [1, 0]) > serverTime' in begin

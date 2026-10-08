@@ -17,6 +17,19 @@ if (!local _patient) exitWith {
     [_patient, "chestSealPatientEnd", [_patient, _token, _medic, _providerExit, _resumeGeneration]] call ACME_fnc_ownerDispatch;
 };
 
+// B263: record a bounded cancel-before-begin tombstone on the patient owner,
+// even when End arrived before the initial enrollment. A late retry may not
+// recreate physical gear custody after the provider has already closed.
+// Tokens are session-unique; retain at most 64 and expire after 180 s.
+if (_resumeGeneration < 0 && {_token != ""}) then {
+    private _retired = +(_patient getVariable ["ACME_CS_ClosedTokens", []]);
+    _retired = _retired select {(_x param [1, 0]) > serverTime};
+    if ((_retired findIf {(_x param [0, ""]) == _token}) < 0) then {
+        _retired pushBack [_token, serverTime + 180];
+    };
+    if ((count _retired) > 64) then {_retired deleteRange [0, (count _retired) - 64];};
+    _patient setVariable ["ACME_CS_ClosedTokens", _retired, true];
+};
 private _tokens = +(_patient getVariable ["ACME_CS_ProcedureTokens", []]);
 private _generation = _patient getVariable ["ACME_CS_ProcedureGeneration", 0];
 private _resuming = _resumeGeneration >= 0;

@@ -15,6 +15,7 @@ Use B263 on the dedicated server, at least two clients and HC. Match all PBOs, k
 2. Medic client targeting another client, headless-owned patient, server-owned AI, Zeus/local-controlled NPC. Change patient locality while preparing; operation must either use the acknowledged owner or cancel cleanly with a retry message.
 3. Two medics simultaneously on one casualty: no duplicate patient chest roll, gear, damage effect or clinical debit; each closed dialog cleans its own session without disrupting the other's.
 4. Stress 20 rapid open/Escape/F0/reopen cycles; close at every preparation stage. Check keys, carrier, crouch, animation speed, input and other medical menus still work.
+4a. Intentionally delay or reorder an already-sent patient-owner Begin behind End; the cancelled token must remain tombstoned, with no new vest removal, roll, lease or callback. Verify closed-token storage is bounded and newer tokens still open.
 5. Simulate loss of an owner acknowledgment / owner disconnect; no indefinite Preparing—bounded chest retry and 30-second abort, thoracostomy timeout at 20 seconds.
 6. Delayed stale panel Unload after a new thoracostomy dialog opens must not close the replacement or release its lease.
 7. Re-enable old class names via another addon and verify requests route through ACME's current clinical checks; overwriting ACE's treatment bridge must trigger `[ACME COMPAT] FAILED`.

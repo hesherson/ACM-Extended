@@ -10,6 +10,12 @@ if (!local _patient) exitWith {
     [_patient, "chestSealPatientBegin", [_patient, _token, _medic]] call ACME_fnc_ownerDispatch;
 };
 
+// B263: a timed-out/closed token may arrive AFTER its owner-targeted End
+// (retries and locality redirection can reorder separate events). Never
+// resurrect that abandoned workspace, re-remove a vest or restart its roll.
+private _retired = _patient getVariable ["ACME_CS_ClosedTokens", []];
+if ((_retired findIf {(_x param [0, ""]) == _token
+    && {(_x param [1, 0]) > serverTime}}) >= 0) exitWith {};
 private _tokens = +(_patient getVariable ["ACME_CS_ProcedureTokens", []]);
 if (_token in _tokens) exitWith {};
 private _wasActive = _patient getVariable ["ACME_CS_ProcedureActive", false];

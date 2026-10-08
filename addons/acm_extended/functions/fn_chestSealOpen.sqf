@@ -95,6 +95,9 @@ private _entryPFH = [{
     if ((uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != _tok) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };
+    // A deleted patient is objNull on this machine. Do not attempt its
+    // replicated token/member lookup after removal or respawn.
+    if (isNull _p) exitWith {[] call ACME_fnc_chestSealClose;};
     private _member = _tok in (_p getVariable ["ACME_CS_ProcedureTokens", []]);
     if (isNull _p || {isNull _m} || {!alive _m} || {!local _m} || {!([_m] call ace_common_fnc_isPlayer)}
         || {_m getVariable ["ACE_isUnconscious", false]}
