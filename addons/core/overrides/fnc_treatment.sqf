@@ -4,6 +4,19 @@
  * Native ACM/ACE remains authoritative for treatment timing, inventory, callbacks, cancellation and patient state.
  */
 params ["_medic", "_patient", "_bodyPart", "_classname"];
+// B263 legacy-action compatibility: some large modpacks re-expose ACM's
+// original action names or call them from a cached menu. Always route those
+// *launcher* clicks through ACME's current clinical/permission checks and
+// modal workspace, never through the obsolete native animation/ACE timer.
+// The treatment and supply checks still execute on the canonical class.
+if (_classname in ["ApplyChestSeal", "PerformThoracostomy"]) then {
+    private _oldName = _classname;
+    _classname = ["ACME_ApplyChestSeal", "ACME_PerformThoracostomy"]
+        select (_classname == "PerformThoracostomy");
+    _this set [3, _classname];
+    diag_log format ["[ACME MODAL] ACME-B263-modal-route remapped legacy action %1 => %2 on %3",
+        _oldName, _classname, if (isNull _patient) then {"null"} else {netId _patient}];
+};
 // An explicit successor click invalidates an older assessment's pending menu return.
 if (!isNull _medic && {local _medic}) then {
     _medic setVariable ["ACME_assessmentReturn", [], false];
@@ -142,9 +155,22 @@ if (_classname in [
     "ACME_PerformThoracostomy", "ACME_AdjustThoracostomy", "ACME_InsertChestTube"
 ]) exitWith {
     if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
-    if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {false};
-    if !([_medic, _patient, _interactionChecks] call ace_common_fnc_canInteractWith) exitWith {false};
-    if (!_rangeOkay) exitWith {false};
+    private _modalRefused = {
+        params ["_cause"];
+        diag_log format ["[ACME MODAL B263] launch denied; action=%1 patient=%2 cause=%3 providerOwner=%4 patientOwner=%5",
+            _classname, netId _patient, _cause, owner _medic, owner _patient];
+        if (hasInterface && {[_medic] call ace_common_fnc_isPlayer}) then {
+            [format ["Procedure could not start (%1).", _cause], 3, _medic] call ACME_fnc_netNotice;
+        };
+        false
+    };
+    if !(_this call ace_medical_treatment_fnc_canTreatCached) exitWith {
+        ["treatment eligibility, equipment or role changed"] call _modalRefused
+    };
+    if !([_medic, _patient, _interactionChecks] call ace_common_fnc_canInteractWith) exitWith {
+        ["interaction context changed"] call _modalRefused
+    };
+    if (!_rangeOkay) exitWith {["patient out of range"] call _modalRefused};
 
     // Modal procedure launchers are not ACE timed treatments. Their panel/preparation controller owns provider
     // animation, cancellation and medical-menu return. Running thoracostomy through the generic treatment preflight

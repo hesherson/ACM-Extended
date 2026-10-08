@@ -1,3 +1,7 @@
+// A late Unload from an older window may NOT retire a replacement workspace.
+disableSerialization;
+params [["_closing", displayNull]];
+if (_this isNotEqualTo [] && {_closing isNotEqualTo (uiNamespace getVariable ["ACME_Thora_DLG", displayNull])}) exitWith {};
 // Close thoracostomy workspace and release the one patient-side chest-access lease.
 // Stable thoracostomy entry is providerless; the provider cleanup below exists only to recover stale state from
 // an older/hot-loaded build and is not part of the normal lifecycle.

@@ -3,7 +3,9 @@
 // animate, but the medic stays free while the source medical menu is closed and Preparing... is visible.
 params ["_medic", "_patient", ["_bodyPart", ""]];
 if (isNull _patient || {isNull _medic} || {!local _medic}) exitWith {};
-if !([_medic, _patient] call ACME_fnc_thoraCanOpen) exitWith {};
+if !([_medic, _patient] call ACME_fnc_thoraCanOpen) exitWith {
+    ["Thoracostomy cannot start: kit, procedure permission, or site availability changed.", 3, _medic] call ACME_fnc_netNotice;
+};
 
 // Recover any provider presentation left by an older build before starting this providerless flow.
 private _oldChest = _medic getVariable ["ACME_chestAccessProvider", []];
@@ -48,7 +50,10 @@ _medic setVariable ["ACME_chestAccessPreflightActive", true, false];
 _medic setVariable ["ACME_chestAccessPreflightToken", _lease, false];
 _medic setVariable ["ACME_chestAccessPreflightCancel", false, false];
 
+// B263: take ownership of both ACE and ACME menu PFHs synchronously. Waiting
+// until the procedure's onLoad leaves an unsafe interval on mod-heavy clients.
 ace_medical_gui_pendingReopen = false;
+call ACM_GUI_fnc_pauseMedicalMenuPFH;
 private _menuDisplay = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
 if (!isNull _menuDisplay) then {_menuDisplay closeDisplay 1;};
 if (dialog) then {closeDialog 0;};
@@ -99,27 +104,21 @@ private _releaseLease = {
 
 private _abort = {
     params ["_p", "_m", "_lease", "_finish", "_release", ["_reopen", true, [false]]];
-    [_m, _p, _lease] call _finish;
-    [_p, _m, _lease] call _release;
-
-    if (!isNull _m && {local _m}) then {
-        _m setVariable ["ACME_treatmentPreflightActive", false, false];
-        _m setVariable ["ACME_treatmentPreflightToken", "", false];
-        _m setVariable ["ACME_treatmentPreflightBypass", [], false];
-        _m setVariable ["ACME_treatmentPreflightStartedAt", -1, false];
-        _m setVariable ["ACME_nativeTreatmentRate", [], true];
-        [_m, [["treatmentEndInAnim"]]] call ACM_core_fnc_setAceMedicalState;
-        if !([_m] call ACME_fnc_providerStanceOwned) then {
-            _m setUnitPos "AUTO";
-            _m setAnimSpeedCoef 1;
-            ["ace_common_setAnimSpeedCoef", [_m, 1]] call CBA_fnc_globalEvent;
+    // A late timeout must never tear down another provider's newer dialog.
+    if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease", ""]) != _lease) exitWith {};
+    private _cancelledByUser = (uiNamespace getVariable ["ACME_Thora_EntryCancelToken", ""]) == _lease;
+    if (!_cancelledByUser) then {
+        diag_log format ["[ACME MODAL B263] thoracostomy entry aborted; patient=%1 token=%2 owner=%3",
+            if (isNull _p) then {"null"} else {netId _p}, _lease,
+            if (isNull _p) then {-1} else {owner _p}];
+        if (!isNull _m && {local _m}) then {
+            ["Thoracostomy preparation interrupted; the workspace was released. Please retry.", 3, _m] call ACME_fnc_netNotice;
         };
     };
-
-    if (_reopen && {!isNull _p} && {!isNull _m} && {alive _m} && {local _m}
-        && {!(_m getVariable ["ACE_isUnconscious", false])} && {[_m] call ace_common_fnc_isPlayer}) then {
-        [_p, "airway"] call ACME_fnc_reopenMedicalMenu;
-    };
+    // Full idempotent teardown also retires modal PFHs, ECG/jostle markers,
+    // prep keys, scoped carrier lease, stance state and stale UI references.
+    // The former partial _finish/_release path could leave these stranded.
+    [] call ACME_fnc_thoraClose;
 };
 
 [{
@@ -157,13 +156,15 @@ private _abort = {
         params ["_p", "_m", "_lease", "_release"];
         if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease", ""]) != _lease) exitWith {};
         if (isNull (findDisplay 86600)) then {
-            [_p, _m, _lease] call _release;
-            if (!isNull _p && {!isNull _m} && {alive _m} && {local _m} && {[_m] call ace_common_fnc_isPlayer}) then {
-                [_p, "airway"] call ACME_fnc_reopenMedicalMenu;
+            diag_log format ["[ACME MODAL B263] thoracostomy dialog did not initialize; patient=%1 token=%2",
+                if (isNull _p) then {"null"} else {netId _p}, _lease];
+            if (!isNull _m && {local _m}) then {
+                ["Thoracostomy panel could not open. Please retry.", 3, _m] call ACME_fnc_netNotice;
             };
+            [] call ACME_fnc_thoraClose;
         };
-    }, [_p, _m, _lease, _release], 0.25] call CBA_fnc_waitAndExecute;
-}, [_patient, _medic, _lease, _finishPrep, _releaseLease, _abort], 12, {
+    }, [_p, _m, _lease, _release], 0.6] call CBA_fnc_waitAndExecute;
+}, [_patient, _medic, _lease, _finishPrep, _releaseLease, _abort], 20, {
     params ["_p", "_m", "_lease", "_finish", "_release", "_abort"];
     if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease", ""]) == _lease) then {
         diag_log format ["[ACME THORACOSTOMY] Chest-access preparation timed out on %1; aborting cleanly.", netId _p];

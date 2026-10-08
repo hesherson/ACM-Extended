@@ -3985,7 +3985,7 @@ class ACME_Thoracostomy_Dialog {
     idd = 86600;
     movingEnable = 0;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_thoraInit";
-    onUnload = "[] call ACME_fnc_thoraClose";
+    onUnload = "_this call ACME_fnc_thoraClose";
     class ControlsBackground {
         class Thora_Dim: RscText {
             idc = -1;

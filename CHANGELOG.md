@@ -1,5 +1,14 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B263 (multiplayer modal procedure resilience)
+
+- Chest Seal and Thoracostomy now retire BOTH ACE's native medical-menu PFH and ACME's generation-bound independent renderer **before** closing the old menu, preventing the stale ACE closeDialog call from destroying their new panel.
+- Chest-seal patient-owner enrollment retries only missing identical idempotent tokens, up to four times; a 30-second hard deadline or unexpected owner change yields full token-scoped cleanup and a visible retry reason. No clinical chest edits or supply debits are replayed.
+- Thoracostomy pre-open abort, timeout and failed panel creation now use the complete close path; late callbacks are lease-scoped and stale panel onUnload is display-identity guarded. Heavy modpack preparation is given up to 20 seconds before clean abort.
+- Cached/legacy ACM `ApplyChestSeal` and `PerformThoracostomy` requests normalize to ACME's canonical permission/supply-checked launchers, and the obsolete AI presenter no longer tries to animate these modal-only actions.
+- Modal eligibility, context and distance refusals produce a diagnostic; runtime compatibility check detects replacement of the ACE treatment bridge by another addon. This does not forcibly overwrite other mods.
+- Added B263 regression coverage and a multiplayer modpack acceptance matrix. Stable public version stays **1.2.4.1**; B263 remains a **candidate** until strict CI, HEMTT and dedicated multiplayer acceptance pass.
+
 ## 1.2.4.1 — B262 (NRB kit oxygen / empty-cylinder compatibility)
 
 - Non-rebreather oxygen-source selection now accepts an ACM oxygen tank packed inside an Enhanced First Aid Kits (EFAK) kit, as long as EFAK's actual draw-charge API is loaded. The usual medic/patient donor order remains authoritative.

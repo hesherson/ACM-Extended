@@ -52,6 +52,16 @@ if (_actionName == "CPR") exitWith {
     [_medic, "ACM_CPR"] call ACEFUNC(common,doAnimation);
 };
 
+// B263: these are modal workspace launchers, not native medic animations.
+// A legacy/cached ACM action may still call the AI presentation hook on a
+// modded server; no-anim warnings and goKneeling would otherwise interfere
+// with the chest/thora provider ownership. The actual procedure owns theatre.
+if (_actionName in [
+    "ApplyChestSeal", "PerformThoracostomy", "ACME_ApplyChestSeal",
+    "ACME_PerformThoracostomy", "ACME_AdjustThoracostomy",
+    "ACME_InsertChestTube", "ACME_PerformNARSPEAR"
+]) exitWith {};
+
 private _anim = getText (_config >> _configProperty);
 if (_anim == "") exitWith {
     // ACME-owned actions intentionally leave these fields empty. Their callback owns the
