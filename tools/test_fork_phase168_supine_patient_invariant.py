@@ -24,10 +24,13 @@ def test_chest_restore_normalizes_front_even_with_no_carrier():
     assert 'private _needFrontNormalize = !_frontNormalized' in s
     assert 'private _canRollFront = [_patient] call ACME_fnc_chestSealCanPhysicalRoll;' in s
     assert '[_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;' in s
-    assert '[_p,_force,_medic,_ctx,true] call ACME_fnc_chestAccessVestRestore;' in s
+    # B267 preserves the original kit generation across BOTH deferred
+    # front-normalization paths; a newer kit must not inherit this return.
+    assert s.count('[_p,_force,_medic,_ctx,true,_kitEpoch] call ACME_fnc_chestAccessVestRestore;') == 2
     # A denied physical roll defers restoration; it does not force a rest animation.
     normalize_block = s[s.index('if (_needFrontNormalize) exitWith {'):s.index('_patient setVariable ["ACME_CS_facing","front",true];', s.index('if (_needFrontNormalize) exitWith {'))]
     assert 'ace_common_switchMove' not in normalize_block
+    assert normalize_block.count('(_p getVariable ["ACME_equipmentKitEpoch", 0]) == _kitEpoch') == 2
     assert '["_frontNormalized", false, [false]]' in s
 
 def test_chest_seal_never_restores_original_posterior_or_recovery_pose():
