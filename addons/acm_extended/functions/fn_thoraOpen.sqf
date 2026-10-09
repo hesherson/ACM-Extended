@@ -36,6 +36,7 @@ private _ecgJostleKey = "ui:thora:" + str clientOwner;
 
 uiNamespace setVariable ["ACME_Thora_Medic", _medic];
 uiNamespace setVariable ["ACME_Thora_Patient", _patient];
+uiNamespace setVariable ["ACME_Thora_PatientKitEpoch", _patient getVariable ["ACME_equipmentKitEpoch", 0]];
 uiNamespace setVariable ["ACME_Thora_BodyPart", _bodyPart];
 
 private _serial = (uiNamespace getVariable ["ACME_Thora_ChestAccessSerial", 0]) + 1;
@@ -125,7 +126,8 @@ private _abort = {
     params ["_p", "_m", "_lease"];
     if (isNull _p || {isNull _m} || {!local _m}) exitWith {true};
     if ((uiNamespace getVariable ["ACME_Thora_ChestAccessLease", ""]) != _lease) exitWith {true};
-    if ((_m getVariable ["ACME_chestAccessPreflightCancel", false])
+    if ((_p getVariable ["ACME_equipmentKitEpoch", 0]) != (uiNamespace getVariable ["ACME_Thora_PatientKitEpoch", 0])
+        || {(_m getVariable ["ACME_chestAccessPreflightCancel", false])}
         || {(uiNamespace getVariable ["ACME_Thora_EntryCancelToken", ""]) == _lease}
         || {!alive _m}
         || {_m getVariable ["ACE_isUnconscious", false]}
@@ -137,7 +139,8 @@ private _abort = {
     (_readyLease == _lease) && {_ready isEqualType 0} && {_ready >= 0} && {serverTime >= _ready}
 }, {
     params ["_p", "_m", "_lease", "_finish", "_release", "_abort"];
-    private _cancelled = isNull _p || {isNull _m} || {!local _m}
+    private _cancelled = isNull _p || {isNull _m}
+        || {(_p getVariable ["ACME_equipmentKitEpoch", 0]) != (uiNamespace getVariable ["ACME_Thora_PatientKitEpoch", 0])} || {!local _m}
         || {(_m getVariable ["ACME_chestAccessPreflightCancel", false])}
         || {(uiNamespace getVariable ["ACME_Thora_EntryCancelToken", ""]) == _lease}
         || {(uiNamespace getVariable ["ACME_Thora_ChestAccessLease", ""]) != _lease}

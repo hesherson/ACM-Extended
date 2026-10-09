@@ -21,4 +21,5 @@ _cargo setVariable ["ACME_carrierSavedVar", _savedVar, true];
 _patient setVariable ["ACME_carrierCargo", _cargo, true];
 _patient setVariable [_savedVar + "Live", true, true];
 _patient setVariable [_savedVar + "Settled", false, true];
+_patient setVariable [_savedVar + "KitEpoch", _patient getVariable ["ACME_equipmentKitEpoch", 0], true];
 _cargo

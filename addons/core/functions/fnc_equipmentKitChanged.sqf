@@ -13,6 +13,7 @@ if (canSuspend) exitWith {isNil {[_unit] call ACM_core_fnc_equipmentKitChanged;}
 // before teardown prevents an old exit/reopen from touching the replacement.
 private _epoch = (_unit getVariable ["ACME_equipmentKitEpoch", 0]) + 1;
 _unit setVariable ["ACME_equipmentKitEpoch", _epoch, true];
+[_unit] call ACM_core_fnc_carrierKitChanged;
 private _raising = _unit getVariable ["ACME_hang_Raising", false];
 _unit setVariable ["ACME_hang_PrepToken", (_unit getVariable ["ACME_hang_PrepToken", 0]) + 1, false];
 _unit setVariable ["ACME_hang_savedWeaponSlots", nil, true];

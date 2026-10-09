@@ -28,6 +28,7 @@ private _readyVar = ["ACME_chestAccess_readyServer","ACME_CS_vestReadyServer"] s
 private _busyVar = ["ACME_chestAccess_vestBusy","ACME_CS_vestBusy"] select (_context == "chestseal");
 private _pfhVar = ["ACME_chestAccess_vestPFH","ACME_CS_vestPFH"] select (_context == "chestseal");
 private _frontBusyVar = ["ACME_chestAccess_frontBusy","ACME_CS_frontBusy"] select (_context == "chestseal");
+private _kitEpoch = _patient getVariable ["ACME_equipmentKitEpoch", 0];
 private _workspaceToken = if (_context == "chestseal") then {_patient getVariable ["ACME_CS_PreparationToken", ""]} else {_preparationToken};
 if (_context == "chestseal" && {
     _workspaceToken == "" || {(_patient getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}
@@ -176,8 +177,8 @@ if (_vestClass == "" || {(count _vestEntry) != 2}) exitWith {
     } else {
         _patient setVariable [_readyVar, -1, true];
         [{
-            params ["_p","_readyVar","_ctx","_prep"];
-            if (isNull _p || {!local _p}) exitWith {true};
+            params ["_p","_readyVar","_ctx","_prep","_kitEpoch"];
+            if (isNull _p || {!local _p} || {(_p getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch}) exitWith {true};
             if (_ctx == "chestseal" && {
                 (_p getVariable ["ACME_CS_PreparationToken", ""]) != _prep
                 || {(_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}
@@ -189,18 +190,18 @@ if (_vestClass == "" || {(count _vestEntry) != 2}) exitWith {
                     || {!(_p getVariable ["ACME_headElevated", false])}
                     || {!(_p getVariable ["ACME_headElev_Suspended", false])}}
         }, {
-            params ["_p","_readyVar","_ctx","_prep"];
-            if (isNull _p || {!local _p}) exitWith {};
+            params ["_p","_readyVar","_ctx","_prep","_kitEpoch"];
+            if (isNull _p || {!local _p} || {(_p getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch}) exitWith {};
             if (_ctx == "chestseal" && {
                 (_p getVariable ["ACME_CS_PreparationToken", ""]) != _prep
                 || {(_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}
             }) exitWith {};
             if (_ctx != "chestseal") then {_p setVariable ["ACME_CS_facing", "front", true];};
             _p setVariable [_readyVar, serverTime, true];
-        }, [_patient,_readyVar,_context,_workspaceToken], if (_context == "chestseal") then {-1} else {(_preDelay max 0) + 1.5}, {
-            params ["_p","_readyVar","_ctx"];
+        }, [_patient,_readyVar,_context,_workspaceToken,_kitEpoch], if (_context == "chestseal") then {-1} else {(_preDelay max 0) + 1.5}, {
+            params ["_p","_readyVar","_ctx","_prep","_kitEpoch"];
             if (_ctx == "chestseal") exitWith {};
-            if (isNull _p || {!local _p}) exitWith {};
+            if (isNull _p || {!local _p} || {(_p getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch}) exitWith {};
             // Clinical reliability wins if a third-party animation masks the final classification.
             _p setVariable ["ACME_CS_facing", "front", true];
             _p setVariable [_readyVar, serverTime, true];
@@ -343,8 +344,9 @@ if (!_canAnimate) exitWith {
     } else {
         _patient setVariable [_readyVar, -1, true];
         private _removeWithoutAnimation = {
-            params ["_p","_ctx","_saved","_prop","_pfhVar","_commit","_readyVar","_prep"];
-            if (isNull _p || {!local _p}) exitWith {};
+            params ["_p","_ctx","_saved","_prop","_pfhVar","_commit","_readyVar","_prep","_kitEpoch"];
+            if (isNull _p || {!local _p}
+                || {(_p getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch}) exitWith {};
             if (_ctx == "chestseal" && {
                 (_p getVariable ["ACME_CS_PreparationToken", ""]) != _prep
                 || {(_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo []}
@@ -352,7 +354,7 @@ if (!_canAnimate) exitWith {
             [_p,_ctx,_saved,_prop,_pfhVar] call _commit;
             _p setVariable [_readyVar, serverTime, true];
         };
-        private _args = [_patient,_context,_savedVar,_propVar,_pfhVar,_commitRemoval,_readyVar,_workspaceToken];
+        private _args = [_patient,_context,_savedVar,_propVar,_pfhVar,_commitRemoval,_readyVar,_workspaceToken,_kitEpoch];
         if (_context == "chestseal") then {
             [{
                 params ["_args","","_earliest"];

@@ -67,6 +67,8 @@ private _chestOwnsAfterCancel = _preserveSupportForChest
 if (_headSupportRemoved && {_chestOwnsAfterCancel}
     && {(count (_patient getVariable ["ACME_chestAccess_vestLoadout", []])) != 2}) then {
     _patient setVariable ["ACME_chestAccess_vestLoadout", +_headSupportSaved, true];
+    _patient setVariable ["ACME_chestAccess_vestLoadoutKitEpoch",
+        _patient getVariable ["ACME_headElev_vestLoadoutKitEpoch", _patient getVariable ["ACME_equipmentKitEpoch", 0]], true];
     _patient setVariable ["ACME_chestAccess_vestProp", _headSupportProp, true];
     // Transfer custody of the SAME live container; never recreate its pre-removal supplies.
     if (_patient getVariable ["ACME_headElev_vestLoadoutLive", false]) then {

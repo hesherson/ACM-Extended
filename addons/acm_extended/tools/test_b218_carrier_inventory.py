@@ -11,7 +11,8 @@ from test_menu_death_lifecycle import ROOT, execute, read, adapt, namespace_publ
 
 
 def cargo_source(name):
-    source = read(name)
+    native = name == "carrierLegacySnapshot"
+    source = (ROOT / "addons/core/functions" / ("fnc_" + name + ".sqf")).read_text().split('#include "..\\script_component.hpp"', 1)[-1] if native else read(name)
     source = source.replace('local _patient', 'true')
     source = source.replace('vestContainer _patient', '_wornContainer').replace('vest _patient', '_wornVest')
     source = source.replace('getPosATL _patient', '[0,0,0]')
@@ -31,7 +32,7 @@ def cargo_source(name):
     source = re.sub(r'(_\w+) addBackpackCargoGlobal (\[[^;]*?\]);', r'[\1, \2, true] call _addItem;', source)
     source = re.sub(r'(_\w+) addMagazineAmmoCargo (\[[^;]*?\]);', r'[\1, \2] call _addMagazine;', source)
     source = re.sub(r'(_\w+) addWeaponWithAttachmentsCargoGlobal (\[[^;]*?\]);', r'[\1, \2] call _addWeapon;', source)
-    return 'ACME_fnc_'+name+'={'+namespace_public_arguments(source)+'};\n'
+    return ('ACM_core_fnc_' if native else 'ACME_fnc_')+name+'={'+namespace_public_arguments(source)+'};\n'
 
 
 def setup():
@@ -88,7 +89,7 @@ def setup():
             };
             _container setVariable ["mags",_mags];
         };
-    '''+''.join(cargo_source(x) for x in ['carrierCargoSnapshot','carrierCargoEqual','carrierCargoPopulate','carrierInventoryGet','carrierInventoryCreate','carrierInventoryRestore','carrierSupplyTake'])
+    '''+''.join(cargo_source(x) for x in ['carrierCargoSnapshot','carrierCargoEqual','carrierCargoPopulate','carrierInventoryGet','carrierInventoryCreate','carrierLegacySnapshot','carrierInventoryRestore','carrierSupplyTake'])
 
 
 def remove():

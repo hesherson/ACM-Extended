@@ -27,6 +27,7 @@ if (!isNull _oldMedicalMenu) then {_oldMedicalMenu closeDisplay 1;};
 if (dialog) then {closeDialog 0;};
 uiNamespace setVariable ["ACME_CS_Medic", _medic];
 uiNamespace setVariable ["ACME_CS_Patient", _patient];
+uiNamespace setVariable ["ACME_CS_PatientKitEpoch", _patient getVariable ["ACME_equipmentKitEpoch", 0]];
 uiNamespace setVariable ["ACME_CS_BodyPart", _bodyPart];
 uiNamespace setVariable ["ACME_CS_StartTool", _startTool];
 
@@ -98,6 +99,9 @@ private _entryPFH = [{
     // A deleted patient is objNull on this machine. Do not attempt its
     // replicated token/member lookup after removal or respawn.
     if (isNull _p) exitWith {[] call ACME_fnc_chestSealClose;};
+    if ((_p getVariable ["ACME_equipmentKitEpoch", 0]) != (uiNamespace getVariable ["ACME_CS_PatientKitEpoch", 0])) exitWith {
+        [] call ACME_fnc_chestSealClose;
+    };
     private _member = _tok in (_p getVariable ["ACME_CS_ProcedureTokens", []]);
     if (isNull _p || {isNull _m} || {!alive _m} || {!local _m} || {!([_m] call ace_common_fnc_isPlayer)}
         || {_m getVariable ["ACE_isUnconscious", false]}

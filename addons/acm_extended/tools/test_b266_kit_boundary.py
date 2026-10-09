@@ -21,7 +21,8 @@ def read(name):
 def kit_code():
     s=read('equipmentKitChanged').replace('local _unit', '_localUnit')
     s=s.replace('canSuspend', 'false')
-    return 'ACM_core_fnc_equipmentKitChanged={'+adapt(s)+'};'
+    # Carrier retirement is a separate production subsystem, covered by B267.
+    return 'ACM_core_fnc_carrierKitChanged={}; ACM_core_fnc_equipmentKitChanged={'+adapt(s)+'};'
 
 
 def setup():

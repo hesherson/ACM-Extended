@@ -13,6 +13,8 @@ F=ROOT/'addons/acm_extended/functions'
 
 
 def source(name):
+    if name == 'carrierLegacySnapshot':
+        return (ROOT/'addons/core/functions'/('fnc_'+name+'.sqf')).read_text()
     return (F/('fn_'+name+'.sqf')).read_text()
 
 
@@ -54,7 +56,7 @@ def code(name, server_clock='CBA_missionTime'):
 
 
 def function(name):
-    return 'ACME_fnc_'+name+'={'+code(name)+'};\n'
+    return ('ACM_core_fnc_' if name == 'carrierLegacySnapshot' else 'ACME_fnc_')+name+'={'+code(name)+'};\n'
 
 
 def setup():
@@ -147,7 +149,7 @@ def setup():
             for "_i" from 1 to _count do {_rows pushBack (+_weapon);};
             _container setVariable ["weapons",_rows];
         };
-    ''' + ''.join(adapt(cargo_source(n)) for n in ['carrierCargoPopulate','carrierCargoSnapshot','carrierCargoEqual']) + function('carrierInventoryRestore')+function('chestSealCanPhysicalRoll')+function('chestSealPatientBegin')+function('chestSealPatientEnd')+function('chestAccessVestRestore')
+    ''' + ''.join(adapt(cargo_source(n)) for n in ['carrierCargoPopulate','carrierCargoSnapshot','carrierCargoEqual']) + function('carrierLegacySnapshot')+function('carrierInventoryRestore')+function('chestSealCanPhysicalRoll')+function('chestSealPatientBegin')+function('chestSealPatientEnd')+function('chestAccessVestRestore')
 
 
 @pytest.mark.parametrize('flags,animation,expected',[

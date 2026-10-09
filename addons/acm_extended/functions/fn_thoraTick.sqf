@@ -13,7 +13,10 @@ if (isNull _display) exitWith {};
 // common helper guarantees onUnload runs fn_thoraClose, which releases carrier custody and every provider pose.
 private _thMedic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
 private _thPatient = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
-private _invalidContact = isNull _thMedic || {isNull _thPatient} || {!alive _thMedic} || {!local _thMedic}
+private _kitChanged = !isNull _thPatient && {
+    (_thPatient getVariable ["ACME_equipmentKitEpoch", 0]) != (uiNamespace getVariable ["ACME_Thora_PatientKitEpoch", 0])
+};
+private _invalidContact = _kitChanged || {isNull _thMedic} || {isNull _thPatient} || {!alive _thMedic} || {!local _thMedic}
     || {!([_thMedic] call ace_common_fnc_isPlayer)}
     || {_thMedic getVariable ["ACE_isUnconscious", false]}
     || {([_thPatient] call ACME_fnc_clinicalEpoch) != (uiNamespace getVariable ["ACME_Thora_PrepEpoch", -1])}

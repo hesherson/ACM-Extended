@@ -8,9 +8,12 @@ params [
     ["_force", false, [false]],
     ["_medic", objNull, [objNull]],
     ["_context", "access", [""]],
-    ["_frontNormalized", false, [false]]
+    ["_frontNormalized", false, [false]],
+    ["_kitEpoch", -1, [0]]
 ];
 if (isNull _patient || {!local _patient}) exitWith {false};
+if (_kitEpoch < 0) then {_kitEpoch = _patient getVariable ["ACME_equipmentKitEpoch", 0];};
+if ((_patient getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch) exitWith {false};
 _context = toLowerANSI _context;
 if !(_context in ["access","chestseal"]) then {_context = "access";};
 
@@ -96,7 +99,7 @@ if (!_force) then {
                         && {(count (_p getVariable ["ACME_chestAccess_leases", createHashMap])) == 0}
                 }, {
                     _this call ACME_fnc_chestAccessVestRestore;
-                }, [_patient,false,_medic,"access",_frontNormalized], 900] call CBA_fnc_waitUntilAndExecute;
+                }, [_patient,false,_medic,"access",_frontNormalized,_kitEpoch], 900] call CBA_fnc_waitUntilAndExecute;
             };
         };
     } else {
@@ -133,21 +136,21 @@ if (_needFrontNormalize) exitWith {
         private _rollTime = missionNamespace getVariable ["ACME_CS_rollTime", 1.85 / (call ACME_fnc_choreographyRate)];
         if !(_rollTime isEqualType 0 && {finite _rollTime}) then {_rollTime = 1.85 / (call ACME_fnc_choreographyRate);};
         [{
-            params ["_p","_force","_medic","_ctx"];
-            if (!isNull _p && {local _p}) then {
+            params ["_p","_force","_medic","_ctx","_kitEpoch"];
+            if (!isNull _p && {local _p} && {(_p getVariable ["ACME_equipmentKitEpoch", 0]) == _kitEpoch}) then {
                 _p setVariable ["ACME_CS_facing","front",true];
-                [_p,_force,_medic,_ctx,true] call ACME_fnc_chestAccessVestRestore;
+                [_p,_force,_medic,_ctx,true,_kitEpoch] call ACME_fnc_chestAccessVestRestore;
             };
-        }, [_patient,_force,_medic,_context], (_rollTime max 0.1) + 0.08] call CBA_fnc_waitAndExecute;
+        }, [_patient,_force,_medic,_context,_kitEpoch], (_rollTime max 0.1) + 0.08] call CBA_fnc_waitAndExecute;
     } else {
         // A denied physical roll is not permission to force an unconscious rest pose.
         // Retain the existing deferred gear-restoration path without taking body control.
         [{
-            params ["_p","_force","_medic","_ctx"];
-            if (!isNull _p && {local _p}) then {
-                [_p,_force,_medic,_ctx,true] call ACME_fnc_chestAccessVestRestore;
+            params ["_p","_force","_medic","_ctx","_kitEpoch"];
+            if (!isNull _p && {local _p} && {(_p getVariable ["ACME_equipmentKitEpoch", 0]) == _kitEpoch}) then {
+                [_p,_force,_medic,_ctx,true,_kitEpoch] call ACME_fnc_chestAccessVestRestore;
             };
-        }, [_patient,_force,_medic,_context]] call CBA_fnc_execNextFrame;
+        }, [_patient,_force,_medic,_context,_kitEpoch]] call CBA_fnc_execNextFrame;
     };
     true
 };

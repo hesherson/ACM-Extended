@@ -1,10 +1,21 @@
 /* NA2: explicit patient-owner commands; never accept arbitrary code/function names.
    Called by CBA in an unscheduled scope. A locality change in transit is rerouted. */
-params ["_patient", "_operation", ["_args", []], ["_hops", 0]];
+params ["_patient", "_operation", ["_args", []], ["_hops", 0], ["_equipmentEpoch", -1, [0]]];
 if (isNull _patient) exitWith {};
+private _equipmentRequest = _operation in [
+    "chestAccessVestEvent", "chestSealPatientBegin", "manualPlateCarrier", "headElevStart"
+];
+// Capture once on the original caller, never refresh during locality reroute.
+// This is an ordering guard, not sender authentication or clinical permission.
+if (_equipmentRequest && {_equipmentEpoch < 0} && {_hops == 0}) then {
+    _equipmentEpoch = _patient getVariable ["ACME_equipmentKitEpoch", 0];
+};
+if (_equipmentRequest && {_hops > 0} && {_equipmentEpoch < 0}) exitWith {};
+if (_equipmentRequest && {_equipmentEpoch >= 0}
+    && {_equipmentEpoch != (_patient getVariable ["ACME_equipmentKitEpoch", 0])}) exitWith {};
 if (!local _patient) exitWith {
     if (_hops < 4) then {
-        ["ACME_ownerCommand", [_patient, _operation, _args, _hops + 1], _patient] call CBA_fnc_targetEvent;
+        ["ACME_ownerCommand", [_patient, _operation, _args, _hops + 1, _equipmentEpoch], _patient] call CBA_fnc_targetEvent;
     } else {  };
 };
 switch (_operation) do {

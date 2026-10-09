@@ -45,6 +45,9 @@ if (_burpLock >= 0) then {
 
 private _patient = uiNamespace getVariable ["ACME_CS_Patient", objNull];
 if (isNull _patient) exitWith {closeDialog 0;};
+if ((_patient getVariable ["ACME_equipmentKitEpoch", 0]) != (uiNamespace getVariable ["ACME_CS_PatientKitEpoch", 0])) exitWith {
+    _display closeDisplay 2;
+};
 
 // The procedure diagram is explicit-state only. During a physical roll, hold the requested endpoint; once the
 // animation finishes do NOT reclassify from transient body geometry. This prevents external/ambiguous animation
