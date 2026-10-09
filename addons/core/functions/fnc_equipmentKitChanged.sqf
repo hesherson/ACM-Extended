@@ -32,6 +32,15 @@ if (_active) then {
     // after an Arsenal/mission script has already applied the new kit.
     [true, _unit, true] call ACME_fnc_hangBagStop;
 };
+// Invalidate the ended episode only AFTER its exact patient release. A late
+// restore packet carries that older episode, not a captured kit generation.
+// A new preparation can already own new-kit snapshots before hangBagStart
+// assigns its next episode; do not let that old packet restore those weapons.
+private _previousEpisode = _unit getVariable ["ACME_hang_Start", -1];
+if (_previousEpisode >= 0) then {
+    private _step = 0.001 max (abs _previousEpisode * 0.0000002);
+    _unit setVariable ["ACME_hang_Start", _previousEpisode + _step, true];
+};
 _unit setVariable ["ACME_hang_Raising", false, false];
 if ((_unit getVariable ["ACME_DP_PauseTreatmentClass", ""]) == "hangbag") then {
     _unit setVariable ["ACME_DP_Paused", false, false];
