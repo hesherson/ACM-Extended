@@ -14,36 +14,54 @@ if (_medic getVariable ["ACME_hang_Active", false]) exitWith {false};
 private _savedSlots = +(_medic getVariable ["ACME_hang_savedWeaponSlots", []]);
 if ((count _savedSlots) < 2) exitWith {false};
 
+// B265: remember only a partial slot THIS restore created. On a retry we
+// may fill missing parts only while that exact fingerprint is unchanged.
+private _ownedSlots = +(_medic getVariable ["ACME_hang_weaponRestoreOwned", [[], []]]);
+if (count _ownedSlots != 2) then {_ownedSlots = [[], []];};
 private _allRestored = true;
-for "_slotIndex" from 0 to 1 do {
+private _restoreSlot = {
+    params ["_slotIndex"];
     private _slot = +(_savedSlots select _slotIndex);
-    if ((count _slot) == 0) then {continue};
-    if (count _slot < 7) then {_allRestored = false; continue};
+    if ((count _slot) == 0) exitWith {};
+    if (count _slot != 7) exitWith {_allRestored = false;};
     private _weapon = _slot select 0;
-    if (_weapon == "") then {continue};
+    if (_weapon == "") exitWith {_allRestored = false;};
     private _actual = (getUnitLoadout _medic) param [_slotIndex, [], [[]]];
-    if (_actual isEqualTo _slot) then {continue};
+    if (_actual isEqualTo _slot) exitWith {
+        // Settle this slot immediately: later changes to it are NOT ours.
+        _savedSlots set [_slotIndex, []]; _ownedSlots set [_slotIndex, []];
+        _medic setVariable ["ACME_hang_savedWeaponSlots", +_savedSlots, true];
+        _medic setVariable ["ACME_hang_weaponRestoreOwned", +_ownedSlots, true];
+    };
     // Another mod may have installed a different rifle/launcher while the
     // bag was held. Never overwrite it; retain the saved slot for recovery.
-    if !(_actual isEqualTo []) then {_allRestored = false; continue};
+    if (_actual isNotEqualTo [] && {
+        (_ownedSlots select _slotIndex) isEqualTo []
+        || {_actual isNotEqualTo (_ownedSlots select _slotIndex)}
+    }) exitWith {_allRestored = false;};
 
-    _medic addWeapon _weapon;
+    if (_actual isEqualTo []) then {_medic addWeapon _weapon;};
+    _actual = (getUnitLoadout _medic) param [_slotIndex, [], [[]]];
+    if ((_actual param [0, ""]) != _weapon) exitWith {_allRestored = false;};
     // Same slot encoding as getUnitLoadout:
     // [weapon, muzzle, pointer, optic, [mag,ammo], [GLmag,ammo], bipod].
+    // Fill missing attachments only. Never replace an attachment another
+    // addon put on the gun or refill a magazine after the player fired it.
     {
-        if (_x isEqualType "" && {_x != ""}) then {
-            _medic addWeaponItem [_weapon, _x, true];
+        private _wanted = _slot select _x;
+        if (_wanted isEqualType "" && {_wanted != ""} && {(_actual param [_x, ""]) == ""}) then {
+            _medic addWeaponItem [_weapon, _wanted, true];
         };
-    } forEach [_slot select 1, _slot select 2, _slot select 3, _slot select 6];
+    } forEach [1, 2, 3, 6];
 
     private _primaryMag = _slot select 4;
     if (_primaryMag isEqualType [] && {count _primaryMag >= 2}
-        && {(_primaryMag select 0) != ""}) then {
+        && {(_primaryMag select 0) != ""} && {(_actual param [4, []]) isEqualTo []}) then {
         _medic addWeaponItem [_weapon, [_primaryMag select 0, _primaryMag select 1], true];
     };
     private _underbarrel = _slot select 5;
     if (_underbarrel isEqualType [] && {count _underbarrel >= 2}
-        && {(_underbarrel select 0) != ""}) then {
+        && {(_underbarrel select 0) != ""} && {(_actual param [5, []]) isEqualTo []}) then {
         private _muzzles = getArray (configFile >> "CfgWeapons" >> _weapon >> "muzzles");
         private _other = _muzzles select {_x != "this"};
         if (count _other > 0) then {
@@ -53,10 +71,18 @@ for "_slotIndex" from 0 to 1 do {
     };
     // A modded weapon may reject an attachment/ammo. Retain the snapshot so
     // a later owner can retry or an operator can inspect the conflict.
-    if !(((getUnitLoadout _medic) param [_slotIndex, [], [[]]]) isEqualTo _slot) then {
+    private _after = (getUnitLoadout _medic) param [_slotIndex, [], [[]]];
+    if (_after isEqualTo _slot) then {
+        _savedSlots set [_slotIndex, []]; _ownedSlots set [_slotIndex, []];
+    } else {
+        _ownedSlots set [_slotIndex, +_after];
         _allRestored = false;
     };
+    _medic setVariable ["ACME_hang_savedWeaponSlots", +_savedSlots, true];
+    _medic setVariable ["ACME_hang_weaponRestoreOwned", +_ownedSlots, true];
 };
+
+{[_x] call _restoreSlot;} forEach [0, 1];
 
 if (!_allRestored) exitWith {
     private _last = _medic getVariable ["ACME_hang_restoreWarningAt", -1000];
@@ -70,5 +96,6 @@ if (!_allRestored) exitWith {
 // One-shot owner-local completion: an old disconnected client cannot restore
 // again after the new owner cleared the replicated snapshot.
 _medic setVariable ["ACME_hang_savedWeaponSlots", nil, true];
+_medic setVariable ["ACME_hang_weaponRestoreOwned", nil, true];
 _medic setVariable ["ACME_hang_restoreWarningAt", -1000, false];
 true

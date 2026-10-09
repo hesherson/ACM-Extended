@@ -77,7 +77,9 @@ def test_modded_hidden_selection_not_rebuilt_by_hangbag_or_legacy_vest():
     assert "setUnitLoadout _ld" not in restore
     assert "_patient setUnitLoadout" not in carrier
     assert "_patient addVest _class;" in carrier
-    assert "addMagazineAmmoCargo" in carrier and "addItemCargoGlobal" in carrier
+    assert "ACME_fnc_carrierCargoPopulate" in carrier
+    populate=source("carrierCargoPopulate")
+    assert "addMagazineAmmoCargo" in populate and "addItemCargoGlobal" in populate
 
 def test_owner_dispatch_and_registration_for_manual_abort():
     cfg=(ROOT/"addons/acm_extended/config.cpp").read_text()

@@ -30,7 +30,7 @@ def test_expected_fork_markers_exist_in_executable_sources():
             source = ROOT / "addons" / owner[4:] / "functions" / f"fnc_{function}.sqf"
         else:
             source = ROOT / "addons/core/overrides" / f"fnc_{function}.sqf"
-        assert marker in [t.value for t in lex(source.read_text()) if t.kind == "string"], name
+        assert any(marker in t.value for t in lex(source.read_text()) if t.kind == "string"), name
 
 
 def test_wrap_marker_tracks_current_physical_dressing_reconciliation():

@@ -3,6 +3,13 @@
 // ACM_GenericContinuous phase is played here explicitly instead of through animationmedic.
 params ["_medic"];
 if (isNull _medic || {!local _medic}) exitWith {};
+// B265: a duplicate preparation is not another equipment transaction. An
+// unresolved earlier snapshot must be recovered BEFORE touching new weapons.
+if (_medic getVariable ["ACME_hang_Raising", false]) exitWith {};
+if ((_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []) exitWith {
+    ["Hang Bag: previous weapon return is incomplete. Resolve it before starting again.", 4, _medic]
+        call ace_common_fnc_displayTextStructured;
+};
 
 private _prone = ([_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon";
 private _prepToken = (_medic getVariable ["ACME_hang_PrepToken", 0]) + 1;
@@ -36,9 +43,8 @@ if ((missionNamespace getVariable ["ACME_hang_removeWeapon", true]) && {(primary
     // weapons, never rebuild the unit's uniform/hidden selection meshes.
     private _ld = getUnitLoadout _medic;
     private _slots = [_ld select 0, _ld select 1];
-    if ((_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isEqualTo []) then {
-        _medic setVariable ["ACME_hang_savedWeaponSlots", _slots, true];
-    };
+    _medic setVariable ["ACME_hang_savedWeaponSlots", _slots, true];
+    _medic setVariable ["ACME_hang_weaponRestoreOwned", [[], []], true];
     if (primaryWeapon _medic != "") then {_medic removeWeapon (primaryWeapon _medic);};
     if (secondaryWeapon _medic != "") then {_medic removeWeapon (secondaryWeapon _medic);};
 } else {

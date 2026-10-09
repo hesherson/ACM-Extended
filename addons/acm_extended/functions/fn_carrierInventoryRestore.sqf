@@ -7,43 +7,85 @@ if (_class == "") exitWith {false};
 if (_patient getVariable [_savedVar + "Settled", false]) exitWith {true};
 private _live = _patient getVariable [_savedVar + "Live", false];
 if (!_live) exitWith {
-    // Compatibility for a saved pre-B218 episode which has no live holder at all.
-    if (vest _patient != "") exitWith {true};
-    // Pre-B218 saved only a vest loadout slot; do not rebuild the ENTIRE
-    // casualty's loadout just to return one carrier. setUnitLoadout destroys
-    // third-party uniform hidden selections (boots/gloves/sleeves/camo).
+    // B265: decode the OLD vest-only loadout before touching equipment. Modern
+    // custody below uses live cargo, never this historical snapshot.
+    if (vest _patient != "") exitWith {false};
+    if !(_saved isEqualType [] && {count _saved == 2} && {(_saved select 1) isEqualType []}) exitWith {false};
+    private _valid = true;
+    private _budget = 10000; // Count expanded children too, not just top-level rows.
+    private _decode = {
+        params ["_rows", ["_depth", 0], ["_copies", 1]];
+        private _out = [[], [], [], []];
+        if (!(_rows isEqualType []) || {_depth > 8}) exitWith {_valid = false; _out};
+        {
+            if (!(_x isEqualType []) || {count _x < 2}) exitWith {_valid = false;};
+            private _item = _x select 0;
+            private _count = _x select 1;
+            private _nested = [];
+            private _hasNested = false;
+            // Serialized container entry; accept both direct and counted
+            // representations without mistaking an attached weapon for it.
+            if (_item isEqualType "" && {_count isEqualType []} && {count _x == 2}) then {
+                _nested = _count; _count = 1; _hasNested = true;
+            };
+            if (_item isEqualType [] && {count _item == 2}
+                && {(_item select 0) isEqualType ""} && {(_item select 1) isEqualType []}) then {
+                _nested = _item select 1; _item = _item select 0; _hasNested = true;
+            };
+            if (!(_count isEqualType 0) || {!finite _count} || {_count < 0}
+                || {_count != floor _count} || {_count > 10000}) exitWith {_valid = false;};
+            _budget = _budget - (_count * _copies);
+            if (_budget < 0) exitWith {_valid = false;};
+            if (_item isEqualType []) then {
+                // Weapon detail preserves attachments and BOTH loaded mags.
+                if (count _x != 2 || {count _item != 7} || {!((_item select 0) isEqualType "")}
+                    || {(_item select 0) == ""}) exitWith {_valid = false;};
+                if (([1,2,3,6] findIf {!((_item select _x) isEqualType "")}) >= 0) exitWith {_valid = false;};
+                if (([4,5] findIf {!((_item select _x) isEqualType [])}) >= 0) exitWith {_valid = false;};
+                {
+                    private _mag = _item select _x;
+                    if (_mag isNotEqualTo [] && {count _mag != 2
+                        || {!((_mag select 0) isEqualType "")} || {(_mag select 0) == ""}
+                        || {!((_mag select 1) isEqualType 0)} || {!finite (_mag select 1)}
+                        || {(_mag select 1) < 0} || {(_mag select 1) != floor (_mag select 1)}}) exitWith {_valid = false;};
+                } forEach [4,5];
+                if (!_valid) exitWith {};
+                for "_i" from 1 to _count do {(_out select 2) pushBack (+_item);};
+            } else {
+                if (!(_item isEqualType "") || {_item == ""}) exitWith {_valid = false;};
+                private _isPack = getNumber (configFile >> "CfgVehicles" >> _item >> "isBackpack") > 0;
+                private _isContainer = _isPack || {getText (configFile >> "CfgWeapons" >> _item >> "ItemInfo" >> "containerClass") != ""};
+                if (_hasNested && {!_isContainer}) exitWith {_valid = false;};
+                if (_isContainer) then {
+                    if (count _x != 2) exitWith {_valid = false;};
+                    private _child = [_nested, _depth + 1, _copies * _count] call _decode;
+                    if (!_valid) exitWith {};
+                    for "_i" from 1 to _count do {(_out select 3) pushBack [_item, _isPack, _child];};
+                } else {
+                    if (isClass (configFile >> "CfgMagazines" >> _item)) then {
+                        if (count _x > 3) exitWith {_valid = false;};
+                        private _ammo = _x param [2, getNumber (configFile >> "CfgMagazines" >> _item >> "count")];
+                        if (!(_ammo isEqualType 0) || {!finite _ammo} || {_ammo < 0}
+                            || {_ammo != floor _ammo}) exitWith {_valid = false;};
+                        for "_i" from 1 to _count do {(_out select 1) pushBack [_item, _ammo];};
+                    } else {
+                        if (count _x != 2) exitWith {_valid = false;};
+                        for "_i" from 1 to _count do {(_out select 0) pushBack _item;};
+                    };
+                };
+            };
+            if (!_valid) exitWith {};
+        } forEach _rows;
+        _out
+    };
+    private _snapshot = [_saved select 1] call _decode;
+    if (!_valid) exitWith {false};
     _patient addVest _class;
     if (vest _patient != _class) exitWith {false};
-    private _dest = vestContainer _patient;
-    private _contents = _saved param [1, [], [[]]];
-    {
-        _x params [["_item", "", [""]], ["_count", 0, [0]]];
-        if (_item == "" || {_count <= 0}) then {continue};
-        if (isClass (configFile >> "CfgMagazines" >> _item)) then {
-            private _ammo = _x param [2, getNumber (configFile >> "CfgMagazines" >> _item >> "count"), [0]];
-            _dest addMagazineAmmoCargo [_item, _count, _ammo];
-        } else {
-            _dest addItemCargoGlobal [_item, _count];
-        };
-    } forEach _contents;
-    // The old snapshot is inventory evidence, not a license to silently
-    // drop items when a mod rejects cargo. Reject and retain it on mismatch.
-    private _restored = true;
-    {
-        _x params [["_item", "", [""]], ["_count", 0, [0]]];
-        if (_item == "" || {_count <= 0}) then {continue};
-        private _seen = if (isClass (configFile >> "CfgMagazines" >> _item)) then {
-            private _ammo = _x param [2, getNumber (configFile >> "CfgMagazines" >> _item >> "count"), [0]];
-            {(_x select 0) == _item && {(_x select 1) == _ammo}}
-                count (magazinesAmmoCargo _dest)
-        } else {
-            {_x == _item} count (itemCargo _dest)
-        };
-        if (_seen < _count) then {_restored = false;};
-    } forEach _contents;
-    if (!_restored) exitWith {
+    [vestContainer _patient, _snapshot] call ACME_fnc_carrierCargoPopulate;
+    if !([_snapshot, [vestContainer _patient] call ACME_fnc_carrierCargoSnapshot] call ACME_fnc_carrierCargoEqual) exitWith {
         removeVest _patient;
-        diag_log "[ACME CARRIER B264] Legacy vest cargo restore rejected; original snapshot retained.";
+        diag_log "[ACME CARRIER B265] Legacy cargo rejected; original snapshot retained.";
         false
     };
     _patient setVariable [_savedVar + "Settled", true, true];

@@ -1,18 +1,23 @@
 /* Stable B183: force a manually removed carrier back onto a casualty that wakes, moves or is transported. */
 params [
     ["_patient", objNull, [objNull]],
-    ["_reason", "state", [""]]
+    ["_reason", "state", [""]],
+    ["_expectedLease", "", [""]]
 ];
 
 if (isNull _patient) exitWith {false};
 if (!local _patient) exitWith {
-    [_patient, "manualPlateCarrierAutoReturn", [_patient, _reason]] call ACME_fnc_ownerDispatch;
+    [_patient, "manualPlateCarrierAutoReturn", [_patient, _reason, _expectedLease]] call ACME_fnc_ownerDispatch;
     true
 };
 
 private _state = _patient getVariable ["ACME_manualPlateCarrierState", ""];
 private _lease = _patient getVariable ["ACME_manualPlateCarrierLease", ""];
 if (_state == "" && {_lease == ""}) exitWith {false};
+// B265: an old replacement timeout cannot undo a newer manual removal, even
+// if it crossed a locality transfer before arriving at the patient owner.
+if (_expectedLease != "" && {_lease != _expectedLease}) exitWith {false};
+if (_reason == "replace-timeout" && {_state != "restoring"}) exitWith {false};
 
 private _provider = _patient getVariable ["ACME_manualPlateCarrierProvider", objNull];
 

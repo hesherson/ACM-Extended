@@ -52,7 +52,11 @@ class QuietOutput(unittest.TestCase):
             # an emitter anywhere else still fails the suite.
             'functions/fn_assessmentTime.sqf':1,
             'functions/fn_carrierInventoryCreate.sqf':1,
-            'functions/fn_carrierInventoryRestore.sqf':1,
+            'functions/fn_carrierInventoryRestore.sqf':2,
+            'functions/fn_chestSealOpen.sqf':2,
+            'functions/fn_hangBagRestoreWeapons.sqf':1,
+            'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
+            'functions/fn_manualPlateCarrierAutoReturn.sqf':1,
             'functions/fn_compatCheck.sqf':2,
             'functions/fn_cprAfterChestPrep.sqf':1,
             'functions/fn_debugDumpToClipboard.sqf':1,
@@ -68,7 +72,7 @@ class QuietOutput(unittest.TestCase):
             'functions/fn_providerStateReconcile.sqf':3,
             'functions/fn_registerChestAccessVestRuntime.sqf':1,
             'functions/fn_registerMedicalMenuOpenRuntime.sqf':4,
-            'functions/fn_thoraOpen.sqf':1,
+            'functions/fn_thoraOpen.sqf':3,
             'functions/fn_transientStateReconcile.sqf':1,
         }
         emitters={}

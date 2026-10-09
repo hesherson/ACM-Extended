@@ -23,7 +23,9 @@ def engine(text):
             text=re.sub(re.escape(old)+r'\b', lambda _: new,text)
     text=text.replace('_m distance _p','_distance')
     text=text.replace('serverTime','_serverTime').replace('netId _viewer','"provider"')
-    text=text.replace('netId _p','"patient"')
+    # _p must not match _patient: that generated "patient"atient and
+    # prevented the shared chest-entry/ownership tests from even parsing.
+    text=re.sub(r'\bnetId (_p|_patient)\b', '"patient"', text)
     return adapt(text)
 
 

@@ -7,6 +7,7 @@ are delivered in controlled orders; no Arma pose or real network is rendered.
 import re
 import pytest
 from test_menu_death_lifecycle import ROOT, adapt, execute
+from test_b218_carrier_inventory import cargo_source
 
 F=ROOT/'addons/acm_extended/functions'
 
@@ -47,6 +48,8 @@ def code(name, server_clock='CBA_missionTime'):
     for var in ('_prop','_headProp'):
         text=text.replace('detach '+var+';', '_detaches pushBack '+var+';')
         text=text.replace('deleteVehicle '+var+';', '_deletes pushBack '+var+';')
+    text=text.replace('finite (_mag select 1)', '((_mag select 1) call _finite)')
+    text=re.sub(r'\bfinite (_\w+)', r'(\1 call _finite)', text)
     return adapt(text)
 
 
@@ -121,7 +124,30 @@ def setup():
             };
             [count _waits==0,"unbounded deferred work"] call _check;
         };
-    '''+function('carrierInventoryRestore')+function('chestSealCanPhysicalRoll')+function('chestSealPatientBegin')+function('chestSealPatientEnd')+function('chestAccessVestRestore')
+    ''' + r'''
+        // Explicit cargo commands for the namespace-based body/pose fixture.
+        // Actual populate/snapshot/comparison implementations execute below.
+        private _addItem={
+            params ["_container","_spec",["_pack",false]];
+            _spec params ["_class","_count"];
+            private _key=["items","packs"] select _pack;
+            private _rows=+(_container getVariable [_key,[]]);
+            for "_i" from 1 to _count do {_rows pushBack _class;};
+            _container setVariable [_key,_rows];
+        };
+        private _addMagazine={
+            params ["_container","_spec"]; _spec params ["_class","_count","_ammo"];
+            private _rows=+(_container getVariable ["mags",[]]);
+            for "_i" from 1 to _count do {_rows pushBack [_class,_ammo];};
+            _container setVariable ["mags",_rows];
+        };
+        private _addWeapon={
+            params ["_container","_spec"]; _spec params ["_weapon","_count"];
+            private _rows=+(_container getVariable ["weapons",[]]);
+            for "_i" from 1 to _count do {_rows pushBack (+_weapon);};
+            _container setVariable ["weapons",_rows];
+        };
+    ''' + ''.join(adapt(cargo_source(n)) for n in ['carrierCargoPopulate','carrierCargoSnapshot','carrierCargoEqual']) + function('carrierInventoryRestore')+function('chestSealCanPhysicalRoll')+function('chestSealPatientBegin')+function('chestSealPatientEnd')+function('chestAccessVestRestore')
 
 
 @pytest.mark.parametrize('flags,animation,expected',[

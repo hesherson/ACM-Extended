@@ -67,9 +67,9 @@ if (_restore) exitWith {
         };
         ["ACME_manualPlateCarrierAck", [_p, true, _success], _medic] call CBA_fnc_targetEvent;
     }, [_patient, _medic, _lease], 6, {
-        params ["_p", "_medic"];
+        params ["_p", "_medic", "_lease"];
         if (!isNull _p) then {
-            [_p, "replace-timeout"] call ACME_fnc_manualPlateCarrierAutoReturn;
+            [_p, "replace-timeout", _lease] call ACME_fnc_manualPlateCarrierAutoReturn;
         } else {
             ["ACME_manualPlateCarrierAck", [_p, true, false], _medic] call CBA_fnc_targetEvent;
         };

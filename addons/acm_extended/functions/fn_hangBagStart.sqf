@@ -9,6 +9,11 @@ if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]}
     || {!isNull objectParent _medic} || {!(missionNamespace getVariable ["ACME_sys_hang", true])}) exitWith {
     [_medic] call ACME_fnc_hangBagPrepStop;
 };
+// Recheck the equipment gate at execution as well as menu evaluation.
+if (!(_medic getVariable ["ACME_hang_Raising", false])
+    && {(_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []}) exitWith {
+    ["Hang Bag: previous weapon return is incomplete.", 4, _medic] call ace_common_fnc_displayTextStructured;
+};
 if (_fluidType == "") then {_fluidType = [_patient, _bodyPart] call ACME_fnc_hangBagFluidType;};
 
 // A monotonic episode distinguishes even a same-frame cancel/restart. At long mission
