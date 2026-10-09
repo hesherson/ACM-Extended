@@ -202,8 +202,14 @@ def test_kit_events_ignore_other_owner_and_editor(mutation):
 def test_clipboard_applied_kit_but_not_preset_list_or_editor_is_replacement(import_list,editor,expected):
     s=read('registerSyringeLifecycleRuntime').replace('player addEventHandler','_life pushBack').replace('is3DEN','_editor').replace('local _unit','_localUnit')
     execute(event_setup()+f'private _life=[]; _editor={str(editor).lower()};'+adapt(s)+f'''
-        [objNull,{str(import_list).lower()}] call (_registered get "ace_arsenal_loadoutImported");
-        [count _equipment=={expected} && {{count _medical=={expected}}},"import list/editor was mistaken for new equipment"] call _check;
+        // ACE applies the kit through CBA only on the non-list path.
+        if (!{str(import_list).lower()}) then {{
+            [_medic,[],createHashMap] call (_registered get "CBA_loadoutSet");
+        }};
+        if ("ace_arsenal_loadoutImported" in keys _registered) then {{
+            [objNull,{str(import_list).lower()}] call (_registered get "ace_arsenal_loadoutImported");
+        }};
+        [count _equipment=={expected} && {{count _medical=={expected}}},"import completion/list/editor reset the wrong equipment"] call _check;
     ''')
 
 
@@ -242,7 +248,12 @@ def test_arsenal_center_not_ace_player_receives_actual_kit_replacement(event,loc
     execute(event_setup()+"private _life=[];"+adapt(s)+f"""
         missionNamespace setVariable ["ace_arsenal_center",_patient];
         _localUnit={str(local).lower()};
-        [objNull,false] call (_registered get "{event}");
+        // The actual completed setter supplies the edited unit. ACE's later
+        // UI event is not an additional kit replacement.
+        [_patient,[],createHashMap] call (_registered get "CBA_loadoutSet");
+        if ("{event}" in keys _registered) then {{
+            [objNull,false] call (_registered get "{event}");
+        }};
     """+('[ _equipment isEqualTo [_patient] && {_medical isEqualTo [_patient]},"Arsenal reset viewer instead of edited unit"] call _check;'
         if local else '[count _equipment==0 && {count _medical==0},"Arsenal changed remote kit here"] call _check;'))
 

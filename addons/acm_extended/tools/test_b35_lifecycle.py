@@ -3,6 +3,7 @@ from historical_source import read_source
 from pathlib import Path
 import re
 import unittest
+from source_scan import lex, matching
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,7 +43,39 @@ class PtxLifecycle(unittest.TestCase):
         local = init[init.index('["CAManBase", "Local"'):init.index('["CAManBase", "init"')]
         self.assertIn('"ACM_breathing_Pneumothorax_PFH"', local)
         self.assertIn("CBA_fnc_removePerFrameHandler", local)
-        self.assertLess(local.index('"ACM_breathing_Pneumothorax_PFH"'), local.index("if (_isLocal)"))
+        cleanup = local.index('"ACM_breathing_Pneumothorax_PFH"')
+        # The native-handler foreach executes in the Local event's outer
+        # scope on both edges. Compare with the actual incoming registration
+        # that restarts PTX through ownerRegister, not an unrelated earlier
+        # incoming-only carrier animation branch.
+        tokens = lex(local)
+        pairs = matching(tokens)
+        scopes = [i for i, token in enumerate(tokens) if token.value == '{'
+                  and token.offset < cleanup < tokens[pairs[i]].offset]
+        self.assertEqual(len(scopes), 1, 'native PTX cleanup is conditional on a locality direction')
+        values = [token.value for token in tokens]
+        call = ['[', '_h', ']', 'call', 'CBA_fnc_removePerFrameHandler']
+        calls = [i for i in range(len(tokens)) if values[i:i+len(call)] == call]
+        self.assertEqual(len(calls), 1, 'native cleanup must remove each exact old handle once')
+        removal = tokens[calls[0]].offset
+        removal_scopes = [i for i, token in enumerate(tokens) if token.value == '{'
+                          and token.offset < removal < tokens[pairs[i]].offset]
+        self.assertEqual(len(removal_scopes), 3,
+                         'native PTX removal must run on both Local edges inside its handle foreach')
+        self.assertEqual(removal_scopes[0], scopes[0])
+        self.assertEqual(values[removal_scopes[2]-7:removal_scopes[2]],
+                         ['if', '(', '_h', '>=', '0', ')', 'then'])
+        loop_end = pairs[removal_scopes[1]]
+        self.assertEqual(values[loop_end+1:loop_end+3], ['forEach', '['])
+        loop_array_end = pairs[loop_end+2]
+        self.assertIn('ACM_breathing_Pneumothorax_PFH', values[loop_end+3:loop_array_end])
+        registration = local.index('[_unit] call ACME_fnc_ownerRegister;')
+        incoming_registration = local.rfind('if (_isLocal) then {', 0, registration)
+        self.assertLess(cleanup, incoming_registration)
+        self.assertLess(incoming_registration, registration)
+        native_cleanup = local[local.index('private _h = _unit getVariable'):cleanup]
+        self.assertIn('[_h] call CBA_fnc_removePerFrameHandler;', native_cleanup)
+        self.assertIn('_unit setVariable [_x, -1, false];', native_cleanup)
         self.assertIn('["ACME_alt_ptxSample", nil, false]', local)
         self.assertNotIn('["ACME_ptx_state", nil', local)
         self.assertNotIn('["ACME_ptx_tensionSeverity", nil', local)

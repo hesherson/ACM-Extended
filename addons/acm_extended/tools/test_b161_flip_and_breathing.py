@@ -44,11 +44,25 @@ def test_permanent_animation_denial_cannot_spin_in_one_cba_frame(name,closure):
     start=text.index('private '+closure+' = {')
     opening=text.index('{',start)
     definition=text[start:opening]+block_at(text,opening)+';'
+    guard=''
+    if name.endswith('Acquire'):
+        # The extracted closure now carries the acceptance/owner authority
+        # captured by its enclosing production function. Execute that actual
+        # guard, with one explicitly accepted live ACCESS lease.
+        guard_start=text.index('private _guard = +_authority;')
+        guard_end=text.index('if !([_patient, _context, _guard]',guard_start)
+        guard=r'''
+            _patient setVariable ["ACME_chestAccess_requestToken","accepted"];
+            _patient setVariable ["ACME_chestAccess_leases",createHashMapFromArray [
+                ["lease",[objNull,CBA_missionTime,"checkbreathing"]]]];
+            private _authority=[_patient getVariable ["ACME_equipmentKitEpoch",0],
+                _patient getVariable ["ACME_providerLocalityEpoch",0],"accepted",""];
+        '''+text[guard_start:guard_end]
     args = ('[_patient,objNull,"access","saved","prop","pfh","busy","ready","retired",'
-            '{},0.8,0.04,0.9,1.5,1.74,_beginPatient,true]') if name.endswith('Acquire') else (
+            '{},0.8,0.04,0.9,1.5,1.74,_beginPatient,true,_guard]') if name.endswith('Acquire') else (
             '[_patient,objNull,"access",["Vest_A",[]],"saved","prop","busy","ready","pfh","retired",'
             '0.8,0.02,0.9,1.5,1.72,{},_beginRestore]')
-    execute(patient_setup()+function('patientAnimRequest')+live_queue()+definition+r'''
+    execute(patient_setup()+function('patientAnimRequest')+live_queue()+guard+definition+r'''
         _patient setVariable ["busy","retired"];
         _patient setVariable ["ACME_patientAnimLock",[]];
         _patient setVariable ["ACME_patientAnimRetired",["retired"]];
@@ -75,15 +89,23 @@ def test_permanent_animation_denial_cannot_spin_in_one_cba_frame(name,closure):
     '_patient setVariable ["ACE_isUnconscious",false]; _animation="amovpercmstpsnonwnondnon";',
 ])
 def test_delayed_breathing_lift_rechecks_patient_before_requesting_animation(change):
+    seated=change=='_parent=missionNamespace;'
     execute(patient_setup()+function('chestAccessVestAcquire')+r'''
         _vest="Vest_A"; _loadout set [4,["Vest_A",[]]];
         [_patient,objNull,"access",true,"checkbreathing"] call ACME_fnc_chestAccessVestAcquire;
         private _start=call _take;
+        private _carrierToken=_patient getVariable ["ACME_chestAccess_vestBusy",""];
     '''+change+r'''
         _leaseAllowed=false;
         [_start] call _deliver;
         [count _animRequests==0 && {count _pins==0},"ineligible patient still received delayed lift"] call _check;
-        [count _waits==0 && {count _commits==1},"nonanimated gear completion rearmed a denied lift"] call _check;
+    '''+f'''
+        [count _waits==0 && {{count _commits=={0 if seated else 1}}},"ineligible gear completion stripped a seat or rearmed a denied lift"] call _check;
+    '''+(r'''
+        [_vest=="Vest_A","vehicle fallback removed worn gear"] call _check;
+        [(_patient getVariable ["ACME_chestAccess_readyServer",0])==1000,"valid vehicle care lost readiness"] call _check;
+        [(_releases findIf {(_x param [1,""])==_carrierToken})>=0,"vehicle fallback did not retire its exact carrier episode"] call _check;
+    ''' if seated else '')+r'''
         [(_patient getVariable ["ACME_chestAccess_vestBusy","bad"])=="","ineligible lift left busy marker"] call _check;
     ''')
 

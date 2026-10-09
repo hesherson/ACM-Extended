@@ -19,9 +19,14 @@ def test_fresh_kit_reset_clears_virtual_syringes_and_partial_vials():
 
 def test_ace_arsenal_load_and_import_are_explicit_reset_boundaries():
     s = read("functions/fn_registerSyringeLifecycleRuntime.sqf")
-    assert '["ace_arsenal_onLoadoutLoad",' in s
-    assert '["ace_arsenal_loadoutImported",' in s
-    assert s.count("call ACME_fnc_resetPersonalMedicationKit;") >= 3
+    # B268: both ACE buttons use CBA's extended setter. Its post-set hook
+    # resets exactly the edited unit; button-only/invalid imports do not reset.
+    core = (ROOT.parents[1] / "addons/core/functions/fnc_registerEquipmentKitRuntime.sqf").read_text()
+    assert 'forEach ["CBA_loadoutSet", "ACME_equipmentKitReplaced"]' in core
+    assert '[_unit] call ACM_core_fnc_equipmentKitChanged;' in core
+    assert '[_unit] call ACME_fnc_resetPersonalMedicationKit;' in core
+    assert '["ace_arsenal_onLoadoutLoad",' not in s
+    assert '["ace_arsenal_loadoutImported",' not in s
     assert 'ace_arsenal_displayClosed' not in s
 
 

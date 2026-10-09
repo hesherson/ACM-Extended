@@ -64,7 +64,22 @@ def test_chest_entry_pause_precedes_menu_close_and_ack_wait_is_bounded():
     assert "if (owner _p != _patientOwner) exitWith {" in s
     assert "[] call ACME_fnc_chestSealClose;" in s
     assert 'ACME_CS_EntryPFH' in close
-    assert 'if (_token in _tokens) exitWith {};' in read("addons/acm_extended/functions/fn_chestSealPatientBegin.sqf")
+    begin = read("addons/acm_extended/functions/fn_chestSealPatientBegin.sqf")
+    # Same-owner retries remain idempotent. A fresh invocation on the new
+    # owner may resume unfinished preparation while retaining its shared token.
+    assert 'if (_token in _tokens && {!_resumePreparation}) exitWith {};' in begin
+    assert '(_patient getVariable ["ACME_CS_ProcedureReadyAt", -1]) < 0' in begin
+    assert '(_previousPreparationOwner param [2, _preparationOwner select 2]) == (_preparationOwner select 2)' in begin
+    assert '(_patient getVariable ["ACME_CS_PreparationOwner", []]) isNotEqualTo _preparationOwner' in begin
+    assert 'private _prep = if (_resumePreparation) then {_patient getVariable ["ACME_CS_PreparationToken", _token]} else {_token};' in begin
+    # Both first admission and a resumed owner capture authority once. Delayed
+    # acquire/retry continuations must carry those original epochs and token.
+    authority = 'private _authority = [_patient getVariable ["ACME_equipmentKitEpoch", 0],\n    _patient getVariable ["ACME_providerLocalityEpoch", 0], "", _prep];'
+    assert authority in begin
+    assert begin.index(authority) < begin.index('call ACME_fnc_chestAccessVestAcquire;')
+    assert '[_patient, _medic, "chestseal", false, "", "", _authority] call ACME_fnc_chestAccessVestAcquire;' in begin
+    assert '[_p, _medic, "chestseal", false, "", "", _authority] call ACME_fnc_chestAccessVestAcquire;' in begin
+    assert '[_patient,_preSide,_preGrounded,_prep,_medic,_authority]] call CBA_fnc_waitUntilAndExecute;' in begin
 
 def test_thora_failure_cleanup_and_stale_unload_guard():
     s=read("addons/acm_extended/functions/fn_thoraOpen.sqf")

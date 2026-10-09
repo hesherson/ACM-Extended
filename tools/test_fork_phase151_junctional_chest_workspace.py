@@ -19,7 +19,10 @@ def test_chest_access_and_workspace_choreography_is_current():
     for t in ('"ACME_HeadElevPatientGrab"','"ACME_HeadElevPatientRelease"','removeVest _p;','ACME_fnc_headElevPinPose'): assert t in acquire
     assert 'ACME_chestAccessProviderReady' in provider
     assert 'case "chestAccess": {"AinvPknlMstpSnonWnonDnon_medic4"};' in pose_start
-    assert '[_patient, _medic, "chestseal"] call ACME_fnc_chestAccessVestAcquire;' in begin
+    assert '[_patient, _medic, "chestseal", false, "", "", _authority] call ACME_fnc_chestAccessVestAcquire;' in begin
+    assert '[_p, _medic, "chestseal", false, "", "", _authority] call ACME_fnc_chestAccessVestAcquire;' in begin
+    assert '(_p getVariable ["ACME_equipmentKitEpoch", 0]) != (_authority select 0)' in begin
+    assert '(_p getVariable ["ACME_providerLocalityEpoch", 0]) != (_authority select 1)' in begin
     start=treatment.index("// Chest-access preparation is a physical gear transaction"); end=treatment.index("// Auscultation owns its own modal display",start); chest=treatment[start:end]
     assert "ACME_chestAccessPreflightActive" in chest and "ACME_chestAccess_readyServer" in chest and "ACME_chestAccess_readyLease" in chest
     assert "ACM_core_fnc_treatmentNative" in chest and "ace_medical_treatment_fnc_treatment;" not in chest

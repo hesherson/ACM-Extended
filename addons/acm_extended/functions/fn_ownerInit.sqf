@@ -93,6 +93,24 @@ ACME_NA2_ownerInstalled = true;
     _unit setVariable ["ACME_wakeRepairTicket", (_unit getVariable ["ACME_wakeRepairTicket", 0]) + 1, false];
     // Provider input workers must also retire after away/back transfers between their scheduled ticks.
     _unit setVariable ["ACME_providerLocalityEpoch", (_unit getVariable ["ACME_providerLocalityEpoch", 0]) + 1, false];
+    // B268: carrier preparation callbacks belong to this exact local ownership
+    // period. Clear machine-local wait markers on both edges, including rapid
+    // away/back transfers. Replicated custody/clinical leases remain intact.
+    {
+        _unit setVariable [_x, "", false];
+    } forEach ["ACME_chestAccess_frontBusy", "ACME_CS_frontBusy",
+        "ACME_chestAccess_vestBusy", "ACME_CS_vestBusy", "ACME_chestAccess_requestToken"];
+    if (_isLocal) then {
+        // A migrated carrier lift has no completion on the incoming machine.
+        // Release only its exact finite animation lease; a stronger/newer
+        // patient controller keeps its token, animation, speed and collision.
+        private _carrierLock = _unit getVariable ["ACME_patientAnimLock", []];
+        private _carrierToken = _carrierLock param [0, ""];
+        if (_carrierToken != "" && {(_carrierLock param [1, ""]) in
+            ["chest-access-vest", "chest-access-vest-restore"]}) then {
+            [_unit, _carrierToken] call ACME_fnc_patientAnimRelease;
+        };
+    };
     // Pending prone-to-Semi-Fowler normalization has no active pose yet. Retire it on BOTH local transitions,
     // so returning to this machine cannot revive a callback from its previous ownership period.
     _unit setVariable ["ACME_headElev_startEpoch", (_unit getVariable ["ACME_headElev_startEpoch", 0]) + 1, false];

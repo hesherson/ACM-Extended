@@ -84,6 +84,7 @@ if (_hadSupport) then {
 _patient setVariable ["ACME_chestAccess_frontBusy", "", false];
 _patient setVariable ["ACME_CS_frontBusy", "", false];
 _patient setVariable ["ACME_chestAccess_leases", createHashMap, true];
+_patient setVariable ["ACME_chestAccess_requestToken", "", true];
 _patient setVariable ["ACME_chestAccess_readyLease", "", true];
 _patient setVariable ["ACME_chestAccess_readyServer", -1, true];
 _patient setVariable ["ACME_CS_vestReadyServer", -1, true];
