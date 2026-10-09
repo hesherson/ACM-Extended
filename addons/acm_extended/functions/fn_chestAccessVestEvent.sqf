@@ -13,22 +13,42 @@ if (!local _patient) exitWith {[_patient, "chestAccessVestEvent", _this] call AC
 // New BVM sessions never remove a carrier, even through a stale class registry.
 if (_start && {toLowerANSI _classname in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]}) exitWith {};
 private _leases = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
+// A stop can overtake its initial start. Remember the exact canceled ID even
+// when it has not enrolled yet; later retries must not reacquire gear or ACK.
+if (!_start) then {[_patient, [_id]] call ACME_fnc_chestAccessLeaseRetire;};
+private _closed = _patient getVariable ["ACME_chestAccess_closedLeases", []];
+if (_start && {(_closed findIf {(_x param [0, ""]) == _id
+    && {(_x param [1, 0]) > serverTime}}) >= 0}) exitWith {};
 if (!_start && {!(_id in keys _leases)}) exitWith {};
+private _requestOwner = [clientOwner, _patient getVariable ["ACME_providerLocalityEpoch", 0],
+    _patient getVariable ["ACME_equipmentKitEpoch", 0]];
+private _sameRequestOwner = (_patient getVariable ["ACME_chestAccess_requestOwner", []]) isEqualTo _requestOwner;
+// Active same-owner retries/handoffs share their already accepted preparation
+// and ready timestamp. A fresh invocation on a new owner may resume work with
+// new authority after the old machine's pending callbacks have been retired.
+if (_start && {_id in keys _leases} && {_sameRequestOwner}
+    && {(_patient getVariable ["ACME_chestAccess_requestToken", ""]) != ""}) exitWith {};
 if (_start) then {
     // B268: concurrent ACCESS leases share preparation. Only the first lease
     // accepts a new episode; cancelling its last member retires every pending
     // bare-chest/no-animation/front-normalization callback from that episode.
-    if ((count _leases) == 0 || {(_patient getVariable ["ACME_chestAccess_requestToken", ""]) == ""}) then {
+    if ((count _leases) == 0 || {!_sameRequestOwner}
+        || {(_patient getVariable ["ACME_chestAccess_requestToken", ""]) == ""}) then {
         private _serial = 1 + (_patient getVariable ["ACME_chestAccess_requestSerial", 0]);
         _patient setVariable ["ACME_chestAccess_requestSerial", _serial, false];
         _patient setVariable ["ACME_chestAccess_requestToken",
             format ["access:%1:%2:%3:%4", clientOwner, netId _patient, _serial, _id], true];
+        _patient setVariable ["ACME_chestAccess_requestOwner", _requestOwner, true];
     };
     _leases set [_id, [_medic, CBA_missionTime, toLowerANSI _classname]];
     _patient setVariable ["ACME_chestAccess_readyLease", _id, true];
     _patient setVariable ["ACME_chestAccess_readyServer", -1, true];
 } else {
     _leases deleteAt _id;
+    if ((count _leases) > 0
+        && {(_patient getVariable ["ACME_chestAccess_readyLease", ""]) == _id}) then {
+        _patient setVariable ["ACME_chestAccess_readyLease", (keys _leases) select 0, true];
+    };
 };
 _patient setVariable ["ACME_chestAccess_leases", _leases, true];
 if (!_start && {(count _leases) == 0}) then {

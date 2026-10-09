@@ -83,6 +83,8 @@ if (_hadSupport) then {
 };
 _patient setVariable ["ACME_chestAccess_frontBusy", "", false];
 _patient setVariable ["ACME_CS_frontBusy", "", false];
+[_patient, keys (_patient getVariable ["ACME_chestAccess_leases", createHashMap])]
+    call ACME_fnc_chestAccessLeaseRetire;
 _patient setVariable ["ACME_chestAccess_leases", createHashMap, true];
 _patient setVariable ["ACME_chestAccess_requestToken", "", true];
 _patient setVariable ["ACME_chestAccess_readyLease", "", true];

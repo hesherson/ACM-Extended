@@ -54,7 +54,11 @@ if (_patient getVariable ["ACME_headElevated", false]) then {
 // gone.
 [_patient] call ACME_fnc_headElevVestRestore;
 [_patient, true] call ACME_fnc_chestAccessVestRestore;
+[_patient, keys (_patient getVariable ["ACME_chestAccess_leases", createHashMap])]
+    call ACME_fnc_chestAccessLeaseRetire;
 _patient setVariable ["ACME_chestAccess_leases", createHashMap, true];
+_patient setVariable ["ACME_chestAccess_requestToken", "", true];
+_patient setVariable ["ACME_chestAccess_readyLease", "", true];
 private _hePropObj = _patient getVariable ["ACME_headElev_propObj", objNull];
 if (!isNull _hePropObj) then { detach _hePropObj; deleteVehicle _hePropObj; };
 private _heHelper = _patient getVariable ["ACME_headElev_helper", objNull];

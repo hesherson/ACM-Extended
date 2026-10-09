@@ -35,7 +35,10 @@ if (_patient getVariable ["ACME_headElev_manualCarrierBorrowed", false]) then {
 // Retire the persistent manual lease without disturbing unrelated chest-access leases.
 private _leases = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
 if !(_leases isEqualType createHashMap) then {_leases = createHashMap;};
-if (_lease != "") then {_leases deleteAt _lease;};
+if (_lease != "") then {
+    [_patient, [_lease]] call ACME_fnc_chestAccessLeaseRetire;
+    _leases deleteAt _lease;
+};
 _patient setVariable ["ACME_chestAccess_leases", _leases, true];
 if ((_patient getVariable ["ACME_chestAccess_readyLease", ""]) == _lease) then {
     _patient setVariable ["ACME_chestAccess_readyLease", "", true];

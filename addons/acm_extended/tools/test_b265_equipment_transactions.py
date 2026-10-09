@@ -24,12 +24,23 @@ def weapon_setup(name='hangBagRestoreWeapons'):
     s = re.sub(r'_medic removeWeapon ([^;]+);', r'[_medic, \1] call _removeWeapon;', s)
     s = s.replace('_medic addWeapon _weapon;', '[_weapon] call _addWeapon;')
     s = re.sub(r'_medic addWeaponItem (\[[^;]+\]);', r'\1 call _addWeaponItem;', s)
+    # B269 production adds narrow container suppression. These retained tests
+    # carry only an incompatible spare; native autoload itself is exercised in
+    # test_b269_hang_bag_magazines, with explicit class/round cargo adapters.
+    s = s.replace('compatibleMagazines _weapon', '([])')
+    s = s.replace('uniformContainer _medic', 'objNull').replace('vestContainer _medic', 'objNull').replace('backpackContainer _medic', 'objNull')
+    s = s.replace('magazinesAmmoCargo _container', '([])')
+    s = re.sub(r'_container addMagazineAmmoCargo (\[[^;]+\]);', r'\1 call _noCargo;', s)
+    s = s.replace('removeAllPrimaryWeaponItems _medic;', '[0] call _removeDefaultItems;')
+    s = s.replace('removeAllSecondaryWeaponItems _medic;', '[1] call _removeDefaultItems;')
     s = s.replace('getArray (configFile >> "CfgWeapons" >> _weapon >> "muzzles")', '["this", "GL"]')
     return r'''
         private _loadout=[[],[],[],["U_Custom",[["seal",2]]],["V_Custom",[["Spare",1,11]]],["B_Custom",[]],"H_Custom","G_Custom",[],[]];
         private _rifle=["Rifle","suppressor","laser","scope",["Mag_A",7],["Grenade",1],"bipod"];
         private _launcher=["Launcher","","","sight",["Rocket",1],[],""];
         private _denied=[]; private _removedWeapons=[]; private _adds=0;
+        private _noCargo={};
+        private _removeDefaultItems={params ["_i"]; private _slot=+(_loadout select _i); {_slot set [_x,""];} forEach [1,2,3,6]; _loadout set [_i,_slot];};
         private _weaponIndex={params ["_w"]; [0,1] select (_w=="Launcher");};
         private _addWeapon={
             params ["_w"]; private _i=[_w] call _weaponIndex; _adds=_adds+1;

@@ -333,6 +333,7 @@ private _commitRemoval = {
                 // Plate Carrier or the manual wake/transport auto-return policy.
                 if (_class != "manualplatecarrier"
                     && {isNull _provider || {!alive _provider} || {CBA_missionTime - _at > 900}}) then {
+                    [_patient, [_x]] call ACME_fnc_chestAccessLeaseRetire;
                     _leases deleteAt _x;
                     _dirty = true;
                 };
@@ -340,6 +341,14 @@ private _commitRemoval = {
 
             if (_dirty) then {
                 _patient setVariable ["ACME_chestAccess_leases", _leases, true];
+                if ((count _leases) == 0) then {
+                    _patient setVariable ["ACME_chestAccess_requestToken", "", true];
+                    _patient setVariable ["ACME_chestAccess_readyLease", "", true];
+                } else {
+                    if !((_patient getVariable ["ACME_chestAccess_readyLease", ""]) in keys _leases) then {
+                        _patient setVariable ["ACME_chestAccess_readyLease", (keys _leases) select 0, true];
+                    };
+                };
                 private _thora = false;
                 {if (((_leases get _x) param [2,"",[""]]) == "thoracostomy") exitWith {_thora = true;};} forEach keys _leases;
                 _patient setVariable ["ACME_Thora_ChestAccessActive", _thora, true];

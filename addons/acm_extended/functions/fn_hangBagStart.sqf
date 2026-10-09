@@ -11,7 +11,9 @@ if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]}
 };
 // Recheck the equipment gate at execution as well as menu evaluation.
 if (!(_medic getVariable ["ACME_hang_Raising", false])
-    && {(_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []}) exitWith {
+    && {(_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []
+        || {(_medic getVariable ["ACME_hang_weaponRestoreCargo", [[], []]]) isNotEqualTo [[], []]}
+        || {(_medic getVariable ["ACME_hang_weaponRestoreCargoAnomaly", false]) isNotEqualTo false}}) exitWith {
     ["Hang Bag: previous weapon return is incomplete.", 4, _medic] call ace_common_fnc_displayTextStructured;
 };
 if (_fluidType == "") then {_fluidType = [_patient, _bodyPart] call ACME_fnc_hangBagFluidType;};

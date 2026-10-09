@@ -1989,6 +1989,7 @@ class CfgFunctions {
             class registerChestAccessVestRuntime {};
             class chestAccessManeuverActive {};
             class chestAccessVestEvent {};
+            class chestAccessLeaseRetire {};
             class chestAccessVestAcquire {};
             class chestAccessVestPark {};
             class chestAccessVestRestore {};

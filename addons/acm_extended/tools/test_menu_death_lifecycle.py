@@ -176,6 +176,9 @@ private _tick = {private _id = ACM_core_ContinuousAction_PFH; if (_id < 0) exitW
 # custody reader/debit early-exit rather than silently replacing the new boundary.
 PREAMBLE += "\nACME_fnc_carrierInventoryGet={" + adapt(read('carrierInventoryGet')) + "};"
 PREAMBLE += "\nACME_fnc_carrierSupplyTake={" + adapt(read('carrierSupplyTake')) + "};"
+# Default engine-clock adapter; suites with independent server clocks override
+# this helper with that same clock while retaining the production decisions.
+PREAMBLE += "\nACME_fnc_chestAccessLeaseRetire={" + adapt(read('chestAccessLeaseRetire').replace('objNull, [objNull]', 'objNull').replace('serverTime', 'CBA_missionTime')) + "};"
 
 
 # Shared new dependencies run as production SQF, not constant-return stubs.

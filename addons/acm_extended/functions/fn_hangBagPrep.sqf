@@ -6,7 +6,9 @@ if (isNull _medic || {!local _medic}) exitWith {};
 // B265: a duplicate preparation is not another equipment transaction. An
 // unresolved earlier snapshot must be recovered BEFORE touching new weapons.
 if (_medic getVariable ["ACME_hang_Raising", false]) exitWith {};
-if ((_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []) exitWith {
+if ((_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []
+    || {(_medic getVariable ["ACME_hang_weaponRestoreCargo", [[], []]]) isNotEqualTo [[], []]}
+    || {(_medic getVariable ["ACME_hang_weaponRestoreCargoAnomaly", false]) isNotEqualTo false}) exitWith {
     ["Hang Bag: previous weapon return is incomplete. Resolve it before starting again.", 4, _medic]
         call ace_common_fnc_displayTextStructured;
 };

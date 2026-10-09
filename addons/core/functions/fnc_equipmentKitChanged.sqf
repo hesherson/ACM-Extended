@@ -18,6 +18,10 @@ private _raising = _unit getVariable ["ACME_hang_Raising", false];
 _unit setVariable ["ACME_hang_PrepToken", (_unit getVariable ["ACME_hang_PrepToken", 0]) + 1, false];
 _unit setVariable ["ACME_hang_savedWeaponSlots", nil, true];
 _unit setVariable ["ACME_hang_weaponRestoreOwned", nil, true];
+// B269: held-back spare magazines belong to the deliberately replaced kit,
+// just like its saved weapon slots. Never repay that old cargo into the new kit.
+_unit setVariable ["ACME_hang_weaponRestoreCargo", nil, true];
+_unit setVariable ["ACME_hang_weaponRestoreCargoAnomaly", nil, true];
 _unit setVariable ["ACME_hang_restoreWarningAt", -1000, false];
 
 // A not-yet-acknowledged claim also has a preparation reassert worker.
