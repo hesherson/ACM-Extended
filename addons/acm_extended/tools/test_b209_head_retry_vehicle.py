@@ -147,6 +147,11 @@ def bridge():
     # Preserve the vehicle-parent boundary before the general namespace adapter.
     source = source.replace("objectParent _medic", "_medicParent")
     source = source.replace("objectParent _patient", "_patientParent")
+    # Native Arma network-owner identities are not implemented by the SQF VM;
+    # B263 uses both in its *refusal-only* diagnostic message. Keep the denial
+    # branches executable and retain their clinical admission assertions.
+    source = source.replace("owner _medic", "_ownerNum")
+    source = source.replace("owner _patient", "_ownerNum")
     return adapt(source)
 
 

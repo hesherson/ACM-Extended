@@ -23,6 +23,7 @@ def engine(text):
             text=re.sub(re.escape(old)+r'\b', lambda _: new,text)
     text=text.replace('_m distance _p','_distance')
     text=text.replace('serverTime','_serverTime').replace('netId _viewer','"provider"')
+    text=text.replace('netId _p','"patient"')
     return adapt(text)
 
 
@@ -39,6 +40,8 @@ def setup():
         ACME_fnc_headElevMedicSeq={_exits pushBack _this;};
         ACME_fnc_rollProviderCancel={};
         ACM_GUI_fnc_resumeMedicalMenuPFH={};
+        ACM_GUI_fnc_pauseMedicalMenuPFH={};
+        ACME_fnc_netNotice={};
         ACME_fnc_reopenMedicalMenu={_reopens pushBack _this;};
         private _entryTick={
             private _id=uiNamespace getVariable ["ACME_CS_EntryPFH",-1];
@@ -56,15 +59,17 @@ def setup():
 
 
 def test_patient_acknowledgement_has_no_nominal_wall_clock_deadline():
+    # B263 replaces the *unbounded* wait with a 30-second hard limit. An
+    # actual patient readiness ACK arriving 29 seconds later must still open.
     execute(setup()+r'''
         [_medic,_patient] call ACME_fnc_chestSealOpen;
         private _tok=uiNamespace getVariable ["ACME_CS_SessionToken",""];
         _patient setVariable ["ACME_CS_ProcedureTokens",[_tok]];
         _patient setVariable ["ACME_CS_ProcedureReadyAt",-1];
-        {CBA_missionTime=_x; _serverTime=_x; call _entryTick;} forEach [12,22,45,90];
-        [count _opened==0 && {(uiNamespace getVariable ["ACME_CS_SessionToken",""])==_tok},"slow valid patient preparation was closed or bypassed"] call _check;
+        {CBA_missionTime=_x; _serverTime=_x; call _entryTick;} forEach [12,22,39];
+        [count _opened==0 && {(uiNamespace getVariable ["ACME_CS_SessionToken",""])==_tok},"valid predeadline patient preparation closed or bypassed"] call _check;
         call _ack; call _entryTick;
-        [count _opened==1,"completed patient acknowledgement did not open"] call _check;
+        [count _opened==1,"completed predeadline patient acknowledgement did not open"] call _check;
         [count _capturedKeys==2 && {{_x in _removed} count ["key0","key1"]==2},"pending keys leaked into minigame"] call _check;
         [(_preparing select 0) select 0 && {!((_preparing select 1) select 0)},"Preparing lifecycle missing"] call _check;
     ''')
@@ -76,13 +81,13 @@ def test_provider_fallback_is_bounded_only_after_patient_completion():
         private _tok=uiNamespace getVariable ["ACME_CS_SessionToken",""];
         _patient setVariable ["ACME_CS_ProcedureTokens",[_tok]];
         private _ep=[_medic,_patient,"start",false,"vest:chestseal:test",uiNamespace getVariable ["ACME_CS_SessionToken",""]] call ACME_fnc_chestAccessVestProvider;
-        CBA_missionTime=100; _serverTime=100; call _entryTick;
+        CBA_missionTime=20; _serverTime=20; call _entryTick;
         [count _opened==0,"presentation fallback bypassed unfinished patient"] call _check;
         call _ack; call _entryTick;
         [count _opened==0,"presentation fallback skipped normal hold opportunity"] call _check;
-        CBA_missionTime=104.49; call _entryTick;
+        CBA_missionTime=24.49; call _entryTick;
         [count _opened==0,"presentation budget shortened"] call _check;
-        CBA_missionTime=104.5; call _entryTick;
+        CBA_missionTime=24.5; call _entryTick;
         [count _opened==1,"stalled presentation still vetoes completed workspace"] call _check;
         [(_medic getVariable ["ACME_treatmentPoseState",[]]) select 1=="chestSealWorkspace","workspace did not receive pose ownership"] call _check;
         [(_medic getVariable ["ACME_chestAccessProvider",[0]]) isEqualTo [],"carrier provider entry not retired"] call _check;

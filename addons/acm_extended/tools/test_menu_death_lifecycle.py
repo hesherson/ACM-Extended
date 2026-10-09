@@ -265,7 +265,7 @@ def test_drag_retains_resistance_with_duplicate_timestamp(elapsed):
 
 
 def test_last_viewer_restore_cannot_clear_reopened_workspace():
-    execute('private _begin = {' + adapt(read('chestSealPatientBegin')) + '}; private _end = {' + adapt(read('chestSealPatientEnd')) + '};' + '''
+    execute('private _begin = {' + adapt(read('chestSealPatientBegin').replace('serverTime', 'CBA_missionTime')) + '}; private _end = {' + adapt(read('chestSealPatientEnd').replace('serverTime', 'CBA_missionTime')) + '};' + '''
         ACME_fnc_chestSealCanPhysicalRoll = {false};
         private _acquires=0;
         ACME_fnc_chestAccessVestAcquire = {_acquires=_acquires+1;};
@@ -290,7 +290,7 @@ def test_last_viewer_restore_cannot_clear_reopened_workspace():
 
 
 def test_final_corpse_viewer_restores_workspace_without_rolling_body():
-    execute('private _end = {' + adapt(read('chestSealPatientEnd')) + '};' + '''
+    execute('private _end = {' + adapt(read('chestSealPatientEnd').replace('serverTime', 'CBA_missionTime')) + '};' + '''
         private _actualSide = "front";
         _patientAlive = false;
         _patient setVariable ["ACME_CS_ProcedureActive",true];

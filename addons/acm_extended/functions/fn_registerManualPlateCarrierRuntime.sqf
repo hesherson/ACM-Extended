@@ -40,8 +40,12 @@ if (isNil "ACME_manualPlateCarrierTrackEH") then {
     ACME_manualPlateCarrierTrackEH = ["ACME_manualPlateCarrierTrack", {
         params ["_patient"];
         private _patients = missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []];
-        if (!isNull _patient && {local _patient} && {alive _patient}
-            && {(_patient getVariable ["ACME_manualPlateCarrierState", ""]) != ""}) then {
+        private _state = if (isNull _patient) then {""}
+            else {_patient getVariable ["ACME_manualPlateCarrierState", ""]};
+        // Corpse evidence parked in the "off" state is inert; only a death
+        // DURING removal still needs patient-owner completion/abort work.
+        if (!isNull _patient && {local _patient}
+            && {alive _patient || {_state == "removing"}} && {_state != ""}) then {
             _patients pushBackUnique _patient;
         } else {
             _patients = _patients - [_patient];
@@ -58,11 +62,16 @@ if (isNil "ACME_manualPlateCarrierTrackEH") then {
         [{["ACME_manualPlateCarrierTrack", _this] call CBA_fnc_localEvent;}, [_this select 0]] call CBA_fnc_execNextFrame;
     }, true, [], true] call CBA_fnc_addClassEventHandler;
     ["CAManBase", "Killed", {
-        // Death neither restores nor deletes parked gear. Keep a currently
-        // removing corpse tracked for owner-local completion/timeout; the
-        // real Deleted event disposes of temporary objects.
+        // Death never returns or deletes parked gear. An interrupted removal
+        // continues to completion/abort on its patient owner, but an already
+        // removed corpse is *not* a recurring hot-registry entry.
         params ["_patient"];
-        ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
+        if ((_patient getVariable ["ACME_manualPlateCarrierState", ""]) == "removing") then {
+            ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
+        } else {
+            ACME_manualPlateCarrierPatients =
+                (missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []]) - [_patient];
+        };
     }] call CBA_fnc_addClassEventHandler;
 };
 if (isNil "ACME_manualPlateCarrierWatchPFH") then {
@@ -84,7 +93,25 @@ if (isNil "ACME_manualPlateCarrierWatchPFH") then {
             if (isNull _p || {!local _p}) then {continue};
 
             private _state = _p getVariable ["ACME_manualPlateCarrierState", ""];
-            if (_state == "") then {continue};
+            if (_state == "" || {!alive _p && {_state != "removing"}}) then {continue};
+
+            // B264: CBA completion callbacks stay on the OLD machine after
+            // transfer. The current patient owner can complete that exact
+            // "removing" lease from replicated custody, or cleanly time it
+            // out; neither action can affect a newer success/lease.
+            if (_state == "removing") then {
+                private _lease = _p getVariable ["ACME_manualPlateCarrierLease", ""];
+                private _medic = _p getVariable ["ACME_manualPlateCarrierProvider", objNull];
+                [_p, _medic, _lease] call ACME_fnc_manualPlateCarrierCompleteRemoval;
+                if ((_p getVariable ["ACME_manualPlateCarrierState", ""]) == "removing") then {
+                    private _started = _p getVariable ["ACME_manualPlateCarrierStartedAt", serverTime];
+                    if (serverTime - _started >= 20) then {
+                        [_p, _medic, _lease, "remove-timeout"] call ACME_fnc_manualPlateCarrierAbortRemoval;
+                    };
+                };
+                _state = _p getVariable ["ACME_manualPlateCarrierState", ""];
+                if (_state == "") then {continue};
+            };
 
             private _awake = alive _p
                 && {!(_p getVariable ["ACE_isUnconscious", false])}
@@ -108,7 +135,10 @@ if (isNil "ACME_manualPlateCarrierWatchPFH") then {
                 };
                 [_p, _reason] call ACME_fnc_manualPlateCarrierAutoReturn;
             };
-            if ((_p getVariable ["ACME_manualPlateCarrierState", ""]) != "") then {_kept pushBack _p;};
+            if ((_p getVariable ["ACME_manualPlateCarrierState", ""]) != ""
+                && {alive _p || {(_p getVariable ["ACME_manualPlateCarrierState", ""]) == "removing"}}) then {
+                _kept pushBack _p;
+            };
         } forEach (+(missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []]));
         ACME_manualPlateCarrierPatients = _kept;
     }, 0.20, []] call CBA_fnc_addPerFrameHandler;

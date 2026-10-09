@@ -60,9 +60,13 @@ def test_hang_bag_claim_is_owner_serialized_and_gear_survives_death():
     assert 'ACME_hang_Claimed' in tick
     assert 'call ACME_fnc_setVarNet' not in tick
     assert 'case "hangBagClaim"' in owner and 'case "hangBagRelease"' in owner
-    assert 'ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true' in prep
+    assert 'private _slots = [_ld select 0, _ld select 1];' in prep
+    assert '_medic setVariable ["ACME_hang_savedWeaponSlots", _slots, true];' in prep
     assert 'alive _medic' not in restore
-    assert 'setUnitLoadout _ld' in restore
+    assert '_medic setUnitLoadout' not in restore
+    assert 'addWeapon _weapon;' in restore
+    assert 'addWeaponItem [_weapon' in restore
+    assert 'ACME_hang_savedWeaponSlots", nil, true' in restore
     assert 'ACME_hangRestoreWeapons' in stop
 
 

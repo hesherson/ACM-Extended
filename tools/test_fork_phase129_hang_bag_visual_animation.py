@@ -45,7 +45,8 @@ def test_current_phase129_hang_bag_visual_animation():
     assert 'call ACME_fnc_doAnim;' not in tick
     assert '[true, _medic] call ACME_fnc_hangBagStop' in tick
     assert '[_medic, ""] call ACME_fnc_doAnimHeld' in stop
-    assert 'ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true' in prep
+    assert 'private _slots = [_ld select 0, _ld select 1];' in prep
+    assert '_medic setVariable ["ACME_hang_savedWeaponSlots", _slots, true];' in prep
     assert 'alive _medic' not in restore
     assert '!local _medic' in restore
     assert '_medic setUnitLoadout' not in restore and '_medic setUnitLoadout' not in prep

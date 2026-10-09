@@ -27,6 +27,18 @@ def code(name, server_clock='CBA_missionTime'):
                           '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
     text=text.replace('_patient setUnitLoadout [_loadout, false];',
                       '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
+    # B264 legacy vest-only restore uses addVest and the actual contents
+    # instead of rebuilding the entire unit loadout. The VM lacks Arma's
+    # equipment commands; model their vest-slot and inventory results, while
+    # executing the real procedure/roll/custody conditionals unchanged.
+    text=text.replace('_patient addVest _class;',
+                      '_vest=_class; _loadout set [4,+_saved]; _loadouts pushBack (+_loadout);')
+    text=text.replace('vestContainer _patient', '_patient')
+    text=text.replace('isClass (configFile >> "CfgMagazines" >> _item)', 'false')  # these fixtures contain items, not magazines
+    text=text.replace('_dest addItemCargoGlobal [_item, _count];',
+                      'for "_legacyI" from 1 to _count do {_legacyVestItems pushBack _item;};')
+    text=text.replace('itemCargo _dest', '_legacyVestItems')
+    text=text.replace('removeVest _patient;', '_vest=""; _loadout set [4,[]];')
     text=text.replace('serverTime',server_clock)
     text=text.replace('finite _rollTime','(_rollTime call _finite)')
     text=text.replace('finite _animSpeed','(_animSpeed call _finite)')
@@ -48,7 +60,8 @@ def setup():
         private _animation="amovppnemstpsraswrfldnon"; private _actualSide="back";
         private _lifeState="HEALTHY";
         private _vest=""; private _loadout=[[],[],[],[],[],[],"","",[],[]];
-        private _loadouts=[]; private _detaches=[]; private _deletes=[];
+        private _loadouts=[]; private _legacyVestItems=[];
+        private _detaches=[]; private _deletes=[];
         private _rolls=[]; private _animRequests=[]; private _releases=[]; private _dispatches=[];
         private _headResume=[]; private _yielded=0; private _acquired=0;
         private _blocked=false; private _leaseAllowed=true;

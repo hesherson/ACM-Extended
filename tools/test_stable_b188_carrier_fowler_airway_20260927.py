@@ -80,8 +80,10 @@ def test_chest_access_watchdog_does_not_pull_borrowed_carrier_out_from_under_pat
 
 
 def test_manual_removal_of_elevated_patient_resumes_semi_fowler_when_done():
-    commit = read("addons/acm_extended/functions/fn_manualPlateCarrierCommit.sqf")
-    block = commit.split('_p setVariable ["ACME_manualPlateCarrierState", "off", true];', 1)[1]
+    # B264 extracted the actual once-per-lease commit to one owner worker, so
+    # the old callback and a newly migrated patient owner share this code.
+    complete = read("addons/acm_extended/functions/fn_manualPlateCarrierCompleteRemoval.sqf")
+    block = complete.split('_p setVariable ["ACME_manualPlateCarrierState", "off", true];', 1)[1]
 
     assert 'ACME_headElevated' in block
     assert 'ACME_headElev_Suspended' in block

@@ -153,8 +153,10 @@ def test_transport_event_preserves_immediate_return_before_fast_pass(event):
 def test_state_transitions_all_notify_existing_registry_event():
     commit=(F/'fn_manualPlateCarrierCommit.sqf').read_text()
     auto=(F/'fn_manualPlateCarrierAutoReturn.sqf').read_text()
-    for state in ('removing','restoring','off',''):
+    complete=(F/'fn_manualPlateCarrierCompleteRemoval.sqf').read_text()
+    for state in ('removing','restoring',''):
         assert re.search(r'setVariable \["ACME_manualPlateCarrierState", "'+state+r'", true\];\s*\["ACME_manualPlateCarrierTrack",',commit)
+    assert 'setVariable ["ACME_manualPlateCarrierState", "off", true];\n["ACME_manualPlateCarrierTrack", [_p]] call CBA_fnc_localEvent;' in complete
     assert 'setVariable ["ACME_manualPlateCarrierState", "", true];\n["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;' in auto
 
 

@@ -22,7 +22,8 @@ def marker_pairs():
 
 def test_expected_fork_markers_exist_in_executable_sources():
     pairs = marker_pairs()
-    assert len(pairs) == 13
+    assert len(pairs) == 14
+    assert ("ace_medical_treatment_fnc_treatment", "ACME-B263-modal-route") in pairs
     for name, marker in pairs:
         owner, function = name.split("_fnc_")
         if owner.startswith("ACM_"):
