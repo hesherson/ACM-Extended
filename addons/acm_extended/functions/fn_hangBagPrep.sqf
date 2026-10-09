@@ -26,11 +26,13 @@ _medic setUnitPos "MIDDLE";
 // it falls back to the old on-back stow if removal is disabled. Publish the two removed slots once so death,
 // disconnect or a locality transfer can restore the corpse/provider on whichever machine owns it afterward.
 if ((missionNamespace getVariable ["ACME_hang_removeWeapon", true]) && {(primaryWeapon _medic != "") || {secondaryWeapon _medic != ""}}) then {
+    // save the full state of the primary and launcher slots (weapon, attachments, magazines, bipod) first
     private _ld = getUnitLoadout _medic;
     _medic setVariable ["ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true];
-    _ld set [0, []];
-    _ld set [1, []];
-    _medic setUnitLoadout _ld;
+
+    // remove only the weapons. no setUnitLoadout, so uniforms and their hidden selections are never rebuilt
+    if (primaryWeapon _medic != "") then {_medic removeWeapon (primaryWeapon _medic);};
+    if (secondaryWeapon _medic != "") then {_medic removeWeapon (secondaryWeapon _medic);};
 } else {
     // The single entry preflight above already selected empty hands. Do not issue another stow request.
 };
