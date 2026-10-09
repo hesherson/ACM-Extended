@@ -132,7 +132,7 @@
         </Key>
         <Key ID="STR_ACM_Circulation_SETTING_Allow_AmmoniaInhalant">
             <English>Allow Ammonia Inhalant</English>
-            <Spanish>Permitir inhalante de amoníaco</Spanish>
+            <Spanish>Permitir inhalador de amoníaco</Spanish>
             <Portuguese>Permitir inalador de amônia</Portuguese>
             <Russian>Разрешить нашатырь (ингалянт)</Russian>
             <Korean>암모니아 흡입제 허용</Korean>
@@ -156,7 +156,7 @@
         </Key>
         <Key ID="STR_ACM_Circulation_SETTING_Allow_FentanylLozenge_Desc">
             <English>Training level required to administer fentanyl lozenges</English>
-            <Spanish>Nivel de entrenamiento requerido para administrar la pastilla</Spanish>
+            <Spanish>Nivel de entrenamiento requerido para administrar la pastilla de fentanilo</Spanish>
             <Portuguese>Nível de treinamento necessário para administrar pirulitos de fentanil</Portuguese>
             <Russian>Уровень подготовки для введения леденцов с фентанилом</Russian>
             <Korean>펜타닐 로젠지 투여에 필요한 훈련 수준을 설정합니다.</Korean>
@@ -176,7 +176,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_Allow_IO_Desc">
             <English>Training level required to insert IOs</English>
             <French>Niveau de formation requis pour l'insertion des IO</French>
-            <Spanish>Nivel de entrenamiento requerido para insertar IO</Spanish>
+            <Spanish>Nivel de entrenamiento requerido para insertar vías IO</Spanish>
             <Polish>Poziom wyszkolenia potrzebny do wykonania wkłucia IO</Polish>
             <Portuguese>Nível de treinamento necessário para inserir IOs</Portuguese>
             <Russian>Уровень подготовки для установки IO</Russian>
@@ -198,7 +198,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_Allow_IV_Desc">
             <English>Training level required to insert IVs</English>
             <French>Niveau de formation requis pour la pose d'intraveineuses</French>
-            <Spanish>Nivel de entrenamiento requerido para insertar IV</Spanish>
+            <Spanish>Nivel de entrenamiento requerido para insertar vías IV</Spanish>
             <Polish>Poziom wyszkolenia potrzebny do wykonania wkłucia IV</Polish>
             <Portuguese>Nível de treinamento necessário para inserir IVs</Portuguese>
             <Russian>Уровень подготовки для установки IV</Russian>
@@ -208,7 +208,7 @@
         </Key>
         <Key ID="STR_ACM_Circulation_SETTING_Allow_Syringe">
             <English>Allow Syringe</English>
-            <Spanish>Permitir uso de jeringa</Spanish>
+            <Spanish>Permitir jeringa</Spanish>
             <Portuguese>Permitir seringa</Portuguese>
             <Russian>Разрешить шприц</Russian>
             <Korean>주사기 허용</Korean>
@@ -225,7 +225,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_BloodType_Ratio_%1">
             <English>%1 Ratio</English>
             <French>%1 Ratio</French>
-            <Spanish>Proporción %1</Spanish>
+            <Spanish>%1 Ratio</Spanish>
             <Polish>%1 Współczynnik</Polish>
             <Portuguese>%1 Razão</Portuguese>
             <Russian>Доля %1</Russian>
@@ -247,7 +247,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CPREffectiveness">
             <English>CPR Effectiveness Multiplier</English>
             <French>Multiplicateur d'efficacité de la RCP</French>
-            <Spanish>Multiplicador de Efectividad de RCP</Spanish>
+            <Spanish>Multiplicador de efectividad de RCP</Spanish>
             <Polish>Mnożnik skuteczności RKO</Polish>
             <Portuguese>Multiplicador de eficiência da RCP</Portuguese>
             <Russian>Множитель эффективности СЛР</Russian>
@@ -269,7 +269,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CardiacArrestBleedRate">
             <English>Cardiac Arrest Bleed Rate</English>
             <French>Taux de saignement en cas d'arrêt cardiaque</French>
-            <Spanish>Tasa de Sangrado en Paro Cardíaco</Spanish>
+            <Spanish>Tasa de sangrado en paro cardíaco</Spanish>
             <Polish>Prędkość krwawienia przy NZK</Polish>
             <Portuguese>Taxa de sangramento em parada cardíaca</Portuguese>
             <Russian>Скорость кровопотери при остановке сердца</Russian>
@@ -291,7 +291,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CardiacArrestChance">
             <English>Critical Damage Cardiac Arrest Chance</English>
             <French>Risque d'arrêt cardiaque soudain</French>
-            <Spanish>Probabilidad de Paro Cardíaco por Daño Crítico</Spanish>
+            <Spanish>Probabilidad de paro cardíaco por daño crítico</Spanish>
             <Polish>Szansa na nagłe zatrzymanie krążenia</Polish>
             <Portuguese>Dano crítico chance de parada cardíaca</Portuguese>
             <Russian>Шанс остановки сердца при критическом повреждении</Russian>
@@ -302,7 +302,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CardiacArrestChance_Desc">
             <English>Sets chance for unit to go into cardiac arrest after taking critical damage</English>
             <French>Définit la probabilité que l'unité fasse un arrêt cardiaque après avoir subi des dégâts critiques</French>
-            <Spanish>Define la probabilidad de que una unidad entre en paro tras un daño crítico</Spanish>
+            <Spanish>Define la probabilidad de que una unidad entre en paro tras recibir daño crítico</Spanish>
             <Polish>Szansa na NZK przy otrzymaniu krytycznych obrażeń</Polish>
             <Portuguese>Define a chance de a unidade entrar em parada cardíaca após sofrer dano crítico</Portuguese>
             <Russian>Задаёт вероятность остановки сердца после критического повреждения</Russian>
@@ -313,7 +313,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CardiacArrestDeteriorationRate">
             <English>Rhythm Deterioration Multiplier</English>
             <French>Multiplicateur de détérioration du rythme</French>
-            <Spanish>Multiplicador de Deterioro del Ritmo Cardíaco</Spanish>
+            <Spanish>Multiplicador de deterioro del ritmo cardíaco</Spanish>
             <Polish>Mnożnik pogarszania rytmu</Polish>
             <Portuguese>Multiplicador de deterioração do ritmo</Portuguese>
             <Russian>Множитель ухудшения ритма</Russian>
@@ -324,7 +324,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CardiacArrestDeteriorationRate_Desc">
             <English>Chance that rhythm will deteriorate while in cardiac arrest</English>
             <French>Risque d'aggravation du rythme cardiaque</French>
-            <Spanish>Probabilidad de deterioro del ritmo durante paro cardíaco</Spanish>
+            <Spanish>Probabilidad de deterioro del ritmo durante un paro cardíaco</Spanish>
             <Polish>Szansa na pogorszenie się rytmu serca</Polish>
             <Portuguese>Chance de deterioração do ritmo durante a parada cardíaca</Portuguese>
             <Russian>Шанс ухудшения ритма во время остановки сердца</Russian>
@@ -346,7 +346,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_CoagulationClottingAffectAI">
             <English>Clotting for AI</English>
             <French>Coagulation pour l'IA</French>
-            <Spanish>Coagulación para IA</Spanish>
+            <Spanish>Coagulación para la IA</Spanish>
             <Polish>Krzepnięcie dla SI</Polish>
             <Portuguese>Coagulamento para IA</Portuguese>
             <Russian>Свёртывание для ИИ</Russian>
@@ -399,7 +399,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_Hardcore_PostCardiacArrest">
             <English>[HARDCORE] Post Cardiac Arrest Complications</English>
             <French>[HARDCORE] Complications post-arrêt cardiaque</French>
-            <Spanish>[HARDCORE] Complicaciones Post-Paro Cardíaco</Spanish>
+            <Spanish>[EXTREMO] Complicaciones Post-Paro Cardíaco</Spanish>
             <Polish>[HARDCORE] Komplikacje po zatrzymaniu krążenia</Polish>
             <Portuguese>[HARDCORE] Complicações pós-parada cardíaca</Portuguese>
             <Russian>[ХАРДКОР] Осложнения после восстановления кровообращения</Russian>
@@ -410,7 +410,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_Hardcore_PostCardiacArrest_Desc">
             <English>[HARDCORE] Sets whether there should be a decrease in cardiac output after ROSC requiring further treatment to fully treat</English>
             <French>[HARDCORE] Définit si le débit cardiaque doit être réduit après le retour spontané de la circulation (ROSC).</French>
-            <Spanish>[HARDCORE] Define si debe haber una disminución del gasto cardíaco tras el ROSC que requiera más tratamiento</Spanish>
+            <Spanish>[EXTREMO] Define si debe haber una disminución del gasto cardíaco tras ROSC; asi requiriendo tratamiento adicional</Spanish>
             <Polish>[HARDCORE] Ustawia czy po spontanicznym powrocie krążenia (ROSC) powinna pojawić się obniżona wydajność serca</Polish>
             <Portuguese>[HARDCORE] Define se deve haver uma diminuição na eficiência cardíaco após o ROSC, exigindo tratamento adicional para o tratamento completo</Portuguese>
             <Russian>[ХАРДКОР] Задаёт, будет ли снижение сердечного выброса после ROSC, требующее дополнительного лечения</Russian>
@@ -421,7 +421,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_IVComplications">
             <English>Enable IV Complications</English>
             <French>Permettre les complications IV</French>
-            <Spanish>Activar Complicaciones IV</Spanish>
+            <Spanish>Activar complicaciones IV</Spanish>
             <Polish>Włącz komplikacje IV</Polish>
             <Portuguese>Habilitar complicações com IV</Portuguese>
             <Russian>Включить осложнения IV</Russian>
@@ -432,7 +432,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_IVComplicationsDeteriorate">
             <English>Enable IV Complication Deterioration</English>
             <French>Activer  l'aggravation des complications IV</French>
-            <Spanish>Activar Deterioro de Complicaciones en vías IV</Spanish>
+            <Spanish>Activar deterioro de complicaciones en vías IV</Spanish>
             <Polish>Włącz pogarszanie się komplikacji IV</Polish>
             <Portuguese>Deterioração de complicações de habilitação IV</Portuguese>
             <Russian>Включить прогрессирование осложнений IV</Russian>
@@ -443,7 +443,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_IVComplicationsDeteriorate_Desc">
             <English>Sets whether IVs with complications can deteriorate during use, or deteriorate into a complication if one isn't already present</English>
             <French>Définit si des problèmes d'insertion IV peuvent survenir pendant l'utilisation</French>
-            <Spanish>Define si las vías IV complicadas pueden deteriorarse</Spanish>
+            <Spanish>Define si las vías IV complicadas pueden deteriorarse durante su uso</Spanish>
             <Polish>Ustawia czy mogą pojawić się problemy z wkłuciem IV podczas użycia</Polish>
             <Portuguese>Define se os IVs com complicações podem se deteriorar durante o uso ou se deteriorar em uma complicação, caso ela ainda não esteja presente</Portuguese>
             <Russian>Задаёт, могут ли осложнения IV ухудшаться во время использования или возникать со временем</Russian>
@@ -501,7 +501,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_SelfIV">
             <English>Allow Self IV</English>
             <French>Autoriser une IV sur soi-même</French>
-            <Spanish>Permitir autoinserción de vía venosa</Spanish>
+            <Spanish>Permitir autoinserción de acceso intravenoso</Spanish>
             <Polish>Pozwól na IV na sobie</Polish>
             <Portuguese>Permitir auto IV</Portuguese>
             <Russian>Разрешить самостоятельный IV</Russian>
@@ -512,7 +512,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_SelfIV_Desc">
             <English>Allow self-application of IV</English>
             <French>Autoriser la pose d'une IV sur soi-même</French>
-            <Spanish>Permitir autoinserción de vía venosa</Spanish>
+            <Spanish>Permitir autoinserción de acceso intravenoso</Spanish>
             <Polish>Pozwól na wykonanie wkłucia IV na sobie</Polish>
             <Portuguese>Permitir a autoaplicação de IV</Portuguese>
             <Russian>Разрешить самостоятельную установку IV</Russian>
@@ -523,7 +523,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_TreatmentTime_IO_EZ">
             <English>EZ-IO Time</English>
             <French>Temps EZ-IO</French>
-            <Spanish>Tiempo de acceso EZ-IO</Spanish>
+            <Spanish>Tiempo de EZ-IO</Spanish>
             <Polish>Czas EZ-IO</Polish>
             <Portuguese>Tempo para EZ-IO</Portuguese>
             <Russian>Время установки EZ-IO</Russian>
@@ -534,7 +534,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_TreatmentTime_IO_EZ_Desc">
             <English>Time to insert EZ-IO</English>
             <French>Temps pour insérer EZ-IO</French>
-            <Spanish>Tiempo para insertar EZ-IO</Spanish>
+            <Spanish>Tiempo para utilizar el sistema EZ-IO</Spanish>
             <Polish>Czas potrzebny do wykonania wkłucia EZ-IO</Polish>
             <Portuguese>Tempo para inserir EZ-IO</Portuguese>
             <Russian>Время на установку EZ-IO</Russian>
@@ -545,7 +545,7 @@
         <Key ID="STR_ACM_Circulation_SETTING_TreatmentTime_IO_FAST1">
             <English>FAST1 IO Time</English>
             <French>Temps FAST1 IO</French>
-            <Spanish>Tiempo de acceso FAST1 IO</Spanish>
+            <Spanish>Tiempo de FAST1 IO</Spanish>
             <Polish>Czas FAST1 IO</Polish>
             <Portuguese>Tempo para FAST1 IO</Portuguese>
             <Russian>Время установки FAST1 IO</Russian>
@@ -612,7 +612,7 @@
             <Key ID="STR_ACM_Circulation_AED_%1_Disconnected">
                 <English>%1 disconnected AED</English>
                 <French>%1 a déconnecté le défibrillateur (DAE)</French>
-                <Spanish>%1 desconectó DEA</Spanish>
+                <Spanish>%1 desconectó el DEA</Spanish>
                 <Polish>%1 odłączył defibrylator</Polish>
                 <Portuguese>%1 desconectou o DEA</Portuguese>
                 <Russian>%1 отключил AED</Russian>
@@ -634,7 +634,7 @@
             <Key ID="STR_ACM_Circulation_AED_AnalyzeRhythm">
                 <English>Analyze Rhythm</English>
                 <French>Analyse du rythme</French>
-                <Spanish>Analizar ritmo</Spanish>
+                <Spanish>Analizar Ritmo</Spanish>
                 <Polish>Analizuj rytm</Polish>
                 <Portuguese>Analisar o ritmo</Portuguese>
                 <Russian>Анализ ритма</Russian>
@@ -645,7 +645,7 @@
             <Key ID="STR_ACM_Circulation_AED_ApplyPads">
                 <English>Apply AED Pads</English>
                 <French>Appliquer les électrodes de DAE</French>
-                <Spanish>Aplicar electrodos DEA</Spanish>
+                <Spanish>Poner Electrodos del DEA</Spanish>
                 <Polish>Załóż elektrody</Polish>
                 <Portuguese>Aplicar eletrodos do DEA</Portuguese>
                 <Russian>Наложить электроды AED</Russian>
@@ -656,7 +656,7 @@
             <Key ID="STR_ACM_Circulation_AED_ApplyPads_Progress">
                 <English>Applying AED Pads...</English>
                 <French>Application des électrodes du DAE...</French>
-                <Spanish>Aplicando electrodos DEA...</Spanish>
+                <Spanish>Aplicando electrodos...</Spanish>
                 <Polish>Zakadanie elektrod...</Polish>
                 <Portuguese>Aplicando eletrodos do DEA...</Portuguese>
                 <Russian>Наложение электродов AED...</Russian>
@@ -667,7 +667,7 @@
             <Key ID="STR_ACM_Circulation_AED_CancelCharge">
                 <English>Cancel Charge</English>
                 <French>Décharger le défibrillateur</French>
-                <Spanish>Cancelar carga</Spanish>
+                <Spanish>Cancelar Carga</Spanish>
                 <Polish>Odwołaj defibrylacje</Polish>
                 <Portuguese>Cancelar carga</Portuguese>
                 <Russian>Отменить заряд</Russian>
@@ -689,7 +689,7 @@
             <Key ID="STR_ACM_Circulation_AED_ConnectCapnograph">
                 <English>Connect AED Capnograph</English>
                 <French>Connecter le capnographe DAE</French>
-                <Spanish>Conectar capnógrafo DEA</Spanish>
+                <Spanish>Conectar Capnógrafo del DEA</Spanish>
                 <Polish>Załóż kapnograf defibrylatora</Polish>
                 <Portuguese>Conectar capnógrafo do DEA</Portuguese>
                 <Russian>Подключить капнограф к AED</Russian>
@@ -711,7 +711,7 @@
             <Key ID="STR_ACM_Circulation_AED_ConnectPressureCuff">
                 <English>Connect AED Pressure Cuff</English>
                 <French>Connecter le brassard du tensiomètre du DAE</French>
-                <Spanish>Conectar manguito DEA</Spanish>
+                <Spanish>Conectar Manguito del DEA</Spanish>
                 <Polish>Załóż ciśnieniomierz defibrylatora</Polish>
                 <Portuguese>Conectar esfigmomanômetro do DEA</Portuguese>
                 <Russian>Подключить манжету к AED</Russian>
@@ -733,7 +733,7 @@
             <Key ID="STR_ACM_Circulation_AED_ConnectPulseOximeter">
                 <English>Connect AED Pulse Oximeter</English>
                 <French>Fixer l'oxymètre de pouls du DAE</French>
-                <Spanish>Conectar oxímetro DEA</Spanish>
+                <Spanish>Conectar Pulsioxímetro del DEA</Spanish>
                 <Polish>Załóż pulsoksymetr defibrylatora</Polish>
                 <Portuguese>Conectar oxímetro do DEA</Portuguese>
                 <Russian>Подключить пульсоксиметр к AED</Russian>
@@ -744,7 +744,7 @@
             <Key ID="STR_ACM_Circulation_AED_ConnectPulseOximeter_Progress">
                 <English>Connecting AED Pulse Oximeter...</English>
                 <French>Connexion de l'oxymètre de pouls du DAE...</French>
-                <Spanish>Conectando oxímetro DEA...</Spanish>
+                <Spanish>Conectando pulsioxímetro DEA...</Spanish>
                 <Polish>Zakadanie pulsoksymetru defibrylatora...</Polish>
                 <Portuguese>Conectando oxímento do DEA...</Portuguese>
                 <Russian>Подключение пульсоксиметра к AED...</Russian>
@@ -755,7 +755,7 @@
             <Key ID="STR_ACM_Circulation_AED_DisconnectCapnograph">
                 <English>Disconnect AED Capnograph</English>
                 <French>Retirer le capnographe du défibrillateur</French>
-                <Spanish>Desconectar capnógrafo DEA</Spanish>
+                <Spanish>Desconectar Capnógrafo del DEA</Spanish>
                 <Polish>Zdejmij kapnograf defibrylatora</Polish>
                 <Portuguese>Desconectar capnógrafo do DEA</Portuguese>
                 <Russian>Отключить капнограф от AED</Russian>
@@ -777,7 +777,7 @@
             <Key ID="STR_ACM_Circulation_AED_DisconnectPressureCuff">
                 <English>Disconnect AED Pressure Cuff</English>
                 <French>Retirer le brassard du tensiomètre du DAE</French>
-                <Spanish>Desconectar manguito DEA</Spanish>
+                <Spanish>Desconectar Manguito del DEA</Spanish>
                 <Polish>Zdejmij ciśnieniomierz defibrylatora</Polish>
                 <Portuguese>Desconectar esfigmomanômetro do DEA</Portuguese>
                 <Russian>Отключить манжету от AED</Russian>
@@ -799,7 +799,7 @@
             <Key ID="STR_ACM_Circulation_AED_DisconnectPulseOximeter">
                 <English>Disconnect AED Pulse Oximeter</English>
                 <French>Déconnecter l'oxymètre de pouls du DAE</French>
-                <Spanish>Desconectar oxímetro DEA</Spanish>
+                <Spanish>Desconectar Pulsioxímetro DEA</Spanish>
                 <Polish>Zdejmij pulsoksymetr defibrylatora</Polish>
                 <Portuguese>Desconectar oxímetro do DEA</Portuguese>
                 <Russian>Отключить пульсоксиметр от AED</Russian>
@@ -810,7 +810,7 @@
             <Key ID="STR_ACM_Circulation_AED_DisconnectPulseOximeter_Progress">
                 <English>Disconnecting AED Pulse Oximeter...</English>
                 <French>Déconnexion de l'oxymètre de pouls du DAE ...</French>
-                <Spanish>Desconectando oxímetro DEA...</Spanish>
+                <Spanish>Desconectando Pulsioxímetro del DEA...</Spanish>
                 <Polish>Zdejmowanie pulsoksymetru defibrylatora...</Polish>
                 <Portuguese>Desconectando oxímetro do DEA...</Portuguese>
                 <Russian>Отключение пульсоксиметра от AED...</Russian>
@@ -832,7 +832,7 @@
             <Key ID="STR_ACM_Circulation_AED_MeasureBP">
                 <English>Measure Blood Pressure (AED)</English>
                 <French>Prendre la tension (DAE)</French>
-                <Spanish>Medir tensión arterial (DEA)</Spanish>
+                <Spanish>Medir Tensión (DEA)</Spanish>
                 <Polish>Zmierz ciśnienie krwi (defibrylator)</Polish>
                 <Portuguese>Mensurar pressão sanguínea (DEA)</Portuguese>
                 <Russian>Измерить давление (AED)</Russian>
@@ -843,7 +843,7 @@
             <Key ID="STR_ACM_Circulation_AED_Pads">
                 <English>AED pads</English>
                 <French>Electrodes de défibrillation (DAE)</French>
-                <Spanish>Electrodos DEA</Spanish>
+                <Spanish>Electrodos del DEA</Spanish>
                 <Polish>Elektrody defibrylatora</Polish>
                 <Portuguese>Eletródos do DEA</Portuguese>
                 <Russian>Электроды AED</Russian>
@@ -865,7 +865,7 @@
             <Key ID="STR_ACM_Circulation_AED_PressureCuff">
                 <English>AED Pressure Cuff</English>
                 <French>Brassard de tensiomètre pour DAE</French>
-                <Spanish>Manguito DEA</Spanish>
+                <Spanish>Manguito del DEA</Spanish>
                 <Polish>Ciśnieniomierz defibrylatora</Polish>
                 <Portuguese>Esfigmomanômetro do DEA</Portuguese>
                 <Russian>Манжета AED</Russian>
@@ -876,7 +876,7 @@
             <Key ID="STR_ACM_Circulation_AED_PulseOximeter">
                 <English>AED Pulse Oximeter</English>
                 <French>Oxymètre de pouls (DAE)</French>
-                <Spanish>Oxímetro DEA</Spanish>
+                <Spanish>Pulsioxímetro DEA</Spanish>
                 <Polish>Pulsoksymetr defibrylatora</Polish>
                 <Portuguese>Oxímetro do DEA</Portuguese>
                 <Russian>Пульсоксиметр AED</Russian>
@@ -887,7 +887,7 @@
             <Key ID="STR_ACM_Circulation_AED_RemovePads">
                 <English>Remove AED Pads</English>
                 <French>Retirer les électrodes du DAE</French>
-                <Spanish>Retirar electrodos DEA</Spanish>
+                <Spanish>Retirar Electrodos del DEA</Spanish>
                 <Polish>Zdejmij elektrody</Polish>
                 <Portuguese>Remover eletrodos do DEA</Portuguese>
                 <Russian>Снять электроды AED</Russian>
@@ -909,7 +909,7 @@
             <Key ID="STR_ACM_Circulation_AED_Shock">
                 <English>Administer Shock</English>
                 <French>Délivrer un choc</French>
-                <Spanish>Administrar descarga</Spanish>
+                <Spanish>Administrar Descarga</Spanish>
                 <Polish>Przeprowadź defibrylacje</Polish>
                 <Portuguese>Administrar o choque</Portuguese>
                 <Russian>Подать разряд</Russian>
@@ -920,7 +920,7 @@
             <Key ID="STR_ACM_Circulation_AED_ViewMonitor">
                 <English>View AED Monitor</English>
                 <French>Voir le moniteur DAE</French>
-                <Spanish>Ver monitor DEA</Spanish>
+                <Spanish>Ver Monitor DEA</Spanish>
                 <Polish>Pokaż monitor defibrylatora</Polish>
                 <Portuguese>Exibir o monitor do DEA</Portuguese>
                 <Russian>Открыть монитор AED</Russian>
@@ -931,7 +931,7 @@
             <Key ID="STR_ACM_Circulation_ViewMonitor">
                 <English>View Monitor</English>
                 <French>Afficher le moniteur</French>
-                <Spanish>Ver monitor</Spanish>
+                <Spanish>Ver Monitor</Spanish>
                 <Polish>Pokaż monitor</Polish>
                 <Portuguese>Exibir monitor</Portuguese>
                 <Russian>Открыть монитор</Russian>
@@ -955,7 +955,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_Alarms">
                 <English>Toggle Alarms</English>
                 <French>Commuter l'alarme</French>
-                <Spanish>Alternar alarmas</Spanish>
+                <Spanish>Alternar Alarmas</Spanish>
                 <Polish>Włącz alarm</Polish>
                 <Portuguese>Alternar alarmes</Portuguese>
                 <Russian>Переключение оповещений</Russian>
@@ -966,7 +966,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_Analyze">
                 <English>Analyze Rhythm</English>
                 <French>Analyser le rythme</French>
-                <Spanish>Analizar ritmo</Spanish>
+                <Spanish>Analizar Ritmo</Spanish>
                 <Polish>Analizuj rytm</Polish>
                 <Portuguese>Analisar ritmo</Portuguese>
                 <Russian>Анализ ритма</Russian>
@@ -977,7 +977,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_CPR">
                 <English>CPR Mode Toggle</English>
                 <French>Changer de mode RCP</French>
-                <Spanish>Alternar modo RCP</Spanish>
+                <Spanish>Alternar Modo de RCP</Spanish>
                 <Polish>Aktywuj tryb RKO</Polish>
                 <Portuguese>Alternar modo RCP</Portuguese>
                 <Russian>Переключение режима СЛР</Russian>
@@ -988,7 +988,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_Charge">
                 <English>Manual Charge</English>
                 <French>Charge manuelle</French>
-                <Spanish>Carga manual</Spanish>
+                <Spanish>Carga Manual</Spanish>
                 <Polish>Manualne ładowanie</Polish>
                 <Portuguese>Carregamento manual</Portuguese>
                 <Russian>Ручная зарядка</Russian>
@@ -999,7 +999,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_NIBP">
                 <English>Measure NIBP</English>
                 <French>Mesure de la PNI</French>
-                <Spanish>Medir NIBP</Spanish>
+                <Spanish>Medir PANI</Spanish>
                 <Polish>Zmierz NIBP</Polish>
                 <Portuguese>Aferir PANI</Portuguese>
                 <Russian>Измерить НИАД</Russian>
@@ -1010,7 +1010,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_Shock">
                 <English>Administer Shock</English>
                 <French>Délivrer le choc</French>
-                <Spanish>Administrar descarga</Spanish>
+                <Spanish>Administrar Descarga</Spanish>
                 <Polish>Wykonaj defibrylacje</Polish>
                 <Portuguese>Administrar choque</Portuguese>
                 <Russian>Подать разряд</Russian>
@@ -1021,7 +1021,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_Button_SpeedDial">
                 <English>Speed Dial</English>
                 <French>Sélection rapide</French>
-                <Spanish>Marcación rápida</Spanish>
+                <Spanish>Marcación Rápida</Spanish>
                 <Polish>Pokrętło prędkości</Polish>
                 <Portuguese>Discagem rápida</Portuguese>
                 <Russian>Скорость прокрутки</Russian>
@@ -1043,7 +1043,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_HR">
                 <English>HR</English>
                 <French>RC</French>
-                <Spanish>FC</Spanish>
+                <Spanish>RC</Spanish>
                 <Polish>HR</Polish>
                 <Portuguese>FC</Portuguese>
                 <Russian>ЧСС</Russian>
@@ -1054,7 +1054,7 @@
             <Key ID="STR_ACM_Circulation_AED_Monitor_NIBP">
                 <English>NIBP</English>
                 <French>NIBP</French>
-                <Spanish>NIBP</Spanish>
+                <Spanish>PANI</Spanish>
                 <Polish>NIBP</Polish>
                 <Portuguese>PANI (Pressão Arterial Não Invasiva)</Portuguese>
                 <Russian>НИАД</Russian>
@@ -1111,7 +1111,7 @@
             <Key ID="STR_ACM_Circulation_Intramuscular_Short">
                 <English>IM</English>
                 <French>IM</French>
-                <Spanish>IM (intramuscular)</Spanish>
+                <Spanish>IM</Spanish>
                 <Polish>IM</Polish>
                 <Portuguese>IM</Portuguese>
                 <Russian>IM</Russian>
@@ -1122,7 +1122,7 @@
             <Key ID="STR_ACM_Circulation_Intraosseous_Short">
                 <English>IO</English>
                 <French>IO</French>
-                <Spanish>IO (intraóseo)</Spanish>
+                <Spanish>IO</Spanish>
                 <Polish>IO</Polish>
                 <Portuguese>IO</Portuguese>
                 <Russian>IO</Russian>
@@ -1133,7 +1133,7 @@
             <Key ID="STR_ACM_Circulation_Intravenous_Short">
                 <English>IV</English>
                 <French>IV</French>
-                <Spanish>IV (intravenoso)</Spanish>
+                <Spanish>IV</Spanish>
                 <Polish>IV</Polish>
                 <Portuguese>IV</Portuguese>
                 <Russian>IV</Russian>
@@ -1144,7 +1144,7 @@
             <Key ID="STR_ACM_Circulation_Push">
                 <English>Push</English>
                 <French>Injecter (IV/IO)</French>
-                <Spanish>Inyectar</Spanish>
+                <Spanish>Administrar</Spanish>
                 <Polish>Podaj (IV/IO)</Polish>
                 <Portuguese>Injetar (IV)</Portuguese>
                 <Russian>Ввести (IV/IO)</Russian>
@@ -1155,7 +1155,7 @@
             <Key ID="STR_ACM_Circulation_UseAmmoniaInhalant">
                 <English>Use Ammonia Inhalant</English>
                 <French>Utilisation des inhalations d'ammoniac</French>
-                <Spanish>Usar inhalante de amoníaco</Spanish>
+                <Spanish>Usar inhalador de amoníaco</Spanish>
                 <Polish>Użyj amoniaku wziewnego</Polish>
                 <Portuguese>Uso de inalante de amônia</Portuguese>
                 <Russian>Использовать аммиачный ингалянт</Russian>
@@ -1166,7 +1166,7 @@
             <Key ID="STR_ACM_Circulation_UseAmmoniaInhalant_Progress">
                 <English>Using Ammonia Inhalant...</English>
                 <French>Utilisation d'un inhalant à base d'ammoniac...</French>
-                <Spanish>Usando el inhalante de amoníaco...</Spanish>
+                <Spanish>Usando el inhalador de amoníaco...</Spanish>
                 <Polish>Używanie amoniaku wziewnego...</Polish>
                 <Portuguese>Usando inalador de amônia</Portuguese>
                 <Russian>Использование аммиачного ингалянта...</Russian>
@@ -1177,7 +1177,7 @@
             <Key ID="STR_ACM_Circulation_UseNaloxoneSpray">
                 <English>Use Naloxone Spray</English>
                 <French>Utiliser la Naloxone en spray</French>
-                <Spanish>Usar spray de naloxona</Spanish>
+                <Spanish>Usar Spray de Naloxona</Spanish>
                 <Polish>Użyj naloxonu w spreju</Polish>
                 <Portuguese>Use o spray de naloxona</Portuguese>
                 <Russian>Использовать спрей налоксона</Russian>
@@ -1199,7 +1199,7 @@
             <Key ID="STR_ACM_Circulation_UseParacetamol">
                 <English>Use Paracetamol</English>
                 <French>Utiliser du paracétamol</French>
-                <Spanish>Usar paracetamol</Spanish>
+                <Spanish>Usar Paracetamol</Spanish>
                 <Polish>Użyj paracetamolu</Polish>
                 <Portuguese>Usar de Paracetamol</Portuguese>
                 <Russian>Использовать парацетамол</Russian>
@@ -1221,7 +1221,7 @@
             <Key ID="STR_ACM_Circulation_UsePenthroxInhaler">
                 <English>Use Penthrox Inhaler</English>
                 <French>Utiliser l'inhalateur Penthrox</French>
-                <Spanish>Usar inhalador Penthrox</Spanish>
+                <Spanish>Usar Inhalador Penthrox</Spanish>
                 <Polish>Użyj inhalatora pentrox</Polish>
                 <Portuguese>Usar do Inalador Penthrox</Portuguese>
                 <Russian>Использовать ингалятор Пентрокс</Russian>
@@ -1278,7 +1278,7 @@
             <Key ID="STR_ACM_Circulation_CPR_ActionLog_Stopped">
                 <English>%1 stopped CPR (%2)</English>
                 <French>%1 a arrêté la RCP (%2)</French>
-                <Spanish>%1 detuvo RCP (%2)</Spanish>
+                <Spanish>%1 detuvo la RCP (%2)</Spanish>
                 <Polish>%1 zakończył RKO (2%)</Polish>
                 <Portuguese>%1 parou RCP (%2)</Portuguese>
                 <Russian>%1 остановил СЛР (%2)</Russian>
@@ -1289,7 +1289,7 @@
             <Key ID="STR_ACM_Circulation_CPR_Already">
                 <English>Patient already has CPR provider</English>
                 <French>Le patient reçoit déjà une RCP</French>
-                <Spanish>El paciente ya tiene proveedor de RCP</Spanish>
+                <Spanish>El paciente ya está recibiendo una RCP</Spanish>
                 <Polish>RKO jest już prowadzone na poszkodowanym</Polish>
                 <Portuguese>Paciente já tem um provedor de RCP</Portuguese>
                 <Russian>Пациенту уже оказывается СЛР</Russian>
@@ -1377,7 +1377,7 @@
             <Key ID="STR_ACM_Circulation_CPR_SwapToBVM">
                 <English>Swap To BVM</English>
                 <French>Remplacer par BVM</French>
-                <Spanish>Cambiar a ventilación con ambú</Spanish>
+                <Spanish>Cambiar a Ventilación con Ambú</Spanish>
                 <Portuguese>Trocar para o BVM</Portuguese>
                 <Russian>Перейти на мешок Амбу</Russian>
                 <Korean>BVM로 전환</Korean>
@@ -1408,7 +1408,7 @@
             <Key ID="STR_ACM_Circulation_CapillaryRefill_Hint">
                 <English>Measured Capillary Refill Time&lt;br/&gt;%1 seconds</English>
                 <French>Temps de remplissage capillaire mesuré&lt;br/&gt;%1 secondes</French>
-                <Spanish>Tiempo de relleno capilar medido: %1 segundos</Spanish>
+                <Spanish>Tiempo de relleno capilar medido&lt;br/&gt;%1 segundos</Spanish>
                 <Polish>Zmierzono nawrót kapilarny: &lt;br/&gt;%1 sekundy</Polish>
                 <Portuguese>Mensurou o tempo de recarga capilar&lt;br/&gt;%1 segundos</Portuguese>
                 <Russian>Измерено капиллярное наполнение&lt;br/&gt;%1 секунд</Russian>
@@ -1419,7 +1419,7 @@
             <Key ID="STR_ACM_Circulation_CheckCapillaryRefill">
                 <English>Check Capillary Refill Time</English>
                 <French>Vérifier le temps de recapillarisation</French>
-                <Spanish>Comprobar tiempo de relleno capilar</Spanish>
+                <Spanish>Comprobar Tiempo de Relleno Capilar</Spanish>
                 <Polish>Sprawdź nawrót kapilarny</Polish>
                 <Portuguese>Verificar tempo de recarga de capilar</Portuguese>
                 <Russian>Проверить капиллярное наполнение</Russian>
@@ -1527,7 +1527,7 @@
             <Key ID="STR_ACM_Circulation_FeelPulse">
                 <English>Feel Pulse</English>
                 <French>Prendre le pouls</French>
-                <Spanish>Tomar el pulso</Spanish>
+                <Spanish>Tomar Pulso</Spanish>
                 <Polish>Sprawdź puls</Polish>
                 <Portuguese>Sentir o pulso</Portuguese>
                 <Russian>Пальпация пульса</Russian>
@@ -1545,7 +1545,7 @@
             <Key ID="STR_ACM_Circulation_FeelPulse_Carotid">
                 <English>Carotid</English>
                 <French>Carotide</French>
-                <Spanish>Carótido</Spanish>
+                <Spanish>Carótida</Spanish>
                 <Polish>Tętnica szyjna</Polish>
                 <Portuguese>Carótida</Portuguese>
                 <Russian>Сонный</Russian>
@@ -1556,7 +1556,7 @@
             <Key ID="STR_ACM_Circulation_FeelPulse_FeelingForPulse">
                 <English>Feeling for pulse...</English>
                 <French>Prise du pouls...</French>
-                <Spanish>Palpando pulso...</Spanish>
+                <Spanish>Buscando pulso...</Spanish>
                 <Polish>Wyczuwanie tętna...</Polish>
                 <Portuguese>Sentindo o pulso...</Portuguese>
                 <Russian>Поиск пульса...</Russian>
@@ -1589,7 +1589,7 @@
             <Key ID="STR_ACM_Circulation_FeelPulse_Stopped">
                 <English>Stopped feeling pulse</English>
                 <French>Arrêt de la prise du pouls</French>
-                <Spanish>Dejar de palpar pulso</Spanish>
+                <Spanish>Has parado de sentir un pulso</Spanish>
                 <Polish>Przestano wyczuwać tętno</Polish>
                 <Portuguese>Parou de sentir o pulso</Portuguese>
                 <Russian>Поиск пульса прекращён</Russian>
@@ -1602,7 +1602,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge">
                 <English>Lozenge (OTFC)</English>
                 <French>Pastille (OTFC)</French>
-                <Spanish>Pastilla (OTFC)</Spanish>
+                <Spanish>Piruleta de Fentanilo</Spanish>
                 <Portuguese>Pirulito (CFTO)</Portuguese>
                 <Russian>Леденец (ОТЦФ)</Russian>
                 <Korean>로젠지 (OTFC)</Korean>
@@ -1611,7 +1611,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Already">
                 <English>Patient already has fentanyl lozenge</English>
                 <French>Le patient a déjà des pastilles de fentanyl</French>
-                <Spanish>Paciente ya tiene una pastilla de fentanilo</Spanish>
+                <Spanish>El paciente ya tiene una piruleta de fentanilo</Spanish>
                 <Portuguese>O paciente já tem um pirulito de fentanil</Portuguese>
                 <Russian>У пациента уже есть леденец с фентанилом</Russian>
                 <Korean>환자는 이미 펜타닐 로젠지를 보유함</Korean>
@@ -1629,7 +1629,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Give_ActionLog">
                 <English>%1 gave Fentanyl Lozenge</English>
                 <French>%1 a donné des pastilles de Fentanyl</French>
-                <Spanish>%1 administró pastilla de fentanilo</Spanish>
+                <Spanish>%1 administró una piruleta de fentanilo</Spanish>
                 <Portuguese>%1 deu pirulito de fentanil</Portuguese>
                 <Russian>%1 выдал леденец с фентанилом</Russian>
                 <Korean>%1이 펜타닐 로젠지를 투여함</Korean>
@@ -1638,7 +1638,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Give_Complete">
                 <English>Gave Lozenge (OTFC)</English>
                 <French>Donner une pastille (OTFC)</French>
-                <Spanish>Administrada la pastilla (OTFC)</Spanish>
+                <Spanish>Dar Piruleta</Spanish>
                 <Portuguese>Deu pirulito (CFTO)</Portuguese>
                 <Russian>Леденец (ОТЦФ) выдан</Russian>
                 <Korean>로젠지(OTFC) 투여 완료</Korean>
@@ -1647,7 +1647,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Give_Hint">
                 <English>Fentanyl Lozenge has been placed by %1</English>
                 <French>La pastille de Fentanyl a été placée par %1</French>
-                <Spanish>Pastilla administrada por %1</Spanish>
+                <Spanish>Piruleta puesta porr %1</Spanish>
                 <Portuguese>Pirulito de fentanil foi colocado by %1</Portuguese>
                 <Russian>Леденец с фентанилом установлен пользователем %1</Russian>
                 <Korean>%1이 펜타닐 로젠지를 적용함</Korean>
@@ -1656,7 +1656,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Lozenge">
                 <English>Lozenge</English>
                 <French>Pastille</French>
-                <Spanish>Pastilla</Spanish>
+                <Spanish>Piruleta</Spanish>
                 <Portuguese>Pirulito</Portuguese>
                 <Russian>Леденец</Russian>
                 <Korean>로젠지</Korean>
@@ -1665,7 +1665,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Remove_Complete">
                 <English>Removed fentanyl lozenge</English>
                 <French>Suppression de la pastille de fentanyl</French>
-                <Spanish>Pastilla de fentanilo retirada</Spanish>
+                <Spanish>Piruleta de fentanilo retirada</Spanish>
                 <Portuguese>Removeu pirulito de fentanil</Portuguese>
                 <Russian>Леденец с фентанилом изъят</Russian>
                 <Korean>펜타닐 로젠지 제거됨</Korean>
@@ -1674,7 +1674,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Remove_Hint">
                 <English>%1 removed lozenge</English>
                 <French>%1 a supprimé la pastille</French>
-                <Spanish>%1 retiró la pastilla</Spanish>
+                <Spanish>%1 retiró la piruleta</Spanish>
                 <Portuguese>%1 removeu</Portuguese>
                 <Russian>%1 удалил леденец</Russian>
                 <Korean>%1이 로젠지를 제거함</Korean>
@@ -1683,7 +1683,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Remove_HintSelf">
                 <English>Fentanyl lozenge was removed</English>
                 <French>La pastille de Fentanyl a été retirée</French>
-                <Spanish>La pastilla de fentanilo fue retirada</Spanish>
+                <Spanish>La priuleta de fentanilo fue retirada</Spanish>
                 <Portuguese>Pirulito de fentanil foi removido</Portuguese>
                 <Russian>Леденец с фентанилом был удалён</Russian>
                 <Korean>펜타닐 로젠지가 제거됨</Korean>
@@ -1692,7 +1692,7 @@
             <Key ID="STR_ACM_Circulation_FentanylLozenge_Remove_WoreOff_Hint">
                 <English>Fentanyl lozenge wore off and was removed</English>
                 <French>La pastille de Fentanyl s'est estompée et a été éliminée.</French>
-                <Spanish>La pastilla de fentanilo se agotó y fue retirada</Spanish>
+                <Spanish>La piruleta de fentanilo se acabó y fue retirada</Spanish>
                 <Portuguese>Pirulito de fentanil acabou e foi removido</Portuguese>
                 <Russian>Действие леденца закончилось, он был изъят</Russian>
                 <Korean>펜타닡 로젠지 효과가 사라져 제거됨</Korean>
@@ -1701,7 +1701,7 @@
             <Key ID="STR_ACM_Circulation_GiveFentanylLozenge">
                 <English>Give Fentanyl Lozenge</English>
                 <French>Donner des pastilles de Fentanyl</French>
-                <Spanish>Administrar pastilla de fentanilo</Spanish>
+                <Spanish>Dar Piruleta de Fentanilo</Spanish>
                 <Portuguese>Administrar pirulito de fentanil</Portuguese>
                 <Russian>Дать леденец с фентанилом</Russian>
                 <Korean>펜타닐 로젠지 투여 (Give Fentanyl Lozenge)</Korean>
@@ -1710,7 +1710,7 @@
             <Key ID="STR_ACM_Circulation_GiveFentanylLozenge_Progress">
                 <English>Giving Fentanyl Lozenge...</English>
                 <French>Donner des pastilles de Fentanyl...</French>
-                <Spanish>Administrando pastilla de fentanilo...</Spanish>
+                <Spanish>Administrando piruleta de fentanilo...</Spanish>
                 <Portuguese>Administrando pirulito de fentanil...</Portuguese>
                 <Russian>Выдача леденца с фентанилом...</Russian>
                 <Korean>펜타닐 로젠지 투여 중... (Giving Fentanyl Lozenge...)</Korean>
@@ -1719,7 +1719,7 @@
             <Key ID="STR_ACM_Circulation_RemoveFentanylLozenge">
                 <English>Remove Fentanyl Lozenge</English>
                 <French>Supprimer la pastille de Fentanyl</French>
-                <Spanish>Retirar pastilla de fentanilo</Spanish>
+                <Spanish>Retirar Piruleta de Fentanilo</Spanish>
                 <Portuguese>Remover pirulito de fentanil</Portuguese>
                 <Russian>Забрать леденец с фентанилом</Russian>
                 <Korean>펜타닐 로젠지 제거 (Remove Fentanyl Lozenge)</Korean>
@@ -1728,7 +1728,7 @@
             <Key ID="STR_ACM_Circulation_RemoveFentanylLozenge_Progress">
                 <English>Removing Fentanyl Lozenge...</English>
                 <French>Suppression de la pastille de Fentanyl...</French>
-                <Spanish>Retirando pastilla de fentanilo...</Spanish>
+                <Spanish>Retirando piruleta de fentanilo...</Spanish>
                 <Portuguese>Removendo pirulito de fentanil...</Portuguese>
                 <Russian>Изъятие леденца с фентанилом...</Russian>
                 <Korean>펜타닐 로젠지 제거 중... (Removing Fentanyl Lozenge...)</Korean>
@@ -1739,7 +1739,7 @@
             <Key ID="STR_ACM_Circulation_GUI_BeganTransfusing">
                 <English>%1 began transfusing fluids (%2) into %3</English>
                 <French>%1 a commencé à transfuser des fluides (%2) dans %3</French>
-                <Spanish>%1 inició transfusión (%2) en %3</Spanish>
+                <Spanish>%1 inició transfusión de (%2) en %3</Spanish>
                 <Polish>%1 rozpoczął transfuzje płynu (%2) do %3</Polish>
                 <Portuguese>%1 começou a transmissção de fluido (%2) em %3</Portuguese>
                 <Russian>%1 начал переливание (%2) в %3</Russian>
@@ -1761,7 +1761,7 @@
             <Key ID="STR_ACM_Circulation_GUI_MovedTransfusing">
                 <English>%1 moved fluid bag (%2) to %3</English>
                 <French>%1 a déplacé la poche de fluide (%2) vers %3</French>
-                <Spanish>%1 movió bolsa (%2) a %3</Spanish>
+                <Spanish>%1 movió la bolsa de fluidos (%2) a %3</Spanish>
                 <Polish>%1 przeniusł torebkę (%2) do %3</Polish>
                 <Portuguese>%1 moveu a bolsa de fluido (%2) para %3</Portuguese>
                 <Russian>%1 переместил пакет (%2) к %3</Russian>
@@ -1816,7 +1816,7 @@
             <Key ID="STR_ACM_Circulation_GUI_TransfusingVolume_Blood_Short">
                 <English>B</English>
                 <French>S</French>
-                <Spanish>B</Spanish>
+                <Spanish>S</Spanish>
                 <Polish>K</Polish>
                 <Portuguese>S</Portuguese>
                 <Russian>К</Russian>
@@ -1827,7 +1827,7 @@
             <Key ID="STR_ACM_Circulation_GUI_TransfusingVolume_FieldBloodTransfusionKit_Short">
                 <English>FBTK</English>
                 <French>FBTK</French>
-                <Spanish>FBTK</Spanish>
+                <Spanish>KTS</Spanish>
                 <Polish>ZPTK</Polish>
                 <Portuguese>KTSC</Portuguese>
                 <Russian>ПНПК</Russian>
@@ -1838,7 +1838,7 @@
             <Key ID="STR_ACM_Circulation_GUI_TransfusingVolume_FreshWholeBlood_Short">
                 <English>FWB</English>
                 <French>ST</French>
-                <Spanish>FWB</Spanish>
+                <Spanish>SF</Spanish>
                 <Polish>ŚK</Polish>
                 <Portuguese>Sangue fresco</Portuguese>
                 <Russian>ПСК</Russian>
@@ -1873,7 +1873,7 @@
             <Key ID="STR_ACM_Circulation_IO_Already">
                 <English>Patient already has IO in the %1</English>
                 <French>Le patient a déjà un IO dans le %1</French>
-                <Spanish>El paciente ya tiene acceso IO en %1</Spanish>
+                <Spanish>El paciente ya tiene un acceso IO en %1</Spanish>
                 <Polish>IO zostało już podłączone w %1</Polish>
                 <Portuguese>Paciente já tem IO no %1</Portuguese>
                 <Russian>У пациента уже стоит IO в %1</Russian>
@@ -1884,7 +1884,7 @@
             <Key ID="STR_ACM_Circulation_IV_Already">
                 <English>Patient already has IV in the %1 (%2)</English>
                 <French>Le patient a déjà une IV dans le %1 (%2)</French>
-                <Spanish>El paciente ya tiene acceso IV en %1 (%2)</Spanish>
+                <Spanish>El paciente ya tiene un acceso IV en %1 (%2)</Spanish>
                 <Polish>IV zostało już podłączone w %1 (%2)</Polish>
                 <Portuguese>Paciente já tem uma linha IV no %1 (%2)</Portuguese>
                 <Russian>У пациента уже стоит IV в %1 (%2)</Russian>
@@ -1894,7 +1894,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_IV_Blocked_PressureCuff">
                 <English>IV placement blocked by applied pressure cuff</English>
-                <Spanish>Colocación de vía IV bloqueada por manguito de presión aplicado</Spanish>
+                <Spanish>Colocación de vía IV bloqueada por el manguito de presión </Spanish>
                 <Portuguese>Colocação de IV bloqueada pelo esfigmomanômetro</Portuguese>
                 <Russian>IV блокируется установленной манжетой</Russian>
                 <Korean>부착된 혈압 커프로 IV 삽입이 차단됨</Korean>
@@ -1914,7 +1914,7 @@
             <Key ID="STR_ACM_Circulation_IV_FailedToLocateVein">
                 <English>Failed to locate vein</English>
                 <French>N'a pas senti la veine</French>
-                <Spanish>No se pudo localizar la vena</Spanish>
+                <Spanish>No has podido sentir la vena</Spanish>
                 <Polish>Nie udało się wyczuć żyły</Polish>
                 <Portuguese>Falha em localizar a veia</Portuguese>
                 <Russian>Не удалось найти вену</Russian>
@@ -1936,7 +1936,7 @@
             <Key ID="STR_ACM_Circulation_IV_Middle">
                 <English>Middle</English>
                 <French>Milieu</French>
-                <Spanish>Medio</Spanish>
+                <Spanish>Media</Spanish>
                 <Polish>Środek</Polish>
                 <Portuguese>Medial</Portuguese>
                 <Russian>Средняя</Russian>
@@ -1958,7 +1958,7 @@
             <Key ID="STR_ACM_Circulation_InsertIO_EZ">
                 <English>Insert EZ-IO</English>
                 <French>Percer l'accès EZ-IO</French>
-                <Spanish>Insertar EZ-IO</Spanish>
+                <Spanish>Insertar Vía EZ-IO</Spanish>
                 <Polish>Wprowadź EZ-IO</Polish>
                 <Portuguese>Inserir EZ-IO</Portuguese>
                 <Russian>Установить EZ-IO</Russian>
@@ -1969,7 +1969,7 @@
             <Key ID="STR_ACM_Circulation_InsertIO_EZ_Progress">
                 <English>Inserting EZ-IO...</English>
                 <French>Percer l'accès EZ-IO...</French>
-                <Spanish>Insertando EZ-IO...</Spanish>
+                <Spanish>Insertando vía EZ-IO...</Spanish>
                 <Polish>Wprowadzanie EZ-IO...</Polish>
                 <Portuguese>Inserindo EZ-IO...</Portuguese>
                 <Russian>Установка EZ-IO...</Russian>
@@ -1980,7 +1980,7 @@
             <Key ID="STR_ACM_Circulation_InsertIO_FAST1">
                 <English>Insert FAST1 IO</English>
                 <French>Utiliser FAST1 IO</French>
-                <Spanish>Insertar IO FAST1</Spanish>
+                <Spanish>Insertar Vía IO FAST1</Spanish>
                 <Polish>Użyj FAST1 IO</Polish>
                 <Portuguese>Inserir FAST1 IO</Portuguese>
                 <Russian>Установить FAST1 IO</Russian>
@@ -1991,7 +1991,7 @@
             <Key ID="STR_ACM_Circulation_InsertIO_FAST1_Progress">
                 <English>Inserting FAST1 IO...</English>
                 <French>Utilisation de FAST1 IO...</French>
-                <Spanish>Insertando IO FAST1...</Spanish>
+                <Spanish>Insertando vía IO FAST1...</Spanish>
                 <Polish>Używanie FAST1 IO...</Polish>
                 <Portuguese>Inserindo FAST1 IO...</Portuguese>
                 <Russian>Установка FAST1 IO...</Russian>
@@ -2002,7 +2002,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_14_Lower">
                 <English>Insert 14g IV (Lower)</English>
                 <French>14g Pose d'un cathéter IV (bas)</French>
-                <Spanish>Insertar IV 14G (inferior)</Spanish>
+                <Spanish>Insertar Vía IV 14g (Inferior)</Spanish>
                 <Polish>Wprowadzanie igły 14g (dół)</Polish>
                 <Portuguese>Inserir IV 14g (inferior)</Portuguese>
                 <Russian>Установить IV 14G (низ)</Russian>
@@ -2013,7 +2013,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_14_Middle">
                 <English>Insert 14g IV (Middle)</English>
                 <French>14g Pose d'un cathéter IV (au centre)</French>
-                <Spanish>Insertar IV 14G (medio)</Spanish>
+                <Spanish>Insertar Vía IV 14g (Media)</Spanish>
                 <Polish>Wprowadzanie igły 14g (środek)</Polish>
                 <Portuguese>Inserir IV 14g (medial)</Portuguese>
                 <Russian>Установить IV 14G (середина)</Russian>
@@ -2024,7 +2024,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_14_Progress">
                 <English>Inserting 14g IV...</English>
                 <French>Pose d'un cathéter IV de14g</French>
-                <Spanish>Insertando IV 14G...</Spanish>
+                <Spanish>Insertando vía IV 14G...</Spanish>
                 <Polish>Wprowadzanie igły 14g...</Polish>
                 <Portuguese>Inserindo IV 14g...</Portuguese>
                 <Russian>Установка IV 14G...</Russian>
@@ -2035,7 +2035,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_14_Upper">
                 <English>Insert 14g IV (Upper)</English>
                 <French>14g Pose d'un cathéter IV (haut)</French>
-                <Spanish>Insertar IV 14G (superior)</Spanish>
+                <Spanish>Insertar Via IV 14g (Superior)</Spanish>
                 <Polish>Wprowadzanie igły 14g (góra)</Polish>
                 <Portuguese>Inserir IV 14g (superior)</Portuguese>
                 <Russian>Установить IV 14G (верх)</Russian>
@@ -2046,7 +2046,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_16_Lower">
                 <English>Insert 16g IV (Lower)</English>
                 <French>16g Pose d'un cathéter IV (bas)</French>
-                <Spanish>Insertar IV 16G (inferior)</Spanish>
+                <Spanish>Insertar Vía IV 16g (Inferior)</Spanish>
                 <Polish>Wprowadzanie igły 16g (dół)</Polish>
                 <Portuguese>Inserir IV 16g (inferior)</Portuguese>
                 <Russian>Установить IV 16G (низ)</Russian>
@@ -2057,7 +2057,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_16_Middle">
                 <English>Insert 16g IV (Middle)</English>
                 <French>16g Pose d'un cathéter IV (au centre)</French>
-                <Spanish>Insertar IV 16G (medio)</Spanish>
+                <Spanish>Insertar Vía IV 16g (Media)</Spanish>
                 <Polish>Wprowadzanie igły 16g (środek)</Polish>
                 <Portuguese>Inserir IV 16g (medial)</Portuguese>
                 <Russian>Установить IV 16G (середина)</Russian>
@@ -2068,7 +2068,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_16_Progress">
                 <English>Inserting 16g IV...</English>
                 <French>Pose d'un cathéter IV de16g</French>
-                <Spanish>Insertando IV 16G...</Spanish>
+                <Spanish>Insertando vía IV 16g...</Spanish>
                 <Polish>Wprowadzanie igły 16g...</Polish>
                 <Portuguese>Inserindo IV 16g...</Portuguese>
                 <Russian>Установка IV 16G...</Russian>
@@ -2079,7 +2079,7 @@
             <Key ID="STR_ACM_Circulation_InsertIV_16_Upper">
                 <English>Insert 16g IV (Upper)</English>
                 <French>16g Pose d'un cathéter IV (haut)</French>
-                <Spanish>Insertar IV 16G (superior)</Spanish>
+                <Spanish>Insertar Vía IV 16g (Superior)</Spanish>
                 <Polish>Wprowadzanie igły 16g (góra)</Polish>
                 <Portuguese>Inserir IV 16g (superior)</Portuguese>
                 <Russian>Установить IV 16G (верх)</Russian>
@@ -2090,7 +2090,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIO_EZ">
                 <English>Remove EZ-IO</English>
                 <French>Supprimer l'accès EZ-IO</French>
-                <Spanish>Retirar EZ-IO</Spanish>
+                <Spanish>Retirar Vía EZ-IO</Spanish>
                 <Polish>Usuź EZ-IO</Polish>
                 <Portuguese>Remover EZ-IO</Portuguese>
                 <Russian>Снять EZ-IO</Russian>
@@ -2101,7 +2101,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIO_EZ_Progress">
                 <English>Removing EZ-IO...</English>
                 <French>Suppression de l'accès EZ-IO...</French>
-                <Spanish>Retirando EZ-IO...</Spanish>
+                <Spanish>Retirando vía EZ-IO...</Spanish>
                 <Polish>Usuwanie EZ-IO...</Polish>
                 <Portuguese>Removendo EZ-IO...</Portuguese>
                 <Russian>Снятие EZ-IO...</Russian>
@@ -2112,7 +2112,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIO_FAST1">
                 <English>Remove FAST1 IO</English>
                 <French>Extraire FAST1 IO</French>
-                <Spanish>Retirar IO FAST1</Spanish>
+                <Spanish>Retirar Vía IO FAST1</Spanish>
                 <Polish>Wyciągnij FAST1 IO</Polish>
                 <Portuguese>Remover FAST1 IO</Portuguese>
                 <Russian>Снять FAST1 IO</Russian>
@@ -2123,7 +2123,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIO_FAST1_Progress">
                 <English>Removing FAST1 IO...</English>
                 <French>Extraction FAST1 IO</French>
-                <Spanish>Retirando IO FAST1...</Spanish>
+                <Spanish>Retirando vía IO FAST1...</Spanish>
                 <Polish>Wyciąganie FAST1 IO...</Polish>
                 <Portuguese>Removendo FAST1 IO...</Portuguese>
                 <Russian>Снятие FAST1 IO...</Russian>
@@ -2134,7 +2134,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_14_Lower">
                 <English>Remove 14g IV (Lower)</English>
                 <French>14g Retirer le cathéter IV (bas)</French>
-                <Spanish>Retirar IV 14G (inferior)</Spanish>
+                <Spanish>Retirar Vía IV 14g (Inferior)</Spanish>
                 <Polish>Wyciąganie igły 14g (dół)</Polish>
                 <Portuguese>Remover IV 14g (inferior)</Portuguese>
                 <Russian>Снять IV 14G (низ)</Russian>
@@ -2145,7 +2145,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_14_Middle">
                 <English>Remove 14g IV (Middle)</English>
                 <French>14g Retirer le cathéter IV (au centre)</French>
-                <Spanish>Retirar IV 14G (medio)</Spanish>
+                <Spanish>Retirar Vía IV 14g (Media)</Spanish>
                 <Polish>Wyciąganie igły 14g (środek)</Polish>
                 <Portuguese>Remover IV 14g (medial)</Portuguese>
                 <Russian>Снять IV 14G (середина)</Russian>
@@ -2156,7 +2156,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_14_Progress">
                 <English>Removing 14g IV...</English>
                 <French>Retirer un cathéter IV de 14g</French>
-                <Spanish>Retirando IV 14G...</Spanish>
+                <Spanish>Retirando vía IV 14g...</Spanish>
                 <Polish>Wyciąganie igły 14g...</Polish>
                 <Portuguese>Removendo IV 14g...</Portuguese>
                 <Russian>Снять IV 14G...</Russian>
@@ -2167,7 +2167,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_14_Upper">
                 <English>Remove 14g IV (Upper)</English>
                 <French>14g Retirer le cathéter IV (haut)</French>
-                <Spanish>Retirar IV 14G (superior)</Spanish>
+                <Spanish>Retirar Vía IV 14g (Superior)</Spanish>
                 <Polish>Wyciąganie igły 14g (góra)</Polish>
                 <Portuguese>Remover IV 14g (superior)</Portuguese>
                 <Russian>Снять IV 14G (верх)</Russian>
@@ -2178,7 +2178,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_16_Lower">
                 <English>Remove 16g IV (Lower)</English>
                 <French>16g Retirer le cathéter IV (bas)</French>
-                <Spanish>Retirar IV 16G (inferior)</Spanish>
+                <Spanish>Retirar Vía IV 16g (Inferior)</Spanish>
                 <Polish>Wyciąganie igły 16g (dół)</Polish>
                 <Portuguese>Remover IV 16g (inferior)</Portuguese>
                 <Russian>Снять IV 16G (низ)</Russian>
@@ -2189,7 +2189,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_16_Middle">
                 <English>Remove 16g IV (Middle)</English>
                 <French>16g Retirer le cathéter IV (au centre)</French>
-                <Spanish>Retirar IV 16G (medio)</Spanish>
+                <Spanish>Retirar Vía IV 16g (Media)</Spanish>
                 <Polish>Wyciąganie igły 16g (środek)</Polish>
                 <Portuguese>Remover IV 16g (medial)</Portuguese>
                 <Russian>Снять IV 16G (середина)</Russian>
@@ -2200,7 +2200,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_16_Progress">
                 <English>Removing 16g IV...</English>
                 <French>Retirer un cathéter IV de 16g</French>
-                <Spanish>Retirando IV 16G...</Spanish>
+                <Spanish>Retirando vía IV 16G...</Spanish>
                 <Polish>Wyciąganie igły 16g...</Polish>
                 <Portuguese>Removendo IV 16g...</Portuguese>
                 <Russian>Снять IV 16G...</Russian>
@@ -2211,7 +2211,7 @@
             <Key ID="STR_ACM_Circulation_RemoveIV_16_Upper">
                 <English>Remove 16g IV (Upper)</English>
                 <French>16g Retirer le cathéter IV (haut)</French>
-                <Spanish>Retirar IV 16G (superior)</Spanish>
+                <Spanish>Retirar Vía IV 16G (Superior)</Spanish>
                 <Polish>Wyciąganie igły 16g (góra)</Polish>
                 <Portuguese>Remover IV 16g (superior)</Portuguese>
                 <Russian>Снять IV 16G (верх)</Russian>
@@ -2257,7 +2257,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_Lower">
                 <English>Inspect IV Catheter (Lower)</English>
                 <French>Vérifier le cathéter IV (en bas)</French>
-                <Spanish>Inspeccionar catéter IV (inferior)</Spanish>
+                <Spanish>Inspeccionar Catéter IV (Inferior)</Spanish>
                 <Polish>Sprawdź wkłucie (dół)</Polish>
                 <Portuguese>Inspecionar cateter (inferior)</Portuguese>
                 <Russian>Осмотреть катетер IV (низ)</Russian>
@@ -2268,7 +2268,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_Middle">
                 <English>Inspect IV Catheter (Middle)</English>
                 <French>Vérifier le cathéter IV (au centre)</French>
-                <Spanish>Inspeccionar catéter IV (medio)</Spanish>
+                <Spanish>Inspeccionar Catéter IV (medio)</Spanish>
                 <Polish>Sprawdź wkłucie (środek)</Polish>
                 <Portuguese>Inspecionar cateter IV (medial)</Portuguese>
                 <Russian>Осмотреть катетер IV (середина)</Russian>
@@ -2279,7 +2279,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_NoFlow">
                 <English>IV Catheter has no flow</English>
                 <French>Le cathéter IV ne fonctionne pas</French>
-                <Spanish>Catéter IV sin flujo</Spanish>
+                <Spanish>El catéter IV no fluye</Spanish>
                 <Polish>Wenflon jest zatkany</Polish>
                 <Portuguese>Cateter IV sem fluxo</Portuguese>
                 <Russian>У катетера IV нет потока</Russian>
@@ -2301,7 +2301,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_NormalFlow">
                 <English>IV Catheter has normal flow</English>
                 <French>Cathéter i.v. à débit normal</French>
-                <Spanish>Catéter IV con flujo normal</Spanish>
+                <Spanish>El catéter IV tiene un flujo normal</Spanish>
                 <Polish>Wenflon ma normalny przepływ</Polish>
                 <Portuguese>Fluxo normal do cateter IV</Portuguese>
                 <Russian>У катетера IV нормальный поток</Russian>
@@ -2334,7 +2334,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_Swelling">
                 <English>Swelling on insertion site</English>
                 <French>Gonflement au niveau du site d'injection</French>
-                <Spanish>Hinchazón en sitio de inserción</Spanish>
+                <Spanish>Tumefacción presente en el sitio de inserción</Spanish>
                 <Polish>Obrzęk w miejscu wkłucia</Polish>
                 <Portuguese>Inchaço no local de inserção</Portuguese>
                 <Russian>Отёк в месте установки</Russian>
@@ -2345,7 +2345,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_Swelling_Short">
                 <English>noticable swelling</English>
                 <French>Oedème significatif</French>
-                <Spanish>Hinchazón notable</Spanish>
+                <Spanish>Tumefacción notable</Spanish>
                 <Polish>Widoczny obrzęk</Polish>
                 <Portuguese>inchaço perceptível</Portuguese>
                 <Russian>заметный отёк</Russian>
@@ -2356,7 +2356,7 @@
             <Key ID="STR_ACM_Circulation_InspectIV_Upper">
                 <English>Inspect IV Catheter (Upper)</English>
                 <French>Vérifier le cathéter IV (haut)</French>
-                <Spanish>Inspeccionar catéter IV (superior)</Spanish>
+                <Spanish>Inspeccionar Catéter IV (Superior)</Spanish>
                 <Polish>Sprawdź wkłucie (góra)</Polish>
                 <Portuguese>Inspecionar cateter IV (superior)</Portuguese>
                 <Russian>Осмотреть катетер IV (верх)</Russian>
@@ -2506,7 +2506,7 @@
             <Key ID="STR_ACM_Circulation_Medication_OTFC">
                 <English>Oral Transmucosal Fentanyl Citrate</English>
                 <French>Citrate de fentanyl par voie orale et transmuqueuse</French>
-                <Spanish>Fentanilo oral transmucosal</Spanish>
+                <Spanish>Citrato de Fentanilo Oral Transmucosa</Spanish>
                 <Portuguese>Citrato de Fentanil Transmucoso Oral</Portuguese>
                 <Russian>Оральный трансмукозальный цитрат фентанила</Russian>
                 <Korean>구강점막 펜타닐 시트르산염 (Oral Transmucosal Fentanyl Citrate)</Korean>
@@ -2515,7 +2515,7 @@
             <Key ID="STR_ACM_Circulation_Medication_OTFC_Short">
                 <English>OTFC</English>
                 <French>OTFC</French>
-                <Spanish>OTFC</Spanish>
+                <Spanish>CFOT</Spanish>
                 <Portuguese>CFTO</Portuguese>
                 <Russian>ОТЦФ</Russian>
                 <Korean>OTFC</Korean>
@@ -2546,7 +2546,7 @@
             <Key ID="STR_ACM_Circulation_Medication_TXA">
                 <English>TXA</English>
                 <French>TXA</French>
-                <Spanish>Ácido tranexámico (TXA)</Spanish>
+                <Spanish>Ácido Tranexámico (TXA)</Spanish>
                 <Polish>TXA</Polish>
                 <Portuguese>TXA</Portuguese>
                 <Russian>ТХА</Russian>
@@ -2559,7 +2559,7 @@
             <Key ID="STR_ACM_Circulation_AmmoniaInhalant">
                 <English>Ammonia Inhalant</English>
                 <French>Inhalation d'ammoniac</French>
-                <Spanish>Inhalante de amoníaco</Spanish>
+                <Spanish>Inhalador de Amoniaco</Spanish>
                 <Polish>Amoniak wziewny</Polish>
                 <Portuguese>Inalante de amônia</Portuguese>
                 <Russian>Аммиачный ингалянт</Russian>
@@ -2570,7 +2570,7 @@
             <Key ID="STR_ACM_Circulation_AmmoniaInhalant_Desc">
                 <English>Used to wake up patients who've fainted</English>
                 <French>Utilisé pour réveiller les patients qui se sont évanouis</French>
-                <Spanish>Dspertar pacientes desmayados</Spanish>
+                <Spanish>Usado para despertar a pacientes desmayados</Spanish>
                 <Polish>Używany do budzenia nieprzytomnych pacjentów</Polish>
                 <Portuguese>Usado para acordar pacientes que desmaiaram</Portuguese>
                 <Russian>Для приведения в сознание при обмороке</Russian>
@@ -2580,7 +2580,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_Ampule_Dimercaprol">
                 <English>Dimercaprol Ampule (300mg/3ml)</English>
-                <Spanish>Ampolla de dimercaprol (300 mg/3 ml)</Spanish>
+                <Spanish>Ampolla de Dimercaprol (300 mg/3 ml)</Spanish>
                 <Portuguese>Dimercaprol Ampola (300mg/3ml)</Portuguese>
                 <Russian>Ампула димеркаптола (300 мг/3 мл)</Russian>
                 <Korean>디메르캅롤 앰플 (300mg/3ml) (Dimercaprol Ampule)</Korean>
@@ -2588,7 +2588,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_Ampule_Dimercaprol_Desc">
                 <English>Used to treat lewisite exposure, administered intramuscularly</English>
-                <Spanish>Tratar exposición a lewisita, intramuscular</Spanish>
+                <Spanish>Usado para tratar la exposición a lewisita, administrado intramuscularmente</Spanish>
                 <Portuguese>Usado para tratar a exposição à lewisite, administrado por via intramuscular</Portuguese>
                 <Russian>Для лечения отравления люизитом; внутримышечно</Russian>
                 <Korean>루이사이트(Lewisite) 노출 치료에 사용되며, 근육주사로 투여합니다.</Korean>
@@ -2608,7 +2608,7 @@
             <Key ID="STR_ACM_Circulation_Inhaler_Penthrox_Desc">
                 <English>Used to rapidly manage acute pain for a short time</English>
                 <French>Utilisé pour gérer rapidement la douleur aiguë pendant une courte période</French>
-                <Spanish>Manejo rápido de dolor agudo por tiempo limitado</Spanish>
+                <Spanish>Usado para controlar dolores agudos en un periodo corto de tiempo</Spanish>
                 <Polish>Używany do walki z silnym bólem na krótki okres czasu</Polish>
                 <Portuguese>Usado para controlar rapidamente a dor aguda por um curto período de tempo</Portuguese>
                 <Russian>Для быстрого кратковременного обезболивания</Russian>
@@ -2619,7 +2619,7 @@
             <Key ID="STR_ACM_Circulation_Lozenge_Fentanyl">
                 <English>Fentanyl Lozenge</English>
                 <French>Pastille de Fentanyl</French>
-                <Spanish>Pastilla de Fentanilo</Spanish>
+                <Spanish>Piruleta de Fentanilo</Spanish>
                 <Portuguese>Pirulito de Fentanil</Portuguese>
                 <Russian>Леденец с фентанилом</Russian>
                 <Korean>펜타닐 로젠지 (Fentanyl Lozenge)</Korean>
@@ -2628,7 +2628,7 @@
             <Key ID="STR_ACM_Circulation_Lozenge_Fentanyl_Desc">
                 <English>Used to manage acute severe pain, via oral transmucosal route</English>
                 <French>Utilisé pour gérer la douleur aiguë sévère, par voie orale transmucosale</French>
-                <Spanish>Analgesia oral transmucosal para dolor severo agudo</Spanish>
+                <Spanish>Usado para controlar el dolor agudo severgo con ruta oral transmucosa</Spanish>
                 <Portuguese>Usado para controlar a dor aguda grave, por via transmucosa oral</Portuguese>
                 <Russian>Для устранения острой сильной боли через слизистую рта</Russian>
                 <Korean>구강점막 경로로 급성 중증 통증을 관리하는 데 사용됩니다.</Korean>
@@ -2648,7 +2648,7 @@
             <Key ID="STR_ACM_Circulation_Paracetamol_Desc">
                 <English>Used to combat mild to moderate pain</English>
                 <French>Utilisé pour lutter contre les douleurs légères à modérées</French>
-                <Spanish>Combatir dolor leve a moderado</Spanish>
+                <Spanish>Usado para combatir dolores leves o moderados</Spanish>
                 <Polish>Używany do walki z małym i średnim bólem</Polish>
                 <Portuguese>Usado para combater a dor leve a moderada</Portuguese>
                 <Russian>Для борьбы с лёгкой/умеренной болью</Russian>
@@ -2659,7 +2659,7 @@
             <Key ID="STR_ACM_Circulation_Paracetamol_DoublePack">
                 <English>Paracetamol (Double Pack)</English>
                 <French>Paracétamol (emballage double)</French>
-                <Spanish>Paracetamol (paquete doble)</Spanish>
+                <Spanish>Paracetamol (Paquete Doble)</Spanish>
                 <Portuguese>Paracetamol (embalagem dupla)</Portuguese>
                 <Russian>Парацетамол (двойная упаковка)</Russian>
                 <Korean>파라세타몰 (이중 포장) (Paracetamol (Double Pack))</Korean>
@@ -2668,7 +2668,7 @@
             <Key ID="STR_ACM_Circulation_Paracetamol_SinglePack">
                 <English>Paracetamol (Single Pack)</English>
                 <French>Paracétamol (paquet individuel)</French>
-                <Spanish>Paracetamol (paquete individual)</Spanish>
+                <Spanish>Paracetamol (Paquete Individual)</Spanish>
                 <Portuguese>Paracetamol (embalagem individual)</Portuguese>
                 <Russian>Парацетамол (одна упаковка)</Russian>
                 <Korean>파라세타몰 (단일 포장) (Paracetamol (Single Pack))</Korean>
@@ -2677,7 +2677,7 @@
             <Key ID="STR_ACM_Circulation_Spray_Naloxone">
                 <English>Naloxone Nasal Spray</English>
                 <French>Naloxone en spray nasal</French>
-                <Spanish>Spray nasal de naloxona</Spanish>
+                <Spanish>Spray Nasal de Naloxona</Spanish>
                 <Polish>Nalokson w spreju</Polish>
                 <Portuguese>Naloxona Spray Nasal</Portuguese>
                 <Russian>Назальный спрей налоксона</Russian>
@@ -2688,7 +2688,7 @@
             <Key ID="STR_ACM_Circulation_Spray_Naloxone_Desc">
                 <English>Used to rapidly reverse opioid overdose</English>
                 <French>Utilisé pour inverser rapidement une overdose d'opioïdes</French>
-                <Spanish>Revertir sobredosis de opioides rápidamente</Spanish>
+                <Spanish>Usado para combatir las sobredosis de opioides</Spanish>
                 <Polish>Używany do odwrócenia efektów opioidów</Polish>
                 <Portuguese>Usado para reverter rapidamente a overdose de opioides</Portuguese>
                 <Russian>Используется для быстрого устранения передозировки опиоидами</Russian>
@@ -2699,7 +2699,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Adenosine">
                 <English>Adenosine Vial (12mg/4ml)</English>
                 <French>Adénosine en flacon (12mg/4ml)</French>
-                <Spanish>Vial de adenosina (12 mg/4 ml)</Spanish>
+                <Spanish>Vial de Adenosina (12 mg/4 ml)</Spanish>
                 <Polish>Adenozyna (12mg/4ml)</Polish>
                 <Portuguese>Frasco de adenosina (12mg/4ml)</Portuguese>
                 <Russian>Флакон аденозина (12 мг/4 мл)</Russian>
@@ -2710,7 +2710,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Adenosine_Desc">
                 <English>Used to treat certain heart arrhythmias</English>
                 <French>Utilisé pour traiter certaines arythmies cardiaques</French>
-                <Spanish>Para tratar ciertas arritmias cardíacas</Spanish>
+                <Spanish>Usado para tratar ciertas arritmias cardíacas</Spanish>
                 <Polish>Używana do leczenia niektórych rodzajów arytmii serca</Polish>
                 <Portuguese>Usado para tratar certas arritmias cardíacas</Portuguese>
                 <Russian>Используется при некоторых аритмиях</Russian>
@@ -2721,7 +2721,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Amiodarone">
                 <English>Amiodarone Vial (150mg/3ml)</English>
                 <French>Amiodarone en flacon (150mg/3ml)</French>
-                <Spanish>Vial de amiodarona (150 mg/3 ml)</Spanish>
+                <Spanish>Vial de Amiodarona (150 mg/3 ml)</Spanish>
                 <Polish>Amiodaron (150mg/3ml)</Polish>
                 <Portuguese>Frasco de amiodarona (150mg/3ml)</Portuguese>
                 <Russian>Флакон амиодарона (150 мг/3 мл)</Russian>
@@ -2732,7 +2732,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Amiodarone_Desc">
                 <English>Used to treat irregular heart rhythms</English>
                 <French>Utilisé pour traiter les rythmes cardiaques irréguliers</French>
-                <Spanish>Tratar arritmias cardíacas</Spanish>
+                <Spanish>Usado para tratar ritmos cardiacos irregulares</Spanish>
                 <Polish>Używany do walki z nieregularnymi rytmami serca</Polish>
                 <Portuguese>Usado para tratar ritmos cardíacos irregulares</Portuguese>
                 <Russian>Для лечения аритмий</Russian>
@@ -2742,7 +2742,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_Vial_Atropine">
                 <English>Atropine Vial (1mg/1ml)</English>
-                <Spanish>Vial de atropina (1 mg/1 ml)</Spanish>
+                <Spanish>Vial de Atropina (1 mg/1 ml)</Spanish>
                 <Portuguese>Frasco de Atropina (1mg/1ml)</Portuguese>
                 <Russian>Флакон атропина (1 мг/1 мл)</Russian>
                 <Korean>아트로핀 바이알 (1mg/1ml) (Atropine Vial)</Korean>
@@ -2750,7 +2750,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_Vial_Atropine_Desc">
                 <English>Used to treat nerve agent exposure and increase heart rate</English>
-                <Spanish>Tratar exposición a agentes nerviosos y aumentar frecuencia cardíaca</Spanish>
+                <Spanish>Usado para tratar la exposición a agentes nerviosos y aumentar el ritmo cardiaco</Spanish>
                 <Portuguese>Usado para tratar a exposição a agentes nervosos e aumentar a frequência cardíaca</Portuguese>
                 <Russian>Для лечения воздействия нервно-паралитических веществ и увеличения ЧСС</Russian>
                 <Korean>신경작용제 노출 치료 및 심박수 증가에 사용됩니다.</Korean>
@@ -2759,7 +2759,7 @@
             <Key ID="STR_ACM_Circulation_Vial_CalciumChloride">
                 <English>Calcium Chloride Vial (1g/10ml)</English>
                 <French>Chlorure de calcium en flacon (1g/10ml)</French>
-                <Spanish>Vial de cloruro de calcio (1 g/10 ml)</Spanish>
+                <Spanish>Vial de Cloruro de Calcio (1 g/10 ml)</Spanish>
                 <Polish>Chlorek wapnia (1g/10ml)</Polish>
                 <Portuguese>Frasco de cloreto de cálcio (1g/10ml)</Portuguese>
                 <Russian>Флакон хлорида кальция (1 г/10 мл)</Russian>
@@ -2770,7 +2770,7 @@
             <Key ID="STR_ACM_Circulation_Vial_CalciumChloride_Desc">
                 <English>Used to manage low calcium after blood transfusion</English>
                 <French>Utilisé pour gérer le manque de calcium après une transfusion sanguine</French>
-                <Spanish>Corregir hipocalcemia post-transfusión</Spanish>
+                <Spanish>Usado para tratar la hipocalcemia post-transfusión</Spanish>
                 <Polish>Używany do walki z niskimi poziomami wapnia po transfuzji krwi</Polish>
                 <Portuguese>Usado para controlar o baixo nível de cálcio após uma transfusão de sangue</Portuguese>
                 <Russian>Для коррекции гипокальциемии после переливания</Russian>
@@ -2781,7 +2781,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Epinephrine">
                 <English>Epinephrine Vial (1mg/1ml)</English>
                 <French>Epinéphrine en flacon (1mg/1ml)</French>
-                <Spanish>Vial de epinefrina (1 mg/1 ml)</Spanish>
+                <Spanish>Vial de Epinefrina (1 mg/1 ml)</Spanish>
                 <Polish>Epinefryna (1mg/1ml)</Polish>
                 <Portuguese>Frasco de epinefrina (1mg/1ml)</Portuguese>
                 <Russian>Флакон адреналина (1 мг/1 мл)</Russian>
@@ -2792,7 +2792,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Epinephrine_Desc">
                 <English>Used to treat cardiac arrest</English>
                 <French>Utilisé pour traiter les arrêts cardiaques</French>
-                <Spanish>Para tratar paros cardíacos</Spanish>
+                <Spanish>Usado para combatir paros cardiacos</Spanish>
                 <Polish>Używana do leczenia zatrzymania krążenia</Polish>
                 <Portuguese>Usado para tratar parada cardíaca</Portuguese>
                 <Russian>Используется для лечения остановки сердца</Russian>
@@ -2803,7 +2803,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Ertapenem">
                 <English>Ertapenem Vial (1g/3.2ml)</English>
                 <French>Ertapenem Flacon (1g/3.2ml)</French>
-                <Spanish>Vial de ertapenem (1 g/3,2 ml)</Spanish>
+                <Spanish>Vial de Ertapenem (1 g/3,2 ml)</Spanish>
                 <Polish>Ertapenem (1g/3.2ml)</Polish>
                 <Portuguese>Frasco de Ertapenem (1g/3,2 ml)</Portuguese>
                 <Russian>Флакон эртапенема (1 г/3,2 мл)</Russian>
@@ -2814,7 +2814,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Ertapenem_Desc">
                 <English>Used to manage infections from open wounds, required before evacuation of casualty</English>
                 <French>Utilisé pour traiter les infections des plaies ouvertes, nécessaire avant l'évacuation de la victime.</French>
-                <Spanish>Tratar infecciones de heridas abiertas, requerido antes de evacuación</Spanish>
+                <Spanish>Usado para tratar infecciones de heridas abiertas, requerido antes de evacuación</Spanish>
                 <Polish>Używany do walki z infekcjami otwartych ran, wymagany do ewakuacji</Polish>
                 <Portuguese>Usado para tratar infecções de feridas abertas, necessário antes da evacuação da vítima</Portuguese>
                 <Russian>Для лечения инфекций при открытых ранах; требуется до эвакуации пострадавшего</Russian>
@@ -2825,7 +2825,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Esmolol">
                 <English>Esmolol Vial (100mg/10ml)</English>
                 <French>Esmolol Flacon (100mg/10ml)</French>
-                <Spanish>Vial de esmolol (100 mg/10 ml)</Spanish>
+                <Spanish>Vial de Esmolol (100 mg/10 ml)</Spanish>
                 <Polish>Esmolol (100mg/10ml)</Polish>
                 <Portuguese>Frasco de Esmolol (100mg/10ml)</Portuguese>
                 <Russian>Флакон эсмолола (100 мг/10 мл)</Russian>
@@ -2836,7 +2836,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Esmolol_Desc">
                 <English>Used to lower heart rate for a short time</English>
                 <French>Utilisé pour réduire la fréquence cardiaque pendant une courte période</French>
-                <Spanish>Reducir frecuencia cardíaca temporalmente</Spanish>
+                <Spanish>Usado para reducir el ritmo cardiaco por un corto periodo de tiempo</Spanish>
                 <Polish>Używany do obniżenia tętna na krótki czas</Polish>
                 <Portuguese>Usado para diminuir a frequência cardíaca por um curto período de tempo</Portuguese>
                 <Russian>Кратковременное снижение ЧСС</Russian>
@@ -2847,7 +2847,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Fentanyl">
                 <English>Fentanyl Vial (100mcg/2ml)</English>
                 <French>Fentanyl en flacon (100mcg/2ml)</French>
-                <Spanish>Vial de fentanilo (100 mcg/2 ml)</Spanish>
+                <Spanish>Vial de Fentanilo (100 mcg/2 ml)</Spanish>
                 <Polish>Fentanyl (100mcg/2ml)</Polish>
                 <Portuguese>Frasco de fentanil (100mcg/2ml)</Portuguese>
                 <Russian>Флакон фентанила (100 мкг/2 мл)</Russian>
@@ -2858,7 +2858,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Fentanyl_Desc">
                 <English>Used to manage acute severe pain</English>
                 <French>Utilisé pour gérer une douleur aiguë sévère</French>
-                <Spanish>Manejo de dolor agudo severo</Spanish>
+                <Spanish>Usado para combatir el dolor agudo severo</Spanish>
                 <Polish>Używana do walki z silnym bólem</Polish>
                 <Portuguese>Usado para controlar a dor aguda grave</Portuguese>
                 <Russian>Для устранения острой сильной боли через слизистую рта</Russian>
@@ -2869,7 +2869,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Ketamine">
                 <English>Ketamine Vial (500mg/10ml)</English>
                 <French>Kétamine en flacon (500mg/10ml)</French>
-                <Spanish>Vial de ketamina (500 mg/10 ml)</Spanish>
+                <Spanish>Vial de Ketamina (500 mg/10 ml)</Spanish>
                 <Polish>Ketamina (500mg/10ml)</Polish>
                 <Portuguese>Frasco de quetamina (500mg/10ml)</Portuguese>
                 <Russian>Флакон кетамина (500 мг/10 мл)</Russian>
@@ -2880,7 +2880,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Ketamine_Desc">
                 <English>Used to manage moderate to severe pain, alternative to opioid analgesics</English>
                 <French>Utilisé pour gérer la douleur modérée à sévère, alternative aux analgésiques opioïdes</French>
-                <Spanish>Analgesia alternativa para dolor moderado a severo</Spanish>
+                <Spanish>Usado para combatir dolores medios y severos, alternativa a los analgésicos opioides</Spanish>
                 <Polish>Używana do walki ze średnim i silnym bólem, alternatywa dla opioidów</Polish>
                 <Portuguese>Usado para controlar a dor moderada a grave, alternativa aos analgésicos opioides</Portuguese>
                 <Russian>Для устранения умеренной/сильной боли, альтернатива опиоидным анальгетикам</Russian>
@@ -2891,7 +2891,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Lidocaine">
                 <English>Lidocaine Vial (100mg/5ml)</English>
                 <French>Lidocaïne en flacon (100mg/5ml)</French>
-                <Spanish>Vial de lidocaína (100 mg/5 ml)</Spanish>
+                <Spanish>Vial de Lidocaína (100 mg/5 ml)</Spanish>
                 <Polish>Lidokaina (100mg/5ml)</Polish>
                 <Portuguese>Frasco de lidocaína (100mg/5ml)</Portuguese>
                 <Russian>Флакон лидокаина (100 мг/5 мл)</Russian>
@@ -2902,7 +2902,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Lidocaine_Desc">
                 <English>Used as local anesthetic for painful surgical procedures, and to treat irregular heart rhythms</English>
                 <French>Utilisé comme anesthésique local pour les interventions chirurgicales douloureuses</French>
-                <Spanish>Anestesia local y tratamiento de arritmias</Spanish>
+                <Spanish>Usado como anestesia local para intervenciones quirúrgicas dolorosas y para tratar ritmos cardiacos irregulares</Spanish>
                 <Polish>Używana jako lokalne znieczulenie dla bolesnych zabiegów medycznych</Polish>
                 <Portuguese>Usado como anestésico local para procedimentos cirúrgicos dolorosos e para tratar ritmos cardíacos irregulares</Portuguese>
                 <Russian>Используется как местный анестетик для болезненных хирургических процедур и для лечения нарушений сердечного ритма.</Russian>
@@ -2913,7 +2913,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Morphine">
                 <English>Morphine Vial (10mg/2ml)</English>
                 <French>Morphine en flacon (10mg/2ml)</French>
-                <Spanish>Vial de morfina (10 mg/2 ml)</Spanish>
+                <Spanish>Vial de Morfina (10 mg/2 ml)</Spanish>
                 <Polish>Morfina (10mg/2ml)</Polish>
                 <Portuguese>Frasco de morfina (10 mg/2 ml)</Portuguese>
                 <Russian>Флакон морфина (10 мг/2 мл)</Russian>
@@ -2924,7 +2924,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Morphine_Desc">
                 <English>Used to manage moderate to severe pain experiences</English>
                 <French>Utilisé pour gérer les douleurs modérées à sévères</French>
-                <Spanish>Para manejar dolor moderado a severo</Spanish>
+                <Spanish>Usado para combatir dolores moderados y severos</Spanish>
                 <Polish>Używana do walki ze średnim i silnym bólem</Polish>
                 <Portuguese>Usado para controlar experiências de dor moderada a grave</Portuguese>
                 <Russian>Для устранения умеренной/сильной боли</Russian>
@@ -2935,7 +2935,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Ondansetron">
                 <English>Ondansetron Vial (4mg/2ml)</English>
                 <French>Ondansétron en flacon (4mg/2ml)</French>
-                <Spanish>Vial de ondansetrón (4 mg/2 ml)</Spanish>
+                <Spanish>Vial de Ondansetrón (4 mg/2 ml)</Spanish>
                 <Polish>Ondansetron (4mg/2ml)</Polish>
                 <Portuguese>Frasco de Ondansetrona (4mg/2ml)</Portuguese>
                 <Russian>Флакон ондансетрона (4 мг/2 мл)</Russian>
@@ -2946,7 +2946,7 @@
             <Key ID="STR_ACM_Circulation_Vial_Ondansetron_Desc">
                 <English>Used to manage nausea and vomiting</English>
                 <French>Utilisé pour gérer les nausées et les vomissements</French>
-                <Spanish>Manejo de náuseas y vómitos</Spanish>
+                <Spanish>Usado para combatir náuseas y vómitos</Spanish>
                 <Polish>Używany do walki z mdłościami i wymiotami</Polish>
                 <Portuguese>Usado para controlar náuseas e vômitos</Portuguese>
                 <Russian>Для контроля тошноты и рвоты</Russian>
@@ -2968,7 +2968,7 @@
             <Key ID="STR_ACM_Circulation_Vial_TXA_Desc">
                 <English>Used to manage catastrophic bleeding by preventing clot dissolvement</English>
                 <French>Utilisé pour lutter contre les hémorragies internes en réduisant la décomposition des caillots dans la circulation sanguine.</French>
-                <Spanish>Controlar hemorragias graves evitando disolución del coágulo</Spanish>
+                <Spanish>Usado para combatir sangrados catastróficos impidiendo la disolución de coágulos</Spanish>
                 <Polish>Używany do walki z krwawieniem wewnętrznym przez ograniczenie rozbijania skrzepów w krwioobiegu</Polish>
                 <Portuguese>Usado para controlar sangramentos catastróficos, impedindo a dissolução do coágulo</Portuguese>
                 <Russian>Для контроля массивного кровотечения, предотвращет фибринолиз</Russian>
@@ -3014,7 +3014,7 @@
             <Key ID="STR_ACM_Circulation_BloodBag">
                 <English>Blood Bag %1</English>
                 <French>Poche de sang %1</French>
-                <Spanish>Bolsa de sangre %1</Spanish>
+                <Spanish>Bolsa de Sangre %1</Spanish>
                 <Polish>Krew %1</Polish>
                 <Portuguese>Bolsa de sangue %1</Portuguese>
                 <Russian>Пакет крови %1</Russian>
@@ -3036,7 +3036,7 @@
             <Key ID="STR_ACM_Circulation_FieldBloodTransfusionKit">
                 <English>Field Blood Transfusion Kit</English>
                 <French>Kit de transfusion sanguine sur le terrain</French>
-                <Spanish>Kit de transfusión de sangre de campo</Spanish>
+                <Spanish>Kit de Transfusión Sanguínea</Spanish>
                 <Polish>Polowy zestaw do transfuzji krwi</Polish>
                 <Portuguese>Kit de transfusão de sangue em campo</Portuguese>
                 <Russian>Полевой набор для переливания крови</Russian>
@@ -3058,7 +3058,7 @@
             <Key ID="STR_ACM_Circulation_FieldBloodTransfusionKit_Short">
                 <English>FBTK</English>
                 <French>FBTK</French>
-                <Spanish>FBTK</Spanish>
+                <Spanish>KTS</Spanish>
                 <Polish>Zestaw do transfuzji</Polish>
                 <Portuguese>FBTK</Portuguese>
                 <Russian>ПНПК</Russian>
@@ -3069,7 +3069,7 @@
             <Key ID="STR_ACM_Circulation_FreshBloodBag">
                 <English>Fresh Blood Bag %1</English>
                 <French>Poche de sang frais %1</French>
-                <Spanish>Bolsa de sangre fresca %1</Spanish>
+                <Spanish>Bolsa de Sangre Fresca %1</Spanish>
                 <Polish>Świeża krew %1</Polish>
                 <Portuguese>Bolsa de sangue fresco %1</Portuguese>
                 <Russian>Пакет свежей крови %1</Russian>
@@ -3146,7 +3146,7 @@
             <Key ID="STR_ACM_Circulation_IV_14g">
                 <English>14g IV</English>
                 <French>14g IV</French>
-                <Spanish>Vía Venosa 14G</Spanish>
+                <Spanish>Vía Venosa 14g</Spanish>
                 <Polish>Igła 14g</Polish>
                 <Portuguese>IV 14g</Portuguese>
                 <Russian>IV 14G</Russian>
@@ -3168,7 +3168,7 @@
             <Key ID="STR_ACM_Circulation_IV_16g">
                 <English>16g IV</English>
                 <French>16g IV</French>
-                <Spanish>Vía Venosa 16G</Spanish>
+                <Spanish>Vía Venosa 16g</Spanish>
                 <Polish>Igła 16g</Polish>
                 <Portuguese>IV 16g</Portuguese>
                 <Russian>IV 16G</Russian>
@@ -3269,7 +3269,7 @@
             <Key ID="STR_ACM_Circulation_MeasureBP_Hint_Bulb">
                 <English>Squeeze Bulb\n+50 (LMB) | +30 (RMB)</English>
                 <French>Gonfler le brassard\n+50 (Clique Gauche) | +30 (Clique Droite)</French>
-                <Spanish>Comprimir bulbo \n+50 (LMB) | +30 (RMB)</Spanish>
+                <Spanish>Apretar Bulbo \n+50 (LMB) | +30 (RMB)</Spanish>
                 <Polish>Napompuj \n+50 (LPM) | +30 (PPM)</Polish>
                 <Portuguese>Apertar bulbo\n+50 (LMB) | +30 (RMB)</Portuguese>
                 <Russian>Надувать грушу\n+50 (ЛКМ) | +30 (ПКМ)</Russian>
@@ -3280,7 +3280,7 @@
             <Key ID="STR_ACM_Circulation_MeasureBP_Hint_Valve">
                 <English>Release Pressure\n-10 (LMB) | -2 (RMB)</English>
                 <French>Relâcher la pression\n-10 (Clique Gauche) | -2 (Clique Droite)</French>
-                <Spanish>Liberar presión \n-10 (LMB) | -2 (RMB)</Spanish>
+                <Spanish>Liberar Presión \n-10 (LMB) | -2 (RMB)</Spanish>
                 <Polish>Spuść ciśnienie \n-10 (LMB) | -2 (RMB)</Polish>
                 <Portuguese>Liberar pressão\n-10 (LMB) | -2 (RMB)</Portuguese>
                 <Russian>Спустить давление\n−10 (ЛКМ) | −2 (ПКМ)</Russian>
@@ -3313,7 +3313,7 @@
             <Key ID="STR_ACM_Circulation_PressureCuff_Attach">
                 <English>Attach Pressure Cuff</English>
                 <French>Fixer le brassard du tensiomètre</French>
-                <Spanish>Colocar manguito de presión</Spanish>
+                <Spanish>Colocar Manguito de Presión</Spanish>
                 <Polish>Załóż ciśnieniomierz</Polish>
                 <Portuguese>Acoplar esfigmomanômetro</Portuguese>
                 <Russian>Подключить манжету</Russian>
@@ -3335,7 +3335,7 @@
             <Key ID="STR_ACM_Circulation_PressureCuff_Measure">
                 <English>Measure Blood Pressure</English>
                 <French>Mesure de la pression artérielle</French>
-                <Spanish>Medir tensión arterial</Spanish>
+                <Spanish>Medir Tensión Arterial</Spanish>
                 <Polish>Sprawdź ciśnienie krwi</Polish>
                 <Portuguese>Aferir pressão sanguínea</Portuguese>
                 <Russian>Измерить давление</Russian>
@@ -3346,7 +3346,7 @@
             <Key ID="STR_ACM_Circulation_PressureCuff_Measure_Stethoscope">
                 <English>Measure Blood Pressure (Stethoscope)</English>
                 <French>Mesure de la pression artérielle (stéthoscope)</French>
-                <Spanish>Medir tensión arterial (estetoscopio)</Spanish>
+                <Spanish>Medir Tensión Arterial (Estetoscopio)</Spanish>
                 <Polish>Sprawdź ciśnienie krwi (stetoskop)</Polish>
                 <Portuguese>Aferir pressão sanguínea (estetoscópio)</Portuguese>
                 <Russian>Измерить давление (стетоскоп)</Russian>
@@ -3357,7 +3357,7 @@
             <Key ID="STR_ACM_Circulation_PressureCuff_Remove">
                 <English>Remove Pressure Cuff</English>
                 <French>Retirer le brassard de tensiomètre</French>
-                <Spanish>Retirar manguito de presión</Spanish>
+                <Spanish>Retirar Manguito de Presión</Spanish>
                 <Polish>Zdejmij ciśnieniomierz</Polish>
                 <Portuguese>Remover esfigmomanômetro</Portuguese>
                 <Russian>Снять манжету</Russian>
@@ -3381,7 +3381,7 @@
             <Key ID="STR_ACM_Circulation_PressureCuff_Already">
                 <English>Patient already has pressure cuff on the %1</English>
                 <French>Le patient a déjà un brassard de tension sur le %1</French>
-                <Spanish>El paciente ya tiene manguito de presión en %1</Spanish>
+                <Spanish>El paciente ya tiene un manguito de presión en %1</Spanish>
                 <Polish>Pacjent ma już ciśnieniomierz na %1</Polish>
                 <Portuguese>O paciente já tem um esfigmomanômetro no %1</Portuguese>
                 <Russian>На %1 уже установлена манжета</Russian>
@@ -3391,7 +3391,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_PressureCuff_Blocked_IV">
                 <English>Pressure cuff placement blocked by IV</English>
-                <Spanish>Colocación de manguito bloqueada por IV</Spanish>
+                <Spanish>Colocación del manguito bloqueada por via IV</Spanish>
                 <Portuguese>Esfigmomanômetro bloqueado pelo IV</Portuguese>
                 <Russian>Установка манжеты блокируется IV</Russian>
                 <Korean>IV 때문에 혈압계 부착 불가</Korean>
@@ -3413,7 +3413,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_Discard_Complete">
                 <English>Discarded syringe contents</English>
                 <French>Contenu de seringue jeté</French>
-                <Spanish>Contenido de jeringa desechado</Spanish>
+                <Spanish>El contenido de la jeringa ha sido desechado</Spanish>
                 <Polish>Odrzucono zawartość strzykawki</Polish>
                 <Portuguese>Descartado conteúdo da seringa</Portuguese>
                 <Russian>Содержимое шприца утилизировано</Russian>
@@ -3435,7 +3435,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_Draw">
                 <English>Draw</English>
                 <French>Prélever</French>
-                <Spanish>Aspirar</Spanish>
+                <Spanish>Extraer</Spanish>
                 <Polish>Pobierz</Polish>
                 <Portuguese>Aspirar</Portuguese>
                 <Russian>Набрать</Russian>
@@ -3446,7 +3446,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_DrawInject">
                 <English>Draw &amp; Inject</English>
                 <French>Injecter par IM</French>
-                <Spanish>Aspirar e inyectar</Spanish>
+                <Spanish>Extraer e Inyectar</Spanish>
                 <Polish>Pobierz i podaj (IM)</Polish>
                 <Portuguese>Aspirar e infundir (IM)</Portuguese>
                 <Russian>Набрать и ввести (IM)</Russian>
@@ -3457,7 +3457,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_DrawPush">
                 <English>Draw &amp; Push</English>
                 <French>Injecter par IV</French>
-                <Spanish>Aspirar e empujar</Spanish>
+                <Spanish>Extraer y Administrador</Spanish>
                 <Polish>Pobierz i podaj (IV)</Polish>
                 <Portuguese>Aspirar e infundir (IV)</Portuguese>
                 <Russian>Набрать и ввести (IV/IO)</Russian>
@@ -3467,7 +3467,7 @@
             </Key>
             <Key ID="STR_ACM_Circulation_Syringe_Drawing">
                 <English>Drawing %1...</English>
-                <Spanish>Aspirando %1...</Spanish>
+                <Spanish>Extrayendo %1...</Spanish>
                 <Portuguese>Extraindo</Portuguese>
                 <Russian>Набор %1...</Russian>
                 <Korean>%1 흡인 중...</Korean>
@@ -3476,7 +3476,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_DrawingInto">
                 <English>Drawing %1 (%2) into %3ml syringe</English>
                 <French>Prélever %1 (%2) dans une seringue de %3ml</French>
-                <Spanish>Aspirando %1 (%2) en jeringa de %3 ml</Spanish>
+                <Spanish>Extrayendo %1 (%2) en jeringa de %3 ml</Spanish>
                 <Polish>Pobrano %1 (%2) do strzykawki (%3ml)</Polish>
                 <Portuguese>Aspirando %1 (%2) na seringa de %3ml</Portuguese>
                 <Russian>Набор %1 (%2) в шприц %3 мл</Russian>
@@ -3487,7 +3487,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_Drawn">
                 <English>%1 Drawn</English>
                 <French>%1 élevé</French>
-                <Spanish>%1 aspirado</Spanish>
+                <Spanish>%1 extraído</Spanish>
                 <Polish>Pobrano: %1</Polish>
                 <Portuguese>%1 aspirado</Portuguese>
                 <Russian>Набрано %1</Russian>
@@ -3531,7 +3531,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_MovePlunger">
                 <English>Move Plunger</English>
                 <French>Déplacer le piston</French>
-                <Spanish>Mover émbolo</Spanish>
+                <Spanish>Mover Émbolo</Spanish>
                 <Polish>Przesuń tłok</Polish>
                 <Portuguese>Mover o êmbulo</Portuguese>
                 <Russian>Двигать поршень</Russian>
@@ -3553,7 +3553,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_Push">
                 <English>Push %1 (%2)</English>
                 <French>Injecter (IV) %1 (%2)</French>
-                <Spanish>Empujar %1 (%2)</Spanish>
+                <Spanish>Administrar %1 (%2)</Spanish>
                 <Polish>Podaj (IV) %1 (%2)</Polish>
                 <Portuguese>Infundir (IV) %1 (%2)</Portuguese>
                 <Russian>Ввести %1 (%2)</Russian>
@@ -3564,7 +3564,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_PushFailed">
                 <English>Medication push failed&lt;br/&gt;Patient has no IV access on the %1</English>
                 <French>Échec de l'administration (IV)&lt;br/&gt;Le patient n'a pas d'accès intraveineux</French>
-                <Spanish>Empuje de medicación fallido&lt;br/&gt;El paciente no tiene acceso IV en %1</Spanish>
+                <Spanish>Administración de medicación fallida&lt;br/&gt;El paciente no tiene acceso IV en %1</Spanish>
                 <Polish>Podanie (IV) nieudane&lt;br/&gt;Pacjent nie ma dostępu dożylnego</Polish>
                 <Portuguese>Falha na infusão (IV) da medicação&lt;br/&gt;O paciente não tem acesso intravenoso no %1</Portuguese>
                 <Russian>Не удалось ввести препарат&lt;br/&gt;Нет IV-доступа на %1</Russian>
@@ -3575,7 +3575,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_Pushed">
                 <English>Pushed</English>
                 <French>Injecté (IV)</French>
-                <Spanish>Empujado</Spanish>
+                <Spanish>Administrando</Spanish>
                 <Polish>Podano (IV)</Polish>
                 <Portuguese>Infundido (IV)</Portuguese>
                 <Russian>Введено (IV/IO)</Russian>
@@ -3586,7 +3586,7 @@
             <Key ID="STR_ACM_Circulation_Syringe_Pushing">
                 <English>Pushing %1...</English>
                 <French>Injecter %1...</French>
-                <Spanish>Empujando %1...</Spanish>
+                <Spanish>Administrando %1...</Spanish>
                 <Polish>Podawanie %1...</Polish>
                 <Portuguese>Infundindo (IV) %1...</Portuguese>
                 <Russian>Введение %1...</Russian>
@@ -3599,7 +3599,7 @@
             <Key ID="STR_ACM_Circulation_OpenTransfusionMenu">
                 <English>Transfuse Fluids</English>
                 <French>Transfuser des liquides</French>
-                <Spanish>Transfundir fluidos</Spanish>
+                <Spanish>Transfundir Fluidos</Spanish>
                 <Polish>Przeprowadź tranfuzje</Polish>
                 <Portuguese>Transfundir fluidos</Portuguese>
                 <Russian>Переливание жидкостей</Russian>
@@ -3610,7 +3610,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_AddBag_Display">
                 <English>Add Bag</English>
                 <French>Ajouter un sac</French>
-                <Spanish>Añadir bolsa</Spanish>
+                <Spanish>Añadir Bolsa</Spanish>
                 <Polish>Dodaj torebkę</Polish>
                 <Portuguese>Adicionar bolsa</Portuguese>
                 <Russian>Добавить пакет</Russian>
@@ -3632,7 +3632,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_AddBag_ToolTip">
                 <English>Add new fluid bag</English>
                 <French>Ajouter une nouvelle perfusion</French>
-                <Spanish>Añadir nueva bolsa de fluidos</Spanish>
+                <Spanish>Añadir Nueva Bolsa de Fluidos</Spanish>
                 <Polish>Dodaj nową torebkę</Polish>
                 <Portuguese>Adicionar nova bolsa de fluido</Portuguese>
                 <Russian>Добавить новый пакет жидкости</Russian>
@@ -3643,7 +3643,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_FluidRemaining">
                 <English>%1ml remaining</English>
                 <French>%1ml restant</French>
-                <Spanish>%1 ml restantes</Spanish>
+                <Spanish>%1ml restantes</Spanish>
                 <Polish>Pozostało %1ml</Polish>
                 <Portuguese>%1ml restante</Portuguese>
                 <Russian>Осталось %1 мл</Russian>
@@ -3687,7 +3687,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_MoveBag_Place_ToolTip">
                 <English>Place fluid bag on selected IV line</English>
                 <French>Placer la poche de liquide sur la ligne IV sélectionnée</French>
-                <Spanish>Colocar bolsa en línea IV seleccionada</Spanish>
+                <Spanish>Colocar bolsa de fluidos en la línea IV seleccionada</Spanish>
                 <Polish>Podłącz torebkę z wybraną linią IV</Polish>
                 <Portuguese>Coloque a bolsa de fluido na linha IV selecionada</Portuguese>
                 <Russian>Установить пакет на выбранную IV-линию</Russian>
@@ -3709,7 +3709,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_MoveBag_ToolTip">
                 <English>Move fluid bag from IV</English>
                 <French>Déplacer la poche de liquide de la perfusion</French>
-                <Spanish>Mover bolsa de IV</Spanish>
+                <Spanish>Mover la bolsa de fluidos del IV</Spanish>
                 <Polish>Przenieś torebkę z IV</Polish>
                 <Portuguese>Move a bolsa de fluido do IV</Portuguese>
                 <Russian>Снять пакет с IV</Russian>
@@ -3720,7 +3720,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_RemoveBag_ActionLog">
                 <English>%1 removed fluid bag (%2) from %3</English>
                 <French>%1 a retiré une perfusion (%2) de %3</French>
-                <Spanish>%1 retiró bolsa de fluidos (%2) de %3</Spanish>
+                <Spanish>%1 retiró la bolsa de fluidos (%2) de %3</Spanish>
                 <Polish>%1 odłączył torebkę (%1) z %3</Polish>
                 <Portuguese>%1 removeu a bolsa de fluido (%2) do %3</Portuguese>
                 <Russian>%1 удалил пакет (%2) с %3</Russian>
@@ -3753,7 +3753,7 @@
             <Key ID="STR_ACM_Circulation_TransfusionMenu_RemoveBag_ToolTip">
                 <English>Remove fluid bag</English>
                 <French>Retirer la perfusion</French>
-                <Spanish>Retirar bolsa de fluidos</Spanish>
+                <Spanish>Retirar Bolsa de Fluídos</Spanish>
                 <Polish>Odłącz torebkę</Polish>
                 <Portuguese>Remover bolsa de fluido</Portuguese>
                 <Russian>Удалить пакет жидкости</Russian>

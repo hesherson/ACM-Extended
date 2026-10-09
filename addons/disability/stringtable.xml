@@ -14,7 +14,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_Category_FractureManagement">
             <English>Fracture Management</English>
-            <Spanish>Manejo de fracturas</Spanish>
+            <Spanish>Manejo de Fracturas</Spanish>
             <Portuguese>Gerenciamento de fraturas</Portuguese>
             <Russian>Лечение переломов</Russian>
             <Korean>골절 관리</Korean>
@@ -22,7 +22,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_Allow_FractureRealignment">
             <English>Allow Performing Fracture Realignment</English>
-            <Spanish>Permitir realineamiento de fracturas</Spanish>
+            <Spanish>Permitir reducción de fracturas</Spanish>
             <Portuguese>Permitir realinhamento de fraturas</Portuguese>
             <Russian>Разрешить репозицию перелома</Russian>
             <Korean>골절 정렬 수행 허용</Korean>
@@ -30,7 +30,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_Allow_FractureRealignment_Desc">
             <English>Training level required to perform fracture realignment</English>
-            <Spanish>Nivel de entrenamiento requerido para realizar realineamiento de fracturas</Spanish>
+            <Spanish>Nivel de entrenamiento requerido para realizar reducciones</Spanish>
             <Portuguese>Nível de treinamento necessário para performar o realinhamento de fraturas</Portuguese>
             <Russian>Уровень подготовки, необходимый для выполнения репозиции перелома</Russian>
             <Korean>골절 정렬을 수행하기 위한 훈련 레벨</Korean>
@@ -54,7 +54,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_EnableFractureSeverity">
             <English>Enable Fracture Severity</English>
-            <Spanish>Habilitar severidad de fractura</Spanish>
+            <Spanish>Habilitar fracturas severas</Spanish>
             <Portuguese>Habilitar a gravidade da fratura</Portuguese>
             <Russian>Включить степень тяжести перелома</Russian>
             <Korean>골절 심각도 활성화</Korean>
@@ -62,7 +62,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_EnableFractureSeverity_Desc">
             <English>Enables fracture severity and performing fracture realignment</English>
-            <Spanish>Activa la severidad de fracturas y la posibilidad de realizar realineamiento</Spanish>
+            <Spanish>Activa la severidad de las fracturas y la posibilidad de realizar reducciones</Spanish>
             <Portuguese>Habilita a gravidade de fratura e a realização do realinhamento da fratura</Portuguese>
             <Russian>Включает учёт тяжести переломов и выполнение репозиции</Russian>
             <Korean>골절 심각도 활성화 및 골절 정렬 수행 가능</Korean>
@@ -70,7 +70,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_Hardcore_ComplexFracture">
             <English>[HARDCORE] Complex Fractures</English>
-            <Spanish>[HARDCORE] Fracturas complejas</Spanish>
+            <Spanish>[EXTREMO] Fracturas complejas</Spanish>
             <Portuguese>[HARDCORE] Fraturas complexas</Portuguese>
             <Russian>[ХАРДКОР] Сложные переломы</Russian>
             <Korean>[HARDCORE] 복합 골절</Korean>
@@ -78,7 +78,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_Hardcore_ComplexFracture_Desc">
             <English>[HARDCORE] Sets whether certain fractures cannot be treated in the field, requiring evacuation</English>
-            <Spanish>[HARDCORE] Define si ciertas fracturas no pueden tratarse en campo, requiriendo evacuación</Spanish>
+            <Spanish>[EXTREMO] Define si ciertas fracturas no pueden tratarse en campo, requiriendo evacuación</Spanish>
             <Portuguese>[HARDCORE] Define se certas fraturas não podem ser tratadas em campo e requerem evacuação</Portuguese>
             <Russian>[ХАРДКОР] Определяет, можно ли лечить некоторые переломы только в стационаре, требуется эвакуация</Russian>
             <Korean>[HARDCORE] 특정 골절이 현장에서 치료 불가하며, 후송 필요 여부 설정</Korean>
@@ -118,7 +118,7 @@
         </Key>
         <Key ID="STR_ACM_Disability_SETTING_TourniquetImpactLimbs_Desc">
             <English>Sets whether tourniquet will impact arms by increasing sway and legs by reducing mobility</English>
-            <Spanish>Define si el torniquete afectará los brazos aumentando el balanceo y las piernas reduciendo la movilidad</Spanish>
+            <Spanish>Define si el torniquete afectará los brazos aumentando la imprecisión; y las piernas reduciendo la movilidad</Spanish>
             <Polish>Ustala czy założone opaski uciskowe mają wpływać na kołysanie broni w przypadku rąk oraz szybkość chodzenia w przypadku nóg</Polish>
             <Portuguese>Define se o torniquete terá impacto nos braços, aumentando a oscilação, e, nas pernas, reduzindo a mobilidade</Portuguese>
             <Russian>Задаёт, будет ли жгут влиять на руки (увеличение дрожания) и ноги (снижение подвижности)</Russian>
@@ -151,7 +151,7 @@
         <Key ID="STR_ACM_Disability_SETTING_TreatmentTime_WrapSplint">
             <English>Wrap Splint Time</English>
             <French>Temps nécessaire pour renforcer l'attelle</French>
-            <Spanish>Tiempo de envoltura de férula</Spanish>
+            <Spanish>Tiempo para envolver la férula</Spanish>
             <Polish>Czas zawinięcia szyny</Polish>
             <Portuguese>Tempo para enfaixar tala</Portuguese>
             <Russian>Время обмотки шины</Russian>
@@ -174,7 +174,7 @@
             <Key ID="STR_ACM_Disability_FractureRealignment">
                 <English>Perform Fracture Realignment</English>
                 <French>Réaliser un réalignement de fracture</French>
-                <Spanish>Realizar realineamiento de fractura</Spanish>
+                <Spanish>Realizar Reducción</Spanish>
                 <Portuguese>Realizar realinhamento de fratura</Portuguese>
                 <Russian>Выполнить репозицию перелома</Russian>
                 <Korean>골절 정렬 수행</Korean>
@@ -183,7 +183,7 @@
             <Key ID="STR_ACM_Disability_FractureRealignment_ActionLog">
                 <English>%1 performed fracture realignment</English>
                 <French>%1 a effectué un réalignement de la fracture</French>
-                <Spanish>%1 realizó realineamiento de fractura</Spanish>
+                <Spanish>%1 realizó una reducción</Spanish>
                 <Portuguese>%1 realizou realinhamento de fratura</Portuguese>
                 <Russian>%1 выполнил(а) репозицию перелома</Russian>
                 <Korean>%1이 골절 정렬을 수행했습니다</Korean>
@@ -192,7 +192,7 @@
             <Key ID="STR_ACM_Disability_FractureRealignment_Complete">
                 <English>Fracture realignment performed</English>
                 <French>Réalignement de la fracture effectué</French>
-                <Spanish>Realineamiento de fractura realizado</Spanish>
+                <Spanish>Reducción realizada</Spanish>
                 <Portuguese>Realizado realinhamento</Portuguese>
                 <Russian>Репозиция перелома выполнена</Russian>
                 <Korean>골절 정렬 수행됨</Korean>
@@ -201,7 +201,7 @@
             <Key ID="STR_ACM_Disability_FractureRealignment_Complete_Success">
                 <English>Fracture realignment performed successfully</English>
                 <French>Le réalignement de la fracture a été effectué avec succès</French>
-                <Spanish>Realineamiento de fractura realizado con éxito</Spanish>
+                <Spanish>Reducción realizada con éxito</Spanish>
                 <Portuguese>Realinhamento de fratura performado com sucesso</Portuguese>
                 <Russian>Репозиция перелома успешно выполнена</Russian>
                 <Korean>골절 정렬 성공적으로 수행됨</Korean>
@@ -210,7 +210,7 @@
             <Key ID="STR_ACM_Disability_FractureRealignment_Progress">
                 <English>Performing fracture realignment...</English>
                 <French>Réaliser un réalignement de fracture...</French>
-                <Spanish>Realizando realineamiento de fractura...</Spanish>
+                <Spanish>Reduciendo la fractura...</Spanish>
                 <Portuguese>Realizando realinhamento de fratura...</Portuguese>
                 <Russian>Выполнение репозиции перелома...</Russian>
                 <Korean>골절 정렬 수행 중...</Korean>
@@ -221,7 +221,7 @@
             <Key ID="STR_ACM_Disability_GUI_Wrapped">
                 <English>Wrapped</English>
                 <French>Renforcé</French>
-                <Spanish>Envolviendo</Spanish>
+                <Spanish>Asegurada</Spanish>
                 <Polish>Zawinięte</Polish>
                 <Portuguese>Enfaixado</Portuguese>
                 <Russian>Обмотано</Russian>
@@ -234,7 +234,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture">
                 <English>Inspect For Fracture</English>
                 <French>Vérifier la présence de fractures</French>
-                <Spanish>Inspeccionar fractura</Spanish>
+                <Spanish>Evaluar Fractura</Spanish>
                 <Portuguese>Inspecionar por fratura</Portuguese>
                 <Russian>Осмотреть на перелом</Russian>
                 <Korean>골절 검사</Korean>
@@ -252,7 +252,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_Bruised">
                 <English>Patient limb is bruised</English>
                 <French>Le membre du patient est contusionné</French>
-                <Spanish>La extremidad del paciente está magullada</Spanish>
+                <Spanish>La extremidad del paciente presenta contusiones</Spanish>
                 <Portuguese>O membro do paciente tem hematomas</Portuguese>
                 <Russian>Конечность пациента ушиблена</Russian>
                 <Korean>환자의 팔다리가 멍들었습니다</Korean>
@@ -261,7 +261,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_Bruised_Short">
                 <English>Bruised</English>
                 <French>Contusionné</French>
-                <Spanish>Magullada</Spanish>
+                <Spanish>Contusionado</Spanish>
                 <Portuguese>Com hematomas</Portuguese>
                 <Russian>Ушиб</Russian>
                 <Korean>멍 (Bruised)</Korean>
@@ -288,7 +288,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_Progress">
                 <English>Inspecting limb for fracture...</English>
                 <French>Inspection du membre pour vérifier qu'il n'y a pas de fracture...</French>
-                <Spanish>Inspeccionando extremidad por fractura...</Spanish>
+                <Spanish>Evaluando fracturas...</Spanish>
                 <Portuguese>Inspecionando membro por fratura...</Portuguese>
                 <Russian>Осмотр конечности на перелом...</Russian>
                 <Korean>팔다리 골절 검사 중...</Korean>
@@ -297,7 +297,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_RealignmentPerformed">
                 <English>Fracture realignment performed</English>
                 <French>Inspection du réalignement de la fracture</French>
-                <Spanish>Realineamiento de fractura realizado</Spanish>
+                <Spanish>Reducción de fractura realizada</Spanish>
                 <Portuguese>Realinhamento realizado</Portuguese>
                 <Russian>Репозиция перелома выполнена</Russian>
                 <Korean>골절 정렬 수행됨</Korean>
@@ -306,7 +306,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_RealignmentPerformed_Short">
                 <English>realignment performed</English>
                 <French>Vérification du réalignement effectué</French>
-                <Spanish>Realineamiento realizado</Spanish>
+                <Spanish>Reducción realizada</Spanish>
                 <Portuguese>realinhado</Portuguese>
                 <Russian>Репозиция выполнена</Russian>
                 <Korean>정렬 수행됨</Korean>
@@ -315,7 +315,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_SevereBruising">
                 <English>Patient has severe bruising on limb</English>
                 <French>Le patient présente d'importantes ecchymoses sur un membre</French>
-                <Spanish>El paciente tiene hematomas graves en la extremidad</Spanish>
+                <Spanish>El paciente tiene contusiones graves en la extremidad</Spanish>
                 <Portuguese>O paciente apresenta hematomas graves no membro</Portuguese>
                 <Russian>У пациента сильный ушиб конечности</Russian>
                 <Korean>환자의 팔다리에 심한 멍이 있습니다</Korean>
@@ -324,7 +324,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_SevereBruising_Short">
                 <English>Severe Bruising</English>
                 <French>Ecchymoses sévères</French>
-                <Spanish>Hematomas graves</Spanish>
+                <Spanish>Contusiones graves</Spanish>
                 <Portuguese>Hematomas graves</Portuguese>
                 <Russian>Сильный ушиб</Russian>
                 <Korean>심한 멍 (Severe Bruising)</Korean>
@@ -333,7 +333,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_SignificantSwelling">
                 <English>Patient has significant swelling on limb</English>
                 <French>Le patient présente un gonflement important du membre</French>
-                <Spanish>El paciente tiene hinchazón significativa en la extremidad</Spanish>
+                <Spanish>El paciente presenta tumefacción grave en la extremidad</Spanish>
                 <Portuguese>O paciente apresenta inchaço significativo no membro</Portuguese>
                 <Russian>У пациента значительная отёчность конечности</Russian>
                 <Korean>환자의 팔다리에 심한 부종이 있습니다</Korean>
@@ -342,7 +342,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_SignificantSwelling_Short">
                 <English>Significant Swelling</English>
                 <French>Gonflement important</French>
-                <Spanish>Hinchazón significativo</Spanish>
+                <Spanish>Tumefacción significativa</Spanish>
                 <Portuguese>Inchaço significativo</Portuguese>
                 <Russian>Значительный отёк</Russian>
                 <Korean>심한 부종 (Significant Swelling)</Korean>
@@ -351,7 +351,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_SplintApplied">
                 <English>Patient has splint applied to limb</English>
                 <French>Le patient se voit appliquer une attelle sur le membre</French>
-                <Spanish>El paciente tiene férula aplicada en la extremidad</Spanish>
+                <Spanish>El paciente tiene una férula en la extremidad</Spanish>
                 <Portuguese>Paciente tem uma tala aplicada ao membro</Portuguese>
                 <Russian>На конечность пациента наложена шина</Russian>
                 <Korean>환자의 팔다리에 부목이 적용되었습니다</Korean>
@@ -369,7 +369,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_Swelling">
                 <English>Patient has swelling on limb</English>
                 <French>Le patient présente un gonflement d'un membre</French>
-                <Spanish>El paciente tiene hinchazón en la extremidad</Spanish>
+                <Spanish>El paciente presenta tumefacción en la extremidad</Spanish>
                 <Portuguese>O paciente apresenta inchaço no membro</Portuguese>
                 <Russian>У пациента отёк конечности</Russian>
                 <Korean>환자의 팔다리에 부종이 있습니다</Korean>
@@ -378,7 +378,7 @@
             <Key ID="STR_ACM_Disability_InspectForFracture_Swelling_Short">
                 <English>Swelling</English>
                 <French>Gonflement</French>
-                <Spanish>Hinchazón</Spanish>
+                <Spanish>Tumefacción</Spanish>
                 <Portuguese>Inchaço</Portuguese>
                 <Russian>Отёк</Russian>
                 <Korean>부종 (Swelling)</Korean>
@@ -400,7 +400,7 @@
             <Key ID="STR_ACM_Disability_SAMSplint_Desc">
                 <English>Re-usable splint used to immobilize fracture, should be wrapped to keep fracture stable</English>
                 <French>Attelle réutilisable qui immobilise la fracture, elle doit être renforcée pour maintenir la fracture stable</French>
-                <Spanish>Férula reutilizable para inmovilizar fracturas, debe envolverse para mantenerla estable</Spanish>
+                <Spanish>Férula reutilizable para inmovilizar fracturas, debe envolverse para mantener la fractura estable</Spanish>
                 <Polish>Wielorazowa szyna używana do stabilizacji złamań, powinna być zawinięta by utrzymać unieruchomione złamanie</Polish>
                 <Portuguese>Tala reutilizável utilizada para imobilizar fraturas, deve ser enfaixada para manter a fratura estável</Portuguese>
                 <Russian>Многоразовая шина для фиксации перелома, должна быть обмотана для стабильности</Russian>
@@ -422,7 +422,7 @@
             <Key ID="STR_ACM_Disability_UniversalSplint_Desc">
                 <English>Single-use splint kit used to immobilize fracture</English>
                 <French>Kit d'attelle à usage unique utilisé pour immobiliser une fracture</French>
-                <Spanish>Kit de férula de un solo uso para inmovilizar fracturas</Spanish>
+                <Spanish>Kit desechable de férula para inmovilizar fracturas</Spanish>
                 <Polish>Jednorazowy zestaw szyny używany do unieruchomienia złamania</Polish>
                 <Portuguese>Kit de tala de uso único para imobilizar fraturas</Portuguese>
                 <Russian>Одноразовый набор для фиксации перелома</Russian>
@@ -459,7 +459,7 @@
             <Key ID="STR_ACM_Disability_ShakeAwake">
                 <English>Attempt To Shake Awake</English>
                 <French>Secouer le patient</French>
-                <Spanish>Intentar despertar sacudiendo</Spanish>
+                <Spanish>Intentar Despertarlo</Spanish>
                 <Polish>Potrząśnij by wybudzić</Polish>
                 <Portuguese>Tentar acordar o paciente sacudindo</Portuguese>
                 <Russian>Попытка разбудить встряхиванием</Russian>
@@ -492,7 +492,7 @@
             <Key ID="STR_ACM_Disability_ShakePatient_Attempt">
                 <English>You attempt to shake the patient awake</English>
                 <French>Vous tentez de secouer le patient pour le réveiller</French>
-                <Spanish>Intentaste sacudir al paciente para despertarlo</Spanish>
+                <Spanish>Intentas sacudir al paciente para despertarlo</Spanish>
                 <Polish>Próbujesz potrząsnąć pacjentem by się obudził</Polish>
                 <Portuguese>Você tentou sacudir um paciente acordado</Portuguese>
                 <Russian>Вы пытаетесь разбудить пациента встряхиванием</Russian>
@@ -505,7 +505,7 @@
             <Key ID="STR_ACM_Disability_SlapAwake">
                 <English>Attempt To Slap Awake</English>
                 <French>Gifler pour réveiller</French>
-                <Spanish>Intentar despertar abofeteando</Spanish>
+                <Spanish>Pegar una Bofetada</Spanish>
                 <Polish>Uderz by wybudzić</Polish>
                 <Portuguese>Tentar acordar o paciente estapeando</Portuguese>
                 <Russian>Попытка разбудить пощёчиной</Russian>
@@ -516,7 +516,7 @@
             <Key ID="STR_ACM_Disability_SlapAwake_Progress">
                 <English>Slapping Patient...</English>
                 <French>Gifler le patient...</French>
-                <Spanish>Abofeteando al paciente...</Spanish>
+                <Spanish>Pegando al paciente...</Spanish>
                 <Polish>Uderzanie...</Polish>
                 <Portuguese>Estapeando paciente...</Portuguese>
                 <Russian>Пощёчина пациенту...</Russian>
@@ -538,7 +538,7 @@
             <Key ID="STR_ACM_Disability_SlapPatient_Attempt">
                 <English>You attempt to slap the patient awake</English>
                 <French>Essayer de gifler le patient pour le réveiller</French>
-                <Spanish>Intentaste abofetear al paciente para despertarlo</Spanish>
+                <Spanish>Intentas abofetear al paciente para despertarlo</Spanish>
                 <Polish>Próbujesz uderzyć pacjenta by się obudził</Polish>
                 <Portuguese>Você tentou estapear um paciente acordado</Portuguese>
                 <Russian>Вы пытаетесь разбудить пациента пощёчиной</Russian>

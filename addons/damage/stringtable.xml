@@ -48,7 +48,7 @@
         <Key ID="STR_ACM_Damage_SETTING_AIStayDownChance">
             <English>AI Stay Down Chance</English>
             <French>Chance que l'unité IA reste au sol</French>
-            <Spanish>Probabilidad IA — Permanecer derribado</Spanish>
+            <Spanish>Probabilidad de permanecer inconsciente</Spanish>
             <Polish>Szansa że jednostka SI pozostanie na na ziemi</Polish>
             <Portuguese>Chance de ficar caído para IA</Portuguese>
             <Russian>Шанс, что ИИ останется лежать</Russian>
@@ -59,7 +59,7 @@
         <Key ID="STR_ACM_Damage_SETTING_AIStayDownChance_Desc">
             <English>Sets chance for AI to stay down once unconscious (without intervention)</English>
             <French>Définit la probabilité que l'IA reste couchée une fois qu'elle est inconsciente (sans intervention)</French>
-            <Spanish>Probabilidad de que una unidad IA permanezca en el suelo tras quedar inconsciente si no se le interviene.</Spanish>
+            <Spanish>Probabilidad de que una IA permanezca en el suelo tras quedar inconsciente si no se le interviene</Spanish>
             <Polish>Szansa na pozostanie jednostki SI w pozycji leżącej, gdy straci przytomność (bez interwencji)</Polish>
             <Portuguese>Define a chance de a IA permanecer no chão quando estiver inconsciente (sem intervenção)</Portuguese>
             <Russian>Вероятность, что ИИ не встанет после потери сознания (без вмешательства)</Russian>
@@ -81,7 +81,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaCardiacArrestThresholdAI">
             <English>AI Torso Trauma Cardiac Arrest Threshold</English>
             <French>Seuil de lésion thoracique entraînant un arrêt cardiaque pour les unités IA</French>
-            <Spanish>Umbral IA — Paro cardiaco por trauma torácico (IA)</Spanish>
+            <Spanish>Paro cardiaco por trauma torácico (IA)</Spanish>
             <Polish>Próg obrażeń w tors powodujących zatrzymanie krążenia dla jednostek SI</Polish>
             <Portuguese>Limiar de parada cardíaca por dano no torso para IA</Portuguese>
             <Russian>Порог остановки сердца при травме торса (ИИ)</Russian>
@@ -92,7 +92,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaCardiacArrestThresholdAI_Desc">
             <English>Sets threshold for possibility of cardiac arrest from trauma to the torso for AI, disabled if 0</English>
             <French>Fixe le seuil de possibilité d'arrêt cardiaque à la suite d'une lésion thoracique pour l'IA, désactivé si 0</French>
-            <Spanish>Umbral para la posibilidad de paro cardiaco por trauma torácico en IA. (Desactivado si es 0.)</Spanish>
+            <Spanish>Probabilidad de paro cardiaco por trauma torácico en la IA (Desactivado si es 0)</Spanish>
             <Polish>Im mniejsza wartość tym łatwiej o zatrzymanie krążenia u jednostki SI. 0 wyłącza możliwość nagłego zatrzymania krążenia</Polish>
             <Portuguese>Define o limiar para a possibilidade de parada cardíaca por trauma no tronco para IA, desativado se for 0</Portuguese>
             <Russian>Порог риска остановки сердца от травмы торса для ИИ; 0 — отключено</Russian>
@@ -103,7 +103,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaCardiacArrestThreshold_Desc">
             <English>Sets threshold for possibility of cardiac arrest from trauma to the torso, disabled if 0</English>
             <French>Fixe le seuil de possibilité d'arrêt cardiaque à la suite d'un traumatisme au torse, désactivé si 0</French>
-            <Spanish>Establece el umbral que determina la posibilidad de paro cardiaco como consecuencia de un traumatismo torácico. (Desactivado si el valor es 0.)</Spanish>
+            <Spanish>Probabilidad de paro cardiaco como consecuencia de un traumatismo torácico. (Desactivado si el valor es 0)</Spanish>
             <Polish>Im mniejsza wartość tym łatwiej o zatrzymanie krążenia. 0 wyłącza możliwość nagłego zatrzymania krążenia</Polish>
             <Portuguese>Define o limiar para a possibilidade de parada cardíaca por trauma no tronco, desativado se for 0</Portuguese>
             <Russian>Задаёт порог риска остановки сердца от травмы торса; 0 — отключено</Russian>
@@ -114,7 +114,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaDeathThreshold">
             <English>Torso Trauma Death Threshold</English>
             <French>Seuil de décès avec une lésion thoracique</French>
-            <Spanish>Umbral de Muerte por Trauma Torácico</Spanish>
+            <Spanish>Probabilidad de muerte por trauma torácico</Spanish>
             <Polish>Próg śmiertelnych obrażeń w tors</Polish>
             <Portuguese>Limiar de morte por trauma no troco</Portuguese>
             <Russian>Порог смертельной травмы торса</Russian>
@@ -125,7 +125,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaDeathThresholdAI">
             <English>AI Torso Trauma Death Threshold</English>
             <French>Seuil de décès avec une lésion thoracique de l'IA</French>
-            <Spanish>Umbral IA — Muerte por trauma torácico (IA)</Spanish>
+            <Spanish>Muerte por trauma torácico (IA)</Spanish>
             <Polish>Próg śmiertelnych obrażeń w tors dla jednostek SI</Polish>
             <Portuguese>Limiar de morte para IA por dano no torso</Portuguese>
             <Russian>Порог смертельной травмы торса (ИИ)</Russian>
@@ -136,7 +136,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaDeathThresholdAI_Desc">
             <English>Sets threshold for instant death from trauma to the torso for AI, disabled if 0</English>
             <French>Fixe le seuil de mort instantanée avec une lésion thoracique pour l'IA, désactivé si 0</French>
-            <Spanish>Umbral de muerte instantánea por trauma torácico aplicado a IA. (Desactivado si es 0.)</Spanish>
+            <Spanish>Probabilidad de muerte instantánea por trauma torácico en la IA. (Desactivado si es 0)</Spanish>
             <Polish>Im mniejsza wartość tym szybsza śmierć jednostki SI. 0 wyłącza możliwość śmierci</Polish>
             <Portuguese>Define o limiar para morte instantânea por trauma no tronco para IA, desativado se for 0</Portuguese>
             <Russian>Порог мгновенной смерти от травмы торса для ИИ; 0 — отключено</Russian>
@@ -147,7 +147,7 @@
         <Key ID="STR_ACM_Damage_SETTING_BodyTraumaDeathThreshold_Desc">
             <English>Sets threshold for instant death from trauma to the torso, disabled if 0</English>
             <French>Fixe le seuil de mort instantanée par avec une lésion thoracique, désactivé si 0</French>
-            <Spanish>Define el valor umbral a partir del cual un traumatismo en el torso produce muerte instantánea. (Desactivado si el valor es 0.)</Spanish>
+            <Spanish>Define el valor a partir del cual un traumatismo en el torso produce muerte instantánea. (Desactivado si el valor es 0)</Spanish>
             <Polish>Im mniejsza wartość tym szybsza śmierć. 0 wyłącza możliwość śmierci</Polish>
             <Portuguese>Define o limiar para morte instantânea por trauma no tronco, desativado se for 0</Portuguese>
             <Russian>Задаёт порог мгновенной смерти от травмы торса; 0 — отключено</Russian>
@@ -158,7 +158,7 @@
         <Key ID="STR_ACM_Damage_SETTING_Enable">
             <English>Enable Damage Addon</English>
             <French>Activer l'addon de dommages</French>
-            <Spanish>Habilitar Addon de Daño</Spanish>
+            <Spanish>Habilitar Daño</Spanish>
             <Polish>Włącz obrażenia</Polish>
             <Portuguese>Habilitar dano de addon</Portuguese>
             <Russian>Включить модуль повреждений</Russian>
@@ -180,7 +180,7 @@
         <Key ID="STR_ACM_Damage_SETTING_Hardcore_InternalBleeding">
             <English>[HARDCORE] Internal Bleeding</English>
             <French>[HARDCORE] Saignement interne</French>
-            <Spanish>[HARDCORE] Hemorragia interna</Spanish>
+            <Spanish>[EXTREMO] Hemorragia Interna</Spanish>
             <Polish>[HARDCORE] Krwawienie wewnętrzne</Polish>
             <Portuguese>[HARDCORE] Hemorragia interna</Portuguese>
             <Russian>[ХАРДКОР] Внутреннее кровотечение</Russian>
@@ -191,7 +191,7 @@
         <Key ID="STR_ACM_Damage_SETTING_Hardcore_InternalBleeding_Desc">
             <English>[HARDCORE] Sets whether internal bleeding should require further treatment to fully stop</English>
             <French>[HARDCORE] Détermine si une hémorragie interne nécessite un traitement plus poussé pour être guérie</French>
-            <Spanish>Opción avanzada: define si la hemorragia interna requiere tratamientos adicionales para detenerse por completo.</Spanish>
+            <Spanish>[EXTREMO] Define si la hemorragia interna requiere tratamientos adicionales para detenerse por completo</Spanish>
             <Polish>[HARDCORE] Określa czy krwawienie wewnętrzne będzie wymagało dalszych działań by je powstrzymać</Polish>
             <Portuguese>[HARDCORE] Define se a hemorragia deve exigir tratamento adicional para ser totalmente interrompido</Portuguese>
             <Russian>[ХАРДКОР] Устанавливает, требуется ли дальнейшее лечение для полного прекращения внутреннего кровотечения</Russian>
@@ -213,7 +213,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaCardiacArrestThresholdAI">
             <English>AI Head Trauma Cardiac Arrest Threshold</English>
             <French>Seuil des traumatismes crâniens provoquant un arrêt cardiaque pour les unités IA</French>
-            <Spanish>Umbral IA — Paro cardiaco por trauma craneal (IA)</Spanish>
+            <Spanish>Paro cardiaco por trauma craneal (IA)</Spanish>
             <Polish>Próg obrażeń w głowę powodujących zatrzymanie krążenia dla jednostek SI</Polish>
             <Portuguese>Limiar de parada cardíaca por trauma na cabeça para IA</Portuguese>
             <Russian>Порог остановки сердца при травме головы (ИИ)</Russian>
@@ -224,7 +224,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaCardiacArrestThresholdAI_Desc">
             <English>Sets threshold for possibility of cardiac arrest from trauma to the head for AI, disabled if 0</English>
             <French>Fixe le seuil de possibilité d'arrêt cardiaque dû à un traumatisme crânien pour l'IA, désactivé si 0</French>
-            <Spanish>Umbral para la posibilidad de paro cardiaco por trauma craneal en IA. (Desactivado si es 0.)</Spanish>
+            <Spanish>Probabilidad de paro cardiaco por trauma craneal en la IA. (Desactivado si es 0)</Spanish>
             <Polish>Im mniejsza wartość tym łatwiej o zatrzymanie krążenia u jednostki SI. 0 wyłącza możliwość nagłego zatrzymania krążenia</Polish>
             <Portuguese>Define o limiar para a possibilidade de parada cardíaca por trauma na cabeça para IA, desativado se for 0</Portuguese>
             <Russian>Порог риска остановки сердца от травмы головы для ИИ; 0 — отключено</Russian>
@@ -235,7 +235,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaCardiacArrestThreshold_Desc">
             <English>Sets threshold for possibility of cardiac arrest from trauma to the head, disabled if 0</English>
             <French>Fixe le seuil de possibilité d'arrêt cardiaque dû à un traumatisme crânien, désactivé si 0</French>
-            <Spanish>Establece el umbral que determina la posibilidad de paro cardiaco como consecuencia de un traumatismo craneal. (Desactivado si el valor es 0.)</Spanish>
+            <Spanish>Probabilidad de paro cardiaco como consecuencia de un traumatismo craneal. (Desactivado si el valor es 0)</Spanish>
             <Polish>Im mniejsza wartość tym łatwiej o zatrzymanie krążenia. 0 wyłącza możliwość nagłego zatrzymania krążenia</Polish>
             <Portuguese>Define o limiar para a possibilidade de parada cardíaca por trauma na cabeça, desativado se for 0</Portuguese>
             <Russian>Задаёт порог риска остановки сердца от травмы головы; 0 — отключено</Russian>
@@ -246,7 +246,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaDeathThreshold">
             <English>Head Trauma Death Threshold</English>
             <French>Seuil de décès par traumatisme crânien</French>
-            <Spanish>Umbral de Muerte por Trauma Craneal</Spanish>
+            <Spanish>Muerte por trauma craneal</Spanish>
             <Polish>Próg śmiertelnych obrażeń w głowę</Polish>
             <Portuguese>Limiar de morte por trauma na cabeça</Portuguese>
             <Russian>Порог смертельной черепно-мозговой травмы</Russian>
@@ -257,7 +257,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaDeathThresholdAI">
             <English>AI Head Trauma Death Threshold</English>
             <French>Seuil des traumatismes crâniens mortels pour les unités IA</French>
-            <Spanish>Umbral IA — Muerte por trauma craneal (IA)</Spanish>
+            <Spanish>Muerte por trauma craneal (IA)</Spanish>
             <Polish>Próg śmiertelnych obrażeń w głowę dla jednostek SI</Polish>
             <Portuguese>Limiar de morte por trauma na cabeça para IA</Portuguese>
             <Russian>Порог смертельной травмы головы (ИИ)</Russian>
@@ -268,7 +268,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaDeathThresholdAI_Desc">
             <English>Sets threshold for instant death from trauma to the head for AI, disabled if 0</English>
             <French>Fixe le seuil de mort instantanée par traumatisme crânien pour l'IA, désactivé si 0</French>
-            <Spanish>Umbral de muerte instantánea por trauma craneal aplicado a unidades controladas por IA. (Desactivado si es 0.)</Spanish>
+            <Spanish>Define el valor de muerte instantánea por trauma craneal en la IA(Desactivado si es 0)</Spanish>
             <Polish>Im mniejsza wartość tym szybsza śmierć jednostki SI. 0 wyłącza możliwość śmierci</Polish>
             <Portuguese>Define o limiar para morte instantânea por trauma na cabeça para IA, desativado se for 0</Portuguese>
             <Russian>Порог мгновенной смерти от травмы головы для ИИ; 0 — отключено</Russian>
@@ -279,7 +279,7 @@
         <Key ID="STR_ACM_Damage_SETTING_HeadTraumaDeathThreshold_Desc">
             <English>Sets threshold for instant death from trauma to the head, disabled if 0</English>
             <French>Fixe le seuil de mort instantanée par traumatisme crânien, désactivé si 0</French>
-            <Spanish>Define el umbral de muerte instantánea por trauma craneal (desactivado si es 0)</Spanish>
+            <Spanish>Define el valor de muerte instantánea por trauma craneal (Desactivado si es 0)</Spanish>
             <Polish>Im mniejsza wartość tym szybsza śmierć. 0 wyłącza możliwość śmierci</Polish>
             <Portuguese>Define o limiar para morte instantânea por trauma na cabeça, desativado se for 0</Portuguese>
             <Russian>Задаёт порог мгновенной смерти от травмы головы; 0 — отключено</Russian>
@@ -290,7 +290,7 @@
         <Key ID="STR_ACM_Damage_SETTING_InternalBleedingChanceMultiplier">
             <English>Internal Bleeding Chance Multiplier</English>
             <French>Risque d'hémorragie interne</French>
-            <Spanish>Multiplicador de probabilidad de hemorragia interna</Spanish>
+            <Spanish>Probabilidad de hemorragia interna</Spanish>
             <Polish>Szansa na krwawienie wewnątrzne</Polish>
             <Portuguese>Multiplicador de chance de hemorragia interna</Portuguese>
             <Russian>Множитель вероятности внутреннего кровотечения</Russian>
@@ -301,7 +301,7 @@
         <Key ID="STR_ACM_Damage_SETTING_InternalBleedingChanceMultiplier_Desc">
             <English>Chance for internal bleeding to occur from inflicted wounds</English>
             <French>Risque d'hémorragie interne due à la blessure</French>
-            <Spanish>Multiplicador que modifica la probabilidad de que se produzca hemorragia interna tras heridas infligidas.</Spanish>
+            <Spanish>Multiplicador que modifica la probabilidad de que se produzca una hemorragia interna por heridas inflingidas</Spanish>
             <Polish>Szansa na pojawienie się krwawienia wewnętrzego na skutek odniesionych ran</Polish>
             <Portuguese>Possibilidade de ocorrência de hemorragia interna em ferimentos infligidos</Portuguese>
             <Russian>Шанс развития внутреннего кровотечения от нанесённых ран</Russian>
@@ -313,7 +313,7 @@
             <Key ID="STR_ACM_Damage_ElasticWrap">
                 <English>Elastic Wrap</English>
                 <French>Bande de fixation</French>
-                <Spanish>Venda elástica</Spanish>
+                <Spanish>Venda Elástica</Spanish>
                 <Polish>Bandaż stabilizacyjny</Polish>
                 <Portuguese>Atadura elástica</Portuguese>
                 <Russian>Эластичный бинт</Russian>
@@ -324,7 +324,7 @@
             <Key ID="STR_ACM_Damage_ElasticWrap_Desc">
                 <English>Used to wrap bandages, clotted wounds and bruises</English>
                 <French>Utilisé pour envelopper les bandages, les plaies coagulées et les ecchymoses.</French>
-                <Spanish>Usada para envolver vendajes, heridas coaguladas y moretones</Spanish>
+                <Spanish>Usada para envolver vendajes, heridas coaguladas y contusiones</Spanish>
                 <Polish>Używany do stabilizacji bandaży, owijania skrzepniętych ran i siniaków</Polish>
                 <Portuguese>Usado para enfaixar, talas, bandagens, ferimentos coagulados e hematomas</Portuguese>
                 <Russian>Используется для обмотки повязок, коагулированных ран и ушибов</Russian>
@@ -335,7 +335,7 @@
             <Key ID="STR_ACM_Damage_EmergencyTraumaDressing">
                 <English>Emergency Trauma Dressing</English>
                 <French>Pansement d'urgence</French>
-                <Spanish>Vendaje israelí</Spanish>
+                <Spanish>Vendaje Israelí</Spanish>
                 <Polish>Powiększony bandaż uciskowy</Polish>
                 <Portuguese>Curativo de emergência para trauma</Portuguese>
                 <Russian>Экстренная травматическая повязка</Russian>
@@ -346,7 +346,7 @@
             <Key ID="STR_ACM_Damage_EmergencyTraumaDressing_Desc">
                 <English>Trauma dressing with large surface area</English>
                 <French>Pansement d'urgence à grande surface</French>
-                <Spanish>Vendaje israelí de gran superficie</Spanish>
+                <Spanish>Vendaje de gran superficie para hemorragias activas</Spanish>
                 <Polish>Bandaż uciskowy z powiększoną powieszchnią</Polish>
                 <Portuguese>Curativo para trauma com grande área de superfície</Portuguese>
                 <Russian>Травматическая повязка с большой площадью покрытия</Russian>
@@ -357,7 +357,7 @@
             <Key ID="STR_ACM_Damage_PressureBandage">
                 <English>Pressure Bandage</English>
                 <French>Pansement compressif</French>
-                <Spanish>Vendaje compresivo</Spanish>
+                <Spanish>Vendaje Compresivo</Spanish>
                 <Polish>Bandaż uciskowy</Polish>
                 <Portuguese>Bandagem de pressão</Portuguese>
                 <Russian>Компрессионная повязка</Russian>
@@ -368,7 +368,7 @@
             <Key ID="STR_ACM_Damage_PressureBandage_Desc">
                 <English>Standard issue bandage</English>
                 <French>Bandage standard</French>
-                <Spanish>Vendaje estándar de dotación</Spanish>
+                <Spanish>Vendaje Estándar</Spanish>
                 <Polish>Standardowo przydzielany bandaż osobisty</Polish>
                 <Portuguese>Bandagem padrão</Portuguese>
                 <Russian>Стандартная повязка</Russian>
@@ -403,7 +403,7 @@
             <Key ID="STR_ACM_Damage_SETTING_TreatmentTime_SutureStitch">
                 <English>Suture Stitch Time Multiplier</English>
                 <French>Multiplicateur de temps de suture</French>
-                <Spanish>Multiplicador del tiempo de sutura con puntos</Spanish>
+                <Spanish>Multiplicador del tiempo de sutura</Spanish>
                 <Polish>Mnożnik czasu szycia z użyciem szwów</Polish>
                 <Portuguese>Multiplicador de tempo para suturar pontos</Portuguese>
                 <Russian>Множитель времени наложения швов</Russian>
@@ -414,7 +414,7 @@
             <Key ID="STR_ACM_Damage_SETTING_TreatmentTime_SutureStitch_Desc">
                 <English>Time multiplier when stitching wound with sutures</English>
                 <French>Multiplication du temps lors de la suture d'une plaie avec des points de suture</French>
-                <Spanish>Multiplicador del tiempo necesario al suturar una herida con puntos</Spanish>
+                <Spanish>Multiplicador del tiempo necesario paral suturar una herida </Spanish>
                 <Polish>Mnożnik czasu zszywania ran z użyciem szwów</Polish>
                 <Portuguese>Multiplicador de tempo para dar pontos com sutura</Portuguese>
                 <Russian>Множитель времени при наложения швов (не обмотаной раны)</Russian>
@@ -447,7 +447,7 @@
             <Key ID="STR_ACM_Damage_SETTING_TreatmentTime_WrappedStitch">
                 <English>Wrapped Stitch Time</English>
                 <French>Temps de suture pour les bandages fixés</French>
-                <Spanish>Tiempo Sutura Vendada</Spanish>
+                <Spanish>Tiempo de sutura para heridas vendadas</Spanish>
                 <Polish>Czas szycia zawiniętych ran</Polish>
                 <Portuguese>Tempo para suturar ferida enfaixada</Portuguese>
                 <Russian>Время наложения швов обмотанной раны</Russian>
@@ -458,7 +458,7 @@
             <Key ID="STR_ACM_Damage_SETTING_TreatmentTime_WrappedStitch_Desc">
                 <English>Time to stitch a wrapped wound</English>
                 <French>Temps nécessaire pour suturer une plaie bandée, préalablement maintenue par une bande de fixation</French>
-                <Spanish>Tiempo para suturar la herida vendada</Spanish>
+                <Spanish>Tiempo para suturar las heridas vendada</Spanish>
                 <Polish>Czas potrzebny na zeszycie zawiniętych wcześniej ran</Polish>
                 <Portuguese>Tempo para suturar uma ferida enfaixada</Portuguese>
                 <Russian>Время на наложение швов по обмотанной ране</Russian>
@@ -468,16 +468,18 @@
             </Key>
             <Key ID="STR_ACM_Damage_SETTING_WrappedWoundReopenChance">
                 <English>Wrapped Wound Reopen Chance Multiplier</English>
+                <Spanish>Multiplicador de reapertura para heridas vendadas</Spanish>
             </Key>
             <Key ID="STR_ACM_Damage_SETTING_WrappedWoundReopenChance_Desc">
                 <English>Sets chance that a wrapped wound reopens</English>
+                <Spanish>Establece la probabilidad para que una herida vendada se reabra</Spanish>
             </Key>
         </Container>
         <Container name="// Stitch Actions //">
             <Key ID="STR_ACM_Damage_SurgicalKit_Clotted">
                 <English>Use Surgical Kit (Clotted)</English>
                 <French>Utiliser un kit de suture (Blessures coagulées)</French>
-                <Spanish>Usar kit quirúrgico (herida coagulada)</Spanish>
+                <Spanish>Usar Kit Quirúrgico (Coagulado)</Spanish>
                 <Polish>Użyj zestawu do szycia (skrzepy)</Polish>
                 <Portuguese>Usar kit cirúrgico (coagulado)</Portuguese>
                 <Russian>Использовать хирургический набор (коагулированные)</Russian>
@@ -488,7 +490,7 @@
             <Key ID="STR_ACM_Damage_SurgicalKit_Clotted_Suture">
                 <English>Use Surgical Kit With Sutures (Clotted)</English>
                 <French>Utiliser un kit de suture avec des points de suture (plaies coagulées)</French>
-                <Spanish>Usar kit quirúrgico con suturas (herida coagulada)</Spanish>
+                <Spanish>Usar Kit Quirúrgico con Suturas (Coagulado)</Spanish>
                 <Polish>Użyj zestawu do szycia ze szwami (skrzepy)</Polish>
                 <Portuguese>Usar kit cirúrgico com fios de sutura (coagulado)</Portuguese>
                 <Russian>Использовать хирургический набор с нитью (коагулированные)</Russian>
@@ -499,7 +501,7 @@
             <Key ID="STR_ACM_Damage_SurgicalKit_Suture">
                 <English>Use Surgical Kit With Sutures</English>
                 <French>Utiliser un kit chirurgical avec des sutures</French>
-                <Spanish>Usar kit quirúrgico con suturas</Spanish>
+                <Spanish>Usar Kit Quirúrgico con Suturas</Spanish>
                 <Polish>Użyj zestawu do szycia ze szwami</Polish>
                 <Portuguese>Usar kit cirúrgico com fio de sutura</Portuguese>
                 <Russian>Использовать хирургический набор с нитью</Russian>
@@ -510,7 +512,7 @@
             <Key ID="STR_ACM_Damage_SurgicalKit_Suture_Progress">
                 <English>Stitching With Sutures...</English>
                 <French>Suture avec du fil de suture...</French>
-                <Spanish>Suturando con puntos...</Spanish>
+                <Spanish>Suturando...</Spanish>
                 <Polish>Szycie ze szwami...</Polish>
                 <Portuguese>Suturando com fio de sutura...</Portuguese>
                 <Russian>Наложение швов...</Russian>
@@ -521,7 +523,7 @@
             <Key ID="STR_ACM_Damage_SurgicalKit_Wrapped">
                 <English>Use Surgical Kit (Wrapped)</English>
                 <French>Utiliser un kit de couture (Blessures enveloppées)</French>
-                <Spanish>Usar kit quirúrgico con suturas (herida vendada)</Spanish>
+                <Spanish>Usar Kit Quirúrgico (Vendado)</Spanish>
                 <Polish>Użyj zestawu do szycia (zawinięte)</Polish>
                 <Portuguese>Usar kit cirúrgico (enfaixado)</Portuguese>
                 <Russian>Использовать хирургический набор (обмотка)</Russian>
@@ -532,7 +534,7 @@
             <Key ID="STR_ACM_Damage_SurgicalKit_Wrapped_Suture">
                 <English>Use Surgical Kit With Sutures (Wrapped)</English>
                 <French>Utiliser un kit de couture avec des points de suture (Blessures enveloppées)</French>
-                <Spanish>Usar kit quirúrgico (herida coagulada)</Spanish>
+                <Spanish>Usar Kit Quirúrgico con Suturas (Vendado)</Spanish>
                 <Polish>Użyj zestawu do szycia ze szwami (zawinięte)</Polish>
                 <Portuguese>Usar kit cirúrgico com fio de sutura</Portuguese>
                 <Russian>Использовать хирургический набор с нитью (обмотка)</Russian>
@@ -582,7 +584,7 @@
             <Key ID="STR_ACM_Damage_ElasticWrap_Bruises">
                 <English>Wrap Bruises</English>
                 <French>Envelopper les bleus</French>
-                <Spanish>Envolver moretones</Spanish>
+                <Spanish>Envolver contusiones</Spanish>
                 <Polish>Zawiń siniaki</Polish>
                 <Portuguese>Enfaixar hematomas</Portuguese>
                 <Russian>Обмотать ушибы</Russian>
@@ -648,7 +650,7 @@
             <Key ID="STR_ACM_Damage_WrapBruises_ActionLog">
                 <English>%1 has wrapped bruises</English>
                 <French>%1 a enveloppé des contusions</French>
-                <Spanish>%1 ha envuelto los moretones</Spanish>
+                <Spanish>%1 ha envuelto contusiones</Spanish>
                 <Polish>%1 zawinął siniaki</Polish>
                 <Portuguese>%1 enfaixou hematomas</Portuguese>
                 <Russian>%1 обмотал(а) ушибы</Russian>

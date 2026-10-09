@@ -3,7 +3,7 @@
     <Package name="CBRN">
         <Key ID="STR_ACM_CBRN_Category">
             <English>ACM: CBRN</English>
-            <Spanish>ACM: CBRN</Spanish>
+            <Spanish>ACM: NRBQ</Spanish>
             <Portuguese>ACM: QBRN</Portuguese>
             <Russian>ACM: ХБРЯ</Russian>
             <Korean>ACM: CBRN</Korean>
@@ -27,7 +27,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_Category_Chemical_CS">
             <English>Chemical - CS Gas</English>
-            <Spanish>Químico – Gas CS</Spanish>
+            <Spanish>Químico - Gas CS</Spanish>
             <Portuguese>Químico - Gás CS</Portuguese>
             <Russian>Химическое – CS газ</Russian>
             <Korean>화학 - CS 가스</Korean>
@@ -35,7 +35,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_Category_Chemical_Chlorine">
             <English>Chemical - Chlorine Gas</English>
-            <Spanish>Químico – Gas Cloro</Spanish>
+            <Spanish>Químico - Gas Cloro</Spanish>
             <Portuguese>Químico - Gás Cloro</Portuguese>
             <Russian>Химическое – хлорный газ</Russian>
             <Korean>화학 - 염소 가스</Korean>
@@ -67,7 +67,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_Allow_ATNAAutoinjector_Desc">
             <English>Training level required to use ATNA Autoinjector</English>
-            <Spanish>Nivel de entrenamiento requerido para usar el Autoinyector ATNA.</Spanish>
+            <Spanish>Nivel de entrenamiento requerido para usar el Autoinyector ATNA</Spanish>
             <Portuguese>Nível de treinamento necessário para usar o autoinjetor ATNA</Portuguese>
             <Russian>Уровень подготовки, необходимый для использования автоинъектора ATNA</Russian>
             <Korean>ATNA 자동주사기 사용을 위한 훈련 레벨</Korean>
@@ -83,7 +83,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_Allow_MidazolamAutoinjector_Desc">
             <English>Training level required to use Midazolam Autoinjector</English>
-            <Spanish>Nivel de entrenamiento requerido para usar el Autoinyector de Midazolam.</Spanish>
+            <Spanish>Nivel de entrenamiento requerido para usar el Autoinyector de Midazolam</Spanish>
             <Portuguese>Nível de treinamento necessário para usar o Autoinjetor de Midazolam</Portuguese>
             <Russian>Уровень подготовки, необходимый для использования автоинъектора мидазолама</Russian>
             <Korean>미다졸람 자동주사기 사용을 위한 훈련 레벨</Korean>
@@ -91,7 +91,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CSCauseBlindness">
             <English>CS Exposure Cause Blindness</English>
-            <Spanish>La Exposición a Gas CS Causa Ceguera</Spanish>
+            <Spanish>La exposición a gas CS causa ceguera</Spanish>
             <Portuguese>Exposição ao CS causa cegueira</Portuguese>
             <Russian>CS вызывает слепоту</Russian>
             <Korean>CS 노출로 인한 실명</Korean>
@@ -99,7 +99,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CSCauseBlindness_Desc">
             <English>Sets whether CS gas exposure causes blindness</English>
-            <Spanish>Define si la exposición al gas CS provoca ceguera.</Spanish>
+            <Spanish>Define si la exposición al gas CS provoca ceguera</Spanish>
             <Portuguese>Define se a exposição ao gás CS causa cegueira</Portuguese>
             <Russian>Определяет, вызывает ли CS газ слепоту</Russian>
             <Korean>CS 가스 노출로 실명 여부 설정</Korean>
@@ -107,7 +107,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_ChemicalAffectAI">
             <English>Chemical Agents Affect AI</English>
-            <Spanish>Los Agentes Químicos Afectan a la IA</Spanish>
+            <Spanish>Los agentes químicos afectan a la IA</Spanish>
             <Portuguese>Agentes químicos afetam a IA</Portuguese>
             <Russian>Воздействие химических агентов на ИИ</Russian>
             <Korean>화학제 AI 영향</Korean>
@@ -115,7 +115,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_ChemicalAffectAISkill">
             <English>Chemical Agents Affect AI Skill</English>
-            <Spanish>Los Agentes Químicos Afectan a la Habilidad de IA</Spanish>
+            <Spanish>Los agentes químicos afectan a la habilidad de IA</Spanish>
             <Portuguese>Agentes químicos afetam a habilidade da IA</Portuguese>
             <Russian>Влияние химических агентов на навыки ИИ</Russian>
             <Korean>화학제 AI 스킬 영향</Korean>
@@ -123,7 +123,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_ChemicalAffectAISkill_Desc">
             <English>Sets whether AI skill will be affected by chemical agent exposure</English>
-            <Spanish>Define si la habilidad de la IA será afectada por exposición a agentes químicos.</Spanish>
+            <Spanish>Define si la habilidad de la IA es afectada por exposición a agentes químicos</Spanish>
             <Portuguese>Define se a habilidade da IA será afetada pela exposição a agentes químicos</Portuguese>
             <Russian>Определяет, будут ли навыки ИИ снижаться под воздействием химических агентов</Russian>
             <Korean>AI 스킬이 화학제 노출 영향을 받을지 설정</Korean>
@@ -131,7 +131,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_ChemicalAffectAI_Desc">
             <English>Sets whether AI will be affected by chemical agent exposure</English>
-            <Spanish>Define si la IA será afectada por exposición a agentes químicos.</Spanish>
+            <Spanish>Define si la IA es afectada por exposición a agentes químicos</Spanish>
             <Portuguese>Define se a IA será afetada pela exposição a agentes químicos</Portuguese>
             <Russian>Определяет, будет ли ИИ подвержен воздействию химических агентов</Russian>
             <Korean>AI가 화학제 노출 영향을 받을지 설정</Korean>
@@ -139,7 +139,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_ChlorineCauseBlindness">
             <English>Chlorine Exposure Cause Blindness</English>
-            <Spanish>Exposición a Cloro Causa Ceguera</Spanish>
+            <Spanish>Exposición a cloro causa ceguera</Spanish>
             <Portuguese>Exposição ao cloro causa cegueira</Portuguese>
             <Russian>Хлор вызывает слепоту</Russian>
             <Korean>염소 노출로 인한 실명</Korean>
@@ -147,7 +147,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_ChlorineCauseBlindness_Desc">
             <English>Sets whether chlorine gas exposure causes blindness</English>
-            <Spanish>Define si la exposición al gas cloro provoca ceguera.</Spanish>
+            <Spanish>Define si la exposición al gas cloro provoca ceguera</Spanish>
             <Portuguese>Define se a exposição ao gás cloro causa cegueira</Portuguese>
             <Russian>Определяет, вызывает ли хлорный газ слепоту</Russian>
             <Korean>염소 가스 노출로 실명 여부 설정</Korean>
@@ -155,7 +155,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomPPEList_GasMask">
             <English>Gas Mask List</English>
-            <Spanish>Lista de Máscaras de Gas</Spanish>
+            <Spanish>Lista de máscaras de gas</Spanish>
             <Portuguese>Lista de máscaras de gás</Portuguese>
             <Russian>Список противогазов</Russian>
             <Korean>방독면 목록</Korean>
@@ -163,7 +163,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomPPEList_GasMask_Desc">
             <English>List of goggles (facewear)/helmets that are gas masks (or equivalent). Each entry should be a goggles/helmet classname and should be seperated with a comma</English>
-            <Spanish>Lista de gafas (accesorios faciales)/cascos que son máscaras de gas (o equivalentes). Cada entrada debe ser un classname de gafas/casco separada por coma.</Spanish>
+            <Spanish>Lista de gafas (accesorios faciales)/cascos que son máscaras de gas (o equivalentes). Cada entrada debe ser un classname de gafas/casco separada por coma</Spanish>
             <Portuguese>Lista de óculos de proteção (faciais)/capacetes que são máscaras de gás (ou equivalentes). Cada entrada deve ser um nome de classe de óculos/capacete e deve ser separada por uma vírgula</Portuguese>
             <Russian>Список очков (масок)/шлемов, которые являются противогазами (или эквивалентом). Каждый элемент должен быть классом очков/шлема и разделяться запятой</Russian>
             <Korean>방독면(또는 동등 장비)으로 간주되는 고글/헬멧 목록. 각 항목은 클래스명으로 콤마(",")로 구분</Korean>
@@ -171,7 +171,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomPPEList_Suit">
             <English>CBRN Suit List</English>
-            <Spanish>Lista de Trajes CBRN</Spanish>
+            <Spanish>Lista de Trajes NRBQ</Spanish>
             <Portuguese>Lista de trajes QBRN</Portuguese>
             <Russian>Список ХБРЯ-костюмов</Russian>
             <Korean>CBRN 슈트 목록</Korean>
@@ -179,7 +179,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomPPEList_Suit_Desc">
             <English>List of uniforms that are CBRN suits. Each entry should be a uniform classname and should be seperated with a comma</English>
-            <Spanish>Lista de uniformes que son trajes CBRN. Cada entrada debe ser un classname de uniforme separada por coma.</Spanish>
+            <Spanish>Lista de uniformes que son trajes nrbq. Cada entrada debe ser un classname de uniforme separada por coma</Spanish>
             <Portuguese>Lista de uniformes que são trajes QBRN. Cada entrada deve ser um nome de classe de uniforme e deve ser separada por uma vírgula</Portuguese>
             <Russian>Список униформ, которые являются защитными костюмами ХБРЯ. Каждый элемент должен быть классом униформы и разделяться запятой</Russian>
             <Korean>CBRN 슈트로 간주되는 유니폼 목록. 각 항목은 클래스명으로 콤마(",")로 구분</Korean>
@@ -187,7 +187,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomVehicleList_CBRN">
             <English>CBRN Protected Vehicle List</English>
-            <Spanish>Lista de Vehículos con Protección CBRN</Spanish>
+            <Spanish>Lista de vehículos con protección NRBQ</Spanish>
             <Portuguese>Lista de veículos protegidos contra QBRN</Portuguese>
             <Russian>Список защищённых ХБРЯ машин</Russian>
             <Korean>CBRN 보호 차량 목록</Korean>
@@ -195,7 +195,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomVehicleList_CBRN_Desc">
             <English>List of vehicles that are CBRN protected (overpressure capability). Each entry should be a vehicle classname and should be seperated with a comma</English>
-            <Spanish>Lista de vehículos con protección CBRN (capacidad de sobrepresión). Cada entrada debe ser un classname de vehículo separada por coma.</Spanish>
+            <Spanish>Lista de vehículos con protección NRBQ (capacidad de sobrepresión). Cada entrada debe ser un classname de vehículo separada por coma</Spanish>
             <Portuguese>Lista de veículos que são protegidos contra QBRN (capacidade de sobrepressão). Cada entrada deve ser um nome de classe de veículo e deve ser separada por uma vírgula</Portuguese>
             <Russian>Список машин, защищённых от ХБРЯ (с избыточным давлением). Каждый элемент должен быть классом машины и разделяться запятой</Russian>
             <Korean>CBRN 보호(과압 기능) 차량 목록. 각 항목은 클래스명으로 콤마(",")로 구분</Korean>
@@ -203,7 +203,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomVehicleList_Sealed">
             <English>Sealed Vehicle List</English>
-            <Spanish>Lista de Vehículos Sellados</Spanish>
+            <Spanish>Lista de vehículos sellados</Spanish>
             <Portuguese>Lista de veículos lacrados</Portuguese>
             <Russian>Список герметичных машин</Russian>
             <Korean>밀폐 차량 목록</Korean>
@@ -211,7 +211,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_CustomVehicleList_Sealed_Desc">
             <English>List of vehicles that are sealed. Each entry should be a vehicle classname and should be seperated with a comma</English>
-            <Spanish>Lista de vehículos que están sellados. Cada entrada debe ser un classname de vehículo separada por coma.</Spanish>
+            <Spanish>Lista de vehículos que están sellados. Cada entrada debe ser un classname de vehículo separada por coma</Spanish>
             <Portuguese>Lista de veículos que são lacrados. Cada entrada deve ser um nome de classe de veículo e deve ser separada por uma vírgula</Portuguese>
             <Russian>Список машин, которые являются герметичными. Каждый элемент должен быть классом машины и разделяться запятой</Russian>
             <Korean>밀폐 차량 목록. 각 항목은 클래스명으로 콤마(",")로 구분</Korean>
@@ -219,7 +219,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_Enable">
             <English>Enable CBRN</English>
-            <Spanish>Habilitar CBRN</Spanish>
+            <Spanish>Habilitar NRBQ</Spanish>
             <Portuguese>Habilitar QBRN</Portuguese>
             <Russian>Включить ХБРЯ</Russian>
             <Korean>CBRN 활성화</Korean>
@@ -227,7 +227,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_Enable_Desc">
             <English>Enable CBRN threat functionality</English>
-            <Spanish>Habilitar funcionalidad de amenaza CBRN</Spanish>
+            <Spanish>Habilitar funcionalidad de amenaza NRBQ</Spanish>
             <Portuguese>Habilitar a funcionalidade de ameaças CBRN</Portuguese>
             <Russian>Включить функционал химико-биологической угрозы</Russian>
             <Korean>CBRN 위협 기능 활성화</Korean>
@@ -235,7 +235,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_LewisiteCauseBlindness">
             <English>Lewisite Exposure Cause Blindness</English>
-            <Spanish>Exposición a Lewisita Causa Ceguera</Spanish>
+            <Spanish>Exposición a lewisita causa ceguera</Spanish>
             <Portuguese>Exposição à Lewisite causa cegueira</Portuguese>
             <Russian>Люизит вызывает слепоту</Russian>
             <Korean>루이사이트 노출로 인한 실명</Korean>
@@ -243,7 +243,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_LewisiteCauseBlindness_Desc">
             <English>Sets whether lewisite exposure causes blindness</English>
-            <Spanish>Define si la exposición a lewisita provoca ceguera.</Spanish>
+            <Spanish>Define si la exposición a lewisita provoca ceguera</Spanish>
             <Portuguese>Define se a exposição à Lewisite causa cegueira</Portuguese>
             <Russian>Определяет, вызывает ли люизит слепоту</Russian>
             <Korean>루이사이트 노출로 실명 여부 설정</Korean>
@@ -251,7 +251,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_LewisiteIsColorless">
             <English>Colorless Lewisite</English>
-            <Spanish>Lewisita Incolora</Spanish>
+            <Spanish>Lewisita incolora</Spanish>
             <Portuguese>Lewisita incolor</Portuguese>
             <Russian>Бесцветный люизит</Russian>
             <Korean>무색 루이사이트</Korean>
@@ -259,7 +259,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_LewisiteIsColorless_Desc">
             <English>Sets whether lewisite should be invisible</English>
-            <Spanish>Define si la lewisita debe ser invisible.</Spanish>
+            <Spanish>Define si la lewisita debe ser invisible</Spanish>
             <Portuguese>Define se o Lewisite deve ser invisível</Portuguese>
             <Russian>Определяет, должен ли люизит быть невидимым</Russian>
             <Korean>루이사이트가 눈에 보이지 않도록 설정</Korean>
@@ -267,7 +267,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_SarinIsColorless">
             <English>Colorless Sarin Gas</English>
-            <Spanish>Gas Sarín Incoloro</Spanish>
+            <Spanish>Gas sarín incoloro</Spanish>
             <Portuguese>Gás Sarin incolor</Portuguese>
             <Russian>Бесцветный зарин</Russian>
             <Korean>무색 사린 가스</Korean>
@@ -275,7 +275,7 @@
         </Key>
         <Key ID="STR_ACM_CBRN_SETTING_SarinIsColorless_Desc">
             <English>Sets whether sarin gas should be invisible</English>
-            <Spanish>Define si el sarín debe ser invisible.</Spanish>
+            <Spanish>Define si el sarín debe ser invisible</Spanish>
             <Portuguese>Define se o gás sarin deve ser invisível</Portuguese>
             <Russian>Определяет, должен ли зарин быть невидимым</Russian>
             <Korean>사린 가스가 눈에 보이지 않도록 설정</Korean>
@@ -489,7 +489,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_CreateChemicalDevice_CloudSize">
                 <English>Explosion Cloud Size</English>
-                <Spanish>Tamaño de la Nube de Explosión</Spanish>
+                <Spanish>Tamaño de la Nube </Spanish>
                 <Portuguese>Tamanho da nuvem de explosão</Portuguese>
                 <Russian>Размер облака взрыва</Russian>
                 <Korean>폭발 구름 크기</Korean>
@@ -513,7 +513,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_CreateChemicalDevice_CloudSize_Small">
                 <English>Small</English>
-                <Spanish>Pequeño</Spanish>
+                <Spanish>Pequeña</Spanish>
                 <Portuguese>Pequeno</Portuguese>
                 <Russian>Малый</Russian>
                 <Korean>작음</Korean>
@@ -529,7 +529,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_CreateChemicalDevice_PermanentHazard_Tooltip">
                 <English>Sets whether the created hazard will not dissipate after activation</English>
-                <Spanish>Define si el peligro creado no se disipará tras activación.</Spanish>
+                <Spanish>Define si el peligro creado no se disipará tras activación</Spanish>
                 <Portuguese>Define se o perigo criado não se dissipará após a ativação</Portuguese>
                 <Russian>Определяет, будет ли созданная угроза сохраняться после активации</Russian>
                 <Korean>생성된 위험이 활성화 후 사라지지 않도록 설정</Korean>
@@ -638,7 +638,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_GasMask_ReplaceFilter_Complete">
                 <English>Replaced gas mask filter</English>
-                <Spanish>El filtro de máscara de gas ha sido reemplazado</Spanish>
+                <Spanish>El filtro de la máscara de gas ha sido reemplazado</Spanish>
                 <Portuguese>Trocou o filtro da máscara de gás</Portuguese>
                 <Russian>Фильтр противогаза заменён</Russian>
                 <Korean>방독면 필터 교체됨</Korean>
@@ -646,7 +646,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_GasMask_ReplaceFilter_Progress">
                 <English>Replacing gas mask filter...</English>
-                <Spanish>máscara</Spanish>
+                <Spanish>Reemplazando filtro...</Spanish>
                 <Portuguese>Trocando filtroda máscara de gás...</Portuguese>
                 <Russian>Замена фильтра противогаза...</Russian>
                 <Korean>방독면 필터 교체 중...</Korean>
@@ -714,7 +714,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Autoinjector_ATNA_Desc">
                 <English>Antidote Treatment Nerve Agent Autoinjector, used to treat nerve agent exposure</English>
-                <Spanish>Autoinyector Antídoto para Agentes Nerviosos, usado para tratar exposición a agentes neurotóxicos.</Spanish>
+                <Spanish>Autoinyector Antídoto para Agentes Nerviosos, usado para tratar exposición a agentes nerviosos</Spanish>
                 <Portuguese>Antidote Treatment Nerve Agent Autoinjector (ATNA), usado para tratar a exposição a agentes nervosos</Portuguese>
                 <Russian>Антидот от нервно-паралитических веществ, автоинъектор для лечения отравления</Russian>
                 <Korean>신경작용제 치료용 자동주사기, 신경작용제 노출 치료용</Korean>
@@ -730,7 +730,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Autoinjector_Midazolam_Desc">
                 <English>Used to manage seizure activity caused by nerve agent exposure</English>
-                <Spanish>Usado para manejar actividad convulsiva causada por exposición a agentes nerviosos.</Spanish>
+                <Spanish>Usado para combatir convulsiones causadas por los agentes nerviosos</Spanish>
                 <Portuguese>Usado para controlar a atividade convulsiva causada pela exposição a agentes nervosos</Portuguese>
                 <Russian>Используется для контроля судорожной активности, вызванной воздействием нервно-паралитических веществ.</Russian>
                 <Korean>신경작용제 노출로 인한 발작 관리용</Korean>
@@ -778,7 +778,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_GasMaskFilter_Desc">
                 <English>Used with gas mask to allow breathing in hazardous environments</English>
-                <Spanish>Usado con una máscara de gas para permitir respiración en ambientes peligrosos.</Spanish>
+                <Spanish>Usado con una máscara de gas para permitir respiración en ambientes peligrosos</Spanish>
                 <Portuguese>Usado com máscara de gás para permitir a respiração em ambientes perigosos</Portuguese>
                 <Russian>Используется с противогазом для дыхания в опасной среде</Russian>
                 <Korean>방독면과 함께 사용, 위험 환경에서 호흡 가능</Korean>
@@ -796,7 +796,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_Generic_AttachToObject">
                 <English>Attach To Object</English>
-                <Spanish>Poner en objeto</Spanish>
+                <Spanish>Acoplar a Objeto</Spanish>
                 <Portuguese>Atrelar ao objeto</Portuguese>
                 <Russian>Привязать к объекту</Russian>
                 <Korean>객체에 부착</Korean>
@@ -804,7 +804,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_Generic_AttachToObject_TooltipEden">
                 <English>Attaches hazard zone to synchronized object</English>
-                <Spanish>Adjunta la zona de peligro al objeto sincronizado.</Spanish>
+                <Spanish>Adjunta la zona de peligro al objeto sincronizado</Spanish>
                 <Portuguese>Anexa a zona de perigo ao objeto sincronizado</Portuguese>
                 <Russian>Привязывает зону угрозы к синхронизированному объекту</Russian>
                 <Korean>동기화 객체에 위험 영역 부착</Korean>
@@ -820,7 +820,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_Generic_EffectTime_Tooltip">
                 <English>Sets time in minutes after which hazard zone will remove itself, will last forever if 0</English>
-                <Spanish>Define el tiempo en minutos tras el cual la zona de peligro se eliminará; durará para siempre si es 0.</Spanish>
+                <Spanish>Define el tiempo en minutos tras el cual la zona de peligro se eliminará; durará para siempre si es 0</Spanish>
                 <Portuguese>Define o tempo, em minutos, após o qual a zona de perigo se removerá, durará para sempre se for 0</Portuguese>
                 <Russian>Задаёт время в минутах, после которого зона угрозы исчезнет; если 0 — бесконечно</Russian>
                 <Korean>위험 영역이 자동으로 제거될 시간(분) 설정, 0이면 지속</Korean>
@@ -828,7 +828,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_Generic_Error_AddonDisabled">
                 <English>CBRN Addon must be enabled</English>
-                <Spanish>El Addon CBRN debe estar habilitado</Spanish>
+                <Spanish>El Addon NRBQ debe estar habilitado</Spanish>
                 <Russian>Необходимо включить модуль ХБРЯ</Russian>
                 <Korean>CBRN 애드온 활성화 필요</Korean>
                 <Ukrainian>Потрібно увімкнути модуль ХБРЯ</Ukrainian>
@@ -867,7 +867,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_Module_Generic_ShowMist_Tooltip">
                 <English>Show mist effect over hazard radius</English>
-                <Spanish>Muestra el efecto de niebla sobre el radio de peligro.</Spanish>
+                <Spanish>Muestra el efecto de niebla sobre el radio de peligro</Spanish>
                 <Portuguese>Mostrar o efeito de névoa no raio de perigo</Portuguese>
                 <Russian>Показывать туман над зоной угрозы</Russian>
                 <Korean>위험 반경에 안개 효과 표시</Korean>
@@ -885,7 +885,7 @@
         <Container name="// Supply Crate //">
             <Key ID="STR_ACM_CBRN_SupplyCrate_Display">
                 <English>[ACM] CBRN Supply Crate</English>
-                <Spanish>[ACM] Caja de Suministros CBRN</Spanish>
+                <Spanish>[ACM] Caja de Suministros NRBQ</Spanish>
                 <Portuguese>[ACM] Caixa de suprimentos QBRN</Portuguese>
                 <Russian>[ACM] Ящик снабжения ХБРЯ</Russian>
                 <Korean>[ACM] CBRN 보급 상자</Korean>
@@ -893,7 +893,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_SupplyCrate_PPE_Display">
                 <English>[ACM] CBRN PPE Supply Crate</English>
-                <Spanish>[ACM] Caja de Suministros EPI CBRN</Spanish>
+                <Spanish>[ACM] Caja de Suministros EPI NRBQ</Spanish>
                 <Portuguese>[ACM] Caixa de suprimentos de EPIs CBRN</Portuguese>
                 <Russian>[ACM] Ящик СИЗ ХБРЯ</Russian>
                 <Korean>[ACM] CBRN PPE 보급 상자</Korean>
@@ -903,7 +903,7 @@
         <Container name="// Wash Eyes Action //">
             <Key ID="STR_ACM_CBRN_WashEyes">
                 <English>Wash Eyes</English>
-                <Spanish>Lavar ojos</Spanish>
+                <Spanish>Lavar Ojos</Spanish>
                 <Portuguese>Lavar os olhos</Portuguese>
                 <Russian>Промыть глаза</Russian>
                 <Korean>눈 씻기</Korean>
@@ -911,7 +911,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_WashEyesOf">
                 <English>Wash Eyes Of</English>
-                <Spanish>Lavar los ojos de</Spanish>
+                <Spanish>Lavar los Ojos de</Spanish>
                 <Portuguese>Lavar os olhos de</Portuguese>
                 <Russian>Промыть глаза у</Russian>
                 <Korean>눈 씻기 대상</Korean>
@@ -919,7 +919,7 @@
             </Key>
             <Key ID="STR_ACM_CBRN_WashEyes_ActionLog">
                 <English>%1 washed eyes with water</English>
-                <Spanish>%1 lavó los ojos con agua</Spanish>
+                <Spanish>%1 lavó sus ojos con agua</Spanish>
                 <Portuguese>%1 lavou os olhos com água</Portuguese>
                 <Russian>%1 промыл глаза водой</Russian>
                 <Korean>%1이 눈을 물로 씻음</Korean>

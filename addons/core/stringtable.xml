@@ -4,7 +4,7 @@
         <Key ID="STR_ACM_Core_Category">
             <English>ACM: Core</English>
             <French>ACM: Core</French>
-            <Spanish>ACM: Core</Spanish>
+            <Spanish>ACM: Base</Spanish>
             <Polish>ACM: Core</Polish>
             <Portuguese>ACM: Núcleo</Portuguese>
             <Russian>ACM: Основной модуль</Russian>
@@ -15,7 +15,7 @@
         <Key ID="STR_ACM_Core_Category_Items">
             <English>Items</English>
             <French>Articles</French>
-            <Spanish>Items</Spanish>
+            <Spanish>Objetos</Spanish>
             <Polish>Przedmioty</Polish>
             <Portuguese>Itens</Portuguese>
             <Russian>Предметы</Russian>
@@ -26,7 +26,7 @@
         <Key ID="STR_ACM_Core_SETTING_Dogtag_ShowWeight">
             <English>Dogtag list weight</English>
             <French>Poids des plaques d'identification</French>
-            <Spanish>Mostrar Peso en las Chapas de Identificación</Spanish>
+            <Spanish>Mostrar peso en las chapas de identificación</Spanish>
             <Polish>Nieśmiertelniki pokazują wagę</Polish>
             <Portuguese>Plaqueta de identificação exibe o peso</Portuguese>
             <Russian>Показывать вес на жетонах</Russian>
@@ -37,7 +37,7 @@
         <Key ID="STR_ACM_Core_SETTING_Dogtag_ShowWeight_Desc">
             <English>Set whether dog tags list the unit's weight</English>
             <French>Définir si les plaques d'identification indiquent le poids de l'unité</French>
-            <Spanish>Define si las placas de identificación muestran el peso del individuo</Spanish>
+            <Spanish>Define si las chapas de identificación muestran el peso del individuo</Spanish>
             <Polish>Czy na nieśmietelnikach ma się wyświetlać waga jednostki</Polish>
             <Portuguese>Define se as plaquetas de identificação listam o peso da unidade</Portuguese>
             <Russian>Задаёт, указывают ли жетоны вес бойца</Russian>
@@ -48,7 +48,7 @@
         <Key ID="STR_ACM_Core_SETTING_IgnoreIncompatibleAddonWarnings">
             <English>Ignore Incompatible Addon Warning</English>
             <French>Ignorer l'avertissement d'incompatibilité des modules complémentaires</French>
-            <Spanish>Ignorar Advertencia de Addons Incompatibles</Spanish>
+            <Spanish>Ignorar advertencia de addons incompatibles</Spanish>
             <Polish>Zignoruj ostrzeżenia o niekompatybilności</Polish>
             <Portuguese>Ignorar advertências de incompatibilidade de addon</Portuguese>
             <Russian>Игнорировать предупреждение о несовместимых аддонах</Russian>
@@ -69,7 +69,7 @@
         </Key>
         <Key ID="STR_ACM_Core_SETTING_MedicAI_AllowIntermediateTreatment">
             <English>Medic AI Allow Intermediate Treatment</English>
-            <Spanish>Permitir Tratamiento Intermedio al Médico IA</Spanish>
+            <Spanish>Permitir tratamiento intermedio los médicos de IA</Spanish>
             <Portuguese>Tratamento intermediário por médico IA</Portuguese>
             <Russian>Разрешить ИИ-медику промежуточное лечение</Russian>
             <Korean>의무병 AI 중간 처치 허용</Korean>
@@ -77,7 +77,7 @@
         </Key>
         <Key ID="STR_ACM_Core_SETTING_MedicAI_AllowIntermediateTreatment_Desc">
             <English>Sets whether medic AI is allowed to perform any actions other than bandaging and tourniqueting</English>
-            <Spanish>Define si el médico IA puede realizar acciones adicionales aparte de vendar y aplicar torniquetes</Spanish>
+            <Spanish>Define si el médico de IA puede realizar acciones adicionales aparte de vendar y aplicar torniquetes</Spanish>
             <Portuguese>Define se um médico IA tem permissão para realizar outras ações além de curativos e torniquetes</Portuguese>
             <Russian>Задаёт, может ли ИИ-медик выполнять действия помимо бинтования и наложения жгута</Russian>
             <Korean>의무병 AI가 붕대 감기와 지혈대 적용 외의 행동을 수행할 수 있는지 설정</Korean>
@@ -86,7 +86,7 @@
         <Key ID="STR_ACM_Core_SETTING_TreatmentTime_TakeOffTourniquet">
             <English>Take Off Tourniquet Time</English>
             <French>Heure de retrait du garrot</French>
-            <Spanish>Tiempo para Retirar el Torniquete</Spanish>
+            <Spanish>Tiempo para retirar el torniquete</Spanish>
             <Polish>Czas zdjęcia opaski uciskowej</Polish>
             <Portuguese>Tempo para retirada do torniquete</Portuguese>
             <Russian>Время снятия жгута</Russian>
@@ -133,7 +133,7 @@
             <Key ID="STR_ACM_Core_AdenosineAutoinjector_Progress">
                 <English>Using Adenosine Autoinjector...</English>
                 <French>Utilisation de l'auto-injecteur d'adénosine...</French>
-                <Spanish>Usando el Autoinyector de Adenosina...</Spanish>
+                <Spanish>Usando el autoinyector de adenosina...</Spanish>
                 <Polish>Używanie autostrzykawki z adenozyną...</Polish>
                 <Portuguese>Usando autoinjetor de adenosina...</Portuguese>
                 <Russian>Использование автоинъектора аденозина...</Russian>
@@ -155,7 +155,7 @@
             <Key ID="STR_ACM_Core_EpinephrineAutoinjector_Progress">
                 <English>Using Epinephrine Autoinjector...</English>
                 <French>Utilisation de l'auto-injecteur d'épinéphrine...</French>
-                <Spanish>Usando el Autoinyector de Epinefrina...</Spanish>
+                <Spanish>Usando el autoinyector de epinefrina...</Spanish>
                 <Polish>Używanie autostrzykawki z epinefryną...</Polish>
                 <Portuguese>Usando autoinjetor de epinefrina...</Portuguese>
                 <Russian>Использование автоинъектора адреналина...</Russian>
@@ -177,7 +177,7 @@
             <Key ID="STR_ACM_Core_MorphineAutoinjector_Progress">
                 <English>Using Morphine Autoinjector...</English>
                 <French>Utilisation de l'auto-injecteur de morphine...</French>
-                <Spanish>Usando el Autoinyector de Morfina...</Spanish>
+                <Spanish>Usando el autoinyector de morfina...</Spanish>
                 <Polish>Używanie autostrzykawki z morfiną...</Polish>
                 <Portuguese>Usando autoinjetor de morfina...</Portuguese>
                 <Russian>Использование автоинъектора морфина...</Russian>
@@ -190,7 +190,7 @@
             <Key ID="STR_ACM_Core_AssistCarry_Already">
                 <English>Patient is already being carry-assisted</English>
                 <French>Le patient bénéficie déjà d'une assistance au portage</French>
-                <Spanish>El paciente ya está siendo portado</Spanish>
+                <Spanish>El paciente ya ha recibido ayuda con el porte</Spanish>
                 <Portuguese>O paciente já está sendo assistido para carregamento</Portuguese>
                 <Russian>Пациента уже подготовлен к переноске</Russian>
                 <Korean>환자가 이미 들기 보조를 받고 있는 상태입니다</Korean>
@@ -199,7 +199,7 @@
             <Key ID="STR_ACM_Core_AssistCarry_Cancelled">
                 <English>Carry-assist cancelled</English>
                 <French>L'assistance au portage a été annulée</French>
-                <Spanish>Porte cancelado</Spanish>
+                <Spanish>Ayuda al porte cancelada</Spanish>
                 <Portuguese>Assistência ao carregamento cancelada</Portuguese>
                 <Russian>Подготовка к переноске отменена</Russian>
                 <Korean>들기 보조 취소</Korean>
@@ -227,7 +227,7 @@
         <Container name="// Body Bag Return Items //">
             <Key ID="STR_ACM_Core_BodyBagReturnedItems">
                 <English>Medical items returned from body bag</English>
-                <Spanish>Material médico recuperado de la mortaja</Spanish>
+                <Spanish>Material médico recuperado de la bolsa de cadáveres</Spanish>
                 <Portuguese>Itens médicos recuperados do saco de cadáver</Portuguese>
                 <Russian>Медицинские предметы возвращены из мешка для тел</Russian>
                 <Korean>시체가방에서 의료 아이템 반환</Korean>
@@ -273,7 +273,7 @@
             <Key ID="STR_ACM_Core_CancelCarrying_Stopped">
                 <English>Stopped carrying %1</English>
                 <French>Arrêt du portage %1</French>
-                <Spanish>Has dejado de transportar al %1</Spanish>
+                <Spanish>Has dejado de transportar a %1</Spanish>
                 <Polish>Przestano nieść %1</Polish>
                 <Portuguese>Parou de carregar %1</Portuguese>
                 <Russian>Переноска %1 прекращена</Russian>
@@ -509,7 +509,7 @@
             <Key ID="STR_ACM_Core_TreatedBy">
                 <English>You are being treated by %1</English>
                 <French>Tu es traité par %1</French>
-                <Spanish>Estás siendo tratado por el</Spanish>
+                <Spanish>Estás siendo tratado por el %1</Spanish>
                 <Polish>%1 udziela ci pomocy</Polish>
                 <Portuguese>Você está sendo tratado por %1</Portuguese>
                 <Russian>Вас лечит %1</Russian>
