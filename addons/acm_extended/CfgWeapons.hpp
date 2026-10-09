@@ -20,7 +20,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -88,7 +88,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\vial_norepinephrine_ca.paa";  // todo[art]: a calcium icon.
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 0.5;
         };
     };
 
@@ -127,7 +127,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineFlush_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.6;
         };
     };
 
@@ -142,7 +142,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";  // todo[art]: a thermometer icon.
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 7.9;
         };
     };
 
@@ -167,7 +167,7 @@ class CfgWeapons {
         nameSound = "";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 35;
         };
     };
     // the EMMA mainstream capnograph. it attaches inline on a BVM, and the HUD reads out while ventilating.
@@ -179,7 +179,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\emma\emma_etco2_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 1.3;
         };
     };
     // combat gauze, hemostatic packing for junctional hemorrhage.
@@ -194,7 +194,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\combat_gauze_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 };
