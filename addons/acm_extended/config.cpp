@@ -863,7 +863,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
         descriptionShort = "Premixed 3% hypertonic saline. Osmotherapy for raised ICP.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 6.2; };
     };
     // the herniation rescue. 23.4 percent hypertonic saline in a 30 ml bullet, which is the concentrated push that
     // buys minutes of ICP reduction when a pupil has blown, as opposed to the 3 percent bag above which is a drip.
@@ -877,7 +877,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
         descriptionShort = "Concentrated osmotherapy bolus for herniation. Central access preferred. Buys minutes, does not fix the lesion.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1.2; };
     };
     // mannitol as a push rather than a bag. it draws water out of the brain and it also makes the casualty pass it,
     // so it drops the circulating volume, which is why it is the wrong choice in someone who is already dry.
@@ -923,7 +923,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\vent\laryngoscope_ca.paa";
         descriptionShort = "Rigid laryngoscope for direct-vision orotracheal intubation. Needed with an ET tube to intubate.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 4; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 7.7; };
     };
     class ACME_ETTube: ACE_ItemCore {
         author = "mavis";
@@ -933,7 +933,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\vent\et_tube_ca.paa";
         descriptionShort = "Cuffed endotracheal tube. Passed under direct laryngoscopy to secure a definitive airway.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.5; };
     };
     class ACME_MagnesiumBag: ACE_ItemCore {
         author = "mavis";
@@ -971,7 +971,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\plasmalyte-a_ca.paa";
         descriptionShort = "Balanced crystalloid, 1000 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable; no cells/protein/clotting factors (not plasma).";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 10; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 23.4; };
     };
     // smaller plasma-lyte a volumes, at 100, 250 and 500 ml. it is the same balanced crystalloid, and the mass
     // scales at about 1 per 100 ml.
@@ -980,21 +980,21 @@ class CfgWeapons {
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (500mL)";
         descriptionShort = "Balanced crystalloid, 500 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 5; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 12; };
     };
     class ACME_PlasmaLyteBag_250: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (250mL)";
         descriptionShort = "Balanced crystalloid, 250 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 6.3; };
     };
     class ACME_PlasmaLyteBag_100: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (100mL)";
         descriptionShort = "Balanced crystalloid, 100 mL. Small volume / carrier. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2.8; };
     };
     // small-volume saline bags, at 50 and 100 ml. these are flush and keep-open reserves. they are ideal as the
     // y-line saline reserve, because each flush line bleeds 50 ml, so a 50 ml bag is one flush and a 100 ml bag is
@@ -1007,7 +1007,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineiv_50ml_ca.paa";
         descriptionShort = "0.9% sodium chloride, 50 mL. Small flush / keep-vein-open volume. As a Y-line reserve this is one line flush.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1.5; };
     };
     class ACME_SalineBag_100: ACE_ItemCore {
         author = "mavis";
@@ -1017,7 +1017,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineiv_100ml_ca.paa";
         descriptionShort = "0.9% sodium chloride, 100 mL. Small flush / keep-vein-open volume. As a Y-line reserve this is two line flushes.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2.8; };
     };
 
     // intranasal esketamine atomizer. it gives battlefield analgesia with no iv access, and a medic administers it
@@ -1074,7 +1074,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -1091,7 +1091,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.11;
         };
     };
 
@@ -1109,7 +1109,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.11;
         };
     };
 
@@ -1129,7 +1129,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1148,7 +1148,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -1166,7 +1166,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1183,7 +1183,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.65;
         };
     };
 
@@ -1200,7 +1200,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.65;
         };
     };
 
@@ -1216,7 +1216,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 class ACM_Vial_Fentanyl: ACE_ItemCore {
@@ -1229,7 +1229,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1277,7 +1277,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\quantum_bloodwarmer_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 0.3;
+            mass = 13.75;
         };
     };
 
@@ -1311,7 +1311,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\nar_boa_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 0.2;
+            mass = 0.7;
         };
     };
 
@@ -1338,7 +1338,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACE_isMedicalItem = 1;
         ACME_premixedBag = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 6.2;
         };
     };
 
@@ -1431,7 +1431,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\salineFlush_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.6;
         };
     };
 
@@ -1446,7 +1446,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\suretemp690_thermometer_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 7.9;
         };
     };
 
@@ -1473,7 +1473,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         nameSound = "";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 35;
         };
     };
     // EMMA mainstream capnograph. it attaches inline on a BVM, and the HUD reads out while a medic ventilates.
@@ -1486,7 +1486,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\emma\emma_etco2_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 1.3;
         };
     };
     // combat gauze, hemostatic packing for junctional hemorrhage.
@@ -1503,7 +1503,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\combat_gauze_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1559,7 +1559,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\xstat_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;  // about 71 g. it has barely any footprint.
+            mass = 1.56;  // about 71 g. it has barely any footprint.
         };
     };
 
@@ -1601,7 +1601,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 500;
         ACME_coolerColdChainTime = 7200;  // 2 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 50;
+            mass = 20;
         };
     };
 
@@ -1618,7 +1618,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 1000;
         ACME_coolerColdChainTime = 5400;  // 1.5 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 100;
+            mass = 42;
         };
     };
 
@@ -1636,7 +1636,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 2000;
         ACME_coolerColdChainTime = 10800;  // 3 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 330;  // huge on purpose, so it fits vehicle cargo or a very large pack only.
+            mass = 75;
         };
     };
 };
