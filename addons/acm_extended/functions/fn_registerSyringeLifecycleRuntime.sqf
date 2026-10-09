@@ -10,6 +10,8 @@ if (hasInterface) then {
 
     player addEventHandler ["Respawn", {
         params ["_unit"];
+        if (isNull _unit || {!local _unit}) exitWith {};
+        [_unit] call ACM_core_fnc_equipmentKitChanged;
         [_unit] call ACME_fnc_resetPersonalMedicationKit;
     }];
 
@@ -18,17 +20,20 @@ if (hasInterface) then {
     // previously prepared syringes. Manual Arsenal browsing and ordinary inventory changes do not trigger this.
     ["ace_arsenal_onLoadoutLoad", {
         if (is3DEN) exitWith {};
-        private _unit = ACE_player;
-        if (isNull _unit) exitWith {};
+        private _unit = missionNamespace getVariable ["ace_arsenal_center", ACE_player];
+        if (isNull _unit || {!local _unit}) exitWith {};
+        [_unit] call ACM_core_fnc_equipmentKitChanged;
         [_unit] call ACME_fnc_resetPersonalMedicationKit;
     }] call CBA_fnc_addEventHandler;
 
-    // Clipboard-imported loadouts are another wholesale kit replacement path in ACE Arsenal.
+    // A clipboard-applied kit is a replacement. Importing a LIST of saved
+    // presets changes only the Arsenal library and must not reset a live kit.
     ["ace_arsenal_loadoutImported", {
-        params ["_display", ["_editorImport", false]];
-        if (is3DEN || {_editorImport}) exitWith {};
-        private _unit = ACE_player;
-        if (isNull _unit) exitWith {};
+        params ["_display", ["_importList", false]];
+        if (is3DEN || {_importList}) exitWith {};
+        private _unit = missionNamespace getVariable ["ace_arsenal_center", ACE_player];
+        if (isNull _unit || {!local _unit}) exitWith {};
+        [_unit] call ACM_core_fnc_equipmentKitChanged;
         [_unit] call ACME_fnc_resetPersonalMedicationKit;
     }] call CBA_fnc_addEventHandler;
 };

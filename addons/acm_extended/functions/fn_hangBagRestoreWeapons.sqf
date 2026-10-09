@@ -9,6 +9,10 @@ params [
     ["_episodeStart", -1, [0]]
 ];
 if (isNull _medic || {!local _medic}) exitWith {false};
+// A delayed owner-targeted restore may belong to an intentionally replaced
+// kit. Reject it before reading or mutating any current equipment slots.
+private _kitEpoch = _medic getVariable ["ACME_equipmentKitEpoch", 0];
+if ((_medic getVariable ["ACME_hang_weaponKitEpoch", _kitEpoch]) != _kitEpoch) exitWith {false};
 if (_episodeStart >= 0 && {(_medic getVariable ["ACME_hang_Start", -2]) != _episodeStart}) exitWith {false};
 if (_medic getVariable ["ACME_hang_Active", false]) exitWith {false};
 private _savedSlots = +(_medic getVariable ["ACME_hang_savedWeaponSlots", []]);

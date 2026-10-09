@@ -1,6 +1,8 @@
 // cancel the pre-raise animation if the treatment or progress bar is interrupted before the bag is up.
 params ["_medic"];
 if (isNull _medic || {!local _medic}) exitWith {};
+private _kitEpoch = _medic getVariable ["ACME_equipmentKitEpoch", 0];
+if ((_medic getVariable ["ACME_hang_weaponKitEpoch", _kitEpoch]) != _kitEpoch) exitWith {};
 _medic setVariable ["ACME_hang_Raising", false];
 _medic setVariable ["ACME_hang_PrepToken", (_medic getVariable ["ACME_hang_PrepToken", 0]) + 1];
 private _prone = _medic getVariable ["ACME_hang_Prone", false];

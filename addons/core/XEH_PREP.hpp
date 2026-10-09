@@ -51,3 +51,7 @@ PREP(registerContinuousRuntime);
 PREP(setCargoLoadCapability);
 PREP(registerDownedProtectionReason);
 PREP(suppressPhysicalBandageReopening);
+
+// Completed loadout replacement boundaries, including owner-local AI/HC.
+PREP(equipmentKitChanged);
+PREP(registerEquipmentKitRuntime);

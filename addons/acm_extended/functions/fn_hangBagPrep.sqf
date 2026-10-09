@@ -11,6 +11,8 @@ if ((_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []) exi
         call ace_common_fnc_displayTextStructured;
 };
 
+_medic setVariable ["ACME_hang_weaponKitEpoch", _medic getVariable ["ACME_equipmentKitEpoch", 0], true];
+
 private _prone = ([_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon";
 private _prepToken = (_medic getVariable ["ACME_hang_PrepToken", 0]) + 1;
 private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];

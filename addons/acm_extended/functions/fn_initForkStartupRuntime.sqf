@@ -1,8 +1,8 @@
 ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");
 if (ACME_infusion_version == "") then { ACME_infusion_version = "1.2.4.1"; };
-ACME_buildBatch = "B265";
+ACME_buildBatch = "B266";
 ACME_debugRevision = "";
-ACME_networkAuditRevision = "NA8-B265-1.2.4.1-candidate";
+ACME_networkAuditRevision = "NA8-B266-1.2.4.1-candidate";
 
 /*
  * B199 physical-dressing invariant.
@@ -21,6 +21,7 @@ call ACME_fnc_chestSealNetInit;
 [] call ACME_fnc_aiProtectionInit;
 [{ call ACME_fnc_ownerInit; }, []] call CBA_fnc_execNextFrame;
 call ACME_fnc_registerManualPlateCarrierRuntime;
+call ACM_core_fnc_registerEquipmentKitRuntime;
 
 // ACE prepares ace_dragging_fnc_dropObject_carry from its own source during startup, so attempting to own that
 // function through CfgFunctions creates a load-order race. Preserve ACME's only required post-drop behavior on
