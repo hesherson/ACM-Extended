@@ -58,9 +58,11 @@ if (isNil "ACME_manualPlateCarrierTrackEH") then {
         [{["ACME_manualPlateCarrierTrack", _this] call CBA_fnc_localEvent;}, [_this select 0]] call CBA_fnc_execNextFrame;
     }, true, [], true] call CBA_fnc_addClassEventHandler;
     ["CAManBase", "Killed", {
-        // Death preserves parked equipment/intervention evidence; retire only this runtime enrollment.
+        // Death neither restores nor deletes parked gear. Keep a currently
+        // removing corpse tracked for owner-local completion/timeout; the
+        // real Deleted event disposes of temporary objects.
         params ["_patient"];
-        ACME_manualPlateCarrierPatients = (missionNamespace getVariable ["ACME_manualPlateCarrierPatients", []]) - [_patient];
+        ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
     }] call CBA_fnc_addClassEventHandler;
 };
 if (isNil "ACME_manualPlateCarrierWatchPFH") then {
@@ -79,7 +81,7 @@ if (isNil "ACME_manualPlateCarrierWatchPFH") then {
         private _kept = [];
         {
             private _p = _x;
-            if (isNull _p || {!local _p} || {!alive _p}) then {continue};
+            if (isNull _p || {!local _p}) then {continue};
 
             private _state = _p getVariable ["ACME_manualPlateCarrierState", ""];
             if (_state == "") then {continue};

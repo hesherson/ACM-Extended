@@ -48,7 +48,10 @@ def test_current_phase129_hang_bag_visual_animation():
     assert 'ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true' in prep
     assert 'alive _medic' not in restore
     assert '!local _medic' in restore
-    assert 'setUnitLoadout _ld' in restore
+    assert '_medic setUnitLoadout' not in restore and '_medic setUnitLoadout' not in prep
+    assert 'removeWeapon (primaryWeapon _medic)' in prep
+    assert 'removeWeapon (secondaryWeapon _medic)' in prep
+    assert 'addWeaponItem [_weapon' in restore
     assert 'ACME_hang_savedWeaponSlots", nil, true' in restore
     assert 'ACME_hangRestoreWeapons' in stop
     assert 'ACME_hang_Medic' in canstart and 'ACME_hang_Active' in canstart

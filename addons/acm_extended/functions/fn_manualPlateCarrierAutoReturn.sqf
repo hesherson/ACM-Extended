@@ -73,20 +73,41 @@ private _restored = true;
 if (_hadCustody) then {
     _restored = [_patient, true, _provider, "access", true] call ACME_fnc_chestAccessVestRestore;
 };
+// A failed physical return must retain custody and the exact manual lease.
+// The previous code discarded both even when an equipment mod refused restore.
+if (_hadCustody && {!_restored}) exitWith {
+    if (_lease != "") then {
+        _leases set [_lease, [_provider, CBA_missionTime, "manualplatecarrier"]];
+        _patient setVariable ["ACME_chestAccess_leases", _leases, true];
+        _patient setVariable ["ACME_chestAccess_readyLease", _lease, true];
+    };
+    _patient setVariable ["ACME_manualPlateCarrierState", "off", true];
+    ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
+    diag_log format ["[ACME MANUAL PC B264] carrier return refused, custody retained patient=%1 reason=%2",
+        netId _patient, _reason];
+    if (_reason != "remove-timeout" && {!isNull _provider}) then {
+        ["ACME_manualPlateCarrierAck", [_patient, true, false], _provider] call CBA_fnc_targetEvent;
+    };
+    false
+};
 
 _patient setVariable ["ACME_manualPlateCarrierState", "", true];
 ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
 _patient setVariable ["ACME_manualPlateCarrierLease", "", true];
 _patient setVariable ["ACME_manualPlateCarrierProvider", objNull, true];
 _patient setVariable ["ACME_manualPlateCarrierOriginASL", [], true];
+_patient setVariable ["ACME_manualPlateCarrierStartedAt", -1, true];
 _patient setVariable ["ACME_manualPlateCarrierRemoved", false, true];
 
-if (_restored && {_hadCustody || {(vest _patient) != ""}}) then {
+// Never claim a "returned" carrier for a timed-out remove that never took
+// off the vest. A genuine physical return requires settled custody.
+if (_restored && {_hadCustody} && {(vest _patient) != ""}) then {
     [_patient, "activity", format ["Plate carrier automatically returned (%1)", _reason], []]
         call ace_medical_treatment_fnc_addToLog;
 };
 
-if (!isNull _provider) then {
+// A remove-timeout is a failed Remove action, not a successful Replace.
+if (!isNull _provider && {_reason != "remove-timeout"}) then {
     ["ACME_manualPlateCarrierAck", [_patient, true, _restored], _provider] call CBA_fnc_targetEvent;
 };
 true

@@ -252,6 +252,7 @@ switch (_operation) do {
     case "shock": {_args call ACME_fnc_shockLocal;};
     case "ventAirwayLoss": {_args call ACME_fnc_ventAirwayLoss;};
     case "manualPlateCarrier": {_args call ACME_fnc_manualPlateCarrierCommit;};
+    case "manualPlateCarrierAbortRemoval": {_args call ACME_fnc_manualPlateCarrierAbortRemoval;};
     case "manualPlateCarrierAutoReturn": {_args call ACME_fnc_manualPlateCarrierAutoReturn;};
     case "syncArmed": {
         _args params [["_medic", objNull, [objNull]], ["_armed", false, [false]], ["_epoch", -1, [0]]];

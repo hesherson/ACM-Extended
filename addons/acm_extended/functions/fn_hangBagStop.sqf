@@ -33,6 +33,8 @@ private _visualJip = _medic getVariable ["ACME_hang_VisualJip", ""];
 if (local _medic) then { [_medic, ""] call ACME_fnc_doAnimHeld; };
 _medic setVariable ["ACME_hang_Active", false, true];
 
+// B264: weapon restoration no longer rebuilds the unit loadout; preserve
+// uniform hidden selections while the existing bag lowering completes.
 // immediate: stop all the per-frame machinery and the cancel prompt.
 private _ownsInput = (uiNamespace getVariable ["ACME_HangInputMedic", objNull]) isEqualTo _medic;
 [_medic, false] call ACME_fnc_hangBagInputLock;

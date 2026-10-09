@@ -1,5 +1,15 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B264 (manual carrier / modded gear integrity)
+
+- Manual **Remove Plate Carrier** now initiates the original patient-owner Grab/Hold/Remove/Release transaction without waiting for a separate medic4/provider animation acknowledgement, which could consume the entire eight-second deadline under a slow or heavily modded server.
+- Successful removal commits through a single idempotent lease-checked patient-owner worker. A locality-transfer owner can finish the same verified removal; old callbacks cannot duplicate medical activity or replace a later episode.
+- The removal timeout now has a 20-second bounded failure path, retaining identity across owner handoffs. An unsuccessful removal explicitly reports failure instead of falsely logging `Plate carrier automatically returned (remove-timeout)` when the vest never left the patient. Failed real returns preserve custody records for retry.
+- Hang Bag removes only the temporary primary/launcher weapons via `removeWeapon` and restores the original classes, attachments and partially loaded magazines via `addWeapon`/`addWeaponItem` without `setUnitLoadout`. Restoration validates each saved slot and retains unmatched records if a third-party weapon mod refuses them.
+- The pre-B218 legacy carrier-restoration fallback now re-equips only the saved vest and its contents, never rebuilding the casualty's full uniform/loadout. Live carrier inventory/supply custody remains authoritative and unchanged.
+- Reviewed unmerged equipment compatibility submissions PRs #42 and #43; integrated an audited variant of their no-full-loadout-reset approach. Unrelated unmerged medical-item mass/weight PRs are **not** implicitly applied.
+- Added B264 regression coverage and dedicated-server acceptance checks for mixed player/AI ownership, the provider-queue timeout, exact ammo and magazine restoration, live vest contents, and uniform hidden selections (boots, gloves, camouflage, sleeves). Public version remains **1.2.4.1**; B264 is a candidate pending strict CI, HEMTT and live multiplayer acceptance.
+
 ## 1.2.4.1 — B263 (multiplayer modal procedure resilience)
 
 - Chest Seal and Thoracostomy now retire BOTH ACE's native medical-menu PFH and ACME's generation-bound independent renderer **before** closing the old menu, preventing the stale ACE closeDialog call from destroying their new panel.

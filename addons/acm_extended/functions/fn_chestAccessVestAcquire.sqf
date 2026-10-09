@@ -570,6 +570,23 @@ private _providerArgs = [
     _commitRemoval,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient,_workspaceToken,_readyOnRemoval
 ];
 
+// B264: manual carrier removal is independent of provider animation delivery.
+// Busy multiplayer/modded clients must not hold the patient-side removal behind
+// a 4.75-second medic4 readiness wait. Retain its own patient Grab/Hold/Release
+// and exact cargo/parking lease while bypassing the provider presentation queue.
+if (_treatmentClass == "manualplatecarrier") exitWith {
+    private _patientArgs = [
+        _patient,_medic,_context,_savedVar,_propVar,_pfhVar,_busyVar,_readyVar,_token,
+        _commitRemoval,_liftTime,_holdTime,_lowerTime,_removeAnimSpeed,_sequenceTime,_beginPatient,_readyOnRemoval
+    ];
+    if ((_preDelay max 0) > 0) then {
+        [_beginPatient, _patientArgs, _preDelay max 0] call CBA_fnc_waitAndExecute;
+    } else {
+        _patientArgs call _beginPatient;
+    };
+    true
+};
+
 // Stable thoracostomy deliberately has NO provider chestAccess/medic4 owner. Only the casualty/gear transaction
 // runs here. This removes the provider freeze/release race entirely while preserving the same carrier/Semi-Fowler
 // preparation and owner-authoritative readiness signal used by the other chest procedures.

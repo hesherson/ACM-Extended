@@ -2006,6 +2006,8 @@ class CfgFunctions {
             class carrierSupplyTake {};
             class manualPlateCarrierCanToggle {};
             class manualPlateCarrierCommit {};
+            class manualPlateCarrierCompleteRemoval {};
+            class manualPlateCarrierAbortRemoval {};
             class manualPlateCarrierAutoReturn {};
             class manualPlateCarrierHeadElevSupport {};
             class registerManualPlateCarrierRuntime {};

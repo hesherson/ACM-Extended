@@ -86,6 +86,7 @@ _patient setVariable ["ACME_manualPlateCarrierState", "removing", true];
 _patient setVariable ["ACME_manualPlateCarrierLease", _lease, true];
 _patient setVariable ["ACME_manualPlateCarrierProvider", _medic, true];
 _patient setVariable ["ACME_manualPlateCarrierOriginASL", getPosASL _patient, true];
+_patient setVariable ["ACME_manualPlateCarrierStartedAt", serverTime, true];
 _patient setVariable ["ACME_manualPlateCarrierRemoved", false, true];
 
 // This is the same owner-side transaction used by normal chest access. The persistent lease prevents its custody
@@ -109,35 +110,11 @@ _patient setVariable ["ACME_manualPlateCarrierRemoved", false, true];
     if (isNull _p || {!local _p}) exitWith {};
     if ((_p getVariable ["ACME_manualPlateCarrierLease", ""]) != _lease) exitWith {};
 
-    _p setVariable ["ACME_manualPlateCarrierState", "off", true];
-    ["ACME_manualPlateCarrierTrack", [_p]] call CBA_fnc_localEvent;
-    _p setVariable ["ACME_manualPlateCarrierRemoved", true, true];
-
-    [_medic, "chestAccessVestProvider", [_medic, _p, "manualstop", false, "", _lease]]
-        call ACME_fnc_ownerDispatch;
-
-    // Manual removal may have temporarily flattened an existing Semi-Fowler placement. Once the carrier-removal
-    // choreography is genuinely complete, borrow the removed carrier as support and resume the normal elevated
-    // patient/provider choreography instead of leaving the persistent manual lease blocking re-elevation.
-    if ((_p getVariable ["ACME_headElevated", false])
-        && {_p getVariable ["ACME_headElev_Suspended", false]}) then {
-        if ((backpack _p) == "") then {
-            [_p, "borrow"] call ACME_fnc_manualPlateCarrierHeadElevSupport;
-        };
-        _p setVariable ["ACME_headElev_ResumePending", true, true];
-        private _poseToken = _p getVariable ["ACME_headElev_poseToken", ""];
-        [{_this call ACME_fnc_headElevTryResume;}, [_p, _poseToken], 0.05] call CBA_fnc_waitAndExecute;
-    };
-
-    [_p, "activity", "Plate carrier manually removed", []] call ace_medical_treatment_fnc_addToLog;
-    ["ACME_manualPlateCarrierAck", [_p, false, true], _medic] call CBA_fnc_targetEvent;
-}, [_patient, _medic, _lease], 8, {
-    params ["_p", "_medic"];
-    if (!isNull _p) then {
-        [_p, "remove-timeout"] call ACME_fnc_manualPlateCarrierAutoReturn;
-    } else {
-        ["ACME_manualPlateCarrierAck", [_p, false, false], _medic] call CBA_fnc_targetEvent;
-    };
+    [_p, _medic, _lease] call ACME_fnc_manualPlateCarrierCompleteRemoval;
+}, [_patient, _medic, _lease], 20, {
+    params ["_p", "_medic", "_lease"];
+    // An old owner timeout must not retire a newer successful/manual session.
+    [_p, _medic, _lease, "remove-timeout"] call ACME_fnc_manualPlateCarrierAbortRemoval;
 }] call CBA_fnc_waitUntilAndExecute;
 
 true
