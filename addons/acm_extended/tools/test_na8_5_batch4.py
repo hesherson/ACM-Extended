@@ -187,7 +187,15 @@ class ThoracostomySource(unittest.TestCase):
         s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');take=s.index('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',a)
         self.assertLess(s.index('ACME_thora_sealed_%1',a),take)
         self.assertLess(s.index('ACME_Thora_SealPending',a),take)
-        self.assertLess(s.index('call ACME_fnc_ptxCanClose',a),take)
+        # A vented dressing can cover completed finger access before the leak
+        # settles. Repeat, incomplete, closed and unauthorized placement must
+        # still fail before reserving its one real supply receipt.
+        prefix=s[a:take]
+        self.assertIn('count (_patient getVariable [format ["ACME_thora_incision_%1", _side], []]) != 3',prefix)
+        self.assertIn('(_patient getVariable [format ["ACME_thora_open_%1", _side], ""]) != "finger"',prefix)
+        self.assertLess(s.index('ACME_thora_closed_%1',a),take)
+        self.assertLess(s.index('[_medS, "thoracostomySeal", true] call ACME_fnc_procedureAllowed',a),take)
+        self.assertNotIn('ACME_fnc_ptxCanClose',s[a:s.index('private _tubeMedic',a)])
     def test_hover_selects_shared_slot(self):
         # Retain the historical identity, not the retired shared-slot alias. The current
         # separate tube/seal rows must never claim each other's held-tool shadow.

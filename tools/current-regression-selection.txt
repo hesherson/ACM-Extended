@@ -145,3 +145,4 @@ tools/test_fork_phase164_chest_animation_contract.py
 tools/test_fork_phase167_chest_minigame_animation_contract.py
 tools/test_fork_phase168_supine_patient_invariant.py
 addons/acm_extended/tools/test_bounded_head_weapon_contract.py
+addons/acm_extended/tools/test_na8_5_batch4.py
