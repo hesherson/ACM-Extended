@@ -69,7 +69,9 @@ class ContextSourceContracts(unittest.TestCase):
         s = source('ptxContext')
         for forbidden in ('setVariable', 'setVarNet', 'displayText', 'hint ', 'medLog', 'globalEvent', 'addPerFrameHandler'):
             self.assertNotIn(forbidden, s)
-        self.assertIn('[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet]', s)
+        # B271 appends definitive-drain status; the seven historical clinical
+        # indices remain in their original order for every existing consumer.
+        self.assertIn('[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet, _hasDefinitiveDrain]', s)
 
     def test_discovery_flag_cannot_change_physiology(self):
         s = source('ptxContext')

@@ -441,23 +441,43 @@ switch (_operation) do {
     case "tbiInit": { _args call ACME_fnc_tbiInit; };
     case "thoraDrain": { [_patient] call ACME_fnc_thoraPassiveDrain; };
     case "thoraAftercare": {
-        if ((_args param [3, ""]) != "widen") exitWith {_args call ACME_fnc_thoraAftercareLocal;};
+        private _operation = _args param [3, ""];
+        if !(_operation in ["widen", "seal"]) exitWith {_args call ACME_fnc_thoraAftercareLocal;};
         _args params ["", "_medic", "_side", "", "_epoch", ["_request", []], "", ["_receipt", []]];
         if (!(_request isEqualType []) || {count _request != 3} || {isNull _medic}
             || {(_request findIf {!(_x isEqualType 0) || {!finite _x}}) >= 0}) exitWith {};
-        private _results = (_patient getVariable ["ACME_thoraWidenResults", []]) select {serverTime <= (_x select 3)};
+        private _resultKey = if (_operation == "seal") then {"ACME_thoraSealResults"} else {"ACME_thoraWidenResults"};
+        private _results = (_patient getVariable [_resultKey, []]) select {serverTime <= (_x select 3)};
         private _known = _results findIf {(_x select 0) == _epoch && {(_x select 1) isEqualTo _request} && {(_x select 2) == _side}};
-        private _accepted = _known >= 0;
-        if (!_accepted && {count _results < 128}) then {
+        private _accepted = if (_known >= 0) then {(_results select _known) param [4, true]} else {false};
+        private _fresh = _operation != "seal" || {
+            (_request select 0) >= 0 && {(_request select 0) == floor (_request select 0)}
+            && {(_request select 1) >= 1} && {(_request select 1) == floor (_request select 1)}
+            && {serverTime - (_request select 2) <= 15} && {(_request select 2) - serverTime <= 2}
+        };
+        // An unknown old query is not proof that no item was used. Preserve its
+        // reservation; never manufacture a rejection/refund after losing evidence.
+        if (_operation == "seal" && {_known < 0} && {!_fresh}) exitWith {};
+        if (_known >= 0 && {_operation == "seal"}) then {
+            // Active reconciliation keeps the decision alive. Inactive results
+            // expire, so repeated injuries cannot exhaust a lifetime ledger.
+            (_results select _known) set [3, serverTime + 120];
+            _patient setVariable [_resultKey, _results, true];
+        };
+        if (_known < 0 && {_fresh} && {_operation == "seal" || {count _results < 128}}) then {
             _accepted = (_args call ACME_fnc_thoraAftercareLocal) isEqualTo true;
-            if (_accepted) then {
-                _results pushBack [_epoch, +_request, _side, serverTime + 60];
-                _patient setVariable ["ACME_thoraWidenResults", _results, true];
+            // Seal rejections are final too: a delayed copy cannot consume an
+            // already-refunded reservation after the patient's condition changes.
+            if (_accepted || {_operation == "seal"}) then {
+                private _result = [_epoch, +_request, _side, serverTime + (if (_operation == "seal") then {120} else {60})];
+                if (_operation == "seal") then {_result pushBack _accepted;};
+                _results pushBack _result;
+                _patient setVariable [_resultKey, _results, true];
             };
         };
         private _origin = _request select 0;
         private _replyTarget = if (_origin >= 2) then {_origin} else {_medic};
-        ["ACME_thoraAftercareAck", [_patient, _side, _epoch, _request, _receipt, _accepted], _replyTarget] call CBA_fnc_targetEvent;
+        ["ACME_thoraAftercareAck", [_patient, _side, _epoch, _request, _receipt, _accepted, _operation], _replyTarget] call CBA_fnc_targetEvent;
     };
     case "thoraSideState": {_args call ACME_fnc_thoraSideStateCommit;};
     case "thoraBumpVer": {_args call ACME_fnc_thoraBumpVer;};

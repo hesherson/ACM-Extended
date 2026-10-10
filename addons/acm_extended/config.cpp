@@ -2265,6 +2265,7 @@ class CfgFunctions {
             class ptxTreat {};
             class ptxAmbientChange {};
             class ptxContext {};
+            class ptxCanClose {};
 
             class ivCathSetFrame {};
             class ivMinigamePullTick {};
@@ -2690,6 +2691,7 @@ class CfgFunctions {
             class thoraMouseDown {};
             class thoraAftercareLocal {};
             class thoraAftercareRequest {};
+            class thoraAftercareRetry {};
             class thoraAftercareAck {};
             class thoraDrainBloodLocal {};
             class thoraCanSweep {};

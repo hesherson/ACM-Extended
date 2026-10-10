@@ -190,10 +190,16 @@ def test_aftercare_rejects_invalid_owner_episode_provider_or_tract(change):
 def chest_effect_setup():
     # Localization and triage rendering are presentation boundaries only.
     effect=function('chestSealEffectLocal',extended=True).replace('localize "STR_ACM_Breathing_ChestSeal"','"ChestSeal"')
-    return aftercare_setup()+effect+'''
+    return aftercare_setup()+function('ptxCanClose',extended=True)+effect+'''
         private _injuries=0; private _wholeChestSeals=0; private _nativeChanges=[];
         ACME_fnc_ptxInjury={_injuries=_injuries+1;};
         ACME_fnc_ptxEnsure={};
+        // Explicit context boundary for these closure-transport cases: external
+        // wounds are already covered and the existing opposite-side tube is patent.
+        ACME_fnc_ptxContext={[0,0,5,0,1,true,false,true]};
+        missionNamespace setVariable ["ACME_ptx_stableSec",60];
+        _patient setVariable ["ACME_ptx_state",[1,0.5,0,60,0,0,1,1,60]];
+        _patient setVariable ["ACME_ptx_observationRevision",1];
         ACM_breathing_fnc_applyChestSealLocal={_wholeChestSeals=_wholeChestSeals+1;};
         ACM_breathing_fnc_setRuntimeState={_nativeChanges append (_this select 1);};
         ace_medical_treatment_fnc_addToTriageCard={};
@@ -212,8 +218,14 @@ def test_seal_peel_rejects_stale_effects_and_never_creates_a_new_injury(blocked,
 
 @pytest.mark.parametrize('epoch,tube,tract,accepted',[(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)])
 def test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds(epoch,tube,tract,accepted):
-    execute(chest_effect_setup()+f'_patient setVariable ["ACME_thora_open_left","{tract}"]; _patient setVariable ["ACME_thora_tube_left",{str(tube).lower()}];'+
-        f'[_patient,_medic,"thoraSeal",["left",{epoch}]] call ACME_fnc_chestSealEffectLocal;'+
+    execute(chest_effect_setup()+'''
+        // A surgical seal now closes an owner-verified ready, unsealed tract.
+        // The retained epoch/tube/tract matrix still tests the same rejection fences.
+        _patient setVariable ["ACME_thora_sealed_left",false];
+        _patient setVariable ["ACME_thora_closed_left",false];
+    '''+f'_patient setVariable ["ACME_thora_open_left","{tract}"]; _patient setVariable ["ACME_thora_tube_left",{str(tube).lower()}];'+
+        f'private _accepted=[_patient,_medic,"thoraSeal",["left",{epoch}]] call ACME_fnc_chestSealEffectLocal;'+
+        f'[_accepted isEqualTo {str(accepted).lower()},"surgical seal acknowledgement mismatch"] call _check;'+
         f'[count _writes=={3 if accepted else 0} && {{_effects=={int(accepted)}}},"surgical seal accepted invalid tract/epoch"] call _check;'+'''
         [_wholeChestSeals==0 && {count _nativeChanges==0},"surgical seal changed whole-chest coverage"] call _check;
         [_patient getVariable ["ACME_thora_tube_right",false],"surgical seal changed opposite tube"] call _check;

@@ -1,8 +1,8 @@
 /* Read-only pleural context. No patient state, UI, or progression writes.
-   [openHoles,totalHoles,ventCapacity,bleedSource0to1,ppvFactor,hasDrain,hasSealOutlet]
+   [openHoles,totalHoles,ventCapacity,bleedSource0to1,ppvFactor,hasDrain,hasSealOutlet,hasDefinitiveDrain]
    Capacities are gameplay coefficients for ptxStep, not physical flow units. */
 params [["_patient", objNull, [objNull]]];
-if (isNull _patient) exitWith {[0, 0, 0, 0, 1, false, false]};
+if (isNull _patient) exitWith {[0, 0, 0, 0, 1, false, false, false]};
 
 private _holes = _patient getVariable ["ACME_CS_holeData", []];
 if !(_holes isEqualType []) then {_holes = [];};
@@ -132,4 +132,4 @@ if !(_lastBreath isEqualType 0 && {finite _lastBreath}) then {_lastBreath = -100
 private _breathAge = (serverTime - _lastBreath) max 0;
 if (alive _provider && {_breathAge >= 0} && {_breathAge <= 12}) then {_ppvFactor = _ppvFactor max 1.5;};
 
-[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet]
+[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet, _hasDefinitiveDrain]

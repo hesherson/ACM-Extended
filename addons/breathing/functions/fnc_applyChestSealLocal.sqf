@@ -14,7 +14,9 @@ private _thoracostomyOpen = (_patient getVariable ["ACM_breathing_Thoracostomy_S
 private _tubeInstalled = (_patient getVariable ["ACME_thora_tube_left", false])
     || {_patient getVariable ["ACME_thora_tube_right", false]};
 
-if (_thoracostomyOpen && {!_tubeInstalled}) then {
+// Ordinary traumatic wound sealing remains available while surgical closure
+// waits for controlled, settled PTX. It must not close an unstable drain.
+if (_thoracostomyOpen && {!_tubeInstalled} && {[_patient] call ACME_fnc_ptxCanClose}) then {
     [_medic, _patient] call ACM_breathing_fnc_Thoracostomy_closeLocal;
 };
 

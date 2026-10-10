@@ -31,7 +31,7 @@ private _settings = [
             };
         }],
     ["ACME_ptx_stableSec", "SLIDER",
-        ["Pneumothorax stability interval", "Seconds of controlled air accumulation before the internal model records stability. Does not display a provider notification."],
+        ["Pneumothorax stability interval", "Seconds of low, controlled PTX with a patent finger thoracostomy or chest tube, covered communicating wounds and relieved tension before the internal leak settles. Settled, observed PTX permits surgical closure. No provider notification is displayed."],
         [_cTrau, "Pneumothorax"], [0, 300, 60, 0], 1, {}],
     ["ACME_ptx_leakSettleSec", "SLIDER",
         ["Pneumothorax leak settling time", "Simulation time scale for internal air leaks to settle. Larger values prolong leakage. Open chest wounds and actual drainage remain consequential."],

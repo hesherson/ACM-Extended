@@ -4,7 +4,7 @@ if (isNull _patient || {!local _patient}
     || {isNull _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
     || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}
     || {!(_side in ["left", "right"])}
-    || {!(_operation in ["peel", "burp", "sweep", "widen"])}) exitWith {false};
+    || {!(_operation in ["peel", "burp", "sweep", "widen", "seal"])}) exitWith {false};
 if ((_medic distance _patient) > 5) exitWith {false};
 private _procedure = if (_operation in ["sweep", "widen"]) then {"thoracostomy"} else {"thoracostomySeal"};
 if !([_medic, _procedure, _operation != "widen"] call ACME_fnc_procedureAllowed) exitWith {false};
@@ -13,6 +13,10 @@ if (count (_patient getVariable [format ["ACME_thora_incision_%1", _side], []]) 
 private _tract = _patient getVariable [format ["ACME_thora_open_%1", _side], ""];
 private _sealed = _patient getVariable [format ["ACME_thora_sealed_%1", _side], false];
 private _closed = _patient getVariable [format ["ACME_thora_closed_%1", _side], false];
+if (_operation == "seal") exitWith {
+    if (_tract != "finger" || {_sealed} || {_closed}) exitWith {false};
+    [_patient, _medic, "thoraSeal", [_side, _epoch]] call ACME_fnc_chestSealEffectLocal
+};
 if (_operation == "sweep" && {_tract != "finger" || {_sealed} || {_closed}}) exitWith {false};
 if (_operation == "widen" && {_tract != "kelly" || {_sealed} || {_closed}}) exitWith {false};
 if (_operation in ["peel", "burp"] && {!_sealed || {!(_tract in ["sealed", "finger"])}}) exitWith {false};

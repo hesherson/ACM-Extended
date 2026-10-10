@@ -89,8 +89,15 @@ class TreatmentProgressionContracts(unittest.TestCase):
         click=read_source(ROOT/'functions/fn_thoraMouseDown.sqf')
         seal=click.split('if (_held == "seal") exitWith {',1)[1].split('private _tubeMedic',1)[0]
         self.assertNotIn('call ACM_breathing_fnc_applyChestSeal',seal)
-        self.assertIn('"chestEffect", [_patient, _medS, "thoraSeal"',seal)
-        self.assertIn('call ACME_fnc_clinicalEpoch',seal)
+        self.assertIn('[_patient, _medS, _side, "seal", false, _receipt] call ACME_fnc_thoraAftercareRequest',seal)
+        request=read_source(ROOT/'functions/fn_thoraAftercareRequest.sqf')
+        self.assertIn('call ACME_fnc_clinicalEpoch',request)
+        self.assertNotIn('"chestEffect"',seal)
+        self.assertNotIn('call ACME_fnc_thoraSideStateCommit',seal)
+        effect=read_source(ROOT/'functions/fn_chestSealEffectLocal.sqf')
+        surgical=effect.split('case "thoraSeal": {',1)[1].split('case "peel":',1)[0]
+        self.assertLess(surgical.index('if !([_patient] call ACME_fnc_ptxCanClose) exitWith {false};'),
+                        surgical.index('call ACME_fnc_thoraSideStateCommit'))
         self.assertNotIn('They still need a tube',click)
         from test_historical_airway_execution import test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds
         for epoch,tube,tract,accepted in [(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)]:
@@ -100,6 +107,10 @@ class TreatmentProgressionContracts(unittest.TestCase):
         text = override("Thoracostomy_closeLocal")
         self.assertLess(text.index('ACME_thora_tube_left'), text.index('call ACME_fnc_ptxEnsure'))
         self.assertLess(text.index('ACME_thora_tube_right'), text.index('call ACME_fnc_ptxEnsure'))
+        readiness=text.index('if !([_patient] call ACME_fnc_ptxCanClose) exitWith {')
+        self.assertLess(text.index('if (!local _patient) exitWith'),readiness)
+        self.assertLess(text.index('call ACME_fnc_ptxEnsure'),readiness)
+        self.assertLess(readiness,text.index('_patient setVariable'))
         for field in ("open", "tube", "sealed", "incision", "site"):
             self.assertIn(f'"ACME_thora_{field}_%1"', text)
         self.assertIn('"ACME_thora_ver"', text)

@@ -163,19 +163,22 @@ if (_held in ["seal", "tube"]) exitWith {
         if (_patient getVariable [format ["ACME_thora_sealed_%1", _side], false]) exitWith {false};
         private _medS = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
         if !([_medS, "thoracostomySeal", true] call ACME_fnc_procedureAllowed) exitWith {false};
+        private _pendingSeal = uiNamespace getVariable ["ACME_Thora_SealPending", []];
+        if (count _pendingSeal >= 5 && {(_pendingSeal select 0) isEqualTo _patient}
+            && {(_pendingSeal select 2) == ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {false};
+        if !([_patient] call ACME_fnc_ptxCanClose) exitWith {
+            ["Maintain chest drainage until PTX is stable, and seal all chest wounds before closing the incision.", 3] call ace_common_fnc_displayTextStructured;
+            false
+        };
         private _receipt = [_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake;
         if (_receipt isEqualTo []) exitWith {
             ["No chest seal available.", 2] call ace_common_fnc_displayTextStructured;
             false
         };
-        [_receipt, false] call ACME_fnc_treatmentSupplyRefund;
-        [_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit;
-        [_patient, _side, "closed", true] call ACME_fnc_thoraSideStateCommit;
-        [_patient] call ACME_fnc_thoraBumpVer;
-        // This operation is deliberately distinct from native whole-chest sealing.
-        // The owner validates the captured clinical epoch before changing physiology.
-        ["ACME_ownerCommand", [_patient, "chestEffect", [_patient, _medS, "thoraSeal",
-            [_side, [_patient] call ACME_fnc_clinicalEpoch], "", CBA_missionTime]], _patient] call CBA_fnc_targetEvent;
+        // Reserve once; the patient owner rechecks readiness and acknowledges the
+        // same transaction. A rejected or concurrent closure refunds this seal.
+        // No speculative provider field can remove the drain before acceptance.
+        [_patient, _medS, _side, "seal", false, _receipt] call ACME_fnc_thoraAftercareRequest;
         [] call ACME_fnc_thoraRenderTube;
         ["tube"] call ACME_fnc_thoraSelectTool;
         false

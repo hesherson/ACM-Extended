@@ -15,6 +15,7 @@
   ["ACME_seizure_arrestStartedAt", "", true, false],
   // The PTX model stores elapsed durations, never an owner's raw scheduler clock.
   ["ACME_ptx_state", "", true, true],
+  ["ACME_ptx_observationRevision", "", true, true],
   ["ACME_ptx_tensionSeverity", "", true, true],
   ["ACME_ptx_nativeSealCount", "", true, true],
   ["ACME_ptx_nativeSealHoleCount", "", true, true],

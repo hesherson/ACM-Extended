@@ -12,6 +12,7 @@ private _budget = [100000];
 private _reason = "";
 private _required = createHashMapFromArray [
     ["ACME_ptx_state","ARRAY"], ["ACME_ptx_tensionSeverity","SCALAR"],
+    ["ACME_ptx_observationRevision","SCALAR"],
     ["ACME_ptx_nativeSealCount","SCALAR"],
     ["ACME_ptx_nativeSealHoleCount","SCALAR"],
     ["ACME_pendingFlush","ARRAY"],
@@ -62,6 +63,9 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
         };
         case "ACME_ptx_tensionSeverity": {
             _bad = !([_v] call _number) || {_v < 0 || {_v > 1}};
+        };
+        case "ACME_ptx_observationRevision": {
+            _bad = !([_v] call _number) || {!(_v in [0, 1])};
         };
         case "ACME_ptx_nativeSealCount";
         case "ACME_ptx_nativeSealHoleCount": {

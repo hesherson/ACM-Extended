@@ -5,6 +5,13 @@ if (_payload isEqualTo []) exitWith {[_patient] call ACME_fnc_ownerRegister;};
 private _validation = [_payload] call ACME_fnc_clinicalValidate;
 if !(_validation select 0) exitWith {};
 private _allowed = ((call ACME_fnc_clinicalFields) select {_x param [3, true]}) apply {_x select 0};
+// Restoring a pre-B271 episode onto an existing casualty must not borrow the
+// current casualty's marker and turn an old quiet timer into closure readiness.
+private _restoredPtx = ((_payload select 1) findIf {(_x select 0) == "ACME_ptx_state"}) >= 0;
+private _restoredObservation = ((_payload select 1) findIf {(_x select 0) == "ACME_ptx_observationRevision"}) >= 0;
+if (_restoredPtx && {!_restoredObservation}) then {
+    _patient setVariable ["ACME_ptx_observationRevision", nil, true];
+};
 private _chest = [];
 private _ettRestore = createHashMap;
 private _rocRestoreSet = false;

@@ -104,6 +104,12 @@ def test_aftercare_is_owner_routed_and_epoch_guarded():
     for gate in ['!local _patient','!alive _medic','ACME_fnc_clinicalEpoch','["left", "right"]',
                  'ACME_fnc_procedureAllowed','ACME_thora_incision_%1','ACME_thora_tube_%1']:
         assert gate in aftercare
+    seal=block(aftercare, 'if (_operation == "seal") exitWith {')
+    assert '[_patient, _medic, "thoraSeal", [_side, _epoch]] call ACME_fnc_chestSealEffectLocal' in seal
+    assert 'exitWith {false}' in seal and 'ACME_fnc_thoraSideStateCommit' not in seal
+    effect=read('functions/fn_chestSealEffectLocal.sqf')
+    owner_seal=block(effect,'case "thoraSeal": {')
+    assert owner_seal.index('if !([_patient] call ACME_fnc_ptxCanClose) exitWith {false};') < owner_seal.index('call ACME_fnc_thoraSideStateCommit')
     # Availability must not reveal death; the physiology call alone is live-only.
     from test_historical_airway_execution import test_aftercare_remains_available_on_dead_patients_without_resuming_physiology
     for operation in ['peel','burp','sweep']:
