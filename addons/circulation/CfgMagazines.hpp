@@ -49,6 +49,7 @@ class CfgMagazines {
         displayName = CSTRING(Inhaler_Penthrox);
         descriptionShort = CSTRING(Inhaler_Penthrox_Desc);
         count = 8;
+        mass = 2.2;
     };
 
     class ACM_Syringe_10_Epinephrine: ACM_Paracetamol {
