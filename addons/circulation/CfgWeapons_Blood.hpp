@@ -8,6 +8,9 @@ class ACM_BloodBag_O_1000: ACE_bloodIV {
     author = "Blue";
     displayName = __EVAL(call compile BLOODBAG_NAME_FORMAT('O+ (1000ml)'));
     descriptionShort = CSTRING(BloodBag_Desc);
+    class ItemInfo: CBA_MiscItem_ItemInfo {
+        mass = 25;
+    };
 };
 
 #define BLOODBAG_ENTRY(type,amount,name) \
@@ -31,6 +34,9 @@ class ACM_BloodBag_O_500: ACE_bloodIV_500 {
     author = "Blue";
     displayName = __EVAL(call compile BLOODBAG_NAME_FORMAT('O+ (500ml)'));
     descriptionShort = CSTRING(BloodBag_Desc);
+    class ItemInfo: CBA_MiscItem_ItemInfo {
+        mass = 12.9;
+    };
 };
 
 BLOODBAG_ENTRY(ON,500,__EVAL(call compile BLOODBAG_NAME_FORMAT('O- (500ml)')));
@@ -49,6 +55,9 @@ class ACM_BloodBag_O_250: ACE_bloodIV_250 {
     author = "Blue";
     displayName = __EVAL(call compile BLOODBAG_NAME_FORMAT('O+ (250ml)'));
     descriptionShort = CSTRING(BloodBag_Desc);
+    class ItemInfo: CBA_MiscItem_ItemInfo {
+        mass = 6.7;
+    };
 };
 
 BLOODBAG_ENTRY(ON,250,__EVAL(call compile BLOODBAG_NAME_FORMAT('O- (250ml)')));
@@ -76,6 +85,9 @@ class ACM_FreshBloodBag_500: ACE_bloodIV_500 {
     displayName = __EVAL(call compile FRESHBLOODBAG_NAME_FORMAT('(500ml) [0]'));
     shortName = __EVAL(call compile FRESHBLOODBAG_NAME_FORMAT_S('(500ml) [0]'));
     descriptionShort = CSTRING(BloodBag_Desc);
+    class ItemInfo: CBA_MiscItem_ItemInfo {
+        mass = 12.9;
+    };
 };
 
 #include "CfgWeapons_Blood_500.hpp"
@@ -87,6 +99,9 @@ class ACM_FreshBloodBag_250: ACE_bloodIV_250 {
     displayName = __EVAL(call compile FRESHBLOODBAG_NAME_FORMAT('(250ml) [0]'));
     shortName = __EVAL(call compile FRESHBLOODBAG_NAME_FORMAT_S('(250ml) [0]'));
     descriptionShort = CSTRING(BloodBag_Desc);
+    class ItemInfo: CBA_MiscItem_ItemInfo {
+        mass = 6.7;
+    };
 };
 
 #include "CfgWeapons_Blood_250.hpp"
