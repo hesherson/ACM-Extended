@@ -544,7 +544,7 @@ def test_accepted_replay_reports_original_success_without_closing_or_logging_twi
     ''')
 
 
-@pytest.mark.parametrize("clock", [7, 26])
+@pytest.mark.parametrize("clock", [7, 131])
 def test_owner_drops_unknown_future_or_expired_seal_packet_without_closing_or_settling_receipt(clock):
     execute(transaction_setup() + f'''
         [objNull,0] call ACME_fnc_thoraMouseDown;
@@ -757,7 +757,7 @@ def test_expired_inactive_result_is_not_guessed_or_replayed_and_fresh_transactio
         [_patient,1] call ACME_fnc_ptxInjury;
         [_packet select 0,_packet select 2] call _ownerSeal;
         _events=[];
-        _clock=131;
+        _clock=191;
         [_patient,[1,0.5,0,60,0,0,2,0.5,0.5],false] call ACME_fnc_ptxPublish;
         [_packet select 0,_packet select 2] call _ownerSeal;
         [count _events==0 && {(_patient getVariable "ACME_thora_open_left")=="finger"},"expired inactive query guessed outcome or re-executed closure"] call _check;
@@ -765,7 +765,7 @@ def test_expired_inactive_result_is_not_guessed_or_replayed_and_fresh_transactio
         private _newReceipt=[_medic,"ACM_ChestSeal",objNull,"seal-2"];
         private _supplyPending=missionNamespace getVariable "ACME_supplyReceipts";
         _supplyPending set ["seal-2",_newReceipt];
-        _new set [5,[7,2,131]];
+        _new set [5,[7,2,191]];
         _new set [7,_newReceipt];
         [_patient,_new] call _ownerSeal;
         private _reply=(_events select ((count _events)-1)) select 1;
@@ -780,4 +780,101 @@ def test_old_pending_for_other_patient_or_epoch_does_not_block_current_ready_sea
         uiNamespace setVariable ["ACME_Thora_SealPending",{old_pending}];
         [objNull,0] call ACME_fnc_thoraMouseDown;
         [_takes==1 && {{count _packets==1}},"unrelated old pending token blocked current patient/epoch"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("accepted", [False, True])
+def test_first_packet_loss_is_recovered_by_real_retry_with_same_reserved_item(accepted):
+    execute(transaction_setup() + f'''
+        [objNull,0] call ACME_fnc_thoraMouseDown;
+        private _original=_packets select 0;
+        [count _deferred==1 && {{count _events==0}},"fixture delivered original owner packet before loss"] call _check;
+        // Drop the original request, rather than an ACK. The patient owner has
+        // no result yet, so its first real receipt of this packet is at 16 s.
+        _packets=[];
+        {'[_patient,1] call ACME_fnc_ptxInjury;' if not accepted else ''}
+        _clock=26; _nowTime=26;
+        private _work=_deferred deleteAt 0;
+        [(_work select 2)==16,"first reconciliation is not scheduled at 16 seconds"] call _check;
+        (_work select 1) call (_work select 0);
+        [count _packets==1 && {{(_packets select 0) isEqualTo _original}},"first-loss retry replaced request identity or reserved item"] call _check;
+        [_takes==1 && {{_inventoryAdds==0}},"first-loss retry allocated another item or prematurely refunded"] call _check;
+        private _retry=_packets select 0;
+        [_retry select 0,_retry select 2] call _ownerSeal;
+        [count _events==1,"first delivered retry did not return a terminal owner outcome"] call _check;
+        private _ack=(_events select 0) select 1;
+        [(_ack select 5) isEqualTo {str(accepted).lower()},"first-loss owner decision disagrees with current readiness"] call _check;
+        _ack call ACME_fnc_thoraAftercareAck;
+        _ack call ACME_fnc_thoraAftercareAck;
+        [_inventoryAdds=={0 if accepted else 1} && {{count (missionNamespace getVariable "ACME_supplyReceipts")==0}},"first-loss recovery did not settle original supply exactly once"] call _check;
+        [((_patient getVariable "ACME_thora_open_left")=="sealed") isEqualTo {str(accepted).lower()},"first-loss recovery ignored owner readiness"] call _check;
+        _packets=[];
+        private _last=_deferred deleteAt 0;
+        (_last select 1) call (_last select 0);
+        [count _packets==0 && {{count _deferred==0}},"settled first-loss transaction kept reconciling"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("request_age", [120, 120.01])
+def test_first_delivery_freshness_window_has_inclusive_120_second_boundary(request_age):
+    fresh = request_age <= 120
+    expected = r'''
+        [count _events==1,"eligible first delivery did not acknowledge"] call _check;
+        private _reply=(_events select 0) select 1;
+        [(_reply select 5),"120-second first delivery failed current readiness"] call _check;
+        _reply call ACME_fnc_thoraAftercareAck;
+        [count (missionNamespace getVariable "ACME_supplyReceipts")==0 && {_inventoryAdds==0},"accepted boundary request did not commit original supply"] call _check;
+    ''' if fresh else r'''
+        [count _events==0,"expired unknown first delivery guessed a terminal result"] call _check;
+        [count (missionNamespace getVariable "ACME_supplyReceipts")==1 && {_inventoryAdds==0},"expired unknown first delivery settled uncertain supply"] call _check;
+    '''
+    execute(transaction_setup() + f'''
+        [objNull,0] call ACME_fnc_thoraMouseDown;
+        private _packet=_packets select 0;
+        _clock=10+{request_age};
+        [_packet select 0,_packet select 2] call _ownerSeal;
+        [((_patient getVariable "ACME_thora_open_left")=="sealed") isEqualTo {str(fresh).lower()},"first-delivery freshness boundary changed tract incorrectly"] call _check;
+    ''' + expected)
+
+
+@pytest.mark.parametrize("idle_age", [180, 180.01])
+def test_known_decision_inactivity_window_is_inclusive_and_refreshes_only_known_result(idle_age):
+    known = idle_age <= 180
+    expected = r'''
+        [count _events==1 && {(((_events select 0) select 1) select 5)},"known decision at inclusive lease boundary lost acceptance"] call _check;
+        private _renewed=(_patient getVariable "ACME_thoraSealResults") select 0;
+        [abs ((_renewed select 3)-(_clock+180))<0.000001,"active known query did not renew inactivity lease"] call _check;
+    ''' if known else r'''
+        [count _events==0,"expired inactive decision guessed ACK/outcome"] call _check;
+    '''
+    execute(transaction_setup() + f'''
+        [objNull,0] call ACME_fnc_thoraMouseDown;
+        private _packet=_packets select 0;
+        [_packet select 0,_packet select 2] call _ownerSeal;
+        private _version=_patient getVariable "ACME_thora_ver";
+        _events=[];
+        _clock=10+{idle_age};
+        [_packet select 0,_packet select 2] call _ownerSeal;
+        [(_patient getVariable "ACME_thora_ver")==_version && {{_inventoryAdds==0}},"inactivity query repeated surgery or manufactured refund"] call _check;
+    ''' + expected)
+
+
+def test_rejected_then_recovered_episode_cannot_replay_refunded_seal_during_120_second_window():
+    execute(transaction_setup() + r'''
+        [objNull,0] call ACME_fnc_thoraMouseDown;
+        private _packet=_packets select 0;
+        [_patient,1] call ACME_fnc_ptxInjury;
+        [_packet select 0,_packet select 2] call _ownerSeal;
+        private _reply=(_events select ((count _events)-1)) select 1;
+        [!(_reply select 5),"first unready owner request accepted"] call _check;
+        _reply call ACME_fnc_thoraAftercareAck;
+        [_patient,[1,0.5,0,60,0,0,2,0.5,0.5],false] call ACME_fnc_ptxPublish;
+        {
+            _clock=_x; _events=[];
+            [_packet select 0,_packet select 2] call _ownerSeal;
+            private _late=(_events select 0) select 1;
+            [!(_late select 5) && {(_patient getVariable "ACME_thora_open_left")=="finger"},"late fresh-window replay used already-refunded seal after recovery"] call _check;
+            _late call ACME_fnc_thoraAftercareAck;
+        } forEach [70,130];
+        [_inventoryAdds==1 && {count (missionNamespace getVariable "ACME_supplyReceipts")==0},"rejected fresh-window replays changed exact refund settlement"] call _check;
     ''')

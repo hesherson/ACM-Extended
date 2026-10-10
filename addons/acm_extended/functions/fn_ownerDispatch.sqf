@@ -453,7 +453,7 @@ switch (_operation) do {
         private _fresh = _operation != "seal" || {
             (_request select 0) >= 0 && {(_request select 0) == floor (_request select 0)}
             && {(_request select 1) >= 1} && {(_request select 1) == floor (_request select 1)}
-            && {serverTime - (_request select 2) <= 15} && {(_request select 2) - serverTime <= 2}
+            && {serverTime - (_request select 2) <= 120} && {(_request select 2) - serverTime <= 2}
         };
         // An unknown old query is not proof that no item was used. Preserve its
         // reservation; never manufacture a rejection/refund after losing evidence.
@@ -461,7 +461,7 @@ switch (_operation) do {
         if (_known >= 0 && {_operation == "seal"}) then {
             // Active reconciliation keeps the decision alive. Inactive results
             // expire, so repeated injuries cannot exhaust a lifetime ledger.
-            (_results select _known) set [3, serverTime + 120];
+            (_results select _known) set [3, serverTime + 180];
             _patient setVariable [_resultKey, _results, true];
         };
         if (_known < 0 && {_fresh} && {_operation == "seal" || {count _results < 128}}) then {
@@ -469,7 +469,9 @@ switch (_operation) do {
             // Seal rejections are final too: a delayed copy cannot consume an
             // already-refunded reservation after the patient's condition changes.
             if (_accepted || {_operation == "seal"}) then {
-                private _result = [_epoch, +_request, _side, serverTime + (if (_operation == "seal") then {120} else {60})];
+                // Retain terminal decisions beyond the whole fresh-request
+                // window, including the tolerated future clock skew.
+                private _result = [_epoch, +_request, _side, serverTime + (if (_operation == "seal") then {180} else {60})];
                 if (_operation == "seal") then {_result pushBack _accepted;};
                 _results pushBack _result;
                 _patient setVariable [_resultKey, _results, true];
