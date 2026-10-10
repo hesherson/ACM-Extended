@@ -67,8 +67,19 @@ class ManualInfusionSource(unittest.TestCase):
     def test_manual_clamp_has_no_preset_lock(self):
         for n in ('setClampPosition','cycleDropSet'):self.assertNotIn('infusionPreset',src(n))
     def test_both_drugs_allowed(self):
+        # Both drugs remain available through their appropriate infusion routes.
         s=re.search(r'ACME_infusion_allowedMedications\s*=\s*(\[[^;]+)',src('postInit')).group(1)
-        for drug in ('Ketamine','Propofol'):self.assertIn('"'+drug+'"',s)
+        self.assertIn('"Ketamine"',s)
+        self.assertNotIn('"Propofol"',s)
+        self.assertIn('if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};',src('transfusionSpikeOrAdd'))
+        bottle=src('spikePropofolBottle')
+        self.assertIn('[_medic, _patient, "ACM_Vial_Propofol", _mode, _vehicle] call ACME_fnc_transfusionTakeSelected',bottle)
+        self.assertIn('[_medic, _patient, ["ACME_IVLine"]] call ACME_fnc_treatmentSupplyTake',bottle)
+        self.assertIn('[["Propofol", 500, 1]], _uid, 50, "propofol-bottle"',bottle)
+        self.assertIn('_medic setVariable ["ACME_infusion_PreparedBags", _prepared, true]',bottle)
+        action=re.search(r'class ACME_PropofolIV_50\s*:\s*SalineIV\s*\{([^}]+)\}',read_source(R/'config.cpp')).group(1)
+        self.assertIn('type = "ACME_Propofol"',action)
+        self.assertIn('volume = 50',action)
     def test_native_propofol_class_preserved(self):
         s=read_source(R/'config.cpp');c=s[s.index('class Propofol_IV:'):s.index('class Norepinephrine_IV:')]
         for term in ('timeInSystem = 480','timeTillMaxEffect = 90','maxEffectTime = 180','maxEffectDose = 100','weightEffect = 1','painReduce = 0'):self.assertIn(term,c)

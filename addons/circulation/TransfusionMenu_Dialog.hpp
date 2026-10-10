@@ -47,7 +47,7 @@ class GVAR(TransfusionMenu_Dialog) {
         // Local action popovers live in the background layer, below the unchanged native action buttons.
         class BagActionsBackground: PatientPanelBackground {
             idc = 86173;
-            x = QUOTE(safeZoneX - 1);
+            x = QUOTE(ACM_UI_CANVAS_X - 1);
             y = QUOTE(safeZoneY + safeZoneH * 0.214);
             w = QUOTE(ACM_UI_CANVAS_W * 0.206);
             h = QUOTE(safeZoneH * 0.237);

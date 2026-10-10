@@ -56,10 +56,56 @@ def test_medication_source_mirrors_acm_vial_membership_and_never_requires_extra_
     assert 'if !(isClass _conc) then {continue}' not in s
 
 def test_prepared_iv_sets_button_counts_and_pulses_green():
+    from test_menu_death_lifecycle import adapt, execute
     s = txt('functions/fn_updateTransfusionControls.sqf')
-    assert 'private _preparedSetCountB50 = count (ACE_player getVariable ["ACME_preparedIVSets", []]);' in s
+    # B273 bottle records retain paired transaction custody, but appear once in
+    # Prepared Infusions. Execute the real count/filter/row/pulse decisions.
+    count = re.search(r'private _preparedSetCountB50 = .*?;', s).group()
+    shown = s[s.index('private _shown = [];'):s.index('private _wantSig = str _shown;')]
+    entries = re.search(r'private _preparedEntries = .*?;', s).group()
+    row_start = s.index('private _label = [_x] call ACME_fnc_formatPreparedLabel;')
+    row_begin = s.rfind('{', 0, row_start)
+    row_end = s.index('} forEach _preparedEntries;', row_start) + len('} forEach _preparedEntries;')
+    rows = s[row_begin:row_end]
+    rows = rows.replace('private _i = _ctrlPreparedList lbAdd _label;', 'private _i = _renderedPrepared pushBack _label;')
+    rows = rows.replace('_ctrlPreparedList lbSetValue [_i, _forEachIndex];', '_renderedPreparedIndices pushBack _forEachIndex;')
+    rows = rows.replace('_ctrlPreparedList lbSetTooltip [_i, _label];', '')
+    pulse = s[s.index('private _setPulse ='):s.index('[_ctrlSetsBtn,"show",true]')]
+    pulse = pulse.replace('_ctrlSetsBtn ctrlSetBackgroundColor', '_paintBackground =')
+    pulse = pulse.replace('_ctrlSetsBtn ctrlSetTextColor', '_paintText =')
+    execute(r'''
+        private _normal=["saline-set","SalineIV_500","SalineIV_500","","","","Saline prepared",false,"yset",500,0];
+        private _bottle=["prop-bottle","ACM_Vial_Propofol","ACME_PropofolIV_50","","","","Propofol prepared",false,"propofol",50,0];
+        private _prepared=["prop-bottle","ACM_Vial_Propofol","ACME_PropofolIV_50","Propofol",500,1800,20,0,0,0,50];
+        ACE_player setVariable ["ACME_preparedIVSets",[_normal,_bottle]];
+        ACE_player setVariable ["ACME_infusion_PreparedBags",[_prepared]];
+        private _sets=ACE_player getVariable ["ACME_preparedIVSets",[]];
+        private _tgtNet="";
+        private _renderedPrepared=[];private _renderedPreparedIndices=[];
+        ACME_fnc_formatPreparedLabel={(_this select 0) param [0,""];};
+    ''' + adapt(count + shown + entries + rows) + r'''
+        [_preparedSetCountB50==1,"paired bottle incorrectly counted as a plain IV set"] call _check;
+        [_shown isEqualTo [["saline-set","Saline prepared"]],"bottle leaked into the plain Prepared IV Sets overlay"] call _check;
+        [_renderedPrepared isEqualTo ["prop-bottle"] && {_renderedPreparedIndices isEqualTo [0]},"prepared bottle is missing or duplicated in Prepared Infusions"] call _check;
+        [count (ACE_player getVariable "ACME_preparedIVSets")==2,"UI filtering destroyed paired bottle custody"] call _check;
+        private _paintBackground=[];private _paintText=[];
+        private _paint={
+    ''' + adapt(pulse) + r'''
+        };
+        private _alphas=[];
+        {
+            _nowTime=_x;call _paint;
+            [_paintBackground select [0,3] isEqualTo [0.20,0.65,0.20],"plain-set count lost its circulation-green cue"] call _check;
+            _alphas pushBack (_paintBackground select 3);
+        } forEach [0,0.25,0.5,0.75];
+        [abs ((selectMin _alphas)-0.30)<0.0001 && {abs ((selectMax _alphas)-0.75)<0.0001},"prepared-set green cue stopped pulsing"] call _check;
+        ACE_player setVariable ["ACME_preparedIVSets",[_bottle]];
+    ''' + adapt(count) + r'''
+        [_preparedSetCountB50==0,"bottle-only inventory should show zero plain prepared IV sets"] call _check;
+        call _paint;
+        [_paintBackground isEqualTo [0,0,0,0.55],"bottle-only custody incorrectly enables the plain-set green pulse"] call _check;
+    ''')
     assert 'Prepared IV sets (%1)' in s
-    assert '[0.20, 0.65, 0.20, 0.30 + 0.45 * _setPulse]' in s
     assert 'diag_tickTime % 1' in s
 
 def test_prep_infusion_only_enables_for_selected_prepared_saline():
