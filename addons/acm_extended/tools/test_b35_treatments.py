@@ -96,8 +96,12 @@ class TreatmentProgressionContracts(unittest.TestCase):
         self.assertNotIn('call ACME_fnc_thoraSideStateCommit',seal)
         effect=read_source(ROOT/'functions/fn_chestSealEffectLocal.sqf')
         surgical=effect.split('case "thoraSeal": {',1)[1].split('case "peel":',1)[0]
-        self.assertLess(surgical.index('if !([_patient] call ACME_fnc_ptxCanClose) exitWith {false};'),
-                        surgical.index('call ACME_fnc_thoraSideStateCommit'))
+        self.assertNotIn('ACME_fnc_ptxCanClose',surgical)
+        for guard in ('ACME_thora_incision_%1','ACME_thora_open_%1','ACME_thora_tube_%1',
+                      'ACME_thora_sealed_%1','ACME_thora_closed_%1'):
+            self.assertLess(surgical.index(guard),surgical.index('call ACME_fnc_thoraSideStateCommit'))
+        self.assertIn('[_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit',surgical)
+        self.assertIn('[_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit',surgical)
         self.assertNotIn('They still need a tube',click)
         from test_historical_airway_execution import test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds
         for epoch,tube,tract,accepted in [(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)]:

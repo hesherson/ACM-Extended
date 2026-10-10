@@ -21,21 +21,20 @@ switch (_op) do {
     case "thoraSeal": {
         _args params [["_side", ""], ["_clinicalEpoch", -1]];
         if (!(_side in ["left", "right"]) || {_clinicalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {false};
-        // B271: only this owner commits the closure after accepting its supply transaction.
-        if ((_patient getVariable [format ["ACME_thora_open_%1", _side], ""]) != "finger"
+        // Only this owner commits the dressing after accepting its supply transaction.
+        // An incomplete or sutured tract cannot become a vented finger outlet.
+        if (count (_patient getVariable [format ["ACME_thora_incision_%1", _side], []]) != 3
+            || {(_patient getVariable [format ["ACME_thora_open_%1", _side], ""]) != "finger"}
             || {_patient getVariable [format ["ACME_thora_tube_%1", _side], false]}
             || {_patient getVariable [format ["ACME_thora_sealed_%1", _side], false]}
             || {_patient getVariable [format ["ACME_thora_closed_%1", _side], false]}) exitWith {false};
-        [_patient] call ACME_fnc_ptxEnsure;
-        if !([_patient] call ACME_fnc_ptxCanClose) exitWith {false};
-        // This is a per-tract closure, not ACM's global whole-chest ChestSeal_State. Setting the native
+        // This is a per-tract dressing, not ACM's global whole-chest ChestSeal_State. Setting the native
         // aggregate here would incorrectly imply that unrelated penetrating chest wounds are also sealed.
 
-        // A seal over the finger-thoracostomy is a true occlusive closure of that surgical communication.
-        // Preserve the incision/seal evidence, but retire the tract from the patent finger-drain state. It is
-        // deliberately NOT a vent. Readiness proves this injury's leak has settled before closing it.
+        // All available chest seals are vented. The covered finger tract retains outward drainage;
+        // applying its dressing does not close the incision or discard earned injury-healing progress.
         [_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit;
-        [_patient, _side, "closed", true] call ACME_fnc_thoraSideStateCommit;
+        [_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit;
         [_patient, _side, "open", "sealed"] call ACME_fnc_thoraSideStateCommit;
         [_patient] call ACME_fnc_thoraBumpVer;
         [_patient, "thoraSeal"] call ACME_fnc_ptxTreat;

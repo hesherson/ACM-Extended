@@ -4,6 +4,13 @@ Actual Context/Ensure/Injury/Treat/Step/Publish and treatment callbacks execute.
 Only object, native clock/network/UI/inventory commands cross explicit fixtures;
 all inputs to the finite-number adapter are finite. The pinned VM must emit no
 warning/error/fatal diagnostics. No Python copy of the physiology is exercised.
+
+B272 retains every historical case identity. Its authorized vented-seal model
+changes only contradictory oracles: covered fingers retain bounded drainage,
+early covers are accepted, settled residual air resolves, and rejection/replay
+fixtures invalidate the surgical tract rather than merely adding an injury.
+Actual suturing retains its settled-PTX gate and native ordinary wound seals do
+not automatically suture a finger tract.
 """
 import os
 from pathlib import Path
@@ -160,6 +167,9 @@ def model_setup():
     ("finger", True, True, False, True),
 ])
 def test_context_distinguishes_definitive_outlet_from_incomplete_or_closed_tract(side, tract, tube, sealed, closed, expected):
+    covered = sealed and not tube and tract in ("finger", "sealed")
+    definitive = expected or covered
+    capacity = 5 if expected else 2 if covered else 0
     execute(function("ptxContext") + f'''
         _patient setVariable ["ACME_thora_open_{side}","{tract}"];
         _patient setVariable ["ACME_thora_tube_{side}",{str(tube).lower()}];
@@ -167,8 +177,8 @@ def test_context_distinguishes_definitive_outlet_from_incomplete_or_closed_tract
         _patient setVariable ["ACME_thora_closed_{side}",{str(closed).lower()}];
         private _context=[_patient] call ACME_fnc_ptxContext;
         [count _context==8,"context missing definitive-outlet qualification"] call _check;
-        [(_context select 7) isEqualTo {str(expected).lower()},"wrong definitive-outlet eligibility"] call _check;
-        [((_context select 2)>=5) isEqualTo {str(expected).lower()},"drainage capacity disagrees with eligibility"] call _check;
+        [(_context select 7) isEqualTo {str(definitive).lower()},"wrong definitive-outlet eligibility"] call _check;
+        [(_context select 2)=={capacity},"open/tube and vented-cover capacities disagree with eligibility"] call _check;
     ''')
 
 
@@ -232,7 +242,7 @@ def test_definitive_outlet_settles_after_full_observation_and_stays_stable_after
             [_patient] call ACME_fnc_ptxTensionTick;
         }};
         private _late=_patient getVariable "ACME_ptx_state";
-        [(_late select 2)==0 && {{abs ((_late select 1)-(_atClosure select 1))<0.000001}},"settled PTX recurred after closing outlet"] call _check;
+        [(_late select 2)==0 && {{(_late select 1)==0}} && {{(_late select 8)==0}},"settled PTX recurred or retained permanent residual air after covered drainage"] call _check;
         [!(_patient getVariable "ACM_breathing_TensionPneumothorax_State"),"closure silently recreated tension"] call _check;
     ''')
 
@@ -411,10 +421,11 @@ def test_unsettled_surgical_closure_preserves_patent_drain_and_existing_ptx(side
         private _before=+(_patient getVariable "ACME_ptx_state");
     ''' + operation + f'''
         private _after=_patient getVariable "ACME_ptx_state";
-        [(_patient getVariable "ACME_thora_open_{side}")=="finger","unsettled closure removed surgical vent"] call _check;
-        [!(_patient getVariable ["ACME_thora_sealed_{side}",false]) && {{!(_patient getVariable ["ACME_thora_closed_{side}",false])}},"unsettled closure published closed artwork"] call _check;
+        [(_patient getVariable "ACME_thora_open_{side}")=="{'sealed' if path == 'owner_seal' else 'finger'}","owner cover or rejected suture has wrong tract state"] call _check;
+        [(_patient getVariable ["ACME_thora_sealed_{side}",false]) isEqualTo {str(path == 'owner_seal').lower()}
+            && {{!(_patient getVariable ["ACME_thora_closed_{side}",false])}},"vented cover was sutured or native ordinary seal changed surgical tract"] call _check;
         [(_after select 1)==(_before select 1) && {{(_after select 2)==(_before select 2)}},"attempted closure changed clinical injury"] call _check;
-        [count _logs==0,"blocked closure logged success"] call _check;
+        [count _logs=={1 if path == 'owner_seal' else 0},"accepted vented cover or blocked suture has wrong log count"] call _check;
         {'[(_patient getVariable "ACM_breathing_ChestSeal_State"),"ordinary traumatic seal was blocked with surgical closure"] call _check;' if path == 'native_seal' else ''}
     ''')
 
@@ -428,12 +439,12 @@ def test_ready_surgical_closure_preserves_settled_injury_and_no_long_term_recurr
         "native_seal": '[_medic,_patient] call ACM_breathing_fnc_applyChestSealLocal;',
     }[path]
     execute(closure_setup(side) + operation + f'''
-        [(_patient getVariable "ACME_thora_open_{side}")!="finger","qualified closure left drain patent"] call _check;
+        [((_patient getVariable "ACME_thora_open_{side}")=="finger") isEqualTo {str(path == 'native_seal').lower()},"native ordinary seal sutured a tract or qualified closure failed"] call _check;
         private _atClosure=+(_patient getVariable "ACME_ptx_state");
         [(_atClosure select 1)==0.5 && {{(_atClosure select 2)==0}},"closure erased residual collapse or recreated leak"] call _check;
         for "_i" from 1 to 120 do {{ CBA_missionTime=70+_i; [_patient] call ACME_fnc_ptxTensionTick; }};
         private _late=_patient getVariable "ACME_ptx_state";
-        [(_late select 1)==0.5 && {{(_late select 2)==0}},"settled PTX recurred after approved closure"] call _check;
+        [(_late select 1)<0.5 && {{(_late select 8)<0.5}} && {{(_late select 2)==0}},"settled PTX recurred or residual clearance stalled after approved closure"] call _check;
     ''')
 
 
@@ -480,10 +491,12 @@ def transaction_setup(ready=True):
 
 
 def test_unready_minigame_seal_does_not_consume_inventory_or_publish_tract():
+    # Historical identity retained: unready for suturing is ready for a vented
+    # covering, but it still reserves only once and awaits the patient owner.
     execute(transaction_setup(ready=False) + r'''
         [objNull,0] call ACME_fnc_thoraMouseDown;
-        [_takes==0 && {count _packets==0},"unready UI seal consumed supply or crossed owner boundary"] call _check;
-        [(_patient getVariable "ACME_thora_open_left")=="finger" && {!(_patient getVariable ["ACME_thora_closed_left",false])},"unready UI removed drainage"] call _check;
+        [_takes==1 && {count _packets==1},"early vented covering did not reserve one real supply transaction"] call _check;
+        [(_patient getVariable "ACME_thora_open_left")=="finger" && {!(_patient getVariable ["ACME_thora_closed_left",false])},"provider projected early covering before owner acceptance"] call _check;
     ''')
 
 
@@ -510,14 +523,16 @@ def test_owner_rechecks_new_injury_refunds_once_and_rejected_replay_cannot_later
         [objNull,0] call ACME_fnc_thoraMouseDown;
         private _packet=_packets select 0;
         [_patient,1] call ACME_fnc_ptxInjury;
+        _patient setVariable ["ACME_thora_open_left","kelly"];
         [_packet select 0,_packet select 2] call _ownerSeal;
         private _reply=(_events select ((count _events)-1)) select 1;
-        [!(_reply select 5),"owner trusted stale provider readiness after new injury"] call _check;
+        [!(_reply select 5),"owner trusted stale provider tract after new injury and disrupted access"] call _check;
         _reply call ACME_fnc_thoraAftercareAck;
         _reply call ACME_fnc_thoraAftercareAck;
         [_inventoryAdds==1,"rejected seal was not refunded exactly once"] call _check;
-        [(_patient getVariable "ACME_thora_open_left")=="finger","rejected owner request closed drainage"] call _check;
+        [(_patient getVariable "ACME_thora_open_left")=="kelly","rejected owner request changed disrupted tract"] call _check;
         [_patient,[1,0.5,0,60,0,0,2,0.5,0.5],false] call ACME_fnc_ptxPublish;
+        _patient setVariable ["ACME_thora_open_left","finger"];
         [_packet select 0,_packet select 2] call _ownerSeal;
         private _replay=(_events select ((count _events)-1)) select 1;
         [!(_replay select 5) && {(_patient getVariable "ACME_thora_open_left")=="finger"},"rejected replay consumed already-refunded seal after recovery"] call _check;
@@ -684,7 +699,7 @@ def test_snapshot_validation_accepts_only_supported_observation_revision(revisio
 @pytest.mark.parametrize("accepted", [False, True])
 @pytest.mark.parametrize("later_clock", [26, 300])
 def test_lost_ack_query_recovers_durable_original_outcome_without_reusing_supply(accepted, later_clock):
-    reject = "" if accepted else "[_patient,1] call ACME_fnc_ptxInjury;"
+    reject = "" if accepted else '_patient setVariable ["ACME_thora_open_left","kelly"];'
     execute(transaction_setup() + f'''
         [objNull,0] call ACME_fnc_thoraMouseDown;
         private _firstPacket=_packets select 0;
@@ -696,6 +711,7 @@ def test_lost_ack_query_recovers_durable_original_outcome_without_reusing_supply
         // query callback executes, using the still-reserved receipt and request.
         _events=[]; _packets=[];
         [_patient,[1,0.5,0,60,0,0,2,0.5,0.5],false] call ACME_fnc_ptxPublish;
+        {'_patient setVariable ["ACME_thora_open_left","finger"];' if not accepted else ''}
         // Periodic lost-ACK queries keep the known decision alive; clinical
         // recovery cannot change its original rejected/accepted outcome.
         for "_at" from 26 to {later_clock - 1} step 16 do {{
@@ -755,10 +771,12 @@ def test_expired_inactive_result_is_not_guessed_or_replayed_and_fresh_transactio
         [objNull,0] call ACME_fnc_thoraMouseDown;
         private _packet=_packets select 0;
         [_patient,1] call ACME_fnc_ptxInjury;
+        _patient setVariable ["ACME_thora_open_left","kelly"];
         [_packet select 0,_packet select 2] call _ownerSeal;
         _events=[];
         _clock=191;
         [_patient,[1,0.5,0,60,0,0,2,0.5,0.5],false] call ACME_fnc_ptxPublish;
+        _patient setVariable ["ACME_thora_open_left","finger"];
         [_packet select 0,_packet select 2] call _ownerSeal;
         [count _events==0 && {(_patient getVariable "ACME_thora_open_left")=="finger"},"expired inactive query guessed outcome or re-executed closure"] call _check;
         private _new=+(_packet select 2);
@@ -792,7 +810,7 @@ def test_first_packet_loss_is_recovered_by_real_retry_with_same_reserved_item(ac
         // Drop the original request, rather than an ACK. The patient owner has
         // no result yet, so its first real receipt of this packet is at 16 s.
         _packets=[];
-        {'[_patient,1] call ACME_fnc_ptxInjury;' if not accepted else ''}
+        {'_patient setVariable ["ACME_thora_open_left","kelly"];' if not accepted else ''}
         _clock=26; _nowTime=26;
         private _work=_deferred deleteAt 0;
         [(_work select 2)==16,"first reconciliation is not scheduled at 16 seconds"] call _check;
@@ -864,11 +882,13 @@ def test_rejected_then_recovered_episode_cannot_replay_refunded_seal_during_120_
         [objNull,0] call ACME_fnc_thoraMouseDown;
         private _packet=_packets select 0;
         [_patient,1] call ACME_fnc_ptxInjury;
+        _patient setVariable ["ACME_thora_open_left","kelly"];
         [_packet select 0,_packet select 2] call _ownerSeal;
         private _reply=(_events select ((count _events)-1)) select 1;
         [!(_reply select 5),"first unready owner request accepted"] call _check;
         _reply call ACME_fnc_thoraAftercareAck;
         [_patient,[1,0.5,0,60,0,0,2,0.5,0.5],false] call ACME_fnc_ptxPublish;
+        _patient setVariable ["ACME_thora_open_left","finger"];
         {
             _clock=_x; _events=[];
             [_packet select 0,_packet select 2] call _ownerSeal;

@@ -31,11 +31,14 @@ private _settings = [
             };
         }],
     ["ACME_ptx_stableSec", "SLIDER",
-        ["Pneumothorax stability interval", "Seconds of low, controlled PTX with a patent finger thoracostomy or chest tube, covered communicating wounds and relieved tension before the internal leak settles. Settled, observed PTX permits surgical closure. No provider notification is displayed."],
+        ["Pneumothorax stability interval", "Seconds of low, controlled PTX with an open or vented-seal-covered finger thoracostomy or chest tube, covered communicating wounds and relieved tension before the internal leak settles. Vented seals can be applied while healing continues. Settled, observed PTX permits surgical closure."],
         [_cTrau, "Pneumothorax"], [0, 300, 60, 0], 1, {}],
     ["ACME_ptx_leakSettleSec", "SLIDER",
         ["Pneumothorax leak settling time", "Simulation time scale for internal air leaks to settle. Larger values prolong leakage. Open chest wounds and actual drainage remain consequential."],
         [_cTrau, "Pneumothorax"], [120, 1800, 600, 0], 1, {}],
+    ["ACME_ptx_resolveSec", "SLIDER",
+        ["Pneumothorax residual air clearance", "Seconds to clear one normalized unit of remaining PTX after the internal leak settles, communicating wounds are covered and pressure is controlled. Open finger drainage and chest tubes accelerate clearance. This is simulation tuning."],
+        [_cTrau, "Pneumothorax"], [60, 1800, 600, 0], 1, {}],
     ["ACME_vent_simpleMode", "CHECKBOX",
         ["Simple Ventilator Mode", "Use the selected breathing rate with automatic supporting settings. Lung and airway problems, circulation, power and circuit failures still affect the patient. Advanced settings are retained for when this mode is disabled."],
         [_cVent, "Mode"], false, 1, {

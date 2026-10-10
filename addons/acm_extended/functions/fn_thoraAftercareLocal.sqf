@@ -56,7 +56,14 @@ if (_operation == "peel") then {
 // Burping relieves pressure once while retaining the dressing; peeling restores the open tract.
 // Preserve any chest tube on the opposite side and ACM's aggregate tube state.
 if (alive _patient) then {
-    [_patient, "thora"] call ACME_fnc_ptxTreat;
+    // Initial finger access starts a new control observation. Maintenance of an existing
+    // tract preserves its earned healing progress, and burping also restores seal venting.
+    private _ptxOperation = switch (_operation) do {
+        case "widen": {"thora"};
+        case "burp": {"burp"};
+        default {"thoraAftercare"};
+    };
+    [_patient, _ptxOperation] call ACME_fnc_ptxTreat;
     [_patient] call ACM_breathing_fnc_updateLungState;
 };
 private _message = switch (_operation) do {

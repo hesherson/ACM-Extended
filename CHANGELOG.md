@@ -1,5 +1,14 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B272 (vented thoracostomy seals / PTX resolution)
+
+- Chest seals over completed finger thoracostomies now retain a bounded vented outlet and can be applied while the internal leak is still healing. They protect the selected surgical tract without declaring unrelated penetrating wounds covered.
+- A functioning covered finger can earn the same controlled recovery interval as an open finger or chest tube. Seal placement, burping, peeling and repeat finger sweeps preserve injury identity and earned recovery; continuing leaks can still overwhelm an obstructed or insufficient outlet.
+- Once the leak settles, all communicating wounds are covered and pressure is controlled, remaining air and its residual floor gradually clear. The new residual-air clearance setting defaults to 600 seconds per normalized air unit; open finger and tube drainage accelerate clearance.
+- Historical covered-finger records are interpreted as vented dressings. Ordinary wound sealing no longer silently closes a surgical incision; actual surgical closure keeps its owner readiness gate.
+- Owner-authoritative inventory receipts, seal request retries, clinical epochs and pressure-scaled retained-blood drainage remain intact. No continuous blood drainage is added to finger dressings.
+- Stable version remains **1.2.4.1**, network protocol **1**. B272 is a draft development candidate pending automated and native multiplayer acceptance.
+
 ## 1.2.4.1 — B264 (manual carrier / modded gear integrity)
 
 - Manual **Remove Plate Carrier** now initiates the original patient-owner Grab/Hold/Remove/Release transaction without waiting for a separate medic4/provider animation acknowledgement, which could consume the entire eight-second deadline under a slow or heavily modded server.

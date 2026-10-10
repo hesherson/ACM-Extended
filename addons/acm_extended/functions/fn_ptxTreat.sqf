@@ -15,10 +15,12 @@ switch (_op) do {
         [_patient,"ACME_CS_sealVenting",1] call ACME_fnc_setVarNet;
     };
     case "thoraSeal": {
-        // A chest seal laid directly over a completed finger-thoracostomy tract is closure of that surgical
-        // communication, not another patent pleural drain. Apply the same open-tract closure state as the suture
-        // path while preserving the separate seal intervention record for presentation and logging.
-        _s set [3,0];
+        // Covering a completed finger tract changes its outlet capacity only.
+        // Placement preserves air, pressure, injury identity and earned recovery.
+        // A fresh vented dressing starts patent under the existing shared-seal
+        // model, just as an ordinary newly applied chest seal does.
+        [_patient,"ACME_CS_sealOcclusion",0] call ACME_fnc_setVarNet;
+        [_patient,"ACME_CS_sealVenting",1] call ACME_fnc_setVarNet;
     };
     case "peel": {
         [_patient,"ACME_ptx_nativeSealCount",-1] call ACME_fnc_setVarNet;
@@ -33,6 +35,7 @@ switch (_op) do {
     };
     case "thora";
     case "tube": {_relief=true;};
+    case "thoraAftercare": {_relief=true;};
     // Closing does not heal the leak; remaining actual outlets govern next tick.
     case "close": {_s set [3,0];};
     case "tubeRemoved": {
@@ -50,7 +53,9 @@ switch (_op) do {
 if (_relief) then {
     _s set [8,(_s select 8) min 0.5];
     _s set [1,(_s select 1) min 1];
-    _s set [4,0];_s set [3,0];_tension=false;
+    _s set [4,0];
+    if !(_op in ["burp", "thoraAftercare"]) then {_s set [3,0];};
+    _tension=false;
 };
 if (_op=="ncd" && {_hadPtx}) then {
     // NCD is temporary needle venting, not definitive finger/thoracostomy

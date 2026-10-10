@@ -13,7 +13,8 @@ private _context=[_patient] call ACME_fnc_ptxContext;
 private _result=[_s,_context,_dt,_patient getVariable ["ACM_breathing_TensionPneumothorax_State",false],
     missionNamespace getVariable ["ACME_ptx_tensionBaseSec",600],
     missionNamespace getVariable ["ACME_ptx_leakSettleSec",600],
-    missionNamespace getVariable ["ACME_ptx_stableSec",60]] call ACME_fnc_ptxStep;
+    missionNamespace getVariable ["ACME_ptx_stableSec",60],
+    missionNamespace getVariable ["ACME_ptx_resolveSec",600]] call ACME_fnc_ptxStep;
 _result params ["_next","_tension"];
 [_patient,_next,_tension] call ACME_fnc_ptxPublish;
 if (_tension) then {

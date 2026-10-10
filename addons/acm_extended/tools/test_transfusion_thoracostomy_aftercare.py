@@ -109,7 +109,15 @@ def test_aftercare_is_owner_routed_and_epoch_guarded():
     assert 'exitWith {false}' in seal and 'ACME_fnc_thoraSideStateCommit' not in seal
     effect=read('functions/fn_chestSealEffectLocal.sqf')
     owner_seal=block(effect,'case "thoraSeal": {')
-    assert owner_seal.index('if !([_patient] call ACME_fnc_ptxCanClose) exitWith {false};') < owner_seal.index('call ACME_fnc_thoraSideStateCommit')
+    # B272: covering established access with a vented seal is available before
+    # the internal leak settles. Exact incision/tract guards still precede all
+    # owner commits; true surgical closure retains the separate PTX gate.
+    assert 'ACME_fnc_ptxCanClose' not in owner_seal
+    assert owner_seal.index('ACME_thora_incision_%1') < owner_seal.index('call ACME_fnc_thoraSideStateCommit')
+    assert owner_seal.index('exitWith {false};') < owner_seal.index('call ACME_fnc_thoraSideStateCommit')
+    assert '[_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit' in owner_seal
+    native_close = (ADDONS / 'breathing/functions/fnc_Thoracostomy_closeLocal.sqf').read_text()
+    assert 'ACME_fnc_ptxCanClose' in native_close
     # Availability must not reveal death; the physiology call alone is live-only.
     from test_historical_airway_execution import test_aftercare_remains_available_on_dead_patients_without_resuming_physiology
     for operation in ['peel','burp','sweep']:

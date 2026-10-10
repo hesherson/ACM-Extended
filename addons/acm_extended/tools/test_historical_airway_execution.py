@@ -219,7 +219,7 @@ def test_seal_peel_rejects_stale_effects_and_never_creates_a_new_injury(blocked,
 @pytest.mark.parametrize('epoch,tube,tract,accepted',[(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)])
 def test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds(epoch,tube,tract,accepted):
     execute(chest_effect_setup()+'''
-        // A surgical seal now closes an owner-verified ready, unsealed tract.
+        // A vented surgical seal covers an owner-verified completed, unsealed tract.
         // The retained epoch/tube/tract matrix still tests the same rejection fences.
         _patient setVariable ["ACME_thora_sealed_left",false];
         _patient setVariable ["ACME_thora_closed_left",false];
