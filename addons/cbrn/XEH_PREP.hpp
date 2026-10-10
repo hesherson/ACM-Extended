@@ -20,6 +20,7 @@ PREP(handleVehicleDoorOpen);
 PREP(hasFilter);
 PREP(hasGasMask);
 PREP(initHazardUnit);
+PREP(seedTrainingExposure);
 PREP(initHazardZone);
 PREP(initUnit);
 PREP(isWearingGasMask);

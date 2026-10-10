@@ -14,6 +14,9 @@ params [
 if (isNull _patient) exitWith {false};
 
 if (!_public || {!local _patient}) exitWith {
+    // Local staging must not retain an old publication fingerprint. The mutable bag map may have changed
+    // and returned to that old value between two public commits.
+    _patient setVariable ["ACME_ivBagsPublishedSig", nil, false];
     _patient setVariable [QGVAR(IV_Bags), _bags, _public];
     true
 };

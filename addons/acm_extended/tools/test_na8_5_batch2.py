@@ -136,27 +136,40 @@ class SuctionModel(unittest.TestCase):
         self.assertEqual(device(0,0,True),0)
 
 class FlushSource(unittest.TestCase):
-    def test_flush_reopens_native_dialog_with_ten(self):
+    def test_flush_switches_existing_native_dialog_to_ten_in_place(self):
         s=sqf('skPickFlush')
-        self.assertIn('[10, _patient, _bodyPart, _flushClass]',s)
-        self.assertLess(s.index('_display closeDisplay 0'),s.index('call ACME_fnc_skOpenDraw'))
-        self.assertIn('ACME_SK_RestoreMouse',s)
+        self.assertIn('[10, _flushClass] call ACME_fnc_skApplySize',s)
+        self.assertIn('[_flushClass] call ACME_fnc_skWasteBegin',s)
+        self.assertNotIn('closeDisplay',s)
+        self.assertNotIn('ACME_fnc_skOpenDraw',s)
     def test_flush_forces_size_before_native_closure_capture(self):
         s=sqf('skOpenDraw')
         self.assertLess(s.index('if (_flushClass != "") then {_size = 10;}'),s.index('call ACM_circulation_fnc_Syringe_Draw'))
         self.assertIn('0, [0, _flushClass]',s)
-    def test_every_previous_size_opens_ten(self):
+    def test_every_previous_size_switches_to_ten(self):
         s=sqf('skPickFlush')
-        target=int(re.search(r'\}, \[(\d+), _patient, _bodyPart, _flushClass\]',s).group(1))
+        target=int(re.search(r'\[(\d+), _flushClass\] call ACME_fnc_skApplySize',s).group(1))
         for previous in [1,3,5,10]:
             with self.subTest(previous=previous):self.assertEqual(target,10)
+    def test_every_previous_size_opens_ten(self):
+        # Historical B235 identity: opening was replaced by an in-place switch.
+        self.test_every_previous_size_switches_to_ten()
+    def test_flush_reopens_native_dialog_with_ten(self):
+        # Historical identity retained against the current no-reopen behavior.
+        self.test_flush_switches_existing_native_dialog_to_ten_in_place()
     def test_does_not_require_empty_ten_ml_syringe(self):
         for f in ['skPickFlush','skWasteBegin','skOpenDraw']:
             self.assertNotIn('ACM_Syringe_10',tokens(f))
+    def test_pending_compound_is_committed_before_in_place_size_switch(self):
+        s=sqf('skApplySize')
+        self.assertIn('private _hadPendingCompound = _stageBefore == "compound"',s)
+        self.assertIn('if (_hadPendingCompound) then {_autoSaved = call ACME_fnc_skCompoundCommit;};',s)
+        self.assertIn('if (_hadPendingCompound && {!_autoSaved}) exitWith {false};',s)
+        self.assertLess(s.index('call ACME_fnc_skCompoundCommit'),s.index('uiNamespace setVariable ["ACME_SK_CurSize",_size]'))
     def test_pending_compound_is_committed_before_close(self):
-        s=sqf('skPickFlush')
-        self.assertLess(s.index('ACME_fnc_skCompoundCommit'),s.index('_display closeDisplay 0'))
-        self.assertIn('if (_saveFailed) exitWith',s)
+        # Historical identity: the old close/reopen flow is now an in-place
+        # size switch, but the compound must still settle before that transition.
+        self.test_pending_compound_is_committed_before_in_place_size_switch()
     def test_flush_full_state_initialized_at_entry(self):
         s=sqf('skWasteBegin')
         for part in ['private _cap = 10;', '["ACME_SK_WasteFill", _cap]',
@@ -169,8 +182,9 @@ class FlushSource(unittest.TestCase):
                      'Saline flush (10 mL)','SyringeDraw_Ctrl_LimitBottom']:
             self.assertIn(part,s)
     def test_flush_picker_does_not_run_in_bag_prep(self):
-        self.assertIn('_display getVariable ["ACME_SK_Return", []]',sqf('skPickFlush'))
-        self.assertIn('if (dialog) exitWith',sqf('skPickFlush'))
+        s=sqf('skPickFlush')
+        self.assertIn('_display getVariable ["ACME_SK_Return", []]',s)
+        self.assertIn('if !((_display getVariable ["ACME_SK_Return", []]) isEqualTo []) exitWith {};',s)
 
 class EmmaSource(unittest.TestCase):
     def test_airway_kind_prioritizes_et_tube(self):

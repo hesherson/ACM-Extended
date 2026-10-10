@@ -19,7 +19,8 @@ def native(component, name):
 
 
 def setup():
-    return '''
+    # Execute the real native airway writer, including its suction-ledger cleanup.
+    return 'ACM_airway_fnc_setAirwayState={'+native('airway','setAirwayState')+'};'+'''
         private _patientLocal = true;
         private _linear = {params ["_lo","_hi","_x","_a","_b",["_clamp",false]]; private _f=(_x-_lo)/(_hi-_lo); if (_clamp) then {_f=(_f max 0) min 1;}; _a+(_f*(_b-_a))};
         ACME_fnc_clinicalEpoch = {(_this select 0) getVariable ["ACME_clinicalEpoch",0]};
@@ -89,10 +90,16 @@ def test_hemolysis_delay_cannot_recreate_severity_after_full_heal():
 
 def test_old_mercy_callback_cannot_restore_obtundation_after_heal():
     s=(F/'fn_consciousnessBudget.sqf').read_text()
-    s=s.replace('allUnits select {local _x && {alive _x} && {isPlayer _x}}','[_patient]')
+    # Registry traversal is production logic. Adapt only the two engine predicates,
+    # then supply a registered player exactly as the current owner loop requires.
+    s=s.replace('alive _x','(_x getVariable ["_fixtureAlive",false])')
+    s=s.replace('isPlayer _x','(_x getVariable ["_fixturePlayer",false])')
     s=s.replace('local _p','_localPatient').replace('owner _p','_ownerNum').replace('owner _u','_ownerNum')
     execute(setup()+'''
         private _localPatient = true; private _obtunded = [];
+        _patient setVariable ["_fixtureAlive",true];
+        _patient setVariable ["_fixturePlayer",true];
+        missionNamespace setVariable ["ACME_clinical_ownedUnits",[_patient]];
         missionNamespace setVariable ["ACME_sys_obtunded",true];
         missionNamespace setVariable ["ACME_ko_mercySeconds",0];
         ACME_fnc_setVarNet = {params ["_p","_key","_value"]; _p setVariable [_key,_value];};

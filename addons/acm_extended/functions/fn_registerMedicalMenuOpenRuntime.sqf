@@ -8,6 +8,7 @@
 // Any ACE interaction menu replaces pulse palpation as the active interaction surface. Retire the pulse layer
 // immediately so it can never remain underlaid behind another action/menu.
 ["ace_interactMenuOpened", {
+    [false, false] call ACME_fnc_respirationStop;
     if (uiNamespace getVariable ["ACME_PulseCheckActive", false]) then {
         uiNamespace setVariable ["ACME_PulseCheckCancel", true];
         "ACM_FeelPulse" cutText ["","PLAIN",0,false];
@@ -17,6 +18,7 @@
 // the medical menu opened.
 ["ace_medicalMenuOpened", {
     params ["_medic", "_target", "_display"];
+    [false, false] call ACME_fnc_respirationStop;
 
     // B169 renderer ownership: do not rely on ACE's single global menuPFH lifetime. The stock onLoad/onUnload pair
     // is final in this runtime and rapid medical-menu replacement can let an older display's unload retire the PFH
@@ -71,11 +73,7 @@
                 || {_epoch != (uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", -1])}
                 || {_rendererPFH != (uiNamespace getVariable ["ACME_medicalMenuRendererPFH", -1])}) exitWith {};
 
-            private _acePFH = missionNamespace getVariable ["ace_medical_gui_menuPFH", -1];
-            if (_acePFH isEqualType 0 && {_acePFH >= 0} && {_acePFH != _rendererPFH}) then {
-                [_acePFH] call CBA_fnc_removePerFrameHandler;
-            };
-            missionNamespace setVariable ["ace_medical_gui_menuPFH", -1];
+            private _acePFH = [_rendererPFH] call ACM_GUI_fnc_retireMedicalMenuPFH;
 
             if (call ACME_fnc_debugEnabled) then {
                 diag_log format ["[ACME MENU RENDERER] owner epoch=%1 renderer=%2 retiredACE=%3 target=%4",

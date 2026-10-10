@@ -30,6 +30,7 @@ if (_tool == "tube" && {
 if (_tool == "seal" && {isNull _medic || {!([_medic, "thoracostomySeal"] call ACME_fnc_procedureAllowed)}
     || {([_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount) < 1}}) exitWith {};
 
+[] call ACME_fnc_thoraPrepFlush;
 uiNamespace setVariable ["ACME_Thora_Held", _tool];
 uiNamespace setVariable ["ACME_Thora_TubeSnap", false];
 uiNamespace setVariable ["ACME_Thora_SealMode", _tool == "seal"];

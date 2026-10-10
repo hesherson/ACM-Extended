@@ -19,7 +19,10 @@ if (_reason == "manual" || {_reason == "complete"}) then {
     private _delta = +(_job getOrDefault ["unsentDelta",[0,0,[]]]);
     private _ml = (_delta param [0,0]) + (_delta param [1,0]);
     if (_ml > 0) then {
-        [_job getOrDefault ["medic",objNull],_job getOrDefault ["stableId",""],_delta] call ACME_fnc_hardcorePushRestoreDelta;
+        private _restored = [_job getOrDefault ["medic",objNull],_job getOrDefault ["stableId",""],_delta] call ACME_fnc_hardcorePushRestoreDelta;
+        if (!_restored) exitWith {
+            [_job getOrDefault ["session",""],missionNamespace getVariable ["ACME_HCMedPushPFH",-1],"unsettled-refund"] call ACME_fnc_hardcorePushRetire;
+        };
         _job = missionNamespace getVariable ["ACME_HCMedPushJob",_job];
         _job set ["pushedMl",((_job getOrDefault ["pushedMl",0]) - _ml) max 0];
         _job set ["unsentDelta",[0,0,[]]];

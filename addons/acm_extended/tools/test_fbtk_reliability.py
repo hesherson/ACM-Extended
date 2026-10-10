@@ -13,7 +13,8 @@ def read(path: Path) -> str:
 def test_fbtk_is_rejected_on_io_before_inventory_is_consumed():
     s = read(CIRC / "fnc_TransfusionMenu_AddBag.sqf")
     gate = s.index('FBTK blood collection requires IV access')
-    consume = s.index('removeItem _itemClassname')
+    # FBTK exits before the ordinary fluid inventory target and debit path are even selected.
+    consume = s.index('private _vehicle = objectParent _medic;')
     assert gate < consume
     assert '(_itemClassname in FBTK_ARRAY)' in s
     assert '!GVAR(TransfusionMenu_SelectIV)' in s

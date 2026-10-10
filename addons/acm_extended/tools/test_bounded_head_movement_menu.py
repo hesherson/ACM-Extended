@@ -79,7 +79,7 @@ def test_superseded_controller_cannot_cancel_new_sequence_even_with_input():
 def movement_contract(text=None):
     s=source('headElevMedicSeq') if text is None else text
     for part in (
-        'hasInterface && {!isNil "ACE_player"} && {_u isEqualTo ACE_player}',
+        'hasInterface && {local _u} && {[_u] call ace_common_fnc_isPlayer}',
         '(inputAction _x) > 0.05',
         'if (_cancel) exitWith {',
         'call ACME_fnc_headElevateCancelSeq;',

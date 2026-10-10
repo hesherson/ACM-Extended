@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stable B189 build: B184/B185 RPT cleanup remains enforced."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 import re
 
@@ -115,10 +116,12 @@ def test_manual_plate_carrier_awake_guard_uses_valid_sqf_syntax():
     # This is clearer to HEMTT/SQF parsing and avoids the malformed-brace regression entirely.
     assert 'if (!(alive _medic)) exitWith {false};' in s
     assert 'if (!([_medic] call ace_common_fnc_isAwake)) exitWith {false};' in s
-    assert 'if (!(alive _patient)) exitWith {false};' in s
+    # B208 permits corpse equipment access; only a living, awake patient blocks removal.
+    assert 'if (!(alive _patient)) exitWith {false};' not in s
+    assert 'private _awake = alive _patient && {' in s
 
     # Persistent removal is valid only while the casualty remains medically down.
-    assert 'private _awake = !(_patient getVariable ["ACE_isUnconscious", false])' in s
+    assert 'private _awake = alive _patient && {!(_patient getVariable ["ACE_isUnconscious", false])}' in s
     assert '&& {!(_patient getVariable ["ace_medical_unconscious", false])};' in s
     assert s.rstrip().endswith("!_awake")
 
@@ -141,8 +144,8 @@ def test_structured_item_descriptions_escape_xml_ampersands():
 def test_build_identity_is_b186_stable():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4";' in cfg
-    assert 'ACME_buildBatch = "B190";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 

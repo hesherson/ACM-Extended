@@ -24,7 +24,6 @@ if (_bagId == "") exitWith {
     ["Bag state is synchronizing. Select it again after the next medical update.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 private _pending = missionNamespace getVariable ["ACME_piPending", createHashMap];
-if (((values _pending) findIf { !(_x select 3) && {(_x select 0) isEqualTo _patient} && {((_x select 1) select 2) == _bagId} }) >= 0) exitWith {};
 private _isNewCuff = !(_bagId in (_patient getVariable ["ACME_piCuffs", createHashMap]));
 if (_isNewCuff && {([ACE_player, _patient, "ACME_PressureInfuser"] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
     ["No pressure infuser carried.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
@@ -32,7 +31,7 @@ if (_isNewCuff && {([ACE_player, _patient, "ACME_PressureInfuser"] call ACME_fnc
 private _seq = (missionNamespace getVariable ["ACME_piSequence", 0]) + 1;
 missionNamespace setVariable ["ACME_piSequence", _seq];
 private _id = format ["cuff:%1:%2:%3", clientOwner, netId ACE_player, _seq];
-private _args = [_patient, ACE_player, _bagId, [_patient] call ACME_fnc_clinicalEpoch, _id, CBA_missionTime, _isNewCuff, _pane == "infusion"];
+private _args = [_patient, ACE_player, _bagId, [_patient] call ACME_fnc_clinicalEpoch, _id, serverTime, _isNewCuff, _pane == "infusion", "pump-b227"];
 _pending set [_id, [_patient, _args, CBA_missionTime, false]];
 missionNamespace setVariable ["ACME_piPending", _pending];
 [_patient, "pressureCuff", _args] call ACME_fnc_ownerDispatch;

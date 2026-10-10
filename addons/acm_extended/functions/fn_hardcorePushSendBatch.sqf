@@ -8,7 +8,13 @@ _delta params [["_drugMl",0,[0]],["_nsMl",0,[0]],["_comp",[],[[]]]];
 private _batchMl = _drugMl + _nsMl;
 if (_batchMl <= 0.000001) exitWith {true};
 private _elapsed = (_job getOrDefault ["batchElapsed",0]) max 0.05;
-if (!_force && {_elapsed < (missionNamespace getVariable ["ACME_hcMed_pushBatchSec",5])}) exitWith {true};
+// Long normal pushes must become systemic WHILE the plunger is moving, not
+// only after the final frame. One acknowledged 1-second aliquot is the upper
+// delay; Hardcore's existing 5-second batch tuning remains unchanged.
+private _batchSec = if (_job getOrDefault ["standardTimed",false]) then {1} else {
+    missionNamespace getVariable ["ACME_hcMed_pushBatchSec",5]
+};
+if (!_force && {_elapsed < _batchSec}) exitWith {true};
 private _medic = _job getOrDefault ["medic",objNull];
 private _patient = _job getOrDefault ["patient",objNull];
 if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};

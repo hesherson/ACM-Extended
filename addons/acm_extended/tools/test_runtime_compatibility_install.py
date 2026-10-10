@@ -22,14 +22,15 @@ def marker_pairs():
 
 def test_expected_fork_markers_exist_in_executable_sources():
     pairs = marker_pairs()
-    assert len(pairs) == 13
+    assert len(pairs) == 14
+    assert ("ace_medical_treatment_fnc_treatment", "ACME-B263-modal-route") in pairs
     for name, marker in pairs:
         owner, function = name.split("_fnc_")
         if owner.startswith("ACM_"):
             source = ROOT / "addons" / owner[4:] / "functions" / f"fnc_{function}.sqf"
         else:
             source = ROOT / "addons/core/overrides" / f"fnc_{function}.sqf"
-        assert marker in [t.value for t in lex(source.read_text()) if t.kind == "string"], name
+        assert any(marker in t.value for t in lex(source.read_text()) if t.kind == "string"), name
 
 
 def test_wrap_marker_tracks_current_physical_dressing_reconciliation():

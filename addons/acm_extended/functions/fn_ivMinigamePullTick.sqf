@@ -89,15 +89,16 @@ if (!(uiNamespace getVariable ["ACME_IV_PullBroke", false])) then {
     playSound "ACE_Sound_Click";
 };
 
-// draw the hub sliding out along the axis, and fading as it leaves the skin.
-private _ctrl = uiNamespace getVariable ["ACME_IV_PullCtrl", controlNull];
-if (!isNull _ctrl) then {
-    (uiNamespace getVariable ["ACME_IV_PullBase", [0, 0]]) params ["_bx0", "_by0"];
-    private _outX = _bx0 - (_sx * _aspect * _full * _prog);
-    private _outY = _by0 - (_sy * _full * _prog);
-    _ctrl ctrlSetPosition [_outX, _outY, _geometry select 0, _geometry select 1];
-    _ctrl ctrlSetTextColor [1, 1, 1, ((1 - (_prog * 0.6)) max 0.2)];
-    _ctrl ctrlCommit 0;
-};
+// Move only the selected component and its dependants, using stored geometry.
+private _layers=uiNamespace getVariable ["ACME_IV_PullLayers",[]];
+private _bases=uiNamespace getVariable ["ACME_IV_PullLayerBases",[]];
+{
+    if (!isNull _x && {_forEachIndex<count _bases}) then {
+        private _base=+(_bases select _forEachIndex);
+        _base set [0,(_base select 0)-_sx*_aspect*_full*_prog];
+        _base set [1,(_base select 1)-_sy*_full*_prog];
+        _x ctrlSetPosition _base;_x ctrlSetTextColor [1,1,1,(1-_prog*0.6) max 0.2];_x ctrlCommit 0;
+    };
+} forEach _layers;
 
 if (_prog >= 1) then { [true] call ACME_fnc_ivMinigamePullStop; };

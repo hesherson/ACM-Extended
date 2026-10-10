@@ -10,7 +10,7 @@ class ACEGVAR(medical_treatment,actions) {
         treatmentTime = 2.5;
         allowedSelections[] = {"Head"};
         allowSelfTreatment = 0;
-        condition = QUOTE(GVAR(enable) && !(_patient call ACEFUNC(common,isAwake)));
+        condition = QUOTE(GVAR(enable) && (!(_patient call ACEFUNC(common,isAwake)) || (_patient getVariable [ARR_2('ACME_ETT_Inserted',false)]) || (_patient getVariable [ARR_2(QQGVAR(AirwayObstructionVomit_State),0)]) > 0 || (_patient getVariable [ARR_2(QQGVAR(AirwayObstructionBlood_State),0)]) > 0));
         callbackSuccess = QFUNC(checkAirway);
         ACM_rollToBack = 1;
     };
@@ -71,7 +71,7 @@ class ACEGVAR(medical_treatment,actions) {
         treatmentTime = QUOTE([_patient] call FUNC(getSuctionTime));
         items[] = {"ACM_SuctionBag"};
         consumeItem = 1;
-        condition = QUOTE(GVAR(enable) && !(_patient call ACEFUNC(common,isAwake)));
+        condition = QUOTE(GVAR(enable) && (!(_patient call ACEFUNC(common,isAwake)) || (_patient getVariable [ARR_2(QQGVAR(AirwayObstructionVomit_State),0)]) > 0 || (_patient getVariable [ARR_2(QQGVAR(AirwayObstructionBlood_State),0)]) > 0));
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,0)] call FUNC(handleSuction));
         ACM_cancelRecovery = 1;
         ACM_menuIcon = "ACM_SuctionBag";

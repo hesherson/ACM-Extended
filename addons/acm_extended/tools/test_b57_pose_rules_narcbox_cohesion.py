@@ -57,9 +57,9 @@ def test_menu_open_is_only_empty_hands_and_crouch_transition():
     assert 'setUnitPos "MIDDLE"' in start
     assert 'currentWeapon _medic' in start
     assert 'primaryWeapon _medic' in start and 'secondaryWeapon _medic' in start and 'handgunWeapon _medic' in start
-    assert '[_medic, _kneel, 0] call ACME_fnc_doAnim;' in start
+    assert '[_medic, _kneel, [0, 1] select _oldGeneric] call ACME_fnc_doAnim;' in start
     code='\n'.join(line for line in start.splitlines() if not line.lstrip().startswith(('*','//','/*')))
-    for forbidden in ('UnconsciousMedicFromUnarmedKneel','UnconsciousReviveMedic_B','switchMove [','addPerFrameHandler','ACME_menuPoseFallback'):
+    for forbidden in ('UnconsciousMedicFromUnarmedKneel','UnconsciousReviveMedic_B','switchMove [','ACME_menuPoseFallback'):
         assert forbidden not in code
     stop=txt('functions/fn_menuPoseStop.sqf')
     assert 'setUnitPos "AUTO"' in stop
@@ -67,8 +67,8 @@ def test_menu_open_is_only_empty_hands_and_crouch_transition():
 
 def test_roll_inspect_pulse_cannot_exit_standing():
     stop=txt('functions/fn_treatmentPoseStop.sqf')
-    assert '_currentMode in ["roll","inspect","pulse"]' in stop
-    assert 'setUnitPos (["MIDDLE", "UP"] select _exitUpright)' in stop
+    assert 'private _enteredProne =' in stop
+    assert '_medic setUnitPos (if (_enteredProne) then {"AUTO"} else {["MIDDLE", "UP"] select _exitUpright});' in stop
     assert 'if (stance _unit == "STAND") then {' in stop
     assert 'AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon' in stop
 

@@ -147,7 +147,10 @@ class B38Mixtures(unittest.TestCase):
         self.assertLess(debit.index('isNil {'), debit.index('ACME_fnc_infusionVialVolume'))
         self.assertLess(debit.index('ACME_fnc_infusionVialVolume'), debit.index('ACME_fnc_vialTake'))
         self.assertIn('ACME_fnc_vialRefund', debit)
-        self.assertLess(debit.index('ACME_fnc_vialRefund'), debit.index('_medic removeItem _container'))
+        self.assertIn('ACME_fnc_treatmentSupplyTake', debit)
+        self.assertIn('ACME_fnc_treatmentSupplyRefund', debit)
+        self.assertLess(debit.index('ACME_fnc_infusionVialVolume'), debit.index('ACME_fnc_treatmentSupplyTake'))
+        self.assertLess(debit.index('ACME_fnc_vialRefund'), debit.index('ACME_fnc_treatmentSupplyRefund'))
 
     def test_virtual_marker_includes_single_component_preparations(self):
         inject = src('skInjectSite')

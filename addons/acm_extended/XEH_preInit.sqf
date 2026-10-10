@@ -23,15 +23,39 @@ if (hasInterface) then {
 };
 
 private _settings = [
+    ["ACME_menuPoseEnabled", "CHECKBOX",
+        ["Crouch when opening the medical menu", "Automatically kneel when opening another casualty's medical menu while standing. Prone medics keep their posture. Disabling this stops automatic menu posture changes; treatment animations keep their own posture requirements."],
+        [_cSys, "Interface"], true, 2, {
+            if (!_this && {hasInterface} && {!isNil "ACE_player"} && {!isNil "ACME_fnc_menuPoseStop"}) then {
+                [ACE_player] call ACME_fnc_menuPoseStop;
+            };
+        }],
     ["ACME_ptx_stableSec", "SLIDER",
-        ["Pneumothorax stability interval", "Seconds of controlled air accumulation before the internal model records stability. Does not display a provider notification."],
+        ["Pneumothorax stability interval", "Seconds of low, controlled PTX with an open or vented-seal-covered finger thoracostomy or chest tube, covered communicating wounds and relieved tension before the internal leak settles. Vented seals can be applied while healing continues. Settled, observed PTX permits surgical closure."],
         [_cTrau, "Pneumothorax"], [0, 300, 60, 0], 1, {}],
     ["ACME_ptx_leakSettleSec", "SLIDER",
         ["Pneumothorax leak settling time", "Simulation time scale for internal air leaks to settle. Larger values prolong leakage. Open chest wounds and actual drainage remain consequential."],
         [_cTrau, "Pneumothorax"], [120, 1800, 600, 0], 1, {}],
+    ["ACME_ptx_resolveSec", "SLIDER",
+        ["Pneumothorax residual air clearance", "Seconds to clear one normalized unit of remaining PTX after the internal leak settles, communicating wounds are covered and pressure is controlled. Open finger drainage and chest tubes accelerate clearance. This is simulation tuning."],
+        [_cTrau, "Pneumothorax"], [60, 1800, 600, 0], 1, {}],
     ["ACME_vent_simpleMode", "CHECKBOX",
         ["Simple Ventilator Mode", "Use the selected breathing rate with automatic supporting settings. Lung and airway problems, circulation, power and circuit failures still affect the patient. Advanced settings are retained for when this mode is disabled."],
-        [_cVent, "Mode"], false, 1, {}],
+        [_cVent, "Mode"], false, 1, {
+            // CBA passes the new Boolean directly. Corpse physiology has no
+            // drive tick, so advance only device protocol metadata on changes.
+            private _simple = _this;
+            {
+                private _patient = _x;
+                if (!isNull _patient && {local _patient} && {!alive _patient}
+                    && {_patient getVariable ["ACME_vent_onPatient", false]}) then {
+                    private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [!_simple, 0]];
+                    if !((_episode select 0) isEqualTo _simple) then {
+                        [_patient, "ACME_vent_simpleEpisode", [_simple, (_episode select 1) + 1]] call ACME_fnc_setVarNet;
+                    };
+                };
+            } forEach allDeadMen;
+        }],
     // systems: enable and disable, plus hardcore.
     // hardcore descriptors. it uses precise anatomical and clinical wording in the assessment text instead of
     // plain-language terms, and appends findings, such as chest-seal counts and NCD laterality, that a trained
@@ -456,11 +480,11 @@ private _settings = [
     // the physiology of a seizure is core gameplay and has no switch: the casualty still seizes, still loses
     // consciousness, and still carries every vital sign and consequence of it. this setting governs the BODY
     // MOTION and nothing else.
-    // ACME uses BI's GestureSpasm3-6 as dedicated 1.35x seizure gestures. Each gesture finishes before the next
+    // ACME uses BI's GestureSpasm0/4/5/6 as isolated seizure gestures. Each gesture finishes before the next
     // begins. The old heading tremor, random yaw jitter and repeated ragdoll-flop loop are no longer used.
     [
         "ACME_seizure_animEnabled", "CHECKBOX",
-        ["Seizure body motion", "The convulsion ANIMATION only. ON: active seizures cycle BI GestureSpasm3-6 at 1.35x, allowing each spasm to finish before the next begins. OFF: a seizing casualty lies still, while loss of consciousness, apnea, vitals, postictal state and treatment remain unchanged. Takes effect immediately, including on a seizure already running."],
+        ["Seizure body motion", "The convulsion ANIMATION only. ON: active seizures randomly play BI GestureSpasm0, GestureSpasm4, GestureSpasm5 and GestureSpasm6, allowing each spasm to finish before the next begins. OFF: a seizing casualty lies still, while loss of consciousness, apnea, vitals, postictal state and treatment remain unchanged. Takes effect immediately, including on a seizure already running."],
         [_cTrau, "3. Seizures"],
         true, 2, {}
     ],

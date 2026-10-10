@@ -32,7 +32,7 @@ if (_class isEqualTo "") exitWith {};
 // handed straight to ACM's native add bag, which hangs it to fill, and the removal is likewise handed to native
 // in fn_transfusionpullbag, so it returns the filled blood. native addbag reads the same right-list selection
 // this function does, so the pick carries over.
-if ((_class find "FieldBloodTransfusionKit") >= 0) exitWith { call ACM_circulation_fnc_TransfusionMenu_AddBag; };
+if ((_class find "FieldBloodTransfusionKit") >= 0) exitWith { call ACME_fnc_fbtkHang; };
 
 private _action = ((_right lbData _idx) splitString "|") param [1, ""];
 // is it a cooler-sourced row? the available-list rows we add for cooler blood carry a trailing |COOLER
@@ -59,8 +59,11 @@ if (_fromUsed) exitWith {
     _used deleteAt _ui; ACE_player setVariable ["ACME_usedBags",_used,true];
     private _requestId=format ["rehang:%1:%2:%3",clientOwner,diag_frameNo,floor(diag_tickTime*1000)];
     private _pending=uiNamespace getVariable ["ACME_usedRehangPending",createHashMap]; _pending set [_requestId,_record]; uiNamespace setVariable ["ACME_usedRehangPending",_pending]; uiNamespace setVariable ["ACME_usedRowSig","__force__"];
+    private _contexts = uiNamespace getVariable ["ACME_usedRehangContext",createHashMap];
+    _contexts set [_requestId,[ACE_player,_target2,_usedId]];
+    uiNamespace setVariable ["ACME_usedRehangContext",_contexts];
     private _warmer=([ACE_player,_target2,"ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount)>=1;
-    [_target2,"rehangUsedBag",[_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer]] call ACME_fnc_ownerDispatch;
+    [_target2,"rehangUsedBag",[_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer,serverTime]] call ACME_fnc_ownerDispatch;
 };
 
 private _isBlood  = ((toLowerANSI _class) find "blood")  >= 0;
@@ -195,9 +198,7 @@ private _setName = "an IV line (administration set)";
 if (([ACE_player, _target, _setItem] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
     [format ["You need %1 to spike this bag.", _setName], 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
-if (([ACE_player, _target, _class] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
-    ["Bag not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
-};
+// The selected fluid source is rechecked atomically at commit.
 // do not start a second spike while one is running.
 if (count (missionNamespace getVariable ["ACME_spikingActive", []]) > 0) exitWith {};
 
@@ -206,19 +207,28 @@ if (count (missionNamespace getVariable ["ACME_spikingActive", []]) > 0) exitWit
 missionNamespace setVariable ["ACME_spikingActive", [_class, diag_tickTime + 1.6]];
 call ACME_fnc_updateTransfusionControls;
 [{
-    params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold", "_medic", "_target"];
+    params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold", "_medic", "_target", "_inventoryMode", "_sourceVehicle"];
     missionNamespace setVariable ["ACME_spikingActive", []];
     if (isNull _medic || {!local _medic} || {!alive _medic}
         || {!isNull _target && {_medic distance _target > 5}}) exitWith {};
     if (([_medic, _target, _setItem] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
         [format ["%1 is no longer available.", _setName], 2, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([_medic, _target, _class] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
-        ["The bag is no longer on hand.", 2, _medic, 13] call ace_common_fnc_displayTextStructured;
+    // Capture inventory choice when clicked; toggling the pane during the short spike beat cannot
+    // redirect the debit to another person's bag. Reserve both components, refund if either vanished.
+    private _receipts = [];
+    isNil {
+        private _bagReceipt = [_medic, _target, _class, _inventoryMode, _sourceVehicle] call ACME_fnc_transfusionTakeSelected;
+        if (_bagReceipt isNotEqualTo []) then {
+            private _setReceipt = [_medic, _target, [_setItem]] call ACME_fnc_treatmentSupplyTake;
+            if (_setReceipt isEqualTo []) then {
+                [_bagReceipt] call ACME_fnc_treatmentSupplyRefund;
+            } else {_receipts = [_bagReceipt, _setReceipt];};
+        };
+        true
     };
-    private _receipts = [_medic, _target, [_setItem, [_class, _cold]]] call ACME_fnc_treatmentSupplyTakeMany;
     if (_receipts isEqualTo []) exitWith {
-        ["The bag or administration set is no longer available.", 2, _medic, 13] call ace_common_fnc_displayTextStructured;
+        ["The selected bag or administration set is no longer available.", 2, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
     {[_x, false] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
 
@@ -239,4 +249,7 @@ call ACME_fnc_updateTransfusionControls;
     if (!isNil "ACM_circulation_fnc_TransfusionMenu_UpdateBagList") then {
         [false] call ACM_circulation_fnc_TransfusionMenu_UpdateBagList;
     };
-}, [_class, _action, _setItem, _setName, _kind, (_isBlood && _fromCooler), ACE_player, _target], 1.6] call CBA_fnc_waitAndExecute;
+    if (!isNull (findDisplay 86000)) then {[false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;};
+}, [_class, _action, _setItem, _setName, _kind, (_isBlood && _fromCooler), ACE_player, _target,
+    (if (_fromCooler) then {0} else {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory", 0]}),
+    objectParent ACE_player], 1.6] call CBA_fnc_waitAndExecute;

@@ -1,15 +1,15 @@
 // Open the shared airway screen in suction-only mode after ACE finishes its action.
-// Keep the legacy type argument for callers. Eligible shared equipment selects the actual device.
-params ["_medic", "_patient", ["_type", 1]];
+// The explicit action selects its actual device; only the full intubation workspace auto-selects.
+params ["_medic", "_patient", ["_type", 1, [0]]];
+if !(_type in [0, 1]) exitWith {};
 
 if (!hasInterface) exitWith {  };
 if (isNull _patient) exitWith {  };
 
 // Keep an unspent manual bag in inventory until the first squeeze.
 if (isNull _medic || {!local _medic}) exitWith {};
-if (([_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount) < 1 && {
-    ([_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount) < 1
-}) exitWith {["No suction device carried.", 2] call ace_common_fnc_displayTextStructured;};
+private _item = ["ACM_SuctionBag", "ACM_ACCUVAC"] select _type;
+if (([_medic, _patient, _item] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {["No suction device carried.", 2] call ace_common_fnc_displayTextStructured;};
 uiNamespace setVariable ["ACME_suction_bagOwner", []];
 uiNamespace setVariable ["ACME_suction_resume", []];
 uiNamespace setVariable ["ACME_laryngo_patient", _patient];
@@ -17,6 +17,7 @@ uiNamespace setVariable ["ACME_laryngo_medic", _medic];
 uiNamespace setVariable ["ACME_suction_standalone", true];
 // The initializer selects the actual profile before the first tray refresh.
 uiNamespace setVariable ["ACME_suction_type", -2];
+uiNamespace setVariable ["ACME_suction_requestedType", _type];
 
 // open on a short delay rather than here and now.
 // this runs inside the callbacksuccess of an ACE treatment, and ACE is still tearing its own treatment down at

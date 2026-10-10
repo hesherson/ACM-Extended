@@ -11,4 +11,4 @@ private _session = _patient getVariable [QGVAR(CPR_session), []];
     && {(_medic getVariable [QGVAR(CPR_Patient), objNull]) isEqualTo _patient}
     && {(_medic getVariable [QGVAR(CPR_Epoch), -1]) == (_session select 1)}
     && {(objectParent _medic) isEqualTo (objectParent _patient)}
-    && {(_medic distance2D _patient) <= ACEGVAR(medical_gui,maxDistance)}
+    && {!isNull objectParent _medic || {(_medic distance2D _patient) <= ACEGVAR(medical_gui,maxDistance)}}

@@ -7,11 +7,14 @@ are delivered in controlled orders; no Arma pose or real network is rendered.
 import re
 import pytest
 from test_menu_death_lifecycle import ROOT, adapt, execute
+from test_b218_carrier_inventory import cargo_source
 
 F=ROOT/'addons/acm_extended/functions'
 
 
 def source(name):
+    if name == 'carrierLegacySnapshot':
+        return (ROOT/'addons/core/functions'/('fnc_'+name+'.sqf')).read_text()
     return (F/('fn_'+name+'.sqf')).read_text()
 
 
@@ -25,6 +28,20 @@ def code(name, server_clock='CBA_missionTime'):
             text=re.sub(re.escape(old)+r'\b',lambda m:new,text)
         text=text.replace(unit+' setUnitLoadout [_loadout,false];',
                           '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
+    text=text.replace('_patient setUnitLoadout [_loadout, false];',
+                      '_loadouts pushBack (+_loadout); _vest=(_loadout select 4) select 0;')
+    # B264 legacy vest-only restore uses addVest and the actual contents
+    # instead of rebuilding the entire unit loadout. The VM lacks Arma's
+    # equipment commands; model their vest-slot and inventory results, while
+    # executing the real procedure/roll/custody conditionals unchanged.
+    text=text.replace('_patient addVest _class;',
+                      '_vest=_class; _loadout set [4,+_saved]; _loadouts pushBack (+_loadout);')
+    text=text.replace('vestContainer _patient', '_patient')
+    text=text.replace('isClass (configFile >> "CfgMagazines" >> _item)', 'false')  # these fixtures contain items, not magazines
+    text=text.replace('_dest addItemCargoGlobal [_item, _count];',
+                      'for "_legacyI" from 1 to _count do {_legacyVestItems pushBack _item;};')
+    text=text.replace('itemCargo _dest', '_legacyVestItems')
+    text=text.replace('removeVest _patient;', '_vest=""; _loadout set [4,[]];')
     text=text.replace('serverTime',server_clock)
     text=text.replace('finite _rollTime','(_rollTime call _finite)')
     text=text.replace('finite _animSpeed','(_animSpeed call _finite)')
@@ -33,11 +50,13 @@ def code(name, server_clock='CBA_missionTime'):
     for var in ('_prop','_headProp'):
         text=text.replace('detach '+var+';', '_detaches pushBack '+var+';')
         text=text.replace('deleteVehicle '+var+';', '_deletes pushBack '+var+';')
+    text=text.replace('finite (_mag select 1)', '((_mag select 1) call _finite)')
+    text=re.sub(r'\bfinite (_\w+)', r'(\1 call _finite)', text)
     return adapt(text)
 
 
 def function(name):
-    return 'ACME_fnc_'+name+'={'+code(name)+'};\n'
+    return ('ACM_core_fnc_' if name == 'carrierLegacySnapshot' else 'ACME_fnc_')+name+'={'+code(name)+'};\n'
 
 
 def setup():
@@ -46,8 +65,9 @@ def setup():
         private _animation="amovppnemstpsraswrfldnon"; private _actualSide="back";
         private _lifeState="HEALTHY";
         private _vest=""; private _loadout=[[],[],[],[],[],[],"","",[],[]];
-        private _loadouts=[]; private _detaches=[]; private _deletes=[];
-        private _rolls=[]; private _animRequests=[]; private _releases=[];
+        private _loadouts=[]; private _legacyVestItems=[];
+        private _detaches=[]; private _deletes=[];
+        private _rolls=[]; private _animRequests=[]; private _releases=[]; private _dispatches=[];
         private _headResume=[]; private _yielded=0; private _acquired=0;
         private _blocked=false; private _leaseAllowed=true;
         private _finite={_this isEqualType 0};
@@ -81,6 +101,7 @@ def setup():
         // roll request so workspace timing tests do not depend on rendering the medic4 provider RTM.
         ACME_fnc_ownerDispatch={
             params ["_owner","_op","_args"];
+            _dispatches pushBack [_owner,_op,+_args];
             if (_op=="chestSealEntryFrontRoll") then {
                 _args params ["_m","_p"];
                 [_p,"front",false,_m,true] call ACME_fnc_chestSealRoll;
@@ -105,7 +126,30 @@ def setup():
             };
             [count _waits==0,"unbounded deferred work"] call _check;
         };
-    '''+function('chestSealCanPhysicalRoll')+function('chestSealPatientBegin')+function('chestSealPatientEnd')+function('chestAccessVestRestore')
+    ''' + r'''
+        // Explicit cargo commands for the namespace-based body/pose fixture.
+        // Actual populate/snapshot/comparison implementations execute below.
+        private _addItem={
+            params ["_container","_spec",["_pack",false]];
+            _spec params ["_class","_count"];
+            private _key=["items","packs"] select _pack;
+            private _rows=+(_container getVariable [_key,[]]);
+            for "_i" from 1 to _count do {_rows pushBack _class;};
+            _container setVariable [_key,_rows];
+        };
+        private _addMagazine={
+            params ["_container","_spec"]; _spec params ["_class","_count","_ammo"];
+            private _rows=+(_container getVariable ["mags",[]]);
+            for "_i" from 1 to _count do {_rows pushBack [_class,_ammo];};
+            _container setVariable ["mags",_rows];
+        };
+        private _addWeapon={
+            params ["_container","_spec"]; _spec params ["_weapon","_count"];
+            private _rows=+(_container getVariable ["weapons",[]]);
+            for "_i" from 1 to _count do {_rows pushBack (+_weapon);};
+            _container setVariable ["weapons",_rows];
+        };
+    ''' + ''.join(adapt(cargo_source(n)) for n in ['carrierCargoPopulate','carrierCargoSnapshot','carrierCargoEqual']) + function('carrierLegacySnapshot')+function('carrierInventoryRestore')+function('chestSealCanPhysicalRoll')+function('chestSealPatientBegin')+function('chestSealPatientEnd')+function('chestAccessVestRestore')
 
 
 @pytest.mark.parametrize('flags,animation,expected',[
@@ -319,7 +363,7 @@ def test_same_side_request_is_a_noop_and_nonlocal_request_is_forwarded(side):
         [count _animRequests==0 && {count _waits==0},"same-side request invented a roll"] call _check;
         _patientLocal=false;
     '''+f'[_patient,"{side}",true,_medic,true] call ACME_fnc_chestSealRoll;'+'''
-        [count _events==1 && {((_events select 0) select 1)=="chestSealRoll"},"nonlocal request not forwarded"] call _check;
+        [count _dispatches==1 && {((_dispatches select 0) select 1)=="chestSealRoll"},"nonlocal request not forwarded"] call _check;
         [count _animRequests==0,"nonowner animated patient"] call _check;
     ''')
 

@@ -12,6 +12,14 @@ private _secretionStage = (_secretions param [1, 0]) max 0 min 4;
 private _stamp = if (_vom > 0) then {[_vom, 0, _emesis]} else {[0, _blood, []]};
 private _kind = if (_vom > 0) then {"v"} else {if (_blood > 0) then {"b"} else {""}};
 private _target = if (_vom > 0) then {(_vom * 2) min 8} else {(_blood * 2) min 6};
+// A later native blood increment adds ONLY new fluid, not the amount already
+// suctioned. Persist the blood compartment independently of visible vomit/secretions.
+if (_kind == "b") then {
+    private _remainingBlood = _patient getVariable ["ACME_laryngo_bloodRemaining", []];
+    if (count _remainingBlood == 2 && {(_remainingBlood select 0) <= _blood}) then {
+        _target = ((_remainingBlood select 1) + 2 * (_blood - (_remainingBlood select 0))) max 0 min 6;
+    };
+};
 // Secretions are their own compartment. New secretion behind blood/vomit must not
 // invalidate that active compartment's partial suction ledger or refill its volume.
 if (_kind == "" && {_secretionStage > 0}) then {

@@ -75,6 +75,7 @@ private _applied = 0;
         switch (_field) do {
             case "cardiacArrestPFH": { _accepted = [QGVAR(CardiacArrest_PFH), _value] call _publish; };
             case "reversibleCardiacArrestPFH": { _accepted = [QGVAR(ReversibleCardiacArrest_PFH), _value] call _publish; };
+            case "cprProvider": { _accepted = [QACEGVAR(medical,CPR_provider), _value] call _publish; };
             case "cprMedic": { _accepted = [QGVAR(CPR_Medic), _value] call _publish; };
             case "cprSession": { _accepted = [QGVAR(CPR_session), _value] call _publish; };
             case "aedUpdateStep": { _accepted = [QGVAR(AED_UpdateStep), _value] call _publish; };

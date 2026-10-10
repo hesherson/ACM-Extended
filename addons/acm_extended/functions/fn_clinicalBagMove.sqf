@@ -29,6 +29,7 @@ if (_hasDrug && {_mode != "cancel"} && {[_p, _part, _iv, _site] call ACME_fnc_is
 private _detached = +(_p getVariable ["ACME_detachedBags", []]);
 if (_hasAccess) then {_detached = _detached - [_id];} else {_detached pushBackUnique _id;};
 [_p, _detached] call ACME_fnc_detachedBagsCommit;
+if (_mode!="cancel" && {_hasAccess}) then {[_p,"ACME_IV_DisconnectedBagUIDs",(_p getVariable ["ACME_IV_DisconnectedBagUIDs",[]])-[_id]] call ACME_fnc_setVarNet;};
 private _pi = ACME_infusion_bodyParts find toLowerANSI _part;
 _bag set [2, [_p, _iv, _pi, _site] call ACM_circulation_fnc_getAccessType]; _bag set [3, _site]; _bag set [4, _iv];
 private _arr = _map getOrDefault [_part, []];

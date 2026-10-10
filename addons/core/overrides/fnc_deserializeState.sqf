@@ -313,6 +313,8 @@ if (_currentState in ["Unconscious", "CardiacArrest"] && {_targetState in ["Defa
 
 // Resume only after the validated state transition has completed.
 _unit setVariable ["ACME_clinicalRestoring", false, false];
+// The validated restored episode may remain unconscious throughout teardown/rebuild.
+if (!isNil "ACME_fnc_aiProtectionSync") then {[_unit, "restore"] call ACME_fnc_aiProtectionSync;};
 
 // Airway
 if (IS_UNCONSCIOUS(_unit)) then {

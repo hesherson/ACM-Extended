@@ -13,6 +13,7 @@ uiNamespace setVariable ["ACME_minigame_open", true];
 private _bodyPart = uiNamespace getVariable ["ACME_IV_BodyPart", "leftarm"];
 private _site     = uiNamespace getVariable ["ACME_IV_Site", "lower"];
 private _patient  = uiNamespace getVariable ["ACME_IV_Patient", objNull];
+if (!isNull _patient) then {[_patient,"ivMarks",["finishmigrate",[],[_patient] call ACME_fnc_clinicalEpoch]] call ACME_fnc_ownerDispatch;};
 if (!isNull _patient) then {[_patient, "ui:iv:" + str clientOwner, true] call ACME_fnc_ecgJostleRequest;};
 
 // load all three sites for this limb, so the band can snap between upper, middle and lower. each site can use a
@@ -196,7 +197,7 @@ if (!(missionNamespace getVariable ["ACME_ui_helpText", false])) then { (_displa
 // count left behind is a column that runs off the bottom of an ultrawide screen and nowhere else, which is the
 // worst kind of thing to leave behind.
 private _rows  = 6;  // band, pad, 14g, 16g, 18g, 20g.
-if (missionNamespace getVariable ["ACME_iv_lineSlot", false]) then { _rows = 7; };
+// The four finishing tools now have their own column; legacy lineSlot cannot change tray scale.
 // the tray takes the SAME physical scale the limb takes, so ACME_iv_uiScaleV3 grows the panel as one thing rather than
 // growing the casualty and leaving the instruments the size they were. the fit check below still shrinks the
 // column when it does not fit the screen height, so a large scale on a short screen degrades instead of
@@ -265,14 +266,8 @@ private _needleRects = [];
 
     private _iconX = _colX + (_slotW / 2) - (_iconW / 2);
 
-    // Keep the existing height preference, bounded by the actual fan footprint. This also safely brings old
-    // saved 0.34 defaults down from the top without overwriting the player's stored preference.
-    private _iconBias = missionNamespace getVariable ["ACME_iv_trayIconBias", 0.66];
-    if (!(_iconBias isEqualType 0) || {!finite _iconBias}) then {_iconBias = 0.66;};
-    private _minBias = 0.12 + (0.27 * _iconH / _slotH);
-    private _maxBias = 0.90 - (0.065 * _iconH / _slotH);
-    _iconBias = (_iconBias max _minBias) min _maxBias;
-    private _iconY = _ry + (_slotH * _iconBias) - (_iconH / 2);
+    // B233: the ready needle artwork is centered in its tile, never biased for a fan.
+    private _iconY = _ry + (_slotH / 2) - (_iconH / 2);
     (_display displayCtrl _bgIdc) ctrlSetPosition [_colX, _ry, _slotW, _slotH]; (_display displayCtrl _bgIdc) ctrlCommit 0;
     private _logo = _display displayCtrl _logoIdc;
     _logo ctrlSetText format ["\acm_extended\ui\iv\tray\iv_tray_%1g_0_ca.paa", _g];
@@ -291,7 +286,7 @@ uiNamespace setVariable ["ACME_IV_NeedleRects", _needleRects];
 // the saline line slot is off. what the mini-game called a line is a capped extension set rather than an
 // administration set, and the transfusion menu already owns hanging a bag, so the slot is hidden until that is
 // settled. set ACME_iv_lineSlot true to bring it back.
-private _lineSlotOn = missionNamespace getVariable ["ACME_iv_lineSlot", false];
+private _lineSlotOn = false; // B232: tubing is in the extension tool column.
 if (!_lineSlotOn) then {
     { private _lc = _display displayCtrl _x; if (!isNull _lc) then { _lc ctrlShow false; }; } forEach [86552, 86553, 86554, 86555];
 };
@@ -306,6 +301,9 @@ private _lIconW = _lIconH * _af;
 (_display displayCtrl 86553) ctrlSetPosition [_colX + (_slotW / 2) - (_lIconW / 2), _lineY + (_slotH / 2) - (_lIconH / 2), _lIconW, _lIconH]; (_display displayCtrl 86553) ctrlCommit 0;
 (_display displayCtrl 86554) ctrlSetPosition [_colX, _lineY + _slotH, _slotW, _lblH]; (_display displayCtrl 86554) ctrlCommit 0;
 (_display displayCtrl 86555) ctrlSetPosition [_colX, _lineY, _slotW, _slotH]; (_display displayCtrl 86555) ctrlCommit 0;
+
+[_display,_colX-_slotW-(_szW*0.012),_colY,_slotW,_slotH,_lblH,_step] call ACME_fnc_ivFinishTray;
+[_patient,"ivMarks",["finishMigrate",[],[_patient] call ACME_fnc_clinicalEpoch]] call ACME_fnc_ownerDispatch;
 
 // the interaction surface, which is the mouse-move source, plus the cursor calibration.
 uiNamespace setVariable ["ACME_IV_EvtUI", []];
@@ -519,6 +517,21 @@ uiNamespace setVariable ["ACME_IV_FrameAxis", createHashMapFromArray [
 ]];
 // where the floating line meets the hub, as a canvas fraction. it is the connector end of the tubing, so it is
 // the point that must sit under the cursor while the medic carries it to the hub.
+// B235: measured seated-hub sockets/axes; not the old floating-line artwork endpoints.
+uiNamespace setVariable ["ACME_IV_HubSockets", createHashMapFromArray [
+    ["", [0.49083587, 0.50485242]],
+    ["_15_left", [0.49385948, 0.50441832]],
+    ["_15_right", [0.4884779, 0.50312679]],
+    ["_ej_15_left", [0.4841672, 0.49265216]],
+    ["_ej_15_right", [0.49008342, 0.49051349]]
+]];
+uiNamespace setVariable ["ACME_IV_HubAxes", createHashMapFromArray [
+    ["", [0.01109028, -0.9999385]],
+    ["_15_left", [-0.24950163, -0.96837438]],
+    ["_15_right", [0.26734963, -0.96359959]],
+    ["_ej_15_left", [0.24916114, 0.96846204]],
+    ["_ej_15_right", [-0.26750392, 0.96355677]]
+]];
 uiNamespace setVariable ["ACME_IV_LineAnchors", createHashMapFromArray [
     ["",              [0.49246, 0.50391]],
     ["_15_left",      [0.49867, 0.50244]],

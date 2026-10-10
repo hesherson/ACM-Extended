@@ -19,6 +19,9 @@ def pressure_source(name):
         "animationState _m": "_animation",
         "animationState _u": "_animation",
         "alive _u": "_alive",
+        # This fixture runs the provider and held animation on one machine; transfer is covered separately.
+        "local _unit": "true",
+        "local _u": "true",
         "objectParent _u": "objNull",
         "objectParent _m": "objNull",
         "getPosASL _medic": "[0,0,0]",
@@ -26,6 +29,15 @@ def pressure_source(name):
         "getPosVisual _patient": "[0,1,0]",
         "eyeDirection _medic": "_look",
         "serverTime": "_serverTime",
+        "netId _medic": '"provider"',
+        "diag_frameNo": "100",
+        # Native animation samples/config are supplied explicitly; all exit ownership and timing code executes.
+        '_m getUnitMovesInfo 1': '_dpNativeElapsed',
+        '_m getUnitMovesInfo 2': '_dpNativeDuration',
+        'getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> _anim >> "speed")': '-1.8',
+        # These fixed numeric engine samples are finite; SQF-VM does not implement finite.
+        'finite _nativeDuration': 'true',
+        'finite _nativeElapsed': 'true',
         '_medic setUnitPos "MIDDLE";': "",
         '_m setUnitPos "AUTO";': "_stanceFreed = true;",
         'removeMissionEventHandler ["Draw3D", _d3];': "_removedDraw pushBack _d3;",
@@ -33,6 +45,7 @@ def pressure_source(name):
     }
     for old, new in replacements.items():
         source = re.sub(re.escape(old) + (r"\b" if old[-1].isalnum() else ""), lambda _: new, source)
+    source = re.sub(r'_(?:medic|m|u) setUnitPos ([^;]+);', r'_stanceFreed = (\1)=="AUTO";', source)
     source = re.sub(r'inputAction "[^"]+"', "0", source)
     source = source.replace("[objNull]", "[profileNamespace]")
     return adapt(source)
@@ -40,16 +53,21 @@ def pressure_source(name):
 
 def setup():
     source = bvm_setup() + '''
-        private _animation = "acme_directpressurehold";
+        // Start from real empty-hands idle; a visible orphaned DP hold legitimately schedules its own exit.
+        private _animation = "amovpknlmstpsnonwnondnon";
         private _look = [0,1,0];
         private _removedDraw = [];
         private _pressureLogs = [];
         private _serverTime = 1000;
+        private _dpNativeElapsed = -1;
+        private _dpNativeDuration = -1;
         ACME_fnc_animBlocked = {false};
+        ACME_fnc_medicAnimationPrep = {0};
         ACME_fnc_doAnim = {_moves pushBack (_this select 1);};
         ACME_fnc_bodyPartName = {_this select 0};
         ACME_fnc_medLog = {_pressureLogs pushBack _this;};
         ACME_fnc_directPressureHasFracture = {false};
+        ACME_fnc_patientInteractionDistance = {_distance};
         ACME_fnc_clinicalEpoch = {0};
         ACM_damage_fnc_clotWoundsOnBodyPart = {};
         ace_medical_status_fnc_updateWoundBloodLoss = {};
@@ -66,6 +84,7 @@ def setup():
                '_args params ["_op","_claimArgs"]; '
                '_claimArgs params ["_m","_part","_token","_epoch","_providerOwner"]; '
                'if (_op == "claim") then { '
+               '_patient setVariable [format ["ACME_DP_claim_%1",_part],[_m,_token,_epoch,_providerOwner,_serverTime]]; '
                '_m setVariable ["ACME_DP_ClaimPending",[]]; '
                '_m setVariable ["ACME_DP_ClaimToken",_token]; '
                '_m setVariable ["ACME_DP_ClaimEpoch",_epoch]; '
@@ -76,7 +95,7 @@ def setup():
                'if ((_patient getVariable [format ["ACME_DP_press_%1",_part],objNull]) isEqualTo _m) then {_patient setVariable [format ["ACME_DP_press_%1",_part],objNull];}; '
                '};}; '
                '_this call _originalOwnerDispatch;};')
-    for name in ("doAnimHeld", "directPressureStop", "directPressurePose", "directPressureTick", "directPressureLimb", "directPressureTorso", "directPressureStart"):
+    for name in ("providerAnimation", "providerAnimSpeedOwned", "directPressurePoseBusy", "directPressurePoseRetire", "directPressurePoseEnter", "directPressurePoseExit", "doAnimHeld", "directPressureStop", "directPressurePose", "directPressureTick", "directPressureLimb", "directPressureTorso", "directPressureStart"):
         source += f"ACME_fnc_{name} = {{" + pressure_source(name) + "};"
     source += '''
         private _press = {
@@ -88,6 +107,20 @@ def setup():
             if (_id < 0) exitWith {};
             private _h = _handlers select _id;
             [_h select 1,_id] call (_h select 0);
+        };
+        private _pressureWorkerTick = {
+            private _h = _handlers select _this;
+            [_h select 1,_this] call (_h select 0);
+        };
+        private _finishPressureExit = {
+            private _exitId = count _handlers - 1;
+            _animation = "ainvpknlmstpsnonwnondnon_medicend";
+            _dpNativeDuration = 1.8; _dpNativeElapsed = 0;
+            _exitId call _pressureWorkerTick;
+            CBA_missionTime = CBA_missionTime + 1.21;
+            _dpNativeElapsed = 1.8;
+            _exitId call _pressureWorkerTick;
+            _animation = "amovpknlmstpsnonwnondnon";
         };
         private _pressYielded = {
             private _part = _this;
@@ -166,11 +199,14 @@ def test_pending_pressure_workers_and_pose_callback_cannot_disturb_bvm():
         private _pressure = _handlers select _pressureID;
         _look = [0,-1,0];
         [_medic,_patient] call ACME_fnc_directPressurePose;
-        [count _waits > 0,"pose exit callback not captured"] call _check;
+        private _exitID = count _handlers - 1;
+        private _exit = _handlers select _exitID;
+        [(_medic getVariable ["ACME_DP_Exit",[]]) isNotEqualTo [],"pose exit worker not captured"] call _check;
         [_medic,_patient] call ACM_breathing_fnc_useBVM;
         private _before = count _moves;
         [_held select 1,_heldID] call (_held select 0);
         [_pressure select 1,_pressureID] call (_pressure select 0);
+        [_exit select 1,_exitID] call (_exit select 0);
         {(_x select 1) call (_x select 0);} forEach _waits;
         [count _moves == _before,"old pressure callback changed BVM animation"] call _check;
         CBA_missionTime = 13; call _tick;
@@ -183,9 +219,10 @@ def test_unclaimed_pressure_pose_still_gets_its_delayed_movement_repair():
         "leftarm" call _press;
         _look = [0,-1,0];
         [_medic,_patient] call ACME_fnc_directPressurePose;
-        [count _waits == 1,"pressure repair was not queued"] call _check;
+        [(_medic getVariable ["ACME_DP_Exit",[]]) isNotEqualTo [],"pressure exit was not queued"] call _check;
+        [(_moves select (count _moves - 1)) == "AinvPknlMstpSnonWnonDnon_medicEnd","release did not enter medicEnd"] call _check;
         private _before = count _moves;
-        {(_x select 1) call (_x select 0);} forEach _waits;
+        call _finishPressureExit;
         [count _moves == _before + 1,"unclaimed stale pressure pose was not repaired"] call _check;
         [(_moves select _before) == "AmovPknlMstpSnonWnonDnon","repair used wrong release pose"] call _check;
     ''')
@@ -196,8 +233,9 @@ def test_pending_pressure_pose_repair_yields_during_maneuver_transfer_gap():
         "leftarm" call _press;
         _look = [0,-1,0];
         [_medic,_patient] call ACME_fnc_directPressurePose;
-        [count _waits == 1,"pressure repair was not queued"] call _check;
-        private _repair = _waits select 0;
+        [(_medic getVariable ["ACME_DP_Exit",[]]) isNotEqualTo [],"pressure exit was not queued"] call _check;
+        private _exitID = count _handlers - 1;
+        private _repair = _handlers select _exitID;
         [_medic,_patient] call ACM_breathing_fnc_useBVM;
         call _pressTick;
         _medic setVariable ["ACME_chestAccessManeuverHandoff",[_patient,CBA_missionTime + 1]];
@@ -207,7 +245,7 @@ def test_pending_pressure_pose_repair_yields_during_maneuver_transfer_gap():
         [!ACM_core_ContinuousAction_Active && {!_cprActive},"fixture is not in transfer gap"] call _check;
         "leftarm" call _pressYielded;
         private _before = count _moves;
-        (_repair select 1) call (_repair select 0);
+        [_repair select 1,_exitID] call (_repair select 0);
         [count _moves == _before,"old pressure repair changed pose during transfer gap"] call _check;
     ''')
 

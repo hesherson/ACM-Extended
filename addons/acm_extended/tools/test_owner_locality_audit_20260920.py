@@ -60,9 +60,13 @@ def test_hang_bag_claim_is_owner_serialized_and_gear_survives_death():
     assert 'ACME_hang_Claimed' in tick
     assert 'call ACME_fnc_setVarNet' not in tick
     assert 'case "hangBagClaim"' in owner and 'case "hangBagRelease"' in owner
-    assert 'ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true' in prep
+    assert 'private _slots = [_ld select 0, _ld select 1];' in prep
+    assert '_medic setVariable ["ACME_hang_savedWeaponSlots", _slots, true];' in prep
     assert 'alive _medic' not in restore
-    assert 'setUnitLoadout _ld' in restore
+    assert '_medic setUnitLoadout' not in restore
+    assert 'addWeapon _weapon;' in restore
+    assert 'addWeaponItem [_weapon' in restore
+    assert 'ACME_hang_savedWeaponSlots", nil, true' in restore
     assert 'ACME_hangRestoreWeapons' in stop
 
 
@@ -97,8 +101,16 @@ def test_iv_marks_and_compromise_are_owner_serialized():
     commit = src('functions/fn_ivMarkCommit.sqf')
     register = src('functions/fn_ivMinigameRegister.sqf')
     assert '"ivMarks"' in add and '_patient setVariable ["ACME_IV_Marks"' not in add
-    assert '"connect"' in connect and '_patient setVariable ["ACME_IV_Marks"' not in connect
-    assert '"remove"' in pull and '_patient setVariable ["ACME_IV_Marks"' not in pull
+    # B232 routes the same public line action through a UID-bound finishing transaction.
+    assert 'call ACME_fnc_ivFinishStart' in connect and '_patient setVariable ["ACME_IV_Marks"' not in connect
+    start = src('functions/fn_ivFinishStart.sqf')
+    finish = src('functions/fn_ivFinishCommit.sqf')
+    assert '"ivFinish"' in start and '_patient setVariable ["ACME_IV_Marks"' not in start
+    assert '!local _patient' in finish and 'ACME_IV_MarkVer' in finish
+    assert '"ivCatheterPull"' in pull and '_patient setVariable ["ACME_IV_Marks"' not in pull
+    owner_pull = src("functions/fn_ivCatheterPull.sqf")
+    assert "!local _patient" in owner_pull and '"remove"' in owner_pull
+    assert "_uid" in owner_pull and "ACME_fnc_ivAccessoryUnplug" in owner_pull
     assert 'serverTime' in infiltrated and 'CBA_missionTime' not in infiltrated.split('ivMinigameAddMark', 1)[0].splitlines()[-1]
     assert 'private _e = serverTime - _mmiss;' in render
     assert '!local _patient' in commit and 'ACME_IV_MarkVer' in commit
@@ -203,7 +215,15 @@ def test_aajt_application_tamponade_clock_is_patient_owner_local():
     owner = src('functions/fn_ownerDispatch.sqf')
     apply = src('functions/fn_aajtApply.sqf')
     assert "setVariable ['ACME_Junc_AAJTApplying'" not in config
-    assert config.count("'aajtApplying'") >= 6
+    # B216 centralizes apply/cancel dispatch in token-scoped provider callbacks;
+    # the synchronized applying timestamp remains stamped exclusively on the patient owner.
+    start = src('functions/fn_aajtTreatmentStart.sqf')
+    finish = src('functions/fn_aajtTreatmentFinish.sqf')
+    assert config.count('callbackStart = "_this call ACME_fnc_aajtTreatmentStart";') == 6
+    assert config.count('callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";') == 6
+    assert '"aajtApplying", [toLowerANSI _bodyPart, true]' in start
+    assert '"aajtApplying", ["", false]' in finish
+    assert 'ACME_Junc_AAJTApplying' not in start + finish
     assert 'case "aajtApplying"' in owner
     block = owner.split('case "aajtApplying"', 1)[1].split('case "xstatApply"', 1)[0]
     assert '[serverTime, toLowerANSI _part]' in block
@@ -304,9 +324,10 @@ def test_direct_pressure_marker_is_patient_owner_authoritative_and_disconnect_sa
     runtime = src('functions/fn_initPressureAndAuscultationConfig.sqf')
     assert '"directPressureMarker"' not in start
     assert '"directPressureMarker"' in torso and '"directPressureMarker"' in limb and '"directPressureMarker"' in self_dp
-    torso_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true]]'
-    limb_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true]]'
-    self_active = '[_medic, "directPressureMarker", [_medic, _bodyPart, true]]'
+    identity = ', _medic getVariable ["ACME_DP_ClaimToken", ""], _medic getVariable ["ACME_DP_ClaimEpoch", -1]]]'
+    torso_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true' + identity
+    limb_active = '[_patient, "directPressureMarker", [_medic, _bodyPart, true' + identity
+    self_active = '[_medic, "directPressureMarker", [_medic, _bodyPart, true' + identity
     assert torso.index('ACME_DP_Active", true') < torso.index(torso_active)
     assert limb.index('ACME_DP_Active", true') < limb.index(limb_active)
     assert self_dp.index('ACME_DP_Active", true') < self_dp.index(self_active)
@@ -318,6 +339,8 @@ def test_direct_pressure_marker_is_patient_owner_authoritative_and_disconnect_sa
     block = owner.split('case "directPressureMarker"', 1)[1].split('case "directPressureClot"', 1)[0]
     assert '_patient setVariable [_key, _medic, true];' in block
     assert 'isEqualTo _medic' in block
+    assert '(_claim select 1) == _token' in block
+    assert '_epoch == ([_patient] call ACME_fnc_clinicalEpoch)' in block
     assert 'ACME_DP_ServerCleanupInstalled' in runtime
     assert 'HandleDisconnect' in runtime and 'EntityKilled' in runtime
 

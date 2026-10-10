@@ -19,7 +19,7 @@
 // stops as soon as the animation has actually taken.
 // it gives up quietly if the unit ends up somewhere the animation cannot apply, such as inside a vehicle, rather
 // than fighting for it.
-params ["_unit", "_anim", ["_hold", 1.2], ["_prio", 1]];
+params ["_unit", "_anim", ["_hold", 1.2], ["_prio", 1], ["_localOnly", false]];
 
 // only the newest request for this unit is allowed to keep re-asserting.
 // every call used to start its own re-assert loop with no knowledge of any other, and a sequence that plays
@@ -46,18 +46,22 @@ params ["_unit", "_anim", ["_hold", 1.2], ["_prio", 1]];
 // NOTHING ANIMATES A UNIT IN A VEHICLE. see fn_doAnim for why. this is checked here as well as there, so a
 // queued pose does not even start a re-assert loop for a unit who is seated.
 if (isNull _unit) exitWith {};
+// Provider-owned input loops opt in; remote patient choreography retains the existing default.
+if (_localOnly && {!local _unit}) exitWith {};
 if ([_unit] call ACME_fnc_animBlocked) exitWith {};
 
 private _gen = (_unit getVariable ["ACME_dah_gen", 0]) + 1;
+private _localityEpoch = _unit getVariable ["ACME_providerLocalityEpoch", 0];
 _unit setVariable ["ACME_dah_gen", _gen, false];
 if (isNull _unit) exitWith {};
 if (_anim isEqualTo "") exitWith {};
 
 [{
     params ["_args", "_pfh"];
-    _args params ["_u", "_a", "_tEnd", "_tries", "_g", "_asserts", "_p"];
+    _args params ["_u", "_a", "_tEnd", "_tries", "_g", "_asserts", "_p", "_localOnly", "_localityEpoch"];
 
-    if (isNull _u || {!alive _u} || {CBA_missionTime > _tEnd} || {_tries > 12}) exitWith {
+    if (isNull _u || {_localOnly && {!local _u || {(_u getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}}}
+        || {!alive _u} || {CBA_missionTime > _tEnd} || {_tries > 12}) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };
     // superseded. something newer wants this unit to do something else, so stop pushing.
@@ -66,6 +70,14 @@ if (_anim isEqualTo "") exitWith {};
     };
     // in a vehicle the pose will not hold, and forcing it looks worse than letting it go.
     if (!isNull objectParent _u) exitWith { [_pfh] call CBA_fnc_removePerFrameHandler; };
+
+    // Provider-only retries may run after the provider selected prone during holstering.
+    // Resolve before comparing and retain that target; patient choreography uses the
+    // default false branch and must never pass through this provider posture resolver.
+    if (_localOnly) then {
+        _a = [_u, _a] call ACME_fnc_providerAnimation;
+        _args set [1, _a];
+    };
 
     // the engine reports the move name in lower case, so both sides are lowered before the comparison.
     if ((toLower animationState _u) isEqualTo (toLower _a)) exitWith {
@@ -82,4 +94,4 @@ if (_anim isEqualTo "") exitWith {};
     [_u, _a, _p] call ACME_fnc_doAnim;
     _args set [3, _tries + 1];
     _args set [5, _asserts + 1];
-}, 0.12, [_unit, _anim, CBA_missionTime + _hold, 0, _gen, 0, _prio]] call CBA_fnc_addPerFrameHandler;
+}, 0.12, [_unit, _anim, CBA_missionTime + _hold, 0, _gen, 0, _prio, _localOnly, _localityEpoch]] call CBA_fnc_addPerFrameHandler;

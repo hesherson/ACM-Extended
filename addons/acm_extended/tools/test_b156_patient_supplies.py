@@ -19,9 +19,9 @@ def execute(scenario):
     if not vm:
         pytest.skip("SQF-VM is required for supply execution checks")
     definitions = []
-    for name in ["treatmentSupplyOrder", "treatmentSupplyCount", "treatmentSupplyTake", "treatmentSupplyRefund", "treatmentSupplyTakeMany"]:
+    for name in ["itemCount", "treatmentSupplyOrder", "treatmentSupplyCount", "treatmentSupplyTake", "treatmentSupplyRefund", "treatmentSupplyTakeMany"]:
         source = (FUNCTIONS / f"fn_{name}.sqf").read_text()
-        for unit in ["_medic", "_patient", "_donor", "_vehicle", "_x"]:
+        for unit in ["_unit", "_medic", "_patient", "_donor", "_vehicle", "_carrier", "_x"]:
             source = source.replace(f"isNull {unit}", f'({unit} isEqualTo "")')
         source = source.replace("local _medic", "true")
         source = source.replace("_medic removeItem _x", "[_medic, _x] call _remove")
@@ -32,6 +32,9 @@ def execute(scenario):
         definitions.append(f"ACME_fnc_{name} = {{{source}}};")
     code = r'''
         private _ok = true;
+        // No removed-carrier fixture in this legacy string-object harness.
+        ACME_fnc_carrierInventoryGet = {""};
+        ACME_fnc_carrierSupplyTake = {["", "", false, ""]};
         private _parents = createHashMap;
         private _cargo = createHashMap;
         private _inventory = createHashMapFromArray [["medic", ["seal"]], ["patient", ["seal"]]];
@@ -158,6 +161,11 @@ def test_hpmk_owner_rejection_refunds_patient_and_acceptance_commits_once():
     source = (FUNCTIONS / "fn_hpmkPrep.sqf").read_text()
     for unit in ["_medic", "_patient"]:
         source = source.replace(f"isNull {unit}", f'({unit} isEqualTo "")')
+    # Actors are string inventory keys in this fixture; preserve its living/down patient at the engine boundary.
+    source = source.replace("alive _patient", "_patientAlive")
+    # This historical inventory test models actors as strings rather than
+    # Arma objects. The real CPR field guard is covered by B258's object tests.
+    source = source.replace("_patient isEqualType objNull", "false")
     source = source.replace("local _patient", "_patientLocal").replace("objNull", '""')
     source = source.replace('_patient getVariable ["ACM_core_Lying_State", false]', "true")
     source = source.replace('_patient getVariable ["ACE_isUnconscious", false]', "true")
@@ -166,6 +174,7 @@ def test_hpmk_owner_rejection_refunds_patient_and_acceptance_commits_once():
     source = source.replace('_patient setVariable ["ACME_hpmk_returnPending", false, true];', "")
     execute('''
         private _patientLocal = true;
+        private _patientAlive = true;
         private _hpmkState = "";
         private _hpmkProvider = "";
         private _queued = [];

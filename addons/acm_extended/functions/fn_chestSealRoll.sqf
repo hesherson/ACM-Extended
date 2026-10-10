@@ -28,7 +28,12 @@ if !(_patient getVariable ["ACME_CS_ProcedureActive", false]) then {
 
 private _actual = [_patient, _patient getVariable ["ACME_CS_facing", "front"]] call ACME_fnc_chestSealActualSide;
 _patient setVariable ["ACME_CS_facing", _actual, true];
-if (!_force && {_actual isEqualTo _target}) exitWith {};
+// A side-lying recovery pose can classify as front. It still needs a physical
+// roll to supine; a matching diagram side is not proof that the body is flat.
+private _recovery = _patient getVariable ["ACM_airway_RecoveryPosition_State", false]
+    || {(_patient getVariable ["ACM_airway_RecoveryPosition_Pending", []]) isNotEqualTo []}
+    || {(toLowerANSI animationState _patient) == "acm_recoveryposition"};
+if (!_force && {_actual isEqualTo _target} && {!_recovery}) exitWith {};
 
 // Never invent a different diagram side when the body itself cannot be animated.
 if ((!alive _patient) || {(lifeState _patient) isEqualTo "DEAD"} || {!isNull objectParent _patient}) exitWith {};

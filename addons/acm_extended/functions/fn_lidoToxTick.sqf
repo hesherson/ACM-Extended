@@ -1,7 +1,7 @@
 // the lidocaine toxicity arc, phase 2: the seizure. it is driven by the serum level, ACME_lido_serumLevel, built
 // in phase 1.
 // at or above the seizure threshold an unconscious patient seizes: a generalized tonic-clonic event with shared
-// ACME physiology and the 1.35x GestureSpasm3-6 visual sequence. the recognizable physiologic tell is apnea. we
+// ACME physiology and the GestureSpasm0/4/5/6 visual sequence. the recognizable physiologic tell is apnea. we
 // drive a dedicated seizure rr channel, ACME_seizure_rrDrive, which is higher priority than the TBI
 // drive in the updateRespirationRate sole-writer, to 0, and the SpO2 then crashes on its own through ACM's
 // native oxygen model, because its updateoxygen drops the sat at maxdecrease whenever rr is 0. a sympathetic

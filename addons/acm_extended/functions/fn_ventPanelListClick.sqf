@@ -9,7 +9,7 @@ playSound "ACME_VentClick";
 private _n = uiNamespace getVariable ["ACME_vent_listCount", 0];
 if (_row >= _n) exitWith {};
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
-if (missionNamespace getVariable ["ACME_vent_simpleMode", false] && {
+if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])}) && {
     _screen in ["weight", "mode", "interface", "params", "o2", "ie", "peep"]
     || {_screen == "alerts" && {_row == 2}}
 }) exitWith {};

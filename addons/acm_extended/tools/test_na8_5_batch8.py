@@ -83,7 +83,7 @@ class SourceContracts(unittest.TestCase):
         s=read_source(ROOT/'config.cpp');self.assertNotIn('only catheter a wrist vein will take',s);self.assertNotIn('only one that fits a wrist',s)
         self.assertIn('Wrist placement requires an extremely accurate central stick',s)
     def test_gauge_availability_is_inventory_only(self):
-        s=source('ivMinigameGrabNeedle');self.assertIn('getCountOfItem',s);self.assertNotIn('maxG',code('ivMinigameGrabNeedle'))
+        s=source('ivMinigameGrabNeedle');self.assertIn('ACME_fnc_treatmentSupplyCount',s);self.assertIn('format ["ACM_IV_%1g", _gauge]',s);self.assertNotIn('maxG',code('ivMinigameGrabNeedle'))
     def test_puncture_uses_actual_site_margin(self):
         s=source('ivMinigameClick');self.assertIn('_gauge',source('ivSiteDifficulty'))
         self.assertIn('[_patientStick, _bpStick, _gaugeStick, _diffSite] call ACME_fnc_ivSiteDifficulty',s)

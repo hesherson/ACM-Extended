@@ -57,15 +57,16 @@ if (_patient getVariable ["ACM_circulation_AED_AnalyzeRhythm_State", false]) the
 } else {
     [{params ["_p", "_epoch"]; if (!isNull _p && {_epoch == ([_p] call ACME_fnc_clinicalEpoch)}) then {playSound3D ["x\ACM\addons\circulation\sound\aed_3beep.wav", _p, false, getPosASL _p, 15, 1, 15];};}, [_patient, _epoch], 0.7] call CBA_fnc_waitAndExecute;
 };
+// Record the actor/action, not a clinical conclusion inferred from this transaction.
+[_patient, "activity", ["%1 initiated defibrillation", "%1 initiated synchronized cardioversion"] select _expectedSync,
+    [[_medic, false, true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
 if (!alive _patient) exitWith {};
 private _notice = "Shock delivered. No conversion.";
-private _log = "Shock delivered";
 if (_organized && {!_expectedSync}) then {
     if (random 1 < (missionNamespace getVariable ["ACME_sync_ronTvfChance", 0.55])) then {
         [_patient] call ACME_fnc_rhythmRelease;
         [_patient, 2, _epoch] call ACME_fnc_arrestLocal;
         _notice = "Unsynchronized shock on an organized rhythm. R on T: VF.";
-        _log = "Unsynchronized shock induced VF (R on T)";
     };
 } else {
     if (_organized && {_expectedSync}) then {
@@ -74,7 +75,6 @@ if (_organized && {!_expectedSync}) then {
         if (random 1 < _chance) then {
             [_patient, 0] call ACME_fnc_rhythmSet;
             _notice = "Synchronized cardioversion successful.";
-            _log = "Synchronized cardioversion converted to sinus";
         };
     } else {
         if (_defib) then {
@@ -109,9 +109,8 @@ if (_organized && {!_expectedSync}) then {
                     [_patient,0,_epoch] call ACME_fnc_rhythmSet;
                     [_patient,"ACME_rhythm_torsadesRefractoryUntil",CBA_missionTime + (missionNamespace getVariable ["ACME_rhythm_defibTorsadesRefractorySec",8])] call ACME_fnc_setVarNet;
                     _notice = "Defibrillation converted polymorphic VT.";
-                    _log = "Defibrillation converted torsades";
                 } else {
-                    if ([_patient, _epoch] call ACME_fnc_shockROSC) then {_notice = "Defibrillation: return of spontaneous circulation."; _log = "Defibrillation with ROSC";};
+                    if ([_patient, _epoch] call ACME_fnc_shockROSC) then {_notice = "Defibrillation: return of spontaneous circulation.";};
                 };
             };
         } else {
@@ -123,4 +122,3 @@ if (_organized && {!_expectedSync}) then {
 };
 [_patient, [["aedPadsLastSync", -1], ["aedEkgRhythm", -99]], true] call ACM_circulation_fnc_setRuntimeState;
 [_medic, _notice] call ACME_fnc_clinicalNotice;
-[_patient, "activity", _log, []] call ace_medical_treatment_fnc_addToLog;

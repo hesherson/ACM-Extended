@@ -1,79 +1,56 @@
-"""Exercise the real Check Breathing preparation, timed hold, and completion gates.
+"""Current Check Breathing preparation, timed work, and exact completion gates.
 
-Engine inventory/RTM rendering are boundaries. Clinical startup and event callbacks
-run from current SQF; separate pose tests exercise the actual freeze controller.
+Historical test identities are retained. B218 starts native progress with provider
+entry and uses the configured full Dr_medic4 duration (prone equivalent when needed).
+Engine rendering is a boundary; production sequence and carrier/event cleanup execute.
 """
 import pytest
 from test_menu_death_lifecycle import adapt, execute, read
-from test_historical_weapon_preflight import setup as bridge_setup
+from test_b212_assessment_sequence import setup as assessment_setup
 from test_chestseal_preparation_progress import setup as patient_setup, function
 from test_chest_entry_timing import setup as pose_setup
 
 
 def setup():
-    return bridge_setup().replace('serverTime', '_clock').replace('_m distance _p', '_distance') + r'''
-        private _stops=[]; private _prep=[]; private _leases=[]; private _starts=[];
-        private _patientReady=true; private _heldAtStart=[]; private _eventHandlers=[];
-        _weaponNow=""; _animNowFixture="AmovPknlMstpSnonWnonDnon"; _stanceNow="CROUCH";
-        ACME_chestAccess_classes=["checkbreathing","cpr"];
-        ace_medical_treatment_fnc_canTreat={_permitted};
-        ACME_fnc_chestAccessPreparing={_prep pushBack _this;};
+    return assessment_setup() + r'''
+        _request set [3,"CheckBreathing"];
+        private _eventHandlers=[];
         CBA_fnc_addEventHandler={_eventHandlers pushBack _this;};
-        ACME_fnc_chestAccessVestEvent={
-            params ["_p","_m","_id","_start"];
-            _leases pushBack _this;
-            if (_start) then {
-                _p setVariable ["ACME_chestAccess_readyLease",_id];
-                _p setVariable ["ACME_chestAccess_readyServer",[-1,_clock] select _patientReady];
-            };
-        };
-        ACME_fnc_chestAccessVestProvider={
-            params ["_m","_p","_op",["_handoff",false],["_token",""]];
-            if (_op=="start") then {
-                _starts pushBack _this;
-                _m setVariable ["ACME_chestAccessProvider",[_p,7,_token]];
-                _m setVariable ["ACME_treatmentPoseState",[7,"chestAccess","medic4",1]];
-            } else {
-                _stops pushBack _this;
-                _m setVariable ["ACME_chestAccessProvider",[]];
-                _m setVariable ["ACME_treatmentPoseState",[]];
-            };
-            7
-        };
+        private _emit={params ["_name","_eventArgs"]; {if ((_x select 0)==_name) then {_eventArgs call (_x select 1);};} forEach _eventHandlers;};
+        CBA_fnc_localEvent={_this call _emit;};
         ACM_core_fnc_treatmentNative={
             _nativeCalls pushBack _this;
-            _heldAtStart pushBack [(_medic getVariable ["ACME_treatmentPoseState",[]]) param [3,-1],
-                _medic getVariable ["ACME_suppressNativeTreatmentAnim",false]];
+            _nativeArgs=_this+[objNull,"",false,((_medic getVariable ["ACME_assessment",[]]) param [0,-1])];
+            if (_nativeAccepted) then {["ace_treatmentStarted",_nativeArgs] call _emit;};
             _nativeAccepted
         };
-        private _freeze={(_medic getVariable ["ACME_treatmentPoseState",[]]) set [3,3];};
-        private _emit={params ["_name","_args"]; {if ((_x select 0)==_name) then {_args call (_x select 1);};} forEach _eventHandlers;};
-    ''' + adapt(read('registerChestAccessVestRuntime')).replace(') != _patient', ') isNotEqualTo _patient')
+    ''' + adapt(read('registerChestAccessVestRuntime').replace('netId _medic', '"provider"')).replace(') != _patient', ') isNotEqualTo _patient')
 
 
 def test_no_carrier_timer_waits_for_freeze_and_does_not_end_pose_at_launch():
+    # Name retained: the old freeze requirement is deliberately replaced by actual Dr_medic4 entry.
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        [count _nativeCalls==0 && {count _timers==1},"no-carrier timer skipped preparation"] call _check;
-        [!(0 call _condition) && {count _starts==1},"no-carrier pose was not requested"] call _check;
-        [!(0 call _condition) && {count _starts==1},"pending pose was requested repeatedly"] call _check;
-        call _freeze; 0 call _deliver;
-        [_heldAtStart isEqualTo [[3,true]] && {count _stops==0},"native launch thawed/replaced held animation"] call _check;
-        [!(_medic getVariable ["ACME_suppressNativeTreatmentAnim",true]),"suppression leaked into other treatments"] call _check;
-        [!(_medic getVariable ["ACME_chestAccessPreflightActive",true]),"preflight lock leaked into timer"] call _check;
+        _request call ACME_fnc_assessmentStart;
+        call _frame; call _frame;
+        [count _nativeCalls==1,"entry did not share the single clinical timer"] call _check;
+        [((_medic getVariable ["ACME_treatmentPoseState",[]]) select 2)=="AinvPknlMstpSnonWnonDr_medic4","wrong clinical animation"] call _check;
+        call _ready;
+        [count _nativeCalls==1 && {count _poseStops==0},"clinical launch retired its own work"] call _check;
+        [["CheckBreathing"] call ACME_fnc_assessmentTime==-_configuredSpeed,"wrong breathing duration"] call _check;
+        [((_medic getVariable ["ACME_treatmentPoseState",[]]) select 11)==-1,"assessment inherited carrier freeze"] call _check;
     ''')
 
 
 @pytest.mark.parametrize('event',['ace_treatmentSucceded','ace_treatmentFailed'])
 def test_breathing_timer_completion_or_cancel_releases_exact_hold_and_custody(event):
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        0 call _condition; call _freeze; 0 call _deliver;
-        [count _stops==0,"hold ended before timer completion"] call _check;
-    '''+f'["{event}",[_medic,_patient,"Head","CheckBreathing"]] call _emit;'+r'''
-        [count _stops==1 && {!((_stops select 0) select 3)},"timer did not exit assessment hold"] call _check;
-        [(_medic getVariable ["ACME_checkBreathingPose",[]]) isEqualTo [],"timer retained hold ownership"] call _check;
-        [count _leases==2 && {!((_leases select 1) select 3)},"timer failed to release carrier custody"] call _check;
+        _request call ACME_fnc_assessmentStart; call _ready;
+        [count _poseStops==0 && {count _leases==1},"clinical work or carrier lease missing"] call _check;
+        [_nativeArgs] call ACME_fnc_assessmentFinish;
+    '''+f'["{event}",_nativeArgs] call _emit;'+r'''
+        [count _poseStops==1,"completion did not retire exact work"] call _check;
+        [(_medic getVariable ["ACME_assessment",[]]) isEqualTo [],"completion retained assessment worker"] call _check;
+        [count _leases==2 && {!((_leases select 1) select 3)},"completion retained carrier custody"] call _check;
     ''')
 
 
@@ -84,49 +61,56 @@ def test_breathing_timer_completion_or_cancel_releases_exact_hold_and_custody(ev
     '_interactable=false;',
 ])
 def test_preparation_invalidation_does_not_start_breathing_timer(invalidation):
+    # Preserve old parametrized IDs while explicitly mapping the renamed preflight inputs to the current owner.
+    source={'_medic setVariable ["ACME_chestAccessPreflightCancel",true];':'[_medic,1,true] call ACME_fnc_assessmentStop;',
+            '_interactable=false;':'_interactive=false;'}.get(invalidation,invalidation)
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        0 call _condition;
-    '''+invalidation+r'''
-        0 call _deliver;
-        [count _nativeCalls==0 && {count _stops==1},"cancelled preparation started or retained hold"] call _check;
-        [!(_medic getVariable ["ACME_chestAccessPreflightActive",true]),"cancel retained preparation lock"] call _check;
-    ''')
+        _request call ACME_fnc_assessmentStart;
+    '''+source+(r'''
+        call _ready;
+        [count _nativeCalls==1 && {count _poseStops==0},"death blocked otherwise eligible assessment"] call _check;
+    ''' if invalidation=='_patientAlive=false;' else r'''
+        call _frame;
+        [count _nativeCalls==1 && {count _poseStops==1},"invalid prep relaunched timer or retained work"] call _check;
+        [(_medic getVariable ["ACME_assessment",[]]) isEqualTo [],"invalid prep retained lock"] call _check;
+    '''))
 
 
 def test_missing_pose_bounded_timeout_aborts_without_unfrozen_timer():
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        0 call _condition; 0 call _timeout;
-        [count _nativeCalls==0 && {count _stops==1},"failed pose timed out into an unheld assessment"] call _check;
-        [!(_medic getVariable ["ACME_chestAccessPreflightActive",true]),"timeout retained preflight lock"] call _check;
+        _request call ACME_fnc_assessmentStart;
+        CBA_missionTime=16; call _frame;
+        [count _nativeCalls==1 && {count _poseStops==1},"missing work relaunched timer or retained sequence"] call _check;
+        [(_medic getVariable ["ACME_assessment",[]]) isEqualTo [],"timeout retained lock"] call _check;
     ''')
 
 
 def test_second_click_cannot_launch_while_first_check_is_preparing():
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        private _second=[_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        [!_second && {count _nativeCalls==0} && {count _timers==1},"second click bypassed pending chest lease"] call _check;
+        _request call ACME_fnc_assessmentStart;
+        private _second=_request call ACME_fnc_assessmentStart;
+        [!_second && {count _nativeCalls==1} && {count _handlers==1},"second click replaced pending assessment"] call _check;
     ''')
 
 
 def test_native_rejection_releases_frozen_episode():
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        0 call _condition; call _freeze; _nativeAccepted=false; 0 call _deliver;
-        [count _stops==1 && {(_medic getVariable ["ACME_checkBreathingPose",[]]) isEqualTo []},"native rejection retained frozen pose"] call _check;
+        _nativeAccepted=false;
+        _request call ACME_fnc_assessmentStart; call _frame;
+        [count _poseStops==1 && {(_medic getVariable ["ACME_assessment",[]]) isEqualTo []},"native rejection retained work"] call _check;
+        [count _removed==0 && {count _added==0} && {!((_handlers select 0) select 2)},"native rejection retained PFH or redundant inputs"] call _check;
     ''')
 
 
 def test_old_completion_does_not_stop_newer_pose():
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        0 call _condition; call _freeze; 0 call _deliver;
-        _medic setVariable ["ACME_chestAccessProvider",[_patient,8,"new"]];
-        _medic setVariable ["ACME_treatmentPoseState",[8,"chestAccess","medic4",3]];
-        ["ace_treatmentFailed",[_medic,_patient,"Head","CheckBreathing"]] call _emit;
-        [count _stops==0,"old completion stopped newer provider episode"] call _check;
+        _request call ACME_fnc_assessmentStart; call _ready;
+        private _oldArgs=+_nativeArgs;
+        [_medic,1] call ACME_fnc_assessmentStop;
+        _request call ACME_fnc_assessmentStart; call _ready;
+        [_oldArgs] call ACME_fnc_assessmentFinish;
+        [((_medic getVariable ["ACME_assessment",[]]) select 0)==2,"old completion stopped newer same-class assessment"] call _check;
+        [count _poseStops==1,"old completion retired replacement pose"] call _check;
     ''')
 
 
@@ -163,15 +147,12 @@ def test_breathing_provider_ack_waits_for_actual_freeze():
 
 def test_deleted_patient_releases_pending_provider_and_preparation_lock():
     execute(setup()+r'''
-        [_medic,_patient,"Head","CheckBreathing"] call ace_medical_treatment_fnc_treatment;
-        0 call _condition;
-        // Model Arma's deleted-object references becoming objNull at every object boundary.
-        ((_timers select 0) select 2) set [1,objNull];
-        (_medic getVariable ["ACME_chestAccessProvider",[]]) set [0,objNull];
-        (_medic getVariable ["ACME_chestAccess_treatment",[]]) set [0,objNull];
-        0 call _deliver;
-        [count _nativeCalls==0 && {count _stops==1},"deleted patient leaked frozen preparation"] call _check;
-        [!(_medic getVariable ["ACME_chestAccessPreflightActive",true]),"deleted patient retained prep lock"] call _check;
+        _request call ACME_fnc_assessmentStart;
+        // Model deleted object references becoming objNull while preparation is pending.
+        ((_medic getVariable ["ACME_assessment",[]]) select 1) set [1,objNull];
+        call _frame;
+        [count _nativeCalls==1 && {count _poseStops==1},"deleted patient leaked prepared provider"] call _check;
+        [(_medic getVariable ["ACME_assessment",[]]) isEqualTo [],"deleted patient retained pending lock"] call _check;
     ''')
 
 

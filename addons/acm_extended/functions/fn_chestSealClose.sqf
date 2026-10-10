@@ -30,6 +30,7 @@ uiNamespace setVariable ["ACME_CS_ApplyAnimSerial",(uiNamespace getVariable ["AC
 uiNamespace setVariable ["ACME_CS_ApplyGestureUntil",0];
 private _flipMedic = uiNamespace getVariable ["ACME_CS_Medic",objNull];
 private _closingPatient = uiNamespace getVariable ["ACME_CS_Patient",objNull];
+private _providerExit = [];
 
 if (!isNull _flipMedic && {local _flipMedic}) then {
     [_flipMedic,"chestSealFlip"] call ACME_fnc_rollProviderCancel;
@@ -40,6 +41,11 @@ if (!isNull _flipMedic && {local _flipMedic}) then {
     private _poseMode = _pose param [1,""];
     private _poseEpoch = _pose param [0,-1];
     private _ambulatoryPose = _pose param [16,false];
+    // A cancelled entry may still be holstering a visibly drawn weapon. Only an actually entered chest-work
+    // animation can hand off to medicEnd without running another weapon-preparation sequence.
+    private _poseMain = _pose param [2, ""];
+    private _acquiredChestWork = _poseMain != ""
+        && {(toLowerANSI animationState _flipMedic) == (toLowerANSI _poseMain)};
     private _ownsChestPose = _poseMode in ["chestSealWorkspace","chestSeal","chestAccess"];
     if (_entryPFH >= 0) then {
         private _provider = _flipMedic getVariable ["ACME_chestAccessProvider", []];
@@ -56,14 +62,17 @@ if (!isNull _flipMedic && {local _flipMedic}) then {
 
     _flipMedic setVariable ["ACME_CS_providerHoldEpoch",-1,false];
 
-    // User-requested close theatre: the exact Semi-Fowler Putdown pair, then normal unarmed crouch.
+    // End the frozen medical work before the existing carrier reach/return pair. The provider publishes a
+    // token-scoped readiness gate so the patient owner cannot begin restoring the carrier ahead of medicEnd.
     if (_ownsChestPose
+        && {_acquiredChestWork}
         && {!_ambulatoryPose}
         && {alive _flipMedic}
         && {!(_flipMedic getVariable ["ACE_isUnconscious",false])}
         && {isNull objectParent _flipMedic}
         && {!(_flipMedic getVariable ["ACME_headElev_seqActive",false])}) then {
-        [_flipMedic,"lower"] call ACME_fnc_headElevMedicSeq;
+        [_flipMedic,"chestsealexit",uiNamespace getVariable ["ACME_CS_SessionToken", ""]] call ACME_fnc_headElevMedicSeq;
+        _providerExit = +(_flipMedic getVariable ["ACME_CS_ProviderExitReady", []]);
     };
 };
 uiNamespace setVariable ["ACME_CS_ProviderHoldEpoch",-1];
@@ -88,7 +97,7 @@ if (!isNull _patient) then {[_patient, "ui:chest:" + str clientOwner, false] cal
 // anterior-up / lying on the back, gives the carrier back, then resumes Semi-Fowler only from that supine base.
 private _sessionToken = uiNamespace getVariable ["ACME_CS_SessionToken", ""];
 if (!isNull _patient && {_sessionToken != ""}) then {
-    [_patient, "chestSealPatientEnd", [_patient, _sessionToken, _flipMedic]] call ACME_fnc_ownerDispatch;
+    [_patient, "chestSealPatientEnd", [_patient, _sessionToken, _flipMedic, _providerExit]] call ACME_fnc_ownerDispatch;
 };
 uiNamespace setVariable ["ACME_CS_SessionToken", ""];
 

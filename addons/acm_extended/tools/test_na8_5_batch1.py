@@ -42,21 +42,37 @@ def gauge_reference(entries, types, labels=('Upper','Middle','Lower')):
 
 class QuietOutput(unittest.TestCase):
     def test_no_unapproved_rpt_emitters_in_shipped_sqf_or_callbacks(self):
+        self.maxDiff = None
         # B22 restores the pre-B20 quiet debug overlay. No shipped runtime SQF or config callback may
         # emit RPT traffic; diagnostic dumping/tracing was explicitly reverted with the tabbed overlay.
         # Later reliability work added a small, explicit set of event/error diagnostics.
         # Keep the whitelist exact by file and emitter count so new runtime chatter still fails closed.
         approved={
-            'functions/fn_chestSealOpen.sqf':1,
+            # Reviewed failure/compatibility diagnostics. Keep this exact: adding
+            # an emitter anywhere else still fails the suite.
+            'functions/fn_assessmentTime.sqf':1,
+            'functions/fn_carrierInventoryCreate.sqf':1,
+            'functions/fn_carrierInventoryRestore.sqf':2,
+            'functions/fn_chestSealOpen.sqf':2,
+            'functions/fn_hangBagRestoreWeapons.sqf':1,
+            'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
+            'functions/fn_manualPlateCarrierAutoReturn.sqf':1,
             'functions/fn_compatCheck.sqf':2,
+            'functions/fn_cprAfterChestPrep.sqf':1,
             'functions/fn_debugDumpToClipboard.sqf':1,
+            'functions/fn_directPressureClaimAck.sqf':1,
             'functions/fn_expansionRegisterRuntime.sqf':1,
             'functions/fn_megacodeMenu.sqf':1,
             'functions/fn_megacodeModuleInit.sqf':2,
             'functions/fn_megacodeOpenPanel.sqf':2,
             'functions/fn_megacodePanelLoad.sqf':2,
-            'functions/fn_providerStateReconcile.sqf':2,
-            'functions/fn_thoraOpen.sqf':1,
+            'functions/fn_networkCompatNotice.sqf':1,
+            'functions/fn_postInit.sqf':5,
+            'functions/fn_preparedAttachLocal.sqf':1,
+            'functions/fn_providerStateReconcile.sqf':3,
+            'functions/fn_registerChestAccessVestRuntime.sqf':1,
+            'functions/fn_registerMedicalMenuOpenRuntime.sqf':4,
+            'functions/fn_thoraOpen.sqf':3,
             'functions/fn_transientStateReconcile.sqf':1,
         }
         emitters={}

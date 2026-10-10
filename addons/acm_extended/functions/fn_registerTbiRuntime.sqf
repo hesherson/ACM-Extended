@@ -7,4 +7,10 @@
 
 [{call ACME_fnc_tbiHandle}, 0.25, []] call CBA_fnc_addPerFrameHandler;
 [{call ACME_fnc_cheyneStokesTick}, 0.10, []] call CBA_fnc_addPerFrameHandler;
-if (hasInterface) then { call ACME_fnc_installRmbCancelGuard; };
+if (hasInterface) then {
+    [] call ACME_fnc_installRmbCancelGuard;
+    ["ace_medicalMenuOpened", {
+        params ["_medic", "_patient", "_display"];
+        [_display] call ACME_fnc_installRmbCancelGuard;
+    }] call CBA_fnc_addEventHandler;
+};

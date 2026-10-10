@@ -8,20 +8,56 @@
 params [
     ["_patient", objNull, [objNull]],
     ["_token", "", [""]],
-    ["_medic", objNull, [objNull]]
+    ["_medic", objNull, [objNull]],
+    ["_providerExit", [], [[]]],
+    ["_resumeGeneration", -1, [0]]
 ];
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {
-    [_patient, "chestSealPatientEnd", [_patient, _token, _medic]] call ACME_fnc_ownerDispatch;
+    [_patient, "chestSealPatientEnd", [_patient, _token, _medic, _providerExit, _resumeGeneration]] call ACME_fnc_ownerDispatch;
 };
 
+// B263: record a bounded cancel-before-begin tombstone on the patient owner,
+// even when End arrived before the initial enrollment. A late retry may not
+// recreate physical gear custody after the provider has already closed.
+// Tokens are session-unique; retain at most 64 and expire after 180 s.
+if (_resumeGeneration < 0 && {_token != ""}) then {
+    private _retired = +(_patient getVariable ["ACME_CS_ClosedTokens", []]);
+    _retired = _retired select {(_x param [1, 0]) > serverTime};
+    if ((_retired findIf {(_x param [0, ""]) == _token}) < 0) then {
+        _retired pushBack [_token, serverTime + 180];
+    };
+    if ((count _retired) > 64) then {_retired deleteRange [0, (count _retired) - 64];};
+    _patient setVariable ["ACME_CS_ClosedTokens", _retired, true];
+};
 private _tokens = +(_patient getVariable ["ACME_CS_ProcedureTokens", []]);
-if (_token == "" || {!(_token in _tokens)}) exitWith {};
-_tokens = _tokens - [_token];
 private _generation = _patient getVariable ["ACME_CS_ProcedureGeneration", 0];
-_patient setVariable ["ACME_CS_ProcedureTokens", _tokens, true];
+private _resuming = _resumeGeneration >= 0;
+// Locality can change while a newly added exit/shared-care wait owns the already-authorized gear return.
+// Resume only that closed generation through this existing named owner command; never recreate a viewer token.
+if (_resuming && {_resumeGeneration != _generation || {!(_tokens isEqualTo [])}}) exitWith {};
+if (!_resuming && {_token == "" || {!(_token in _tokens)}}) exitWith {};
+if (!_resuming) then {
+    _tokens = _tokens - [_token];
+    _patient setVariable ["ACME_CS_ProcedureTokens", _tokens, true];
+};
 if !(_tokens isEqualTo []) exitWith {};
-if !(_patient getVariable ["ACME_CS_ProcedureActive", false]) exitWith {};
+if (!_resuming && {!(_patient getVariable ["ACME_CS_ProcedureActive", false])}) exitWith {};
+
+// Only the final viewer can delay the reverse carrier lift. Passing the provider record with the owner request
+// also handles a public-variable packet arriving later than this request. The provider's exact session/token
+// must acknowledge completion; an old close cannot acknowledge a replacement workspace.
+private _gate = [];
+if (!isNull _medic && {(_providerExit param [0, ""]) == _token}
+    && {(_providerExit param [1, -1]) >= 0} && {!(_providerExit param [2, true])}) then {
+    private _deadline = _providerExit param [3, serverTime];
+    if (_deadline isEqualType 0 && {finite _deadline} && {_deadline > serverTime}) then {
+        // Guard malformed or stale packets too: presentation must never hold clinical cleanup indefinitely.
+        _providerExit set [3, _deadline min (serverTime + 8)];
+        _gate = [_generation, _medic, +_providerExit];
+    };
+};
+_patient setVariable ["ACME_CS_ProviderExitGate", _gate, false];
 
 // Last-viewer cancellation retires only this workspace's unfinished preparation.
 // Queued lift/front-roll callbacks must not restart it after teardown or reopen.
@@ -102,6 +138,39 @@ private _restoreCarrier = {
     if (isNull _p || {!local _p}
         || {(_p getVariable ["ACME_CS_ProcedureGeneration",-1]) != _generation}
         || {!((_p getVariable ["ACME_CS_ProcedureTokens",[]]) isEqualTo [])}) exitWith {};
+
+    private _gate = _p getVariable ["ACME_CS_ProviderExitGate", []];
+    if ((_gate param [0, -1]) == _generation) exitWith {
+        _p setVariable ["ACME_CS_ProviderExitGate", [], false];
+        private _exit = _gate param [2, []];
+        private _deadline = _exit param [3, serverTime];
+        private _continue = {
+            params ["_restoreArgs", "_restore", "", "_exit"];
+            _restoreArgs params ["_p", "_medic", "", "_generation"];
+            if (isNull _p) exitWith {};
+            if (!local _p) exitWith {
+                // Keep the original provider marker/deadline when transferring the wait, so a locality change
+                // cannot make the new owner return the carrier before medicEnd has finished.
+                [_p, "chestSealPatientEnd", [_p, _exit param [0, ""], _medic, _exit, _generation]] call ACME_fnc_ownerDispatch;
+            };
+            // _restoreCarrier revalidates locality, generation and live workspace tokens before any write.
+            _restoreArgs call _restore;
+        };
+        [{
+            params ["_restoreArgs", "", "_provider", "_exit", "_deadline"];
+            _restoreArgs params ["_p", "", "", "_generation"];
+            if (isNull _p || {!local _p}
+                || {(_p getVariable ["ACME_CS_ProcedureGeneration", -1]) != _generation}
+                || {!((_p getVariable ["ACME_CS_ProcedureTokens", []]) isEqualTo [])}
+                || {isNull _provider} || {serverTime >= _deadline}) exitWith {true};
+            private _ready = _provider getVariable ["ACME_CS_ProviderExitReady", []];
+            ((_ready param [0, ""]) == (_exit param [0, ""])
+                && {(_ready param [1, -1]) == (_exit param [1, -2])}
+                && {_ready param [2, false]})
+                || {(_ready param [1, -1]) > (_exit param [1, -2])}
+        }, _continue, [+_this, _restoreCarrier, _gate param [1, objNull], _exit, _deadline],
+            ((_deadline - serverTime) max 0.05), _continue] call CBA_fnc_waitUntilAndExecute;
+    };
 
     private _busy = _p getVariable ["ACME_CS_vestBusy",""];
     if (_busy != "" && {(_busy find "restore:") != 0}) exitWith {

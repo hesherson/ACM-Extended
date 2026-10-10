@@ -16,6 +16,9 @@ def source(name):return (F/('fn_'+name+'.sqf')).read_text()
 
 
 def code(text):
+    # Provider objects are namespace stand-ins; locality and public replication are engine boundaries.
+    text=text.replace('local _owner', 'true').replace('local _unit', 'true')
+    text=text.replace('_owner setVariable ["ACME_narcStore", _store, _public]', '_owner setVariable ["ACME_narcStore", _store]')
     text=text.replace('findDisplay 84000','_drawDisplay')
     text=re.sub(r'_d displayCtrl\s*(\([^\n]+?\)|\d+)',r'\1',text)
     text=text.replace('(ctrlText _ctrl)','([_ctrl] call _readText)')
@@ -193,7 +196,9 @@ def test_tag_color_uses_selected_identity_without_changing_text_or_dose(chosen):
 @pytest.mark.parametrize('event',['Killed','Respawn'])
 def test_personal_lifecycle_clears_kit_and_selection_but_not_patient_equipment(event):
     text=source('registerSyringeLifecycleRuntime').replace('hasInterface','_interface').replace('player addEventHandler','_lifeHandlers pushBack')
-    execute(setup()+'''private _interface=true; private _lifeHandlers=[];'''+code(text)+'''
+    # Respawn delegates to the shared fresh-kit reset; execute that dependency too.
+    reset=function('openVialStoreCommit')+function('resetPersonalMedicationKit')+'ACME_fnc_vialLeaseRelease={}; ACM_core_fnc_equipmentKitChanged={};'
+    execute(setup()+reset+'''private _interface=true; private _lifeHandlers=[];'''+code(text)+'''
         [count _lifeHandlers==2,"lifecycle handlers missing"] call _check;
         ["id-b",_rows] call ACME_fnc_skSelectStored; uiNamespace setVariable ["ACME_SK_SiteIdx",3];
         _medic setVariable ["ACME_thora_tube_left",true]; _medic setVariable ["ACME_hpmk_state","wrapped"];

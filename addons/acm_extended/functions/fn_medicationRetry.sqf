@@ -5,6 +5,7 @@
     private _medic = _x;
     if (isNull _medic || {!local _medic}) then {continue;};
     private _escrow = _medic getVariable ["ACME_medicationEscrow",createHashMap];
+    if (count _escrow == 0) then {continue};
     private _dt = [_medic,"medicationEscrow",0,2] call ACME_fnc_clinicalTickDelta;
     {
         private _row = _escrow get _x;

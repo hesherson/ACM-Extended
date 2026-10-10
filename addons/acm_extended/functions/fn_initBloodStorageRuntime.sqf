@@ -17,49 +17,42 @@ if (isServer) then {
 // most once.
 ["ACME_bfViewPing", {
     params ["_anchor", "_player"];
-    if (isNull _anchor || isNull _player) exitWith {};
+    if (!isServer || {isNull _anchor} || {isNull _player} || {!alive _player}
+        || {_player distance _anchor > 4.5} || {!(_anchor getVariable ["ACME_bloodFridge", false])}) exitWith {};
     private _v = _anchor getVariable ["ACME_bf_viewers", createHashMap];
     _v set [netId _player, diag_tickTime];
     _anchor setVariable ["ACME_bf_viewers", _v];
 }] call CBA_fnc_addEventHandler;
 ["ACME_bfViewStop", {
     params ["_anchor", "_player"];
-    if (isNull _anchor || isNull _player) exitWith {};
+    if (!isServer || {isNull _anchor} || {isNull _player}) exitWith {};
     private _v = _anchor getVariable ["ACME_bf_viewers", createHashMap];
     _v deleteAt (netId _player);
     _anchor setVariable ["ACME_bf_viewers", _v];
 }] call CBA_fnc_addEventHandler;
 
-// take. the owner is authoritative over the count, so decrement here, then hand the unit to the machine of the
-// taker. if the taker carries a cooler, the existing cold-chain ledger covers the taken unit by volume
-// automatically, at no spoilage cost.
-["ACME_bfTake", {
-    params ["_anchor", "_class", "_player"];
-    if (isNull _anchor || isNull _player) exitWith {};
-    private _stock = _anchor getVariable ["ACME_bf_stock", []];
-    private _i = _stock findIf { (_x # 0) == _class };
-    if (_i < 0 || {(_stock # _i # 1) <= 0}) exitWith {
-        ["The fridge is out of that blood type.", 2] remoteExec ["ace_common_fnc_displayTextStructured", _player];
-    };
-    private _e = +(_stock # _i);
-    _e set [1, (_e # 1) - 1];
-    _stock set [_i, _e];
-    _anchor setVariable ["ACME_bf_stock", _stock, true];
-    ["ACME_bfGive", [_class], _player] call CBA_fnc_targetEvent;
-}] call CBA_fnc_addEventHandler;
-["ACME_bfGive", {
-    params ["_class"];
-    // addtoinventory returns [addedtounit, weaponholder] and drops to a ground holder itself when there is no
-    // room.
-    [ACE_player, _class] call ace_common_fnc_addToInventory;
-    [format ["Took %1 from the blood fridge.", getText (configFile >> "CfgWeapons" >> _class >> "displayName")], 2] call ace_common_fnc_displayTextStructured;
+// Stock authority stays on the server even if engine ownership of a furniture object changes.
+["ACME_bfTake", {_this call ACME_fnc_bloodFridgeTakeOwner;}] call CBA_fnc_addEventHandler;
+["ACME_bfGive", {_this call ACME_fnc_bloodFridgeReceive;}] call CBA_fnc_addEventHandler;
+["ACME_bfTakeStop", {
+    params ["_anchor", "_player", "_token"];
+    if (!isServer || {isNull _anchor} || {isNull _player}) exitWith {};
+    private _takers = _anchor getVariable ["ACME_bf_takers", createHashMap];
+    private _key = netId _player;
+    if !(((_takers getOrDefault [_key, []]) param [1, []]) isEqualTo _token) exitWith {};
+    _takers deleteAt _key;
+    // Only retire this taker's browse entry. Another viewer/taker keeps the door open.
+    private _viewers = _anchor getVariable ["ACME_bf_viewers", createHashMap];
+    _viewers deleteAt _key;
+    call ACME_fnc_bloodFridgeTick;
 }] call CBA_fnc_addEventHandler;
 
 // client. while the world interaction menu is open, poll the selected target and ping any fridge it lands
 // on.
 ["ace_interactMenuOpened", {
     params ["_menuType"];
-    if (_menuType != 1) exitWith {};
+    // ACE world interaction is 0; 1 is self-interaction and never selects the fridge.
+    if (_menuType != 0) exitWith {};
     if (!isNil "ACME_bf_pollPFH") exitWith {};
     ACME_bf_pollPFH = [{ call ACME_fnc_bloodFridgeMenuPoll }, 0.2, []] call CBA_fnc_addPerFrameHandler;
 }] call CBA_fnc_addEventHandler;
@@ -69,7 +62,7 @@ if (isServer) then {
     ACME_bf_pollPFH = nil;
     private _lf = ACE_player getVariable ["ACME_bf_lastFridge", objNull];
     if (!isNull _lf) then {
-        ["ACME_bfViewStop", [_lf, ACE_player], _lf] call CBA_fnc_targetEvent;
+        ["ACME_bfViewStop", [_lf, ACE_player]] call CBA_fnc_serverEvent;
         ACE_player setVariable ["ACME_bf_lastFridge", objNull];
     };
 }] call CBA_fnc_addEventHandler;

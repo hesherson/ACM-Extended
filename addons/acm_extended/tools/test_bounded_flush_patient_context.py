@@ -18,6 +18,9 @@ def source(name):
     text=text.replace('_medicVehicle != _patientVehicle','!(_medicVehicle isEqualTo _patientVehicle)')
     text=text.replace('_medic removeItem "ACM_SalineFlush_10";', '_removedItems pushBack "ACM_SalineFlush_10"; _stock=_stock-1;')
     text=re.sub(r'playSound ("[^"]*");',r'_sounds pushBack \1;',text)
+    # Supply-source cargo is an explicit empty engine boundary in these medic-stock cases.
+    text=text.replace('objectParent _x','objNull')
+    text=text.replace('itemCargo _vehicle','[]')
     return adapt(text)
 
 
@@ -29,6 +32,7 @@ def setup():
         private _sounds=[]; private _access=[]; private _refreshes=0; private _staged=[];
         private _iv=true; private _io=true; private _exactIV=true;
         private _isLocal=true; private _medicVehicle=objNull; private _patientVehicle=objNull;
+        ACME_fnc_carrierInventoryGet={objNull};
         // This fixture represents an injected and settled Body Map.
         uiNamespace setVariable ["ACME_SK_CloseEpoch",1];
         _drawDisplay setVariable ["ACME_SK_CloseEpoch",1];
@@ -41,14 +45,19 @@ def setup():
         _medic setVariable ["ACME_narcStore",["untouched"]];
         ACM_circulation_fnc_hasIV={_access pushBack ["IV",+_this]; if (count _this>3) then {_exactIV} else {_iv}};
         ACM_circulation_fnc_hasIO={_access pushBack ["IO",+_this];_io};
-        ace_common_fnc_getCountOfItem={_stock};
+        ace_common_fnc_getCountOfItem={if ((_this select 0) isEqualTo _medic) then {_stock} else {0}};
+        ace_medical_treatment_fnc_useItem={
+            if (_stock<=0) exitWith {[objNull,"",false]};
+            _stock=_stock-1; _removedItems pushBack "ACM_SalineFlush_10";
+            [_medic,"ACM_SalineFlush_10",true]
+        };
         ace_common_fnc_getName={"Provider"};
         ace_common_fnc_displayTextStructured={};
         ACME_fnc_medicationRequest={_requests pushBack +_this;};
         ace_medical_treatment_fnc_addToLog={_logs pushBack +_this;};
         ACME_fnc_skBuildHotspots={_refreshes=_refreshes+1;};
         ACME_fnc_skBeginInjection={_staged pushBack +_this;};
-    '''+''.join('ACME_fnc_'+n+'={'+source(n)+'};\n' for n in ['salineFlush','skFlushSite','skSiteClick'])
+    '''+''.join('ACME_fnc_'+n+'={'+source(n)+'};\n' for n in ['itemCount','treatmentSupplyOrder','treatmentSupplyCount','treatmentSupplyTake','salineFlush','skFlushSite','skSiteClick'])
 
 
 @pytest.mark.parametrize('site',[1,-1])
@@ -61,8 +70,10 @@ def test_flush_uses_the_patient_shown_and_checked_by_the_actual_site_click(site,
         uiNamespace setVariable ["ACME_SK_Patient",{value}];
         _ctrl setVariable ["ACME_SK_Target",["rightleg",{site},9000,true]];
         [_ctrl] call ACME_fnc_skSiteClick;
-        [_requests isEqualTo [[_medic,_patient,"rightleg",[],"flush",{site}]],"flush request targeted a different patient or line"] call _check;
+        [(_requests apply {{_x select [0,6]}}) isEqualTo [[_medic,_patient,"rightleg",[],"flush",{site}]],"flush request targeted a different patient or line"] call _check;
         [_stock==1 && {{count _removedItems==1}},"flush debit count changed"] call _check;
+        [(_requests select 0 select 6) isEqualTo [[],[],[],[[_medic,"ACM_SalineFlush_10",objNull,"7:1"]]],"flush lost its exact stock reservation"] call _check;
+        [count (missionNamespace getVariable ["ACME_supplyReceipts",createHashMap])==1,"stock reservation was discarded before owner ACK"] call _check;
         [count _logs==1 && {{(_logs select 0 select 0) isEqualTo _patient}},"activity log patient differs"] call _check;
         [(_access findIf {{!((_x select 1 select 0) isEqualTo _patient)}})<0,"access checks changed patient"] call _check;
         [count _staged==0 && {{count _waits==0}},"flush staged medication or a delay"] call _check;
@@ -79,7 +90,7 @@ def test_self_display_uses_the_same_self_fallback_as_hotspot_validation(shared):
         uiNamespace setVariable ["ACME_SK_Patient",{shared}];
         _ctrl setVariable ["ACME_SK_Target",["leftarm",2,9000,true]];
         [_ctrl] call ACME_fnc_skSiteClick;
-        [_requests isEqualTo [[_medic,_medic,"leftarm",[],"flush",2]],"self view flushed another patient"] call _check;
+        [(_requests apply {{_x select [0,6]}}) isEqualTo [[_medic,_medic,"leftarm",[],"flush",2]],"self view flushed another patient"] call _check;
     ''')
 
 

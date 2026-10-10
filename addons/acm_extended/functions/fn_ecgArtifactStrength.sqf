@@ -23,4 +23,4 @@ private _sessions = (_patient getVariable ["ACME_suctionSessions", []]) select {
 if !(_sessions isEqualTo []) then {_s = _s max 0.42;};
 if (((serverTime - (_patient getVariable ["ACME_bvm_lastBreathServer", -99])) max 0) < 1.2) then {_s = _s max 0.30;};
 if (!isNull (_patient getVariable ["ace_medical_CPR_provider", objNull])) then {_s = 1.0;};
-_s min 1
+(_s max ([_patient] call ACME_fnc_ecgMotionStrength)) min 1

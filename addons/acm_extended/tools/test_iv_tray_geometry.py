@@ -77,16 +77,11 @@ def tray_dimensions(slot_w, slot_h, aspect, bias):
     width_limit, height_limit = map(float, re.search(
         r"private _iconH = .*?_slotW \* ([\d.]+).*?_slotH \* ([\d.]+)", init
     ).groups())
-    min_base, min_height = map(float, re.search(
-        r"private _minBias = ([\d.]+) \+ \(([\d.]+) \* _iconH", init
-    ).groups())
-    max_base, max_height = map(float, re.search(
-        r"private _maxBias = ([\d.]+) - \(([\d.]+) \* _iconH", init
-    ).groups())
     height = min(slot_h * 2.45, slot_w * width_limit / aspect, slot_h * height_limit)
     width = height * aspect
-    bias = min(max(bias, min_base + min_height * height / slot_h), max_base - max_height * height / slot_h)
-    return slot_w / 2 - width / 2, slot_h * bias - height / 2, width, height
+    # B233: user removed fan and vertical bias. Tile center is invariant.
+    assert 'private _iconY = _ry + (_slotH / 2) - (_iconH / 2);' in init
+    return slot_w / 2 - width / 2, slot_h / 2 - height / 2, width, height
 
 
 @pytest.mark.parametrize("screen", [(1920, 1080), (2560, 1440), (3440, 1440), (5120, 1440)])
@@ -99,18 +94,9 @@ def test_actual_pixels_stay_inside_tile_for_every_pose_and_saved_bias(screen, bi
         sw, sh = .25, .25 * aspect * .92
         bx, by, bw, bh = tray_dimensions(sw, sh, aspect, bias)
         assert bw / pw == pytest.approx(bh / ph)
-        hover = (ROOT / "functions/fn_ivTrayHover.sqf").read_text()
-        rise = float(re.search(r"private _rise = _sh \* ([\d.]+)", hover)[1])
-        front_scale = float(re.search(r"_shown > 0\}\) then \{([\d.]+)\}", hover)[1])
-        for pose in range(5):
-            x, y, w, h = bx, by, bw, bh
-            if pose == 0:
-                x -= bw * (front_scale - 1) / 2
-                y -= bh * (front_scale - 1) / 2
-                w *= front_scale
-                h *= front_scale
-            else:
-                y -= sh * rise * pose
-            u0, v0, u1, v1 = bounds(silhouette(14, pose)) / 512
-            assert 0 <= x + u0 * w < x + u1 * w <= sw
-            assert 0 <= y + v0 * h < y + v1 * h <= sh
+        # Only the centered resting needle is rendered; old fan assets stay available but hidden.
+        u0, v0, u1, v1 = bounds(silhouette(14, 0)) / 512
+        assert 0 <= bx + u0 * bw < bx + u1 * bw <= sw
+        assert 0 <= by + v0 * bh < by + v1 * bh <= sh
+        assert bx + bw/2 == pytest.approx(sw/2)
+        assert by + bh/2 == pytest.approx(sh/2)

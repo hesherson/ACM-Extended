@@ -35,7 +35,7 @@ def test_action_rows_are_bound_synchronously_on_each_new_display():
 def test_acme_renderer_uses_its_own_handle_not_ace_global_handle():
     s = text(RUNTIME)
     add = s.index('private _rendererPFH = [{')
-    retire_stock = s.index('private _acePFH = missionNamespace getVariable ["ace_medical_gui_menuPFH", -1];')
+    retire_stock = s.index('private _acePFH = [_rendererPFH] call ACM_GUI_fnc_retireMedicalMenuPFH;')
     block = s[add:retire_stock]
     assert 'ACME_medicalMenuRendererPFH' in block
     assert 'ace_medical_gui_menuPFH' not in block
@@ -44,8 +44,12 @@ def test_acme_renderer_uses_its_own_handle_not_ace_global_handle():
 def test_stock_ace_renderer_is_retired_only_after_onload_finishes():
     s = text(RUNTIME)
     assert 'call CBA_fnc_execNextFrame;' in s
-    assert 'missionNamespace setVariable ["ace_medical_gui_menuPFH", -1];' in s
-    assert '[_acePFH] call CBA_fnc_removePerFrameHandler;' in s
+    assert 'private _acePFH = [_rendererPFH] call ACM_GUI_fnc_retireMedicalMenuPFH;' in s
+    bridge = text(ROOT / "addons/gui/functions/fnc_retireMedicalMenuPFH.sqf")
+    assert 'missionNamespace setVariable ["ace_medical_gui_menuPFH", -1];' in bridge
+    assert '[_acePFH] call CBA_fnc_removePerFrameHandler;' in bridge
+    assert '_acePFH != _protectedPFH' in bridge
+    assert "PREP(retireMedicalMenuPFH);" in text(ROOT / "addons/gui/XEH_PREP.hpp")
 
 
 def test_old_display_unload_cannot_remove_new_renderer_generation():

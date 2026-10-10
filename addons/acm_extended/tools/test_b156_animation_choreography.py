@@ -84,6 +84,17 @@ def test_frozen_sample_uses_native_timeline_at_accelerated_rate_and_hold_is_wall
 
 @pytest.mark.parametrize('stance,native', [('STAND',.65),('PRONE',1.116)])
 def test_provider_entry_timer_matches_rate(stance,native):
+    # Preserve the historical case IDs; B212 deliberately removes the prone-to-kneel entry RTM.
+    if stance == 'PRONE':
+        execute(pose_setup()+r'''
+            _stance="PRONE";
+            [_medic,"roll",-1,_patient] call ACME_fnc_treatmentPoseStart;
+            private _state=_medic getVariable ["ACME_treatmentPoseState",[]];
+            [(_state select 20) && {(_state select 2)=="ACM_ProneContinuous"}
+                && {(_state select 3)==1} && {_speed==1.5}
+                && {_positions isEqualTo ["DOWN"]},"prone entry raised provider or delayed work"] call _check;
+        ''')
+        return
     execute(pose_setup()+f'_stance="{stance}";'+r'''
         [_medic,"roll",-1,_patient] call ACME_fnc_treatmentPoseStart;
         private _state=_medic getVariable ["ACME_treatmentPoseState",[]];
@@ -111,7 +122,7 @@ def manual_support_setup():
     for var in ('_medic','_m'):
         for old,new in [('local '+var,'_isLocal'),('alive '+var,'_alive'),
                         ('objectParent '+var,'_parent'),('animationState '+var,'_animation'),
-                        ('getAnimSpeedCoef '+var,'_speed'),('currentWeapon '+var,'_weapon'),
+                        ('getAnimSpeedCoef '+var,'_speed'),('currentWeapon '+var,'_weapon'), ('stance '+var,'_stance'),
                         ('netId '+var,'"provider"')]:
             text=re.sub(re.escape(old)+r'\b',lambda _:new,text)
         text=re.sub(re.escape(var)+r' setAnimSpeedCoef ([^;]+);',r'_speed=(\1);',text)
@@ -125,6 +136,7 @@ def manual_support_setup():
         ACM_core_fnc_beginContinuousAction={
             _continuous=_this; ACM_core_ContinuousAction_Active=true;
             (_this select 0) call (_this select 1);
+            true
         };
         _patient setVariable ["ACME_headElev_poseToken","support"];
         _patient setVariable ["ACME_headElevated",true];
@@ -197,6 +209,9 @@ def test_carrier_return_rejected_lease_does_not_change_foreign_presentation():
         _patient setVariable ["ACME_patientAnimLock",[]]; _leaseAllowed=true;
         private _retry=_waits deleteAt 0;
         [_retry] call _deliver;
+        [count _animRequests==1 && {count _waits==1},"lease retry did not defer exact restore generation"] call _check;
+        private _resume=_waits deleteAt 0;
+        [_resume] call _deliver;
         [count _animRequests==2 && {count _waits==3},"carrier restore did not resume exact owned transaction"] call _check;
     ''')
 
@@ -270,18 +285,25 @@ def test_old_native_completion_cannot_clear_new_action_or_frozen_pose():
         0 call _rateTick;
         [_testAnimationSpeed==1.5 && {(_medic getVariable ["ACME_nativeTreatmentRate",[]]) isEqualTo _new},"old completion reset new native action"] call _check;
         call _complete;
-        _medic setVariable ["ACME_treatmentPoseEpoch",9]; _testAnimationSpeed=0;
+        _medic setVariable ["ACME_treatmentPoseEpoch",9];
+        _medic setVariable ["ACME_treatmentPoseState",[9,"pulse","ACME_StethoscopeWork",2]];
+        _testAnimationSpeed=0;
         1 call _rateTick;
-        [_testAnimationSpeed==0,"native completion thawed newer frozen pose"] call _check;
+        [_testAnimationSpeed==0 && {(_medic getVariable ["ACME_treatmentPoseState",[]]) isNotEqualTo []},"native completion thawed newer frozen pose"] call _check;
     ''')
 
 
 def test_preflight_abort_and_native_rejection_release_only_their_own_rate():
+    # B177 removed the generic async preflight. Native treatment begins on the
+    # click frame; its exact completion/rejection owns the finite rate lease.
     execute(native_bridge_setup()+r'''
         [_medic,_patient,"LeftArm","FieldDressing"] call ace_medical_treatment_fnc_treatment;
-        [_testAnimationSpeed==1.5,"ordinary holster/preparation was not accelerated"] call _check;
-        0 call _timeout;
-        [_testAnimationSpeed==1 && {!(_medic getVariable ["ACME_treatmentPreflightActive",true])},"preflight timeout left rate or reservation"] call _check;
+        [_testAnimationSpeed==1.5 && {count _nativeCalls==1},"ordinary treatment did not start immediately at choreography rate"] call _check;
+        [count _timers==0 && {!(_medic getVariable ["ACME_treatmentPreflightActive",false])},"retired generic preflight was reintroduced"] call _check;
+        call _complete;
+        [count _rateWaits==1,"completion did not schedule exact rate release"] call _check;
+        0 call _rateTick;
+        [_testAnimationSpeed==1 && {(_medic getVariable ["ACME_nativeTreatmentRate",[]]) isEqualTo []},"completion left rate or reservation"] call _check;
         _animNowFixture="ACM_GenericContinuous"; _weaponNow=""; _stanceNow="CROUCH"; _nativeAccepted=false;
         [_medic,_patient,"LeftArm","FieldDressing"] call ace_medical_treatment_fnc_treatment;
         [_testAnimationSpeed==1 && {(_medic getVariable ["ACME_nativeTreatmentRate",[]]) isEqualTo []},"rejected treatment retained accelerated rate"] call _check;

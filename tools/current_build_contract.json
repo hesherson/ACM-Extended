@@ -1,0 +1,9 @@
+{
+  "version": "1.2.4.1",
+  "batch": "B272",
+  "network_revision": "NA8-B272-1.2.4.1-candidate",
+  "network_protocol": 1,
+  "debug_revision": "",
+  "status": "candidate",
+  "baseline": "01ed17d8d435ca75903aef508c026d3c4652750f"
+}

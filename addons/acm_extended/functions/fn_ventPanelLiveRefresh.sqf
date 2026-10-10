@@ -11,7 +11,7 @@ private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
 private _selIdx = uiNamespace getVariable ["ACME_vent_selIdx", 0];
 private _edit   = uiNamespace getVariable ["ACME_vent_editing", false];
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
 
 // the shared colors.
 private _hoverBg   = [0, 0.988, 0.992,1];  // light blue.

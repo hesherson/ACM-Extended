@@ -80,6 +80,7 @@ private _applied = 0;
             case "bvmLastBreath": { _accepted = [QGVAR(BVM_lastBreath), _value] call _publish; };
             case "bvmLastBreathOxygen": { _accepted = [QGVAR(BVM_lastBreathOxygen), _value] call _publish; };
             case "thoracostomyUsedKit": { _accepted = [QGVAR(Thoracostomy_UsedKit), _value] call _publish; };
+            case "thoracostomyState": { _accepted = [QGVAR(Thoracostomy_State), _value] call _publish; };
             case "hemothoraxFluid": { _accepted = [QGVAR(Hemothorax_Fluid), _value] call _publish; };
             case "chestSeal": { _accepted = [QGVAR(ChestSeal_State), _value] call _publish; };
             case "pneumothoraxPFH": { _accepted = [QGVAR(Pneumothorax_PFH), _value] call _publish; };

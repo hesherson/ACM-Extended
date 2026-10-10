@@ -6,13 +6,16 @@ import pytest
 from test_menu_death_lifecycle import ROOT, adapt, execute
 
 
-def rate_source():
+def rate_source(normal_speed=0):
     source = (ROOT / "addons/core/functions/fnc_treatmentNative.sqf").read_text()
     source = source[source.index("private _animRatio ="):source.index("// Play animation\n")]
     source = re.sub(r"TRACE_3\([^;]*;", "", source)
     source = source.replace("ANIMATION_SPEED_MIN_COEFFICIENT", "0.5")
     source = source.replace("ANIMATION_SPEED_MAX_COEFFICIENT", "2.5")
-    return adapt(source)
+    # This extracted block is normally called with the treatment config already loaded.
+    # Replace only the engine config read, not the rate arithmetic or lease checks.
+    source = source.replace('getNumber (_config >> "ACME_normalSpeedAnimation")', "_normalSpeed")
+    return f"private _normalSpeed={normal_speed};\n" + adapt(source)
 
 
 @pytest.mark.parametrize("lease,expected", [

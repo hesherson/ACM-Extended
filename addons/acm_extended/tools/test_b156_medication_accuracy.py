@@ -8,7 +8,18 @@ import re
 import pytest
 from test_menu_death_lifecycle import execute, adapt
 from test_historical_medication_preparation import commit_setup, transaction_setup, prep_code, ui_setup, ui_code
-from test_historical_vial_execution import F, source, setup
+from test_historical_vial_execution import F, source, setup as vial_setup
+
+
+def setup():
+    # Proximity is an engine boundary; preserve _distance so leash tests still invalidate it.
+    store = source("narcStoreCommit").replace("local _owner", "_medicLocal")
+    # Namespace stand-ins cannot use OBJECT setVariable's dynamic broadcast flag.
+    # Record that exact flag while executing the real writer guard and store update.
+    store = prep_code(store.replace('_owner setVariable ["ACME_narcStore", _store, _public];',
+        '_storePublications pushBack [_owner,+_store,_public]; _owner setVariable ["ACME_narcStore", _store];'))
+    return (vial_setup() + "\nprivate _storePublications=[]; ACME_fnc_patientInteractionDistance={_distance};\n"
+            + "ACME_fnc_narcStoreCommit={" + store + "};\n")
 
 
 def test_saved_flush_cannot_debit_a_second_flush_before_delayed_feedback_finishes():
@@ -38,21 +49,22 @@ def test_last_hundredth_waits_for_its_requested_push_time_before_moving():
         _medic setVariable ["ACME_narcStore",[_row]];
         private _job=createHashMapFromArray [
             ["medic",_medic],["patient",_patient],["flowing",true],
-            ["identity",[0,1,1]],["stableId","slow-final"],
+            ["identity",[0,1,1]],["stableId","slow-final"],["drug","Ketamine"],
             ["targetMl",0.01],["rateMlSec",0.01/300],
             ["pushedMl",0],["carryMl",0],["lastTick",10]
         ];
         missionNamespace setVariable ["ACME_HCMedPushJob",_job];
         _nowTime=10.05;
-        call ACME_fnc_hardcorePushTick;
+        ["",-1] call ACME_fnc_hardcorePushTick;
         private _remaining=(_medic getVariable ["ACME_narcStore",[]]) select 0 select 2;
         [_remaining==0.01 && {count _stops==0},"last aliquot ignored the typed push duration"] call _check;
         _job=missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
         _job set ["carryMl",0.01-(0.01/300*0.05)];
         _nowTime=10.10;
-        call ACME_fnc_hardcorePushTick;
+        ["",-1] call ACME_fnc_hardcorePushTick;
         private _finished=(_medic getVariable ["ACME_narcStore",[]]) select 0 select 2;
         [abs _finished<0.000001 && {count _stops==1},"final aliquot failed to finish after its time accrued"] call _check;
+        [count _storePublications==1 && {!((_storePublications select 0) select 2)},"live plunger step was broadcast or store written more than once"] call _check;
     ''')
 
 
@@ -204,7 +216,7 @@ def test_partial_push_settles_once_and_preserves_exact_resume_contents(reason,ac
         ];
         missionNamespace setVariable ["ACME_HCMedPushJob",_job];
         _nowTime=10.25;
-        call ACME_fnc_hardcorePushTick;
+        ["",-1] call ACME_fnc_hardcorePushTick;
         private _half=(_medic getVariable ["ACME_narcStore",[]]) select 0;
         [abs ((_half select 2)-1.5)<0.000001 && {count _requests==0},"partial tick did not reserve the precise unsent tail"] call _check;
     '''+f'["{reason}"] call ACME_fnc_hardcorePushStop;'+('''

@@ -1,16 +1,38 @@
 /* B121: persistent one-handed syringe worker. It owns flow independently of all displays. */
 scopeName "ACME_HC_PUSH_TICK";
+params [["_expectedSession","",[""]],["_callbackPFH",-1,[0]]];
 private _job = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+// Every installed worker captures its originating session. A callback already queued when an old worker was
+// removed must not drive or retire a newer job, even if CBA has reused its numeric handler ID.
+if (_expectedSession != "" && {
+    !(_job isEqualType createHashMap)
+    || {(_job getOrDefault ["session",""]) != _expectedSession}
+    || {(missionNamespace getVariable ["ACME_HCMedPushPFH",-1]) != _callbackPFH}
+}) exitWith {
+    if (_callbackPFH >= 0 && {_callbackPFH != (missionNamespace getVariable ["ACME_HCMedPushPFH",-1])}) then {
+        [_callbackPFH] call CBA_fnc_removePerFrameHandler;
+    };
+};
 if !(_job isEqualType createHashMap && {count _job > 0}) exitWith {
     ["clear"] call ACME_fnc_hardcorePushOverlay;
     private _h = missionNamespace getVariable ["ACME_HCMedPushPFH",-1];
     if (_h >= 0) then {[_h] call CBA_fnc_removePerFrameHandler; missionNamespace setVariable ["ACME_HCMedPushPFH",-1];};
 };
-if !(_job getOrDefault ["flowing",false]) exitWith {call ACME_fnc_hardcorePushFinalize;};
-if !(missionNamespace getVariable ["ACME_hcEff_medications",false]) exitWith {["hardcore-disabled"] call ACME_fnc_hardcorePushStop;};
 private _medic = _job getOrDefault ["medic",objNull];
 private _patient = _job getOrDefault ["patient",objNull];
-if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}) exitWith {["provider"] call ACME_fnc_hardcorePushStop;};
+private _localityEpoch = _job getOrDefault ["providerLocalityEpoch",-1];
+// Retire before Stop can settle the unsent tail. The old machine no longer owns inventory on locality loss;
+// switching the controlled provider also must not leave a hidden 20 Hz worker driving the previous unit.
+if (isNull _medic || {!local _medic} || {!(_medic isEqualTo ACE_player)}
+    || {_localityEpoch >= 0 && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) != _localityEpoch}}) exitWith {
+    [_job getOrDefault ["session",""],missionNamespace getVariable ["ACME_HCMedPushPFH",-1],"provider-changed"] call ACME_fnc_hardcorePushRetire;
+};
+if !(_job getOrDefault ["flowing",false]) exitWith {call ACME_fnc_hardcorePushFinalize;};
+if (!(_job getOrDefault ["standardTimed",false])
+    && {!(missionNamespace getVariable ["ACME_hcEff_medications",false])}) exitWith {
+    ["hardcore-disabled"] call ACME_fnc_hardcorePushStop;
+};
+if (isNull _patient || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}) exitWith {["provider"] call ACME_fnc_hardcorePushStop;};
 // Exact ACM AED leash semantics: same objectParent plus configured distance, or the same vehicle.
 private _leash = missionNamespace getVariable ["ACM_circulation_AEDDistanceLimit",5];
 if (((objectParent _medic) isNotEqualTo (objectParent _patient))
@@ -59,7 +81,7 @@ if (_step > 0.000001) then {
         _dParts pushBack [_i,_source,_dv];
     };
     _row set [5,_parts]; _store set [_idx,_row];
-    _medic setVariable ["ACME_narcStore",_store,false];
+    [_medic,_store,false] call ACME_fnc_narcStoreCommit;
     private _unsent = +(_job getOrDefault ["unsentDelta",[0,0,[]]]);
     _unsent set [0,(_unsent param [0,0]) + _dDrug];
     _unsent set [1,(_unsent param [1,0]) + _dNs];

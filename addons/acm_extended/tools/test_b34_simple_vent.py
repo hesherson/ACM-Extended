@@ -153,6 +153,6 @@ class SimpleVentContracts(unittest.TestCase):
         for f in ('ventConnectPatient','ventCustodyRequest','ventInventoryLocal'):
             self.assertIn('[_medic, "ventilator"] call ACME_fnc_procedureAllowed',source(f))
         inv=source('ventInventoryLocal')
-        self.assertLess(inv.index('call ACME_fnc_procedureAllowed'),inv.index('_medic removeItem'))
+        self.assertLess(inv.index('call ACME_fnc_procedureAllowed'),inv.index('call ACME_fnc_treatmentSupplyTake'))
 
 if __name__=='__main__': unittest.main()

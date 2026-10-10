@@ -1,7 +1,13 @@
-name: B204 network audit
+name: Stable network audit
 
 on:
   push:
+    branches: [main]
+    paths:
+      - "addons/**"
+      - "tools/**"
+      - ".github/workflows/b204-network-audit.yml"
+  pull_request:
     branches: [main]
     paths:
       - "addons/**"
@@ -13,141 +19,166 @@ permissions:
   contents: read
 
 concurrency:
-  group: b204-network-audit-main
+  group: stable-network-audit-${{ github.ref }}
   cancel-in-progress: true
 
+# B236: parity is a development gate, not release approval. The independent
+# strict job intentionally remains red while inherited failures/errors exist.
 jobs:
-  validate:
+  static:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Install pinned validation toolchain
         run: |
           set -euo pipefail
           mkdir -p /tmp/acme-tools
           curl -fLsS --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
           echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
-          chmod +x /tmp/acme-tools/hemtt
+          curl -fLsS --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
           python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
 
-      - name: Native-state ownership diagnostic
-        run: python tools/audit_acme_native_owner_writes.py
-
-      - name: Focused networking and ownership gates
+      - name: Source and native-state ownership gates
         run: |
-          set -euo pipefail
-          python -m pytest             addons/acm_extended/tools/test_b204_network_full_audit_20260929.py             addons/acm_extended/tools/test_bug_audit_batch09_network.py             addons/acm_extended/tools/test_b203_network_backpressure_20260929.py             addons/acm_extended/tools/test_owner_locality_audit_20260920.py             addons/acm_extended/tools/test_build_version_tag.py             tools/test_fork_phase23_runtime_ownership.py             tools/test_fork_phase48_native_iv_bag_owner.py             tools/test_fork_phase49_airway_state_owner.py             tools/test_fork_phase50_core_state_owner.py             tools/test_fork_phase51_breathing_state_owner.py             tools/test_fork_phase52_circulation_state_owner.py             tools/test_fork_phase67_persistent_state_owner_restore.py             tools/test_fork_phase80_ett_migration_owner.py             tools/test_fork_phase84_thora_side_state_owner.py             tools/test_fork_phase85_thora_output_state_owner.py             tools/test_fork_phase135_remoteexec_whitelist_closure.py             tools/test_fork_phase136_remoteexec_target_registration.py             -q
-
+          git diff --check 90e47ed7a2fc457099255f477f2b476fdae2ce9b HEAD
+          python tools/build_contract.py
+          python tools/audit_acme_native_owner_writes.py --strict
       - name: HEMTT static validation
-        run: /tmp/acme-tools/hemtt check
+        run: /tmp/acme-tools/hemtt check --error-on-all
 
-      - name: Compare full regression outcomes to pre-audit B203 baseline
-        env:
-          BASE: 2ab84cfcb58d1d24d76295e28db8c0b06dd127af
+  full-regression-shards:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: addon
+            shard: 0
+          - group: addon
+            shard: 1
+          - group: addon
+            shard: 2
+          - group: addon
+            shard: 3
+          - group: addon
+            shard: 4
+          - group: addon
+            shard: 5
+          - group: addon
+            shard: 6
+          - group: addon
+            shard: 7
+          - group: root
+            shard: 0
+          - group: root
+            shard: 1
+          - group: root
+            shard: 2
+          - group: root
+            shard: 3
+    env:
+      SQFVM: /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+      HEMTT: /tmp/acme-tools/hemtt
+      HEMTT_BINARY: /tmp/acme-tools/hemtt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install pinned validation toolchain
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import os, pathlib, subprocess, xml.etree.ElementTree as ET
-          from concurrent.futures import ThreadPoolExecutor
-          from collections import Counter
+          mkdir -p /tmp/acme-tools
+          curl -fLsS --retry 2 https://github.com/BrettMayson/HEMTT/releases/download/v1.22.0/linux-x64 -o /tmp/acme-tools/hemtt
+          echo '58c0f2c1d88041ebce24753e920ac80efb7624d28e8af9b7960c669117695770  /tmp/acme-tools/hemtt' | sha256sum --check
+          curl -fLsS --retry 2 https://github.com/SQFvm/runtime/releases/download/v2026.04.03-ed9f5f5/sqfvm_linux_x64_gcc.zip -o /tmp/acme-tools/sqfvm.zip
+          echo 'bb4e3bb415305d2ef2c4cdb75e98f442baea3a4575887c6570a11435a780615b  /tmp/acme-tools/sqfvm.zip' | sha256sum --check
+          unzip -q /tmp/acme-tools/sqfvm.zip -d /tmp/acme-tools
+          chmod +x /tmp/acme-tools/hemtt /tmp/acme-tools/sqfvm_linux_x64_gcc/sqfvm
+          python -m pip install 'pytest==9.0.2' 'numpy==2.3.5' 'Pillow==12.3.0' 'soundfile==0.13.1'
 
-          root = pathlib.Path.cwd()
-          before = pathlib.Path("/tmp/acme-b204-before")
-          out = pathlib.Path("/tmp/acme-b204-results")
-          out.mkdir(exist_ok=True)
-          base = os.environ["BASE"]
+      - name: Prepare immutable audited B235 baseline
+        run: git worktree add --detach /tmp/acme-before 90e47ed7a2fc457099255f477f2b476fdae2ce9b
+      - name: Run every allocated module and compare all case occurrences
+        run: >-
+          python tools/run_sharded_regressions.py shard
+          --baseline /tmp/acme-before
+          --group ${{ matrix.group }} --shard ${{ matrix.shard }}
+          --out /tmp/acme-results/${{ matrix.group }}-${{ matrix.shard }}
+          --timeout 600
+      - name: Preserve complete shard reports even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b236-shard-${{ matrix.group }}-${{ matrix.shard }}-${{ github.run_id }}
+          path: /tmp/acme-results/
+          if-no-files-found: error
 
-          def cmd(args, cwd=root, timeout=900):
-              return subprocess.run(
-                  args, cwd=cwd, text=True, stdout=subprocess.PIPE,
-                  stderr=subprocess.STDOUT, timeout=timeout
-              )
+  regression-parity:
+    if: ${{ !cancelled() }}
+    needs: [full-regression-shards]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b236-shard-*-${{ github.run_id }}
+          merge-multiple: true
+          path: /tmp/acme-results
+      - name: Require all modules, current regression gates, and no worsening
+        run: python tools/run_sharded_regressions.py aggregate --out /tmp/acme-results
+      - name: Preserve aggregate and explicit remaining-failure register
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-network-validation-${{ github.run_id }}
+          path: /tmp/acme-results/
+          if-no-files-found: error
 
-          r = cmd(["git", "fetch", "--depth=1", "origin", base], timeout=120)
-          assert r.returncode == 0, r.stdout[-12000:]
-          r = cmd(["git", "worktree", "add", "--detach", str(before), base], timeout=120)
-          assert r.returncode == 0, r.stdout[-12000:]
-
-          diff = cmd(["git", "diff", "--check", base, "HEAD"], timeout=120)
-          assert diff.returncode == 0, diff.stdout[-12000:]
-
-          def suite(label, cwd, target):
-              xml = out / f"{label}.xml"
-              r = cmd([
-                  "python", "-m", "pytest", target, "-q", "--tb=no",
-                  "--continue-on-collection-errors", f"--junitxml={xml}"
-              ], cwd=cwd, timeout=850)
-              (out / f"{label}.log").write_text(r.stdout)
-              assert xml.exists(), r.stdout[-12000:]
-              states = {}
-              for case in ET.parse(xml).iter("testcase"):
-                  key = (case.get("classname", ""), case.get("name", ""))
-                  state = (
-                      "error" if case.find("error") is not None else
-                      "failed" if case.find("failure") is not None else
-                      "skipped" if case.find("skipped") is not None else
-                      "passed"
-                  )
-                  states[key] = state
-              return r.returncode, states, Counter(states.values())
-
-          with ThreadPoolExecutor(max_workers=2) as ex:
-              a = ex.submit(suite, "addon-before", before, "addons/acm_extended/tools")
-              b = ex.submit(suite, "addon-after", root, "addons/acm_extended/tools")
-              rb, db, cb = a.result()
-              ra, da, ca = b.result()
-
-          missing = sorted(set(db) - set(da))
-          regressions = []
-          improvements = []
-          for key, old in db.items():
-              if key not in da:
-                  continue
-              new = da[key]
-              if old == "passed" and new != "passed":
-                  regressions.append((key, old, new))
-              elif old == "skipped" and new in {"failed", "error"}:
-                  regressions.append((key, old, new))
-              elif old in {"failed", "error"} and new == "passed":
-                  improvements.append(key)
-              elif old == "failed" and new == "error":
-                  regressions.append((key, old, new))
-
-          assert not missing, f"missing addon tests: {missing[:30]}"
-          assert not regressions, f"addon regressions: {regressions[:30]}"
-
-          with ThreadPoolExecutor(max_workers=2) as ex:
-              a = ex.submit(suite, "root-before", before, "tools")
-              b = ex.submit(suite, "root-after", root, "tools")
-              _, db2, cb2 = a.result()
-              _, da2, ca2 = b.result()
-
-          missing2 = sorted(set(db2) - set(da2))
-          regressions2 = []
-          for key, old in db2.items():
-              if key not in da2:
-                  continue
-              new = da2[key]
-              if old == "passed" and new != "passed":
-                  regressions2.append((key, old, new))
-              elif old == "skipped" and new in {"failed", "error"}:
-                  regressions2.append((key, old, new))
-              elif old == "failed" and new == "error":
-                  regressions2.append((key, old, new))
-
-          assert not missing2, f"missing root tests: {missing2[:30]}"
-          assert not regressions2, f"root regressions: {regressions2[:30]}"
-
-          print("B204 baseline comparison PASS")
-          print("addon before:", dict(cb), "after:", dict(ca), "improvements:", len(improvements))
-          print("root before:", dict(cb2), "after:", dict(ca2))
-          PY
+  strict-full-suite:
+    if: ${{ !cancelled() }}
+    needs: [static, regression-parity]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v4
+        with:
+          name: stable-network-validation-${{ github.run_id }}
+          path: /tmp/acme-results
+      - name: Require genuinely clean full suite (no baseline exemptions)
+        run: python tools/run_sharded_regressions.py aggregate --out /tmp/acme-results --require-green
+      - name: Require all prerequisite jobs
+        env:
+          STATIC_RESULT: ${{ needs.static.result }}
+          PARITY_RESULT: ${{ needs.regression-parity.result }}
+        run: test "$STATIC_RESULT" = success && test "$PARITY_RESULT" = success
+      # Native Windows/Arma dedicated-server acceptance is a separate recorded
+      # manual requirement. This workflow never publishes or certifies it.

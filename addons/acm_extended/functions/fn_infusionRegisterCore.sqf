@@ -1,4 +1,4 @@
-params ["_context", "_medication", "_doseMg", "_durationSeconds", "_dropSet", "_dropsPerMinute", "_clampPosition", "_uid", "_bagUid", "_epoch", ["_solutionMl", 0]];
+params ["_context", "_medication", "_doseMg", "_durationSeconds", "_dropSet", "_dropsPerMinute", "_clampPosition", "_uid", "_bagUid", "_epoch", ["_solutionMl", 0], ["_deferPublish", false]];
 _context params ["_patient", "_bodyPart", "_bagIndex", "_type", "_accessType", "_bagAccessSite", "_bagIV", "_bloodType", "_volume", "_freshBloodID", "_remainingVolume"];
 
 if (!local _patient || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {""};
@@ -84,16 +84,18 @@ if (_solutionMl > 0) then {
     private _bags = _map getOrDefault [_bodyPart, []];
     _foundBag set [1, _newVolume]; _foundBag set [6, _original];
     _bags set [_bagIndex, _foundBag]; _map set [_bodyPart, _bags];
-    [_patient, _map] call ACME_fnc_ivBagsCommit;
+    [_patient, _map, !_deferPublish] call ACME_fnc_ivBagsCommit;
 };
-[_patient, _entries] call ACME_fnc_infusionMedicationStateCommit;
-[_patient, _entries select (if (_same >= 0) then {_same} else {(count _entries) - 1})] call ACME_fnc_infusionFlow;
-ACME_infusion_activePatients pushBackUnique _patient;
+[_patient, _entries, !_deferPublish] call ACME_fnc_infusionMedicationStateCommit;
+if (!_deferPublish) then {
+    [_patient, _entries select (if (_same >= 0) then {_same} else {(count _entries) - 1})] call ACME_fnc_infusionFlow;
+    ACME_infusion_activePatients pushBackUnique _patient;
+};
 
 // a distal epinephrine drip gives a catecholamine-driven atrial tachyarrhythmia.
 // there is no instant rhythm flip on a bag hang. the circ handler waits for the drip to actually run long enough for
 // an epinephrine effect envelope to develop, then applies a per-minute hazard while the distal drip is active.
-if (_medication == "Epinephrine"
+if (!_deferPublish && {_medication == "Epinephrine"}
     && {_bagIV}
     && {_bagAccessSite >= 1}
     && {_bodyPart in ["leftarm", "rightarm", "leftleg", "rightleg"]}

@@ -1,5 +1,5 @@
 // B88 cancel/release for the provider-only head-position sequence.
-// The patient head position is never changed here. Provider animation control always resolves to the unarmed crouch.
+// The patient head position is never changed here. Provider animation control returns to an unarmed idle in the provider's posture.
 private _medic = ACE_player;
 if (isNull _medic || {!local _medic}) exitWith {};
 if !(_medic getVariable ["ACME_headElev_seqActive", false]) exitWith {};
@@ -31,8 +31,10 @@ _medic setVariable ["ACME_headElev_pinToken", (_medic getVariable ["ACME_headEle
 
 if (alive _medic && {isNull objectParent _medic}) then {
     _medic selectWeapon "";
-    _medic setUnitPos "MIDDLE";
-    [_medic, "AmovPknlMstpSnonWnonDnon", 2] call ACME_fnc_doAnim;
+    private _prone = _medic getVariable ["ACME_headElev_providerProne", false];
+    _prone = _prone || {([_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon"};
+    _medic setUnitPos (["MIDDLE", "DOWN"] select (_prone || {stance _medic == "PRONE"}));
+    [_medic, [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation, 2] call ACME_fnc_doAnim;
     [{
         params ["_m"];
         if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}) exitWith {};

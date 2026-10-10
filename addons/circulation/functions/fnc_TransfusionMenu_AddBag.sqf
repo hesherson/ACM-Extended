@@ -39,6 +39,8 @@ if (_isFBTK && {!GVAR(TransfusionMenu_SelectIV)}) exitWith {
     ["FBTK blood collection requires IV access. It cannot collect through IO.", 3, ACE_player, 13] call ACEFUNC(common,displayTextStructured);
 };
 
+if (_isFBTK) exitWith {[] call ACME_fnc_fbtkHang;};
+
 private _validAccess = [
     _patient,
     GVAR(TransfusionMenu_Selected_BodyPart),

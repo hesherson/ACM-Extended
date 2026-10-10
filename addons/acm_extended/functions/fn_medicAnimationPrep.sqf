@@ -16,10 +16,17 @@ private _ownedEmptyState = _state in [
     "acme_stethoscopework",
     "acme_directpressurehold",
     "acm_genericcontinuous",
+    "acme_junctionalwork",
     "acm_pronecontinuous"
 ];
 private _visuallyEmpty = (((_state find "wnon") >= 0) && {((_state find "snon") >= 0)}) || {_ownedEmptyState};
 private _weapon = currentWeapon _medic;
+if (_ownedEmptyState) exitWith {
+    // These are exact stable medical states, never a partial handgun-holstering transition.
+    if (_weapon != "") then {_medic selectWeapon "";};
+    _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_ready", CBA_missionTime, ""], false];
+    0
+};
 if (_weapon == "" && {_visuallyEmpty}) exitWith {
     _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_ready", CBA_missionTime, ""], false];
     0

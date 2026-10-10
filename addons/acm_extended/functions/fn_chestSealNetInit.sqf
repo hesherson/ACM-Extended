@@ -56,6 +56,9 @@ if (hasInterface) then {
 };
 if (isServer) then {
     [{
+        // B246: with no viewers and no unacknowledged edit outcomes there is nothing
+        // to maintain. Avoid a permanent one-second allPlayers scan on an idle server.
+        if (count ACME_CS_sessions == 0 && {count ACME_CS_editResults == 0}) exitWith {};
         private _players = allPlayers;
         private _owners = _players apply {owner _x};
         {

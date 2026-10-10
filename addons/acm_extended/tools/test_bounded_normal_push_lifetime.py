@@ -157,6 +157,18 @@ def test_duplicate_completion_is_exactly_one_handoff_even_if_the_row_remains():
 @pytest.mark.parametrize('duration', ['', '30'])
 def test_current_push_retains_duration_route_target_and_stable_id(route,site,duration):
     expected=3 if route=='im' or not duration else int(duration)
+    if route == 'vascular' and expected > 3:
+        # B259: long normal vascular pushes no longer use a 30-second
+        # display-bound animation with zero medication until the final frame.
+        # They reuse the acknowledged incremental worker.
+        execute(setup()+f'''
+            _durationText="{duration}";
+            uiNamespace setVariable ["ACME_SK_PendingInjection",["leftleg",{site},"vascular"]];
+            [call ACME_fnc_skConfirmInjection,"long incremental push was rejected"] call _check;
+            [_hcStarts==1 && {{count _waits==0}} && {{count _delivered==0}},
+                "long push still queued a completion-only bolus"] call _check;
+        ''')
+        return
     execute(setup()+f'''
         _durationText="{duration}";
         uiNamespace setVariable ["ACME_SK_PendingInjection",["leftleg",{site},"{route}"]];

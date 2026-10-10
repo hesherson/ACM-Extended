@@ -62,15 +62,24 @@ class SourceContracts(unittest.TestCase):
         t=src("headElevateStart")
         self.assertIn("(getUnitLoadout _patient) param [4, [], [[]]]",t)
         self.assertLess(t.index('setVariable ["ACME_headElev_vestLoadout"'),t.index("removeVest _patient"))
+    def test_passive_carrier_removal_excludes_manual_custody_and_blocked_animation(self):
+        t=src("headElevateStart")
+        self.assertIn('if (!_manual && {!_hasBag} && {!_manualCarrierSupport} && {!([_patient] call ACME_fnc_animBlocked)}) then {',t)
     def test_vest_vehicle_not_removed(self):
-        self.assertIn('if (!_manual && {!_hasBag} && {!([_patient] call ACME_fnc_animBlocked)}) then {',src("headElevateStart"))
+        # Historical identity: vehicle/animation custody is now represented by
+        # the shared animBlocked guard on passive carrier removal.
+        self.test_passive_carrier_removal_excludes_manual_custody_and_blocked_animation()
     def test_vest_restore_has_no_alive_or_vehicle_gate(self):
         t=code(src("headElevVestRestore"))
         self.assertNotIn("alive",t);self.assertNotIn("animBlocked",t);self.assertNotIn("objectParent",t)
-    def test_vest_restore_current_slot_only(self):
+    def test_vest_restore_delegates_exact_carrier_custody_only(self):
         t=src("headElevVestRestore")
-        self.assertIn("_current = getUnitLoadout _patient",t);self.assertIn("_current set [4, +_saved]",t)
-        self.assertIn("setUnitLoadout [_current, false]",t);self.assertNotIn("addItemToVest",t)
+        self.assertIn('[_patient, _saved, "ACME_headElev_vestLoadout"] call ACME_fnc_carrierInventoryRestore',t)
+        self.assertNotIn("setUnitLoadout",t);self.assertNotIn("addItemToVest",t)
+        self.assertIn('if (vest _patient == "") then {',t)
+    def test_vest_restore_current_slot_only(self):
+        # Historical identity bound to the current exact-custody restore path.
+        self.test_vest_restore_delegates_exact_carrier_custody_only()
     def test_restore_reentrant_atomic(self):
         t=code(src("headElevVestRestore"))
         self.assertIn("isNil {",t);self.assertIn("!local _patient",t);self.assertIn('if (vest _patient == "")',t)
@@ -108,10 +117,10 @@ class SourceContracts(unittest.TestCase):
         from test_bounded_head_pose_contracts import contains
         retry_contract()
         t=src("headElevateStart")
-        # The carrier-creation callback also keeps its existing placement/life gate.
-        self.assertTrue(contains(t, 'params ["_patient", "_vestClass", "_poseToken"];'))
-        self.assertTrue(contains(t, '|| {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}'))
-        self.assertTrue(contains(t, 'if (isNull _patient || {!local _patient} || {!alive _patient}'))
+        # The owner-side prone normalization callback is generation-bound as well as pose-token-bound.
+        self.assertTrue(contains(t, 'params ["_p","_rollToken","_startPoseToken","_m","_body","_auto","_startEpoch"];'))
+        self.assertTrue(contains(t, '|| {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}'))
+        self.assertTrue(contains(t, '|| {(_p getVariable ["ACME_headElev_startEpoch", 0]) != _startEpoch}'))
     def test_watchdog_is_one_half_second_local_worker(self):
         t=code(src("headElevWatch"))
         self.assertIn("}, 0.5, [_patient]]",t)

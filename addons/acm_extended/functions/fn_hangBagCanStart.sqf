@@ -5,6 +5,12 @@ params ["_medic", "_patient"];
 if (isNull _patient || {isNull _medic}) exitWith { false };
 if !(missionNamespace getVariable ["ACME_sys_hang", true]) exitWith { false };
 if (_medic getVariable ["ACME_hang_Active", false]) exitWith { false };
+// The in-progress native launcher rechecks availability while Raising; its
+// own saved weapons are valid. A leftover record outside that episode is not.
+if (!(_medic getVariable ["ACME_hang_Raising", false])
+    && {(_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []
+        || {(_medic getVariable ["ACME_hang_weaponRestoreCargo", [[], []]]) isNotEqualTo [[], []]}
+        || {(_medic getVariable ["ACME_hang_weaponRestoreCargoAnomaly", false]) isNotEqualTo false}}) exitWith {false};
 if (!isNull objectParent _medic) exitWith { false };
 
 // The patient has one elevated bag workspace. Do not let a second provider enter the prep sequence while a live

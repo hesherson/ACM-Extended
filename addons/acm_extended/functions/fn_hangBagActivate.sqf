@@ -58,7 +58,12 @@ _medic setVariable ["ACME_hang_Bag", _bag];
 
 // the weapon was already stowed by fn_hangbagprep. do not issue another asynchronous SwitchWeapon here, because
 // that second command was completing after the pose started and knocking the raised arm animation back out.
-private _pose = missionNamespace getVariable ["ACME_hang_poseAnim", "ACME_Acts_JetsCrewaidFCrouchThumbup_loop"];
+private _prone = _medic getVariable ["ACME_hang_Prone", stance _medic == "PRONE"];
+private _pose = [_medic, missionNamespace getVariable ["ACME_hang_poseAnim", "ACME_Acts_JetsCrewaidFCrouchThumbup_loop"], _prone] call ACME_fnc_providerAnimation;
+_prone = _prone || {_pose == "ACM_ProneContinuous"};
+_medic setVariable ["ACME_hang_Prone", _prone];
+private _episodeStart = _medic getVariable ["ACME_hang_Start", -1];
+private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
 // The stock Acts_* _in RTM contains cinematic root translation. That movement was being applied to the live
 // provider and is the source of the ground slide. The progress-bar/prep sequence already supplies the visible
 // crouch entry, so blend directly from that in-place crouch into the stationary raised-bag hold. Keep the local
@@ -67,14 +72,21 @@ private _inAnim = _pose;
 private _inTime = 0.45;
 _medic setVariable ["ACME_hang_Pose", _pose];
 _medic setVariable ["ACME_hang_PoseRetryAt", CBA_missionTime + _inTime + 0.5];
-[_medic, _inAnim, 1.4, 1] call ACME_fnc_doAnimHeld;
+[_medic, _inAnim, 1.4, 1, true] call ACME_fnc_doAnimHeld;
 // One failsafe only. There is no position correction, setPos/setDir loop, or repeated pose wrestling.
 [{
-    params ["_medic", "_pose"];
-    if (!isNull _medic && {_medic getVariable ["ACME_hang_Active", false]} && {(toLower animationState _medic) find "jetscrewaidfcrouchthumbup" < 0}) then {
+    params ["_medic", "_pose", "_episodeStart", "_localityEpoch"];
+    if (!isNull _medic && {local _medic}
+        && {(_medic getVariable ["ACME_hang_Start", -2]) == _episodeStart}
+        && {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) == _localityEpoch}
+        && {_medic getVariable ["ACME_hang_Active", false]}
+        && {(toLower animationState _medic) != toLower _pose}) then {
+        _pose = [_medic, _pose] call ACME_fnc_providerAnimation;
+        if (stance _medic == "PRONE" || {_pose == "ACM_ProneContinuous"}) then {_medic setVariable ["ACME_hang_Prone", true];};
+        _medic setVariable ["ACME_hang_Pose", _pose];
         [_medic, _pose, 1] call ACME_fnc_doAnim;
     };
-}, [_medic, _pose], _inTime] call CBA_fnc_waitAndExecute;
+}, [_medic, _pose, _episodeStart, _localityEpoch], _inTime] call CBA_fnc_waitAndExecute;
 [_medic, true] call ACME_fnc_hangBagInputLock;
 
 // the patient-side rope helper, including the calibrated position and orientation.

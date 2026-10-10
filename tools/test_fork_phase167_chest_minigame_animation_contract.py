@@ -38,7 +38,7 @@ def test_workspace_is_hands_on_chest_without_medic3():
     init = read("addons/acm_extended/functions/fn_initChestSealProcedureRuntime.sqf")
     assert "class ACME_ChestSealWorkspace: ACM_CPR_Stop" in cfg
     assert "class ACME_ChestSealWorkspace: AinvPknlMstpSnonWnonDnon_medic3" not in cfg
-    assert '["chestSealWorkspace"' not in init
+    assert '["chestSealWorkspace", "AinvPknlMstpSnonWnonDnon_medicUp4"]' in init
 
 def test_medic3_is_reserved_for_actual_seal_placement():
     pose = read("addons/acm_extended/functions/fn_treatmentPoseStart.sqf")
@@ -50,14 +50,15 @@ def test_medic3_is_reserved_for_actual_seal_placement():
     assert 'case "chestSeal": {"AinvPknlMstpSnonWnonDnon_medic3"};' in pose
     assert 'ACME_CS_applyAnimSeconds = 2.65;' in init
     assert '[_medic, "chestSeal", _duration, _patient] call ACME_fnc_treatmentPoseStart' in apply
-    assert '"AinvPknlMstpSnonWnonDnon_medic3", 1] call ACME_fnc_doAnim' in apply
+    assert '[_medic, "chestSeal", _duration, _patient] call ACME_fnc_treatmentPoseStart' in apply
+    assert 'call ACME_fnc_doAnim' not in apply
     assert '}, [_medic, _patient, _placeEpoch, _serial], _duration] call CBA_fnc_waitAndExecute;' in apply
     assert "ACME_fnc_chestSealProviderHoldStart" in apply
     assert "chestSealBurpGesture" not in burp
     assert "chestSealBurpGesture" not in thora
     assert 'case "chestSealBurpGesture"' not in dispatch
     ncd = read("addons/acm_extended/functions/fn_chestSealApplyNCD.sqf")
-    assert '[_medic,"ncdSeat",2.0] call ACME_fnc_treatmentGesture' in ncd
+    assert '[_medic,"ncdSeat",2.0,_patient] call ACME_fnc_treatmentGesture' in ncd
     assert 'call ACME_fnc_treatmentGesture' not in apply
     assert '[_medic,"ncdSeat"' not in apply
     assert '[_medic, "ncdSeat"' not in apply
@@ -96,17 +97,18 @@ def test_chestseal_and_stethoscope_use_semifowler_putdown_exit():
     restore = read("addons/acm_extended/functions/fn_chestAccessVestRestore.sqf")
     head = read("addons/acm_extended/functions/fn_headElevMedicSeq.sqf")
 
-    assert '[_flipMedic,"lower"] call ACME_fnc_headElevMedicSeq' in chest
-    assert '[_medic,"lower"] call ACME_fnc_headElevMedicSeq' in steth
+    assert '[_flipMedic,"chestsealexit",uiNamespace getVariable ["ACME_CS_SessionToken", ""]] call ACME_fnc_headElevMedicSeq' in chest
+    assert '[_medic, ["lower", "contactexit"] select _ambulatoryContact] call ACME_fnc_headElevMedicSeq' in steth
     assert '[_flipMedic,_poseMode,_poseEpoch,true] call ACME_fnc_treatmentPoseStop' in chest
-    assert '[_medic,"stethoscope",_poseEpoch,true] call ACME_fnc_treatmentPoseStop' in steth
-    assert steth_controller.count('"stethoscope", _poseEpoch, true') >= 2
+    assert '[_medic,"stethoscope",_poseEpoch,_temporaryCarrier] call ACME_fnc_treatmentPoseStop' in steth
+    assert '[_medic, "stethoscope", _poseEpoch, true] call ACME_fnc_treatmentPoseStop;' in steth_controller
+    assert '[_medic, "stethoscope", _poseEpoch, false] call ACME_fnc_treatmentPoseStop;' in steth_controller
     assert '"chestAccessVestProvider", [_medic, _patient, "start"' not in restore
 
     # Verify this really is the requested Semi-Fowler Putdown/inventory sequence.
     assert '"AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown"' in head
     assert '"AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon"' in head
-    assert 'private _rest = "AmovPknlMstpSnonWnonDnon";' in head
+    assert 'private _rest = [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation;' in head
 
 
 def test_chest_minigame_exits_always_leave_patient_supine():

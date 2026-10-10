@@ -45,13 +45,9 @@ private _activeBagListIO = [];
 
     if (_iv) then {
         private _activeBagListIVAccess = _activeBagListIV select _accessSite;
-        if (!(_type in _activeBagListIVAccess)) then {
-            _activeBagListIVAccess pushBack _type;
-        };
+        _activeBagListIVAccess pushBackUnique _type;
     } else {
-        if !(_type in _activeBagListIO) then {
-            _activeBagListIO pushBack _type;
-        };
+        _activeBagListIO pushBackUnique _type;
     };
 } forEach _fluidBagsBodyPart;
 

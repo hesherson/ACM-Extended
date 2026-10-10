@@ -35,6 +35,21 @@ private _applied = 0;
                 _applied = _applied + 1;
             };
             case "blood": {
+                // Clearing/restarting this native compartment retires its partial suction ledger.
+                if (_value isEqualType 0 && {_value <= 0 || {(_patient getVariable [QGVAR(AirwayObstructionBlood_State), 0]) <= 0}}) then {
+                    _patient setVariable ["ACME_laryngo_bloodRemaining", [], _public];
+                    // Retire only the shared blood pool; an overlying vomit pool
+                    // has its own independently suctioned remaining volume.
+                    private _pool = _patient getVariable ["ACME_laryngo_pool", []];
+                    if (_pool isEqualType [] && {count _pool >= 1}) then {
+                        private _stamp = _pool select 0;
+                        if (_stamp isEqualType [] && {count _stamp >= 2}
+                            && {(_stamp select 0) isEqualType 0} && {(_stamp select 1) isEqualType 0}
+                            && {(_stamp select 0) <= 0} && {(_stamp select 1) > 0}) then {
+                            _patient setVariable ["ACME_laryngo_pool", [], _public];
+                        };
+                    };
+                };
                 _patient setVariable [QGVAR(AirwayObstructionBlood_State), _value, _public];
                 _applied = _applied + 1;
             };

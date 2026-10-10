@@ -1,10 +1,21 @@
 /* NA2: explicit patient-owner commands; never accept arbitrary code/function names.
    Called by CBA in an unscheduled scope. A locality change in transit is rerouted. */
-params ["_patient", "_operation", ["_args", []], ["_hops", 0]];
+params ["_patient", "_operation", ["_args", []], ["_hops", 0], ["_equipmentEpoch", -1, [0]]];
 if (isNull _patient) exitWith {};
+private _equipmentRequest = _operation in [
+    "chestAccessVestEvent", "chestSealPatientBegin", "manualPlateCarrier", "headElevStart"
+];
+// Capture once on the original caller, never refresh during locality reroute.
+// This is an ordering guard, not sender authentication or clinical permission.
+if (_equipmentRequest && {_equipmentEpoch < 0} && {_hops == 0}) then {
+    _equipmentEpoch = _patient getVariable ["ACME_equipmentKitEpoch", 0];
+};
+if (_equipmentRequest && {_hops > 0} && {_equipmentEpoch < 0}) exitWith {};
+if (_equipmentRequest && {_equipmentEpoch >= 0}
+    && {_equipmentEpoch != (_patient getVariable ["ACME_equipmentKitEpoch", 0])}) exitWith {};
 if (!local _patient) exitWith {
     if (_hops < 4) then {
-        ["ACME_ownerCommand", [_patient, _operation, _args, _hops + 1], _patient] call CBA_fnc_targetEvent;
+        ["ACME_ownerCommand", [_patient, _operation, _args, _hops + 1, _equipmentEpoch], _patient] call CBA_fnc_targetEvent;
     } else {  };
 };
 switch (_operation) do {
@@ -57,7 +68,9 @@ switch (_operation) do {
     // the casualty owner so it cannot race the native circulation integrator on another machine.
     case "crystalloidCredit": {
         _args params [["_liters", 0, [0]]];
-        if (finite _liters && {_liters > 0}) then {
+        // B236: only shipped small boluses (10/30/250 mL) use this
+        // trusted internal endpoint. This cap is not sender authentication.
+        if (count _args==1 && {finite _liters} && {_liters > 0} && {_liters <= 0.250}) then {
             [_patient, [["salineVolume", (_patient getVariable ["ACM_circulation_Saline_Volume", 0]) + _liters]], true] call ACM_circulation_fnc_setRuntimeState;
         };
     };
@@ -236,6 +249,11 @@ switch (_operation) do {
             else {_patient setVariable [_key, true, true];};
         };
     };
+    case "fbtkHang": {([_patient]+_args) call ACME_fnc_fbtkHangCommit;};
+    case "fbtkHangReply": {_args call ACME_fnc_fbtkHangReply;};
+    case "ivCatheterPull": {([_patient]+_args) call ACME_fnc_ivCatheterPull;};
+    case "ivFinish": {([_patient]+_args) call ACME_fnc_ivFinishCommit;};
+    case "ivFinishReply": {_args call ACME_fnc_ivFinishReply;};
     case "ivSite": {_args call ACME_fnc_ivPlacementLocal;};
     case "preparedAttach": {_args call ACME_fnc_preparedAttachLocal;};
     case "preparedHang": {_args call ACME_fnc_preparedHangCommit;};
@@ -245,6 +263,7 @@ switch (_operation) do {
     case "shock": {_args call ACME_fnc_shockLocal;};
     case "ventAirwayLoss": {_args call ACME_fnc_ventAirwayLoss;};
     case "manualPlateCarrier": {_args call ACME_fnc_manualPlateCarrierCommit;};
+    case "manualPlateCarrierAbortRemoval": {_args call ACME_fnc_manualPlateCarrierAbortRemoval;};
     case "manualPlateCarrierAutoReturn": {_args call ACME_fnc_manualPlateCarrierAutoReturn;};
     case "syncArmed": {
         _args params [["_medic", objNull, [objNull]], ["_armed", false, [false]], ["_epoch", -1, [0]]];
@@ -282,12 +301,26 @@ switch (_operation) do {
         [_patient,_op,_claimArgs] call ACME_fnc_directPressureClaimLocal;
     };
     case "directPressureMarker": {
-        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]], ["_active", false, [false]]];
+        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]], ["_active", false, [false]],
+            ["_token", "", [""]], ["_epoch", -1, [0]]];
         private _part = toLower _bodyPart;
         if (_part == "") exitWith {};
         private _key = format ["ACME_DP_press_%1", _part];
+        private _claim = _patient getVariable [format ["ACME_DP_claim_%1", _part], []];
+        private _ownsClaim = _token != "" && {_claim isEqualType []} && {count _claim >= 5}
+            && {(_claim select 0) isEqualTo _medic} && {(_claim select 1) == _token}
+            && {(_claim select 2) == _epoch} && {_epoch == ([_patient] call ACME_fnc_clinicalEpoch)};
+        // Both resume and yield carry the originating episode. An old packet from the same provider must not
+        // change a successor hold. Only historical cleanup without any reservation may omit the token.
+        if (!_ownsClaim && {_active || {_token != ""} || {!(_claim isEqualTo [])}}) exitWith {};
         if (_active) then {
-            // Provider-local state identifies the exact hold. The patient owner alone publishes the clinical marker.
+            private _claimOwner = _claim param [3, -1, [0]];
+            // owner is authoritative only on the server. A client can identify a local provider with clientOwner;
+            // remote clients rely on the origin worker's token-specific release after locality loss.
+            if (isNull _medic || {if (local _medic) then {_claimOwner != clientOwner} else {
+                !isMultiplayer || {isServer && {_claimOwner != owner _medic}}
+            }}) exitWith {};
+            // The patient-owner claim, rather than replicated provider identity alone, authorizes this marker.
             if (!isNull _medic
                 && {_medic getVariable ["ACME_DP_Active", false]}
                 && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
@@ -315,9 +348,18 @@ switch (_operation) do {
         };
     };
     case "directPressureClot": {
-        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]]];
+        _args params [["_medic", objNull, [objNull]], ["_bodyPart", "", [""]],
+            ["_token", "", [""]], ["_epoch", -1, [0]]];
         private _part = toLower _bodyPart;
+        private _claim = _patient getVariable [format ["ACME_DP_claim_%1", _part], []];
+        private _claimOwner = _claim param [3, -1, [0]];
+        if (isNull _medic || {if (local _medic) then {_claimOwner != clientOwner} else {
+            !isMultiplayer || {isServer && {_claimOwner != owner _medic}}
+        }}) exitWith {};
         if (!isNull _medic && {_part != ""}
+            && {_token != ""} && {_claim isEqualType []} && {count _claim >= 5}
+            && {(_claim select 0) isEqualTo _medic} && {(_claim select 1) == _token}
+            && {(_claim select 2) == _epoch} && {_epoch == ([_patient] call ACME_fnc_clinicalEpoch)}
             && {_medic getVariable ["ACME_DP_Active", false]}
             && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
             && {(_medic getVariable ["ACME_DP_Part", ""]) == _part}
@@ -380,6 +422,8 @@ switch (_operation) do {
     case "rehangUsedBag": {_args call ACME_fnc_rehangUsedBagCommit;};
     case "yRefill": {_args call ACME_fnc_yRefillCommit;};
     case "discardYTubing": {_args call ACME_fnc_discardYTubingCommit;};
+    case "yEnsureSlots": {[_patient] call ACME_fnc_yEnsureSlots;};
+    case "ySalineSetup": {_args call ACME_fnc_ySalineSetup;};
     case "yFlush": {_args call ACME_fnc_yFlushStart;};
     case "bagMove": {_args call ACME_fnc_clinicalBagMove;};
     case "hangBagClaim": {isNil {[_patient, "claim", _args] call ACME_fnc_hangBagClaimLocal;};};
@@ -396,13 +440,71 @@ switch (_operation) do {
     case "debugSeizure": { _args call ACME_fnc_debugInduceSeizure; };
     case "tbiInit": { _args call ACME_fnc_tbiInit; };
     case "thoraDrain": { [_patient] call ACME_fnc_thoraPassiveDrain; };
-    case "thoraAftercare": {_args call ACME_fnc_thoraAftercareLocal;};
+    case "thoraAftercare": {
+        private _operation = _args param [3, ""];
+        if !(_operation in ["widen", "seal"]) exitWith {_args call ACME_fnc_thoraAftercareLocal;};
+        _args params ["", "_medic", "_side", "", "_epoch", ["_request", []], "", ["_receipt", []]];
+        if (!(_request isEqualType []) || {count _request != 3} || {isNull _medic}
+            || {(_request findIf {!(_x isEqualType 0) || {!finite _x}}) >= 0}) exitWith {};
+        private _resultKey = if (_operation == "seal") then {"ACME_thoraSealResults"} else {"ACME_thoraWidenResults"};
+        private _results = (_patient getVariable [_resultKey, []]) select {serverTime <= (_x select 3)};
+        private _known = _results findIf {(_x select 0) == _epoch && {(_x select 1) isEqualTo _request} && {(_x select 2) == _side}};
+        private _accepted = if (_known >= 0) then {(_results select _known) param [4, true]} else {false};
+        private _fresh = _operation != "seal" || {
+            (_request select 0) >= 0 && {(_request select 0) == floor (_request select 0)}
+            && {(_request select 1) >= 1} && {(_request select 1) == floor (_request select 1)}
+            && {serverTime - (_request select 2) <= 120} && {(_request select 2) - serverTime <= 2}
+        };
+        // An unknown old query is not proof that no item was used. Preserve its
+        // reservation; never manufacture a rejection/refund after losing evidence.
+        if (_operation == "seal" && {_known < 0} && {!_fresh}) exitWith {};
+        if (_known >= 0 && {_operation == "seal"}) then {
+            // Active reconciliation keeps the decision alive. Inactive results
+            // expire, so repeated injuries cannot exhaust a lifetime ledger.
+            (_results select _known) set [3, serverTime + 180];
+            _patient setVariable [_resultKey, _results, true];
+        };
+        if (_known < 0 && {_fresh} && {_operation == "seal" || {count _results < 128}}) then {
+            _accepted = (_args call ACME_fnc_thoraAftercareLocal) isEqualTo true;
+            // Seal rejections are final too: a delayed copy cannot consume an
+            // already-refunded reservation after the patient's condition changes.
+            if (_accepted || {_operation == "seal"}) then {
+                // Retain terminal decisions beyond the whole fresh-request
+                // window, including the tolerated future clock skew.
+                private _result = [_epoch, +_request, _side, serverTime + (if (_operation == "seal") then {180} else {60})];
+                if (_operation == "seal") then {_result pushBack _accepted;};
+                _results pushBack _result;
+                _patient setVariable [_resultKey, _results, true];
+            };
+        };
+        private _origin = _request select 0;
+        private _replyTarget = if (_origin >= 2) then {_origin} else {_medic};
+        ["ACME_thoraAftercareAck", [_patient, _side, _epoch, _request, _receipt, _accepted, _operation], _replyTarget] call CBA_fnc_targetEvent;
+    };
     case "thoraSideState": {_args call ACME_fnc_thoraSideStateCommit;};
     case "thoraBumpVer": {_args call ACME_fnc_thoraBumpVer;};
     case "thoraPrepCommit": {
-        _args params [["_p", objNull, [objNull]], ["_side", "right", [""]], ["_points", [], [[]]]];
-        if (_p isEqualTo _patient && {_points isEqualType []}) then {
-            [_patient, _side, "prep", _points] call ACME_fnc_thoraSideStateCommit;
+        _args params [["_p", objNull, [objNull]], ["_side", "right", [""]],
+            ["_points", [], [[]]], ["_epoch", -1, [0]]];
+        _side = toLower _side;
+        if !(_p isEqualTo _patient && {_side in ["left", "right"]}
+            && {_epoch == ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {};
+        // Each provider may have painted against an older replica. Merge at the single writer so a late or
+        // duplicated packet cannot erase another provider's applied prep or bump the revision unnecessarily.
+        private _current = _patient getVariable [format ["ACME_thora_prep_%1", _side], []];
+        private _merged = +_current;
+        {
+            if (count _merged >= 130) exitWith {};
+            if (_x isEqualType [] && {count _x == 2}
+                && {(_x select 0) isEqualType 0} && {(_x select 1) isEqualType 0}
+                && {finite (_x select 0)} && {finite (_x select 1)}
+                && {(_x select 0) >= 0} && {(_x select 0) <= 1}
+                && {(_x select 1) >= 0} && {(_x select 1) <= 1}) then {
+                _merged pushBackUnique (+_x);
+            };
+        } forEach (_points select [0, 130]);
+        if !(_merged isEqualTo _current) then {
+            [_patient, _side, "prep", _merged] call ACME_fnc_thoraSideStateCommit;
             [_patient] call ACME_fnc_thoraBumpVer;
         };
     };
@@ -416,6 +518,9 @@ switch (_operation) do {
     case "chestSealPatientEnd": {_args call ACME_fnc_chestSealPatientEnd;};
     case "patientAnimRequest": {_args call ACME_fnc_patientAnimRequest;};
     case "patientAnimRelease": {_args call ACME_fnc_patientAnimRelease;};
+    case "ventSyncMask": {[_patient] call ACME_fnc_ventSyncMask;};
+    case "ventSetMaskCPAP": {_args call ACME_fnc_ventSetMaskCPAP;};
+    case "ventMaskApplyReply": {_args call ACME_fnc_ventMaskApplyReply;};
     case "ventManualBreath": {_args call ACME_fnc_ventManualBreathCommit;};
     case "ventBattery": {
         _patient setVariable ["ACME_vent_battery", 100, true];

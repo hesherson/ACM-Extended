@@ -1,3 +1,4 @@
+from historical_source import assert_release_identity as _assert_current_build
 from pathlib import Path
 from historical_source import read_source, assert_release_identity
 
@@ -15,13 +16,13 @@ def raw(path: Path) -> str:
 
 def test_123_release_identity_and_hemtt_version():
     assert_release_identity()
-    assert 'version = "1.2.4";' in acme("config.cpp")
+    _assert_current_build()
     startup = acme("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_infusion_version = "1.2.4";' in startup
-    assert 'ACME_buildBatch = "B171";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
     script = raw(ADDONS / "main" / "script_version.hpp")
-    for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 4", "#define BUILD 0"):
+    for line in ("#define MAJOR 1", "#define MINOR 2", "#define PATCH 4", "#define BUILD 1"):
         assert line in script
 
 
@@ -61,18 +62,27 @@ def test_chest_preparation_range_loss_is_terminal_and_launch_revalidates():
     treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
     assert 'private _invalid = (_m getVariable ["ACME_chestAccessPreflightCancel", false])' in treatment
     assert '_m setVariable ["ACME_chestAccessPreflightCancel", true, false];' in treatment
-    assert 'private _stillTreatable = _args call ace_medical_treatment_fnc_canTreat;' in treatment
-    assert 'private _stillInteractive = [_m, _p, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith;' in treatment
-    assert '(_m distance _p) > ace_medical_gui_maxDistance' in treatment
+    assert 'private _stillTreatable = _args call ace_medical_treatment_fnc_canTreatCached;' in treatment
+    assert 'private _stillInteractive = [_m, _p, [["isNotInside","isNotSwimming","isNotInZeus"],["isNotSwimming","isNotInZeus"]]' in treatment
+    assert 'call ACME_fnc_patientInteractionDistance' in treatment
+    assert 'objectParent _m isNotEqualTo objectParent _p' in treatment
 
 
 def test_provider_pose_is_retired_locally_before_native_intervention_launch():
     treatment = raw(ADDONS / "core" / "overrides" / "fnc_treatment.sqf")
     acquire = acme("functions/fn_chestAccessVestAcquire.sqf")
     handoff = '[_m, _p, "stop", true, ((_m getVariable ["ACME_chestAccessProvider", []]) param [2, ""])] call ACME_fnc_chestAccessVestProvider;'
-    launch = 'private _started = _args call ACM_core_fnc_treatmentNative;'
-    assert handoff in treatment and launch in treatment
-    assert treatment.index(handoff) < treatment.index(launch)
+    # B212 gives Check Breathing its own timed work sequence after the carrier handoff.
+    # Both paths must retire the provider locally before either clinical launcher runs.
+    launch_block = treatment.split('private _launch = {', 1)[1].split('\n        [{', 1)[0]
+    selection = 'private _started = if (_classKey == "checkbreathing") then {'
+    assessment = '_args call ACME_fnc_assessmentStart'
+    native = '_args call ACM_core_fnc_treatmentNative'
+    assert handoff in launch_block and selection in launch_block
+    assert assessment in launch_block and native in launch_block
+    assert launch_block.index(handoff) < launch_block.index(selection) < launch_block.index(assessment)
+    assert launch_block.index(handoff) < launch_block.index(native)
+    assert 'else {' in launch_block[launch_block.index(assessment):launch_block.index(native)]
     # The casualty owner must never send a late provider-stop packet after publishing readiness.
     assert '"chestAccessVestProvider", [_medic, _p, "stop"' not in acquire
 
@@ -122,6 +132,7 @@ def test_direct_pressure_yields_before_pose_for_native_cpr_bvm_and_chest_prep():
     stop = acme("functions/fn_directPressureStop.sqf")
     tick = acme("functions/fn_directPressureTick.sqf")
     pose = acme("functions/fn_directPressurePose.sqf")
+    busy = acme("functions/fn_directPressurePoseBusy.sqf")
     stance = acme("functions/fn_registerProviderStanceReleaseRuntime.sqf")
     for source in (start, stop):
         assert 'ACM_circulation_isPerformingCPR' in source
@@ -132,8 +143,11 @@ def test_direct_pressure_yields_before_pose_for_native_cpr_bvm_and_chest_prep():
     assert 'private _nativeBvm = [_patient] call ACM_core_fnc_bvmActive;' in tick
     assert 'ACME_chestAccessPreflightActive' in tick
     assert tick.index('if (_mustYieldClinical) exitWith {') < tick.index('call ACME_fnc_directPressurePose')
-    assert '[_patient] call ACM_core_fnc_cprActive' in pose
-    assert '[_patient] call ACM_core_fnc_bvmActive' in pose
+    assert 'if ([_medic, _patient] call ACME_fnc_directPressurePoseBusy) exitWith {' in pose
+    assert '[_medic] call ACME_fnc_directPressurePoseRetire;' in pose
+    assert pose.index('call ACME_fnc_directPressurePoseBusy') < pose.index('call ACME_fnc_directPressurePoseEnter')
+    assert '[_patient] call ACM_core_fnc_cprActive' in busy
+    assert '[_patient] call ACM_core_fnc_bvmActive' in busy
     assert '[_patient] call ACM_core_fnc_cprActive' in stance
     assert '[_patient] call ACM_core_fnc_bvmActive' in stance
 

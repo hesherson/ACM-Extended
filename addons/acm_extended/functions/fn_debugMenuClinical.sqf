@@ -1,4 +1,5 @@
 // The single ACME debug overlay. Clinical, treatment and transport state share one patient and one toggle.
+// B221 restores B218 presentation helpers; data additions and the missing-color fix stay intact.
 disableSerialization;
 
 private _cleanup = {
@@ -54,9 +55,9 @@ private _x = safeZoneXAbs + _marginX;
 private _y = safeZoneY + _marginY;
 private _panelBottom = safeZoneY + safeZoneH - _marginY;
 
-// Fixed horizontal proportion on every display. B176 is intentionally a little wider than B165 so normal values,
-// revision strings and paired columns never need to word-wrap. Width does NOT change based on aspect ratio.
-private _totalW = (safeZoneH * 0.255) min (safeZoneWAbs - (2 * _marginX));
+// B215: this is a width ceiling, not a fixed backdrop width. Final measured content determines the right edge
+// after both width and height fitting; the strip always stays below one quarter of the screen.
+private _totalW = (safeZoneH * 0.40) min (safeZoneWAbs * 0.245) min (safeZoneWAbs - (2 * _marginX));
 private _valueW = 11;
 
 private _renderBlock = {
@@ -81,14 +82,15 @@ private _measureNaturalWidth = {
 };
 private _layout = {
     params ["_headerH", "_bodyH"];
-    private _bodyY = _y + _headerH + _gap;
+    private _topPadding = _fontH * 0.75;
+    private _bodyY = _y + _topPadding + _headerH + _gap;
     private _panelH = (_panelBottom - _y) max 0;
     // Never allow the structured-text control itself to extend below the panel. The previous layout expanded
     // the body to its measured content height, which is exactly how 1680x1050 drew text past the bottom edge.
     private _bodyAvail = (_panelBottom - _bodyY) max 0;
 
     _ctrlB ctrlSetPosition [_x, _y, _totalW, _panelH];
-    _ctrlH ctrlSetPosition [_x, _y, _totalW, _headerH min _panelH];
+    _ctrlH ctrlSetPosition [_x, _y + _topPadding, _totalW, _headerH min ((_panelH - _topPadding) max 0)];
     _ctrlL ctrlSetPosition [_x, _bodyY min _panelBottom, _totalW, _bodyAvail];
 
     // Retire B162's separate top/right/footer regions in-place so an already running mission cannot leave one visible.
@@ -104,6 +106,8 @@ private _cWarn  = "#D9A441";
 private _cBad   = "#E04141";
 private _cCrit  = "#FF5A5A";
 private _cMute  = "#8A8474";
+// Same airway/device blue as the ACE medical-menu chest-tube markers (0.19, 0.91, 0.93).
+private _cTube  = "#30E8ED";
 
 private _safe = {
     params ["_v"];
@@ -115,8 +119,8 @@ private _safe = {
 };
 private _yn = {params ["_v"]; if (_v) then {"yes"} else {"no"};};
 private _ynCol = {params ["_v", ["_badWhenTrue", false]]; if (_badWhenTrue) exitWith {if (_v) then {_cBad} else {_cGood}}; if (_v) then {_cGood} else {_cMute};};
-// Restore the pre-redesign value alignment for clinical and machine rows alike.
-// Paired fields have a fixed width, so a state or unit cannot move the next label.
+// All values start at the same column: words, integers, decimals and units use
+// trailing padding only. The paired field width protects the next label.
 private _padRight = {
     params ["_s", "_w"];
     if !(_s isEqualType "") then {_s = str _s;};
@@ -126,21 +130,20 @@ private _padRight = {
 private _alignValue = {
     params ["_v", ["_w", 11]];
     private _s = if (_v isEqualType "") then {_v} else {str _v};
-    // Original layout: right-align the whole token, or the part before its decimal.
-    // This also aligns yes/no, none, OPEN and client/host with integer readings.
-    private _integerW = (_w - 4) max 1;
-    private _dot = _s find ".";
-    private _integer = if (_dot > -1) then {_s select [0, _dot]} else {_s};
-    private _suffix = if (_dot > -1) then {_s select [_dot]} else {""};
-    while {count _integer < _integerW} do {_integer = " " + _integer;};
-    [_integer + _suffix, _w] call _padRight
+    [_s, _w] call _padRight
 };
 private _pair = {
+    // B221: an odd medication catalog ends in a single triplet. Never expand
+    // it into undefined right-hand values/colors (RPT: Wrong color format any).
+    if (count _this == 3) exitWith {_this call _one};
     params ["_a", "_av", "_ac", "_b", "_bv", "_bc"];
+    if (_av in ["yes", "no"] && {(_a select [(count _a - 1) max 0]) != "?"}) then {_a = _a + "?";};
+    if (_bv in ["yes", "no"] && {(_b select [(count _b - 1) max 0]) != "?"}) then {_b = _b + "?";};
     [_a, _av, _ac, _b, _bv, _bc]
 };
 private _one = {
     params ["_a", "_av", "_ac"];
+    if (_av in ["yes", "no"] && {(_a select [(count _a - 1) max 0]) != "?"}) then {_a = _a + "?";};
     [_a, _av, _ac]
 };
 private _wrapValue = {
@@ -152,7 +155,7 @@ private _wrapValue = {
         for "_i" from (_width - 1) to 1 step -1 do {
             if ((_s select [_i, 1]) in [" ", "+", ",", "/"]) exitWith {_cut = _i + 1;};
         };
-        // Numeric left padding is not a useful wrap point.
+        // Do not create an empty continuation line at a padding boundary.
         if ((_s select [0, _cut]) == (["", _cut] call _padRight)) then {_cut = _width;};
         _lines pushBack (_s select [0, _cut]);
         _s = _s select [_cut];
@@ -161,13 +164,29 @@ private _wrapValue = {
     _lines
 };
 private _formatRow = {
-    params ["_row", "_valueW"];
+    params ["_row", "_valueW", ["_labelWidths", [20, 20]]];
     if (_row isEqualType "") exitWith {_row};
+    // A bullet has an explicit depth and spans both columns; it must not widen either label column.
+    if (count _row == 4) exitWith {
+        _row params ["", "_text", "_color", "_depth"];
+        private _indent = if (_depth > 0) then {"    "} else {"  "};
+        private _limit = ((_labelWidths select 0) + (_labelWidths select 1) + 2 * _valueW + 10 - count _indent - 2) max 10;
+        private _lines = [_text, _limit] call _wrapValue;
+        private _formatted = [];
+        {
+            _formatted pushBack format ["%1%2<t color='%3'>%4</t>", _indent, if (_forEachIndex == 0) then {"• "} else {"  "}, _color, [_x] call _safe];
+        } forEach _lines;
+        _formatted joinString "<br/>"
+    };
     _row params ["_a", "_av", "_ac"];
-    private _aTxt = [([_a, 8] call _padRight)] call _safe;
+    // B213: label widths are measured over the whole display, independently for each paired column.
+    // Two spaces indent values under section titles. Exactly one space follows the longest label before ':'.
+    private _labelW = _labelWidths select 0;
+    private _labelWR = _labelWidths select 1;
+    private _aTxt = [([_a, _labelW] call _padRight)] call _safe;
     private _avTxt = [([_av, _valueW] call _alignValue)] call _safe;
     if (count _row == 3) exitWith {
-        format ["<t color='%4'>%1</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
+        format ["  <t color='%4'>%1 :</t> <t color='%3'>%2</t>", _aTxt, _avTxt, _ac, _cLabel]
     };
     private _b = _row select 3;
     private _bv = _row select 4;
@@ -176,11 +195,11 @@ private _formatRow = {
     private _bLines = [([_bv, _valueW] call _alignValue), _valueW] call _wrapValue;
     private _lines = [];
     for "_i" from 0 to (((count _aLines) max (count _bLines)) - 1) do {
-        private _aLabel = [([if (_i == 0) then {_a} else {""}, 8] call _padRight)] call _safe;
-        private _bLabel = [([if (_i == 0) then {_b} else {""}, 8] call _padRight)] call _safe;
+        private _aLabel = [([if (_i == 0) then {_a} else {""}, _labelW] call _padRight)] call _safe;
+        private _bLabel = [([if (_i == 0) then {_b} else {""}, _labelWR] call _padRight)] call _safe;
         private _aValue = [([_aLines param [_i, ""], _valueW] call _padRight)] call _safe;
         private _bValue = [([_bLines param [_i, ""], _valueW] call _padRight)] call _safe;
-        _lines pushBack format ["<t color='%7'>%1</t> <t color='%3'>%2</t>  <t color='%7'>%4</t> <t color='%6'>%5</t>", _aLabel, _aValue, _ac, _bLabel, _bValue, _bc, _cLabel];
+        _lines pushBack format ["  <t color='%7'>%1 :</t> <t color='%3'>%2</t>  <t color='%7'>%4 :</t> <t color='%6'>%5</t>", _aLabel, _aValue, _ac, _bLabel, _bValue, _bc, _cLabel];
     };
     _lines joinString "<br/>"
 };
@@ -213,42 +232,74 @@ private _left = [];
 private _right = [];
 private _network = [];
 private _pName = if (isNull _patient) then {"NO PATIENT"} else {name _patient};
+private _bloodTypeID = if (isNull _patient) then {-1} else {_patient getVariable ["ACM_circulation_BloodType", -1]};
+private _bloodType = if (_bloodTypeID isEqualType 0 && {_bloodTypeID in [0,1,2,3,4,5,6,7]}) then {
+    ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"] select _bloodTypeID
+} else {"unknown"};
+private _weight = if (isNull _patient) then {-1} else {_patient getVariable ["ACM_core_BodyWeight", 80]};
+private _factionClass = if (isNull _patient) then {""} else {faction _patient};
+private _factionName = getText (configFile >> "CfgFactionClasses" >> _factionClass >> "displayName");
+if (_factionName == "") then {_factionName = ["unknown", _factionClass] select (_factionClass != "");};
+private _patientSide = if (isNull _patient) then {"unknown"} else {str side group _patient};
+private _sideColor = switch (toUpperANSI _patientSide) do {
+    case "WEST": {"#4FA3FF"};
+    case "EAST": {"#FF5555"};
+    case "CIV": {"#BD83EA"};
+    case "GUER": {"#64D978"};
+    default {_cMute};
+};
 private _header = [
-    format [
-        "<t color='%1'>ACME DEBUG v%2 | %3</t><t color='%4'> | Patient: %5</t>",
-        _cTitle, [_ver] call _safe, [_batch] call _safe, _cLabel, [_pName] call _safe
-    ]
+    format ["<t size='1.12' color='%1'>ACME DEBUG v%2 | %3</t>", _cTitle, [_ver] call _safe, [_batch] call _safe],
+    ["Patient", _pName, _cLabel] call _one,
+    ["Blood type", _bloodType, _cLabel, "Weight", if (_weight isEqualType 0 && {_weight > 0}) then {format ["%1 kg", _weight toFixed 1]} else {"unknown"}, _cLabel] call _pair,
+    ["Side", _patientSide, _sideColor, "Faction", _factionName, _sideColor] call _pair
 ];
 private _renderAll = {
     // Preserve the existing logical section builders, but serialize them into one compact vertical stream.
     private _allRows = [];
     _allRows append _top;
+    _allRows append _network;
     _allRows append _left;
     _allRows append _right;
-    _allRows append _network;
 
-    // Use one value-field width large enough for EVERY paired value in the current snapshot. This keeps the second
-    // label at the same column and prevents value wrapping instead of trying to repair it after formatting.
+    // Size paired fields from paired values only. A full-width revision/device row
+    // must not widen both columns or shift ordinary readings. Left alignment adds
+    // no leading padding beyond these measured strings, so decimals and units fit.
     _valueW = 11;
     {
-        if (_x isEqualType [] && {count _x >= 3}) then {
+        if (_x isEqualType [] && {count _x >= 6}) then {
             private _vA = _x param [1, ""];
             private _sA = if (_vA isEqualType "") then {_vA} else {str _vA};
             _valueW = _valueW max (count _sA);
-            if (count _x >= 6) then {
-                private _vB = _x param [4, ""];
-                private _sB = if (_vB isEqualType "") then {_vB} else {str _vB};
-                _valueW = _valueW max (count _sB);
-            };
+            private _vB = _x param [4, ""];
+            private _sB = if (_vB isEqualType "") then {_vB} else {str _vB};
+            _valueW = _valueW max (count _sB);
         };
     } forEach _allRows;
 
-    private _bodyRows = _allRows apply {[_x, _valueW] call _formatRow};
-    // Section rows intentionally carry one leading break, which plus the row separator creates one empty line
-    // between sections. Remove only the very first one so the body starts directly beneath the header.
-    if (count _bodyRows > 0 && {((_bodyRows select 0) select [0,5]) == "<br/>"}) then {
-        _bodyRows set [0, (_bodyRows select 0) select [5]];
-    };
+    private _labelWidths = [0, 0];
+    {
+        if (_x isEqualType [] && {count _x in [3, 6]}) then {
+            _labelWidths set [0, (_labelWidths select 0) max (count (_x select 0))];
+            if (count _x >= 6) then {_labelWidths set [1, (_labelWidths select 1) max (count (_x select 3))];};
+        };
+    } forEach (_header + _allRows);
+    private _headerRows = _header apply {[_x, _valueW, _labelWidths] call _formatRow};
+    private _separator = "";
+    for "_i" from 1 to ((_labelWidths select 0) + (_labelWidths select 1) + 2 * _valueW + 10) do {_separator = _separator + "_";};
+    _separator = format ["<t color='%1'>%2</t>", _cMute, _separator];
+    private _bodyRows = [];
+    private _hasSection = false;
+    {
+        private _row = [_x, _valueW, _labelWidths] call _formatRow;
+        if (count _row >= 5 && {(_row select [0,5]) == "<br/>"}) then {
+            if (_hasSection) then {_bodyRows pushBack _separator;};
+            _hasSection = true;
+            _row = _row select [5];
+        };
+        _bodyRows pushBack _row;
+    } forEach _allRows;
+    if (_hasSection) then {_bodyRows pushBack _separator;};
 
     // Every refresh starts from the exact same reference font. First fit the natural longest line to the fixed
     // panel width, then fit the complete vertical stream to the fixed panel height. Because both passes multiply
@@ -257,28 +308,31 @@ private _renderAll = {
     call _applyFont;
     _gap = _fontH * _gapFactor;
 
-    private _naturalW = ([ _header ] call _measureNaturalWidth) max ([_bodyRows] call _measureNaturalWidth);
+    private _naturalW = ([ _headerRows ] call _measureNaturalWidth) max ([_bodyRows] call _measureNaturalWidth);
     if (_naturalW > _totalW && {_naturalW > 0}) then {
         _fontH = _fontH * ((_totalW / _naturalW) min 1);
         call _applyFont;
         _gap = _fontH * _gapFactor;
     };
 
-    private _headerH = [_header, _totalW] call _measureRows;
+    private _headerH = [_headerRows, _totalW] call _measureRows;
     private _bodyH = [_bodyRows, _totalW] call _measureRows;
     private _availableH = (_panelBottom - _y) max 0;
-    private _neededH = _headerH + _gap + _bodyH;
+    private _neededH = (_fontH * 0.75) + _headerH + _gap + _bodyH;
     if (_neededH > _availableH && {_neededH > 0}) then {
         // Small guard keeps the last descender inside the panel despite engine text-metric rounding.
         _fontH = _fontH * ((_availableH / _neededH) * 0.992);
         call _applyFont;
         _gap = _fontH * _gapFactor;
-        _headerH = [_header, _totalW] call _measureRows;
+        _headerH = [_headerRows, _totalW] call _measureRows;
         _bodyH = [_bodyRows, _totalW] call _measureRows;
     };
 
+    // Height fitting can make the text substantially narrower. Measure again at the FINAL font size so
+    // the backdrop follows the actual rightmost content instead of leaving the original maximum-width strip.
+    _totalW = (([_headerRows] call _measureNaturalWidth) max ([_bodyRows] call _measureNaturalWidth)) min _totalW;
     [_headerH, _bodyH] call _layout;
-    [_ctrlH, _header] call _renderBlock;
+    [_ctrlH, _headerRows] call _renderBlock;
     [_ctrlL, _bodyRows] call _renderBlock;
 };
 
@@ -286,7 +340,7 @@ _top pushBack (["MACHINE / PATIENT OWNERSHIP"] call _sect);
 private _role = if (isDedicated) then {"dedi"} else {if (isServer) then {"host"} else {"client"}};
 _top pushBack (["Role", _role, if (isServer) then {_cGood} else {_cLabel}, "MP", if (isMultiplayer) then {"yes"} else {"no"}, if (isMultiplayer) then {_cGood} else {_cMute}] call _pair);
 _top pushBack (["Client", clientOwner, _cLabel, "Server", if (isServer) then {"local"} else {"remote"}, if (isServer) then {_cGood} else {_cLabel}] call _pair);
-private _own = if (isNull _patient) then {-1} else {owner _patient};
+private _own = if (isNull _patient) then {"-"} else {if (isServer) then {str owner _patient} else {if (local _patient) then {str clientOwner} else {"remote"}}};
 private _loc = !isNull _patient && {local _patient};
 private _netId = if (isNull _patient) then {"-"} else {netId _patient};
 _top pushBack (["Owner", _own, if (_loc) then {_cGood} else {_cWarn}, "Local", if (_loc) then {"yes"} else {"no"}, if (_loc) then {_cGood} else {_cWarn}] call _pair);
@@ -300,28 +354,12 @@ _network pushBack (["Chest", if (_naChest) then {"on"} else {"off"}, if (_naChes
 private _rev = missionNamespace getVariable ["ACME_networkAuditRevision", "none"];
 _network pushBack (["Revision", _rev, _cMute] call _one);
 
-_network pushBack (["CHEST-SEAL TRANSPORT"] call _sect);
-private _pend = 0;
-private _pendMap = missionNamespace getVariable ["ACME_CS_pending", nil];
-if (!isNil "_pendMap" && {(typeName _pendMap) isEqualTo "HASHMAP"}) then {_pend = count (keys _pendMap);};
-private _sessTxt = "n/a";
-private _sessCol = _cMute;
-if (isServer) then {
-    private _sess = 0;
-    private _sessMap = missionNamespace getVariable ["ACME_CS_sessions", nil];
-    if (!isNil "_sessMap" && {(typeName _sessMap) isEqualTo "HASHMAP"}) then {_sess = count (keys _sessMap);};
-    _sessTxt = str _sess;
-    _sessCol = if (_sess > 0) then {_cLabel} else {_cGood};
-};
-_network pushBack (["Pending", _pend, if (_pend > 0) then {_cWarn} else {_cGood}, "Sessions", _sessTxt, _sessCol] call _pair);
-private _roster = uiNamespace getVariable ["ACME_CS_presenceTargets", []];
-if !(_roster isEqualType []) then {_roster = [];};
-_roster = _roster - [uiNamespace getVariable ["ACME_CS_presenceViewer", player]];
-private _rate = missionNamespace getVariable ["ACME_CS_presenceRate", 0.07];
-if (!(_rate isEqualType 0) || {!finite _rate}) then {_rate = 0.07;};
-_network pushBack (["Viewers", count _roster, if ((count _roster) > 0) then {_cGood} else {_cMute}, "Rate", format ["%1s", _rate toFixed 2], _cLabel] call _pair);
-
 _network pushBack (["COMPATIBILITY"] call _sect);
+private _networkStatus = missionNamespace getVariable ["ACME_networkCompatStatus", "pending"];
+private _serverBuild = missionNamespace getVariable ["ACME_networkCompatServerBuild", "unverified"];
+private _networkColor = if (_networkStatus == "ok") then {_cGood} else {if (_networkStatus == "pending") then {_cWarn} else {_cBad}};
+_network pushBack (["Network", _networkStatus, _networkColor, "Server", _serverBuild, _networkColor] call _pair);
+
 private _missing = missionNamespace getVariable ["ACME_compatMissing", []];
 if !(_missing isEqualType []) then {_missing = [];};
 _network pushBack (["Issues", count _missing, if (_missing isEqualTo []) then {_cGood} else {_cBad}, "Checked", if (missionNamespace getVariable ["ACME_compatChecked", false]) then {"yes"} else {"no"}, if (missionNamespace getVariable ["ACME_compatChecked", false]) then {_cGood} else {_cWarn}] call _pair);
@@ -363,11 +401,11 @@ private _tempC = if (_temp < 32 || {_temp >= 40}) then {_cBad} else {if (_temp <
 _left pushBack (["VITALS"] call _sect);
 _left pushBack (["HR", _hr, _hrC, "BP", format ["%1/%2", _sys, _dia], _bpC] call _pair);
 _left pushBack (["MAP", _map, _mapC, "RR", _rr, _rrC] call _pair);
-_left pushBack (["SpO2", format ["%1%%", _spo2], _spC, "EtCO2", if (_etco2 < 0) then {"n/a"} else {round _etco2}, if (_etco2 < 0) then {_cMute} else {if (_etco2 < 20 || {_etco2 > 55}) then {_cWarn} else {_cGood}}] call _pair);
-_left pushBack (["Temp", format ["%1 C", _temp toFixed 1], _tempC, "Pain", format ["%1%%", round (_pain * 100)], if (_pain > 0.8) then {_cBad} else {if (_pain > 0.4) then {_cWarn} else {_cGood}}] call _pair);
+_left pushBack (["CO", format ["%1 L/min", _coLMin toFixed 1], if (_coLMin <= 0.01) then {_cBad} else {if (_coLMin < 3) then {_cWarn} else {_cGood}}, "EtCO2", if (_etco2 < 0) then {"n/a"} else {round _etco2}, if (_etco2 < 0) then {_cMute} else {if (_etco2 < 20 || {_etco2 > 55}) then {_cWarn} else {_cGood}}] call _pair);
+_left pushBack (["Temp", format ["%1 C", _temp toFixed 1], _tempC, "SpO2", format ["%1%2", _spo2, "%"], _spC] call _pair);
 private _stateTxt = if (!alive _patient) then {"DEAD"} else {if (_arrest) then {"ARREST"} else {if (_uncon) then {"UNCON"} else {if (_crit) then {"CRITICAL"} else {"awake"}}}};
 private _stateCol = if (!alive _patient || {_arrest}) then {_cCrit} else {if (_uncon || {_crit}) then {_cWarn} else {_cGood}};
-_left pushBack (["State", _stateTxt, _stateCol, "CO", format ["%1 L/min", _coLMin toFixed 1], if (_coLMin <= 0.01) then {_cBad} else {if (_coLMin < 3) then {_cWarn} else {_cGood}}] call _pair);
+_left pushBack (["State", _stateTxt, _stateCol, "Pain", format ["%1%2", round (_pain * 100), "%"], if (_pain > 0.8) then {_cBad} else {if (_pain > 0.4) then {_cWarn} else {_cGood}}] call _pair);
 
 // Perfusion / hemorrhage.
 private _normalBlood = missionNamespace getVariable ["ACME_hypo_bloodNormal", 6];
@@ -390,17 +428,17 @@ private _calcium = _patient getVariable ["ACM_circulation_Calcium_Count", 0];
 private _bvCol = if (_circ < 3.6) then {_cBad} else {if (_circ < 4.4) then {_cWarn} else {_cGood}};
 private _bleedCol = if (_bleedMlMin >= 500) then {_cBad} else {if (_bleedMlMin >= 100) then {_cWarn} else {_cGood}};
 _left pushBack (["PERFUSION / BLEEDING"] call _sect);
-_left pushBack (["Circ", format ["%1L", _circ toFixed 2], _bvCol, "Eff", format ["%1L", _eff toFixed 2], if (_eff < 3.6) then {_cBad} else {if (_eff < 4.4) then {_cWarn} else {_cGood}}] call _pair);
+_left pushBack (["CircVol", format ["%1L", _circ toFixed 2], _bvCol, "EffVol", format ["%1L", _eff toFixed 2], if (_eff < 3.6) then {_cBad} else {if (_eff < 4.4) then {_cWarn} else {_cGood}}] call _pair);
 _left pushBack (["Blood", format ["%1L", _blood toFixed 2], _cLabel, "Plasma", format ["%1L", _plasma toFixed 2], _cLabel] call _pair);
-_left pushBack (["Cryst", format ["%1L", _cryst toFixed 2], _cLabel, "Over", format ["%1L", _over toFixed 2], if (_over > 0.5) then {_cWarn} else {_cMute}] call _pair);
+_left pushBack (["Cryst", format ["%1L", _cryst toFixed 2], _cLabel, "ExcsVol", format ["%1L", _over toFixed 2], if (_over > 0.5) then {_cWarn} else {_cMute}] call _pair);
 _left pushBack (["Ext", format ["%1 mL/min", round _bleedMlMin], _bleedCol, "Junc", format ["%1 mL/min", round _jBleed], if (_jBleed > 0) then {_cBad} else {_cGood}] call _pair);
-_left pushBack (["Internal", format ["%1", round _intBleed], if (_intBleed > 0) then {_cBad} else {_cGood}, "Hemo", format ["%1", round _hemoBleed], if (_hemoBleed > 0) then {_cBad} else {_cGood}] call _pair);
+_left pushBack (["Internal", format ["%1", round _intBleed], if (_intBleed > 0) then {_cBad} else {_cGood}, "HTX", format ["%1", round _hemoBleed], if (_hemoBleed > 0) then {_cBad} else {_cGood}] call _pair);
 _left pushBack (["Cap", format ["%1", round _capBleed], if (_capBleed > 0) then {_cWarn} else {_cGood}, "SrcTot", format ["%1 mL/min", round _totalBleed], if (_totalBleed >= 500) then {_cBad} else {if (_totalBleed > 0) then {_cWarn} else {_cGood}}] call _pair);
-_left pushBack (["Vaso", _vaso toFixed 2, _cLabel, "Plate", _plate toFixed 2, if (_plate < 1.5) then {_cWarn} else {_cGood}] call _pair);
+_left pushBack (["VC", _vaso toFixed 2, _cLabel, "Platelets", _plate toFixed 2, if (_plate < 1.5) then {_cWarn} else {_cGood}] call _pair);
 private _pressor = _circState getOrDefault ["pressorSupport", 0];
 private _svr = _patient getVariable ["ace_medical_peripheralResistance", 100];
 _left pushBack (["Pressor", _pressor toFixed 2, if (_pressor > 0) then {_cGood} else {_cMute}, "SVR", round _svr, _cLabel] call _pair);
-_left pushBack (["Ca", _calcium toFixed 2, _cLabel, "Coag", (_circState getOrDefault ["coagMult", 1]) toFixed 2, _cLabel] call _pair);
+_left pushBack (["Calcium", _calcium toFixed 2, _cLabel, "Coag", (_circState getOrDefault ["coagMult", 1]) toFixed 2, _cLabel] call _pair);
 
 // Airway and chest.
 private _airReflex = _patient getVariable ["ACM_airway_AirwayReflex_State", true];
@@ -427,8 +465,8 @@ private _closedL = (_patient getVariable ["ACME_thora_closed_left", false]) || {
 private _closedR = (_patient getVariable ["ACME_thora_closed_right", false]) || {_sealedR && {_tractR == "sealed"} && {!_tubeR}};
 private _openL = _tractL == "finger" && {!_closedL};
 private _openR = _tractR == "finger" && {!_closedR};
-private _thoraL = if (_tubeL) then {"T"} else {if (_closedL) then {"C"} else {if (_openL) then {"O"} else {"-"}}};
-private _thoraR = if (_tubeR) then {"T"} else {if (_closedR) then {"C"} else {if (_openR) then {"O"} else {"-"}}};
+private _thoraL = if (_tubeL) then {"[TUBE]"} else {if (_closedL) then {"closed"} else {if (_openL) then {"open"} else {"none"}}};
+private _thoraR = if (_tubeR) then {"[TUBE]"} else {if (_closedR) then {"closed"} else {if (_openR) then {"open"} else {"none"}}};
 private _bvm = _patient getVariable ["ACM_breathing_isUsingBVM", false];
 private _vent = _patient getVariable ["ACME_vent_driving", false];
 // B125: classify the airway from ACM's actual patency result, not from a raw collapse latch. A mild collapse
@@ -454,9 +492,27 @@ _left pushBack (["Airway", _airwayTxt, _airwayCol, "Reflex", [_airReflex] call _
 private _adj = [];
 if (_opa != "") then {_adj pushBack "OPA";}; if (_npa != "") then {_adj pushBack "NPA";};
 _left pushBack (["Adjunct", if (_adj isEqualTo []) then {"none"} else {_adj joinString "+"}, if (_adj isEqualTo []) then {_cMute} else {_cGood}, "Obs", format ["C%1 V%2 B%3", _collapse, _vomit, _bloodObs], _obsCol] call _pair);
-_left pushBack (["PTX", _ptx, if (_ptx > 0) then {_cWarn} else {_cGood}, "TPTX", [_tptx] call _yn, [_tptx, true] call _ynCol] call _pair);
-_left pushBack (["Hemo", format ["%1 / %2L", _hemo, _hemoFluid toFixed 2], if (_hemo > 0 || {_hemoFluid > 0.3}) then {_cWarn} else {_cGood}, "Seal", [_seal] call _yn, if (_seal) then {_cGood} else {_cMute}] call _pair);
-_left pushBack (["Thora", format ["L:%1 R:%2", _thoraL, _thoraR], if (_tubeL || {_tubeR} || {_closedL} || {_closedR} || {_openL} || {_openR}) then {_cGood} else {_cMute}, "Support", format ["BVM:%1 V:%2", if (_bvm) then {"Y"} else {"-"}, if (_vent) then {"Y"} else {"-"}], if (_bvm || {_vent}) then {_cGood} else {_cMute}] call _pair);
+_left pushBack (["PTX", _ptx toFixed 3, if (_ptx > 0) then {_cWarn} else {_cGood}, "TPTX", [_tptx] call _yn, [_tptx, true] call _ynCol] call _pair);
+_left pushBack (["HTX", format ["%1 / %2L", _hemo, _hemoFluid toFixed 2], if (_hemo > 0 || {_hemoFluid > 0.3}) then {_cWarn} else {_cGood}, "Seal", [_seal] call _yn, if (_seal) then {_cGood} else {_cMute}] call _pair);
+_left pushBack (["FThor Left", _thoraL, if (_tubeL) then {_cTube} else {if (_closedL || {_openL}) then {_cGood} else {_cMute}}, "FThor Right", _thoraR, if (_tubeR) then {_cTube} else {if (_closedR || {_openR}) then {_cGood} else {_cMute}}] call _pair);
+_left pushBack (["BVM", [_bvm] call _yn, if (_bvm) then {_cGood} else {_cMute}, "Ventilator", [_vent] call _yn, if (_vent) then {_cGood} else {_cMute}] call _pair);
+
+// Metabolic/coagulation summary.
+private _acid = _circState getOrDefault ["totalAcidosis", _circState getOrDefault ["acidosis", 0]];
+private _paCO2 = _circState getOrDefault ["paCO2", 40];
+private _coag = _circState getOrDefault ["coagMult", 1];
+private _shock = _circState getOrDefault ["shockSeverity", 0];
+_left pushBack (["METABOLIC"] call _sect);
+_left pushBack (["Acid", _acid toFixed 2, if (_acid >= 0.65) then {_cBad} else {if (_acid >= 0.30) then {_cWarn} else {_cGood}}, "PaCO2", _paCO2 toFixed 0, if (_paCO2 > 70) then {_cBad} else {if (_paCO2 > 50) then {_cWarn} else {_cGood}}] call _pair);
+_left pushBack (["Coag", _coag toFixed 2, if (_coag > 1.5) then {_cBad} else {if (_coag > 1.1) then {_cWarn} else {_cGood}}, "Shock", _shock toFixed 2, if (_shock > 0.6) then {_cBad} else {if (_shock > 0.2) then {_cWarn} else {_cGood}}] call _pair);
+private _cbrnExp = _patient getVariable ["ACM_cbrn_Exposed_State", false];
+private _cbrnCont = _patient getVariable ["ACM_cbrn_Contaminated_State", false];
+private _cbrnAir = _patient getVariable ["ACM_cbrn_AirwayInflammation", 0];
+private _cbrnLung = _patient getVariable ["ACM_cbrn_LungTissueDamage", 0];
+if (_cbrnExp || {_cbrnCont} || {_cbrnAir > 0} || {_cbrnLung > 0}) then {
+    _left pushBack (["CBRN", format ["E:%1 C:%2", if (_cbrnExp) then {"Y"} else {"-"}, if (_cbrnCont) then {"Y"} else {"-"}], _cWarn, "Air/Lung", format ["%1/%2", _cbrnAir toFixed 1, _cbrnLung toFixed 1], _cWarn] call _pair);
+};
+
 
 // Neuro/TBI explains consciousness and ICP-related arrest on the same overlay.
 private _tbi = _patient getVariable ["ACME_tbi_State", createHashMap];
@@ -471,11 +527,11 @@ private _hern = _tbi getOrDefault ["herniating", false];
 private _cush = _tbi getOrDefault ["cushing", false];
 private _obt = _patient getVariable ["ACME_obtunded", false];
 _left pushBack (["NEURO / TBI"] call _sect);
-_left pushBack (["Acute", _tbiSev toFixed 2, if (_tbiSev >= 0.65) then {_cBad} else {if (_tbiSev >= 0.30) then {_cWarn} else {_cGood}}, "Struct", _tbiStruct toFixed 2, if (_tbiStruct >= 0.80) then {_cBad} else {if (_tbiStruct >= 0.60) then {_cWarn} else {_cLabel}}] call _pair);
+_left pushBack (["Acute", _tbiSev toFixed 2, if (_tbiSev >= 0.65) then {_cBad} else {if (_tbiSev >= 0.30) then {_cWarn} else {_cGood}}, "Brain damage", _tbiStruct toFixed 2, if (_tbiStruct >= 0.80) then {_cBad} else {if (_tbiStruct >= 0.60) then {_cWarn} else {_cLabel}}] call _pair);
 _left pushBack (["ICP", round _icp, if (_icp >= 30) then {_cBad} else {if (_icp > 20) then {_cWarn} else {_cGood}}, "CPP", round _cpp, if (_cpp < 50) then {_cBad} else {if (_cpp < 70) then {_cWarn} else {_cGood}}] call _pair);
 _left pushBack (["Autoreg", _tbiAutoreg toFixed 2, if (_tbiAutoreg < 0.40) then {_cBad} else {if (_tbiAutoreg < 0.70) then {_cWarn} else {_cGood}}, "Auto", format ["%1 / %2", _tbiAutoInt toFixed 2, _tbiTone toFixed 2], if (_tbiTone < -0.35) then {_cBad} else {if (abs _tbiTone > 0.55) then {_cWarn} else {_cLabel}}] call _pair);
-_left pushBack (["Hern", [_hern] call _yn, [_hern, true] call _ynCol, "Cushing", [_cush] call _yn, [_cush, true] call _ynCol] call _pair);
-_left pushBack (["Obtund", [_obt] call _yn, if (_obt) then {_cWarn} else {_cMute}, "PerfOK", [(_tbi getOrDefault ["perfusionOK", true])] call _yn, if (_tbi getOrDefault ["perfusionOK", true]) then {_cGood} else {_cWarn}] call _pair);
+_left pushBack (["Herniation", [_hern] call _yn, [_hern, true] call _ynCol, "Cushing", [_cush] call _yn, [_cush, true] call _ynCol] call _pair);
+_left pushBack (["Obtunded", [_obt] call _yn, if (_obt) then {_cWarn} else {_cMute}, "PerfOK", [(_tbi getOrDefault ["perfusionOK", true])] call _yn, if (_tbi getOrDefault ["perfusionOK", true]) then {_cGood} else {_cWarn}] call _pair);
 
 // Resuscitation / rhythm.
 private _nativeRh = _patient getVariable ["ACM_circulation_Cardiac_RhythmState", 0];
@@ -517,17 +573,78 @@ private _fractN = {_x > 0} count _fract;
 private _splintN = {_x > 0} count _splints;
 _right pushBack (["HPMK", if (_hpmk == "") then {"none"} else {_hpmk}, if (_hpmk in ["wrapped","exposed"]) then {_cGood} else {_cMute}, "Fr/Spl", format ["%1/%2", _fractN, _splintN], if (_fractN > _splintN) then {_cWarn} else {if (_fractN > 0) then {_cGood} else {_cMute}}] call _pair);
 
-// Sedation and paralysis. Keep one compact block even when empty so a screenshot proves the state was checked.
+// B213: discover the installed medication catalog once, so optional/added drugs have permanent zero-valued slots too.
+// Route variants share one drug row; the displayed total is onset/washout-aware reference-dose equivalents,
+// not inventory, injected milligrams, sedation equivalence or an undegraded administration count.
+private _medicationFamily = {
+    params ["_class"];
+    private _name = _class;
+    {
+        private _at = (count _name) - (count _x);
+        if (_at > 0 && {(_name select [_at]) == _x}) exitWith {_name = _name select [0, _at];};
+    } forEach ["_IV_L", "_IV", "_IM", "_BUC", "_PO", "_IN", "_L"];
+    if (_name == "EpinephrineCardiac") then {_name = "Epinephrine";};
+    _name
+};
+private _medicationGroups = missionNamespace getVariable ["ACME_debugMedicationGroups", []];
+if (_medicationGroups isEqualTo []) then {
+    private _names = ("true" configClasses (configFile >> "ACM_Medication" >> "Medications")) apply {configName _x};
+    _names = _names select {(_x select [0,4]) != "ACM_"};
+    _names sort true;
+    {
+        private _class = _x;
+        private _family = [_class] call _medicationFamily;
+        private _index = _medicationGroups findIf {(_x select 0) == _family};
+        if (_index < 0) then {
+            _medicationGroups pushBack [_family, [_class]];
+        } else {
+            ((_medicationGroups select _index) select 1) pushBackUnique _class;
+        };
+    } forEach _names;
+    missionNamespace setVariable ["ACME_debugMedicationGroups", _medicationGroups];
+};
+private _medicationRows = [];
+private _medicationLabel = {
+    params ["_name"];
+    // Preserve acronyms (TXA/HTS) while separating CamelCase words, including optional future medications.
+    private _chars = toArray _name;
+    private _label = "";
+    {
+        private _previous = if (_forEachIndex > 0) then {_chars select (_forEachIndex - 1)} else {0};
+        private _next = _chars param [_forEachIndex + 1, 0];
+        private _upper = _x >= 65 && {_x <= 90};
+        private _previousLower = (_previous >= 97 && {_previous <= 122}) || {_previous >= 48 && {_previous <= 57}};
+        private _acronymEnd = _previous >= 65 && {_previous <= 90} && {_next >= 97} && {_next <= 122};
+        if (_forEachIndex > 0 && {_upper} && {_previousLower || {_acronymEnd}}) then {_label = _label + " ";};
+        _label = _label + (if (_x == 95) then {" "} else {toString [_x]});
+    } forEach _chars;
+    _label
+};
+{
+    _x params ["_family", "_classes"];
+    private _effect = 0;
+    {
+        private _value = [_patient, _x, false] call ACME_fnc_medicationCountCompat;
+        if (_value isEqualType 0 && {finite _value}) then {_effect = _effect + (_value max 0);};
+    } forEach _classes;
+    _medicationRows pushBack [[_family] call _medicationLabel, _effect toFixed 2, if (_effect > 0) then {_cGood} else {_cMute}];
+} forEach _medicationGroups;
+_right pushBack (["MEDICATIONS"] call _sect);
+_right pushBack format ["  <t color='%1'>Effective reference-dose equivalents</t>", _cMute];
+{
+    // An odd catalog leaves a real single-field final row. Passing it to the
+    // six-argument pair builder read undefined _b/_bv/_bc and printed a ghost colon.
+    _right pushBack (if (count _x == 3) then {_x call _one} else {_x call _pair});
+} forEach ([_medicationRows] call ACME_fnc_debugMedicationColumns);
+
+// Nondrug sedation/awareness state is deliberately separated beneath the medication list.
 ([_patient] call ACME_fnc_sedationComponents) params ["_ket", "_prop", "_mid", "_fent", "_adjunct", "_sed"];
-private _roc = [_patient] call ACME_fnc_rocuroniumOnBoard;
 private _sedated = _patient getVariable ["ACME_ket_sedated", false];
 private _par = _patient getVariable ["ACME_roc_paralyzed", false];
 private _awakePar = _patient getVariable ["ACME_roc_awakeParalysis", false];
-_right pushBack (["SEDATION / PARALYSIS"] call _sect);
-_right pushBack (["Sed", _sed toFixed 2, if (_sed >= 1 || {_sedated}) then {_cGood} else {if (_sed > 0) then {_cWarn} else {_cMute}}, "Roc", _roc toFixed 2, if (_roc > 0.5) then {_cWarn} else {_cMute}] call _pair);
-_right pushBack (["Ket", _ket toFixed 2, _cLabel, "Prop", _prop toFixed 2, _cLabel] call _pair);
-_right pushBack (["Mid", _mid toFixed 2, _cLabel, "Fent", _fent toFixed 2, _cLabel] call _pair);
-_right pushBack (["Paral", [_par] call _yn, if (_par) then {_cWarn} else {_cMute}, "Aware", [_awakePar] call _yn, if (_awakePar) then {_cCrit} else {_cGood}] call _pair);
+_right pushBack (["SEDATION / AWARENESS"] call _sect);
+_right pushBack (["Sedation load", _sed toFixed 2, if (_sed >= 1 || {_sedated}) then {_cGood} else {if (_sed > 0) then {_cWarn} else {_cMute}}, "Sedated", [_sedated] call _yn, if (_sedated) then {_cGood} else {_cMute}] call _pair);
+_right pushBack (["Paralyzed", [_par] call _yn, if (_par) then {_cWarn} else {_cMute}, "Aware", [_awakePar] call _yn, if (_awakePar) then {_cCrit} else {_cGood}] call _pair);
 
 // Cerebral seizure state is independent of motor expression under neuromuscular blockade.
 private _szState = _patient getVariable ["ACME_lido_seizureState", ""];
@@ -537,81 +654,121 @@ private _szControlled = _patient getVariable ["ACME_seizure_suppressed", false];
 private _szMasked = _par && {_szState == "active"};
 private _szMotor = if (_szState != "active") then {"none"} else {if (_szMasked) then {"MASKED"} else {"VISIBLE"}};
 _right pushBack (["SEIZURE CONTROL"] call _sect);
-_right pushBack (["Seiz", if (_szState == "") then {"none"} else {_szState}, if (_szState == "active") then {_cCrit} else {if (_szState == "postictal") then {_cWarn} else {_cMute}}, "Motor", _szMotor, if (_szMasked) then {_cWarn} else {if (_szState == "active") then {_cCrit} else {_cMute}}] call _pair);
+_right pushBack (["Seizing", if (_szState == "") then {"none"} else {_szState}, if (_szState == "active") then {_cCrit} else {if (_szState == "postictal") then {_cWarn} else {_cMute}}, "Motor", _szMotor, if (_szMasked) then {_cWarn} else {if (_szState == "active") then {_cCrit} else {_cMute}}] call _pair);
 _right pushBack (["Drive", _szDrive toFixed 2, _cLabel, "Suppress", _szSupp toFixed 2, if (_szControlled) then {_cGood} else {if (_szSupp > 0) then {_cWarn} else {_cMute}}] call _pair);
 
-// Fluids / infusions: physical hung bags, with medication contents folded into the same line.
+// B215: one bullet per connected physical bag, with contents nested beneath it. This is read-only:
+// never allocate bag identities from a debug refresh or bind an unidentified bag to another bag's medication.
 private _medEntries = _patient getVariable ["ACME_infusion_BagMedications", []];
+if !(_medEntries isEqualType []) then {_medEntries = [];};
 private _ivMap = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
 private _fluidRows = [];
 private _bpShort = {
     params ["_bp"];
     switch (toLowerANSI _bp) do {
-        case "leftarm": {"LA"}; case "rightarm": {"RA"};
-        case "leftleg": {"LL"}; case "rightleg": {"RL"};
-        case "body": {"B"}; default {_bp};
+        case "leftarm": {"LUE"}; case "rightarm": {"RUE"};
+        case "leftleg": {"LLE"}; case "rightleg": {"RLE"};
+        case "body": {"Torso"}; case "head": {"Head"}; default {_bp};
     }
 };
 private _fluidShort = {
-    params ["_t"];
-    switch (toLowerANSI _t) do {
-        case "blood": {"Blood"}; case "freshblood": {"FreshB"}; case "plasma": {"Plasma"};
+    params ["_type"];
+    switch (toLowerANSI _type) do {
+        case "blood": {"Blood"}; case "freshblood": {"Fresh Blood"}; case "plasma": {"Plasma"};
         case "saline": {"NS"}; case "acme_saliney": {"NS-Y"}; case "plasmalyte": {"PL"};
-        case "hts": {"HTS"}; case "hypertonicsaline": {"HTS"}; case "mannitol": {"Mtol"};
-        case "fbtk": {"FBTK"}; case "acme_empty": {""}; case "acme_emptysaline": {""};
-        default {_t};
+        case "hts": {"HTS"}; case "hts3": {"HTS"}; case "hypertonicsaline": {"HTS"};
+        case "mannitol": {"Mannitol"}; case "fbtk": {"FBTK"};
+        case "acme_empty": {""}; case "acme_emptysaline": {""}; default {_type};
     }
 };
-{
-    private _bp = _x;
-    private _arrB = _y;
-    {
-        private _bag = _x;
-        private _type = _bag param [0, ""];
-        private _remain = _bag param [1, 0];
-        private _site = _bag param [3, -1];
-        private _isIV = _bag param [4, true];
-        private _uid = _bag param [8, ""];
-        if (_uid == "") then {_uid = [_patient, _bp, _forEachIndex] call ACME_fnc_bagIdentity;};
-        private _short = [_type] call _fluidShort;
-        if (_short != "" && {_remain > 0.01}) then {
-            private _meds = _medEntries select {(_x param [23, ""]) == _uid && {(_x param [14, 0]) > 0.0001}};
-            private _medNames = _meds apply {_x param [11, "?"]};
-            private _what = _short + (if (_medNames isEqualTo []) then {""} else {"+" + (_medNames joinString "+")});
-            private _where = format ["%1 %2%3", [_bp] call _bpShort, if (_isIV) then {"IV"} else {"IO"}, if (_site >= 0) then {str _site} else {""}];
-            private _rate = if (_meds isEqualTo []) then {-1} else {(_meds select 0) param [21, 0]};
-            _fluidRows pushBack [_what, _where, _remain, _rate];
+private _medicationShort = {
+    params ["_name"];
+    _name = [_name] call _medicationFamily;
+    switch (_name) do {
+        case "Epinephrine": {"Epi"}; case "Norepinephrine": {"Norepi"};
+        case "CalciumChloride": {"CaCl2"}; case "CalciumGluconate": {"Ca Gluc"};
+        case "Magnesium": {"MgSO4"}; case "HTS3": {"HTS 3%"};
+        default {[_name] call _medicationLabel};
+    }
+};
+private _matchingBagMeds = {
+    params ["_bag", "_bp", "_index", "_entries"];
+    private _uid = _bag param [8, "", [""]];
+    _entries select {
+        private _entry = _x;
+        private _matches = false;
+        if (_entry isEqualType [] && {count _entry >= 15}) then {
+            private _entryUid = _entry param [23, "", [""]];
+            if (_entryUid != "") then {
+                _matches = _uid != "" && {_uid == _entryUid};
+            } else {
+                // Legacy data is slot-exact AND metadata-exact, never nearest-volume/identity-only fallback.
+                _matches = (toLowerANSI (_entry param [1, ""])) == toLowerANSI _bp
+                    && {(_entry param [2, -1]) == _index}
+                    && {(_entry param [3, ""]) == (_bag param [0, ""])}
+                    && {(_entry param [4, -1]) == (_bag param [3, -1])}
+                    && {(_entry param [5, true]) isEqualTo (_bag param [4, true])}
+                    && {(_entry param [6, -1]) == (_bag param [5, -1])}
+                    && {(_entry param [7, 0]) == (_bag param [6, 0])}
+                    && {(_entry param [8, -1]) == (_bag param [7, -1])};
+            };
+            private _dose = _entry param [14, 0, [0]];
+            _matches = _matches && {_dose > 0.000001};
         };
-    } forEach _arrB;
-} forEach _ivMap;
+        _matches
+    }
+};
+private _fluidBagRows = {
+    params ["_bag", "_bp", "_index", "_entries"];
+    if !(_bag isEqualType [] && {count _bag >= 7}) exitWith {[]};
+    private _type = _bag param [0, "", [""]];
+    private _short = [_type] call _fluidShort;
+    private _remaining = _bag param [1, 0, [0]];
+    // FBTK is a receiving bag and remains connected while empty. Empty plumbing markers are never bags.
+    if (_short == "" || {_remaining <= 0.01 && {toLowerANSI _type != "fbtk"}}) exitWith {[]};
+    // Native field 6 is the initial mixture volume (including added medication solution), not remaining mL.
+    private _volume = _bag param [6, 0, [0]];
+    private _size = if (_volume > 0) then {format ["%1 mL", _volume toFixed 0]} else {"Unknown size"};
+    private _rows = [["bullet", format ["%1 %2", _size, _short], _cGood, 0]];
+    private _site = _bag param [3, -1, [0]];
+    private _isIV = _bag param [4, true, [true]];
+    private _where = format ["%1 %2%3", [_bp] call _bpShort, if (_isIV) then {"IV"} else {"IO"}, if (_site >= 0) then {str _site} else {""}];
+    private _volumeLabel = if (toLowerANSI _type == "fbtk") then {"collected"} else {"remaining"};
+    _rows pushBack ["bullet", format ["%1 | %2 mL %3", _where, (_remaining max 0) toFixed 0, _volumeLabel], _cLabel, 1];
+    private _bloodType = _bag param [5, -1, [0]];
+    if (toLowerANSI _type in ["blood", "freshblood", "fbtk"] && {_bloodType in [0,1,2,3,4,5,6,7]}) then {
+        _rows pushBack ["bullet", "Blood type: " + (["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"] select _bloodType), _cLabel, 1];
+    };
+    private _meds = [_bag, _bp, _index, _entries] call _matchingBagMeds;
+    if !(_meds isEqualTo []) then {
+        private _control = _meds select 0;
+        private _drops = (_control param [21, 0, [0]]) max 0;
+        private _dropSet = (_control param [20, 20, [0]]) max 1;
+        _rows pushBack ["bullet", format ["Clamp: %1 gtt/min (%2 gtt/mL)", _drops toFixed 0, _dropSet toFixed 0], if (_drops > 0) then {_cGood} else {_cWarn}, 1];
+        {
+            private _name = _x param [11, "?", [""]];
+            private _dose = _x param [14, 0, [0]];
+            _rows pushBack ["bullet", format ["%1: %2 remaining", [_name] call _medicationShort, [_name, _dose] call ACME_fnc_formatDose], _cLabel, 1];
+        } forEach _meds;
+    };
+    _rows
+};
+if (_ivMap isEqualType createHashMap) then {
+    private _parts = keys _ivMap;
+    _parts sort true;
+    {
+        private _bp = _x;
+        private _bags = _ivMap getOrDefault [_bp, []];
+        if (_bags isEqualType []) then {
+            {_fluidRows append ([_x, _bp, _forEachIndex, _medEntries] call _fluidBagRows);} forEach _bags;
+        };
+    } forEach _parts;
+};
 _right pushBack (["FLUIDS / INFUSIONS"] call _sect);
 if (_fluidRows isEqualTo []) then {
-    _right pushBack (["Bags", 0, _cGood, "Pressor", _pressor toFixed 2, if (_pressor > 0) then {_cGood} else {_cMute}] call _pair);
+    _right pushBack ["bullet", "No connected bags", _cMute, 0];
 } else {
-    // Every active bag retains the common readable font; the measured block grows with wrapped rows.
-    for "_i" from 0 to ((count _fluidRows) - 1) do {
-        (_fluidRows select _i) params ["_what", "_where", "_rem", "_rate"];
-        private _tail = if (_rate >= 0) then {format ["%1mL/%2g", _rem toFixed 0, round _rate]} else {format ["%1mL", _rem toFixed 0]};
-        _right pushBack format ["<t color='%1'>%2@%3</t> <t color='%4'>%5</t>", _cLabel, [_what] call _safe, [_where] call _safe, if (_rate == 0) then {_cWarn} else {_cGood}, _tail];
-    };
+    _right append _fluidRows;
 };
-
-// Metabolic/coagulation summary.
-private _acid = _circState getOrDefault ["totalAcidosis", _circState getOrDefault ["acidosis", 0]];
-private _paCO2 = _circState getOrDefault ["paCO2", 40];
-private _coag = _circState getOrDefault ["coagMult", 1];
-private _shock = _circState getOrDefault ["shockSeverity", 0];
-_right pushBack (["METABOLIC"] call _sect);
-_right pushBack (["Acid", _acid toFixed 2, if (_acid >= 0.65) then {_cBad} else {if (_acid >= 0.30) then {_cWarn} else {_cGood}}, "PaCO2", _paCO2 toFixed 0, if (_paCO2 > 70) then {_cBad} else {if (_paCO2 > 50) then {_cWarn} else {_cGood}}] call _pair);
-_right pushBack (["Coag", _coag toFixed 2, if (_coag > 1.5) then {_cBad} else {if (_coag > 1.1) then {_cWarn} else {_cGood}}, "Shock", _shock toFixed 2, if (_shock > 0.6) then {_cBad} else {if (_shock > 0.2) then {_cWarn} else {_cGood}}] call _pair);
-private _cbrnExp = _patient getVariable ["ACM_cbrn_Exposed_State", false];
-private _cbrnCont = _patient getVariable ["ACM_cbrn_Contaminated_State", false];
-private _cbrnAir = _patient getVariable ["ACM_cbrn_AirwayInflammation", 0];
-private _cbrnLung = _patient getVariable ["ACM_cbrn_LungTissueDamage", 0];
-if (_cbrnExp || {_cbrnCont} || {_cbrnAir > 0} || {_cbrnLung > 0}) then {
-    _right pushBack (["CBRN", format ["E:%1 C:%2", if (_cbrnExp) then {"Y"} else {"-"}, if (_cbrnCont) then {"Y"} else {"-"}], _cWarn, "Air/Lung", format ["%1/%2", _cbrnAir toFixed 1, _cbrnLung toFixed 1], _cWarn] call _pair);
-};
-
-
 
 call _renderAll;

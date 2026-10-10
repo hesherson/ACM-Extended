@@ -58,7 +58,12 @@ if (_dys > 0.35) then {
 // it is set to invasive and connected, and there is no tube in the airway. the machine is ventilating the open
 // air.
 if (((_simple || {_iface == "INVASIVE"}) && {!_securedAirway})
-    || {_simple && {!(_patient getVariable ["ACME_vent_circuit", false])}}) then {
+    || {_simple && {!(_patient getVariable ["ACME_vent_circuit", false])}}
+    || {(_patient getVariable ["ACME_vent_nivMask", false]) && {
+        !([_patient] call ACME_fnc_ventNivEligible) || {_mode != "CPAP PS HF"}
+        || {!(_iface in ["NON-INVASIVE", "NON INVASIVE"])}
+        || {!(_patient getVariable ["ACME_vent_circuit", false])}
+    }}) then {
     _alarms pushBack "CIRCUIT DISCONNECT";
 };
 

@@ -8,6 +8,9 @@ from test_menu_death_lifecycle import ROOT, adapt, execute
 
 
 def setup():
+    setter=(ROOT/'addons/core/functions/fnc_setContinuousActionState.sqf').read_text()
+    # Namespace stand-ins have no network-public flag; retain every state write.
+    setter=adapt(setter).replace('_value, _public]', '_value]')
     text = (ROOT / 'addons/acm_extended/functions/fn_stethoscopeClose.sqf').read_text()
     for old, new in [
         ('local _medic', '_medicLocal'),
@@ -18,12 +21,14 @@ def setup():
         text = text.replace(old, new)
     return r"""
         private _display = missionNamespace;
+        _patient setVariable ["ACME_chestAccess_vestLoadout",["V_Test",[]]];
         private _medicLocal = true; private _medicParent = objNull;
         private _speed = 0; private _lower = []; private _stops = [];
         private _restore = []; private _vestEvents = []; private _released = [];
         private _providerCancels = []; private _patientCancels = [];
         CBA_fnc_removePerFrameHandler = {_removed pushBack (_this select 0);};
         ACME_fnc_treatmentPoseStop = {_stops pushBack _this;};
+        ACME_fnc_stethoscopePressureRelease = {};
         ACME_fnc_headElevMedicSeq = {_lower pushBack _this;};
         ACME_fnc_chestAccessVestRestore = {_restore pushBack _this;};
         ACME_fnc_chestAccessVestEvent = {_vestEvents pushBack _this;};
@@ -45,7 +50,8 @@ def setup():
         ACM_core_ContinuousAction_Active = true;
         ACM_core_ContinuousAction_IsDialog = true;
         uiNamespace setVariable ["ACM_breathing_Stethoscope_DLG", _display];
-    """ + 'private _close = {' + adapt(text) + '};\n'
+    """ + 'ACM_core_fnc_setContinuousActionState={' + setter + '};\n' + \
+        'private _close = {' + adapt(text) + '};\n'
 
 
 @pytest.mark.parametrize('current', [10, 11, 0])
@@ -90,9 +96,9 @@ def test_ordinary_exit_and_active_flip_keep_supine_and_carrier_handoffs(flip, ca
         _medic setVariable ["ACME_treatmentPoseEpoch", {6 if flip else 5}];
     ''' + ('''
         _medic setVariable ["ACME_chestAccess_treatment", [_patient, "usestethoscope", "carrier:one"]];
-    ''' if carrier else '') + '''
+''' if carrier else '_patient setVariable ["ACME_chestAccess_vestLoadout",[]];') + f'''
         [_display] call _close;
-        [count _lower == 1 && {(_lower select 0) isEqualTo [_medic,"lower"]}, "authored exit lost"] call _check;
+        [count _lower == {int(carrier)}, "incorrect temporary-carrier reach"] call _check;
         [!ACM_core_ContinuousAction_Active, "scope reservation survived"] call _check;
     ''' + f'''
         [count _patientCancels == {int(flip)}, "wrong physical flip cancellation"] call _check;
@@ -100,7 +106,7 @@ def test_ordinary_exit_and_active_flip_keep_supine_and_carrier_handoffs(flip, ca
         [count _vestEvents == {int(carrier)} && {{count _restore == {int(not carrier)}}}, "carrier handoff changed"] call _check;
     ''' + ('''
         [(_patientCancels select 0) isEqualTo [_patient,"front"], "cancel no longer requests anterior up"] call _check;
-    ''' if flip else '''
-        [(_stops select 0) isEqualTo [_medic,"stethoscope",5,true], "pose handoff changed"] call _check;
+''' if flip else f'''
+        [(_stops select 0) isEqualTo [_medic,"stethoscope",5,{str(carrier).lower()}], "pose handoff changed"] call _check;
         [_speed == 1, "frozen provider not released"] call _check;
     '''))

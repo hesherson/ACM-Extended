@@ -5,12 +5,12 @@ if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {
 private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (isNull _vTgt) then { _vTgt = ACE_player; };
 private _selIdx = uiNamespace getVariable ["ACME_vent_selIdx", 0];
 // Recheck at the mutation boundary, including a setting toggle between frames.
-if (missionNamespace getVariable ["ACME_vent_simpleMode", false] && {_selIdx != 0}) exitWith {
+if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])}) && {_selIdx != 0}) exitWith {
     uiNamespace setVariable ["ACME_vent_editing", false];
 };
 switch (_selIdx) do {
     case 0: {  // BPM
-        private _current = if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) then {
+        private _current = if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])})) then {
             ([_vTgt] call ACME_fnc_ventEffectiveSettings) select 2
         } else {uiNamespace getVariable ["ACME_vent_bpm", 12]};
         private _v = _current + _dir;

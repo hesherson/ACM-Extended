@@ -1,5 +1,218 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B272 (vented thoracostomy seals / PTX resolution)
+
+- Chest seals over completed finger thoracostomies now retain a bounded vented outlet and can be applied while the internal leak is still healing. They protect the selected surgical tract without declaring unrelated penetrating wounds covered.
+- A functioning covered finger can earn the same controlled recovery interval as an open finger or chest tube. Seal placement, burping, peeling and repeat finger sweeps preserve injury identity and earned recovery; continuing leaks can still overwhelm an obstructed or insufficient outlet.
+- Once the leak settles, all communicating wounds are covered and pressure is controlled, remaining air and its residual floor gradually clear. The new residual-air clearance setting defaults to 600 seconds per normalized air unit; open finger and tube drainage accelerate clearance.
+- Historical covered-finger records are interpreted as vented dressings. Ordinary wound sealing no longer silently closes a surgical incision; actual surgical closure keeps its owner readiness gate.
+- Owner-authoritative inventory receipts, seal request retries, clinical epochs and pressure-scaled retained-blood drainage remain intact. No continuous blood drainage is added to finger dressings.
+- Stable version remains **1.2.4.1**, network protocol **1**. B272 is a draft development candidate pending automated and native multiplayer acceptance.
+
+## 1.2.4.1 — B264 (manual carrier / modded gear integrity)
+
+- Manual **Remove Plate Carrier** now initiates the original patient-owner Grab/Hold/Remove/Release transaction without waiting for a separate medic4/provider animation acknowledgement, which could consume the entire eight-second deadline under a slow or heavily modded server.
+- Successful removal commits through a single idempotent lease-checked patient-owner worker. A locality-transfer owner can finish the same verified removal; old callbacks cannot duplicate medical activity or replace a later episode.
+- The removal timeout now has a 20-second bounded failure path, retaining identity across owner handoffs. An unsuccessful removal explicitly reports failure instead of falsely logging `Plate carrier automatically returned (remove-timeout)` when the vest never left the patient. Failed real returns preserve custody records for retry.
+- Hang Bag removes only the temporary primary/launcher weapons via `removeWeapon` and restores the original classes, attachments and partially loaded magazines via `addWeapon`/`addWeaponItem` without `setUnitLoadout`. Restoration validates each saved slot and retains unmatched records if a third-party weapon mod refuses them.
+- The pre-B218 legacy carrier-restoration fallback now re-equips only the saved vest and its contents, never rebuilding the casualty's full uniform/loadout. Live carrier inventory/supply custody remains authoritative and unchanged.
+- Reviewed unmerged equipment compatibility submissions PRs #42 and #43; integrated an audited variant of their no-full-loadout-reset approach. Unrelated unmerged medical-item mass/weight PRs are **not** implicitly applied.
+- Added B264 regression coverage and dedicated-server acceptance checks for mixed player/AI ownership, the provider-queue timeout, exact ammo and magazine restoration, live vest contents, and uniform hidden selections (boots, gloves, camouflage, sleeves). Public version remains **1.2.4.1**; B264 is a candidate pending strict CI, HEMTT and live multiplayer acceptance.
+
+## 1.2.4.1 — B263 (multiplayer modal procedure resilience)
+
+- Chest Seal and Thoracostomy now retire BOTH ACE's native medical-menu PFH and ACME's generation-bound independent renderer **before** closing the old menu, preventing the stale ACE closeDialog call from destroying their new panel.
+- Chest-seal patient-owner enrollment retries only missing identical idempotent tokens, up to four times; a 30-second hard deadline or unexpected owner change yields full token-scoped cleanup and a visible retry reason. No clinical chest edits or supply debits are replayed.
+- Patient-owner closure retains a bounded short-lived session tombstone so an out-of-order delayed Begin cannot resurrect a cancelled workspace and re-remove carrier gear. Deleted casualties are guarded before membership lookups.
+- Thoracostomy pre-open abort, timeout and failed panel creation now use the complete close path; late callbacks are lease-scoped and stale panel onUnload is display-identity guarded. Heavy modpack preparation is given up to 20 seconds before clean abort.
+- Cached/legacy ACM `ApplyChestSeal` and `PerformThoracostomy` requests normalize to ACME's canonical permission/supply-checked launchers, and the obsolete AI presenter no longer tries to animate these modal-only actions.
+- Modal eligibility, context and distance refusals produce a diagnostic; runtime compatibility check detects replacement of the ACE treatment bridge by another addon. This does not forcibly overwrite other mods.
+- Added B263 regression coverage and a multiplayer modpack acceptance matrix. Stable public version stays **1.2.4.1**; B263 remains a **candidate** until strict CI, HEMTT and dedicated multiplayer acceptance pass.
+
+## 1.2.4.1 — B262 (NRB kit oxygen / empty-cylinder compatibility)
+
+- Non-rebreather oxygen-source selection now accepts an ACM oxygen tank packed inside an Enhanced First Aid Kits (EFAK) kit, as long as EFAK's actual draw-charge API is loaded. The usual medic/patient donor order remains authoritative.
+- Loose cylinders with zero reserve no longer block an otherwise available EFAK cylinder (or cause the native reserve debit to select an empty magazine ahead of a charged magazine).
+- Added executable donor-selection regressions and reserve/source contract checks. This includes no-EFAK behavior, depleted tanks, a medic's kit vs a patient's cylinder, and correct donor-bound debit.
+- Ported the compatibility approach reported in community PR #32 without merging that PR into main. Public version remains 1.2.4.1, B262 candidate pending CI and dedicated-server/EFAK verification.
+
+## 1.2.4.1 — B261 (transfusion UI refresh / CI parity)
+
+- Restored the historical B34 ventilation-test identifier without discarding the revised advanced-ventilation assertions; fixes B260's sole known strict regression-parity blocker (an accidentally renamed test).
+- Transfuse Fluids: the Adjust Infusion button now receives its own reserved row below the ordinary fluid list, so the action control cannot overlap live bag rows.
+- Active medicated-bag labels now show the authoritative remaining mL of the physical hung bag, rather than an out-of-date infusion-entry amount.
+- Infusion-list rebuild identity excludes the changing volume suffix; remaining mL and tooltip update in place while retaining the selected row and avoiding list flicker.
+- Added executable geometry/signature regressions, live-volume source contracts, and a focused multiplayer verification checklist.
+- Public version remains 1.2.4.1. B261 is a candidate until strict CI, HEMTT and dedicated-server acceptance pass.
+
+
+## 1.2.4.1 — B260 (B259 regression stabilization)
+
+- Preserved exact measured push-dose epinephrine selector/debit semantics for extended-duration specialty syringes, rather than migrating them to the generic slow-push worker. Long normal calcium/other vascular pushes retain B259's incremental, acknowledged delivery; IM and short/default pushes remain unchanged.
+- When unsupported high-rate SIMV ventilation overlaps actual chest compressions, propagate its reduced gas-exchange fraction into the current respiratory-acidosis deficit calculation as well as PaCO2 clearance.
+- Updated the historical ventilation test from the retired Simple-only policy to require both Simple and advanced machine-owned ventilation to use their measured delivery, while hand BVM retains its fallback.
+- Fixed the B259 executed batch-cadence test harness for SQF-VM's unimplemented HashMap getOrDefault primitive without weakening the one-second normal / five-second Hardcore expectations.
+- Fixed a legacy HPMK inventory test's string-actor mock for B258's physical patient CPR gate. Native module ownership and dedicated-server acceptance remain required.
+- Public version stays 1.2.4.1; B260 is a candidate until CI and multiplayer acceptance pass.
+
+
+## 1.2.4.1 — B259 (live slow pushes / high-rate SIMV)
+
+- Normal-mode vascular syringe pushes with a selected duration longer than three seconds now use the existing provider-owned incremental/acknowledged plunger transaction, shared with Hardcore but with its own 1-second physiological batch cadence. Partial dosing enters circulation during the push, retains exact syringe inventory mass, supports Stop Push, and validates provider/line locality on every tick. Default/short 1–3-second actions and IM use their previous normal choreography.
+- High-rate SIMV now discounts useful alveolar gas exchange when expiratory time is too short for the modeled lung emptying time. Measured exhaled minute-volume remains separate from effective alveolar ventilation.
+- During CPR with a connected advanced ventilator, the acid-base model no longer substitutes a 75% hand-bagging floor for poor actual machine ventilation. Non-CPR modes at extreme rates lose additional effective gas transport due to compression/ventilator interference; IMV VC (CPR) is not penalized this way.
+- Retained oxygen-carrying blood and metabolic acidosis are unchanged by these corrections: ventilator settings alone must not directly restore circulation or neurologic consciousness.
+- Repaired B258 historical HPMK mocks with native CPR-provider reads, and corrected native circulation test paths in B257 regression coverage. New executed and structural B259 regressions added.
+- Public version stays 1.2.4.1. B259 is a dedicated-server candidate pending full CI and multiplayer physiology testing.
+
+
+## 1.2.4.1 — B258 (community-reported clinical bugs)
+
+- Pleural suction now requires an actual in-situ chest tube at both menu admission and the patient-owner fluid mutation. Explicit Extended left/right tube state overrides stale native ACM aggregates, while genuine legacy native-only tubes remain supported.
+- Pulling the last chest tube synchronizes ACM's aggregate thoracostomy state, retires the removed side's definitive pleural outlet, and rechecks residual PTX and ongoing leak. Removing one of two tubes preserves the other.
+- Needle decompression retains a higher residual PTX floor than an open finger-thoracostomy or functioning tube, including when a traumatic wound is chest-sealed.
+- A removed carrier's temporary model and cargo are retired when the patient is deleted, but not simply on death.
+- HPMK preparation/wrapping is refused during any active or paused CPR reservation, with inventory refund on a rejected preparation callback.
+- An awake patient with an ETT or bloody/vomitus-obstructed airway can use Check Airway; an awake obstructed patient can access suction.
+- Pupil examination displays a temporary arrest-related nonreactive finding even without permanent TBI.
+- A new, configurable native-blood compartment threshold prevents ROSC based solely on plasma/crystalloid preload immediately after severe exsanguination; deeper extended-time red-cell accounting still requires multiplayer physiology validation.
+- Added nine regression checks for these field reports. The separately reported transfusion-menu bar overlap/animation requires a reproducible screenshot and UI-specific repair; bag list and volume sync are already present in source and should not be replaced speculatively.
+- Public version remains 1.2.4.1. B258 is a candidate pending CI and dedicated-server testing.
+
+
+## 1.2.4.1 — B257 (final planned code audit)
+
+- Fixed B256's SQF-VM handoff-distance fixture (the game uses a real object distance; the VM uses a controlled scalar). The actual BVM → CPR admission/range logic is unchanged.
+- The CPR AnimDone event now verifies its live provider locality and recorded generation before reasserting compressions; a stale callback retires only its matching handler rather than overwriting another owner's animation.
+- The provider Local event immediately retires its own machine-local CPR AnimDone handler on both ownership edges, closing the gap before the CPR controller's next frame.
+- Added regression tests for valid/invalid CPR AnimDone re-entry and the owner Local retirement contract.
+- Added a 13-case dedicated-server multiplayer acceptance matrix. B257 remains a 1.2.4.1 release candidate until full CI and live multiplayer sign-off.
+
+
+## 1.2.4.1 — B256
+
+- CPR now binds its local per-frame episode to the provider-locality generation. A rapid away/back transfer cancels the old session without starting new compressions or a BVM swap.
+- BVM → CPR's 0.1-second delayed transition now checks the captured locality generation as well as the continuous-action epoch, preventing stale CPR launches following owner transfers.
+- B255 cleanup was moved to run after shared native patient-owner worker retirement, keeping locality event preflight and existing B209/B249/PTX contracts intact.
+- Corrected the B255 SQF-VM fixture extraction comment header and added six handoff/ownership tests.
+- Public version remains 1.2.4.1, candidate build B256.
+
+
+## 1.2.4.1 — B255
+
+- On both provider-locality edges, retire the exact Direct Pressure claim and cancel any pending ACK token, including rapid away/back changes that prevent the original worker from running.
+- Departing machines dispose of their own pressure input/PFH handles. The incoming owner retires inherited provider pressure state without clearing a replacement token.
+- Patient-owner invalid claim cleanup immediately clears matching torso/limb markers and recalculates external limb blood loss.
+- Normal stops and dedicated-server disconnect/death cleanup now replicate the body-part reset, preventing stale site labels.
+- Added SQF-VM/source regression coverage. Public version remains 1.2.4.1, candidate build B255.
+
+
+## 1.2.4.1 — B254
+
+- BVM provider tracking now remembers the owning machine and detects ownership migration with a server-side 1 Hz worker over **tracked BVM sessions only**. Old session tokens are released atomically; paused BVM still has no heartbeat expiry.
+- The same worker retires finished/cancelled session records after the existing 3-second out-of-order network grace so abandoned registry entries no longer accumulate.
+- Added execution regressions for owner transfer, replacement-session safety, normal retirement and non-expiring paused BVM.
+- Fixed the SQF-VM-only B253 regression failure by adapting the unsupported finite check for the numeric timer fixture.
+- Public version remains 1.2.4.1; B254 / NA8-B254-1.2.4.1-candidate.
+
+
+## 1.2.4.1 — B253
+
+- Reconciler now compares a recorded continuous-action worker's original provider-locality generation with the current provider generation. A stopped worker can therefore release stale BVM/head-tilt/other continuous reservations after a rapid away/back transfer without waiting for its six-second heartbeat expiry (existing one-second invalid-state debounce retained).
+- Legacy continuous controllers with no locality-generation field retain their heartbeat recovery fallback.
+- Repaired the B72 historical stance regression contract to recognize B251's new locality parameter rather than demanding retired callback signatures. New SQF-VM checks cover new, healthy and legacy controller ownership.
+- Public version remains 1.2.4.1, B253 candidate.
+
+
+## 1.2.4.1 — B252
+
+- Continuous-treatment workers now bind to the provider's locality generation. Rapid away/back transfers cancel stale controllers and release their clinical reservation and global action gate instead of letting old PFHs continue.
+- Delayed crouch-entry animations and deferred animation-speed resets verify the original provider locality generation, so old callbacks cannot overwrite the returning/new owner's pose.
+- Repaired B250 SQF-VM test incompatibility with the unimplemented finite primitive; added collision-restoration assertions and five B252 regression checks.
+- Public version remains 1.2.4.1; B252 / NA8-B252-1.2.4.1-candidate.
+
+
+## 1.2.4.1 — B251
+
+- Delayed treatment-pose exits now capture and verify the provider's locality generation. The 0.12 s crouch correction, subsequent timed stance release, and both 0.35 s / 4.25 s handoff callbacks cannot change a provider after an away/back locality transition, even when the old treatment-pose epoch is unchanged.
+- Active, matching-owner callbacks retain their existing movement timing and cleanup behavior.
+- Added executed SQF-VM regression coverage for stale and valid callbacks. Public version stays 1.2.4.1; runtime marker B251 / NA8-B251-1.2.4.1-candidate.
+
+
+## 1.2.4.1 — B250
+
+- Expired patient-animation leases now use the token-checked owner-authoritative release helper instead of directly deleting only the lock. This restores animation speed and collision state when the patient owner reconciles a missed expiry.
+- Orphan speed tokens from malformed legacy leases are released only when no newer animation lease exists; natural expiry remains non-retiring.
+- Added SQF-VM and source regressions for expired, active, and malformed lease cleanup. Public version remains 1.2.4.1; candidate build B250.
+
+
+
+## 1.2.4.1 — B249
+
+- Explicitly release the patient breathing-sound per-frame handler on both locality-transition edges, preventing stale machine-local handles after dedicated-server/HC ownership changes.
+- Preserve the clinical breath-pattern state; only the local worker handle is retired and may be recreated by the new owner.
+- Added audio-locality regression coverage; release candidate B249, public version 1.2.4.1.
+
+
+## 1.2.4.1 — B248
+
+- Disabling Cheyne–Stokes now releases its active respiratory-rate drive on the owning machine instead of leaving an obsolete override pinned.
+- Cheyne–Stokes breath audio stops when the feature is disabled, while patient enrollment is preserved for later re-enable.
+- Added toggle lifecycle tests; version remains 1.2.4.1, B248 candidate.
+
+
+## 1.2.4.1 — B247
+
+- Cheyne–Stokes: unchanged rounded respiration rates no longer invoke the network publication helper at 10 Hz; actual RR changes still publish immediately.
+- Delayed post-ROSC Biot gasp audio now verifies patient locality, preventing a departed owner from emitting an extra sound after migration.
+- Added regression contracts. Public version stays 1.2.4.1, runtime build B247 (release candidate).
+
+
+
+## 1.2.4.1 — B246
+
+Updated 7 October 2026.
+
+- Consolidated circulation, coagulation, medicated-infusion, preoxygenation, aspiration, shock, and rhythm-threshold missed-transition discovery into one 1 Hz owner-registry pass. The hot 4-5 Hz clinical workers no longer rescan every server-owned unit.
+- Preserved the previous circulation fallback's one-second worst-case discovery latency while removing the duplicate 1 s / 2 s / 2 s broad scans.
+- Fixed medicated-infusion lifecycle retirement: after the final tracked bag disappears or completes, the owner publishes the final empty structured state and removes the patient from the 4 Hz infusion registry, preventing an indefinite post-treatment 1 Hz state heartbeat.
+- Gated chest-seal server maintenance when there are no live sessions and no pending edit outcomes, removing its otherwise permanent one-second `allPlayers` scan on healthy idle servers.
+- Added regression coverage that keeps healthy owned units out of every consolidated active registry, preserves direct treatment enrollments until their first worker tick, and rejects reintroduction of independent owner scans.
+- Public version remains 1.2.4.1; runtime marker is B246 / NA8-B246-1.2.4.1-candidate.
+
+## 1.2.4.1 — B243
+
+- IV component click capture widened to 1.8% while preserving the 5.2% attraction field and 0.4% hard-seat.
+- Field IV second-catheter placement keeps both 14g and 16g selections and supports direct gauge switching.
+- Extension/line geometry seats 20 authored pixels deeper into the catheter hub with aligned downstream targets.
+- Historical import-time regression modules are being converted to named current-behavior checks so collection can complete.
+- Public version remains 1.2.4.1; runtime marker is B243 / NA8-B243-1.2.4.1-candidate.
+
+
+## 1.2.4.1 — B207
+
+Updated 30 September 2026.
+
+- Direct Pressure and Hang Bag now share bounded owner-side claim validation and cancellation history. Duplicate replies, cancelled requests arriving late, reordered renewals and old releases cannot reapply or replace a newer action.
+- Direct Pressure acceptance expires with its owner-granted reservation. Patient-side marker and clot updates carry the exact claim token so delayed work cannot overwrite or credit a replacement hold.
+- Fixed Hang Bag episode collisions during rapid restart and long mission uptime. Renewal sequence numbers prevent replayed requests from extending a lease or reapplying flow.
+- Continuous-action recovery tracks the actual provider and generation and runs the original cancellation worker. A second local medic cannot replace a live controller; failed startup and interrupted callbacks release the matching session once.
+- Direct Pressure's medical-menu bridge reports queued requests correctly. Its accepted-claim path owns the one-shot treatment sound, removing the remaining global sound broadcast from the core override.
+- Manual plate-carrier checks use an active patient registry with a 30-second recovery scan. Ventilator alarm discovery runs twice per second while retaining the existing 20 Hz beep scheduler and checking nearby vehicle occupants.
+- Added per-PBO build/protocol stamps and bounded server/client/headless-client verification. Mixed or unverified installations produce diagnostics without kicking players or disabling treatment.
+- Added opt-in, bounded local network diagnostics and a dedicated-server validation runbook. Strengthened CI to reject new failures, new skips, missing tests and incomplete runs while reporting the historical failing baseline separately.
+- Public version remains 1.2.4.1; runtime marker is B207 / NA7-B207-1.2.4.1-stable. Live dedicated-server validation remains required before broad rollout.
+
+## 1.2.4.1 — B206
+
+Updated 30 September 2026.
+
+- Fixed Direct Pressure failing to start on dedicated servers: provider requests now carry the originating client's ID, and acknowledgements target the provider object. Pending reservations remain protected on player and headless-client casualty owners.
+- Fixed the same client ownership mismatch in Hang Bag claims and seizure gesture validation.
+- Fixed HPMK preparation/removal callbacks interpreting ACE treatment arguments as internal transaction flags.
+- Fixed facility and evacuation modules parsing numeric position coordinates as strings.
+- Includes the B205 network snapshot, infusion queue, procedural handoff and cleanup fixes. Public version remains 1.2.4.1; runtime marker is B206 / NA6-B206-1.2.4.1-stable.
+
 ## 1.2.4
 
 Updated 27 September 2026.

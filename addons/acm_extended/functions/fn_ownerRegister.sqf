@@ -10,7 +10,15 @@ _owned pushBackUnique _patient;
 missionNamespace setVariable ["ACME_clinical_ownedUnits", _owned];
 _patient setVariable ["ACME_ownerRegisterSeen", owner _patient, false];
 
+[_patient] call ACME_fnc_aiProtectionSync;
 [_patient] call ACME_fnc_transientStateReconcile;
+private _rhythmRegistry = missionNamespace getVariable ["ACME_rhythm_activePatients", []];
+if ((_patient getVariable ["ACME_rhythm_active", 0]) >= 100) then {
+    _rhythmRegistry pushBackUnique _patient;
+} else {
+    _rhythmRegistry = _rhythmRegistry - [_patient];
+};
+missionNamespace setVariable ["ACME_rhythm_activePatients", _rhythmRegistry];
 
 // Migrate old bilateral inguinal AAJT saves exactly once. The physical AAJT-S has one wedge, so an old
 // ACME_AAJT_legs=[leftleg,rightleg] state must become one deterministic side instead of silently retaining
@@ -32,6 +40,9 @@ if (!alive _patient) exitWith {
     [_patient] call ACME_fnc_deadPhysiologyFreeze;
     if (_headState) then {[_patient] call ACME_fnc_headElevDeathRelease;};
 };
+// Populate idle-capable physiology registries from this exact owner event.
+// The periodic full scan is only a missed-event fallback.
+[[_patient]] call ACME_fnc_idlePhysDiscovery;
 // Rebuild coagulation immediately on treatment enrollment and ownership recovery.
 [[_patient]] call ACME_fnc_coagulationTick;
 
@@ -90,6 +101,7 @@ private _circNeeds = (_circState getOrDefault ["shockActive", false])
     || {(_circState getOrDefault ["ionizedCa", 1.15]) < 0.999}
     || {(_circState getOrDefault ["temp", 37]) < 35.99}
     || {(_circState getOrDefault ["salineAcidosis", 0]) > 0.001}
+    || {(_patient getVariable ["ACME_circ_salineGivenMl", 0]) > 0}
     || {(_circState getOrDefault ["totalAcidosis", 0]) > 0.001}
     || {(_circState getOrDefault ["paCO2", 40]) > 40.1}
     || {(_circState getOrDefault ["respiratoryAcidosisDeficit", 0]) > 0.001}

@@ -16,7 +16,7 @@
 // Format: [key, label, category, exact fallback names, visibility code, color].
 // Group visibility is anatomy-only presentation. It prevents a stale cached dropdown from surviving a body-part
 // change (including death transitions) without touching any treatment row, condition, statement or callback.
-// Head: Airway, Breathing, Capnography. Body: Chest, Positioning. Medication route groups were already head-only.
+// Head and Body: Airway and Breathing. Capnography and medication routes remain head-only.
 ACME_menuGroups = [
     // airway
     ["adjuncts", "Airway", "airway", [
@@ -25,22 +25,18 @@ ACME_menuGroups = [
         "Insert OPA", "Insert NPA", "Insert i-gel",
         "Remove OPA", "Remove NPA", "Remove i-gel",
         "Intubate (Orotracheal)", "Remove Endotracheal Tube",
-        "Establish Surgical Airway", "Stitch Airway Incision"
-    ], {ace_medical_gui_selectedBodyPart == 0}, [0.53, 0.53, 0.95, 1]],
+        "Establish Surgical Airway", "Stitch Airway Incision",
+        "Establish Recovery Position", "Cancel Recovery Position"
+    ], {ace_medical_gui_selectedBodyPart in [0, 1]}, [0.53, 0.53, 0.95, 1]],
     ["ventilation", "Breathing", "airway", [
-        "Check Breathing",
+        "Check Breathing", "Measure Respirations",
         "Use BVM", "Use BVM with Oxygen", "Use BVM with Oxygen (Vehicle)", "Use BVM with Oxygen (Portable)",
-        "Apply Non-Rebreather Mask", "Remove Non-Rebreather Mask"
-    ], {ace_medical_gui_selectedBodyPart == 0}, [0.19, 0.65, 0.57, 1]],
-    ["chest", "Chest", "airway", [
+        "Apply Non-Rebreather Mask", "Remove Non-Rebreather Mask",
         "Apply Chest Seal", "Perform Needle-Chest-Decompression", "Perform NCD (NAR SPEAR)",
         "Perform Thoracostomy", "Perform Thoracostomy (Kit)", "Adjust Thoracostomy", "Insert Chest Tube",
         "Drain Fluid (ACCUVAC)", "Drain Fluid (Suction Bag)", "Re-Seal Chest Tube",
         "Close Thoracostomy Incision", "Close Incision (Suture)", "Suture Chest Tube"
-    ], {ace_medical_gui_selectedBodyPart == 1}, [0.58, 0.24, 0.92, 1]],
-    ["position", "Positioning", "airway", [
-        "Establish Recovery Position", "Cancel Recovery Position"
-    ], {ace_medical_gui_selectedBodyPart == 1}, [0.60, 0.88, 0.64, 1]],
+    ], {ace_medical_gui_selectedBodyPart in [0, 1]}, [0.19, 0.65, 0.57, 1]],
     ["capno", "Capnography", "airway", [
         "Attach EMMA to My BVM", "Remove EMMA from My BVM",
         "Attach EMMA to their i-gel", "Remove EMMA from their i-gel",

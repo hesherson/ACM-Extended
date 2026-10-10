@@ -10,17 +10,50 @@ params [
 if (isNull _patient || {_id == ""}) exitWith {};
 if (!local _patient) exitWith {[_patient, "chestAccessVestEvent", _this] call ACME_fnc_ownerDispatch;};
 
+// New BVM sessions never remove a carrier, even through a stale class registry.
+if (_start && {toLowerANSI _classname in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]}) exitWith {};
 private _leases = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
+// A stop can overtake its initial start. Remember the exact canceled ID even
+// when it has not enrolled yet; later retries must not reacquire gear or ACK.
+if (!_start) then {[_patient, [_id]] call ACME_fnc_chestAccessLeaseRetire;};
+private _closed = _patient getVariable ["ACME_chestAccess_closedLeases", []];
+if (_start && {(_closed findIf {(_x param [0, ""]) == _id
+    && {(_x param [1, 0]) > serverTime}}) >= 0}) exitWith {};
+if (!_start && {!(_id in keys _leases)}) exitWith {};
+private _requestOwner = [clientOwner, _patient getVariable ["ACME_providerLocalityEpoch", 0],
+    _patient getVariable ["ACME_equipmentKitEpoch", 0]];
+private _sameRequestOwner = (_patient getVariable ["ACME_chestAccess_requestOwner", []]) isEqualTo _requestOwner;
+// Active same-owner retries/handoffs share their already accepted preparation
+// and ready timestamp. A fresh invocation on a new owner may resume work with
+// new authority after the old machine's pending callbacks have been retired.
+if (_start && {_id in keys _leases} && {_sameRequestOwner}
+    && {(_patient getVariable ["ACME_chestAccess_requestToken", ""]) != ""}) exitWith {};
 if (_start) then {
+    // B268: concurrent ACCESS leases share preparation. Only the first lease
+    // accepts a new episode; cancelling its last member retires every pending
+    // bare-chest/no-animation/front-normalization callback from that episode.
+    if ((count _leases) == 0 || {!_sameRequestOwner}
+        || {(_patient getVariable ["ACME_chestAccess_requestToken", ""]) == ""}) then {
+        private _serial = 1 + (_patient getVariable ["ACME_chestAccess_requestSerial", 0]);
+        _patient setVariable ["ACME_chestAccess_requestSerial", _serial, false];
+        _patient setVariable ["ACME_chestAccess_requestToken",
+            format ["access:%1:%2:%3:%4", clientOwner, netId _patient, _serial, _id], true];
+        _patient setVariable ["ACME_chestAccess_requestOwner", _requestOwner, true];
+    };
     _leases set [_id, [_medic, CBA_missionTime, toLowerANSI _classname]];
     _patient setVariable ["ACME_chestAccess_readyLease", _id, true];
     _patient setVariable ["ACME_chestAccess_readyServer", -1, true];
 } else {
     _leases deleteAt _id;
+    if ((count _leases) > 0
+        && {(_patient getVariable ["ACME_chestAccess_readyLease", ""]) == _id}) then {
+        _patient setVariable ["ACME_chestAccess_readyLease", (keys _leases) select 0, true];
+    };
 };
 _patient setVariable ["ACME_chestAccess_leases", _leases, true];
 if (!_start && {(count _leases) == 0}) then {
     _patient setVariable ["ACME_chestAccess_readyLease", "", true];
+    _patient setVariable ["ACME_chestAccess_requestToken", "", true];
 };
 
 // Thoracostomy is a long minigame rather than one treatment timer. Publish a procedure flag from the live lease
@@ -33,8 +66,14 @@ private _thoraActive = false;
 _patient setVariable ["ACME_Thora_ChestAccessActive", _thoraActive, true];
 
 if (_start) then {
+    // The existing Local handler increments this epoch on both ownership edges
+    // for every CAManBase, including patients. A rapid away/back transfer must
+    // not revive work captured during this machine's previous ownership.
+    private _authority = [_patient getVariable ["ACME_equipmentKitEpoch", 0],
+        _patient getVariable ["ACME_providerLocalityEpoch", 0],
+        _patient getVariable ["ACME_chestAccess_requestToken", ""], ""];
     private _busyBefore = _patient getVariable ["ACME_chestAccess_vestBusy", ""];
-    [_patient, _medic, "access", false, _classname, _preparationToken] call ACME_fnc_chestAccessVestAcquire;
+    [_patient, _medic, "access", false, _classname, _preparationToken, _authority] call ACME_fnc_chestAccessVestAcquire;
 
     // A new intervention outranks a carrier-return animation, but do not tear the patient's current RTM/physics
     // out from underneath it. Queue the same exact lease immediately behind the short restore. The lease-id check
@@ -47,11 +86,11 @@ if (_start) then {
                 || {!(_id in keys (_p getVariable ["ACME_chestAccess_leases", createHashMap]))}
                 || {(_p getVariable ["ACME_chestAccess_vestBusy", ""]) == ""}
         }, {
-            params ["_p","_id","_m","_class","_preparationToken"];
+            params ["_p","_id","_m","_class","_preparationToken","_authority"];
             if (isNull _p || {!local _p}) exitWith {};
             if !(_id in keys (_p getVariable ["ACME_chestAccess_leases", createHashMap])) exitWith {};
-            [_p, _m, "access", false, _class, _preparationToken] call ACME_fnc_chestAccessVestAcquire;
-        }, [_patient,_id,_medic,_classname,_preparationToken], 2.5] call CBA_fnc_waitUntilAndExecute;
+            [_p, _m, "access", false, _class, _preparationToken, _authority] call ACME_fnc_chestAccessVestAcquire;
+        }, [_patient,_id,_medic,_classname,_preparationToken,_authority], 2.5] call CBA_fnc_waitUntilAndExecute;
     };
 } else {
     if ((count _leases) == 0) then {

@@ -21,6 +21,17 @@ if (_patient getVariable ["ACME_headElevated", false]) exitWith {
 // Revalidate on the patient owner after the treatment timer/network hop, before moving gear or posing.
 // This also protects automatic transport restoration if the patient got up in the meantime.
 if !([_patient, _medic] call ACME_fnc_headElevateCanStart) exitWith {};
+// A prone-roll continuation can arrive after the initiating medic became unavailable. Supported placement still
+// requires that provider to finish it; only automatic transport restoration legitimately has no provider.
+if (!_auto && {!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}
+    || {([_medic, _patient] call ACME_fnc_patientInteractionDistance)
+        > (missionNamespace getVariable ["ace_medical_gui_maxDistance", 3])}}) exitWith {};
+
+// A placement may still be normalizing from prone before headElevated/poseToken exist. A separate local
+// generation lets a newer accepted start or explicit lower retire those pending callbacks, including a full
+// start/stop cycle that returns poseToken to its original empty value. Owner loss is checked before every retry.
+private _startEpoch = (_patient getVariable ["ACME_headElev_startEpoch", 0]) + 1;
+_patient setVariable ["ACME_headElev_startEpoch", _startEpoch, false];
 
 // Normalize front/supine before ANY Semi-Fowler animation. The retry flag prevents a second roll request after
 // the authored patient roll finishes. Already-supine casualties take no detour.
@@ -33,6 +44,14 @@ if (_needFrontFirst) exitWith {
     // than sleeping for a nominal animation duration: the next Semi-Fowler frame begins as soon as the casualty roll
     // actually retires, with no dead-air delay and no race against a late roll callback.
     private _startPoseToken = _patient getVariable ["ACME_headElev_poseToken", ""];
+    private _retryStart = {
+        params ["_m","_p","_body","_auto","_afterRoll","_startPoseToken","_startEpoch"];
+        if (isNull _p || {!local _p} || {!alive _p}
+            || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}
+            || {(_p getVariable ["ACME_headElev_startEpoch", 0]) != _startEpoch}
+            || {(_p getVariable ["ACME_CS_rollToken", ""]) != ""}) exitWith {};
+        [_m,_p,_body,_auto,_afterRoll] call ACME_fnc_headElevateStart;
+    };
 
     if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {
         if (!isNull _medic && {!(_medic isEqualTo _patient)} && {alive _medic}) then {
@@ -43,31 +62,34 @@ if (_needFrontFirst) exitWith {
         private _rollToken = _patient getVariable ["ACME_CS_rollToken", ""];
         if (_rollToken != "") then {
             [{
-                params ["_p","_rollToken","_startPoseToken"];
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto","_startEpoch"];
                 if (isNull _p || {!local _p} || {!alive _p}
-                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {true};
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}
+                    || {(_p getVariable ["ACME_headElev_startEpoch", 0]) != _startEpoch}) exitWith {true};
                 (_p getVariable ["ACME_CS_rollToken", ""]) != _rollToken
             }, {
-                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto","_startEpoch"];
                 if (isNull _p || {!local _p} || {!alive _p}
-                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}
+                    || {(_p getVariable ["ACME_headElev_startEpoch", 0]) != _startEpoch}) exitWith {};
                 // A different non-empty token means another/newer roll superseded this normalization. Do not let the
                 // old Semi-Fowler continuation steal that patient's animation generation.
                 if ((_p getVariable ["ACME_CS_rollToken", ""]) != "") exitWith {};
                 // Re-enter through the normal owner-side eligibility gate. The completed roll itself owns the
                 // physical side; this continuation must not write patient state before canStart revalidates.
                 [_m,_p,_body,_auto,true] call ACME_fnc_headElevateStart;
-            }, [_patient,_rollToken,_startPoseToken,_medic,_bodyPart,_auto], 4.5, {
-                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto"];
+            }, [_patient,_rollToken,_startPoseToken,_medic,_bodyPart,_auto,_startEpoch,_retryStart], 4.5, {
+                params ["_p","_rollToken","_startPoseToken","_m","_body","_auto","_startEpoch","_retryStart"];
                 if (isNull _p || {!local _p} || {!alive _p}
-                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}) exitWith {};
+                    || {(_p getVariable ["ACME_headElev_poseToken", ""]) != _startPoseToken}
+                    || {(_p getVariable ["ACME_headElev_startEpoch", 0]) != _startEpoch}) exitWith {};
                 private _currentRoll = _p getVariable ["ACME_CS_rollToken", ""];
                 if (_currentRoll != "" && {_currentRoll != _rollToken}) exitWith {};
                 // Fail closed to the stable supine side. Only the exact wedged roll this start created may be
                 // cancelled; a newer roll generation is never touched.
                 [_p,"front"] call ACME_fnc_patientRollCancel;
                 _p setVariable ["ACME_CS_facing","front",true];
-                [{_this call ACME_fnc_headElevateStart;}, [_m,_p,_body,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+                [_retryStart, [_m,_p,_body,_auto,true,_startPoseToken,_startEpoch], 0.05] call CBA_fnc_waitAndExecute;
             }] call CBA_fnc_waitUntilAndExecute;
         } else {
             // Roll request was denied by an older patient-animation lease. Stabilize to face-up and retry on the
@@ -75,13 +97,13 @@ if (_needFrontFirst) exitWith {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
             _patient setVariable ["ACME_CS_facing","front",true];
             ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
-            [{_this call ACME_fnc_headElevateStart;}, [_medic,_patient,_bodyPart,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+            [_retryStart, [_medic,_patient,_bodyPart,_auto,true,_startPoseToken,_startEpoch], 0.05] call CBA_fnc_waitAndExecute;
         };
     } else {
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
         _patient setVariable ["ACME_CS_facing","front",true];
         ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
-        [{_this call ACME_fnc_headElevateStart;}, [_medic,_patient,_bodyPart,_auto,true], 0.05] call CBA_fnc_waitAndExecute;
+        [_retryStart, [_medic,_patient,_bodyPart,_auto,true,_startPoseToken,_startEpoch], 0.05] call CBA_fnc_waitAndExecute;
     };
 };
 
@@ -145,16 +167,24 @@ _patient setVariable ["ACME_headElev_hold", [[], [_medic, _poseToken, CBA_missio
 if (!_manual && {!_hasBag} && {!_manualCarrierSupport} && {!([_patient] call ACME_fnc_animBlocked)}) then {
     private _vestEntry = (getUnitLoadout _patient) param [4, [], [[]]];
     if (count _vestEntry == 2) then {
+        private _cargo = [_patient, "ACME_headElev_vestLoadout"] call ACME_fnc_carrierInventoryCreate;
+        if (isNull _cargo) exitWith {};
         _patient setVariable ["ACME_headElev_vestLoadout", _vestEntry, true];
         _patient setVariable ["ACME_headElev_vestRemoved", true, true];
         _patient setVariable ["ACME_headElev_propVest", _vestClass, true];
         _patient setVariable ["ACME_headElev_propVestItems", vestItems _patient, true];
         removeVest _patient;
         if (vest _patient != "") then {
+            // Removal failed: the original worn inventory remains authoritative.
+            _patient setVariable ["ACME_carrierCargo", objNull, true];
+            _patient setVariable ["ACME_headElev_vestLoadoutLive", false, true];
+            deleteVehicle _cargo;
             _patient setVariable ["ACME_headElev_vestRemoved", false, true];
             _patient setVariable ["ACME_headElev_vestLoadout", [], true];
             _patient setVariable ["ACME_headElev_propVest", "", true];
             _patient setVariable ["ACME_headElev_propVestItems", [], true];
+        } else {
+            ["ACME_carrierInventoryCapacity", [_patient, _cargo]] call CBA_fnc_serverEvent;
         };
     };
 

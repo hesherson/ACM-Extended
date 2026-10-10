@@ -12,12 +12,13 @@ private _budget = [100000];
 private _reason = "";
 private _required = createHashMapFromArray [
     ["ACME_ptx_state","ARRAY"], ["ACME_ptx_tensionSeverity","SCALAR"],
+    ["ACME_ptx_observationRevision","SCALAR"],
     ["ACME_ptx_nativeSealCount","SCALAR"],
     ["ACME_ptx_nativeSealHoleCount","SCALAR"],
     ["ACME_pendingFlush","ARRAY"],
     ["ACME_do2_dilution","ARRAY"], ["ACME_piCuffs","HASHMAP"],
     ["ACME_circ_State","HASHMAP"], ["ACME_tbi_State","HASHMAP"],
-    ["ACME_yFlushJobs","HASHMAP"], ["ACME_bagMoves","HASHMAP"],
+    ["ACME_yFlushJobs","HASHMAP"], ["ACME_lineWarmers","HASHMAP"], ["ACME_YLinePrimed","HASHMAP"], ["ACME_bagMoves","HASHMAP"],
     ["ACME_infusion_BagMedications","ARRAY"], ["ACME_detachedBags","ARRAY"],
     ["ACME_IV_SiteState","ARRAY"], ["ACME_CS_holeData","ARRAY"],
     ["ACME_nrb_medic","OBJECT"], ["ACME_vent_operator","OBJECT"],
@@ -63,6 +64,9 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
         case "ACME_ptx_tensionSeverity": {
             _bad = !([_v] call _number) || {_v < 0 || {_v > 1}};
         };
+        case "ACME_ptx_observationRevision": {
+            _bad = !([_v] call _number) || {!(_v in [0, 1])};
+        };
         case "ACME_ptx_nativeSealCount";
         case "ACME_ptx_nativeSealHoleCount": {
             _bad = !([_v] call _number) || {_v < -1 || {floor _v != _v}};
@@ -89,10 +93,14 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
             _bad = count _v != 3 || {(_v findIf {!([_x] call _number)}) >= 0};
             if (!_bad) then {_bad = (_v select 0) < 0 || {(_v select 1) < 0} || {(_v select 0) > (_v select 1)};};
         };
+        case "ACME_lineWarmers";
+        case "ACME_YLinePrimed": {
+            _bad = ((keys _v) findIf {!(_x isEqualType "") || {!((_v get _x) isEqualType true)}}) >= 0;
+        };
         case "ACME_piCuffs": {
             _bad = ((keys _v) findIf {
                 private _c = _v get _x;
-                !(_x isEqualType "" && {_c isEqualType []} && {count _c == 2}
+                !(_x isEqualType "" && {_c isEqualType []} && {count _c in [2,3]} && {count _c == 2 || {(_c select 2) in ["server", "cba"]}}
                     && {[_c select 0] call _number} && {[_c select 1] call _number}
                     && {(_c select 1) >= 0} && {(_c select 1) <= 1})
             }) >= 0;
@@ -117,7 +125,13 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
                 !(_job isEqualType [] && {count _job >= 9} && {(_job select 0) isEqualType ""}
                     && {(_job select 1) isEqualType true} && {(_job select 3) isEqualType ""}
                     && {(_job select 7) isEqualType objNull}
-                    && {([2,4,5,6,8] findIf {!([_job select _x] call _number)}) < 0})
+                    && {([2,4,5,6,8] findIf {!([_job select _x] call _number)}) < 0}
+                    && {count _job == 9 || {count _job in [13,14]
+                        && {(_job select 9) isEqualType []} && {count (_job select 9) <= 100}
+                        && {((_job select 9) findIf {!([_x] call _number) || {_x <= 0} || {_x > 50}}) < 0}
+                        && {(_job select 10) in ["prime", "flush"]}
+                        && {([11,12] findIf {!([_job select _x] call _number) || {(_job select _x) < 0}}) < 0}
+                        && {[_job,_x] call ACME_fnc_yServiceJobValid}}})
             }) >= 0;
         };
         case "ACME_bagMoves": {

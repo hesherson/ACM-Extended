@@ -251,7 +251,7 @@ switch (_screen) do {
             ["INTERFACE",     _ifcShort,           count _ifcShort,            "", true ],
             ["WEIGHT",        str _wgt,                             3, "kg",   true ]
         ]};
-        if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) then {
+        if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])})) then {
             _rowsP = if (_pg == 0) then {[
                 ["O2 ENRICHMENT", "AUTO", 4, "", false],
                 ["I:E RATIO", "AUTO", 4, "", false],
@@ -300,7 +300,7 @@ switch (_screen) do {
         private _rrLo = _t getVariable ["ACME_vent_alertRRLow", 6];
         private _rrHi = _t getVariable ["ACME_vent_alertRRHigh", 25];
         private _pLim = _t getVariable ["ACME_vent_alertPLimit", 40];
-        private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+        private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
         private _pAlt = _t getVariable ["ACME_vent_alertPAlert", 40];
         private _inv  = _t getVariable ["ACME_vent_alertInvIE", true];
         private _ly = [0.150, 0.291, 0.432, 0.573, 0.714];

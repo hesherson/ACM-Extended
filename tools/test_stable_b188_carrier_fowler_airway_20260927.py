@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stable B188: manual plate carrier and Semi-Fowler share one physical custody/animation lifecycle."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +30,9 @@ def test_manual_carrier_eligibility_uses_unambiguous_hemtt_safe_alive_checks():
     s = read("addons/acm_extended/functions/fn_manualPlateCarrierCanToggle.sqf")
     assert 'if (!(alive _medic)) exitWith {false};' in s
     assert 'if (!([_medic] call ace_common_fnc_isAwake)) exitWith {false};' in s
-    assert 'if (!(alive _patient)) exitWith {false};' in s
+    # B208 permits corpse equipment access; only a living, awake patient blocks removal.
+    assert 'if (!(alive _patient)) exitWith {false};' not in s
+    assert 'private _awake = alive _patient && {' in s
     assert '!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}' not in s
 
 
@@ -77,8 +80,10 @@ def test_chest_access_watchdog_does_not_pull_borrowed_carrier_out_from_under_pat
 
 
 def test_manual_removal_of_elevated_patient_resumes_semi_fowler_when_done():
-    commit = read("addons/acm_extended/functions/fn_manualPlateCarrierCommit.sqf")
-    block = commit.split('_p setVariable ["ACME_manualPlateCarrierState", "off", true];', 1)[1]
+    # B264 extracted the actual once-per-lease commit to one owner worker, so
+    # the old callback and a newly migrated patient owner share this code.
+    complete = read("addons/acm_extended/functions/fn_manualPlateCarrierCompleteRemoval.sqf")
+    block = complete.split('_p setVariable ["ACME_manualPlateCarrierState", "off", true];', 1)[1]
 
     assert 'ACME_headElevated' in block
     assert 'ACME_headElev_Suspended' in block
@@ -139,8 +144,8 @@ def test_airway_removal_still_disconnects_ventilator():
 def test_build_identity_is_b188_stable():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4";' in cfg
-    assert 'ACME_buildBatch = "B190";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 

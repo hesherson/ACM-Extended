@@ -42,6 +42,7 @@ private _inVehicle = !(isNull (objectParent _unit));
 
         if (alive _unit && (animationState _unit != "AinjPfalMstpSnonWnonDf_carried_dead") && !(IS_UNCONSCIOUS(_unit))) then {
             _unit setVariable [QGVAR(Lying_State), false, true];
+            if (!isNil "ACME_fnc_aiProtectionSync") then {[_unit] call ACME_fnc_aiProtectionSync;};
         };
     };
 

@@ -92,7 +92,7 @@ if (_epoch < 0 || {_rollToken == ""}
 
 private _work = toLowerANSI (_pose param [2,""]);
 if ((_pose param [3,-2]) >= 1
-    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
+    && {_work == "ainvpknlmstpsnonwnondnon_medic4" || {(_pose param [20, false]) && {_work == "acm_pronecontinuous"}}}
     && {(toLowerANSI animationState _provider) == _work}) then {
     _args set [8,diag_tickTime];
     _args set [10,true];

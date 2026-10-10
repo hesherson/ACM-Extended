@@ -7,7 +7,7 @@ if (isNull _patient || {isNull _medic} || {!alive _medic}
     || {!(_amount isEqualType 0)} || {!finite _amount} || {_amount <= 0} || {_amount > 10}) exitWith {};
 if (_medic distance _patient > 5 && {isNull objectParent _medic || {objectParent _medic != objectParent _patient}}) exitWith {};
 private _session = (_patient getVariable ["ACME_suctionSessions", []]) select {(_x select 0) == _token && {(_x select 1) == _medic} && {(_x select 2) > CBA_missionTime}};
-if (_session isEqualTo [] || {!alive _patient} || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
+if (_session isEqualTo [] || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
 private _receipts = _patient getVariable ["ACME_laryngoEventReceipts", []];
 if (_id in _receipts) exitWith {};
 private _state = [_patient] call ACME_fnc_laryngoFluidState;
@@ -36,6 +36,14 @@ if (count _totals > 64) then {_totals deleteAt 0;};
 _patient setVariable ["ACME_suctionTotals", _totals, true];
 // Persist partial secretion debits in their compartment as well as the active
 // ledger, so a later native blood/vomit event cannot restore already-suctioned fluid.
+if (_removed > 0 && {_kind in ["b", "s"]}) then {
+    private _field = if (_kind == "b") then {"ACME_airwayBloodRefillAt"} else {"ACME_airwaySecretionRefillAt"};
+    _patient setVariable [_field, CBA_missionTime + 30, true];
+};
+// Blood has its own partial-volume ledger, even when vomit temporarily covers it.
+if (_kind == "b") then {
+    _patient setVariable ["ACME_laryngo_bloodRemaining", [_patient getVariable ["ACM_airway_AirwayObstructionBlood_State", 0], _remaining], true];
+};
 if (_kind == "s") then {
     private _secretions = _patient getVariable ["ACME_laryngo_secretions", []];
     _patient setVariable ["ACME_laryngo_secretions", [_secretions param [0, ""], _remaining], true];
@@ -45,7 +53,10 @@ if (_remaining <= 0) then {
         [_patient, [["vomit", 0], ["vomitGrace", CBA_missionTime]], true] call ACM_airway_fnc_setAirwayState;
         _patient setVariable ["ACME_laryngo_emesis", [], true];
     } else {
-        if (_kind == "b") then {[_patient, [["blood", 0]], true] call ACM_airway_fnc_setAirwayState;};
+        if (_kind == "b") then {
+            [_patient, [["blood", 0]], true] call ACM_airway_fnc_setAirwayState;
+            _patient setVariable ["ACME_laryngo_bloodRemaining", [], true];
+        };
         if (_kind == "s") then {_patient setVariable ["ACME_laryngo_secretions", [], true];};
     };
     [_patient, true] call ACM_airway_fnc_clearAirwayCheckedTime;

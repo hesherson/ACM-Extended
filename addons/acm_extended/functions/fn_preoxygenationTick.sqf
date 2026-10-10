@@ -6,9 +6,44 @@
  * while reserve remains, so preoxygenation before RSI has a real payoff and sick lungs/anemia/altitude burn through it.
  */
 private _now = CBA_missionTime;
+private _candidate = {
+    params ["_u"];
+    if (isNull _u || {!local _u} || {!alive _u}) exitWith {false};
+    private _reserve = (_u getVariable ["ACME_preox_reserve",0.30]) max 0 min 1;
+    private _rr = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate",16])];
+    private _support = alive (_u getVariable ["ACM_breathing_BVM_Medic",objNull])
+        || {_u getVariable ["ACME_vent_onPatient",false]}
+        || {_u getVariable ["ACME_nrb_on",false]};
+    private _physiology = (_rr <= 2)
+        || {_u getVariable ["ACE_isUnconscious",false]}
+        || {_u getVariable ["ace_medical_inCardiacArrest",false]}
+        || {(_u getVariable ["ace_medical_spo2",97]) < 94}
+        || {(_u getVariable ["ACME_blastLung_State",0]) > 0}
+        || {(_u getVariable ["ACME_aspiration_load",0]) > 0.001}
+        || {(_u getVariable ["ACME_alt_pRatio",1]) < 0.999};
+    abs (_reserve - 0.30) > 0.001 || {_support} || {_physiology}
+};
+private _patients = (missionNamespace getVariable ["ACME_preox_activePatients", []]) select {[_x] call _candidate};
 {
     private _u = _x;
     if (isNull _u || {!local _u} || {!alive _u}) then {continue};
+
+    // Healthy room-air units must be network-silent. Only enter the full model when
+    // reserve is displaced from baseline, oxygen/support is active, or physiology
+    // can actually spend/limit reserve. This keeps the 1 Hz discovery pass cheap.
+    private _reserveProbe = (_u getVariable ["ACME_preox_reserve", 0.30]) max 0 min 1;
+    private _rrProbe = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate", 16])];
+    private _supportProbe = alive (_u getVariable ["ACM_breathing_BVM_Medic", objNull])
+        || {_u getVariable ["ACME_vent_onPatient", false]}
+        || {_u getVariable ["ACME_nrb_on", false]};
+    private _physProbe = (_rrProbe <= 2)
+        || {_u getVariable ["ACE_isUnconscious", false]}
+        || {_u getVariable ["ace_medical_inCardiacArrest", false]}
+        || {(_u getVariable ["ace_medical_spo2", 97]) < 94}
+        || {(_u getVariable ["ACME_blastLung_State", 0]) > 0}
+        || {(_u getVariable ["ACME_aspiration_load", 0]) > 0.001}
+        || {(_u getVariable ["ACME_alt_pRatio", 1]) < 0.999};
+    if (abs (_reserveProbe - 0.30) <= 0.001 && {!_supportProbe} && {!_physProbe}) then {continue};
 
     private _lastAt = _u getVariable ["ACME_preox_lastTick", _now - 1];
     private _dt = ((_now - _lastAt) max 0) min 3;
@@ -19,7 +54,7 @@ private _now = CBA_missionTime;
     private _lastSpo2 = _u getVariable ["ACME_preox_lastSpO2", _spo2];
     private _reserve = (_u getVariable ["ACME_preox_reserve", 0.30]) max 0 min 1;
 
-    private _rr = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate", 0])];
+    private _rr = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate", 16])];
     private _airway = if (!isNil "ACM_airway_fnc_getAirwayState") then {[_u] call ACM_airway_fnc_getAirwayState} else {_u getVariable ["ACM_airway_AirwayState",1]};
     private _breathing = if (!isNil "ACM_breathing_fnc_getBreathingState") then {[_u] call ACM_breathing_fnc_getBreathingState} else {_u getVariable ["ACM_breathing_BreathingState",1]};
     private _hasPulse = if (!isNil "ACM_circulation_fnc_hasPulse") then {[_u] call ACM_circulation_fnc_hasPulse} else {true};
@@ -48,8 +83,9 @@ private _now = CBA_missionTime;
     _reserveCeiling = (_reserveCeiling max 0.20) min 1;
 
     private _effectiveVent = _bvm || {_vent} || {_spontaneous};
-    if (_effectiveVent && {_spo2 >= 92}) then {
-        private _oxygenBonus = linearConversion [0.21,1,_fio2Frac,0.15,1,true];
+    private _supplemental = _fio2Frac > 0.22;
+    if (_effectiveVent && {_supplemental} && {_spo2 >= 92}) then {
+        private _oxygenBonus = linearConversion [0.22,1,_fio2Frac,0,1,true];
         private _buildPerSec = 0.0012 + (0.0032 * _oxygenBonus); // ~3-5 min from ordinary reserve to full preoxygenation.
         if (_spo2 >= 96) then {_buildPerSec = _buildPerSec * 1.25;};
         _reserve = (_reserve + (_buildPerSec * _dt)) min _reserveCeiling;
@@ -73,24 +109,25 @@ private _now = CBA_missionTime;
             private _retain = (0.15 + (0.80 * _reserve)) * (1 - (0.55 * _lungPenalty));
             private _buffered = _spo2 + ((_lastSpo2 - _spo2) * (_retain max 0 min 0.92));
             if (_buffered > _spo2) then {
-                if (!isNil "ACM_core_fnc_setAceMedicalState") then {
-                    [_u, [["spo2", (_buffered min 100), true, true]]] call ACM_core_fnc_setAceMedicalState;
-                    _spo2 = _buffered;
-                } else {
-                    _u setVariable ["ace_medical_spo2", _buffered min 100, true];
-                    _spo2 = _buffered;
-                };
+                [_u, [["spo2", (_buffered min 100), true, true]]] call ACM_core_fnc_setAceMedicalState;
+                _spo2 = _buffered;
             };
         };
     } else {
-        // Room-air baseline reserve slowly returns toward 0.30 when the patient is breathing adequately.
-        if (_effectiveVent && {_fio2Frac <= 0.22} && {_spo2 >= 94} && {_reserve < 0.30}) then {
-            _reserve = (_reserve + (0.0008 * _dt)) min 0.30;
+        // Room air owns a neutral baseline of 0.30. It may restore a spent reserve,
+        // but it must never manufacture "preoxygenation" or retain supplemental reserve forever.
+        if (_effectiveVent && {!_supplemental} && {_spo2 >= 94}) then {
+            private _baselineStep = 0.0008 * _dt;
+            if (_reserve < 0.30) then {_reserve = (_reserve + _baselineStep) min 0.30;};
+            if (_reserve > 0.30) then {_reserve = (_reserve - _baselineStep) max 0.30;};
         };
     };
 
-    [_u,"ACME_preox_reserve",_reserve,0.005,5] call ACME_fnc_setVarNetApprox;
+    // Replicated object state already survives JIP. Stable reserve needs no heartbeat;
+    // changes and ownership transfer are sufficient publication triggers.
+    [_u,"ACME_preox_reserve",_reserve,([0.005,0] select (abs (_reserve - 0.30) <= 0.000001)),0] call ACME_fnc_setVarNetApprox;
     _u setVariable ["ACME_preox_lastSpO2", _spo2, false];
     // Publish only the coarse label transition; setVarNet suppresses unchanged state.
     [_u,"ACME_preox_state",if (_reserve >= 0.80) then {"preoxygenated"} else {if (_reserve >= 0.40) then {"partial"} else {"low"}}] call ACME_fnc_setVarNet;
-} forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
+} forEach _patients;
+ACME_preox_activePatients = _patients select {[_x] call _candidate};

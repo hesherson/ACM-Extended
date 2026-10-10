@@ -55,10 +55,12 @@ def test_whole_limb_physiology_uses_single_occlusion_authority():
     hooks={'addons/core/overrides/fnc_updateWoundBloodLoss.sqf',
            'addons/circulation/functions/fnc_getIVFlowRate.sqf',
            'addons/circulation/functions/fnc_getBloodVolumeChange.sqf',
-           'addons/core/overrides/fnc_medicationLocal.sqf',
-           'addons/acm_extended/functions/fn_yFlushTick.sqf'}
+           'addons/core/overrides/fnc_medicationLocal.sqf'}
     for path in hooks:
         assert 'ACME_fnc_aajtOccludes' in text(path),path
+    # Y-line service consumes the same authoritative IV-flow gate rather than
+    # duplicating the AAJT predicate locally.
+    assert 'ACM_circulation_fnc_getIVFlowRate' in text('addons/acm_extended/functions/fn_yFlushTick.sqf')
     assert '[_unit, _deltaT, _syncValues] call ACM_circulation_fnc_getBloodVolumeChange' in text('addons/core/overrides/fnc_getBloodVolumeChange.sqf')
     assert 'ACME_fnc_pulsePerfusionProfile' in text('addons/core/overrides/fnc_checkPulseLocal.sqf')
     from test_historical_cardiac_execution import test_aajt_pulse_occlusion_is_site_specific

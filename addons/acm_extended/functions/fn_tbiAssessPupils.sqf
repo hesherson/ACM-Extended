@@ -41,6 +41,17 @@ private _exam = switch (_pupils) do {
         }
     };
 };
+// Cardiac arrest is not a normal, perfused pupil examination even when no TBI
+// has been seeded. Apply a transient NO-FLOW finding only to the description;
+// never mutate permanent TBI/herniation stage, so ROSC can restore the
+// patient's actual neurologic response.
+if (_patient getVariable ["ace_medical_inCardiacArrest", false] && {_pupils < 2}) then {
+    _exam = if (_hcP) then {
+        "Pupils: bilaterally sluggish/nonreactive during cardiac arrest."
+    } else {
+        "Both pupils react poorly or not at all while the heart is stopped."
+    };
+};
 
 // B33: add an observed eye movement to the existing pupil findings. Read current
 // effect-site drug loads, so old administration records or a fading sedation flag
@@ -64,5 +75,7 @@ if (alive _patient
 [_exam, 3, _medic] call ace_common_fnc_displayTextStructured;
 
 if (!isNil "ace_medical_treatment_fnc_addToLog") then {
-    [_patient, "activity", _exam, []] call ace_medical_treatment_fnc_addToLog;
+    private _args = [[_medic, false, true] call ace_common_fnc_getName, _exam];
+    [_patient, "activity", "%1 assessed pupils: %2", _args] call ace_medical_treatment_fnc_addToLog;
+    [_patient, "quick_view", "%1 assessed pupils: %2", _args] call ace_medical_treatment_fnc_addToLog;
 };

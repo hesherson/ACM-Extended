@@ -117,7 +117,8 @@ private _armReadyProbe = {
         (_state param [0,-2]) == _epoch
             && {(_state param [1,""]) == "chestAccess"}
             && {(_state param [3,-2]) >= _requiredStage}
-            && {(toLowerANSI animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"}
+            && {(toLowerANSI (_state param [2, ""])) in ["ainvpknlmstpsnonwnondnon_medic4", "acm_pronecontinuous"]}
+            && {(toLowerANSI animationState _m) == (toLowerANSI (_state param [2, ""]))}
     }, {
         params ["_m","_epoch","_token","_requiredStage"];
         if (isNull _m || {!local _m} || {!alive _m}
@@ -127,7 +128,8 @@ private _armReadyProbe = {
         if ((_entry param [2,""]) == _token && {(_entry param [1,-1]) == _epoch}
             && {(_state param [0,-2]) == _epoch} && {(_state param [1,""]) == "chestAccess"}
             && {(_state param [3,-2]) >= _requiredStage}
-            && {(toLowerANSI animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"}) then {
+            && {(toLowerANSI (_state param [2, ""])) in ["ainvpknlmstpsnonwnondnon_medic4", "acm_pronecontinuous"]}
+            && {(toLowerANSI animationState _m) == (toLowerANSI (_state param [2, ""]))}) then {
             _m setVariable ["ACME_chestAccessProviderReady", [_token, serverTime], true];
         };
     }, [_m,_epoch,_token,_requiredStage], 4.5, {

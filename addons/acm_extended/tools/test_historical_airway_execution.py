@@ -52,6 +52,19 @@ def test_suction_debits_once_and_clears_only_the_current_compartment():
     '_medic setVariable ["ACE_isUnconscious",true];',
 ])
 def test_stale_or_invalid_suction_has_no_receipt_debit_or_native_clear(change):
+    if change == '_patientAlive=false;':
+        # B208 explicitly permits physical removal of retained airway contents
+        # after engine death. Keep this historical case identity while verifying
+        # the newly requested behavior and the one-debit receipt fence.
+        execute(suction_setup()+change+'''
+            [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
+            [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
+            [(_patient getVariable ["ACM_airway_AirwayObstructionVomit_State",-1])==0,"corpse suction did not clear retained vomit"] call _check;
+            [(_patient getVariable ["ACM_airway_AirwayObstructionBlood_State",-1])==1,"corpse suction cleared a different compartment"] call _check;
+            [count (_patient getVariable ["ACME_laryngoEventReceipts",[]])==1,"corpse suction duplicated its receipt"] call _check;
+            [(((_patient getVariable ["ACME_suctionTotals",[]]) select 0) select 1)==200,"corpse suction debited more than retained volume"] call _check;
+        ''')
+        return
     execute(suction_setup()+change+'''
         private _before=[_patient] call ACME_fnc_laryngoFluidState;
         [_patient,_medic,1,"a",_stamp,4,"session"] call ACME_fnc_laryngoFluidDrainLocal;
@@ -82,7 +95,9 @@ def test_manual_suction_caps_at_available_capacity_without_double_debit():
 
 
 def epi_setup():
-    return setup()+function('narcStoreCommit',extended=True)+function('epinephrinePushStored',extended=True)+'''
+    # The provider is local in this inventory fixture; engine locality is covered by the writer suite.
+    store=function('narcStoreCommit',extended=True).replace('local _owner','true')
+    return setup()+store+function('epinephrinePushStored',extended=True)+'''
         private _hasIV=true; private _hasIO=false;
         private _requests=[]; private _storeAtDispatch=[];
         ACM_circulation_fnc_hasIV={_hasIV && {count _this<4 || {(_this select 3)==3}}};
@@ -125,7 +140,7 @@ def test_invalid_epinephrine_push_changes_neither_inventory_nor_dispatch(push,si
 
 
 def aftercare_setup():
-    return setup()+function('thoraAftercareLocal',extended=True)+'''
+    return setup()+function('thoraDrainBloodLocal',extended=True)+function('thoraAftercareLocal',extended=True)+'''
         private _effects=0; private _logs=0; private _writes=[]; private _permitted=true;
         ACME_fnc_procedureAllowed={_permitted};
         ACME_fnc_chestSealBurpReady={true};
@@ -175,10 +190,16 @@ def test_aftercare_rejects_invalid_owner_episode_provider_or_tract(change):
 def chest_effect_setup():
     # Localization and triage rendering are presentation boundaries only.
     effect=function('chestSealEffectLocal',extended=True).replace('localize "STR_ACM_Breathing_ChestSeal"','"ChestSeal"')
-    return aftercare_setup()+effect+'''
+    return aftercare_setup()+function('ptxCanClose',extended=True)+effect+'''
         private _injuries=0; private _wholeChestSeals=0; private _nativeChanges=[];
         ACME_fnc_ptxInjury={_injuries=_injuries+1;};
         ACME_fnc_ptxEnsure={};
+        // Explicit context boundary for these closure-transport cases: external
+        // wounds are already covered and the existing opposite-side tube is patent.
+        ACME_fnc_ptxContext={[0,0,5,0,1,true,false,true]};
+        missionNamespace setVariable ["ACME_ptx_stableSec",60];
+        _patient setVariable ["ACME_ptx_state",[1,0.5,0,60,0,0,1,1,60]];
+        _patient setVariable ["ACME_ptx_observationRevision",1];
         ACM_breathing_fnc_applyChestSealLocal={_wholeChestSeals=_wholeChestSeals+1;};
         ACM_breathing_fnc_setRuntimeState={_nativeChanges append (_this select 1);};
         ace_medical_treatment_fnc_addToTriageCard={};
@@ -197,8 +218,14 @@ def test_seal_peel_rejects_stale_effects_and_never_creates_a_new_injury(blocked,
 
 @pytest.mark.parametrize('epoch,tube,tract,accepted',[(1,False,'finger',True),(2,False,'finger',False),(1,True,'finger',False),(1,False,'sealed',False)])
 def test_surgical_seal_is_side_scoped_and_cannot_cover_external_wounds(epoch,tube,tract,accepted):
-    execute(chest_effect_setup()+f'_patient setVariable ["ACME_thora_open_left","{tract}"]; _patient setVariable ["ACME_thora_tube_left",{str(tube).lower()}];'+
-        f'[_patient,_medic,"thoraSeal",["left",{epoch}]] call ACME_fnc_chestSealEffectLocal;'+
+    execute(chest_effect_setup()+'''
+        // A vented surgical seal covers an owner-verified completed, unsealed tract.
+        // The retained epoch/tube/tract matrix still tests the same rejection fences.
+        _patient setVariable ["ACME_thora_sealed_left",false];
+        _patient setVariable ["ACME_thora_closed_left",false];
+    '''+f'_patient setVariable ["ACME_thora_open_left","{tract}"]; _patient setVariable ["ACME_thora_tube_left",{str(tube).lower()}];'+
+        f'private _accepted=[_patient,_medic,"thoraSeal",["left",{epoch}]] call ACME_fnc_chestSealEffectLocal;'+
+        f'[_accepted isEqualTo {str(accepted).lower()},"surgical seal acknowledgement mismatch"] call _check;'+
         f'[count _writes=={3 if accepted else 0} && {{_effects=={int(accepted)}}},"surgical seal accepted invalid tract/epoch"] call _check;'+'''
         [_wholeChestSeals==0 && {count _nativeChanges==0},"surgical seal changed whole-chest coverage"] call _check;
         [_patient getVariable ["ACME_thora_tube_right",false],"surgical seal changed opposite tube"] call _check;

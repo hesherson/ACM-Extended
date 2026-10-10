@@ -9,7 +9,7 @@ private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
 // Simple delivery has no weight/mode/interface setup. Keep the saved advanced
 // choices intact and go to the physical circuit connection instead.
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {(!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false]) && {!([uiNamespace getVariable ["ACME_vent_target", objNull]] call ACME_fnc_ventMaskSelected)})});
 if (_simple && {_screen in ["weight", "mode", "interface"]}) then {
     private _target = uiNamespace getVariable ["ACME_vent_target", objNull];
     _screen = if (!isNull _target && {_target getVariable ["ACME_vent_configured", false]}) then {"params"} else {"connect"};

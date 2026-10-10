@@ -245,6 +245,10 @@ if (_hasFluidBags) then {
             // because the hard requirement is that saline holds until flush line.
             private _bpLC = toLower _targetBodyPart;
             private _onYLine = [_unit, _targetBodyPart, _iv, _accessSite] call ACME_fnc_isYLineAccess;
+            private _warmedFlag = [_unit, _targetBodyPart, _iv, _accessSite] call ACME_fnc_lineWarmer;
+            private _serviceKey = toLowerANSI format ["%1#%2#%3", _targetBodyPart, _iv, _accessSite];
+            private _needsPrime = _onYLine && {!((_unit getVariable ["ACME_YLinePrimed", createHashMap]) getOrDefault [_serviceKey, true])};
+            private _servicing = _serviceKey in (_unit getVariable ["ACME_yFlushJobs", createHashMap]);
             if (_bagUid == "") then {_bagUid = [_unit, _targetBodyPart, _acmeBagIndex] call ACME_fnc_bagIdentity;};
             private _acmeOriginalBag = +_x; _acmeOriginalBag set [8, _bagUid];
             // two kinds of entry are returned untouched, with no drain, no blood math and no removal.
@@ -257,12 +261,13 @@ if (_hasFluidBags) then {
             // function rather than this element alone.
             private _isYSaline = _type in ["ACME_SalineY"] || {_onYLine && {_type == "Saline"}};
             private _detached = _unit getVariable ["ACME_detachedBags", []];
-            private _heldDetached = _bagUid in _detached;
-            if (_heldDetached && {([_unit, _partIndex, _iv, _accessSite, -1] call ACM_circulation_fnc_getIVFlowRate) > 0}) then {
+            private _physicallyUnplugged=_bagUid in (_unit getVariable ["ACME_IV_DisconnectedBagUIDs",[]]);
+            private _heldDetached = _bagUid in _detached || {_physicallyUnplugged};
+            if (_heldDetached && {!_physicallyUnplugged} && {([_unit, _partIndex, _iv, _accessSite, -1] call ACM_circulation_fnc_getIVFlowRate) > 0}) then {
                 _heldDetached = false;
                 [_unit, "ACME_detachedBags", _detached - [_bagUid]] call ACME_fnc_setVarNet;
             };
-            if (_heldDetached || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline}) then {
+            if (_heldDetached || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
                 if (_isYSaline && {_type == "Saline"}) then {
                     // self-heal a missed or late menu retag. a plain saline on a y line is the reserve, so it is returned
                     // permanently re-typed as ACME_SalineY. from the next tick the type-based clamp holds it with no dependence on
@@ -358,9 +363,9 @@ if (_hasFluidBags) then {
                 //
                 // Cold-stored blood: 100 mL/min baseline, 200 with Hang Bag.
                 // LifeWarmer + non-cold blood: 200 mL/min.
-                // An actively pressurized cuff is the universal top blood tier: 300 mL/min for cold, warmed or ordinary
-                // room-temperature blood. The cuff's existing bleed-off still determines when it stops being active and
-                // needs to be repumped; while it has usable pressure, its blood-flow target is exactly 300 mL/min.
+                // Full cuff pressure reaches the universal 300 mL/min ceiling. Partial/decaying pressure interpolates
+                // between the unpressurized temperature/gauge baseline and that ceiling, then gives no boost
+                // below the shared minimum level. UI and this drainer use the same pressure model.
                 if (_type in ["Blood", "FreshBlood"]) then {
                     private _bloodCap = (missionNamespace getVariable ["ACME_bloodMax_mlPerMin", 300]) max 1;
                     private _coldBase = (missionNamespace getVariable ["ACME_coldBlood_mlPerMin", 100]) max 0;
@@ -369,29 +374,16 @@ if (_hasFluidBags) then {
 
                     private _hangActive = (_unit getVariable ["ACME_hang_flowMult", 1]) > 1.001;
 
-                    private _pressureActive = false;
                     private _cuff = (_unit getVariable ["ACME_piCuffs", createHashMap]) getOrDefault [_bagUid, []];
-                    if (_bagUid != "" && {!(_cuff isEqualTo [])}) then {
-                        _cuff params [["_at", 0], ["_p0", 1]];
-                        private _half = (missionNamespace getVariable ["ACME_pi_bleedHalfLifeSec", 150]) max 0.1;
-                        private _p = (_p0 * (2 ^ (-((CBA_missionTime - _at) max 0) / _half))) max 0 min 1;
-                        _pressureActive = _p >= 0.08;
-                    };
-
+                    private _pressureLevel = [_cuff] call ACME_fnc_pressureLevel;
                     private _fixedRate = -1;
-                    if (_pressureActive) then {
-                        // Pressure infusion is the universal top blood tier, including ordinary room-temperature blood.
-                        _fixedRate = _bloodCap;
-                    } else {
-                        if (_coldFlag) then {
-                            // Cold-chain origin wins over the warmer flag for FLOW. The LifeWarmer still supplies heat,
-                            // but a cold unit remains at 100 mL/min unless Hang Bag raises it to 200.
-                            _fixedRate = [_coldBase, _coldHang] select _hangActive;
-                        } else {
-                            if (_warmedFlag) then {
-                                _fixedRate = _warmBase;
-                            };
-                        };
+                    if (_coldFlag) then {_fixedRate = [_coldBase, _coldHang] select _hangActive;} else {
+                        if (_warmedFlag) then {_fixedRate = _warmBase;};
+                    };
+                    if (_pressureLevel > 0) then {
+                        private _boost = 1 + ((missionNamespace getVariable ["ACME_pressureInfuser_boost",2.5]) - 1) * _pressureLevel;
+                        private _base = if (_fixedRate >= 0) then {_fixedRate} else {(_bagChange / (_deltaT max 0.001)) * 60 / (_boost max 1)};
+                        _fixedRate = _base + ((_bloodCap - _base) max 0) * _pressureLevel;
                     };
 
                     if (_fixedRate >= 0) then {
@@ -589,6 +581,7 @@ if (_hasFluidBags) then {
     };
 
     if (count _fluidBags < 1) then {
+        _unit setVariable ["ACME_ivBagsPublishedSig", nil, false];
         _unit setVariable [QEGVAR(circulation,IV_Bags), nil, true];  // no bags are left, so clear the variable. always sync this globally.
         _unit setVariable [QEGVAR(circulation,IV_Bags_Active), false, true];
         [_unit, ""] call EFUNC(circulation,updateActiveFluidBags);
@@ -623,7 +616,7 @@ if (_hasFluidBags) then {
             || {_acmeBagUiLastAt < 0}
             || {(CBA_missionTime - _acmeBagUiLastAt) >= 1};
 
-        _unit setVariable [QEGVAR(circulation,IV_Bags), _fluidBags, _acmeBagUiPublish];
+        [_unit, _fluidBags, _acmeBagUiPublish] call FUNC(setIVBagsState);
         if (_acmeBagUiPublish) then {
             _unit setVariable ["ACME_transfusionUiBagStructSig", _acmeBagStructSig, false];
             _unit setVariable ["ACME_transfusionUiBagSyncAt", CBA_missionTime, false];

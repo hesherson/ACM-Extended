@@ -21,7 +21,7 @@ if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo ACE_player}
 
 // Refresh a visible panel when the synchronized addon option changes. This only
 // resets UI edits; advanced device choices remain available when toggled back.
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
 private _effectiveFrame = if (_simple) then {[_custodyTarget] call ACME_fnc_ventEffectiveSettings} else {[]};
 if (_simple) then { uiNamespace setVariable ["ACME_vent_bpm", _effectiveFrame select 2]; };
 if (_simple != (uiNamespace getVariable ["ACME_vent_simpleShown", _simple])) then {

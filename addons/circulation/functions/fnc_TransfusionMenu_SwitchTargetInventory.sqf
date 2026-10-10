@@ -16,9 +16,10 @@
  * Public: No
  */
 
+params [["_advance", true, [true]]];
 private _targetInventory = GVAR(TransfusionMenu_Selected_Inventory);
 
-_targetInventory = _targetInventory + 1;
+if (_advance) then {_targetInventory = _targetInventory + 1;};
 
 private _vehicle = objectParent ACE_player;
 
@@ -141,13 +142,21 @@ if (count _activeFreshBloodList > 0) then {
     };
 } forEach _cachedItems;
 
+private _ctrlInventoryPanel = _display displayCtrl IDC_TRANSFUSIONMENU_RIGHTLISTPANEL;
+// The empty-target branch must clear the previous inventory too. Never leave selectable stale bags behind.
+lbClear _ctrlInventoryPanel;
+_ctrlInventoryPanel lbSetCurSel -1;
+_display setVariable ["ACME_txCoolerNextScan", 0];
+uiNamespace setVariable ["ACME_coolerRowSig", "__force__"];
+uiNamespace setVariable ["ACME_usedRowSig", "__force__"];
+if (_advance) then {
+    // Changing inventory means viewing that inventory, not a provider-only prepared-set overlay.
+    uiNamespace setVariable ["ACME_preparedListMode", false];
+    {missionNamespace setVariable [_x, ""];} forEach ["ACME_yPending", "ACME_yPendingData", "ACME_yPendingSaline", "ACME_yPendingSalineData"];
+};
 private _index = _fluidsArray findIf {_x in _cachedItems};
-
 if (_index < 0) exitWith {};
 
-private _ctrlInventoryPanel = _display displayCtrl IDC_TRANSFUSIONMENU_RIGHTLISTPANEL;
-
-lbClear _ctrlInventoryPanel;
 
 private _fnc_addToInventoryPanel = {
     params ["_ctrlInventoryPanel", "_fluidsArrayData", "_count", "_entry", "_index"];

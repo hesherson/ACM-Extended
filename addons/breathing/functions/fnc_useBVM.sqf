@@ -176,7 +176,9 @@ if (_dpSamePatient) then {
 
     // Preserve the open-chest lease across the deliberate 0.1 s BVM -> CPR handoff. The bounded token lets the
     // existing lease watchdog restore the carrier if CPR fails to take ownership.
-    if (_swapToCPR && {!isNull _medic} && {!isNull _patient}) then {
+    if (_swapToCPR && {!isNull _medic} && {!isNull _patient} && {local _medic} && {alive _medic}
+        && {_medic isEqualTo ACE_player} && {[_medic] call ACEFUNC(common,isAwake)}
+        && {(missionNamespace getVariable [QGVAR(BVM_LocalSession), []]) isEqualTo [_medic, _patient, _epoch]}) then {
         // A supported Semi-Fowler BVM -> CPR swap has to lower the casualty once before compressions begin.
         // Keep the existing chest-access lease alive through that authored 1.4 s release so the carrier is not
         // restored and immediately removed again during the handoff.
@@ -196,17 +198,30 @@ if (_dpSamePatient) then {
 
     if (_swapToCPR) then {
         EGVAR(core,ContinuousAction_ForceOpenMenu) = false;
+        // B256: the BVM->CPR handoff also belongs to a particular provider locality
+        // generation. A fast away/back transfer can preserve the treatment epoch
+        // and local=true while leaving the old delayed callback in the queue.
+        private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
         // B128: this handoff used to fire unconditionally 0.1 s after BVM teardown. If another continuous action
         // started in that gap, the old BVM callback could inject CPR into the new maneuver. Carry the generation
         // which actually owned this BVM and abandon the handoff if anything newer has taken the controller.
         [{
-            params ["_medic", "_patient", "_epoch"];
+            params ["_medic", "_patient", "_epoch", "_localityEpoch"];
             if ((missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -2]) != _epoch
+                || {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}
                 || {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}
-                || {isNull _medic} || {isNull _patient}) exitWith {};
+                || {isNull _medic} || {isNull _patient} || {!local _medic} || {!alive _medic}
+                || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}
+                || {(objectParent _medic) isNotEqualTo (objectParent _patient)}
+                || {isNull objectParent _medic && {(_medic distance2D _patient) > ACEGVAR(medical_gui,maxDistance)}}) exitWith {};
             [LLSTRING(BVM_SwappedToCPR), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
-            [_medic, _patient] call EFUNC(circulation,beginCPR);
-        }, [_medic, _patient, _epoch], 0.1] call CBA_fnc_waitAndExecute;
+            if (vest _patient != "" && {isNull objectParent _patient}) then {
+                // Only CPR needs the carrier removed. Existing open-chest swaps keep their direct path.
+                [_medic, _patient, "Body", "CPR"] call ACEFUNC(medical_treatment,treatment);
+            } else {
+                [_medic, _patient] call EFUNC(circulation,beginCPR);
+            };
+        }, [_medic, _patient, _epoch, _localityEpoch], 0.1] call CBA_fnc_waitAndExecute;
     } else {
         [LLSTRING(BVM_Stopped), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
         [QEGVAR(core,openMedicalMenu), _patient] call CBA_fnc_localEvent;
@@ -291,4 +306,4 @@ if (_dpSamePatient) then {
             };
         };
     };
-}] call EFUNC(core,beginContinuousAction);
+}, true] call EFUNC(core,beginContinuousAction);

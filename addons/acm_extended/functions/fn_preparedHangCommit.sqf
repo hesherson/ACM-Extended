@@ -32,7 +32,7 @@ private _finish = {
     if (!isNull _medic) then {["ACME_preparedHangResult", [_requestId, _ok, _message], _medic] call CBA_fnc_targetEvent;};
 };
 
-if (isNull _medic || {!alive _medic}) exitWith {[false, "Provider is no longer available. The prepared set was not consumed."] call _finish;};
+if (isNull _medic || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}) exitWith {[false, "Provider is no longer available. The prepared set was not consumed."] call _finish;};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false, "Patient state changed. The prepared set was not consumed."] call _finish;};
 private _sameVehicle = !isNull objectParent _medic && {(objectParent _medic) isEqualTo (objectParent _patient)};
 if ((_medic distance _patient) > 5 && {!_sameVehicle}) exitWith {[false, "Move back within treatment range. The prepared set was not consumed."] call _finish;};
@@ -76,21 +76,24 @@ private _activeOther = (_arr findIf {
 }) >= 0;
 private _dirty = (_patient getVariable ["ACME_YLineDirty", createHashMap]) getOrDefault [_lineKeyLower, false];
 private _refuse = "";
+if ((_patient getVariable ["ACME_yFlushJobs",createHashMap]) getOrDefault [_lineKeyLower,[]] isNotEqualTo []) exitWith {
+    [false, "Finish priming/flushing before replacing a bag on this line."] call _finish;
+};
 if (!_isSingle) then {
     if (_lineYd) then {_refuse = "This IV spot already has a Y line.";};
-    if (_refuse == "" && {_activeOther}) then {_refuse = "This IV/IO already has a line running.";};
+    if (_refuse == "" && {_activeOther}) then {_refuse = "There is already a bag on this line.";};
 } else {
     if (_lineYd) then {
         if (_kind != "blood") then {_refuse = "This IV spot already has a Y line.";}
         else {
-            if (_activeBlood) then {_refuse = "A unit is still running on this Y line.";};
+            if (_activeBlood) then {_refuse = "There is already a bag on this line.";};
             if (_refuse == "" && {_dirty}) then {_refuse = "Flush the Y line before hanging the next unit.";};
         };
     } else {
-        if (_activeOther) then {_refuse = "This IV/IO already has a line running.";};
+        if (_activeOther) then {_refuse = "There is already a bag on this line.";};
     };
 };
-if (_refuse != "") exitWith {[false, _refuse + " The prepared set was not consumed."] call _finish;};
+if (_refuse != "") exitWith {[false, _refuse] call _finish;};
 
 private _pi = ACME_infusion_bodyParts find toLowerANSI _part;
 private _access = if (_pi >= 0) then {[_patient, _iv, _pi, _site] call ACM_circulation_fnc_getAccessType} else {0};
@@ -159,12 +162,13 @@ _map set [_part, _arr];
 
 if (!_isSingle) then {
     private _yl = +(_patient getVariable ["ACME_YLines", []]);
-    if !(_lineKey in _yl) then {_yl pushBack _lineKey;};
+    _yl pushBackUnique _lineKey;
     [_patient, _yl, true] call ACME_fnc_yLinesCommit;
 };
 [_patient, _part, _iv, _site] call ACME_fnc_resumeSiteFlow;
 
 if (_kind == "blood" || {!_isSingle}) then {
+    _warmer = [_patient, _part, _iv, _site, _warmer, _medic] call ACME_fnc_lineWarmer;
     if (_warmer) then {
         [_patient, true, false, objNull, CBA_missionTime + 15, true] call ACME_fnc_bloodThermalStateCommit;
     } else {

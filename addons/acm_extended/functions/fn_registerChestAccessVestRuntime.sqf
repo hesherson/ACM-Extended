@@ -2,7 +2,10 @@
 // This is deliberately class-exact. CPR and every explicit BVM treatment variant now share the same carrier custody
 // so middle-mouse CPR <-> BVM handoffs cannot re-dress the casualty between maneuvers.
 private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
-private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest"] + _maneuverClasses;
+// Pad placement needs exposed skin. Match only the pad action: oximeter/cuff/capnograph actions inherit
+// AED_ApplyPads in config, but must never acquire chest custody merely because of that inheritance.
+// B229: BVM does not require chest exposure. Keep the maneuver family for an existing CPR lease only.
+private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest", "aed_applypads", "cpr"];
 missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
 missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClasses];
 

@@ -44,6 +44,8 @@ def start_setup():
         private _canStart=true; private _canRoll=true;
         private _tilts=[]; private _starts=[]; private _watches=[];
         ACME_fnc_headElevateCanStart={_canStart};
+        ace_common_fnc_isAwake={_alive && {!_unconscious}};
+        ACME_fnc_patientInteractionDistance={_distance};
         ACME_fnc_chestSealCanPhysicalRoll={_canRoll};
         private _providerRolls=[]; private _untils=[]; private _rollCancels=[];
         // Generic chestAccessFrontRoll is presentation-only. The patient roll owns one explicit token.

@@ -61,7 +61,7 @@ ACME_ETT_deflateSec   = 3.2;  // held right click on the pilot balloon to let it
 
 // tunables that were only ever inline defaults.
 // each of these was read with a fallback and never declared, so it worked and could not be changed.
-ACME_pi_bleedHalfLifeSec   = 150;  // pressure cuff half-life, seconds
+ACME_pi_bleedHalfLifeSec   = 60;  // pressure cuff half-life, seconds
 ACME_ettMainstemRate       = 0.55;  // saturation points per second lost to a one-lung tube
 ACME_ettMainstemSatDrop    = 22;  // and the ceiling on that
 ACME_ettMainstemCompliance = 0.55;  // compliance multiplier when one lung is doing the work

@@ -6,6 +6,9 @@ private _serial = (uiNamespace getVariable ["ACME_vent_manualRequestSerial", 0])
 uiNamespace setVariable ["ACME_vent_manualRequestSerial", _serial];
 private _id = format ["ventManual:%1:%2:%3", clientOwner, diag_tickTime, _serial];
 private _custody = _patient getVariable ["ACME_vent_custodyId", ""];
+if ((_patient getVariable ["ACME_vent_nivMask", false] || {[_patient] call ACME_fnc_ventMaskSelected})) exitWith {
+    ["Mask CPAP requires spontaneous breathing; manual breaths need a secured airway.", 2] call ace_common_fnc_displayTextStructured;
+};
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 
 if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) exitWith {

@@ -2,7 +2,7 @@
 // field toggles edit mode, where the mouse wheel changes the value. it mirrors the knob press.
 params ["_field"];
 // The second field remains a measured volume display in Simple mode.
-if (missionNamespace getVariable ["ACME_vent_simpleMode", false] && {_field != "bpm"}) exitWith {};
+if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])}) && {_field != "bpm"}) exitWith {};
 playSound "ACME_VentClick";
 private _sel  = uiNamespace getVariable ["ACME_vent_sel", "none"];
 private _edit = uiNamespace getVariable ["ACME_vent_editing", false];

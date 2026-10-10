@@ -22,10 +22,12 @@ if (_patient getVariable ["ACME_vent_recovering", false]) exitWith {
     };
 };
 
+[_patient] call ACME_fnc_ventSyncMask;
+
 // Owner-published mode episode rejects delayed manual commands across live toggles.
 private _simpleNow = missionNamespace getVariable ["ACME_vent_simpleMode", false];
 private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [!_simpleNow, 0]];
-if ((_episode select 0) != _simpleNow) then {
+if !((_episode select 0) isEqualTo _simpleNow) then {
     [_patient, "ACME_vent_simpleEpisode", [_simpleNow, (_episode select 1) + 1]] call ACME_fnc_setVarNet;
 };
 
@@ -120,10 +122,18 @@ private _mandatory = _mode in ["SIMV VC PS", "SIMV PC", "IMV VC (CPR)", "SIMPLE"
 private _cprProvider = _patient getVariable ["ace_medical_CPR_provider", objNull];
 private _cprActive = (_patient getVariable ["ace_medical_inCardiacArrest", false]) && {!isNull _cprProvider};
 private _cprMode = (_mode == "IMV VC (CPR)");
-private _ifaceOK = if (_mandatory) then { _securedAirway && {_iface == "INVASIVE"} } else { _iface in ["INVASIVE","NON-INVASIVE","NON INVASIVE"] };
+private _ifaceOK = _securedAirway && {_iface == "INVASIVE"};
 if (_simple) then {_ifaceOK = _securedAirway;}; // physical airway; stored interface choice is inactive.
+private _mask = _patient getVariable ["ACME_vent_nivMask", false];
+if (_mask) then {
+    _ifaceOK = _mode == "CPAP PS HF" && {_iface in ["NON-INVASIVE", "NON INVASIVE"]}
+        && {[_patient] call ACME_fnc_ventNivEligible};
+} else {
+    // A preset or unowned device is not physical mask placement.
+    if (!_simple && {_iface in ["NON-INVASIVE", "NON INVASIVE"]}) then {_ifaceOK = false;};
+};
 private _hardwareOK = true;
-if (_simple) then {
+if (_simple || {_mask}) then {
     _hardwareOK = (_patient getVariable ["ACME_vent_circuit", false])
         && {_patient getVariable ["ACME_vent_powerOn", false]}
         && {!(missionNamespace getVariable ["ACME_vent_batteryEnabled", true])
@@ -232,16 +242,19 @@ if (_driving) then {
             };
         };
         case "CPAP PS HF": {
-            if (_canTrigger && {_intrinsic > 0}) then {
+            // Pure mask CPAP is continuous pressure, not a triggered/mandatory breath.
+            if ((_canTrigger || {_mask && {_psup == 0}}) && {_intrinsic > 0}) then {
                 _spontBpm = _intrinsic;
                 _vtiSpont = [_intrinsic, _psup, _compEff] call _spontVtFor;
                 _pipSpont = _peep + _psup;
             } else {
-                _backup = true;
-                private _bkKg = (_patient getVariable ["ACME_vent_weight", 70]) max 1;
-                _mandatoryBpm = round (linearConversion [5, 40, _bkKg, 25, 12, true]);
-                _vtiMand = _vtSet * _compEff;
-                _pipMand = 8 + (12 * (_vtSet / 500) / _compEff);
+                if (!_mask && {_securedAirway}) then {
+                    _backup = true;
+                    private _bkKg = (_patient getVariable ["ACME_vent_weight", 70]) max 1;
+                    _mandatoryBpm = round (linearConversion [5, 40, _bkKg, 25, 12, true]);
+                    _vtiMand = _vtSet * _compEff;
+                    _pipMand = 8 + (12 * (_vtSet / 500) / _compEff);
+                };
             };
         };
         case "IMV VC (CPR)": {
@@ -344,6 +357,12 @@ if (_driving) then {
     };
     _autoPEEP = (_autoPEEP max 0) min 20;
     [_patient, "ACME_vent_autoPEEP", _autoPEEP, 0.10, 1] call ACME_fnc_setVarNetApprox;
+    // B259: at very high mandatory rates expiration ends before the lung has
+    // emptied. Breath count alone cannot be treated as useful gas exchange.
+    // The squared emptying fraction models dead-space/rebreathing and falls
+    // immediately; auto-PEEP remains its separately integrated pressure debt.
+    private _emptyingFrac = (_tE / (_tNeeded max 0.05)) max 0 min 1;
+    private _emptyingEfficiency = _emptyingFrac * _emptyingFrac;
 
     // Pressure limit is a real delivery limit for both the mandatory and the pressure-supported breath.
     private _pLimit = _effective select 11;
@@ -404,7 +423,8 @@ if (_driving) then {
 
     // Exact exhaled and alveolar minute ventilation: mandatory and spontaneous breath volumes are not assumed equal.
     private _mvDelivered = ((_mandatoryBpm * _vteMand) + (_spontBpm * _vteSpont)) / 1000;
-    private _mvAlv = (_mandatoryBpm * ((_vteMand - 150) max 0)) + (_spontBpm * ((_vteSpont - 150) max 0));
+    private _mvAlv = ((_mandatoryBpm * ((_vteMand - 150) max 0)) + (_spontBpm * ((_vteSpont - 150) max 0)))
+        * _emptyingEfficiency;
     if (_simple) then {
         {
             private _exhaled = _x select 1;

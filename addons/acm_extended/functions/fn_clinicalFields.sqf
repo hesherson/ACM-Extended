@@ -1,8 +1,21 @@
 /* NA4 patient fields: [name, clock-kind, clear-on-full-heal, persist=true].
    Supplier transaction ledgers and runtime handler ownership are not saved patient state. */
 [
+  ["ACME_lineWarmers", "", true, true],
+  ["ACME_YLinePrimed", "", true, true],
+  ["ACME_yServiceReceipts", "", false, false],
+  // Wake injury history may survive saves; pose records, PFH IDs and cross-owner tokens never do.
+  ["ACME_wakeHadArmFracture", "", true, true],
+  ["ACME_wakeHadTBI", "", true, true],
+  ["ACME_wakeHadTorsoDamage", "", true, true],
+  ["ACME_wakeVisualArmed", "", true, true],
+  ["ACME_wakeVisual", "", true, false],
+  ["ACME_wakeVisualToken", "", true, false],
+  ["ACME_wakeVisualSerial", "", true, false],
+  ["ACME_seizure_arrestStartedAt", "", true, false],
   // The PTX model stores elapsed durations, never an owner's raw scheduler clock.
   ["ACME_ptx_state", "", true, true],
+  ["ACME_ptx_observationRevision", "", true, true],
   ["ACME_ptx_tensionSeverity", "", true, true],
   ["ACME_ptx_nativeSealCount", "", true, true],
   ["ACME_ptx_nativeSealHoleCount", "", true, true],
@@ -27,6 +40,14 @@
   ["ACME_sedation_hrAdjust", "", true, true],
   ["ACME_sedation_resistAdjust", "", true, true],
   ["ACME_medicationLineGenerations", "", true, true],
+  // B237: eligibility/consumption belongs to the physical IO line, not to a machine-local timer.
+  // Save it with that line and clear it on full heal before line-generation numbers are reused.
+  ["ACME_ioFluidSyncopeEpisode_body", "", true, true],
+  ["ACME_ioFluidSyncopeEpisode_leftarm", "", true, true],
+  ["ACME_ioFluidSyncopeEpisode_rightarm", "", true, true],
+  ["ACME_ioFluidSyncopeEpisode_leftleg", "", true, true],
+  ["ACME_ioFluidSyncopeEpisode_rightleg", "", true, true],
+  ["ACME_ioFluidSyncopeEpisode_head", "", true, true],
   ["ACME_pendingFlush", "", true, true],
   ["ACME_adenosineEpisodes", "", true, true],
   ["ACME_medicationReceiptsB14", "", false, false],
@@ -58,6 +79,9 @@
   ["ACME_laryngo_fluidPersist", "", true],
   ["ACME_laryngo_emesis", "", true],
   ["ACME_laryngo_pool", "", true],
+  ["ACME_laryngo_bloodRemaining", "", true],
+  ["ACME_airwayBloodRefillAt", "cba", true],
+  ["ACME_airwaySecretionRefillAt", "cba", true],
   ["ACME_laryngo_secretions", "", true],
   ["ACME_nativeVomitActive", "", true],
   ["ACME_nativeCollapseActive", "", true],
@@ -1537,6 +1561,7 @@
     "",
     true
   ],
+  ["ACME_IV_DisconnectedBagUIDs", "", true],
   [
     "ACME_edema_crackles",
     "",
@@ -5676,6 +5701,11 @@
   ],
   [
     "ACME_vent_offScreenTop",
+    "",
+    true
+  ],
+  [
+    "ACME_vent_nivMask",
     "",
     true
   ],

@@ -1,0 +1,115 @@
+{
+  "method": "Opaque alpha > 140 silhouette principal axis; mean terminal 3-pixel band at downstream end, inset 4 source pixels along catheter axis. Source coordinates 2048 square. Measured on 16g; other gauges verified separately.",
+  "families": [
+    {
+      "suffix": "",
+      "source": "addons/acm_extended/ui/iv/16g/base/iv_catheter_16g_base_frame_14_catheter_hub_only_ca.paa",
+      "sha256": "bfb3e595608a4fedec562f7279cd8e4d14c555aa85328cb9cb997dfd02a9218a",
+      "axis": [
+        0.01109028,
+        -0.9999385
+      ],
+      "socket_px": [
+        1005.232,
+        1033.938
+      ],
+      "mouth_px": [
+        1005.188,
+        1037.938
+      ],
+      "socket_uv": [
+        0.49083587,
+        0.50485242
+      ],
+      "angle_deg": 0.635439144215563
+    },
+    {
+      "suffix": "_15_left",
+      "source": "addons/acm_extended/ui/iv/16g/15_left/iv_catheter_16g_15_left_frame_14_catheter_hub_only_ca.paa",
+      "sha256": "d6c45713a25922e3502b4a0b7052115c4b809b80c7634371e34dc95a436c2355",
+      "axis": [
+        -0.24950163,
+        -0.96837438
+      ],
+      "socket_px": [
+        1011.424,
+        1033.049
+      ],
+      "mouth_px": [
+        1012.422,
+        1036.922
+      ],
+      "socket_uv": [
+        0.49385948,
+        0.50441832
+      ],
+      "angle_deg": -14.448023196393644
+    },
+    {
+      "suffix": "_15_right",
+      "source": "addons/acm_extended/ui/iv/16g/15_right/iv_catheter_16g_15_right_frame_14_catheter_hub_only_ca.paa",
+      "sha256": "9a110b427c66d9138915c7164eda66acc955aee30ef85a31ba9d0aac5cc18fe3",
+      "axis": [
+        0.26734963,
+        -0.96359959
+      ],
+      "socket_px": [
+        1000.403,
+        1030.404
+      ],
+      "mouth_px": [
+        999.333,
+        1034.258
+      ],
+      "socket_uv": [
+        0.4884779,
+        0.50312679
+      ],
+      "angle_deg": 15.506614861975416
+    },
+    {
+      "suffix": "_ej_15_left",
+      "source": "addons/acm_extended/ui/iv/16g/ej_15_left/iv_catheter_16g_ej_15_left_frame_14_catheter_hub_only_ca.paa",
+      "sha256": "095a2a3041a3695b3c30a8e3ca77dfa2c5cc7847d0ba9ccf0b9323d04b044084",
+      "axis": [
+        0.24916114,
+        0.96846204
+      ],
+      "socket_px": [
+        991.574,
+        1008.952
+      ],
+      "mouth_px": [
+        990.578,
+        1005.078
+      ],
+      "socket_uv": [
+        0.4841672,
+        0.49265216
+      ],
+      "angle_deg": 165.572121803396
+    },
+    {
+      "suffix": "_ej_15_right",
+      "source": "addons/acm_extended/ui/iv/16g/ej_15_right/iv_catheter_16g_ej_15_right_frame_14_catheter_hub_only_ca.paa",
+      "sha256": "2fafd4d85cd7444026d45bb30ba0e4c0fd17947894ae3f71667d06b9e4940d9a",
+      "axis": [
+        -0.26750392,
+        0.96355677
+      ],
+      "socket_px": [
+        1003.691,
+        1004.572
+      ],
+      "mouth_px": [
+        1004.761,
+        1000.717
+      ],
+      "socket_uv": [
+        0.49008342,
+        0.49051349
+      ],
+      "angle_deg": -164.48421057967818
+    }
+  ]
+}

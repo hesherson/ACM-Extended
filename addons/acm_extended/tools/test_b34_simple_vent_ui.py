@@ -44,7 +44,9 @@ class SimpleVentUIContracts(unittest.TestCase):
 
     def test_direct_live_edit_keeps_rr_and_blocks_vt_and_pinsp(self):
         text = source("ventPanelLiveEdit")
-        guard = text.index('getVariable ["ACME_vent_simpleMode", false] && {_selIdx != 0}')
+        guard = text.index('getVariable ["ACME_vent_simpleMode", false]')
+        self.assertIn('ACME_vent_nivMask', text[guard:text.index('switch (_selIdx)')])
+        self.assertIn('&& {_selIdx != 0}', text[guard:text.index('switch (_selIdx)')])
         self.assertLess(guard, text.index('switch (_selIdx)'))
         self.assertIn('case 0:', text)
         self.assertIn('_vTgt setVariable ["ACME_vent_bpm", _v, true]', text)

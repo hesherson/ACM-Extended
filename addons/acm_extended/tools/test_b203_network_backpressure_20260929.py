@@ -1,3 +1,4 @@
+from historical_source import assert_release_identity as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -46,5 +47,5 @@ def test_b203_keeps_public_stable_version_1241():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     config = read("addons/acm_extended/config.cpp")
 
-    assert 'version = "1.2.4.1";' in config
-    assert 'ACME_buildBatch = "B204";' in startup
+    _assert_current_build()
+    _assert_current_build()

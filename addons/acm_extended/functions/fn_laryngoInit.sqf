@@ -407,17 +407,30 @@ private _fnTrack = {
 _surface ctrlAddEventHandler ["MouseMoving", _fnTrack];
 _surface ctrlAddEventHandler ["MouseHolding", _fnTrack];
 
-// one mouse handler, all buttons. registering a second MouseButtonDown for the middle button relied on both
-// handlers being called, and whichever way the engine resolves that, the pin was not happening. it is
-// dispatched inside the single handler now.
-_display displayAddEventHandler ["MouseButtonDown", {
-    if ([_this,"down"] call ACME_fnc_minigameInputMouse) exitWith {true}; _this call ACME_fnc_laryngoClick }];
+// B222: SALAD owns MMB ahead of generic mouse bindings, regardless of handler order.
+_display setVariable ["ACME_laryngo_saladPress", false];
+_display setVariable ["ACME_InputMousePriority", {
+    params ["_d", "_button", "_phase"];
+    if ((diag_tickTime - (_d getVariable ["ACME_laryngo_saladPressAt", -10])) > 1.5) then {
+        _d setVariable ["ACME_laryngo_saladPress", false];
+    };
+    _phase in ["down", "up"] && {_button == 2} && {
+        _d getVariable ["ACME_laryngo_saladPress", false]
+        || {uiNamespace getVariable ["ACME_laryngo_sucPinned", false]}
+        || {(uiNamespace getVariable ["ACME_laryngo_held", ""]) == "suction"}
+    }
+}];
+_display displayAddEventHandler ["MouseButtonDown", {_this call ACME_fnc_laryngoClick}];
 // the middle button pins the suction. pressing it with the yankauer in hand parks it where it is and starts it
 // running, and pressing it again cancels instantly. that is what makes salad possible, because the tool stays
 // working while both hands go back to the blade and the tube.
 
 _display displayAddEventHandler ["MouseButtonUp", {
     if ([_this,"up"] call ACME_fnc_minigameInputMouse) exitWith {true};
+    if ((_this param [1, -1]) == 2) exitWith {
+        (_this select 0) setVariable ["ACME_laryngo_saladPress", false];
+        true
+    };
     // releasing the right button stops a deflation in progress, because a partial pull is not a deflated cuff.
     if (((_this param [1, -1]) isEqualTo 1)) then { ["stop"] call ACME_fnc_laryngoCuffDeflate; };
     params ["_d", "_button"];
@@ -702,6 +715,15 @@ if ((count _snap) >= 14) then {
 
 // Reconcile tray occupancy after secured/migrated/rebuild state has been restored.
 [] call ACME_fnc_laryngoRefreshSlots;
+// Capture the existing tube before the first render/input. This is the comparison baseline for a close
+// immediately after an adjustment, and identifies the insertion if a replacement occurs in transit.
+uiNamespace setVariable ["ACME_laryngo_migrationTubeTime", if (isNull _patient) then {-1} else {_patient getVariable ["ACME_ETT_Time", -1]}];
+if (!isNull _patient && {_patient getVariable ["ACME_ETT_Inserted", false]}) then {
+    private _migrationDepth = _patient getVariable ["ACME_ETT_Depth", 1];
+    uiNamespace setVariable ["ACME_laryngo_migrationSyncLast", [_migrationDepth,
+        _patient getVariable ["ACME_ETT_Frame", 1 + round (_migrationDepth * 7)],
+        _patient getVariable ["ACME_ETT_Mainstem", false]]];
+};
 private _pfh = [{ [] call ACME_fnc_laryngoTick; }, 0, []] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_laryngo_pfh", _pfh];
 

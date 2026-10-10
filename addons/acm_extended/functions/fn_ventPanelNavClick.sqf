@@ -22,12 +22,18 @@ private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (is
 playSound "ACME_VentClick";
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
 // A live addon-setting change may arrive before the panel tick rebuilds setup.
-if (missionNamespace getVariable ["ACME_vent_simpleMode", false] && {_screen in ["weight", "mode", "interface", "o2", "ie", "peep"]}) exitWith {
+if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {(!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false]) && {!([uiNamespace getVariable ["ACME_vent_target", objNull]] call ACME_fnc_ventMaskSelected)})}) && {_screen in ["weight", "mode", "interface", "o2", "ie", "peep"]}) exitWith {
     [_screen] call ACME_fnc_ventPanelShowScreen;
 };
 // the selection comes from the unified dial index, clamped to the row range for row-commit purposes.
 private _n = uiNamespace getVariable ["ACME_vent_listCount", 0];
 private _sel = (uiNamespace getVariable ["ACME_vent_selIdx", 0]) min ((_n - 1) max 0);
+
+if (_action in ["next", "confirm"] && {_vTgt getVariable ["ACME_vent_nivMask", false]}
+    && {_screen == "connect" || {_screen == "menu" && {_sel == 0} && {!(_vTgt getVariable ["ACME_vent_connected", false])}}}
+    && {!([_vTgt] call ACME_fnc_ventNivEligible)}) exitWith {
+    ["Mask CPAP requires an awake, spontaneously breathing patient without another mask or advanced airway.", 3] call ace_common_fnc_displayTextStructured;
+};
 
 // commit the selection of the current screen to the player.
 private _commit = {
@@ -53,6 +59,9 @@ private _commit = {
             private _modes = ["SIMV VC PS","IMV VC (CPR)","SIMV PC","CPAP PS HF"];
             private _newMode = _modes select _sel;
             _vTgt setVariable ["ACME_vent_mode", _newMode, true];
+            if !(uiNamespace getVariable ["ACME_vent_presetMode", false]) then {
+                [_vTgt, "ventSyncMask", []] call ACME_fnc_ownerDispatch;
+            };
             if (_newMode == "SIMV PC") then {
                 private _peep = _vTgt getVariable ["ACME_vent_peep", 5];
                 private _vt = _vTgt getVariable ["ACME_vent_vt", 500];
@@ -66,6 +75,9 @@ private _commit = {
         case "interface": {
             private _ifaces = ["INVASIVE","NON INVASIVE","NEBULIZER"];
             _vTgt setVariable ["ACME_vent_iface", _ifaces select _sel, true];
+            if !(uiNamespace getVariable ["ACME_vent_presetMode", false]) then {
+                [_vTgt, "ventSyncMask", []] call ACME_fnc_ownerDispatch;
+            };
             ["USER", format ["Interface: %1", _ifaces select _sel]] call ACME_fnc_ventLogbookAdd;
             // the nebulizer is cosmetic in this sim, because only INVASIVE drives ventilation through the et tube. it still
             // selects and advances like the real device, and it does not ventilate.
@@ -283,7 +295,7 @@ switch (_action) do {
                 };
             };
             case "interface": { ["mode"] call ACME_fnc_ventPanelShowScreen; };
-            case "connect":   { [if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) then {"menu"} else {"interface"}] call ACME_fnc_ventPanelShowScreen; };
+            case "connect":   { [if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {(!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false]) && {!([uiNamespace getVariable ["ACME_vent_target", objNull]] call ACME_fnc_ventMaskSelected)})})) then {"menu"} else {"interface"}] call ACME_fnc_ventPanelShowScreen; };
             case "menu":      { ["live"] call ACME_fnc_ventPanelShowScreen; };
             case "params":    { uiNamespace setVariable ["ACME_vent_editingParam", -1]; ["menu"] call ACME_fnc_ventPanelShowScreen; };
             case "o2":        { uiNamespace setVariable ["ACME_vent_editingFio2", false]; ["params"] call ACME_fnc_ventPanelShowScreen; };

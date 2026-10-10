@@ -51,7 +51,15 @@ def test_treatment_pose_selects_ambulatory_provider_presentation_only():
     assert 'call ACME_fnc_poseUprightState' in s
     assert 'AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown' in s
     assert 'private _ambulatoryContact = false;' in s
-    assert '_ambulatoryContact];' in s
+    state = [item.strip() for item in s.split('private _state = [', 1)[1].split('];', 1)[0].split(',')]
+    assert len(state) == 21
+    assert state[16] == '_upright'
+    assert state[19:] == ['_ambulatoryContact', '_enteredProne']
+    assert 'if (!_enteredProne && {_ambulatoryPatient} && {_mode == "stethoscope"}) then {' in s
+    assert 'if (!_enteredProne && {!(_mode in ["assessmentAirway", "assessmentBreathing"])}) then {' in s
+    assert 'case "assessmentAirway": {"AinvPknlMstpSnonWnonDr_medic5"};' in s
+    assert 'case "assessmentBreathing": {"AinvPknlMstpSnonWnonDr_medic4"};' in s
+    assert 'if (_enteredProne) then {_main = [_medic, _main, true] call ACME_fnc_providerAnimation;};' in s
     assert '_medic setUnitPos "MIDDLE";' in s
     assert '["MIDDLE", "UP"] select' not in s
     assert '_recoverAmbulatoryHold' not in s

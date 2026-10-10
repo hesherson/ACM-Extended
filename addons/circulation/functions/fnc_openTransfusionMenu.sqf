@@ -38,10 +38,9 @@ if (!(_previousCloseID isEqualTo -1) && {!(_previousCloseID isEqualTo "")}) then
 
 private _medicalMenuKeybind = (["ACE3 Common", QACEGVAR(medical_gui,openMedicalMenuKey)] call CBA_FUNC(getKeybind) select 5) select 0;
 
-private _closeID = [_medicalMenuKeybind, [false, false, false], { // H to close and open medical menu
-    closeDialog 0;
-    [ACEFUNC(medical_gui,openMenu), GVAR(TransfusionMenu_Target)] call CBA_fnc_execNextFrame;
-}, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
+// Mouse wheel bindings must never become a close-menu shortcut. Only real keyboard
+// KeyDown from this display may close it; no global CBA virtual-mouse handler is installed.
+private _closeID = -1;
 GVAR(TransfusionMenu_CloseID) = _closeID;
 
 GVAR(TransfusionMenu_Target) = _patient;
@@ -112,6 +111,22 @@ if (isNull _display) exitWith {
     };
 };
 
+// The foreground menu consumes RMB without cancelling background holds. The hold's own
+// input guard also checks this display, so it does not depend on engine EH ordering.
+{_display displayAddEventHandler [_x, {(_this param [1, -1]) == 1}];} forEach ["MouseButtonDown", "MouseButtonUp"];
+_display setVariable ["ACME_TX_CloseKey", _medicalMenuKeybind];
+_display setVariable ["ACME_TX_CloseTarget", _patient];
+_display displayAddEventHandler ["KeyDown", {
+    params ["_dialog", "_key", "_shift", "_ctrl", "_alt"];
+    private _bound = _dialog getVariable ["ACME_TX_CloseKey", -1];
+    if !(_bound isEqualType 0 && {_bound >= 0} && {_bound < 0xF0}
+        && {_key == _bound} && {!_shift && {!_ctrl && {!_alt}}}) exitWith {false};
+    private _target = _dialog getVariable ["ACME_TX_CloseTarget", objNull];
+    _dialog closeDisplay 0;
+    if (!isNull _target) then {[ace_medical_gui_fnc_openMenu, _target] call CBA_fnc_execNextFrame;};
+    true
+}];
+_display displayAddEventHandler ["MouseZChanged", {true}];
 _display setVariable ["ACM_TX_Generation", _menuGeneration];
 _display setVariable ["ACM_TX_CloseID", _closeID];
 
@@ -353,29 +368,8 @@ private _pfh = [{
         _xMiddle ctrlShow (_IVMiddle > 0);
         _xLower ctrlShow (_IVLower > 0);
 
-        if (GVAR(TransfusionMenu_SelectIV) && (_forEachIndex + 2) == _partIndex) then {
-            switch (GVAR(TransfusionMenu_Selected_AccessSite)) do {
-                case 0: {
-                    _xUpper ctrlSetTextColor [0.20,0.65,0.20,1];
-                    _xMiddle ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xLower ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                };
-                case 1: {
-                    _xUpper ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xMiddle ctrlSetTextColor [0.20,0.65,0.20,1];
-                    _xLower ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                };
-                case 2: {
-                    _xUpper ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xMiddle ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xLower ctrlSetTextColor [0.20,0.65,0.20,1];
-                };
-            };
-        } else {
-            _xUpper ctrlSetTextColor [0.20,0.65,0.20,0.42];
-            _xMiddle ctrlSetTextColor [0.20,0.65,0.20,0.42];
-            _xLower ctrlSetTextColor [0.20,0.65,0.20,0.42];
-        };
+        // The shared access-hotspot painter owns hover/selected color. A second
+        // native painter must not dim a hovered access again on every tick.
     } forEach _IVCtrlArray;
 
     private _ctrlIOLeftArm = _display displayCtrl IDC_TRANSFUSIONMENU_BG_IO_LEFTARM;
@@ -395,11 +389,7 @@ private _pfh = [{
         if !(_value isEqualType 0 && {finite _value}) then {_value = 0;};
         _x ctrlShow (_value > 0);
 
-        if (!(GVAR(TransfusionMenu_SelectIV)) && (_forEachIndex + 1) == _partIndex) then {
-            _x ctrlSetTextColor [0.20,0.65,0.20,1];
-        } else {
-            _x ctrlSetTextColor [0.20,0.65,0.20,0.42];
-        };
+        // Color is owned by the same IV/IO hotspot renderer.
     } forEach _IOCtrlArray;
 
     private _ctrlStopTransfusionButton = _display displayCtrl IDC_TRANSFUSIONMENU_BUTTON_STOPIV;
@@ -416,22 +406,6 @@ private _pfh = [{
         _siteFlowRate = [(GET_IO_FLOW_X(_patient,_partIndex)), (GET_IV_FLOW_X(_patient,_partIndex,_selectedSite))] select GVAR(TransfusionMenu_SelectIV);
     };
     private _typeString = [LLSTRING(Intraosseous_Short), LLSTRING(Intravenous_Short)] select GVAR(TransfusionMenu_SelectIV);
-    private _physicalBlock = "";
-    if (_hasSelectedAccess && {_partIndex >= 0}) then {
-        if (GVAR(TransfusionMenu_SelectIV)
-            && {_patient getVariable [format ["ACME_IV_BandOnPart_%1", _partIndex], false]}) then {
-            _physicalBlock = "IV placement band is still applied. Remove the band before this IV can flow.";
-        };
-        if (_physicalBlock == "" && {!isNil "ACME_fnc_aajtOccludes"}
-            && {[_patient, _partIndex] call ACME_fnc_aajtOccludes}) then {
-            _physicalBlock = "AAJT-S compression is physically occluding this vascular territory.";
-        };
-        if (_physicalBlock == "" && {_patient getVariable ["ace_medical_inCardiacArrest", false]}
-            && {!([_patient] call ACM_core_fnc_cprActive)}) then {
-            _physicalBlock = "No forward perfusion during cardiac arrest. Start CPR for IV/IO flow.";
-        };
-    };
-
     if (!_hasSelectedAccess) then {
         _ctrlStopTransfusionButton ctrlSetText "No IV / IO access";
         _ctrlStopTransfusionButton ctrlSetTooltip "Establish and select an IV or IO before starting a transfusion";
@@ -439,19 +413,15 @@ private _pfh = [{
         if (!isNull _ctrlAddBagButton) then {_ctrlAddBagButton ctrlEnable false;};
     } else {
         if (!isNull _ctrlAddBagButton) then {_ctrlAddBagButton ctrlEnable true;};
-        if (_physicalBlock != "") then {
-            _ctrlStopTransfusionButton ctrlSetText "Flow physically blocked";
-            _ctrlStopTransfusionButton ctrlSetTooltip _physicalBlock;
-            _ctrlStopTransfusionButton ctrlEnable false;
+        // This button is the user's clamp switch, not an unearned diagnosis. Physical
+        // occlusion and perfusion still gate the owner-side drainer, never this label.
+        _ctrlStopTransfusionButton ctrlEnable true;
+        if (_siteFlowRate > 0) then {
+            _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StopTransfusion_Display), _typeString]);
+            _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StopTransfusion_ToolTip), _typeString]);
         } else {
-            _ctrlStopTransfusionButton ctrlEnable true;
-            if (_siteFlowRate > 0) then {
-                _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StopTransfusion_Display), _typeString]);
-                _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StopTransfusion_ToolTip), _typeString]);
-            } else {
-                _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StartTransfusion_Display), _typeString]);
-                _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StartTransfusion_ToolTip), _typeString]);
-            };
+            _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StartTransfusion_Display), _typeString]);
+            _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StartTransfusion_ToolTip), _typeString]);
         };
     };
 

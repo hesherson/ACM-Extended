@@ -1,4 +1,5 @@
 // thoracostomy mini-game, idd 86600.
+["ACME_thoraAftercareAck", {_this call ACME_fnc_thoraAftercareAck;}] call CBA_fnc_addEventHandler;
 // canvas scale, measured from the chest art. the areola at about 3 cm and the red zone width both give about
 // 60 px/cm on the 2048 canvas. incision lengths are authored in cm and convert through this, so they stay
 // correct at any canvas size. an ideal cut of 2 to 3 cm gives full marks. the hard cap is 5.08 cm.

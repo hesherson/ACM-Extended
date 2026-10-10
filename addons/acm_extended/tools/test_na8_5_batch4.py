@@ -177,11 +177,25 @@ class ThoracostomySource(unittest.TestCase):
     def test_seal_branch_does_not_insert_or_drain_tube(self):
         s=src('thoraMouseDown');s=s[s.index('if (_held == "seal") exitWith'):s.index('private _tubeMedic')]
         self.assertNotIn('Thoracostomy_insertChestTube',s);self.assertNotIn('thoraPassiveDrain',s)
-        self.assertNotIn('ACME_thora_tube_%1',s);self.assertIn('\"thoraSeal\"',s);self.assertNotIn('ACM_breathing_fnc_applyChestSeal',s)
+        self.assertNotIn('ACME_thora_tube_%1',s);self.assertNotIn('ACM_breathing_fnc_applyChestSeal',s)
+        self.assertIn('[_patient, _medS, _side, "seal", false, _receipt] call ACME_fnc_thoraAftercareRequest',s)
+        self.assertIn('[_patient, _medic, "thoraSeal", [_side, _epoch]] call ACME_fnc_chestSealEffectLocal',src('thoraAftercareLocal'))
+        self.assertNotIn('ACME_fnc_thoraSideStateCommit',s)
     def test_seal_consumed_and_verified(self):
         s=src('thoraMouseDown');self.assertIn('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',s);self.assertIn('if (_receipt isEqualTo []) exitWith',s)
     def test_repeat_dressing_checks_precede_consumption(self):
-        s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');self.assertLess(s.index('ACME_thora_sealed_%1',a),s.index('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',a))
+        s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');take=s.index('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',a)
+        self.assertLess(s.index('ACME_thora_sealed_%1',a),take)
+        self.assertLess(s.index('ACME_Thora_SealPending',a),take)
+        # A vented dressing can cover completed finger access before the leak
+        # settles. Repeat, incomplete, closed and unauthorized placement must
+        # still fail before reserving its one real supply receipt.
+        prefix=s[a:take]
+        self.assertIn('count (_patient getVariable [format ["ACME_thora_incision_%1", _side], []]) != 3',prefix)
+        self.assertIn('(_patient getVariable [format ["ACME_thora_open_%1", _side], ""]) != "finger"',prefix)
+        self.assertLess(s.index('ACME_thora_closed_%1',a),take)
+        self.assertLess(s.index('[_medS, "thoracostomySeal", true] call ACME_fnc_procedureAllowed',a),take)
+        self.assertNotIn('ACME_fnc_ptxCanClose',s[a:s.index('private _tubeMedic',a)])
     def test_hover_selects_shared_slot(self):
         # Retain the historical identity, not the retired shared-slot alias. The current
         # separate tube/seal rows must never claim each other's held-tool shadow.

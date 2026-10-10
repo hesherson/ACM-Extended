@@ -15,7 +15,7 @@ if (_patient getVariable ["ACME_nrb_on", false]) exitWith {
 // Hard runtime gate as well as the medical-menu condition. This closes the race where an advanced airway can be
 // placed after the action becomes visible but before callbackSuccess executes.
 if !([_patient] call ACME_fnc_nrbAirwayCompatible) exitWith {
-    ["Cannot apply NRB with an i-gel, ET tube, or surgical airway in place. Use BVM or ventilator support.", 3, _medic] call ace_common_fnc_displayTextStructured;
+    ["Cannot apply NRB while an advanced airway or a ventilator mask occupies the airway.", 3, _medic] call ace_common_fnc_displayTextStructured;
 };
 
 // Recheck reusable mask possession at completion, then retain the actual cylinder donor.

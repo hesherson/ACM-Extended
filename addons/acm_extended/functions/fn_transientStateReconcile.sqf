@@ -86,8 +86,7 @@ if (!isNil "ACM_circulation_fnc_cprSessionValid" && {!isNil "ACM_circulation_fnc
             _released = [_medic, _patient, _session select 1] call ACM_circulation_fnc_cprRelease;
         };
         if (!_released) then {
-            _patient setVariable ["ace_medical_CPR_provider", objNull, true];
-            [_patient, [["cprMedic", objNull], ["cprSession", []]], true] call ACM_circulation_fnc_setRuntimeState;
+            [_patient, [["cprProvider", objNull], ["cprMedic", objNull], ["cprSession", []]], true] call ACM_circulation_fnc_setRuntimeState;
         };
         "CPR reservation" call _mark;
     };
@@ -125,13 +124,21 @@ if (["ACME_reconcileInvalidHangAt", _hangInvalid, 2] call _debouncedInvalid) the
     private _claimEpoch = _claim param [2, -1, [0]];
     private _claimOwner = _claim param [3, -1, [0]];
     private _claimAt = _claim param [4, -1, [0]];
+    private _claimOwnerValid = !isNull _claimMedic
+        && {_claimOwner > 0 || {_claimOwner == 0 && {!isMultiplayer} && {local _claimMedic}}}
+        && {if (local _claimMedic) then {_claimOwner == clientOwner} else {
+            isMultiplayer && {!isServer || {_claimOwner == owner _claimMedic}}
+        }};
     private _claimActive = !isNull _claimMedic
+        && {_claimOwnerValid}
         && {_claimMedic getVariable ["ACME_DP_Active", false]}
+        && {(_claimMedic getVariable ["ACME_DP_ClaimToken", ""]) == (_claim param [1, ""])}
+        && {(_claimMedic getVariable ["ACME_DP_ClaimEpoch", -1]) == _claimEpoch}
         && {(_claimMedic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}
         && {toLowerANSI (_claimMedic getVariable ["ACME_DP_Part", ""]) == _part};
     private _claimPending = !isNull _claimMedic && {_claimAt >= 0}
         && {(_netNow - _claimAt) <= 3}
-        && {_claimOwner == owner _claimMedic};
+        && {_claimOwnerValid};
     private _claimInvalid = !(_claim isEqualTo []) && {
         !(_claim isEqualType [] && {count _claim >= 5})
         || {isNull _claimMedic}
@@ -180,7 +187,7 @@ if (["ACME_reconcileInvalidHangAt", _hangInvalid, 2] call _debouncedInvalid) the
 private _progress = _patient getVariable ["ACM_damage_BandageProgress", createHashMap];
 if !(_progress isEqualType createHashMap) then {
     _progress = createHashMap;
-    _patient setVariable ["ACM_damage_BandageProgress", _progress, true];
+    [_patient, [["bandageProgress", _progress]], true] call ACM_damage_fnc_setWoundState;
     "Bandage progress shape" call _mark;
 };
 private _progressChanged = false;
@@ -201,7 +208,7 @@ private _progressChanged = false;
     };
 } forEach +(keys _progress);
 if (_progressChanged) then {
-    _patient setVariable ["ACM_damage_BandageProgress", _progress, true];
+    [_patient, [["bandageProgress", _progress]], true] call ACM_damage_fnc_setWoundState;
     if (!isNil "ace_medical_status_fnc_updateWoundBloodLoss") then {
         [_patient] call ace_medical_status_fnc_updateWoundBloodLoss;
     };
@@ -387,7 +394,21 @@ private _animLock = _patient getVariable ["ACME_patientAnimLock", []];
 if ((_animLock isEqualType []) && {count _animLock >= 5}) then {
     private _expires = _animLock param [4, -1];
     if !(_expires isEqualType 0 && {finite _expires} && {_expires > _netNow}) then {
-        _patient setVariable ["ACME_patientAnimLock", [], true];
+        // B250: never erase an expired animation lease without releasing its owner-scoped
+        // speed and collision state. The helper is token-checked and cannot retire a
+        // newer animation that replaced this snapshot.
+        private _token = _animLock param [0, "", [""]];
+        if (_token != "") then {
+            [_patient, _token, false] call ACME_fnc_patientAnimRelease;
+        } else {
+            _patient setVariable ["ACME_patientAnimLock", [], true];
+        };
+        // A malformed/legacy record can have an unrelated orphan speed token.
+        // Retire it only if no newer animation lease is present.
+        private _speedToken = _patient getVariable ["ACME_patientAnimSpeedToken", ""];
+        if (_speedToken != "" && {(_patient getVariable ["ACME_patientAnimLock", []]) isEqualTo []}) then {
+            [_patient, _speedToken, false] call ACME_fnc_patientAnimRelease;
+        };
         "Patient animation lease" call _mark;
     };
 };

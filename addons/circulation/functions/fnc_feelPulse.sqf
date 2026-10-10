@@ -6,6 +6,7 @@
  */
 params ["_medic","_patient","_bodyPart"];
 if (isNull _medic || {isNull _patient}) exitWith {};
+[false, false, -1, true] call ACME_fnc_respirationStop;
 
 private _site = switch (toLowerANSI _bodyPart) do {
     case "head": {"carotid pulse"};
@@ -32,6 +33,7 @@ if (!isNull _medicVehicle || {!isNull _patientVehicle}) exitWith {
 // token-mismatch tick so it can release only its own treatment-pose token and old-patient Direct Pressure handoff.
 // It is forbidden from clearing the shared cutRsc/watch state of the new pulse episode.
 private _pulseEpoch = (uiNamespace getVariable ["ACME_PulseEpoch", 0]) + 1;
+private _treatmentEpoch = _medic getVariable ["ACME_providerTreatmentEpoch", 0];
 uiNamespace setVariable ["ACME_PulseEpoch", _pulseEpoch];
 private _oldEsc = uiNamespace getVariable ["ACME_PulseEscKey", -1];
 if (!(_oldEsc isEqualTo -1) && {!(_oldEsc isEqualTo "")}) then {[_oldEsc,"keydown"] call CBA_fnc_removeKeyHandler;};
@@ -92,19 +94,23 @@ uiNamespace setVariable ["ACME_PulseEscDisplay",_mainDisplay];
 
 private _pfh = [{
     params ["_args","_pfh"];
-    _args params ["_medic","_patient","_bodyPart","_esc","_poseEpoch","_pulseEpoch","_mainDisplay","_escEH"];
+    _args params ["_medic","_patient","_bodyPart","_esc","_poseEpoch","_pulseEpoch","_mainDisplay","_escEH","_treatmentEpoch"];
+    private _successorTreatment = (_medic getVariable ["ACME_providerTreatmentEpoch", 0]) != _treatmentEpoch;
 
     // Superseded pulse check. Release only resources which belong to this captured patient/pose. If the replacement
     // pulse is the same provider on the same DP patient, leave TreatmentBusy asserted because the new pulse still
     // owns provider animation. No shared UI variables are cleared here.
     if ((uiNamespace getVariable ["ACME_PulseEpoch", -1]) != _pulseEpoch) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
-        [_medic,"pulse",_poseEpoch] call ACME_fnc_treatmentPoseStop;
+        [_medic,"pulse",_poseEpoch,_successorTreatment] call ACME_fnc_treatmentPoseStop;
         private _newMedic = uiNamespace getVariable ["ACME_PulseCheckMedic", objNull];
         private _newPatient = uiNamespace getVariable ["ACME_PulseCheckPatient", objNull];
         private _sameReplacement = (uiNamespace getVariable ["ACME_PulseCheckActive", false])
             && {_newMedic isEqualTo _medic} && {_newPatient isEqualTo _patient};
-        if (!_sameReplacement && {local _medic}
+        private _observation = uiNamespace getVariable ["ACME_RespirationSession", []];
+        private _respirationOwnsProvider = (_observation param [1, objNull]) isEqualTo _medic
+            && {(_observation param [2, objNull]) isEqualTo _patient};
+        if (!_sameReplacement && {!_respirationOwnsProvider} && {!_successorTreatment} && {local _medic}
             && {_medic getVariable ["ACME_DP_Active", false]}
             && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}) then {
             _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
@@ -152,8 +158,11 @@ private _pfh = [{
         // End the pulse/stethoscope pose before handing animation ownership back to Direct Pressure. CheckPulse's
         // ACE success event deliberately leaves ACME_DP_TreatmentBusy set while this minigame is alive. Clearing it
         // any earlier lets the DP PFH reassert its hold over the pulse pose and makes Feel Pulse instantly disappear.
-        [_medic,"pulse",_poseEpoch] call ACME_fnc_treatmentPoseStop;
-        if (local _medic
+        [_medic,"pulse",_poseEpoch,_successorTreatment] call ACME_fnc_treatmentPoseStop;
+        private _observation = uiNamespace getVariable ["ACME_RespirationSession", []];
+        private _respirationOwnsProvider = (_observation param [1, objNull]) isEqualTo _medic
+            && {(_observation param [2, objNull]) isEqualTo _patient};
+        if (!_respirationOwnsProvider && {!_successorTreatment} && {local _medic}
             && {_medic getVariable ["ACME_DP_Active", false]}
             && {(_medic getVariable ["ACME_DP_Patient", objNull]) isEqualTo _patient}) then {
             _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
@@ -231,5 +240,5 @@ private _pfh = [{
     } else {
         _heart ctrlShow false;
     };
-},0,[_medic,_patient,_bodyPart,_esc,_poseEpoch,_pulseEpoch,_mainDisplay,_escEH]] call CBA_fnc_addPerFrameHandler;
+},0,[_medic,_patient,_bodyPart,_esc,_poseEpoch,_pulseEpoch,_mainDisplay,_escEH,_treatmentEpoch]] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_PulsePFH", _pfh];

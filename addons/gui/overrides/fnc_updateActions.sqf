@@ -98,7 +98,11 @@ private _menuActions = missionNamespace getVariable ['ace_medical_gui_actions', 
 // gate which leaks patient death. Re-apply anatomy only because grouped children replace their condition after collection.
 _menuActions = _menuActions select {
     private _class = toLower (_x param [8, '']);
-    !(_class in ['checkairway', 'checkbreathing']) || {_bodyPart == 0 && {!isNull _target}}
+    !(_class in ['acme_openplatecarrierinventory','acme_flushline']) && {
+        !(_class in ['checkairway', 'checkbreathing', 'acme_attachemma','acme_removeemma',
+            'acme_attachemmaett','acme_removeemmaett','acme_attachemmaigel','acme_removeemmaigel'])
+        || {_bodyPart == 0 && {!isNull _target}}
+    }
 };
 
 // Do not retain a cached positioning row after the casualty stands up.
@@ -139,6 +143,20 @@ _manualCarrier = _manualCarrier apply {
     _row set [1, _selectedCategory];
     if ((count _row) > 9) then {_row set [9, ''];};
     _row
+};
+
+// B229: carried-BVM EMMA controls are pinned on Head only, immediately below the carrier,
+// including flat menus and non-Airway tabs. Patient-airway EMMA controls remain in Capnography.
+private _bvmEmma = [];
+if (_bodyPart == 0) then {
+    _bvmEmma = _menuActions select {toLower (_x param [8, '']) in ['acme_attachemma', 'acme_removeemma']};
+    _menuActions = _menuActions select {!(toLower (_x param [8, '']) in ['acme_attachemma', 'acme_removeemma'])};
+    _bvmEmma = _bvmEmma apply {
+        private _row = +_x;
+        _row set [1, _selectedCategory];
+        if (count _row > 9) then {_row set [9, ''];};
+        _row
+    };
 };
 
 // Stop Direct Pressure follows the carrier control whenever its normal condition makes it visible. Apply
@@ -229,7 +247,7 @@ if (_nestEnabled) then {
     _menuActions = _out;
 };
 
-_menuActions = _manualCarrier + _stopPressure + _pressure + _menuActions + _dogTags;
+_menuActions = _manualCarrier + _bvmEmma + _stopPressure + _pressure + _menuActions + _dogTags;
 private _shownIndex = 0;
 private _actionIndex = 0;
 {
@@ -344,7 +362,7 @@ private _actionIndex = 0;
         // flag. Direct Pressure Apply/Stop are immediate in-place state toggles, so they never touch pendingReopen.
         _ctrl ctrlAddEventHandler ['ButtonClick', _statement];
         if (_groupKey isEqualTo '' && {!(_actionClass in [
-            'acme_directpressure', 'acme_stopdirectpressure',
+            'acme_directpressure', 'acme_stopdirectpressure', 'opentransfusionmenu',
             'acme_performthoracostomy', 'acme_adjustthoracostomy', 'acme_insertchesttube'
         ])}) then {
             _ctrl ctrlAddEventHandler ['ButtonClick', {

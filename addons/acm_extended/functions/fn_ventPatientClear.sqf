@@ -24,6 +24,7 @@ if (_final) then {
     [_patient, "ACME_vent_powerOn", false] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_hasBooted", false] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_onPatient", false] call ACME_fnc_setVarNet;
+    [_patient, "ACME_vent_nivMask", false] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_operator", objNull] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_mountVeh", objNull] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_recovering", false] call ACME_fnc_setVarNet;

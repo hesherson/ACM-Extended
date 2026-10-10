@@ -1,5 +1,5 @@
 /* Server allocation lock. Concurrent providers cannot remove or return the same device twice. */
-params [["_op", "", [""]], ["_medic", objNull, [objNull]], ["_patient", objNull, [objNull]]];
+params [["_op", "", [""]], ["_medic", objNull, [objNull]], ["_patient", objNull, [objNull]], ["_interface", "INVASIVE", [""]]];
 if (!isServer || {isNull _patient} || {isNull _medic} || {!alive _medic}) exitWith {};
 if !([_medic, _patient] call ACME_fnc_ventRecoveryNear) exitWith {};
 private _records = missionNamespace getVariable ["ACME_vent_custody", createHashMap];
@@ -67,13 +67,17 @@ if (_op == "attach") exitWith {
     private _airway = (_patient getVariable ["ACME_ETT_Inserted", false])
         || {(_patient getVariable ["ACM_airway_AirwayItem_Oral", ""]) == "SGA"}
         || {_patient getVariable ["ACM_airway_SurgicalAirway_TubeInserted", false]};
-    if (!_airway || {! (missionNamespace getVariable ["ACME_sys_vent", true])}) exitWith {};
+    if !(_interface in ["INVASIVE", "MASK"]) exitWith {};
+    if (_patient getVariable ["ACM_airway_RecoveryPosition_State", false]
+        || {_patient getVariable ["ACME_vent_recovering", false]}) exitWith {};
+    private _eligible = if (_interface == "MASK") then {[_patient] call ACME_fnc_ventNivEligible} else {_airway};
+    if (!_eligible || {! (missionNamespace getVariable ["ACME_sys_vent", true])}) exitWith {};
     private _serial = (missionNamespace getVariable ["ACME_vent_custodySerial", 0]) + 1;
     missionNamespace setVariable ["ACME_vent_custodySerial", _serial];
     _id = format ["vent:%1:%2", netId _patient, _serial];
     private _r = createHashMapFromArray [
         ["patient", _patient], ["supplier", _medic], ["supplierUID", getPlayerUID _medic],
-        ["phase", "taking"], ["lastSent", -100], ["settings", []],
+        ["phase", "taking"], ["lastSent", -100], ["settings", []], ["interface", _interface],
         ["lastPos", getPosASL _patient], ["lastVehicle", objectParent _patient], ["deleted", false]
     ];
     _records set [_id, _r];

@@ -1,4 +1,8 @@
-"""Execute actual Lower Head retries; engine calls are recorded, not rendered."""
+"""Historical IDs retained; Lower Head now directly lays flat without a preliminary roll.
+
+The delayed work under test is the accepted lower completion, not a removed roll retry.
+Engine objects, scheduling, collision and animation are explicit stand-ins.
+"""
 import pytest
 from test_menu_death_lifecycle import execute
 from test_bounded_head_completion import setup
@@ -10,7 +14,7 @@ def begin(rollable=True, quiet=False):
         _actualSide="back";
         ACME_fnc_chestSealCanPhysicalRoll={{{str(rollable).lower()}}};
         [_medic,_patient,{str(quiet).lower()}] call ACME_fnc_headElevateStop;
-        [count _waits==1,"pre-roll continuation missing"] call _check;
+        [count _rolls==0 && {{count _waits==1}},"direct lower completion missing or obsolete pre-roll returned"] call _check;
         private _retry=_waits select 0; _waits=[];
         _collisions=[]; _moves=[]; _restores=[]; _events=[]; _holdClears=[];
         _patient setVariable ["ACME_CS_facing","back"];
@@ -23,6 +27,7 @@ def begin(rollable=True, quiet=False):
 @pytest.mark.parametrize('rollable',[False,True])
 def test_retired_pre_roll_retry_cannot_touch_a_new_placement(token,elevated,rollable):
     execute(begin(rollable) + f'''
+        _patient setVariable ["ACME_headElev_startEpoch",100];
         _patient setVariable ["ACME_headElev_poseToken","{token}"];
         _patient setVariable ["ACME_headElevated",{str(elevated).lower()}];
         [_retry] call _deliver;
@@ -36,21 +41,26 @@ def test_retired_pre_roll_retry_cannot_touch_a_new_placement(token,elevated,roll
 @pytest.mark.parametrize('rollable',[False,True])
 @pytest.mark.parametrize('quiet',[False,True])
 def test_current_pre_roll_retry_lowers_once_and_preserves_recovery(rollable,quiet):
-    execute(begin(rollable,quiet) + f'''
-        [abs ((_retry select 2)-{1.93 if rollable else .08})<0.0001,"roll delay changed"] call _check;
+    execute(setup() + f'''
+        _actualSide="back";
+        ACME_fnc_chestSealCanPhysicalRoll={{{str(rollable).lower()}}};
+        [_medic,_patient,{str(quiet).lower()}] call ACME_fnc_headElevateStop;
+        [count _rolls==0,"lower incorrectly added a preliminary body roll"] call _check;
+        [!(_patient getVariable ["ACME_headElevated",true]),"current lower retained elevation"] call _check;
+        [(_patient getVariable ["ACME_CS_facing",""])=="front","lower lost supine facing"] call _check;
+        [count _holdClears==1 && {{count _waits=={0 if quiet else 1}}},"wrong completion scheduling"] call _check;
+    ''' + ('''
+        private _retry=_waits select 0; _waits=[];
+        [abs ((_retry select 2)-(1.4/1.5))<0.000001,"authored lower delay changed"] call _check;
         [_retry] call _deliver;
-        [!(_patient getVariable ["ACME_headElevated",true]),"current retry did not lower"] call _check;
-        [(_patient getVariable ["ACME_CS_facing",""])=="front","current retry lost supine request"] call _check;
-        [count _holdClears==1 && {{count _waits=={0 if quiet else 1}}},"retry lost its normal handoff"] call _check;
+        [count _moves==2,"release and rest sequence incomplete"] call _check;
         private _before=[count _holdClears,count _moves,count _restores,count _collisions,count _waits];
         [_retry] call _deliver;
-        [[count _holdClears,count _moves,count _restores,count _collisions,count _waits] isEqualTo _before,"duplicate retry ran twice"] call _check;
-    ''' + ('''
-        [_waits select 0] call _deliver;
-        [_moves isEqualTo [[_patient,"ACME_HeadElevPatientRelease",2],[_patient,"ACM_LyingState",2]],"lower choreography changed"] call _check;
-        [_collisions isEqualTo [[_patient,false],[_patient,true]],"normal collision recovery changed"] call _check;
-    ''' if not quiet else '') + '''
-        [_restores isEqualTo [["support",[_patient]],["access",[_patient]]],"normal gear recovery handoff changed"] call _check;
+        [[count _holdClears,count _moves,count _restores,count _collisions,count _waits] isEqualTo _before,"duplicate lower completion ran twice"] call _check;
+    ''' if not quiet else '''
+        [count _moves==0,"quiet cancellation must not replay release theatre"] call _check;
+    ''') + '''
+        [_restores isEqualTo [["support",[_patient]],["access",[_patient]]],"gear recovery handoff changed"] call _check;
     ''')
 
 
@@ -67,6 +77,7 @@ def test_dead_current_placement_keeps_existing_death_recovery():
     execute(begin() + '''
         _patientAlive=false;
         [_retry] call _deliver;
-        [_death isEqualTo [[_patient]],"current dead placement lost recovery delegation"] call _check;
+        // Death owns reset/recovery, not a stale living-animation completion.
+        [count _death==0,"completion duplicated death recovery"] call _check;
         [count _moves==0 && {count _collisions==0} && {count _restores==0},"dead retry ran living theatre"] call _check;
     ''')

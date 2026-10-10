@@ -35,6 +35,8 @@ def pose_source(name):
         text=re.sub(re.escape(var)+r' switchMove (\[[^;]+\]);',r'_seeks pushBack \1; _speed=1;',text)
     text=text.replace('currentWeapon _medic','_weapon').replace('_medic selectWeapon "";','_weapon="";')
     text=text.replace('finite _nativeElapsed','_nativeFinite')
+    text=text.replace('finite _preflightStarted','(_preflightStarted call _finite)')
+    text=text.replace('_patient isKindOf "CAManBase"','true')
     text=text.replace('isServer','_server').replace('hasInterface','_interface').replace('clientOwner','_client')
     text=text.replace('owner _medic','_ownerNum')
     text=text.replace('getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> _main >> "speed")','_configSpeed')
@@ -42,6 +44,7 @@ def pose_source(name):
     for key in ('ACME_poseHoldAt','ACME_poseStopAfterHold'):
         old=f'(missionNamespace getVariable ["{key}", createHashMap]) getOrDefault [_mode, -1]'
         text=text.replace(old,f'[(missionNamespace getVariable ["{key}", createHashMap]),_mode,-1] call _getDefault')
+    text=text.replace('_table getOrDefault [_mode, ""]','([_table,_mode,""] call _getDefault)')
     return adapt(text)
 
 
@@ -68,6 +71,8 @@ def setup():
         private _visiblePhase=0; private _configSpeed=-12;
         private _speedWaits=[]; private _testPrepDelay=0; private _preps=0; private _blocked=false; private _removedJip=[];
         private _getDefault={params ["_map","_key","_default"]; if (_key in _map) then {_map get _key} else {_default}};
+        private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
+        ace_common_fnc_isPlayer={(_this select 0) isEqualTo ACE_player};
         CBA_fnc_waitAndExecute={
             private _job=[_this select 0,_this select 1,_this select 2];
             if ((str (_this select 0) find "ACME_treatmentPoseRemote") >= 0) then {_speedWaits pushBack _job;} else {_waits pushBack _job;};
@@ -93,7 +98,7 @@ def setup():
         };
     '''
     code+=settings_source()
-    for name in ('providerStanceOwned','treatmentPoseStop','treatmentPoseStart','treatmentPoseSync'):
+    for name in ('patientUpright','poseUprightState','providerAnimation','providerStanceOwned','providerAnimSpeedOwned','treatmentPoseStop','treatmentPoseStart','treatmentPoseSync'):
         code+='ACME_fnc_'+name+'={'+pose_source(name)+'};\n'
     return code
 
@@ -102,14 +107,14 @@ OWNERS=[
     ('preflight','_medic setVariable ["ACME_treatmentPreflightActive",true]; _medic setVariable ["ACME_treatmentPreflightToken","live"]; _medic setVariable ["ACME_treatmentPreflightStartedAt",CBA_missionTime];'),
     ('native','_medic setVariable ["ace_medical_treatment_endInAnim","new-treatment"];'),
     ('roll','_medic setVariable ["ACME_rollProviderActive",true];'),
-    ('head','_medic setVariable ["ACME_headElev_seqActive",true];'),
+    ('head','_medic setVariable ["ACME_headElev_seqActive",true]; _medic setVariable ["ACME_headElev_seqLastSeen",CBA_missionTime];'),
     ('menu','_medic setVariable ["ACME_menuPose",[77]];'),
     ('raising','_medic setVariable ["ACME_hang_Raising",true];'),
     ('hang','_medic setVariable ["ACME_hang_Active",true];'),
     ('pressure','_medic setVariable ["ACME_DP_InPose",true];'),
     ('pressure-treatment','_medic setVariable ["ACME_DP_TreatmentBusy",true];'),
     ('cpr','_medic setVariable ["ACM_circulation_isPerformingCPR",true];'),
-    ('continuous','ACM_core_ContinuousAction_Active=true;'),
+    ('continuous','ACM_core_ContinuousAction_Active=true; _medic setVariable ["ACM_core_ContinuousAction_Session",[_medic,_patient]]; _medic setVariable ["ACM_core_ContinuousAction_LastSeen",CBA_missionTime];'),
 ]
 
 
@@ -273,6 +278,16 @@ def test_finite_work_enters_once_without_a_fixed_replay_loop(mode):
 
 @pytest.mark.parametrize('stance,transition',[('STAND','AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon'),('PRONE','AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon')])
 def test_standing_or_prone_provider_enters_through_existing_crouch_transition(stance,transition):
+    if stance == 'PRONE':
+        # Preserve the historical identity while enforcing the user's B212 prone contract.
+        execute(setup()+r'''
+            _stance="PRONE";
+            [_medic,"inspect",6,_patient] call ACME_fnc_treatmentPoseStart;
+            private _state=_medic getVariable ["ACME_treatmentPoseState",[]];
+            [_moves isEqualTo [[_medic,"ACM_ProneContinuous",1]],"prone provider entered a crouch transition"] call _check;
+            [_positions isEqualTo ["DOWN"] && {(_state select 20)},"prone entry posture was not captured"] call _check;
+        ''')
+        return
     execute(setup()+f'_stance="{stance}";'+r'''
         [_medic,"inspect",6,_patient] call ACME_fnc_treatmentPoseStart;
         private _state=_medic getVariable ["ACME_treatmentPoseState",[]]; private _id=_state select 5;

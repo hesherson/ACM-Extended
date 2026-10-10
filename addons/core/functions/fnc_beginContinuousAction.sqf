@@ -11,7 +11,7 @@
  * 1: On Start <CODE>
  * 2: On Cancel <CODE>
  * 3: Per Frame Code <CODE>
- * 4: Allowed Prone <BOOL>
+ * 4: Legacy allowed-prone hint <BOOL> (generic holds now always preserve prone)
  * 5: Dialog ID <NUMBER>
  * 6: Suppress provider animation <BOOL>
  * 7: Reopen medical menu when this action ends <BOOL>
@@ -34,26 +34,18 @@ params [
 ];
 _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
 
-// A stale shared gate used to make every later continuous action silently no-op. A live generation publishes a
-// provider session immediately and refreshes LastSeen at least every two seconds, so a missing session or >4 s
-// heartbeat gap is definitive stale state on this client. Recover before the normal exclusivity guard; valid BVM,
-// CPR, stethoscope, Narc Box and manual Semi-Fowler sessions remain exclusive exactly as before.
-if (!isNull _medic && {local _medic} && {GVAR(ContinuousAction_Active)}) then {
-    private _staleSession = _medic getVariable [QGVAR(ContinuousAction_Session), []];
-    private _staleSeen = _medic getVariable [QGVAR(ContinuousAction_LastSeen), -1e6];
-    if ((count _staleSession) < 2 || {(CBA_missionTime - _staleSeen) > 4}) then {
-        GVAR(ContinuousAction_Active) = false;
-        _medic setVariable [QGVAR(ContinuousAction_Session), [], true];
-        GVAR(ContinuousAction_PFH) = -1;
-    };
-};
-
+// Preserve native exclusivity. An incoming provider's absent heartbeat says nothing about the current owner.
+// The existing reconciliation pass recovers the recorded controller through its own cancellation callback.
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
     || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}) exitWith {false};
 
 // Bind only a session started by the local controlled unit. AI/local scripted
 // providers retain their existing behavior when the player changes units.
 private _playerBound = hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player};
+// B252: a continuous-action generation is machine-local. The same provider can
+// leave and return before its PFH samples a nonlocal frame, so bind this action
+// to the locality generation advanced by ACME_fnc_ownerInit on both edges.
+private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
 
 // B127: every continuous action gets a generation. The old implementation used only the shared Active boolean, so
 // a delayed stance callback or PFH from action A could wake back up after action B set Active=true and then animate,
@@ -125,37 +117,36 @@ if (!_suppressProviderAnim) then {
 private _notInVehicle = isNull objectParent _medic;
 
 private _medicStance = stance _medic;
-private _isProne = (_medicStance == "PRONE") && _allowProne;
+// B212: every generic continuous hold has an authored prone equivalent. The old false/default
+// _allowProne hint silently stood BVM, head tilt, BP and surgical-airway providers up into a kneel.
+// Keep the argument slot for addon callers, but never use it to override a prone provider. CPR owns
+// its separate compressor controller and remains the deliberate kneeling exception.
+private _medicAnimation = toLowerANSI animationState _medic;
+private _isProne = _medicStance == "PRONE" || {(_medicAnimation find "prone") >= 0}
+    || {(_medicAnimation find "ppne") >= 0 && {(_medicAnimation find "pknl") < 0}};
+if (_isProne) then {_medicStance = "PRONE";};
 
 if (_notInVehicle && {!_suppressProviderAnim}) then {
-    switch (stance _medic) do {
+    switch (_medicStance) do {
         case "STAND": {
             [_medic, "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1] call ACEFUNC(common,doAnimation); // 0.650
 
             [{
-                params ["_medic", "_epoch", "_playerBound"];
+                params ["_medic", "_epoch", "_playerBound", "_localityEpoch"];
                 if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
                     && {local _medic} && {alive _medic} && {isNull objectParent _medic}
-                    && {!_playerBound || {_medic isEqualTo ACE_player}}) then {
-                    [_medic, "ACM_GenericContinuous", 1] call ACEFUNC(common,doAnimation);
+                    && {!_playerBound || {_medic isEqualTo ACE_player}}
+                    && {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) == _localityEpoch}) then {
+                    // The provider can go prone while the standing entry is still queued.
+                    private _current = toLowerANSI animationState _medic;
+                    private _proneNow = stance _medic == "PRONE" || {(_current find "prone") >= 0}
+                        || {(_current find "ppne") >= 0 && {(_current find "pknl") < 0}};
+                    [_medic, ["ACM_GenericContinuous", "ACM_ProneContinuous"] select _proneNow, 1] call ACEFUNC(common,doAnimation);
                 };
-            }, [_medic, _epoch, _playerBound], 0.65 / _choreographyRate] call CBA_fnc_waitAndExecute;
+            }, [_medic, _epoch, _playerBound, _localityEpoch], 0.65 / _choreographyRate] call CBA_fnc_waitAndExecute;
         };
         case "PRONE": {
-            if (_allowProne) then {
-                [_medic, "ACM_ProneContinuous", 1] call ACEFUNC(common,doAnimation);
-            } else {
-                [_medic, "AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1] call ACEFUNC(common,doAnimation); // 1.116
-
-                [{
-                    params ["_medic", "_epoch", "_playerBound"];
-                    if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
-                    && {local _medic} && {alive _medic} && {isNull objectParent _medic}
-                    && {!_playerBound || {_medic isEqualTo ACE_player}}) then {
-                            [_medic, "ACM_GenericContinuous", 1] call ACEFUNC(common,doAnimation);
-                    };
-                }, [_medic, _epoch, _playerBound], 1.116 / _choreographyRate] call CBA_fnc_waitAndExecute;
-            };
+            [_medic, "ACM_ProneContinuous", 1] call ACEFUNC(common,doAnimation);
         };
         case "CROUCH": {
             [_medic, "ACM_GenericContinuous", 1] call ACEFUNC(common,doAnimation);
@@ -168,9 +159,9 @@ if (currentWeapon _medic != "") then {
     [_medic] call ACEFUNC(weaponselect,putWeaponAway);
 };
 
-private _pfh = [{
+private _worker = {
     params ["_args", "_idPFH"];
-    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim", "_reopenOnEnd"];
+    _args params ["_medic", "_patient", "_bodyPart", "_extraArgs", "_notInVehicle", "_isProne", "_perFrame", "_onCancel", "_dialogID", "_epoch", "_keyID", "_isDialog", "_dialogStartupUntil", "_playerBound", "_suppressProviderAnim", "_reopenOnEnd", "_startupComplete", "_localityEpoch"];
 
     // Superseded action. Retire only this PFH and its own key id. Never run the old cancellation/reopen path against
     // the newer generation.
@@ -178,10 +169,17 @@ private _pfh = [{
         [_idPFH] call CBA_fnc_removePerFrameHandler;
         if (!(_keyID isEqualTo -1) && {!(_keyID isEqualTo "")}) then {[_keyID, "keydown"] call CBA_fnc_removeKeyHandler;};
     };
+    // Cancellation retires the local record before callbacks run. A queued/repeated old worker cannot run
+    // the same clinical cancellation twice, even when no successor has incremented the generation yet.
+    private _controller = missionNamespace getVariable [QGVAR(ContinuousAction_Controller), []];
+    if ((_controller param [2, -2]) != _epoch) exitWith {
+        [_idPFH] call CBA_fnc_removePerFrameHandler;
+    };
 
     private _patientCondition = (isNull _patient);
     private _identityChanged = _playerBound && {!(_medic isEqualTo ACE_player)};
-    private _medicCondition = (isNull _medic || {!local _medic} || {!(alive _medic)} || {IS_UNCONSCIOUS(_medic)});
+    private _localityChanged = (_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch;
+    private _medicCondition = (isNull _medic || {!local _medic} || {_localityChanged} || {!(alive _medic)} || {IS_UNCONSCIOUS(_medic)});
     private _vehicleCondition = (objectParent _medic isNotEqualTo objectParent _patient);
     private _enteredVehicle = _notInVehicle && {!isNull objectParent _medic};
     private _distanceCondition = (!isNull _patient) && {(_patient distance2D _medic) > ACEGVAR(medical_gui,maxDistance)};
@@ -207,7 +205,7 @@ private _pfh = [{
         };
     };
 
-    if (_patientCondition || _medicCondition || _identityChanged || _enteredVehicle || !GVAR(ContinuousAction_Active) || _dialogCondition || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
+    if (!_startupComplete || _patientCondition || _medicCondition || _identityChanged || _enteredVehicle || !GVAR(ContinuousAction_Active) || _dialogCondition || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
         [_idPFH] call CBA_fnc_removePerFrameHandler;
 
         // Release the shared ownership state before touching CBA handler cleanup. CBA currently returns string key-handler
@@ -223,6 +221,7 @@ private _pfh = [{
         };
         // The generation check above guarantees this cleanup still owns the global gate.
         GVAR(ContinuousAction_Active) = false;
+        GVAR(ContinuousAction_Controller) = [];
         if ((_medic getVariable [QGVAR(ContinuousAction_Session), []]) isEqualTo [_patient, _epoch]) then {
             _medic setVariable [QGVAR(ContinuousAction_Session), [], true];
         };
@@ -237,17 +236,21 @@ private _pfh = [{
             _medic setAnimSpeedCoef _rate;
             [QACEGVAR(common,setAnimSpeedCoef), [_medic, _rate]] call CBA_fnc_globalEvent;
             _medic setUnitPos "AUTO";
-            private _animation = ["AmovPknlMstpSnonWnonDnon", "AmovPpneMstpSnonWnonDnon"] select _isProne;
+            private _current = toLowerANSI animationState _medic;
+            private _proneNow = _isProne || {stance _medic == "PRONE"} || {(_current find "prone") >= 0}
+                || {(_current find "ppne") >= 0 && {(_current find "pknl") < 0}};
+            private _animation = ["AmovPknlMstpSnonWnonDnon", "AmovPpneMstpSnonWnonDnon"] select _proneNow;
             [_medic, _animation, 1] call ACEFUNC(common,doAnimation);
             [{
-                params ["_medic", "_epoch", "_poseEpoch"];
+                params ["_medic", "_epoch", "_poseEpoch", "_localityEpoch"];
                 if (isNull _medic || {!local _medic}) exitWith {};
+                if ((_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch) exitWith {};
                 if (GVAR(ContinuousAction_Epoch) != _epoch || {GVAR(ContinuousAction_Active)}) exitWith {};
                 if ((_medic getVariable ["ACME_treatmentPoseEpoch", -1]) != _poseEpoch) exitWith {};
                 if (!isNil "ACME_fnc_providerStanceOwned" && {[_medic] call ACME_fnc_providerStanceOwned}) exitWith {};
                 _medic setAnimSpeedCoef 1;
                 [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
-            }, [_medic, _epoch, _medic getVariable ["ACME_treatmentPoseEpoch", -1]], 0.85 / _rate] call CBA_fnc_waitAndExecute;
+            }, [_medic, _epoch, _medic getVariable ["ACME_treatmentPoseEpoch", -1], _localityEpoch], 0.85 / _rate] call CBA_fnc_waitAndExecute;
         } else {
             if (!_suppressProviderAnim && {local _medic} && {GVAR(ContinuousAction_Epoch) == _epoch}
                 && {!GVAR(ContinuousAction_Active)}) then {
@@ -258,7 +261,8 @@ private _pfh = [{
 
         ["ace_treatmentFailed", [_medic, _patient, _bodyPart, "ACM_ContinuousAction", "", "", false]] call CBA_fnc_localEvent;
 
-        if (GVAR(ContinuousAction_ShouldReopen) && {!isNull _patient} && {!_medicCondition} && {!_identityChanged}) then {
+        if (GVAR(ContinuousAction_Epoch) == _epoch && {!GVAR(ContinuousAction_Active)}
+            && {GVAR(ContinuousAction_ShouldReopen)} && {!isNull _patient} && {!_medicCondition} && {!_identityChanged}) then {
             disableSerialization;
             private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
             private _medicalTarget = missionNamespace getVariable ["ace_medical_gui_target", objNull];
@@ -280,8 +284,14 @@ private _pfh = [{
         && {CBA_missionTime - (_medic getVariable [QGVAR(ContinuousAction_LastSeen), -100]) >= 2}) then {
         _medic setVariable [QGVAR(ContinuousAction_LastSeen), CBA_missionTime, true];
     };
-}, 0, [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim, _reopenOnEnd]] call CBA_fnc_addPerFrameHandler;
+};
+private _workerArgs = [_medic, _patient, _bodyPart, _extraArgs, _notInVehicle, _isProne, _perFrame, _onCancel, _dialogID, _epoch, _keyID, _isDialog, _dialogStartupUntil, _playerBound, _suppressProviderAnim, _reopenOnEnd, false, _localityEpoch];
+private _pfh = [_worker, 0, _workerArgs] call CBA_fnc_addPerFrameHandler;
 
 GVAR(ContinuousAction_PFH) = _pfh;
+// Machine-local only: record the actual actor and the existing worker, including before OnStart can fail.
+GVAR(ContinuousAction_Controller) = [_medic, _patient, _epoch, _worker, _workerArgs, _pfh];
 _args call _onStart;
+// A surviving PFH must cancel an interrupted OnStart, even if later per-frame callbacks would succeed.
+_workerArgs set [16, true];
 true

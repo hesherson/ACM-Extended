@@ -8,6 +8,14 @@
             </Key>
         </Container>
         <Container name="ClinicalAndRuntimeFixes">
+            <Key ID="STR_ACME_Disability_InspectForFracture_Confirmed">
+                <Original>Patient&apos;s %1 has crepitus on assessment.</Original>
+                <English>Patient&apos;s %1 has crepitus on assessment.</English>
+            </Key>
+            <Key ID="STR_ACME_Disability_InspectForFracture_Confirmed_Short">
+                <Original>Crepitus present</Original>
+                <English>Crepitus present</English>
+            </Key>
             <Key ID="STR_ACME_Disability_InspectForFracture_Indeterminate">
                 <Original>Patient&apos;s %1 requires reassessment; contusion and crepitus findings are indeterminate.</Original>
                 <English>Patient&apos;s %1 requires reassessment; contusion and crepitus findings are indeterminate.</English>

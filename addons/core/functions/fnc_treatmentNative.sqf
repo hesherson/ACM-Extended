@@ -19,15 +19,19 @@
  */
 
 params ["_medic", "_patient", "_bodyPart", "_classname"];
+if (_classname == "ACME_FeelSkin") exitWith {_this call ACME_fnc_feelSkinStart;};
 
 // Delay by a frame if cursor menu is open to prevent progress bar failing
 if (uiNamespace getVariable [QACEGVAR(interact_menu,cursorMenuOpened), false]) exitWith {
     [ACEFUNC(medical_treatment,treatment), _this] call CBA_fnc_execNextFrame;
 };
 
-if !(_this call ACEFUNC(medical_treatment,canTreat)) exitWith {false};
+// Re-evaluate the same live ACME policy used by the menu. Despite its ACE name, this override never caches.
+// Calling stock canTreat here discarded the corpse/equipment exceptions after the player clicked a valid action.
+if !(_this call ACEFUNC(medical_treatment,canTreatCached)) exitWith {false};
 
 private _config = configFile >> QACEGVAR(medical_treatment,actions) >> _classname;
+private _torsoDressing = [_medic, _patient, _bodyPart, _classname] call ACME_fnc_isTorsoBandage;
 
 // Get treatment time from config, exit if treatment time is zero
 private _treatmentTime = if (isText (_config >> "treatmentTime")) then {
@@ -129,11 +133,14 @@ if (alive _patient) then {
 };
 
 if (_medic isNotEqualTo player || {!_isInZeus}) then {
-    // Get treatment animation for the medic
+    // Get treatment animation for the medic. Custom prone states can report UNDEFINED stance.
+    private _providerState = toLowerANSI animationState _medic;
+    private _proneProvider = stance _medic == "PRONE" || {(_providerState find "prone") >= 0}
+        || {(_providerState find "ppne") >= 0 && {(_providerState find "pknl") < 0}};
     private _medicAnim = if (_isSelf) then {
-        getText (_config >> ["animationMedicSelf", "animationMedicSelfProne"] select (stance _medic == "PRONE"));
+        getText (_config >> ["animationMedicSelf", "animationMedicSelfProne"] select (_proneProvider));
     } else {
-        getText (_config >> ["animationMedic", "animationMedicProne"] select (stance _medic == "PRONE"));
+        getText (_config >> ["animationMedic", "animationMedicProne"] select (_proneProvider));
     };
 
     // B184: custom ACME launchers deliberately blank native animation fields. Some inherited config paths can
@@ -145,13 +152,22 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
     // progress bar, item use, callbacks and patient state, but it must not enqueue its generic medic animation or
     // its matching end pose. That generic queue was what overwrote the authored chest/head bandage, NCD and
     // breathing-check motions a frame after ACME started them.
-    private _suppressNativeAnim = (_medic getVariable ["ACME_suppressNativeTreatmentAnim", false])
+    private _suppressNativeAnim = _torsoDressing || {(_medic getVariable ["ACME_suppressNativeTreatmentAnim", false])}
         || {(isNumber (_config >> "ACME_suppressNativeTreatmentAnim")) && {(getNumber (_config >> "ACME_suppressNativeTreatmentAnim")) > 0}};
     if (_suppressNativeAnim) then {
         _medicAnim = "";
     };
 
-    _medic setVariable [QACEGVAR(medical_treatment,selectedWeaponOnTreatment), weaponState _medic];
+    // B212: native actions can inherit a kneeling RTM even in their explicit Prone field.
+    // Preserve blank fields owned by an ACME controller; normalize nonempty provider work to
+    // BI's real prone treatment family before resolving its weapon, duration and ending pose.
+    // CPR has its own forced kneeling controller and is the intentional exception.
+    if (_proneProvider && {_medicAnim != ""}
+        && {toLowerANSI _classname != "cpr"} && {(toLowerANSI _medicAnim find "ppne") < 0}) then {
+        _medicAnim = ["AinvPpneMstpSlayW[wpn]Dnon_medicOther", "AinvPpneMstpSlayW[wpn]Dnon_medic"] select _isSelf;
+    };
+
+    _medic setVariable [QACEGVAR(medical_treatment,selectedWeaponOnTreatment), if (_torsoDressing) then {[]} else {weaponState _medic}];
 
     // Direct Pressure is already an authored empty-hands hold. currentWeapon still reports the player's selected
     // rifle while that Wnon pose is visible, which previously made the next bandage pick a rifle animation/end pose.
@@ -194,7 +210,9 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
     // for ACME-owned modal actions such as Chest Seal, Inspect Chest, Thoracostomy and the IV minigame.
     private _animDuration = 0;
     if (_medicAnim != "") then {
-        _animDuration = ACEGVAR(medical_treatment,animDurations) get toLowerANSI _medicAnim;
+        _animDuration = if (getNumber (_config >> "ACME_normalSpeedAnimation") > 0) then {
+            [_medicAnim] call ACME_fnc_nativeAnimationTime
+        } else {ACEGVAR(medical_treatment,animDurations) get toLowerANSI _medicAnim};
         if (isNil "_animDuration") then {
             WARNING_2("animation [%1] for [%2] has no duration defined",_medicAnim,_classname);
             _animDuration = 10;
@@ -218,7 +236,7 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
     // Play treatment animation for medic and determine the ending animation
     if (isNull objectParent _medic && {_medicAnim != ""}) then {
         // Speed up animation based on treatment time (but cap max to prevent odd animiations/cam shake)
-        private _animRatio = _animDuration / _treatmentTime;
+        private _animRatio = if (getNumber (_config >> "ACME_normalSpeedAnimation") > 0) then {1} else {_animDuration / _treatmentTime};
         TRACE_3("setAnimSpeedCoef",_animRatio,_animDuration,_treatmentTime);
 
         // Don't slow down animation too much to prevent it looking funny.
@@ -238,7 +256,7 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
             && {(_rateLease select 2) == _bodyPart}
             && {(_rateLease select 3) == _classname}
             && {(_rateLease select 4) == (_medic getVariable ["ACME_treatmentPoseEpoch", -1])}) then {
-            _animRatio = call ACME_fnc_choreographyRate;
+            _animRatio = if (getNumber (_config >> "ACME_normalSpeedAnimation") > 0) then {1} else {call ACME_fnc_choreographyRate};
             _medic setAnimSpeedCoef _animRatio;
         };
         [QACEGVAR(common,setAnimSpeedCoef), [_medic, _animRatio]] call CBA_fnc_globalEvent;
@@ -246,7 +264,7 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
         // Play animation
         private _endInAnim = "AmovP[pos]MstpS[stn]W[wpn]Dnon";
 
-        private _pos = ["knl", "pne"] select (stance _medic == "PRONE");
+        private _pos = ["knl", "pne"] select (_proneProvider);
         private _stn = "non";
 
         if (_wpn != "non") then {
@@ -282,7 +300,7 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
     };
 };
 
-if (_isInZeus) then {
+if (_isInZeus && {getNumber (_config >> "ACME_normalSpeedAnimation") == 0}) then {
     _treatmentTime = _treatmentTime * ACEGVAR(medical_treatment,treatmentTimeCoeffZeus);
 };
 
@@ -313,18 +331,54 @@ if (_callbackProgress isEqualTo {}) then {
     _callbackProgress = {true};
 };
 
-[_medic, _patient, _bodyPart, _classname, _itemUser, _usedItem, _createLitter] call _callbackStart;
+private _callbackArgs = [_medic, _patient, _bodyPart, _classname, _itemUser, _usedItem, _createLitter];
+// The assessment controller starts before this native progress bar. Bind its callbacks to
+// that exact episode so delayed completion/progress from an earlier same-class action cannot
+// stop a replacement assessment. Other native treatments retain their existing argument shape.
+if (toLowerANSI _classname in ["checkairway", "checkbreathing"]) then {
+    _callbackArgs pushBack ((_medic getVariable ["ACME_assessment", []]) param [0, -1]);
+    // Preserve the established on-foot/legacy shape. Only a live seated episode adds its return identity.
+    private _seated = _medic getVariable ["ACME_assessmentSeated", []];
+    if ((_callbackArgs select 7) == -1 && {_seated isNotEqualTo []}) then {
+        _callbackArgs pushBack (_seated select 0);
+    };
+};
+_callbackArgs call _callbackStart;
+if (toLowerANSI _classname == "checkcapillaryrefill") then {
+    _callbackArgs pushBack ((_medic getVariable ["ACME_capillaryPose", []]) param [0, -1]);
+};
+// AAJT starts its full-duration provider pose in callbackStart. Bind the same argument array used by ACE's
+// eventual success/failure to that exact episode; a late cancellation must not release a replacement AAJT pose.
+if (toLowerANSI _classname in [
+    "acme_applyaajt_inguinal", "acme_removeaajt_inguinal",
+    "acme_applyaajt_axilla", "acme_removeaajt_axilla",
+    "acme_applyaajt_zone3", "acme_removeaajt_zone3"
+]) then {
+    _callbackArgs pushBack ((_medic getVariable ["ACME_aajtTreatment", []]) param [0, -1]);
+};
 
 ["ace_treatmentStarted", [_medic, _patient, _bodyPart, _classname, _itemUser, _usedItem, _createLitter]] call CBA_fnc_localEvent;
 
+// Start after treatmentStarted has retired the previous provider generation.
+if (_torsoDressing) then {_callbackArgs pushBack ([_medic, _patient, _bodyPart, _classname, _treatmentTime] call ACME_fnc_torsoBandageStart);};
 [
     _treatmentTime,
-    [_medic, _patient, _bodyPart, _classname, _itemUser, _usedItem, _createLitter],
-    ACEFUNC(medical_treatment,treatmentSuccess),
-    ACEFUNC(medical_treatment,treatmentFailure),
+    _callbackArgs,
+    (if (_torsoDressing) then {{
+        _this call ACEFUNC(medical_treatment,treatmentSuccess);
+        [_this select 0, true] call ACME_fnc_torsoBandageFinish;
+    }} else {ACEFUNC(medical_treatment,treatmentSuccess)}),
+    (if (_torsoDressing) then {{
+        _this call ACEFUNC(medical_treatment,treatmentFailure);
+        [_this select 0, false] call ACME_fnc_torsoBandageFinish;
+    }} else {ACEFUNC(medical_treatment,treatmentFailure)}),
     getText (_config >> "displayNameProgress"),
     _callbackProgress,
     ["isNotInside", "isNotSwimming", "isNotInZeus"]
-] call ACEFUNC(common,progressBar);
+] call (if ((toLowerANSI _classname) in ["checkairway", "checkbreathing"]) then {
+    ACME_fnc_assessmentProgressBar
+} else {
+    ACEFUNC(common,progressBar)
+});
 
 true

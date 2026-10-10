@@ -6,6 +6,7 @@ F=ROOT/'addons/acm_extended/functions'
 torso=(F/'fn_directPressureTorso.sqf').read_text()
 tick=(F/'fn_directPressureTick.sqf').read_text()
 pose=(F/'fn_directPressurePose.sqf').read_text()
+busy=(F/'fn_directPressurePoseBusy.sqf').read_text()
 stop=(F/'fn_directPressureStop.sqf').read_text()
 start=(F/'fn_directPressureStart.sqf').read_text()
 cfg=(ROOT/'addons/acm_extended/config.cpp').read_text()
@@ -13,8 +14,11 @@ assert 'call ACM_core_fnc_setContinuousActionActive' not in torso
 assert 'call ACM_core_fnc_setContinuousActionActive' not in stop
 assert '[true, _medic, false] call ACME_fnc_directPressureStop' in tick
 assert '[false, _medic, false] call ACME_fnc_directPressureStop' in tick
-assert 'ACME_treatmentPreflightActive' in pose and 'ace_medical_treatment_endInAnim' in pose
-assert 'ACM_core_ContinuousAction_Active' in pose
+assert 'if ([_medic, _patient] call ACME_fnc_directPressurePoseBusy) exitWith {' in pose
+assert '[_medic] call ACME_fnc_directPressurePoseRetire;' in pose
+assert pose.index('call ACME_fnc_directPressurePoseBusy') < pose.index('call ACME_fnc_directPressurePoseEnter')
+assert 'ACME_treatmentPreflightActive' in busy and 'ace_medical_treatment_endInAnim' in busy
+assert 'ACM_core_ContinuousAction_Active' in busy
 assert 'params [["_silent", false, [false]], ["_medic", ACE_player' in stop
 assert 'if !(_medic getVariable ["ACME_DP_Active", false]) exitWith' not in stop
 for token in ['ACME_DP_Patient','ACME_DP_Part','ACME_DP_PFH','ACME_DP_KeyIDs',

@@ -49,7 +49,7 @@ if (local _target) then {
 // of the owner before its own override sees ACME_SalineY. fn_ysalinesetup runs after the ivbaglocal events, and
 // retries, so it re-types the saline locally on the owner and the type clamp holds. it is a harmless no-op when
 // the medic is the owner.
-["ACME_ySalineSetup", [_target, _lineKey, _iv], _target] call CBA_fnc_targetEvent;
+["ACME_ySalineSetup", [_target, _lineKey, _iv, [_target] call ACME_fnc_clinicalEpoch], _target] call CBA_fnc_targetEvent;
 
 // record the completed intervention in the activity log of the patient.
 [_target, "activity", "%1 hung blood on a Y-line with paired saline", [[ACE_player, false, true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
@@ -67,25 +67,5 @@ closeDialog 0;
 [{
     params ["_patient", "_bp", "_iv", "_site"];
     if (isNull _patient) exitWith {};
-    // retag the just-hung saline as the clamped y sentinel. it searches every body-part key rather than only the one
-    // we expect, because if ACM stored it under a different key our single-key lookup would miss and never retag
-    // it.
-    private _bags = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
-    private _done = false;
-    {
-        private _keyPart = _x;
-        private _arr = _y;
-        if (!_done) then {
-            private _sIdx = _arr findIf { ((_x param [0, ""]) == "Saline") && {(_x param [4, true]) isEqualTo _iv} };
-            if (_sIdx >= 0) then {
-                private _e = +(_arr select _sIdx);
-                _e set [0, "ACME_SalineY"];
-                _arr set [_sIdx, _e];
-                _bags set [_keyPart, _arr];
-                [_patient, _bags] call ACME_fnc_ivBagsCommit;
-                _done = true;
-            };
-        };
-    } forEach _bags;
     [ACE_player, _patient, _bp] call ACM_circulation_fnc_openTransfusionMenu;
 }, [_target, _bodyPart, _iv, _site], 0.3] call CBA_fnc_waitAndExecute;

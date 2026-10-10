@@ -4,6 +4,13 @@ params [
     ["_bag", [], [[]]], ["_part", "", [""]], ["_mode", "", [""]], ["_onY", false, [false]], ["_reason", "", [""]]
 ];
 if (!hasInterface || {isNull ACE_player}) exitWith {};
+// Replies can settle only a real pending click, and never into a replacement controlled unit.
+private _pending=uiNamespace getVariable ["ACME_txPullPending",createHashMap];
+private _context=_pending getOrDefault [_requestId,[]];
+if (count _context != 2 || {!((_context select 1) isEqualTo _patient)}) exitWith {};
+private _provider=_context select 0;
+if (isNull _provider || {!local _provider}) exitWith {};
+_pending deleteAt _requestId;uiNamespace setVariable ["ACME_txPullPending",_pending];
 private _seen = uiNamespace getVariable ["ACME_txPullSeen", createHashMap];
 if (_requestId in _seen) exitWith {};
 _seen set [_requestId, true];
@@ -28,9 +35,9 @@ if (_mode == "used" && {count _bag >= 7}) then {
         };
         default {_type};
     };
-    private _used = ACE_player getVariable ["ACME_usedBags", []];
+    private _used = _provider getVariable ["ACME_usedBags", []];
     _used pushBack [format ["used_%1", _requestId], _type, _remVol, _accessType, _bloodType, _origVol, _name, _freshBloodID];
-    ACE_player setVariable ["ACME_usedBags", _used, true];
+    _provider setVariable ["ACME_usedBags", _used, true];
     [format ["Pulled %1 (%2 mL left).%3", _name, round _remVol, ["", " Y tube intact."] select _onY], 2.5, ACE_player] call ace_common_fnc_displayTextStructured;
 } else {
     if (_mode == "discard") then {[format ["Discarded spent infusion.%1", ["", " Y tube intact."] select _onY], 2.5, ACE_player] call ace_common_fnc_displayTextStructured;};

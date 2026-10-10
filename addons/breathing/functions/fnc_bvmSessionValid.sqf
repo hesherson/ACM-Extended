@@ -6,4 +6,4 @@ if (isNull _medic || {isNull _patient} || {!alive _medic}
     || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {false};
 ((_patient getVariable [QGVAR(BVM_Medic), objNull]) isEqualTo _medic)
     && {(objectParent _medic) isEqualTo (objectParent _patient)}
-    && {(_medic distance2D _patient) <= ACEGVAR(medical_gui,maxDistance)}
+    && {!isNull objectParent _medic || {(_medic distance2D _patient) <= ACEGVAR(medical_gui,maxDistance)}}

@@ -58,19 +58,20 @@ class ACEGVAR(medical_treatment,actions) {
         displayName = CSTRING(UseBVM_Oxygen);
         treatmentLocations = TREATMENT_LOCATIONS_FACILITIES;
         items[] = {"ACM_BVM"};
-        condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM));
+        condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM) && {[ARR_3(_medic,_patient,'facility')] call ACME_fnc_bvmOxygenSourceAllowed});
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,true)] call FUNC(useBVM));
         ACM_menuIcon = "ACM_BVM";
     };
     class UseBVM_VehicleOxygen: UseBVM_Oxygen {
         displayName = CSTRING(UseBVM_VehicleOxygen);
         treatmentLocations = TREATMENT_LOCATIONS_VEHICLES;
+        condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM) && {[ARR_3(_medic,_patient,'vehicle')] call ACME_fnc_bvmOxygenSourceAllowed});
     };
     class UseBVM_PortableOxygen: UseBVM_Oxygen {
         displayName = CSTRING(UseBVM_PortableOxygen);
         treatmentLocations = TREATMENT_LOCATIONS_ALL;
         items[] = {"ACM_BVM"};
-        condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM) && (([ARR_2(_medic,'ACM_OxygenTank_425')] call ACME_fnc_itemCount) > 0));
+        condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM) && {[ARR_3(_medic,_patient,'portable')] call ACME_fnc_bvmOxygenSourceAllowed});
         callbackSuccess = QUOTE([ARR_4(_medic,_patient,true,true)] call FUNC(useBVM));
     };
 
@@ -162,7 +163,7 @@ class ACEGVAR(medical_treatment,actions) {
         allowSelfTreatment = 0;
         items[] = {"ACM_ACCUVAC"};
         consumeItem = 0;
-        condition = QUOTE(GVAR(pneumothoraxEnabled) && (_patient getVariable [ARR_2(QQGVAR(Thoracostomy_State),0)]) in [ARR_2(2,3)]);
+        condition = QUOTE(GVAR(pneumothoraxEnabled) && [ARR_1(_patient)] call ACME_fnc_thoraHasTube);
         callbackSuccess = QUOTE([ARR_2(_medic,_patient)] call FUNC(Thoracostomy_drain));
         ACM_menuIcon = "ACM_ACCUVAC";
     };

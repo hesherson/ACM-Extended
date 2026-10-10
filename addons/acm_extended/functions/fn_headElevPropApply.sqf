@@ -30,3 +30,6 @@ private _fwd2 = (_fwd vectorMultiply (cos _p)) vectorAdd (_up  vectorMultiply (s
 private _up2  = (_up  vectorMultiply (cos _p)) vectorAdd (_fwd vectorMultiply (-(sin _p)));
 private _up3  = (_up2 vectorMultiply (cos _r)) vectorAdd (_right vectorMultiply (sin _r));
 _prop setVectorDirAndUp [_fwd2, _up3];
+
+private _cargo = [_patient] call ACME_fnc_carrierInventoryGet;
+if (local _patient && {!isNull _cargo}) then {_cargo setPosATL (getPosATL _prop);};

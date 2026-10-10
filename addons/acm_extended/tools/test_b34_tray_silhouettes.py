@@ -42,10 +42,18 @@ class TraySilhouetteContracts(unittest.TestCase):
             self.assertNotRegex(text, rf'displayCtrl {idc}\) ctrlEnable')
         self.assertIn('_bandOn || {_held == "band"}', text)
         self.assertIn('!(uiNamespace getVariable ["ACME_IV_EJMode", false])', text)
-        self.assertIn('missionNamespace getVariable ["ACME_iv_lineSlot", false]', text)
+        from test_b241_current_ui_expectations import current_finish_tray_contract
+        # The old line silhouette stays hidden. B233+ uses the separate physical
+        # finishing tray, including tubing, rather than a retired option toggle.
+        current_finish_tray_contract(text, source('ivFinishTray'))
         for function in ('ivMinigameGrabPad', 'ivMinigameGrabBand', 'ivMinigameGrabNeedle',
-                         'ivMinigameGrabLine', 'ivMinigameSyncBand', 'ivMinigameStickSuccess'):
+                         'ivMinigameSyncBand', 'ivMinigameStickSuccess'):
             self.assertIn('ACME_fnc_ivMinigameRefreshBandSlot', source(function), function)
+        self.assertEqual(source('ivMinigameGrabLine').strip(), '["line"] call ACME_fnc_ivFinishGrab;')
+        finish = source('ivFinishGrab')
+        self.assertIn('[] call ACME_fnc_ivMinigameRefreshBandSlot;', finish)
+        self.assertIn('ACME_IV_FinishGrabPress', finish)
+        self.assertIn('ACME_IV_FinishBusy', finish)
 
     def test_chest_seal_and_spear_refresh_use_separate_slot_logos(self):
         for function, idc in (('chestSealRefreshSlot', 86422), ('chestSealRefreshSpearSlot', 86432)):

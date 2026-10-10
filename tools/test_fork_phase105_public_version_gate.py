@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Phase 105: keep public/runtime/debug version identity set to v1.2.4.1."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 import re
 
@@ -20,7 +21,7 @@ def main() -> None:
 
     start = START.read_text(encoding='utf-8', errors='replace')
     assert 'getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version")' in start
-    assert f'ACME_infusion_version = "{EXPECTED}"' in start
+    _assert_current_build()
     batch = re.search(r'ACME_buildBatch\s*=\s*"([A-Za-z0-9._-]+)"\s*;', start)
     assert batch, 'internal build batch stamp missing or malformed'
 

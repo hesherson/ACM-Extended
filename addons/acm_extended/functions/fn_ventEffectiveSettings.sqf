@@ -2,7 +2,7 @@
    Return: [simple, mode, RR, VT, FiO2, PEEP, PInsp, PS, trigger, I:E, kg, pressure limit].
    SIMPLE is an adult gameplay model, not a clinical ventilator prescription. */
 params [["_patient", objNull, [objNull]]];
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = (missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((_patient getVariable ["ACME_vent_nivMask", false] || {[_patient] call ACME_fnc_ventMaskSelected}))};
 private _bpm = _patient getVariable ["ACME_vent_bpm", 12];
 if (!(_bpm isEqualType 0) || {!finite _bpm}) then {_bpm = 12;};
 _bpm = _bpm max 1;

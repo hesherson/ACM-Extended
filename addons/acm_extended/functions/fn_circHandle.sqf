@@ -41,40 +41,8 @@ private _patients = ACME_circ_activePatients + ACME_tbi_activePatients + (missio
     if (!isNull _x && {alive _x} && {local _x}) then {_patients pushBackUnique _x};
 } forEach (ACME_infusion_activePatients select {!isNull _x});
 
-// keep acidosis and PaCO2 ticking even when the casualty falls out of an ACME active array. cardiac arrest,
-// unconscious airway failure, severe hypoventilation, existing acidosis, TBI, active iv fluids and saline
-// reservoir changes all need a continuous physiology tick.
-{
-    private _u = _x;
-    if (isNull _u || {!alive _u} || {!local _u}) then { continue };
-
-    private _circState = _u getVariable ["ACME_circ_State", createHashMap];
-    private _arrest = _u getVariable ["ace_medical_inCardiacArrest", false];
-    private _uncon = _u getVariable ["ACE_isUnconscious", false];
-    private _rr = _u getVariable ["ACM_breathing_RespirationRate", 18];
-    private _rrTarget = _u getVariable ["ACM_core_TargetVitals_RespirationRate", 16];
-    if (_rrTarget <= 6) then { _rrTarget = 16 };
-
-    private _needsAcidTick =
-        _arrest ||
-        {_u getVariable ["ACME_vent_connected", false]} ||
-        {_u getVariable ["ACME_ETT_Inserted", false]} ||
-        {_u getVariable ["ACME_nrb_on", false]} ||
-        {(_u getVariable ["ACME_blastLung_State", 0]) > 0} ||
-        {count (_u getVariable ["ace_medical_medications", []]) > 0} ||
-        {count (_u getVariable ["ACME_yFlushJobs", createHashMap]) > 0} ||
-        {_uncon} ||
-        {[_circState] call _circStateNeedsTick} ||
-        {_u getVariable ["ACME_tbi_HasTBI", false]} ||
-        {_rr < (_rrTarget * 0.85)} ||
-        {(_u getVariable ["ACME_circ_salineGivenMl", 0]) > 0} ||
-        {(_u getVariable ["ACM_circulation_Saline_Volume", 0]) > 0} ||
-        {(_u getVariable ["ACME_lido_serumLevel", 0]) > 0.05} ||
-        {(_u getVariable ["ACME_lido_seizureState", ""]) != ""} ||
-        {count (_u getVariable ["ACM_circulation_IV_Bags", createHashMap]) > 0};
-
-    if (_needsAcidTick) then { _patients pushBackUnique _u };
-} forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
+// B246: missed-transition discovery is centralized in ACME_fnc_idlePhysDiscovery.
+ // This 4 Hz clinical worker never scans the complete owner registry.
 
 _patients = _patients arrayIntersect _patients;
 
@@ -1035,14 +1003,29 @@ private _getMedEffect = {
     // see apnea during arrest. a BVM provides partial effective ventilation and can clear CO2.
     if (_inCardiacArrest && {missionNamespace getVariable ["ACME_circ_arrestForcesAcidosis", true]}) then {
         if (_bvmActive) then {
-            // Simple mode's actual alveolar delivery remains authoritative in
-            // arrest. The generic hand-bagging floor would otherwise make a very
-            // low ventilator rate clear CO2 as if it supplied adequate breaths.
-            private _simpleVentArrest = (missionNamespace getVariable ["ACME_vent_simpleMode", false])
-                && {_patient getVariable ["ACME_vent_driving", false]}
+            // B259: the generic hand-bagging floor applies ONLY to manual
+            // BVM. Advanced SIMV (as well as Simple) already publishes its
+            // measured alveolar volume; assigning 0.75 anyway invents breaths
+            // when the connected ventilator is ineffective.
+            private _ventOwnsArrest = (_patient getVariable ["ACME_vent_driving", false])
                 && {(_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient};
-            if (!_simpleVentArrest) then {
+            if (!_ventOwnsArrest) then {
                 _ventFrac = (_ventFrac max (missionNamespace getVariable ["ACME_circ_bvmVentFrac", 0.75])) min 1.5;
+            } else {
+                // A 40 BPM SIMV mode is not CPR-optimized. Overlapping positive
+                // pressure and compressions impair effective gas transport;
+                // high machine rate must not cure severe CO2 retention at once.
+                private _compressing = !isNull (_patient getVariable ["ace_medical_CPR_provider", objNull]);
+                private _cprMode = (_patient getVariable ["ACME_vent_mode", "SIMV VC PS"]) == "IMV VC (CPR)";
+                if (_compressing && {!_cprMode}) then {
+                    private _actualRR = _patient getVariable ["ACME_vent_effectiveRR", 0];
+                    private _cprEfficiency = linearConversion [12, 40, _actualRR, 1, 0.45, true];
+                    _ventFrac = _ventFrac * _cprEfficiency;
+                    // B260: apply this real gas-exchange penalty to both CO2
+                    // kinetics AND the respiratory acid deficit for this tick.
+                    _effVent = _targetRR * _ventFrac;
+                    _respDeficit = (1 - (_ventFrac min 1)) max 0 min 1;
+                };
             };
             _effVent = _targetRR * _ventFrac;
             _respDeficit = (1 - (_ventFrac min 1)) max 0 min 1;
@@ -1388,6 +1371,7 @@ private _getMedEffect = {
         || {_offset != 0}
         || {_hyperSpike > 0}
         || {[_state] call _circStateNeedsTick}
+        || {(_patient getVariable ["ACME_circ_salineGivenMl", 0]) > 0}
         || {_effMAPpre < _acidThresh};
     if (_keepCirc) then {
         ACME_circ_activePatients pushBackUnique _patient;

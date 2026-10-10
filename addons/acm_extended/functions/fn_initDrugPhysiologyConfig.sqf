@@ -42,7 +42,7 @@ ACME_lido_shockClearFrac = 0.6;  // active shock multiplies clearance by this, b
 ACME_lido_betaClearFrac  = 0.7;  // esmolol (beta-blocker) on board multiplies clearance by this
 
 // lidocaine toxicity, phase 2: the shared generalized seizure. at or above seizurethreshold an unconscious
-// patient seizes. The visible convulsion is the same 1.35x GestureSpasm3-6 sequence used by TBI and severe ACM
+// patient seizes. The visible convulsion is the same GestureSpasm0/4/5/6 sequence used by TBI and severe ACM
 // nerve-agent seizures. the physiologic tell is apnea, because the dedicated seizure
 // rr channel drives rr to seizureapnearr, which crashes SpO2 through ACM's native oxygen model. a sympathetic
 // tachycardia runs with it. the arc is active, then postictal, then resolve. it recurs while the patient stays
@@ -80,7 +80,7 @@ ACME_seizure_ketamineExtraWeight = 0.35;
 ACME_seizure_controlHysteresis = 0.10;
 ACME_seizure_controlCap = 4.0;
 
-// seizure body motion. BI GestureSpasm3-6 are played as ACME-only gesture aliases at 1.35x and chained on
+// seizure body motion. BI GestureSpasm0/4/5/6 are played as ACME-only gesture aliases (native Spasm0; 1.05x Spasm4/5/6) and chained on
 // GestureDone, so each spasm completes before the next one begins. The old setDir tremor, random yaw jitter,
 // burst/pause oscillator, repeated ragdoll flops and seizure camera shake are retired.
 ACME_seizure_motionEnabled = 1;  // legacy mission-level master toggle retained for compatibility

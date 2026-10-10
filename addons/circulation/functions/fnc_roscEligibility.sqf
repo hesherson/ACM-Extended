@@ -19,6 +19,15 @@ if (_refresh) then {[_patient] call FUNC(updateCirculationState);};
 
 private _volume = GET_BLOOD_VOLUME(_patient);
 if (_volume <= ACM_REVERSIBLE_CA_BLOODVOLUME) exitWith {[false, "BLOOD VOLUME"]};
+// Plasma can restore circulating preload without replacing lost oxygen-carrying
+// cells. The ACE total-volume gate above counts blood + plasma + saline, so
+// it cannot be the sole rescue condition after fatal red-cell loss.
+// Keep the requirement below the reversible-volume threshold: resuscitation
+// may still work after substantial blood loss, but plasma-only filling cannot
+// immediately resurrect a patient with almost no native blood remaining.
+private _bloodCarrying = _patient getVariable [QGVAR(Blood_Volume), _volume];
+private _minBlood = missionNamespace getVariable ["ACME_rosc_minBloodCarryingVolume", 2.75];
+if (_bloodCarrying < _minBlood) exitWith {[false, "INSUFFICIENT BLOOD / OXYGEN CAPACITY"]};
 
 if (!(GET_CIRCULATIONSTATE(_patient))) exitWith {
     private _reason = _patient getVariable ["ACME_rosc_blockedBy", ""];

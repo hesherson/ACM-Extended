@@ -17,6 +17,11 @@ private _valid = if (_iv) then {
     [_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO
 };
 if (!_valid) exitWith {};
+private _selected = [missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],
+    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],
+    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1]];
+if (_selected isEqualTo [_bodyPart,_iv,if (_iv) then {_site} else {0}]) exitWith {};
+
 
 [[["transfusionSelectIV", _iv], ["transfusionSelectedBodyPart", _bodyPart], ["transfusionSelectedAccessSite", if (_iv) then {_site} else {0}]]] call ACM_circulation_fnc_setLocalUiState;
 call ACM_circulation_fnc_TransfusionMenu_UpdateSelection;

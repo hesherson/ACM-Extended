@@ -73,8 +73,12 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
     private _animToken = format ["manual-sf:%1:%2:%3", clientOwner, _animSerial, _token];
     _medic setVariable ["ACME_headElev_manualAnimToken", _animToken, false];
 
-    private _entry = "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown";
-    private _holdState = "AinvPknlMstpSnonWnonDnon_Putdown";
+    private _prone = stance _medic == "PRONE";
+    _medic setVariable ["ACME_headElev_manualProne", _prone, false];
+    private _entry = [_medic, "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown", _prone] call ACME_fnc_providerAnimation;
+    _prone = _prone || {_entry == "ACM_ProneContinuous"};
+    _medic setVariable ["ACME_headElev_manualProne", _prone, false];
+    private _holdState = [_medic, "AinvPknlMstpSnonWnonDnon_Putdown", _prone] call ACME_fnc_providerAnimation;
     private _entryLC = toLowerANSI _entry;
     private _holdLC = toLowerANSI _holdState;
 
@@ -96,7 +100,7 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
 
     private _pfh = [{
         params ["_args","_handle"];
-        _args params ["_m","_p","_poseToken","_animToken","_entry","_entryLC","_holdState","_holdLC","_prepUntil","_stage","_stageAt","_lastAssert","_poseEpoch"];
+        _args params ["_m","_p","_poseToken","_animToken","_entry","_entryLC","_holdState","_holdLC","_prepUntil","_stage","_stageAt","_lastAssert","_poseEpoch","_prone"];
 
         if (isNull _m || {!local _m}
             || {(_m getVariable ["ACME_headElev_manualAnimToken",""]) != _animToken}
@@ -115,6 +119,35 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
             };
         };
 
+        if (!_prone && {([_m, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon"}) then {
+            _prone = true;
+            _entry = [_m, _entry, true] call ACME_fnc_providerAnimation;
+            _holdState = [_m, _holdState, true] call ACME_fnc_providerAnimation;
+            _entryLC = toLowerANSI _entry; _holdLC = toLowerANSI _holdState;
+            _args set [4, _entry]; _args set [5, _entryLC];
+            _args set [6, _holdState]; _args set [7, _holdLC];
+            _args set [13, true];
+            _m setVariable ["ACME_headElev_manualProne", true, false];
+            // A published frozen pose is immutable for its episode. If posture changes
+            // after the freeze, publish a new episode so observers adopt the prone pose.
+            if (_stage == 1) then {
+                [format ["ACME_treatmentPose_%1_%2", netId _m, _poseEpoch]] call CBA_fnc_removeGlobalEventJIP;
+                _poseEpoch = (_m getVariable ["ACME_treatmentPoseEpoch", _poseEpoch]) + 1;
+                _m setVariable ["ACME_treatmentPoseEpoch", _poseEpoch, true];
+                _m setVariable ["ACME_treatmentPoseEpisode", [_poseEpoch, true], true];
+                _m setVariable ["ACME_headElev_manualPoseEpoch", _poseEpoch, false];
+                _args set [12, _poseEpoch];
+                private _rate = call ACME_fnc_choreographyRate;
+                _m setAnimSpeedCoef _rate;
+                private _jip = format ["ACME_treatmentPose_%1_%2", netId _m, _poseEpoch];
+                ["ACME_treatmentPoseSync", [_m, _poseEpoch, "run", "", -1, clientOwner, _rate], _jip] call CBA_fnc_globalEventJIP;
+                [_jip, _m] call CBA_fnc_removeGlobalEventJIP;
+                [_m, _holdState, 2] call ACME_fnc_doAnim;
+                _stage = 0; _args set [9, 0];
+                _stageAt = CBA_missionTime; _args set [10, _stageAt];
+            };
+        };
+
         private _now = CBA_missionTime;
         private _state = toLowerANSI animationState _m;
 
@@ -122,7 +155,7 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
             private _empty = currentWeapon _m == "" && {(_state find "wnon") >= 0} && {(_state find "snon") >= 0};
             if (!_empty && {_now < _prepUntil}) exitWith {};
             if (currentWeapon _m != "") then {_m selectWeapon "";};
-            _m setUnitPos "MIDDLE";
+            _m setUnitPos (["MIDDLE", "DOWN"] select (_prone || {stance _m == "PRONE"}));
             [_m, _entry, 2] call ACME_fnc_doAnim;
             _args set [9,0];
             _args set [10,_now];
@@ -160,7 +193,7 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
                 _args set [11,_now];
             };
         };
-    }, 0, [_medic,_patient,_token,_animToken,_entry,_entryLC,_holdState,_holdLC,_prepUntil,-1,CBA_missionTime,-1,_poseEpoch]] call CBA_fnc_addPerFrameHandler;
+    }, 0, [_medic,_patient,_token,_animToken,_entry,_entryLC,_holdState,_holdLC,_prepUntil,-1,CBA_missionTime,-1,_poseEpoch,_prone]] call CBA_fnc_addPerFrameHandler;
     _medic setVariable ["ACME_headElev_manualAnimPFH", _pfh, false];
 }, {
     params ["_medic", "_patient", "_bodyPart", "_extra"];
@@ -199,11 +232,12 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
     // Use the authored Putdown exit, the same provider animation family used to return a patient to supine.
     if (_ownsPose && {alive _medic} && {local _medic} && {isNull objectParent _medic}
         && {!(_medic getVariable ["ACE_isUnconscious",false])}) then {
-        private _exit = "AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon";
-        private _rest = "AmovPknlMstpSnonWnonDnon";
+        private _prone = _medic getVariable ["ACME_headElev_manualProne", false];
+        private _rest = [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation;
+        private _exit = if (_prone || {stance _medic == "PRONE"}) then {_rest} else {"AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon"};
         private _exitSerial = (_medic getVariable ["ACME_headElev_manualExitSerial",0]) + 1;
         _medic setVariable ["ACME_headElev_manualExitSerial",_exitSerial,false];
-        _medic setUnitPos "MIDDLE";
+        _medic setUnitPos (["MIDDLE", "DOWN"] select (_prone || {stance _medic == "PRONE"}));
         [_medic,_exit,2] call ACME_fnc_doAnim;
 
         private _releaseTime = missionNamespace getVariable ["ACME_headElev_seqReleaseTime", 2.1 / (call ACME_fnc_choreographyRate)];

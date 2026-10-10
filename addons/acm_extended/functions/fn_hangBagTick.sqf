@@ -33,7 +33,7 @@ if (!_stop && {(_medic distance _patient) > _leash}) then {
     _stop = true;
     _why = "Out of line range. Bag lowered.";
 };
-if (!_stop && {!isNull objectParent _medic || {_medic getVariable ["ACE_isUnconscious", false]} || {(stance _medic) == "PRONE"}}) then {
+if (!_stop && {!isNull objectParent _medic || {_medic getVariable ["ACE_isUnconscious", false]}}) then {
     _stop = true;
     _why = "Bag lowered.";
 };
@@ -43,7 +43,7 @@ if (_stop) exitWith {
 };
 
 // The owner reply, not replicated holder writes from another client, determines acceptance.
-if ((_medic getVariable ["ACME_hang_ClaimOwner", -1]) != owner _medic
+if ((_medic getVariable ["ACME_hang_ClaimOwner", -1]) != clientOwner
     || {(_medic getVariable ["ACME_hang_ClaimEpoch", -1]) != ([_patient] call ACME_fnc_clinicalEpoch)}
     || {(_medic getVariable ["ACME_hang_PlayerBound", false]) && {!(_medic isEqualTo ACE_player)}}) exitWith {
     [true, _medic] call ACME_fnc_hangBagStop;
@@ -59,9 +59,11 @@ if (serverTime - (_medic getVariable ["ACME_hang_ClaimAckAt", 0]) >= 6) exitWith
 // Reuse the existing tick, but send at most one renewal every two seconds, never at 20 Hz.
 if (serverTime - (_medic getVariable ["ACME_hang_ClaimRequestedAt", 0]) >= 2) then {
     _medic setVariable ["ACME_hang_ClaimRequestedAt", serverTime, false];
+    private _sequence = (_medic getVariable ["ACME_hang_ClaimSequence", 0]) + 1;
+    _medic setVariable ["ACME_hang_ClaimSequence", _sequence, false];
     [_patient, "hangBagRenew", [_medic, _medic getVariable ["ACME_hang_Start", -1],
         missionNamespace getVariable ["ACME_hang_flowMult", 1.75],
-        _medic getVariable ["ACME_hang_ClaimEpoch", -1], owner _medic]] call ACME_fnc_ownerDispatch;
+        _medic getVariable ["ACME_hang_ClaimEpoch", -1], clientOwner, _sequence, serverTime]] call ACME_fnc_ownerDispatch;
 };
 
 // A local owner can reject the renewal synchronously and stop this episode.
@@ -82,6 +84,7 @@ if (_hPart != "") then {
     { if (toLower _x == _hPart) then { _hbags = _y; }; } forEach (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]);
     private _flowing = (_hbags findIf {
         !((_x param [0, ""]) in ["ACME_Empty", "ACME_EmptySaline", "ACME_SalineY"]) && {(_x param [1, 0]) > 0.5}
+            && {!((_x param [8, ""]) in (_patient getVariable ["ACME_IV_DisconnectedBagUIDs", []]))}
     }) >= 0;
     if (_flowing) then {
         _medic setVariable ["ACME_hang_sawFlow", true];
@@ -112,7 +115,7 @@ if (hasInterface
 private _graceUntil = _medic getVariable ["ACME_hang_PoseRetryAt", 0];
 if (CBA_missionTime >= _graceUntil) then {
     private _animNow = toLower animationState _medic;
-    if ((_animNow find "jetscrewaidfcrouchthumbup") < 0) exitWith {
+    if (_animNow != toLower (_medic getVariable ["ACME_hang_Pose", "ACME_Acts_JetsCrewaidFCrouchThumbup_loop"])) exitWith {
         [true, _medic] call ACME_fnc_hangBagStop;
     };
 };

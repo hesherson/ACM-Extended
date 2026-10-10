@@ -18,7 +18,7 @@ class AssessmentContracts(unittest.TestCase):
         for name in ("checkTemperature", "readCoreTemp"):
             with self.subTest(callback=name):
                 text = source(name)
-                gate = text.index('([_medic, "ACM_Thermometer"] call ace_common_fnc_getCountOfItem) <= 0')
+                gate = text.index('([_medic, _patient, "ACM_Thermometer"] call ACME_fnc_treatmentSupplyCount) <= 0')
                 self.assertLess(gate, text.index('getVariable ["ACME_hypo_temp"'))
                 self.assertLess(gate, text.index("call ace_common_fnc_displayTextStructured"))
                 self.assertLess(gate, text.index("call ACME_fnc_medLog"))
@@ -39,7 +39,8 @@ class AssessmentContracts(unittest.TestCase):
         ):
             self.assertIn(finding, original)
         self.assertIn('[_exam, 3, _medic]', text[append:])
-        self.assertIn('[_patient, "activity", _exam, []]', text[append:])
+        self.assertIn('[_patient, "activity", "%1 assessed pupils: %2", _args]', text[append:])
+        self.assertIn('[_patient, "quick_view", "%1 assessed pupils: %2", _args]', text[append:])
 
     def test_append_uses_current_descriptor_choice_without_exposing_drug_cause(self):
         text = source("tbiAssessPupils")

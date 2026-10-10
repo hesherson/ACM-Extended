@@ -3,6 +3,16 @@
    A deflated cuff remains fitted and can be pumped without spending another item. */
 params ["_patient"];
 if (isNull _patient || {!local _patient}) exitWith {};
+private _warmers = _patient getVariable ["ACME_lineWarmers", createHashMap];
+private _removedWarmers = [];
+{
+    private _site = _x splitString "#";
+    if (count _site != 3 || {!([_patient, _site select 0, (_site select 1) == "true", parseNumber (_site select 2)] call ACME_fnc_transfusionAccessValid)}) then {_removedWarmers pushBack _x;};
+} forEach keys _warmers;
+if (_removedWarmers isNotEqualTo []) then {
+    {_warmers deleteAt _x;} forEach _removedWarmers;
+    [_patient, "ACME_lineWarmers", _warmers] call ACME_fnc_setVarNet;
+};
 private _cuffs = _patient getVariable ["ACME_piCuffs", createHashMap];
 if (count _cuffs == 0) exitWith {};
 private _live = [];

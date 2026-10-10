@@ -12,6 +12,10 @@ params [
 if (isNull _medic || {!local _medic} || {!alive _medic}
     || {_medic getVariable ["ACE_isUnconscious", false]}
     || {[_medic] call ACME_fnc_animBlocked}) exitWith {-1};
+private _enteredProne = stance _medic == "PRONE" || {
+    private _animation = toLowerANSI animationState _medic;
+    (_animation find "pknl") < 0 && {(_animation find "ppne") >= 0 || {(_animation find "prone") >= 0}}
+};
 
 [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
 // B56: a treatment pose replaces the medical-menu pose without an intermediate exit motion.
@@ -20,6 +24,8 @@ if (isNull _medic || {!local _medic} || {!alive _medic}
 private _main = switch (_mode) do {
     case "response": {"ACME_ResponseCheckWork"};
     case "airway": {"ACME_AirwayCheckWork"};
+    case "assessmentAirway": {"AinvPknlMstpSnonWnonDr_medic5"};
+    case "assessmentBreathing": {"AinvPknlMstpSnonWnonDr_medic4"};
     // Chest-seal Flip intentionally uses the literal BI medic4 state.  The B73 wrapper changed the move-graph
     // entry and lost the characteristic flip theatre.  Crouch-first entry/empty-hands handling still comes from
     // this controller; only the actual work state is restored to the known-good literal animation.
@@ -30,11 +36,16 @@ private _main = switch (_mode) do {
     case "inspect": {"ACME_ChestInspectWork"};
     case "chestSealWorkspace": {"ACME_ChestSealWorkspace"};
     case "junctional": {"ACME_JunctionalWork"};
+    // AAJT placement/removal uses Flip's empty-handed medic4 as repeating work until ACE ends the treatment.
+    case "aajt": {"ACME_JunctionalWork"};
     case "stethoscope": {"ACME_StethoscopeWork"};
+    // B224: Feel Skin samples native medic3 at 1.5 seconds; the tactile action owns its contact hold.
+    case "feelSkin": {"AinvPknlMstpSnonWnonDr_medic3"};
+    case "feelSkinReturn": {"AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon"};
     case "chestSeal": {"AinvPknlMstpSnonWnonDnon_medic3"};
     case "ncdSeat": {"AinvPknlMstpSnonWnonDnon_medic1"};
     case "pulse": {"ACME_StethoscopeWork"};
-    case "torsoBandage": {"AinvPknlMstpSnonWrflDnon_medic4"};
+    case "torsoBandage": {"ACME_JunctionalWork"};
     case "headBandageLeft": {"AinvPknlMstpSnonWrflDnon_medic0"};
     case "headBandageRight": {"AinvPknlMstpSnonWrflDr_medic2_old"};
     case "directPressureAction": {"AinvPknlMstpSnonWrflDnon_medic5"};
@@ -49,19 +60,26 @@ private _ambulatoryPatient = [_patient] call ACME_fnc_patientUpright;
 private _upright = false;              // true only when a validated BI medicUp state replaced _main.
 private _ambulatoryContact = false;    // stethoscope uses the Semi-Fowler Putdown reach instead of medicUp.
 
-if (_ambulatoryPatient && {_mode == "stethoscope"}) then {
+if (!_enteredProne && {_ambulatoryPatient} && {_mode == "stethoscope"}) then {
     _main = "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown";
     _ambulatoryContact = true;
 } else {
-    ([_mode, _main, _patient] call ACME_fnc_poseUprightState) params ["_selectedMain", "_selectedUpright"];
-    _main = _selectedMain;
-    _upright = _selectedUpright;
+    if (!_enteredProne && {!(_mode in ["assessmentAirway", "assessmentBreathing"])}) then {
+        ([_mode, _main, _patient] call ACME_fnc_poseUprightState) params ["_selectedMain", "_selectedUpright"];
+        _main = _selectedMain;
+        _upright = _selectedUpright;
+    };
 };
+if (_enteredProne) then {_main = [_medic, _main, true] call ACME_fnc_providerAnimation;};
 
 private _holdAt = (missionNamespace getVariable ["ACME_poseHoldAt", createHashMap]) getOrDefault [_mode, -1];
 private _stopAfterHold = (missionNamespace getVariable ["ACME_poseStopAfterHold", createHashMap]) getOrDefault [_mode, -1];
+if (_mode == "feelSkin") then {_holdAt = 1.5; _stopAfterHold = -1;};
 if !(_holdAt isEqualType 0) then {_holdAt = -1;};
 if !(_stopAfterHold isEqualType 0) then {_stopAfterHold = -1;};
+// A prone specialty fallback is already a supported medical hold. Do not seek a kneeling RTM timestamp into it.
+// Retain the held-stage contract needed by chest-access/roll completion and their existing stop timing.
+if (_enteredProne && {_holdAt >= 0}) then {_holdAt = 0;};
 
 if (_upright) then {
     // B178 medicUp is always a finite one-shot gesture. It never inherits the downed pose's frozen hold.
@@ -82,6 +100,7 @@ _medic setVariable ["ACME_treatmentPoseEpisode", [_epoch, true], true];
 private _exclusion = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
 private _actionStarted = CBA_missionTime;
 private _rate = call ACME_fnc_choreographyRate;
+if (_mode in ["assessmentAirway", "assessmentBreathing", "feelSkin"]) then {_rate = 1;};
 _medic setAnimSpeedCoef _rate;
 private _speedJIP = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
 ["ACME_treatmentPoseSync", [_medic, _epoch, "run", "", -1, clientOwner, _rate], _speedJIP] call CBA_fnc_globalEventJIP;
@@ -119,12 +138,12 @@ private _prepUntil = _actionStarted + (_prepDelay max 0);
 //  8 waitUntil, 9 finiteWindow (informational), 10 actionStarted, 11 holdAt, 12 holdPhase,
 //  13 lastHoldAssert, 14 holdStarted, 15 stopAfterHold, 16 upright-target medicUp state in use, 17 moving animation rate,
 //  18 forceImmediate (skip redundant weapon/crouch prep; hard priority-2 overwrite is roll/Flip only),
-//  19 ambulatoryContact (standing-casualty stethoscope using the frozen Semi-Fowler Putdown reach)
+//  19 ambulatoryContact, 20 provider entered prone (preserved throughout entry, hold and cleanup)
 // Stages: -1 waiting for the one weapon stow, -2 playing the BI stance transition into the crouch,
 //          0 legacy immediate start, 1 requested state entering, 2 running, 3 frozen hold.
 private _state = [_epoch, _mode, _main, -1, _actionStarted, -1, clientOwner, _exclusion,
     _prepUntil, _window, _actionStarted, _holdAt, -1, -1, -1, _stopAfterHold, _upright, _rate, _forceImmediate,
-    _ambulatoryContact];
+    _ambulatoryContact, _enteredProne];
 _medic setVariable ["ACME_treatmentPoseState", _state];
 // An accepted physical examination/preparation is actual care; merely viewing
 // the initial medical menu never reaches this controller.
@@ -143,8 +162,20 @@ if (!isNil "ace_advanced_fatigue_setAnimExclusions") then {
 
 private _fnStartMain = {
     params ["_medic", "_main", "_state"];
+    // Recheck at the emission boundary: stance can change during either queued entry transition.
+    if (!(_state param [20, false]) && {stance _medic == "PRONE" || {
+        private _animation = toLowerANSI animationState _medic;
+        (_animation find "pknl") < 0 && {(_animation find "ppne") >= 0 || {(_animation find "prone") >= 0}}
+    }}) then {
+        _state set [20, true];
+        _main = [_medic, _main, true] call ACME_fnc_providerAnimation;
+        _state set [2, _main];
+        if ((_state param [11, -1]) >= 0) then {_state set [11, 0];};
+        _state set [16, false];
+        _state set [19, false];
+    };
     // BI medicUp is still a Pknl/kneeling provider family. "Upright" describes the casualty target, not the medic.
-    _medic setUnitPos "MIDDLE";
+    _medic setUnitPos (["MIDDLE", "DOWN"] select (_state param [20, false]));
     // Chest-seal placement must keep the normal interpolated motion; only physical Flip needs the hard overwrite.
     // Both may skip redundant prep because the live chest workspace already owns empty-hands crouch theatre.
     private _hardOverride = (_state param [18, false]) && {(_state param [1, ""]) == "roll"};
@@ -153,20 +184,36 @@ private _fnStartMain = {
     _state set [4, CBA_missionTime];
 };
 
-// Crouch first. A provider who is standing or prone plays the normal BI transition into the unarmed kneel and only
-// then receives the requested state, so the RTM starts from the pose it was authored for.
+// Standing providers enter the authored kneel; prone providers keep their supported prone medical pose.
 private _fnEnter = {
     params ["_medic", "_main", "_state", "_fnStartMain"];
     private _transition = "";
     private _length = 0;
+    // The provider may have gone prone while the one-shot weapon stow was finishing.
+    if (!(_state param [20, false]) && {stance _medic == "PRONE" || {
+        private _animation = toLowerANSI animationState _medic;
+        (_animation find "pknl") < 0 && {(_animation find "ppne") >= 0 || {(_animation find "prone") >= 0}}
+    }}) then {
+        _state set [20, true];
+        _main = [_medic, _main, true] call ACME_fnc_providerAnimation;
+        _state set [2, _main];
+        if ((_state param [11, -1]) >= 0) then {_state set [11, 0];};
+        _state set [16, false];
+        _state set [19, false];
+    };
+    if (_state param [20, false]) exitWith {[_medic, _main, _state] call _fnStartMain;};
     // Procedure-critical immediate handoffs must not wait for a crouch-transition RTM to complete.
     if (_state param [18, false]) exitWith {[_medic, _main, _state] call _fnStartMain;};
     switch (stance _medic) do {
         case "STAND": {_transition = "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon"; _length = 0.65;};
-        case "PRONE": {_transition = "AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon"; _length = 1.116;};
         default {};
     };
     if (_transition == "") exitWith {[_medic, _main, _state] call _fnStartMain;};
+    if ((_state param [1, ""]) in ["assessmentAirway", "assessmentBreathing"]) then {
+        private _speed = getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> _transition >> "speed");
+        if (_speed < 0) then {_length = -_speed;};
+        if (_speed > 0) then {_length = 1 / _speed;};
+    };
     _medic setUnitPos "MIDDLE";
     [_medic, _transition, 1] call ACME_fnc_doAnim;
     _state set [3, -2];
@@ -275,7 +322,7 @@ private _pfh = [{
             // The move class is looped, but some Arma animation transitions still fall out to crouch after one
             // native cycle. Reassert only if the junctional state actually exited, never on a fixed timer.
             if (_holdAt < 0) exitWith {
-                if (_mode == "junctional" && {_current != toLower _main} && {_now - _stageStarted >= 0.20}) then {
+                if (_mode in ["junctional", "aajt", "torsoBandage"] && {!(_state param [16, false])} && {_current != toLower _main} && {_now - _stageStarted >= 0.20}) then {
                     [_medic, _main, 1] call ACME_fnc_doAnim;
                     _state set [4, _now];
                 };

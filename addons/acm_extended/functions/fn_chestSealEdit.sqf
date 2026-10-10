@@ -3,7 +3,12 @@
    Each hole has a sealed-field revision: unrelated concurrent edits can commute,
    while stale same-hole edits (including seal/peel/seal ABA) are rejected. */
 params ["_patient", "_medic", "_viewer", "_id", "_epoch", "_expected", "_op", "_payload", "_issued", "_replyOwner"];
-if (!isServer || {!(_replyOwner isEqualType 0)} || {_replyOwner < 2}) exitWith {};
+if (!isServer || {!(_replyOwner isEqualType 0)} || {!finite _replyOwner} || {_replyOwner != floor _replyOwner}) exitWith {};
+// Single-player has no network client ID. Its local provider/viewer can legitimately submit zero;
+// replies target the viewer object, so accepting this local-only case cannot broadcast an ACK.
+private _singlePlayerLocal = !isMultiplayer && {_replyOwner == 0} && {clientOwner == 0}
+    && {!isNull _medic} && {local _medic} && {!isNull _viewer} && {local _viewer};
+if (_replyOwner < 2 && {!_singlePlayerLocal}) exitWith {};
 private _prior = ACME_CS_editResults getOrDefault [_id, []];
 if (count _prior > 0) exitWith {
     _prior params ["_at", "_ok", "_message", "_originalPatient", "_originalOwner"];

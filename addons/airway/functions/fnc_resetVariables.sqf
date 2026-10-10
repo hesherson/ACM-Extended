@@ -27,6 +27,12 @@ _patient setVariable [QGVAR(AirwayObstructionVomit_Count), (round(2 + random 2))
 
 _patient setVariable [QGVAR(AirwayObstructionBlood_State), 0, true];
 
+// Retire an exact in-flight transaction before reset so a delayed success cannot reapply recovery.
+private _recoveryPending = _patient getVariable [QGVAR(RecoveryPosition_Pending), []];
+private _recoveryToken = _recoveryPending param [0, ""];
+if (_recoveryToken != "") then {[objNull, _patient, false, true, "cancel", _recoveryToken] call FUNC(setRecoveryPosition);};
+_patient setVariable [QGVAR(RecoveryPosition_Pending), [], true];
+_patient setVariable [QGVAR(RecoveryPosition_Episode), "", true];
 _patient setVariable [QGVAR(RecoveryPosition_State), false, true];
 _patient setVariable [QGVAR(HeadTilt_State), false, true];
 

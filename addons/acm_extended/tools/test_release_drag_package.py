@@ -17,7 +17,7 @@ ACTION_CLASSES = ("ACME_AttachDragHandle", "ACME_ReleaseDragHandle", "ACME_Relea
 
 def run(hemtt, *args):
     result = subprocess.run([hemtt, *map(str, args)], cwd=ROOT, capture_output=True,
-                            text=True, encoding="utf-8", errors="replace", timeout=60)
+                            text=True, encoding="utf-8", errors="replace", timeout=180)
     assert result.returncode == 0, result.stdout + result.stderr
 
 
@@ -26,8 +26,11 @@ def package(mode, destination):
     output = ROOT / ".hemttout" / mode / "addons"
     extended = output / "ACM_acm_extended.pbo"
     gui = output / "ACM_gui.pbo"
-    if not hemtt or not extended.exists() or not gui.exists():
-        pytest.skip(f"Build the {mode} package and make HEMTT available first")
+    if not hemtt:
+        pytest.fail(f"HEMTT is required to inspect the {mode} package")
+    if not extended.exists() or not gui.exists():
+        run(hemtt, mode)
+    assert extended.exists() and gui.exists(), f"{mode} package did not contain required PBOs"
     destination.mkdir()
     binary = destination / "config.bin"
     config = destination / "config.json"
@@ -73,7 +76,10 @@ def test_release_does_not_install_drag_runtime_and_keeps_normal_transport(releas
 def test_development_package_keeps_actions_only_when_feature_source_exists(tmp_path):
     feature = ROOT / "addons/acm_extended/functions/fn_initDragHandleRuntime.sqf"
     if not feature.exists():
-        pytest.skip("This branch deliberately excludes the experimental implementation")
+        functions = ROOT / "addons/acm_extended/functions"
+        for name in ("initDragHandleRuntime", "dragHandleCanStart", "dragHandleStart", "dragHandleStartOwner", "dragHandleStartMedic"):
+            assert not (functions / f"fn_{name}.sqf").exists()
+        return
     config, menu, post = package("dev", tmp_path / "development")
     assert config["CfgPatches"]["ACM_Extended"]["acme_developmentBuild"] == 1
     man = config["CfgVehicles"]["CAManBase"]

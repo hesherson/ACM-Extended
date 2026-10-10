@@ -155,7 +155,14 @@ class EpinephrineSource(unittest.TestCase):
         self.assertIn('ACME_fnc_vialTake',t)
         ledger=src('vialTake');self.assertIn('ACME_infusion_openVials',ledger);self.assertIn('_open + _needed * _cap - _ml',ledger)
     def test_no_source_debit_before_flush_check(self):
-        t=src('epinephrinePrepare');self.assertLess(t.index('getCountOfItem'),t.index('call ACME_fnc_epinephrineTakeSource'))
+        t=src('epinephrinePrepare')
+        # Default preparation reserves epinephrine + flush atomically through
+        # the shared source transaction; the legacy pre-reserved-flush branch
+        # may debit epinephrine only after its exact reservation is validated.
+        self.assertLess(t.index('_reservedFlush && {!(_reserved isEqualTo [9, 1, false])}'), t.index('call ACME_fnc_epinephrineTakeSource'))
+        self.assertIn('call ACME_fnc_medicationTakeSources',t)
+        self.assertLess(t.index('call ACME_fnc_medicationTakeSources'),t.index('if (!_funded) exitWith {false};'))
+        self.assertLess(t.index('if (!_funded) exitWith {false};'),t.index('call ACME_fnc_narcStoreCommit'))
     def test_real_inventory_signature(self):self.assertIn('[ACE_player, _class, "", round (_ml * 100)]',src('epinephrineDrawCardiac'))
     def test_default_compound_flow_can_draw_plain_cardiac(self):
         t=src('skCompoundDraw');self.assertNotIn('if (_med == "EpinephrineCardiac") exitWith',t)

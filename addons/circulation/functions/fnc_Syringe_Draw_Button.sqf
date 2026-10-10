@@ -73,7 +73,8 @@ if (_type > 0) then {
         call ACME_fnc_skPendingTagCommit;
         private _med  = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medication", ""];
         private _size = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 10];
-        private _amt  = missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0];
+        // The prepared magazine and its persistent row must use the same hundredth-mL quantity.
+        private _amt  = (round ((missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0]) * 100)) / 100;
         private _prepared = [ACE_player, _med, _amt, _size] call ACM_circulation_fnc_Syringe_PrepareFinish;
 
         // the drawn drugs land in the "Drawn" list only after exact source solution was successfully reserved.

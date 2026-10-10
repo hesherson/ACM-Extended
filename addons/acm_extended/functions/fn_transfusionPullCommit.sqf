@@ -2,21 +2,25 @@
 params [
     ["_patient", objNull, [objNull]], ["_medic", objNull, [objNull]], ["_part", "", [""]],
     ["_bagUid", "", [""]], ["_expectedIndex", -1, [0]], ["_expectedSig", [], [[]]],
-    ["_epoch", -1, [0]], ["_requestId", "", [""]]
+    ["_epoch", -1, [0]], ["_requestId", "", [""]], ["_issued",-1,[0]]
 ];
 if (isNull _patient || {!local _patient} || {_requestId == ""}) exitWith {false};
+if (count _requestId > 128 || {!finite _issued} || {_issued < 0}
+    || {serverTime - _issued > 10} || {_issued > serverTime + 2}) exitWith {false};
 private _receipts = _patient getVariable ["ACME_txPullReceipts", createHashMap];
 private _prior = _receipts getOrDefault [_requestId, []];
 if !(_prior isEqualTo []) exitWith {
     if (!isNull _medic) then {["ACME_transfusionPullResult", _prior, _medic] call CBA_fnc_targetEvent;};
     _prior param [2, false]
 };
+private _times=_patient getVariable ["ACME_txPullReceiptsTimes",createHashMap];
+{if (serverTime - (_times get _x) > 12) then {_receipts deleteAt _x;_times deleteAt _x;};} forEach keys _times;
+if (count _receipts >= 512) exitWith {false};
 private _reply = {
     params ["_accepted", ["_bag", []], ["_mode", ""], ["_onY", false], ["_reason", ""]];
     private _payload = [_patient, _requestId, _accepted, _bag, _part, _mode, _onY, _reason];
     _receipts set [_requestId, _payload];
-    private _ks = keys _receipts; while {count _ks > 32} do {_receipts deleteAt (_ks deleteAt 0);};
-    _patient setVariable ["ACME_txPullReceipts", _receipts, false];
+    _times set [_requestId,serverTime]; [_patient,"ACME_txPullReceipts",_receipts] call ACME_fnc_setVarNet; [_patient,"ACME_txPullReceiptsTimes",_times] call ACME_fnc_setVarNet;
     if (!isNull _medic) then {["ACME_transfusionPullResult", _payload, _medic] call CBA_fnc_targetEvent;};
     _accepted
 };

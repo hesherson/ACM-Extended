@@ -1,3 +1,4 @@
+from historical_source import assert_release_identity as _assert_current_build
 from historical_source import read_source
 from pathlib import Path
 
@@ -10,7 +11,7 @@ def read(rel: str) -> str:
 
 def test_release_is_the_cfgpatches_version():
     config = read("config.cpp")
-    assert 'version = "1.2.4.1";' in config
+    _assert_current_build()
 
 
 def test_single_debug_renderer_uses_cfgpatches_version():
@@ -23,6 +24,6 @@ def test_single_debug_renderer_uses_cfgpatches_version():
 
 def test_stable_1241_debug_identity_has_no_rc_suffix():
     startup = read("functions/fn_initForkStartupRuntime.sqf")
-    assert 'ACME_buildBatch = "B204";' in startup
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
-    assert 'ACME_networkAuditRevision = "NA4-B204-1.2.4.1-stable";' in startup
+    _assert_current_build()

@@ -41,21 +41,31 @@ class VentDeliveryReporting(unittest.TestCase):
 
     def test_only_active_simple_self_owned_vent_bypasses_hand_bvm_floor(self):
         text = source("circHandle")
-        predicate = re.search(r'private _simpleVentArrest = (.*?);', text, re.S)[1]
-        # Evaluate this restricted source predicate for every clinically distinct
-        # ownership/mode combination. This is not a general-purpose SQF evaluator.
-        for simple, driving, provider in itertools.product((False, True), (False, True), ("none", "medic", "patient")):
+        match = re.search(r'private _ventOwnsArrest = (.*?);', text, re.S)
+        self.assertIsNotNone(match)
+        predicate = match[1]
+        # Actual Simple AND advanced SIMV modes publish their own measured
+        # alveolar minute ventilation. Neither may inherit the manual BVM
+        # floor, but idle, disconnected or manual-BVM sessions retain it.
+        for simple, driving, provider in itertools.product(
+            (False, True), (False, True), ("none", "medic", "patient")
+        ):
             expr = predicate
-            expr = expr.replace('(missionNamespace getVariable ["ACME_vent_simpleMode", false])', repr(simple))
             expr = expr.replace('_patient getVariable ["ACME_vent_driving", false]', repr(driving))
-            expr = expr.replace('(_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient', repr(provider == "patient"))
+            expr = expr.replace(
+                '(_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient',
+                repr(provider == "patient"),
+            )
             expr = expr.replace('&&', ' and ').replace('{', '(').replace('}', ')')
             actual = eval("(" + expr + ")", {"__builtins__": {}}, {})
-            expected = simple and driving and provider == "patient"
+            expected = driving and provider == "patient"
             self.assertEqual(actual, expected, (simple, driving, provider))
-        branch = text[text.index('if (!_simpleVentArrest) then {'):]
+        branch = text[text.index('if (!_ventOwnsArrest) then {'):]
         self.assertIn('"ACME_circ_bvmVentFrac", 0.75', branch[:branch.index('};')])
+        self.assertIn('private _cprEfficiency = linearConversion [12, 40, _actualRR, 1, 0.45, true];', branch)
+        self.assertIn('_respDeficit = (1 - (_ventFrac min 1)) max 0 min 1;', branch)
         self.assertIn('_effVent = _targetRR * _ventFrac;', branch)
+
 
 
 if __name__ == "__main__":

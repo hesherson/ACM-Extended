@@ -13,6 +13,10 @@ if (_expectedSource != "" && {_source != _expectedSource}) exitWith {false};
 private _token = _medic getVariable ["ACME_rollProviderToken", ""];
 private _pose = _medic getVariable ["ACME_treatmentPoseState", []];
 private _isRollPose = (_pose param [1, ""]) == "roll";
+private _enteredProne = (_pose param [20, false]) || {stance _medic == "PRONE"} || {
+    private _animation = toLowerANSI animationState _medic;
+    (_animation find "pknl") < 0 && {(_animation find "ppne") >= 0 || {(_animation find "prone") >= 0}}
+};
 if (_token == "" && {!_isRollPose}) exitWith {false};
 
 private _pfh = _medic getVariable ["ACME_rollProviderPFH", -1];
@@ -34,7 +38,11 @@ if (_isRollPose && {_epoch >= 0}) then {
 if (alive _medic && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic}) then {
     _medic setAnimSpeedCoef 1;
     _medic setUnitPos "AUTO";
-    _medic switchMove "";
-    ["ace_common_switchMove", [_medic, ""]] call CBA_fnc_globalEvent;
+    if (_enteredProne) then {
+        [_medic, "AmovPpneMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;
+    } else {
+        _medic switchMove "";
+        ["ace_common_switchMove", [_medic, ""]] call CBA_fnc_globalEvent;
+    };
 };
 true

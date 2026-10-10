@@ -64,10 +64,8 @@ private _hang = _patient getVariable ["ACME_hang_flowMult", 1];
 private _pressure = 1;
 private _cuff = (_patient getVariable ["ACME_piCuffs", createHashMap]) getOrDefault [_bagId, []];
 if (_bagId != "" && {!(_cuff isEqualTo [])}) then {
-    _cuff params [["_at", 0], ["_p0", 1]];
-    private _half = (missionNamespace getVariable ["ACME_pi_bleedHalfLifeSec", 150]) max 0.1;
-    private _p = (_p0 * (2 ^ (-((CBA_missionTime - _at) max 0) / _half))) max 0 min 1;
-    if (_p >= 0.08) then {_pressure = 1 + ((missionNamespace getVariable ["ACME_pressureInfuser_boost", 2.5]) - 1) * _p;};
+    private _p = [_cuff] call ACME_fnc_pressureLevel;
+    if (_p > 0) then {_pressure = 1 + ((missionNamespace getVariable ["ACME_pressureInfuser_boost", 2.5]) - 1) * _p;};
 };
 private _baseCeil = _rate * _hang;  // the gauge, gravity and hand-squeeze ceiling, before the pressure infuser.
 private _clampRate = if (_bagClamp == -2) then {

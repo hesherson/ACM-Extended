@@ -60,12 +60,17 @@ private _PFH = [{
 
     if (_inRecovery || _hasSGA) exitWith {}; // TODO check for pose
 
+    // Successful suction buys a finite gameplay recovery window. The head wound
+    // still bleeds normally; no deficit is banked into a catch-up refill afterwards.
+    if (CBA_missionTime < (_patient getVariable ["ACME_airwayBloodRefillAt", 0])) exitWith {};
+
     private _cardiacArrest = GET_HEART_RATE(_patient) < 20;
     private _obstructChance = (linearConversion [0.05, 0.5, ([_patient, "head"] call EFUNC(damage,getBodyPartBleeding)), 0, 0.5, true]) * GVAR(airwayObstructionBloodChance);
     private _obstructionState = _patient getVariable [QGVAR(AirwayObstructionBlood_State), 0];
 
     if ((!_cardiacArrest && (random 1 < _obstructChance)) || {_cardiacArrest && (random 1 < (_obstructChance / 2))}) then {
-        _patient setVariable [QGVAR(AirwayObstructionBlood_State), (_obstructionState + 1), true];
+        [_patient, [["blood", _obstructionState + 1]], true] call FUNC(setAirwayState);
+        _patient setVariable ["ACME_airwayBloodRefillAt", CBA_missionTime + 30, true];
     };
 
 }, 5 max (random 10), [_patient, _epoch]] call CBA_fnc_addPerFrameHandler;

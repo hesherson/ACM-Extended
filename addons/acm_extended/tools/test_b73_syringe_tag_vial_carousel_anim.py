@@ -160,20 +160,28 @@ def test_chest_seal_patient_roll_interpolates_without_priority_two():
 
 
 def test_generic_treatment_preflight_uses_transition_priority_one_and_never_restores_weapon():
-    from test_historical_weapon_preflight import test_native_treatment_waits_for_logical_and_visible_holster_then_crouch, test_current_weapon_paths_do_not_invoke_optional_sling_or_direct_reselection
-    for stance in ('STAND','PRONE','CROUCH'):
-        test_native_treatment_waits_for_logical_and_visible_holster_then_crouch(stance)
-    test_current_weapon_paths_do_not_invoke_optional_sling_or_direct_reselection()
+    # B177 removed the generic presentation wait: clinical treatment starts
+    # immediately after the one-shot holster request. Keep this historical
+    # identity bound to the current responsiveness and no-reselection contract.
+    from test_historical_weapon_preflight import (
+        test_treatment_bridge_contains_no_generic_presentation_wait,
+        test_native_treatment_is_called_directly_after_presentation_setup,
+        test_no_direct_weapon_reselection_was_reintroduced,
+    )
+    test_treatment_bridge_contains_no_generic_presentation_wait()
+    test_native_treatment_is_called_directly_after_presentation_setup()
+    test_no_direct_weapon_reselection_was_reintroduced()
 
 
 def test_custom_pose_exit_remains_crouched_and_releases_stance_lock():
     stop = txt('functions/fn_treatmentPoseStop.sqf')
     start = txt('functions/fn_treatmentPoseStart.sqf')
     assert 'private _upright = false;' in start
-    assert '_currentMode in ["roll","inspect","pulse"]' in stop
-    assert '"AmovPknlMstpSnonWnonDnon"' in stop
-    assert '"AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1' in stop
+    assert 'private _enteredProne =' in stop
+    assert 'call ACME_fnc_providerAnimation' in stop
+    assert '[_medic, _exitAnim, 1] call ACME_fnc_doAnim;' in stop
     assert '_u setUnitPos "AUTO";' in stop
+    assert 'call ACME_fnc_providerStanceOwned' in stop
 
 
 def test_other_current_medical_transition_entries_use_priority_one():
@@ -192,7 +200,17 @@ def test_other_current_medical_transition_entries_use_priority_one():
 def test_animation_helpers_default_to_interpolated_priority_one():
     held = txt('functions/fn_doAnimHeld.sqf')
     queue = txt('functions/fn_animQueue.sqf')
-    assert 'params ["_unit", "_anim", ["_hold", 1.2], ["_prio", 1]];' in held
+    # Execute omitted options: adding an ownership opt-in must not change the default
+    # interpolated priority or silently prevent ordinary remote-patient choreography.
+    from test_b209_direct_pressure_locality import setup
+    from test_menu_death_lifecycle import execute
+    execute(setup() + '''
+        _medic setVariable ["TEST_owner",8];
+        [_medic,"test_patient_pose"] call ACME_fnc_doAnimHeld;
+        [count _handlers==1,"default held animation unexpectedly requires local ownership"] call _check;
+        0 call _tick;
+        [_moves isEqualTo [[_medic,"test_patient_pose",1]],"default held animation lost interpolated priority one"] call _check;
+    ''')
     assert '(_x param [2, 1])' in queue
     assert '[["_a", ""], ["_d", 1.4], ["_p", 1]]' in queue
     assert '["_prio", 2]' not in held

@@ -1,18 +1,10 @@
-/* B156: integrated clot strength, active patients at 5 Hz with a 2 s discovery fallback.
- * Explicit candidates are used by owner/treatment registration and circulation changes.
- * Healthy units keep implicit neutral defaults and generate no periodic coagulation packets.
+/* B246: integrated clot strength at 5 Hz for explicit/active patients only.
+ * Owner/treatment/fluid hooks enroll immediately; ACME_fnc_idlePhysDiscovery is the
+ * single bounded missed-transition fallback. Healthy owner registries are never scanned here.
  */
 params [["_candidates", [], [[]]]];
 private _active = (missionNamespace getVariable ["ACME_coag_activePatients", []]) select {!isNull _x && {local _x} && {alive _x}};
-private _patients = +_candidates;
-if (_patients isEqualTo []) then {
-    _patients = +_active;
-    private _lastSweep = missionNamespace getVariable ["ACME_coag_lastSweep", -1];
-    if (_lastSweep < 0 || {CBA_missionTime - _lastSweep >= 2}) then {
-        missionNamespace setVariable ["ACME_coag_lastSweep", CBA_missionTime];
-        {_patients pushBackUnique _x;} forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
-    };
-};
+private _patients = if (_candidates isEqualTo []) then {+_active} else {+_candidates};
 {
     private _u = _x;
     if (!isNull _u && {local _u} && {alive _u}) then {

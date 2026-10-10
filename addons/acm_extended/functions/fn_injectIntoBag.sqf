@@ -11,9 +11,8 @@ private _size = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size"
 // The Narc Box draw session owns medication identity while solution is in the syringe. Do not re-resolve the drug
 // from a UI row at commit time; that was a second source of truth and could debit a different drug after a fast click.
 
-// Syringe stock and filled-syringe payloads are represented to 0.01 mL. Snapshot the plunger at the same precision
-// before source debit and bag registration so the amount removed from the vial is exactly the amount put in the bag.
-if (finite _ml) then {_ml = (round ((_ml max 0) * 100)) / 100;};
+// Keep the exact endpoint until source validation. A used vial may display 1.96 mL
+// while its ledger holds 1.957 mL; rounding first falsely overdraws that vial.
 if (_ml <= 0 || {!finite _ml} || {_ml > _size + 0.001}) exitWith {};
 if !(_med in (missionNamespace getVariable ["ACME_infusion_allowedMedications", []])) exitWith {};
 if (missionNamespace getVariable ["ACM_circulation_SyringeDraw_Moving", false]) exitWith {};
@@ -24,10 +23,12 @@ if (!isNull _drawDisplay) then {
     private _stockMax = if (isNull _holder) then {0} else {[_holder, _med] call ACME_fnc_infusionVialVolume};
     _hardMax = (_sessionMax min _stockMax min _size) max 0;
 };
-if (_ml > _hardMax + 0.0005) exitWith {
+private _resolved = [_ml, _hardMax, _hardMax, _size] call ACME_fnc_infusionDrawResolve;
+if !(_resolved select 0) exitWith {
     [_hardMax, _drawDisplay, true] call ACME_fnc_syringeDrawSetAmount;
-    [ACE_player, "The syringe was limited to the medication still available in the selected vial. Confirm the dose and inject again."] call ACME_fnc_clinicalNotice;
+    [ACE_player, "Vial contents changed. Check the dose and inject again."] call ACME_fnc_clinicalNotice;
 };
+_ml = _resolved select 1;
 private _concentration = getNumber (configFile >> "ACM_Medication" >> "Concentration" >> _med >> "concentration");
 if (_concentration <= 0) exitWith {};
 private _ctx = _context select [1, 11];

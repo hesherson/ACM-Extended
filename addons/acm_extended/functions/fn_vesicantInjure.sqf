@@ -95,7 +95,7 @@ _patient setVariable [_key, [_total, _startT, _stage max _lastStage, _lastDoseT,
 
 private _records = _patient getVariable ["ACME_vesicant_records", []];
 private _rec = [_key, _bp, _classname];
-if !(_rec in _records) then { _records pushBack _rec; };
+_records pushBackUnique _rec;
 [_patient, "records", _records] call ACME_fnc_vesicantRegistryCommit;
 
 if (isNil "ACME_vesicant_patients") then { ACME_vesicant_patients = []; };

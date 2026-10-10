@@ -84,9 +84,12 @@ def test_stethoscope_flip_aborts_once_before_reset(active):
 def hang_source(name):
     s=(F/('fn_'+name+'.sqf')).read_text()
     # SQF-VM has no finite command; these tests supply finite numeric values.
-    s=s.replace('finite _episode','(_episode isEqualType 0)').replace('finite _flow','(_flow isEqualType 0)')
+    s=re.sub(r'\bfinite (_\w+)', r'(\1 isEqualType 0)', s)
+    s=s.replace('finite (_x select 6)', 'true')
     s=s.replace('serverTime','CBA_missionTime').replace('alive _holder','_alive')
+    s=s.replace('clientOwner','_ownerNum')
     s=s.replace('getPosASL _medic','[0,0,0]')
+    s=s.replace('[objNull]', '[profileNamespace]')
     return adapt(s)
 
 def hang_setup():
@@ -101,7 +104,9 @@ def hang_setup():
         ACME_fnc_hangBagFluidType = {"saline"};
         ACME_fnc_hangBagTick = {};
         CBA_fnc_targetEvent = {_acks pushBack (_this select 1);};
-    '''+'ACME_fnc_hangBagClaimLocal = {'+hang_source('hangBagClaimLocal')+'};'+\
+    '''+'ACME_fnc_actionClaimValidate = {'+hang_source('actionClaimValidate')+'};'+\
+        'ACME_fnc_actionClaimLedger = {'+hang_source('actionClaimLedger')+'};'+\
+        'ACME_fnc_hangBagClaimLocal = {'+hang_source('hangBagClaimLocal')+'};'+\
         'ACME_fnc_ownerDispatch = {params ["_patient","_operation",["_args",[]]]; switch (_operation) do {'+routes+'};};'+\
         'ACME_fnc_hangBagClaimAck = {'+hang_source('hangBagClaimAck')+'};'+\
         'ACME_fnc_hangBagStop = {'+stop+'};'+\
@@ -185,12 +190,12 @@ def test_renewal_is_exact_episode_and_cannot_resurrect_expired_lease():
         [_medic,_patient,"leftarm","saline"] call _start; 0 call _deliver;
         private _ep = _medic getVariable "ACME_hang_Start";
         CBA_missionTime = 12;
-        [_patient,"hangBagRenew",[_medic,_ep,1.75,0,7]] call ACME_fnc_ownerDispatch;
+        [_patient,"hangBagRenew",[_medic,_ep,1.75,0,7,1,CBA_missionTime]] call ACME_fnc_ownerDispatch;
         [(_patient getVariable "ACME_hang_LeaseUntil") == 18,"valid renewal rejected"] call _check;
         [_patient,"hangBagRelease",[_medic,_ep - 1]] call ACME_fnc_ownerDispatch;
         [(_patient getVariable "ACME_hang_Episode") == _ep,"wrong episode released hold"] call _check;
         CBA_missionTime = 20;
-        [_patient,"hangBagRenew",[_medic,_ep,1.75,0,7]] call ACME_fnc_ownerDispatch;
+        [_patient,"hangBagRenew",[_medic,_ep,1.75,0,7,1,CBA_missionTime]] call ACME_fnc_ownerDispatch;
         [!((_acks select ((count _acks)-1)) select 3),"expired renewal reacquired lease"] call _check;
     ''')
 
@@ -227,7 +232,7 @@ def test_existing_tick_renews_at_two_seconds_not_twenty_hz():
 def test_owner_reconciliation_respects_grant_grace_then_releases_lost_provider():
     src=(F/'fn_transientStateReconcile.sqf').read_text()
     header=src.split('// BVM reservation.',1)[0]
-    block=src.split('// Hang Bag claim.',1)[1].split('// Direct Pressure markers.',1)[0]
+    block=src.split('// Hang Bag claim.',1)[1].split('// Direct Pressure claims and clinical markers.',1)[0]
     source=adapt((header+block+'count _repairs').replace('alive _hangMedic','_alive').replace('serverTime','CBA_missionTime'))
     # Namespace stand-ins retain nil slots; -1 represents the engine's deleted timer.
     source=source.replace('[_key, nil]', '[_key, -1]').replace('finite _at', 'true')
@@ -249,7 +254,7 @@ def test_older_renewal_ack_cannot_extend_a_newer_deadline():
         [_medic,_patient,"leftarm","saline"] call _start; 0 call _deliver;
         private _ep = _medic getVariable "ACME_hang_Start";
         CBA_missionTime = 12;
-        [_patient,"hangBagRenew",[_medic,_ep,1.75,0,7]] call ACME_fnc_ownerDispatch;
+        [_patient,"hangBagRenew",[_medic,_ep,1.75,0,7,1,CBA_missionTime]] call ACME_fnc_ownerDispatch;
         1 call _deliver; 0 call _deliver;
         [(_medic getVariable ["ACME_hang_ClaimAckAt",0]) == 12,"old reply rewound last owner confirmation"] call _check;
     ''')

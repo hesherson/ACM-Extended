@@ -66,7 +66,7 @@ private _fnc_stopSfx = {
         _u setVariable ["ACME_nrb_session", "", true];
         _u setVariable ["ACME_nrb_drawPending", [], true];
         _u setVariable ["ACME_nrb_o2Pending", 0, true];
-        ["NRB removed: advanced airway now requires BVM or ventilator support.", 2.5, _maskMedic] call ACME_fnc_netNotice;
+        ["NRB removed: another airway device now occupies the mask interface.", 2.5, _maskMedic] call ACME_fnc_netNotice;
         continue;
     };
 

@@ -39,7 +39,7 @@ if !(_result isEqualTo []) then {
             _doseRemaining = _entry param [14, -1];
             _lastVolume = _entry param [10, -1];
             if (_medication isEqualType "" && {_medication != ""}) then {
-                _medName = localize (format ["STR_ACM_Circulation_Medication_%1", _medication]);
+                _medName = [_medication] call ACME_fnc_infusionName;
                 if (_medName == "") then {_medName = _medication};
             };
 
@@ -47,8 +47,7 @@ if !(_result isEqualTo []) then {
             private _same = _entries select {(_x param [23, ""]) == _bagId};
             if (_same isEqualTo []) then {_same = [_entry];};
             _componentText = _same apply {
-                private _nominal = (_x param [14,0]) / ((_x param [10,0]) max 0.001) * (_dropsPerMinute / (_dropSet max 1));
-                format ["%1: %2 remaining; %3/min nominal", _x select 11, [_x select 11, _x select 14] call ACME_fnc_formatDose, [_x select 11, _nominal] call ACME_fnc_formatDose]
+                [_x select 11] call ACME_fnc_infusionName
             };
             if (count _same > 1) then {_medName = format ["Mixed infusion (%1 medications)", count _same];};
             uiNamespace setVariable ["ACME_RollerClamp_DropSet", _dropSet];
@@ -83,25 +82,30 @@ private _percent = round (((_position max 0) min 1) * 100);
 private _mlPerMinute = if (_dropSet > 0) then {_dropsPerMinute / _dropSet} else {0};
 private _tooltip = format ["Roller clamp: %1%2 open | %3 gtt/mL | %4 gtt/min | %5 mL/min", _percent, "%", round _dropSet, round _dropsPerMinute, _mlPerMinute toFixed 1];
 
-_tooltip = _tooltip + toString [10] + (_componentText joinString (toString [10]));
-if (!isNull _ctrlTitle) then {
-    _ctrlTitle ctrlSetTooltip _tooltip;
-    _ctrlTitle ctrlSetText ([format ["Roller Clamp - %1", _medName], "Roller Clamp"] select (_medName == ""));
+// Native tooltips are static: changing them under the cursor repeatedly restarts the popup.
+if !(_display getVariable ["ACME_clampReadoutReady",false]) then {
+    _display setVariable ["ACME_clampReadoutReady",true];
+    {_x ctrlSetTooltip "";} forEach [_ctrlTitle,_ctrlRate,_ctrlDrag,_ctrlWheel,_ctrlBG];
+    _ctrlDrop ctrlSetTooltip "Cycle the drop set (gtt/mL).";
 };
-if (!isNull _ctrlRate) then {
-    _ctrlRate ctrlSetText _rateText;
-    _ctrlRate ctrlSetTooltip _tooltip;
+private _readout = _display displayCtrl 86210;
+if (isNull _readout) then {
+    _readout = _display ctrlCreate ["RscText",86210];
+    _readout ctrlEnable false;
+    _readout ctrlSetBackgroundColor [0,0,0,0.6];
+    _readout ctrlSetFont "RobotoCondensed";
+    _readout ctrlSetFontHeight (safeZoneH * 0.019);
+    _readout ctrlSetPosition [safeZoneX + safeZoneW * 0.60,safeZoneY + safeZoneH * 0.72,safeZoneW * 0.37,safeZoneH * 0.045];
+    _readout ctrlCommit 0;
 };
-if (!isNull _ctrlDrop) then {
-    _ctrlDrop ctrlSetText (format ["Drop Set: %1", round _dropSet]);
-    _ctrlDrop ctrlSetTooltip (format ["Cycle drop set (currently %1 gtt/mL)", round _dropSet]);
-};
-if (!isNull _ctrlClamp) then {
-    _ctrlClamp ctrlSetText (["Open Clamp", "Close Clamp"] select (_dropsPerMinute > 0));
-};
-if (!isNull _ctrlDrag) then {_ctrlDrag ctrlSetTooltip _tooltip;};
-if (!isNull _ctrlWheel) then {_ctrlWheel ctrlSetTooltip _tooltip;};
-if (!isNull _ctrlBG) then {_ctrlBG ctrlSetTooltip _tooltip;};
+if (ctrlText _readout != _tooltip) then {_readout ctrlSetText _tooltip;};
+private _heading = [format ["Roller Clamp - %1",_medName],"Roller Clamp"] select (_medName == "");
+if (ctrlText _ctrlTitle != _heading) then {_ctrlTitle ctrlSetText _heading;};
+if (ctrlText _ctrlRate != _rateText) then {_ctrlRate ctrlSetText _rateText;};
+private _dropText = format ["Drop Set: %1",round _dropSet];
+if (ctrlText _ctrlDrop != _dropText) then {_ctrlDrop ctrlSetText _dropText;};
+private _clampText = ["Open Clamp","Close Clamp"] select (_dropsPerMinute > 0);
+if (ctrlText _ctrlClamp != _clampText) then {_ctrlClamp ctrlSetText _clampText;};
 
 if !(uiNamespace getVariable ["ACME_RollerClamp_LoggedUpdate", false]) then {
     uiNamespace setVariable ["ACME_RollerClamp_LoggedUpdate", true];

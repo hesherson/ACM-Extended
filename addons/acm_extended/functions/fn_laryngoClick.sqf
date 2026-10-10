@@ -6,17 +6,37 @@
 // tubing: a re-press re-grips after letting go.
 // cuff: a press on the syringe grabs the plunger, and dragging it down inflates the cuff.
 params ["_display", "_button"];
+// A lost MouseUp (focus change) must not disable every subsequent parking press.
+if ((diag_tickTime - (_display getVariable ["ACME_laryngo_saladPressAt", -10])) > 1.5) then {
+    _display setVariable ["ACME_laryngo_saladPress", false];
+};
 
 // the middle button pins the suction. it is handled here rather than through a second MouseButtonDown handler,
 // which was the reason it never fired: two handlers for the same event on the same display is not a contract
 // worth relying on, and only the first one was getting there.
-if (_button == 2 && {(uiNamespace getVariable ["ACME_laryngo_sucPinned", false]) || {(uiNamespace getVariable ["ACME_laryngo_held", ""]) == "suction"}}) exitWith { [] call ACME_fnc_laryngoSuctionPin; true };
+if (_button == 2 && {
+    (_display getVariable ["ACME_laryngo_saladPress", false])
+    || {uiNamespace getVariable ["ACME_laryngo_sucPinned", false]}
+    || {(uiNamespace getVariable ["ACME_laryngo_held", ""]) == "suction"}
+}) exitWith {
+    if !(_display getVariable ["ACME_laryngo_saladPress", false]) then {
+        _display setVariable ["ACME_laryngo_saladPress", true];
+        _display setVariable ["ACME_laryngo_saladPressAt", diag_tickTime];
+        [] call ACME_fnc_laryngoSuctionPin;
+    };
+    true
+};
 if ([_this,"down"] call ACME_fnc_minigameInputMouse) exitWith {true};
 
 // a right click deflates the cuff, the exact mirror of the left-click hold that inflated it: the same syringe, the
 // same pilot balloon and the same hold, with air out instead of in. this is the step that has to come before the
 // tube can be moved, and it is deliberately the same gesture so it is learned once.
-if (_button == 1) exitWith { ["start"] call ACME_fnc_laryngoCuffDeflate; };
+if (_button == 1) exitWith {
+    if ((uiNamespace getVariable ["ACME_laryngo_held", ""]) == "syringe") then {
+        ["start"] call ACME_fnc_laryngoCuffDeflate;
+    };
+    true
+};
 
 // a left click on the bulb is a squeeze. the wand suctions while the button is held, and the bulb draws in
 // discrete pulls, so it is one click per squeeze. it is dispatched here before the hold logic of the wand, so

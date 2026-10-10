@@ -5,6 +5,13 @@ if (_payload isEqualTo []) exitWith {[_patient] call ACME_fnc_ownerRegister;};
 private _validation = [_payload] call ACME_fnc_clinicalValidate;
 if !(_validation select 0) exitWith {};
 private _allowed = ((call ACME_fnc_clinicalFields) select {_x param [3, true]}) apply {_x select 0};
+// Restoring a pre-B271 episode onto an existing casualty must not borrow the
+// current casualty's marker and turn an old quiet timer into closure readiness.
+private _restoredPtx = ((_payload select 1) findIf {(_x select 0) == "ACME_ptx_state"}) >= 0;
+private _restoredObservation = ((_payload select 1) findIf {(_x select 0) == "ACME_ptx_observationRevision"}) >= 0;
+if (_restoredPtx && {!_restoredObservation}) then {
+    _patient setVariable ["ACME_ptx_observationRevision", nil, true];
+};
 private _chest = [];
 private _ettRestore = createHashMap;
 private _rocRestoreSet = false;
@@ -245,7 +252,7 @@ if (_toxicityFiredRestoreSet && {_toxicityFiredRestore isEqualType createHashMap
 };
 // Work resumes with fresh ownership, epochs and clocks; no old network request is replayed.
 private _jobs = _patient getVariable ["ACME_yFlushJobs", createHashMap];
-{private _j = _jobs get _x; _j set [6, CBA_missionTime]; _j set [8, _epoch];} forEach keys _jobs;
+{private _j = _jobs get _x; _j set [6, if (count _j >= 13) then {serverTime} else {CBA_missionTime}]; _j set [8, _epoch];} forEach keys _jobs;
 _patient setVariable ["ACME_yFlushJobs", _jobs, true];
 private _moves = _patient getVariable ["ACME_bagMoves", createHashMap];
 {private _m = _moves get _x; _m set [3, CBA_missionTime - 121]; _m set [4, _epoch];} forEach keys _moves;

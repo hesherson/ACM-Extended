@@ -4,6 +4,8 @@
 private _patient = if (_this isEqualType []) then { _this param [0, objNull] } else { _this };
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {};
+if (!isNil "ACME_fnc_wakeAnimationStop") then {[_patient,-1,true] call ACME_fnc_wakeAnimationStop;};
+{_patient setVariable [_x,false,true];} forEach ["ACME_wakeVisualArmed","ACME_wakeHadArmFracture","ACME_wakeHadTBI","ACME_wakeHadTorsoDamage"];
 private _preserveDeathInterventions = false;  // Full heal/respawn are real resets; death uses fn_deathFreeze instead.
 
 if (!alive _patient && {
@@ -52,7 +54,11 @@ if (_patient getVariable ["ACME_headElevated", false]) then {
 // gone.
 [_patient] call ACME_fnc_headElevVestRestore;
 [_patient, true] call ACME_fnc_chestAccessVestRestore;
+[_patient, keys (_patient getVariable ["ACME_chestAccess_leases", createHashMap])]
+    call ACME_fnc_chestAccessLeaseRetire;
 _patient setVariable ["ACME_chestAccess_leases", createHashMap, true];
+_patient setVariable ["ACME_chestAccess_requestToken", "", true];
+_patient setVariable ["ACME_chestAccess_readyLease", "", true];
 private _hePropObj = _patient getVariable ["ACME_headElev_propObj", objNull];
 if (!isNull _hePropObj) then { detach _hePropObj; deleteVehicle _hePropObj; };
 private _heHelper = _patient getVariable ["ACME_headElev_helper", objNull];

@@ -7,6 +7,11 @@ private _stable = _meta param [2,"",[""]];
 private _delta = _meta param [3,[0,0,[]],[[]]];
 private _job = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
 if !(_job isEqualType createHashMap && {count _job > 0} && {(_job getOrDefault ["session",""]) == _session}) exitWith {false};
+private _localityEpoch = _job getOrDefault ["providerLocalityEpoch",-1];
+if (_localityEpoch >= 0 && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) != _localityEpoch}) exitWith {
+    [_session,missionNamespace getVariable ["ACME_HCMedPushPFH",-1],"provider-epoch-changed"] call ACME_fnc_hardcorePushRetire;
+    false
+};
 _job set ["pendingAcks",((_job getOrDefault ["pendingAcks",1]) - 1) max 0];
 if (!_accepted) then {
     [_medic,_stable,_delta] call ACME_fnc_hardcorePushRestoreDelta;

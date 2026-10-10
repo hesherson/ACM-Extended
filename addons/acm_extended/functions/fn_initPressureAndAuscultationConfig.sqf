@@ -14,10 +14,10 @@ ACME_DP_fractureWakeMinMAP = 60;
 ACME_DP_fractureWakeGrace = 8;
 
 // direct-pressure free-movement pose tuning, for the limb and the head.
-ACME_DP_idleToPose = 0.8;  // idle seconds before adopting the holding pose
+ACME_DP_idleToPose = 2; // two quiet seconds after repositioning before resuming the pressure pose
 ACME_DP_lookDot    = 0.4;  // minimum horizontal facing dot toward the patient to hold the pose, about a 66 deg cone.
 // B128: give every other-casualty Direct Pressure hold one additional metre of working leash. Movement input
-// still releases the hold immediately; this distance is only for leaning/repositioning around a stationary casualty.
+// yields only the pose; exceeding this distance releases the pressure episode.
 ACME_DP_leashDist = 2.7;
 ACME_DP_torsoLeashDist = 3.2;
 ACME_DP_treatTimeMult = 1.6;  // while a medic holds limb, head or self direct pressure, every timed action takes this much longer, because one hand is occupied.
@@ -50,11 +50,12 @@ if (isServer && {isNil "ACME_DP_ServerCleanupInstalled"}) then {
             if (_token != "") then {
                 [_patient, "directPressureClaim", ["release", [_unit, _part, _token, _epoch, owner _unit]]] call ACME_fnc_ownerDispatch;
             } else {
-                [_patient, "directPressureMarker", [_unit, _part, false]] call ACME_fnc_ownerDispatch;
+                [_patient, "directPressureMarker", [_unit, _part, false, _token, _epoch]] call ACME_fnc_ownerDispatch;
             };
         };
         _unit setVariable ["ACME_DP_Active", false, true];
         _unit setVariable ["ACME_DP_Patient", objNull, true];
+        _unit setVariable ["ACME_DP_Part", "", true];
         _unit setVariable ["ACME_DP_ClaimToken", "", true];
         _unit setVariable ["ACME_DP_ClaimEpoch", -1, true];
     };

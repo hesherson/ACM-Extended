@@ -100,7 +100,7 @@ if (uiNamespace getVariable ["ACME_vent_lvlWinOpen", false]) exitWith {
 playSound "ACME_VentDial";
 private _selDir = -_dir;  // the selection index moves opposite the wheel, so up is an earlier item.
 private _screen = uiNamespace getVariable ["ACME_vent_screen", "live"];
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
 // Clear stale edits before any dial branch can write a stored advanced setting.
 // Alarm thresholds stay editable; the automatic delivery pressure limit does not.
 if (_simple) then {

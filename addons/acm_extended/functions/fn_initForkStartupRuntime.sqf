@@ -1,8 +1,8 @@
 ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");
 if (ACME_infusion_version == "") then { ACME_infusion_version = "1.2.4.1"; };
-ACME_buildBatch = "B204";
+ACME_buildBatch = "B272";
 ACME_debugRevision = "";
-ACME_networkAuditRevision = "NA4-B204-1.2.4.1-stable";
+ACME_networkAuditRevision = "NA8-B272-1.2.4.1-candidate";
 
 /*
  * B199 physical-dressing invariant.
@@ -11,15 +11,17 @@ ACME_networkAuditRevision = "NA4-B204-1.2.4.1-stable";
  * bookkeeping, but make ACE's final reopening roll impossible on every machine. Only ACME's explicit
  * unsecured-clot path may create a spontaneous reopen.
  */
-missionNamespace setVariable ["ace_medical_treatment_woundReopenChance", -1, false];
+call ACM_core_fnc_suppressPhysicalBandageReopening;
 // Re-assert after CBA's server-setting synchronization as well; this keeps JIP clients on the same invariant.
 ["CBA_settingsInitialized", {
-    missionNamespace setVariable ["ace_medical_treatment_woundReopenChance", -1, false];
+    call ACM_core_fnc_suppressPhysicalBandageReopening;
 }] call CBA_fnc_addEventHandler;
 call ACME_fnc_chestSealNetInit;
 [] call ACME_fnc_ventCustodyInit;
+[] call ACME_fnc_aiProtectionInit;
 [{ call ACME_fnc_ownerInit; }, []] call CBA_fnc_execNextFrame;
 call ACME_fnc_registerManualPlateCarrierRuntime;
+call ACM_core_fnc_registerEquipmentKitRuntime;
 
 // ACE prepares ace_dragging_fnc_dropObject_carry from its own source during startup, so attempting to own that
 // function through CfgFunctions creates a load-order race. Preserve ACME's only required post-drop behavior on
@@ -53,3 +55,6 @@ if (isNil "ACME_dropCarryLyingEH") then {
 // ACM Extended's current config.cpp inlines its XEH declarations; the legacy standalone
 // CfgEventHandlers.hpp is not the authoritative registration surface.
 call compile preprocessFileLineNumbers "\acm_extended\functions\fn_expansionBootstrap.sqf";
+
+// Independently verify the server/client/HC build manifests after event handlers are installed.
+[] call ACME_fnc_networkCompatInit;

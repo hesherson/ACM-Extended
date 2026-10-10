@@ -27,7 +27,7 @@ _actions pushBack (["ACM_Training_SpawnPatient",
     params ["_object", "_unit", "_args"];
     _args params ["_spawnPos"];
 
-    [_object, _spawnPos, _unit, 0, 0] call FUNC(generatePatient);
+    [_object, _spawnPos, _unit, 1, 0, 0] call FUNC(requestTrainingPatient);
 },
 {true},
 {
@@ -45,7 +45,7 @@ _actions pushBack (["ACM_Training_SpawnPatients",
     params ["_object", "_unit", "_args"];
     _args params ["_spawnPos"];
 
-    [_object, _spawnPos, _unit, 0, 0] call FUNC(generatePatients);
+    [_object, _spawnPos, _unit, 0, 0, 0] call FUNC(requestTrainingPatient);
 },
 {true},
 {

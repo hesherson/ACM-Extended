@@ -75,6 +75,7 @@ private _keyEH = _display displayAddEventHandler ["KeyDown", {
 // lower a new bag started before the callback executes.
 private _mouseEH = _display displayAddEventHandler ["MouseButtonDown", {
     params ["_display", "_button"];
+    if (call ACME_fnc_transfusionInputOwned) exitWith {false};
     private _unit = ACE_player;
     private _locked = !isNull _unit && {alive _unit} && {_unit getVariable ["ACME_hang_Active", false]};
     if (!_locked) exitWith {false};
@@ -82,6 +83,7 @@ private _mouseEH = _display displayAddEventHandler ["MouseButtonDown", {
         private _episodeStart = _unit getVariable ["ACME_hang_Start", -1];
         [{
             params ["_episodeStart"];
+            if (call ACME_fnc_transfusionInputOwned) exitWith {};
             private _unit = ACE_player;
             if (isNull _unit) exitWith {};
             if ((_unit getVariable ["ACME_hang_Start", -2]) != _episodeStart) exitWith {};

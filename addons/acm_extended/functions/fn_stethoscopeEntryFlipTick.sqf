@@ -39,8 +39,9 @@ if (_rollStarted >= 0) exitWith {
     private _providerAtHold = (_poseNow param [0,-2]) == _epoch
         && {(_poseNow param [1,""]) == "roll"}
         && {(_poseNow param [3,-2]) >= 3};
+    private _providerCompleted = (_provider getVariable ["ACME_rollProviderCompletedEpoch", -1]) == _epoch;
     private _patientDone = diag_tickTime >= (_rollStarted + _rollTime + 0.08);
-    if (_patientDone && {_providerAtHold || {diag_tickTime >= _deadline}}) then {
+    if (_patientDone && {_providerAtHold || {_providerCompleted} || {diag_tickTime >= _deadline}}) then {
         [true] call _finish;
     };
 };
@@ -60,7 +61,7 @@ if (_epoch < 0 || {_rollToken == ""}
 
 private _work = toLowerANSI (_pose param [2, ""]);
 if ((_pose param [3, -2]) >= 1
-    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
+    && {_work == "ainvpknlmstpsnonwnondnon_medic4" || {(_pose param [20, false]) && {_work == "acm_pronecontinuous"}}}
     && {(toLowerANSI animationState _provider) == _work}) then {
     _args set [6, diag_tickTime];
     private _preserveHead = _patient getVariable ["ACME_headElev_Suspended", false];

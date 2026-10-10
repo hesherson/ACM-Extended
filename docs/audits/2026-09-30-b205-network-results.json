@@ -1,0 +1,50 @@
+{
+  "baseline_commit": "133d8bdd2ddefb92990c505ff19af7643d36e694",
+  "version": "1.2.4.1",
+  "build": {
+    "hemtt_check": 0,
+    "hemtt_release_no_bin_no_archive": 0,
+    "pbos": 14,
+    "signatures": 14,
+    "signing_keys": 1,
+    "source_errors": 0,
+    "source_warnings": 0,
+    "unchanged_style_help_diagnostics": 7
+  },
+  "network_revision": "NA5-B205-1.2.4.1-stable",
+  "full_suite_passed": false,
+  "counts": {
+    "before": {
+      "passed": 4879,
+      "failed": 868,
+      "error": 47,
+      "skipped": 29
+    },
+    "after": {
+      "passed": 4973,
+      "failed": 838,
+      "error": 47,
+      "skipped": 29
+    }
+  },
+  "focused_checks_passed": 198,
+  "network_ownership_gates_passed": 74,
+  "new_test_cases_passed": 64,
+  "existing_cases_now_passing": 30,
+  "introduced_failures_or_errors": 0,
+  "missing_test_cases": 0,
+  "newly_skipped": 0,
+  "method": "Compare actual JUnit testcase records using classname/name/occurrence; nested suite header totals differ from records. Broad run used SQFVM. Afterward only four parameter IDs were stabilized; all 31 tests in that module were rerun and their passing records used for final identity comparison. No runtime source changed after the broad run.",
+  "toolchain": {
+    "hemtt": "1.22.0",
+    "sqfvm": "v2026.04.03-ed9f5f5",
+    "pytest": "9.0.2"
+  },
+  "limits": [
+    "No Arma client or dedicated server executed.",
+    "No packet capture, real bandwidth/FPS or network-delivery measurements.",
+    "Windows asset binarization not executed.",
+    "Existing failing/error test backlog remains."
+  ],
+  "build_batch": "B205"
+}

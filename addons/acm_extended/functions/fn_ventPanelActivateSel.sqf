@@ -85,7 +85,7 @@ if (_screen in ["weight","mode","interface","connect","menu","params","advset","
 };
 
 if (_screen == "o2") exitWith {
-    if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) exitWith {
+    if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])})) exitWith {
         ["params"] call ACME_fnc_ventPanelShowScreen;
     };
     // the dial map: 0 is the OXYGEN value, where a middle-click toggles edit, and 1 is BACK. while editing, the dial

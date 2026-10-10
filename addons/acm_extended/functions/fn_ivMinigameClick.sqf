@@ -11,6 +11,24 @@ if (_display isEqualType controlNull) then {_display = ctrlParent _display;};
 if !([] call ACME_fnc_ivUiValid) exitWith {false};
 if (isNull _display || {_display != (uiNamespace getVariable ["ACME_IV_DLG", displayNull])}) exitWith {false};
 
+if (_display getVariable ["ACME_IV_FinishBusy",false]) exitWith {
+    if (_display getVariable ["ACME_IV_FieldInserting",false]) exitWith {
+        if (_button==0) then {uiNamespace setVariable ["ACME_IV_Dragging",true];};
+        if (_button in [1,2]) then {[] call ACME_fnc_ivMinigameRetract;};
+        true
+    };
+    if (_button in [1,2]) then {[] call ACME_fnc_ivFinishAbort;};
+    if (_button==0) then {
+        private _a=_display getVariable ["ACME_IV_FinishActive",[]];
+        private _cursor=[] call ACME_fnc_ivMinigameCursor;
+        if (count _a>=3 && {(((_a select 0) param [16,[]]) param [2,""])=="flush"}
+            && {[_a select 0,_cursor] call ACME_fnc_ivFinishSyringeHit}) then {
+            uiNamespace setVariable ["ACME_IV_Dragging",true];
+            _display setVariable ["ACME_IV_FlushPullPin",_cursor];
+        };
+    };
+    true
+};
 if (_button in [1, 2]) exitWith {
     // Controls, their display and the CBA middle-button fallback can see the same
     // press. Consume it once so a band removal cannot also retract the needle.
@@ -63,6 +81,20 @@ _ui params ["_ux", "_uy"];
 if !(([_ux] call _finite) && {[_uy] call _finite}) exitWith { false };
 
 private _held = uiNamespace getVariable ["ACME_IV_Held", "none"];
+private _fieldTarget=if (_held=="needle") then {[_ux,_uy,"field"] call ACME_fnc_ivFinishTarget} else {[]};
+if (_fieldTarget isNotEqualTo []) exitWith {
+    private _close=[_ux,_uy,"field",false,true] call ACME_fnc_ivFinishTarget;
+    if (_close isEqualTo []) exitWith {
+        ["Move the needle closer to the saline-lock port.",2,uiNamespace getVariable ["ACME_IV_Medic",objNull]] call ace_common_fnc_displayTextStructured;
+        true
+    };
+    _fieldTarget=_close;
+    private _g=uiNamespace getVariable ["ACME_IV_Gauge",16];
+    if (_g in [14,16]) then {
+        [0,0,format ["field%1",_g],(_fieldTarget select 0) param [14,""]] call ACME_fnc_ivFinishStart;
+    } else {["Use a 14g or 16g catheter for the saline lock.",2,uiNamespace getVariable ["ACME_IV_Medic",objNull]] call ace_common_fnc_displayTextStructured;};
+    true
+};
 
 // for a held needle, trust the last rendered hover position, because that is what the player is actually seeing.
 // the MouseButtonDown coords and getMousePosition can disagree by a frame or a control space, which caused the
@@ -81,6 +113,19 @@ if (_held == "needle" && {_lastNeedle isEqualType []} && {count _lastNeedle >= 7
 private _fx = (_ux - _bx) / _bw;
 private _fy = (_uy - _by) / _bh;
 
+private _onFinishTray=false;
+{
+    private _r=ctrlPosition (_x select 3);
+    if (_ux>=(_r select 0) && {_ux<=(_r select 0)+(_r select 2)}
+        && {_uy>=(_r select 1)} && {_uy<=(_r select 1)+(_r select 3)}) exitWith {_onFinishTray=true;};
+} forEach (_display getVariable ["ACME_IV_FinishTray",[]]);
+// Let the native button receive its click; do not also treat its coordinates as a hub.
+if (_onFinishTray) exitWith {false};
+if (_held in ["extension","flush","dressing","line","lock"]) exitWith {
+    uiNamespace setVariable ["ACME_IV_Dragging",false];
+    [_fx,_fy] call ACME_fnc_ivFinishStart;
+    true
+};
 private _inRect = {
     params ["_px", "_py", "_r"];
     if !(_r isEqualType [] && {count _r >= 4}) exitWith { false };
@@ -97,20 +142,15 @@ if (!(uiNamespace getVariable ["ACME_IV_EJMode", false]) || {true}) then {
     private _held0 = uiNamespace getVariable ["ACME_IV_Held", "none"];
     if (!isNull _patient && {_held0 == "none"} && {(uiNamespace getVariable ["ACME_IV_InsStage", ""]) == ""}) then {
         private _marks = _patient getVariable ["ACME_IV_Marks", []];
-        private _bestI = -1;
-        private _bestD = 1e9;
-        {
-            _x params ["_mbp", "_mview", "_mu", "_mv", "_mkind"];
-            if (_mbp == _bp && {_mview == _view} && {_mkind == "hub"}) then {
-                private _du = _fx - _mu;
-                private _dv = (_fy - _mv) * (1 / _af);
-                private _d = sqrt ((_du * _du) + (_dv * _dv));
-                if (_d < _bestD) then { _bestD = _d; _bestI = _forEachIndex; };
-            };
-        } forEach _marks;
+        private _hit=[_ux,_uy,"",true] call ACME_fnc_ivFinishTarget;
+        private _bestI=if (_hit isEqualTo []) then {-1} else {_marks findIf {(_x param [14,""])==((_hit select 0) param [14,""]) && {(_x param [4,""])=="hub"}}};
+        private _bestD=if (_bestI<0) then {1e9} else {0};
         if (_bestI >= 0 && {_bestD <= (missionNamespace getVariable ["ACME_iv_pullGrabRadius", 0.05])}) exitWith {
             (_marks select _bestI) params ["", "", "", "", "", "", ["_pframe", ""]];
             uiNamespace setVariable ["ACME_IV_PullIdx", _bestI];
+            private _row=_marks select _bestI;
+            uiNamespace setVariable ["ACME_IV_PullUID",_row param [14,""]];
+            uiNamespace setVariable ["ACME_IV_PullKind",_hit select 1];
             uiNamespace setVariable ["ACME_IV_PullSuffix", _pframe];
             uiNamespace setVariable ["ACME_IV_PullAngle", (_marks select _bestI) param [13,0]];
             uiNamespace setVariable ["ACME_IV_PullProg", 0];
@@ -121,6 +161,31 @@ if (!(uiNamespace getVariable ["ACME_IV_EJMode", false]) || {true}) then {
             {
                 if ((_x select 0) == _bestI) exitWith { _mc = _x select 1; };
             } forEach (uiNamespace getVariable ["ACME_IV_HubCtrls", []]);
+            private _layers=[];private _bases=[];
+            private _kind=_hit select 1;private _uid=_row param [14,""];
+            {
+                if ((_x select 0)==_uid) exitWith {
+                    if (_kind=="removeDressing") then {_mc=_x select 2;_layers=[_mc];} else {
+                        if (_kind in ["removeExtension","removeLine"]) then {_mc=_x select 1;};
+                        _layers=if (_kind=="catheter") then {[_mc,_x select 1,_x select 2]} else {if (_kind=="removeExtension") then {[_x select 1,_x select 2]} else {[_mc]}};
+                        // A line pull moves only its downstream tubing, not the extension baked into line_ca.
+                        if (_kind=="removeLine") then {
+                            (_x select 1) ctrlSetText "\acm_extended\ui\iv\finish\cursor_line_ca.paa";
+                            private _base=_display ctrlCreate ["ACME_IV_HubMark",-1];
+                            _base ctrlSetText "\acm_extended\ui\iv\finish\extension_ca.paa";
+                            [_base,_row] call ACME_fnc_ivFinishPose;_base ctrlShow true;
+                            uiNamespace setVariable ["ACME_IV_PullExtra",_base];
+                        };
+                    };
+                };
+            } forEach (_display getVariable ["ACME_IV_FinishCtrls",[]]);
+            if ((_row param [15,[]]) param [4,false]) then {
+                private _fieldPull=[_display,_row,_kind,_mc] call ACME_fnc_ivFieldPullLayers;
+                _layers=_fieldPull select 0;_mc=_fieldPull select 1;
+            };
+            {_bases pushBack (ctrlPosition _x);} forEach _layers;
+            uiNamespace setVariable ["ACME_IV_PullLayers",_layers];
+            uiNamespace setVariable ["ACME_IV_PullLayerBases",_bases];
             uiNamespace setVariable ["ACME_IV_PullCtrl", _mc];
             if (!isNull _mc) then {
                 (ctrlPosition _mc) params ["_p0x", "_p0y"];

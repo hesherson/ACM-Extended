@@ -2,6 +2,7 @@
 if (missionNamespace getVariable ["ACME_expansion_batch3_registered", false]) exitWith {};
 missionNamespace setVariable ["ACME_expansion_batch3_registered", true];
 
+[{ call ACME_fnc_idlePhysDiscovery; }, 1, []] call CBA_fnc_addPerFrameHandler;
 [{ call ACME_fnc_preoxygenationTick; }, 1, []] call CBA_fnc_addPerFrameHandler;
 [{ call ACME_fnc_shockPhenotypeTick; }, 0.5, []] call CBA_fnc_addPerFrameHandler;
 [{ call ACME_fnc_coagulationTick; }, 0.20, []] call CBA_fnc_addPerFrameHandler;

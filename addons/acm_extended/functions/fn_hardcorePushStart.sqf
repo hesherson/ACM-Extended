@@ -1,11 +1,23 @@
 /* B121: convert the selected vascular syringe into a persistent Hardcore Medication push transaction. The
    physical magazine is reserved once; the stable Narc Box row remains as the authoritative live plunger state. */
 disableSerialization;
+// B259: normal-mode timed vascular pushes (>3 seconds) reuse the exact same
+// incremental escrow/controller as Hardcore. The legacy short push and IM
+// injection retain their existing immediate-completion choreography.
+params [["_standardTimed",false,[false]]];
+if (isNull ACE_player || {!local ACE_player}) exitWith {false};
 private _d = findDisplay 84000;
 if (isNull _d || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) exitWith {false};
-if !(missionNamespace getVariable ["ACME_hcEff_medications",false]) exitWith {false};
+if (!_standardTimed && {!(missionNamespace getVariable ["ACME_hcEff_medications",false])}) exitWith {false};
 private _existing = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
 if (_existing isEqualType createHashMap && {count _existing > 0}) exitWith {false};
+// Ownership changes cannot transfer this client-local plunger transaction safely. Keep its evidence until
+// the provider receives a fresh kit, without preventing another provider from starting a separate push.
+private _retired = missionNamespace getVariable ["ACME_HCMedPushRetiredJobs",[]];
+if (count _retired >= 32 || {(_retired findIf {(_x select 0) isEqualTo ACE_player}) >= 0}) exitWith {
+    ["An unsettled syringe push was retained after a provider change. Reset the affected provider's kit before reusing it.",5,ACE_player,13] call ace_common_fnc_displayTextStructured;
+    false
+};
 private _pending = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
 if !(_pending isEqualType [] && {count _pending >= 3}) exitWith {false};
 _pending params ["_body","_site","_route"];
@@ -43,7 +55,7 @@ if (!(_size isEqualType 0) || {!finite _size} || {!(_size in [1,3,5,10])}
 if (!_virtual && {(_ns > 0.0005) || {!(_components isEqualTo [])}}) exitWith {false};
 // Physical syringe magazines are stored in hundredths of a milliliter. Quantize the live row up front so every
 // later stop/restart and the returned magazine agree on the exact same plunger volume.
-if (!_virtual) then {_drug = (round (_drug*100))/100; _row set [2,_drug]; _store set [_idx,_row]; ACE_player setVariable ["ACME_narcStore",_store,false];};
+if (!_virtual) then {_drug = (round (_drug*100))/100; _row set [2,_drug]; _store set [_idx,_row]; [ACE_player,_store,false] call ACME_fnc_narcStoreCommit;};
 private _total = (_drug + _ns) max 0;
 if (_total <= 0 || {_total > _size + 0.001}) exitWith {false};
 // Prevalidate every medication component and route before reserving the physical syringe or moving the plunger.
@@ -129,10 +141,11 @@ missionNamespace setVariable ["ACME_HCMedPushSerial",_serial];
 private _session = format ["hcpush:%1:%2:%3",clientOwner,floor(diag_tickTime*1000),_serial];
 private _job = createHashMapFromArray [
     ["medic",ACE_player],["patient",_patient],["bodyPart",toLowerANSI _body],["site",_site],["route","vascular"],
+    ["providerLocalityEpoch",ACE_player getVariable ["ACME_providerLocalityEpoch",0]],
     ["identity",_identity],["stableId",_stable],["size",_size],["med",_med],["kind",_kind],["virtual",_virtual],
     ["label",_row param [3,"",[""]]],["pushLabel",_pushLabel],["barrelMarker",_row param [12,"",[""]]],
     ["overlayAspect",_overlayAspect],["overlayTravelNorm",_overlayTravelNorm],["magClass",_magClass],["magContainer",_magContainer],
-    ["duration",_dur],["targetMl",_target],["rateMlSec",_target/(_dur max 0.01)],["pushedMl",0],["carryMl",0],
+    ["duration",_dur],["standardTimed",_standardTimed],["targetMl",_target],["rateMlSec",_target/(_dur max 0.01)],["pushedMl",0],["carryMl",0],
     ["unsentDelta",[0,0,[]]],["batchElapsed",0],["pendingAcks",0],["session",_session],["lastTick",diag_tickTime],
     ["lastSend",diag_tickTime],["nextUi",0],["flowing",true],["stopRequested",false],["finishRequested",false]
 ];
@@ -144,7 +157,11 @@ uiNamespace setVariable ["ACME_SK_CarouselCollapseAt",0];
 {private _c=_d displayCtrl _x; if (!isNull _c) then {_c ctrlEnable false;};} forEach [84150,84151,84154,84470,84831];
 private _old = missionNamespace getVariable ["ACME_HCMedPushPFH",-1];
 if (_old >= 0) then {[_old] call CBA_fnc_removePerFrameHandler;};
-private _h = [{call ACME_fnc_hardcorePushTick;},0.05] call CBA_fnc_addPerFrameHandler;
+private _h = [{
+    params ["_args","_handle"];
+    _args params ["_session"];
+    [_session,_handle] call ACME_fnc_hardcorePushTick;
+},0.05,[_session]] call CBA_fnc_addPerFrameHandler;
 missionNamespace setVariable ["ACME_HCMedPushPFH",_h];
 playSound "ACME_SyringePush";
 [0] call ACME_fnc_skCarouselRender;

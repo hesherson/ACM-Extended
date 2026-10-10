@@ -1,0 +1,142 @@
+{
+  "build": "B211",
+  "public_version": "1.2.4.1",
+  "base_commit": "ca3b2b8e41f8a03377063990c3860e6bc78ee2af",
+  "focused_gate_reports": {
+    "ownership": 75,
+    "network": 952,
+    "behavior": 689
+  },
+  "network_gate_includes_initial_b211_cases": 55,
+  "final_b211_input_cases": {
+    "passed": 92,
+    "failed": 0,
+    "errors": 0
+  },
+  "distinct_required_cases_passed": 1753,
+  "b210_old_source_comparison": {
+    "passed": 24,
+    "failed": 68,
+    "scope": "same 92 input cases; old tick, pose and mouse installer"
+  },
+  "related_contracts": {
+    "passed": 27,
+    "failed": 2,
+    "both_failures_present_in_b210_full_report": true
+  },
+  "hemtt_check": true,
+  "linux_release_no_bin_no_archive": true,
+  "package": {
+    "pbos": 14,
+    "signatures": 14,
+    "keys": 1,
+    "verified_configs_and_signatures": [
+      {
+        "pbo": "ACM_acm_extended.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "extended"
+      },
+      {
+        "pbo": "ACM_airway.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "airway"
+      },
+      {
+        "pbo": "ACM_breathing.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "breathing"
+      },
+      {
+        "pbo": "ACM_cbrn.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "cbrn"
+      },
+      {
+        "pbo": "ACM_circulation.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "circulation"
+      },
+      {
+        "pbo": "ACM_core.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "core"
+      },
+      {
+        "pbo": "ACM_damage.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "damage"
+      },
+      {
+        "pbo": "ACM_disability.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "disability"
+      },
+      {
+        "pbo": "ACM_evacuation.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "evacuation"
+      },
+      {
+        "pbo": "ACM_gui.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "gui"
+      },
+      {
+        "pbo": "ACM_itemtext.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "itemtext"
+      },
+      {
+        "pbo": "ACM_main.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "main"
+      },
+      {
+        "pbo": "ACM_mission.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "mission"
+      },
+      {
+        "pbo": "ACM_zeus.pbo",
+        "signature_verified": true,
+        "config_build": "B211",
+        "protocol": 1,
+        "component": "zeus"
+      }
+    ]
+  },
+  "strict_native_state_owner_violations": 0,
+  "full_historical_suite_rerun": false,
+  "live_arma_test_performed": false,
+  "limitations": [
+    "Engine UI/input, animation and network transport are simulated in tests.",
+    "Windows asset binarization is performed by the deployment helper on the user machine.",
+    "Historical full-suite failures are not certified fixed by this targeted patch."
+  ]
+}

@@ -1,0 +1,404 @@
+{
+  "batch": "B217",
+  "public_version": "1.2.4.1",
+  "baseline": "ec6e183abe336a7c59711e4350221e98d6b671c8",
+  "bundle_prerequisite": "1bf8e5d7856060f037512e77bc6a38ae634d0b5f",
+  "required_test_count": 2552,
+  "new_test_count": 133,
+  "required_plus_new": 2685,
+  "additional_release_checks": 5,
+  "required_testcase_identities_match_baseline": true,
+  "source_sha256": {
+    "addons/acm_extended/XEH_preInit.sqf": "5725201f71c2043c9811102faca618c75e1437bd77159cf7800b5356f149ace3",
+    "addons/acm_extended/config.cpp": "716b6de8228cb586ed0c9170816cb07fdc345b9e8aec340f4241d8f588b4da08",
+    "addons/acm_extended/functions/fn_assessmentCompletion.sqf": "d0f6de77b11e61fc42e92b321045d26963c729b48acb58c462fb7c2bd460d323",
+    "addons/acm_extended/functions/fn_assessmentProgress.sqf": "04b6ce4abf1c93b196fd27dd407898f97c48773a59007019845437686b78d5c9",
+    "addons/acm_extended/functions/fn_assessmentProgressBar.sqf": "df810fd19ddc151bd78e69016a89f91ff39d6800bf7abd83f53b875fc1523ca2",
+    "addons/acm_extended/functions/fn_assessmentStart.sqf": "c3b7c816e56ba9ac4fd3cb976102b838521395279ab52e9aef7254f98a32f505",
+    "addons/acm_extended/functions/fn_assessmentStop.sqf": "ec975cb6fafea5315b2a05f6b0f9631e0ccad82107b0cfbc9446ef6a6618cf5e",
+    "addons/acm_extended/functions/fn_assessmentTick.sqf": "ee0a0e46b898abebb46044fe6e745bf051cf4cca707935706b62a735143521db",
+    "addons/acm_extended/functions/fn_carrierParkTarget.sqf": "16db5110708bcb56ea58152133affb79d7927bde1c88bb314b0ed95008a22944",
+    "addons/acm_extended/functions/fn_chestAccessVestPark.sqf": "e8fd15afc7c5caa588a4aef7cbe7d62fe0f5023dbaf94395eb12620453465f8d",
+    "addons/acm_extended/functions/fn_chestSealParkCarrier.sqf": "1d9fc1865b27ab102a49e1f03522e7a603fe13d5d0a083aa8228444c96806045",
+    "addons/acm_extended/functions/fn_debugInduceSeizure.sqf": "fc22ad0f653f2741220fde42125dc4392f88521e9d4748926278342c9e4bd7b7",
+    "addons/acm_extended/functions/fn_directPressureLimb.sqf": "5626a1141adb7e36e2915c249793aef363d6edc9e9223d59823e4ed8cf37ca46",
+    "addons/acm_extended/functions/fn_directPressurePose.sqf": "01df34b28ccae2f6f60d21390b24e312c393e1fb6e549c90b36d5a24d4af0d83",
+    "addons/acm_extended/functions/fn_directPressureTorso.sqf": "38a8600f7907f626decfa161d56c3354facb7902f504839d7b5b5472387f8dd7",
+    "addons/acm_extended/functions/fn_feelSkinStart.sqf": "fa1db867e50f6659927297fb17d92fa186d0bae7f88e0427586c0db69a868be1",
+    "addons/acm_extended/functions/fn_feelSkinStop.sqf": "355a41b81150bc555adb27f7b608ef31501aac4fa9bb985232fe37f3f2fe55c7",
+    "addons/acm_extended/functions/fn_feelSkinTick.sqf": "0e7c34ff1ac5da5eef23dc2b71e9ecc69a8bb486cfea2317d46c0e0dadf4a62f",
+    "addons/acm_extended/functions/fn_initDrugPhysiologyConfig.sqf": "be4b31243b367fbb8ef1509e721842ecb741cc2fd56f298385f5d43dbad8b6ce",
+    "addons/acm_extended/functions/fn_initForkStartupRuntime.sqf": "99bd70b00fb818deebd45b4978bd750f11cd5918bc102b6a98009a176575667f",
+    "addons/acm_extended/functions/fn_initMedicalMenuConfig.sqf": "b728a81c74e52907e612eb53e41000b7703ef086b8716a92099b4591d96ef30d",
+    "addons/acm_extended/functions/fn_initPressureAndAuscultationConfig.sqf": "ac20fb87098b82617b7e421c3595c464c682c55131bf5970ea1ad4cecd99006e",
+    "addons/acm_extended/functions/fn_lidoToxTick.sqf": "fe3d5c8ce564b237caeb3d5b357c626a365089dc88b97c4ef566886c5dd609a5",
+    "addons/acm_extended/functions/fn_menuActionInfo.sqf": "bc08169ad6ef07cd0b62451ebd0973cccbaf7d62adb3ab33b743cfd2b2dbec8c",
+    "addons/acm_extended/functions/fn_recoveryPositionFinish.sqf": "7056d539247e8e6c9042bbc75bea77e0f1701d6ee0086982adc41568b3ac5c1e",
+    "addons/acm_extended/functions/fn_recoveryPositionProgress.sqf": "c6076f0aee2adf70172cec88b25bb87cc4ae6b55d87cd21af55e103c24ace827",
+    "addons/acm_extended/functions/fn_seizureGestureAdvance.sqf": "7fc1731d49ed75470bace166b31d0d30cfd9c9fd6459981aae7ea3945abfe12f",
+    "addons/acm_extended/functions/fn_seizureGestureSync.sqf": "83fdf29e65c6ce109e5f69e4fa1819234d814ef1b89d1f338d1e966fd32a6886",
+    "addons/acm_extended/functions/fn_treatmentPoseStart.sqf": "35e84659f57627f313ef3d08a1dad4b6d354a18d383c360bc2c8bd131159853d",
+    "addons/acm_extended/tools/test_b203_network_backpressure_20260929.py": "d62f2cef4a8e4ada91062b01c7de9feaa99551497e8f53a00eb0f050f00cca19",
+    "addons/acm_extended/tools/test_b204_network_full_audit_20260929.py": "ff63676d3dfc6cbb681f579ecaa3fb4f2c64d2cd7efa77e27d08101b892de9be",
+    "addons/acm_extended/tools/test_b206_seizure_gesture_locality_execution.py": "2487ef15b739fd2c508418547afe5f73200bc76782e165ca48dff1f875fe3498",
+    "addons/acm_extended/tools/test_b207_treatment_bridge.py": "37e16e604d59e100a12393b18c136ad2e4c20619e159ba9fc2c227f2d17dd163",
+    "addons/acm_extended/tools/test_b211_direct_pressure_inputs.py": "bf0325bd066c3da573d6469522dbb8e294a57ec45f5e1fc1693f8476dc03031c",
+    "addons/acm_extended/tools/test_b212_assessment_sequence.py": "27203d44923b630e3ec3c3d318ef403eb246beeb324d2dffd6f4bac4c8f6f6aa",
+    "addons/acm_extended/tools/test_b212_prone_providers.py": "76982332c80e9fe8167d4993a54f870663d4f1b1e0b8fe78a8bddc276aaba533",
+    "addons/acm_extended/tools/test_b213_direct_pressure_flow.py": "5c1813f42135e27cf8c34d595bc2e82ef16a96c723799ac9e92d376ac55f264c",
+    "addons/acm_extended/tools/test_b215_recovery_position.py": "a16e057c89970189cbb1aa4291fe2360030a1f705c90be49d0b5857f47d03e15",
+    "addons/acm_extended/tools/test_b216_recovery_adjuncts.py": "938b544ea3e239c56f239e966959d9de87355f203153960334a5b7bc7ef2bc96",
+    "addons/acm_extended/tools/test_b217_feel_skin.py": "edc4b1107496708d11a6f195688a03f08cd52b16bbbeff2f3d8b5033a771dd09",
+    "addons/acm_extended/tools/test_b217_timing_menu.py": "dcfa26c26727c7c4d14f6ba9891661d5c98369ac62eee9bb754ca2efd4f3c16c",
+    "addons/acm_extended/tools/test_build_version_tag.py": "76a9ac783037077c7c8b85978c5dd1fac71ba15ee6e696d907ec8340400e8726",
+    "addons/acm_extended/tools/test_historical_menu_execution.py": "ca260aa10dd591bcb785ccac88504aed4350c7943561dea83f3946d947902fe2",
+    "addons/acm_extended/tools/test_menu_death_lifecycle.py": "dd9f69a750cad8031bc02263d113403a3cb3c4cc04a1c41e305818147b0cac08",
+    "addons/acm_extended/tools/test_seizure_gesture_unification.py": "d5d3435b641b3e17503b5aeb798ebe992c770acbc126bdf2d6b9666d7b0397e0",
+    "addons/airway/CfgMoves.hpp": "67963dd1eb065b046ec4e42babc3bf8ac5994c0bf07881924b5c782139062964",
+    "addons/airway/functions/fnc_handleRecoveryPosition.sqf": "ccd1d5c73c16f8824b91b22bd6a1bfa0449cf3d92b9c7d9a4b065caddb0d3f62",
+    "addons/core/functions/fnc_treatmentNative.sqf": "b931f408acd9179719fe28821a5df1b12c879eeb9f175b70e7241cced5992b0d",
+    "addons/core/overrides/fnc_treatment.sqf": "a01d4c06d28a4f260283990a72fcae863d87c95ca3f1c09d2deec55b3fe1bbe5",
+    "addons/gui/overrides/fnc_updateActions.sqf": "7914d86b73194006e6147a0ce01981f1cc63d3e2c4b3cce303c59afcf984f704",
+    "addons/main/script_build.hpp": "8165d294203b5cfd3246010a394a3998fd04a72fd3d917293817df12c02bd7c5",
+    "tools/Deploy-ACME-B217.ps1": "41201bf3aa9217bea7211500c8559e0b1497ee603e406cce225fa979cc44e640"
+  },
+  "build_exit_codes": {
+    "hemtt-check": 0,
+    "hemtt-release": 0
+  },
+  "build_command": "hemtt release --no-bin --no-archive",
+  "native_owner_violations": 0,
+  "package": {
+    "batch": "B217",
+    "public_version": "1.2.4.1",
+    "pbos": [
+      {
+        "name": "ACM_acm_extended.pbo",
+        "sha256": "54e2affb47bb42a4056e14269ddf400c5553582927067d2b5895b7db488bfa0f",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_Extended": "B217"
+        }
+      },
+      {
+        "name": "ACM_airway.pbo",
+        "sha256": "fd69b371099713cae8efc584c33021083e1e2b20fe0cedb777a3121c0dd78b7b",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_airway": "B217"
+        }
+      },
+      {
+        "name": "ACM_breathing.pbo",
+        "sha256": "e7fcbf26d2bd585285259449e3fde3a41f0b6f12d6602f118fe92043ef049801",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_breathing": "B217"
+        }
+      },
+      {
+        "name": "ACM_cbrn.pbo",
+        "sha256": "91ee7d9febfa918b329535f05bdf1a2b3622c29cb21c24898697fc8a0d6c7f6b",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_cbrn": "B217"
+        }
+      },
+      {
+        "name": "ACM_circulation.pbo",
+        "sha256": "317d9fe6be8d86f2be2e72efe0d71af31c7f1ee64246502e6f67e7356b4f9cd8",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_circulation": "B217"
+        }
+      },
+      {
+        "name": "ACM_core.pbo",
+        "sha256": "720f1f65b2a4c368617ff112d7cef7c089264e4f949c3aba7fef660caaaceb48",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_core": "B217"
+        }
+      },
+      {
+        "name": "ACM_damage.pbo",
+        "sha256": "c10102812cc8e698f7ff25bd00b59a4985fa78b6009d5467a5a0ba777c0a347a",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_damage": "B217"
+        }
+      },
+      {
+        "name": "ACM_disability.pbo",
+        "sha256": "12d9ecd60fc871b151d36917ff89fa68e7d9240f9d0352b9aa82317be0d77b4f",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_disability": "B217"
+        }
+      },
+      {
+        "name": "ACM_evacuation.pbo",
+        "sha256": "af7822c918d862eaf21ea9d4aab2171fd275d1413445e35010b730f19f23389b",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_evacuation": "B217"
+        }
+      },
+      {
+        "name": "ACM_gui.pbo",
+        "sha256": "09c26513d0c90de6afa59b11904aeb83c39fcb5e6da48a08327d00c6a9071aa5",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_gui": "B217"
+        }
+      },
+      {
+        "name": "ACM_itemtext.pbo",
+        "sha256": "6d9657a1baed90bbf6d3d35ee7983bd2082ef0b8642dabb5fc17a6de075c1190",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_itemtext": "B217"
+        }
+      },
+      {
+        "name": "ACM_main.pbo",
+        "sha256": "481715f3d4613b9d6909ef1efeef53ac892821f195b0aa843f66b88a400479bf",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_main": "B217"
+        }
+      },
+      {
+        "name": "ACM_mission.pbo",
+        "sha256": "c9805527ae8b56b007c4720931a443ac3b59642b14131bed8eaa3f462df56d3b",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_mission": "B217"
+        }
+      },
+      {
+        "name": "ACM_zeus.pbo",
+        "sha256": "41f482f9a9e834f6d9a221021afc29fe80fcbde8311256911a11b90b98be2d60",
+        "signature_verified": true,
+        "component_stamps": {
+          "ACM_zeus": "B217"
+        }
+      }
+    ],
+    "source_matches": [
+      {
+        "path": "addons/acm_extended/XEH_preInit.sqf",
+        "sha256": "5725201f71c2043c9811102faca618c75e1437bd77159cf7800b5356f149ace3"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_assessmentCompletion.sqf",
+        "sha256": "d0f6de77b11e61fc42e92b321045d26963c729b48acb58c462fb7c2bd460d323"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_assessmentProgress.sqf",
+        "sha256": "04b6ce4abf1c93b196fd27dd407898f97c48773a59007019845437686b78d5c9"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_assessmentProgressBar.sqf",
+        "sha256": "df810fd19ddc151bd78e69016a89f91ff39d6800bf7abd83f53b875fc1523ca2"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_assessmentStart.sqf",
+        "sha256": "c3b7c816e56ba9ac4fd3cb976102b838521395279ab52e9aef7254f98a32f505"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_assessmentStop.sqf",
+        "sha256": "ec975cb6fafea5315b2a05f6b0f9631e0ccad82107b0cfbc9446ef6a6618cf5e"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_assessmentTick.sqf",
+        "sha256": "ee0a0e46b898abebb46044fe6e745bf051cf4cca707935706b62a735143521db"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_carrierParkTarget.sqf",
+        "sha256": "16db5110708bcb56ea58152133affb79d7927bde1c88bb314b0ed95008a22944"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_chestAccessVestPark.sqf",
+        "sha256": "e8fd15afc7c5caa588a4aef7cbe7d62fe0f5023dbaf94395eb12620453465f8d"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_chestSealParkCarrier.sqf",
+        "sha256": "1d9fc1865b27ab102a49e1f03522e7a603fe13d5d0a083aa8228444c96806045"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_debugInduceSeizure.sqf",
+        "sha256": "fc22ad0f653f2741220fde42125dc4392f88521e9d4748926278342c9e4bd7b7"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_directPressureLimb.sqf",
+        "sha256": "5626a1141adb7e36e2915c249793aef363d6edc9e9223d59823e4ed8cf37ca46"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_directPressurePose.sqf",
+        "sha256": "01df34b28ccae2f6f60d21390b24e312c393e1fb6e549c90b36d5a24d4af0d83"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_directPressureTorso.sqf",
+        "sha256": "38a8600f7907f626decfa161d56c3354facb7902f504839d7b5b5472387f8dd7"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_feelSkinStart.sqf",
+        "sha256": "fa1db867e50f6659927297fb17d92fa186d0bae7f88e0427586c0db69a868be1"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_feelSkinStop.sqf",
+        "sha256": "355a41b81150bc555adb27f7b608ef31501aac4fa9bb985232fe37f3f2fe55c7"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_feelSkinTick.sqf",
+        "sha256": "0e7c34ff1ac5da5eef23dc2b71e9ecc69a8bb486cfea2317d46c0e0dadf4a62f"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_initDrugPhysiologyConfig.sqf",
+        "sha256": "be4b31243b367fbb8ef1509e721842ecb741cc2fd56f298385f5d43dbad8b6ce"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_initForkStartupRuntime.sqf",
+        "sha256": "99bd70b00fb818deebd45b4978bd750f11cd5918bc102b6a98009a176575667f"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_initMedicalMenuConfig.sqf",
+        "sha256": "b728a81c74e52907e612eb53e41000b7703ef086b8716a92099b4591d96ef30d"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_initPressureAndAuscultationConfig.sqf",
+        "sha256": "ac20fb87098b82617b7e421c3595c464c682c55131bf5970ea1ad4cecd99006e"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_lidoToxTick.sqf",
+        "sha256": "fe3d5c8ce564b237caeb3d5b357c626a365089dc88b97c4ef566886c5dd609a5"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_menuActionInfo.sqf",
+        "sha256": "bc08169ad6ef07cd0b62451ebd0973cccbaf7d62adb3ab33b743cfd2b2dbec8c"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_recoveryPositionFinish.sqf",
+        "sha256": "7056d539247e8e6c9042bbc75bea77e0f1701d6ee0086982adc41568b3ac5c1e"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_recoveryPositionProgress.sqf",
+        "sha256": "c6076f0aee2adf70172cec88b25bb87cc4ae6b55d87cd21af55e103c24ace827"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_seizureGestureAdvance.sqf",
+        "sha256": "7fc1731d49ed75470bace166b31d0d30cfd9c9fd6459981aae7ea3945abfe12f"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_seizureGestureSync.sqf",
+        "sha256": "83fdf29e65c6ce109e5f69e4fa1819234d814ef1b89d1f338d1e966fd32a6886"
+      },
+      {
+        "path": "addons/acm_extended/functions/fn_treatmentPoseStart.sqf",
+        "sha256": "35e84659f57627f313ef3d08a1dad4b6d354a18d383c360bc2c8bd131159853d"
+      },
+      {
+        "path": "addons/airway/functions/fnc_handleRecoveryPosition.sqf",
+        "sha256": "ccd1d5c73c16f8824b91b22bd6a1bfa0449cf3d92b9c7d9a4b065caddb0d3f62"
+      },
+      {
+        "path": "addons/core/functions/fnc_treatmentNative.sqf",
+        "sha256": "b931f408acd9179719fe28821a5df1b12c879eeb9f175b70e7241cced5992b0d"
+      },
+      {
+        "path": "addons/core/overrides/fnc_treatment.sqf",
+        "sha256": "a01d4c06d28a4f260283990a72fcae863d87c95ca3f1c09d2deec55b3fe1bbe5"
+      },
+      {
+        "path": "addons/gui/overrides/fnc_updateActions.sqf",
+        "sha256": "7914d86b73194006e6147a0ce01981f1cc63d3e2c4b3cce303c59afcf984f704"
+      }
+    ],
+    "compiled_config_checks": {
+      "recovery_duration": 5,
+      "recovery_selections": [
+        "Head",
+        "Body"
+      ],
+      "recovery_interpolation_speed": 0.5,
+      "feel_skin_timer": 0,
+      "feel_skin_native_animations_empty": true,
+      "seizure_aliases": [
+        0,
+        4,
+        5,
+        6
+      ],
+      "seizure3_absent_from_actions_and_states": true,
+      "development_disabled": true
+    }
+  },
+  "test_provenance": {
+    "description": "Three complete required-regression shards, then the complete 44-case recovery-adjunct module after one test-clock update. No production changes after initial HEMTT release. No test removals. Entries are actual test executions, not presumed fixes.",
+    "initial_complete_shards": {
+      "final-regression-1.xml": {
+        "passed": 845,
+        "failed": 6
+      },
+      "final-regression-2.xml": {
+        "passed": 851
+      },
+      "final-regression-3.xml": {
+        "passed": 850
+      }
+    },
+    "overridden_module": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+    "actual_rerun_report": "final-recovery-adjuncts.xml",
+    "actual_rerun_count": 44,
+    "changed_outcomes": [
+      {
+        "classname": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+        "name": "test_basic_adjunct_does_not_stop_secretions_but_recovery_drains_new_events[Blood-OPA]",
+        "original": "failed",
+        "actual_rerun": "passed"
+      },
+      {
+        "classname": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+        "name": "test_basic_adjunct_does_not_stop_secretions_but_recovery_drains_new_events[Blood-NPA]",
+        "original": "failed",
+        "actual_rerun": "passed"
+      },
+      {
+        "classname": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+        "name": "test_basic_adjunct_does_not_stop_secretions_but_recovery_drains_new_events[Blood-OPA_NPA]",
+        "original": "failed",
+        "actual_rerun": "passed"
+      },
+      {
+        "classname": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+        "name": "test_basic_adjunct_does_not_stop_secretions_but_recovery_drains_new_events[Vomit-OPA]",
+        "original": "failed",
+        "actual_rerun": "passed"
+      },
+      {
+        "classname": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+        "name": "test_basic_adjunct_does_not_stop_secretions_but_recovery_drains_new_events[Vomit-NPA]",
+        "original": "failed",
+        "actual_rerun": "passed"
+      },
+      {
+        "classname": "addons.acm_extended.tools.test_b216_recovery_adjuncts",
+        "name": "test_basic_adjunct_does_not_stop_secretions_but_recovery_drains_new_events[Vomit-OPA_NPA]",
+        "original": "failed",
+        "actual_rerun": "passed"
+      }
+    ],
+    "final_required": {
+      "passed": 2552,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "limitations": [
+    "No live Arma rendering or hosted/dedicated multiplayer test.",
+    "No Windows asset binarization in this Linux release verification.",
+    "The unrelated complete historical test suite was not rerun."
+  ]
+}

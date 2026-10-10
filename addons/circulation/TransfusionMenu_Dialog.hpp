@@ -288,6 +288,8 @@ class GVAR(TransfusionMenu_Dialog) {
             tooltip = "";
         };
         class MoveBagButton: StopTransfusionButton {
+            colorDisabled[] = {1,1,1,0.25};
+            colorBackgroundDisabled[] = {0,0,0,0.35};
             text = CSTRING(TransfusionMenu_MoveBag_Display);
             idc = IDC_TRANSFUSIONMENU_BUTTON_MOVEBAG;
             x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W / 8));

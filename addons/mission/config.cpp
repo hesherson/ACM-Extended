@@ -1,10 +1,13 @@
+#include "../main/script_build.hpp"
 #include "script_component.hpp"
 
 class CfgPatches {
     class ADDON {
+        ACME_BUILD_CONFIG("mission");
         name = COMPONENT_NAME;
         units[] = {
             QGVAR(TrainingPatient),
+            QGVAR(TrainingCivilian),
             QGVAR(Eden_FullHealFacility),
             QGVAR(Eden_ElevationOverride)
         };

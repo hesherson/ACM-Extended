@@ -15,4 +15,4 @@ if ((diag_tickTime - _last) < 0.4) exitWith {};
 
 ACE_player setVariable ["ACME_bf_lastPingT", diag_tickTime];
 ACE_player setVariable ["ACME_bf_lastFridge", _anchor];
-["ACME_bfViewPing", [_anchor, ACE_player], _anchor] call CBA_fnc_targetEvent;
+["ACME_bfViewPing", [_anchor, ACE_player]] call CBA_fnc_serverEvent;

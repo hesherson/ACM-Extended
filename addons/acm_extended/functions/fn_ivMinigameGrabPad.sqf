@@ -1,3 +1,4 @@
+if ((uiNamespace getVariable ["ACME_IV_DLG",displayNull]) getVariable ["ACME_IV_FinishBusy",false]) exitWith {};
 // Keep the active catheter in control until it is completed or this face is suspended.
 if ((uiNamespace getVariable ["ACME_IV_InsStage", ""]) in ["advance", "thread", "retract"]) exitWith {};
 // pick up or put down the alcohol pad, on a single click, and click again to return it.

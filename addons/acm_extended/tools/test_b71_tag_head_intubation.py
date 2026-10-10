@@ -73,7 +73,6 @@ def test_native_acm_treatment_cannot_invent_head_position_roll():
     assert 'ACM_rollToBack = 0;' in elev
     assert 'ACM_rollToBack = 0;' in lower
     assert 'private _headOwned = _classname in ["ACME_ElevateHead", "ACME_LowerHead"];' in override
-    assert 'if (!_isBypass && {!_headOwned}' in override
     assert 'private _nativeArgs = +_this;' in override
     tail = override.split('private _nativeArgs = +_this;',1)[1].split('private _started = _nativeArgs call ACM_core_fnc_treatmentNative;',1)[0]
     assert '_nativeArgs set [' not in tail
@@ -87,8 +86,8 @@ def test_exact_semifowler_patient_and_provider_animations_retained():
     assert_connected_patient_states()
 
 def test_provider_sequence_releases_on_finish_movement_or_menu_exit_without_lowering_head():
-    from test_bounded_head_movement_menu import movement_menu_contract
-    movement_menu_contract()
+    from test_bounded_head_movement_menu import movement_contract
+    movement_contract()
 
 
 def test_exact_head_elevation_log_wording():

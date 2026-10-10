@@ -11,6 +11,8 @@ private _policy = switch (_action) do {
     case "ACME_IntubateStart": {["intubation", false]};
     case "ACME_Extubate";
     case "ACME_OpenAirwayView": {["intubation", true]};
+    case "ACME_VentMaskCPAP";
+    case "ACME_ConnectNIVVent";
     case "ACME_ConnectETVent": {["ventilator", false]};
     case "ACME_DisconnectETVent";
     case "ACME_VentOpenPatient": {["ventilator", true]};

@@ -1,4 +1,5 @@
 """Execute menu-provider ownership using real start, stop and Unload callbacks."""
+import re
 import pytest
 
 from test_menu_death_lifecycle import adapt, execute, read
@@ -10,6 +11,7 @@ def menu_code(name):
     # provider-ownership and callback logic remains the checked-out SQF source.
     source = source.replace('stance _medic', '_menuStance')
     source = source.replace('animationState _medic', '_menuAnimation')
+    source = re.sub(r'\blocal (_medic|_unit)\b', '_menuLocal', source)
     for command in ('primaryWeapon', 'secondaryWeapon', 'handgunWeapon', 'binocular', 'currentWeapon'):
         source = source.replace(command + ' _medic', '_' + command)
     source = source.replace('_patient isKindOf "CAManBase"', 'true')
@@ -23,27 +25,38 @@ def menu_code(name):
 def setup():
     return """
         private _menuStance="CROUCH";
+        private _menuLocal=true;
         private _menuAnimation="amovpknlmstpsnonwnondnon";
         private _primaryWeapon=""; private _secondaryWeapon="";
         private _handgunWeapon=""; private _binocular=""; private _currentWeapon="";
         _medic setVariable ["ACME_menuPoseAfterTreatment",_patient];
         private _stanceMiddle=false;
         private _display=missionNamespace;
+        uiNamespace setVariable ["ace_medical_gui_menuDisplay",_display];
         private _prepDelay=.2;
         private _runtimeHandlers=createHashMap;
+        private _runtimeEventLists=createHashMap;
         ACME_fnc_animBlocked={false};
+        ACME_fnc_debugEnabled={false};
         ace_common_fnc_isSwimming={false};
+        ace_common_fnc_isPlayer={(_this select 0) isEqualTo ACE_player};
         ACME_fnc_medicAnimationPrep={_prepDelay};
         private _priorities=[];
         ACME_fnc_doAnim={_moves pushBack (_this select 1); _priorities pushBack (_this select 2);};
         ACME_fnc_syncPremixedBags={};
         CBA_fnc_waitAndExecute={_waits pushBack _this;};
         CBA_fnc_globalEvent={_events pushBack _this;};
-        CBA_fnc_addEventHandler={_runtimeHandlers set [_this select 0,_this select 1];};
+        // CBA keeps all subscribers. A later debug logger must not replace care lifecycle callbacks.
+        CBA_fnc_addEventHandler={
+            params ["_event","_fn"];
+            private _list=if (_event in _runtimeEventLists) then {_runtimeEventLists get _event} else {[]};
+            _list pushBack _fn;_runtimeEventLists set [_event,_list];
+            _runtimeHandlers set [_event,compile format ['{_this call _x;} forEach (_runtimeEventLists get "%1");',_event]];
+        };
         private _runWait={private _w=_waits select _this; (_w select 1) call (_w select 0);};
     """ + ''.join(
         f'ACME_fnc_{name}={{' + menu_code(name) + '};'
-        for name in ('providerStanceOwned', 'treatmentPoseSync', 'treatmentPoseStop', 'menuPoseStop', 'menuPoseStart')
+        for name in ('providerAnimation', 'providerStanceOwned', 'providerAnimSpeedOwned', 'treatmentPoseSync', 'treatmentPoseStop', 'menuPoseStop', 'menuPoseStart')
     ) + menu_code('registerMedicalMenuOpenRuntime')
 
 
@@ -53,6 +66,15 @@ def setup():
     ('PRONE', 'AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon', 1.116 / 1.5),
 ])
 def test_menu_uses_native_generic_after_preparation_and_correct_transition(stance, transition, delay):
+    if stance == 'PRONE':
+        # Preserve the historical identity; B212 explicitly removes menu-driven prone-to-kneel entry.
+        execute(setup()+'''
+            _menuStance="PRONE";
+            [_medic,_patient,_display] call (_runtimeHandlers get "ace_medicalMenuOpened");
+            [count _moves==0 && {count _waits==0} && {!_stanceMiddle},"medical menu raised prone provider"] call _check;
+            [(_medic getVariable ["ACME_menuPose",[]]) isEqualTo [],"prone menu acquired a pose"] call _check;
+        ''')
+        return
     expected = f'["{transition}"]' if transition else '[]'
     execute(setup() + f'''
         _menuStance="{stance}";

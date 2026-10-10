@@ -15,6 +15,12 @@
  * Public: No
  */
 
+// B219: explicitly marked training casualties cannot start autonomous healing or movement.
+// Other AI retain ACM's native lying-state and treatment logic below.
+if (_this getVariable ["ACME_trainingCrouchOnly",false]) exitWith {
+    _this setVariable [QACEGVAR(medical_ai,currentTreatment),nil];
+};
+
 // Player will have to do this manually of course
 if ([_this] call ACEFUNC(common,isPlayer)) exitWith {};
 // Can't heal self when unconscious

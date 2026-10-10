@@ -4,12 +4,38 @@
  * compensatory SVR/HR and exposes a phenotype for pulse/skin/training systems.
  */
 private _now = CBA_missionTime;
+private _candidate = {
+    params ["_u"];
+    if (isNull _u || {!local _u} || {!alive _u}) exitWith {false};
+    private _prior = (toLowerANSI (_u getVariable ["ACME_shock_phenotype","none"])) != "none"
+        || {abs (_u getVariable ["ACME_shock_severity",0]) > 0.001}
+        || {abs (_u getVariable ["ACME_shock_resistDelta",0]) > 0.01}
+        || {abs (_u getVariable ["ACME_shock_hrAdj",0]) > 0.01}
+        || {_u getVariable ["ACME_shock_warm",false]}
+        || {_u getVariable ["ACME_shock_ownsCirc",false]};
+    private _forced = _u getVariable ["ACME_shock_forced", []];
+    private _forcedLive = _forced isEqualType [] && {count _forced >= 2}
+        && {(_forced param [2,-1]) < 0 || {_now <= (_forced param [2,-1])}};
+    private _circ = _u getVariable ["ACME_circ_State", createHashMap];
+    _prior || {_forcedLive}
+        || {_u getVariable ["ACM_breathing_TensionPneumothorax_State", false]}
+        || {(_u getVariable ["ACM_breathing_Hemothorax_Fluid",0]) >= 0.75}
+        || {_circ isEqualType createHashMap && {_circ getOrDefault ["shockActive",false]}}
+        || {(_u getVariable ["ACM_circulation_Blood_Volume",6]) < 5.1}
+};
+private _patients = (missionNamespace getVariable ["ACME_shock_activePatients", []]) select {[_x] call _candidate};
 {
     private _u = _x;
     if (isNull _u || {!local _u} || {!alive _u}) then {continue};
 
     private _type = "none";
     private _sev = 0;
+    private _hadShock = (toLowerANSI (_u getVariable ["ACME_shock_phenotype","none"])) != "none"
+        || {abs (_u getVariable ["ACME_shock_severity",0]) > 0.001}
+        || {abs (_u getVariable ["ACME_shock_resistDelta",0]) > 0.01}
+        || {abs (_u getVariable ["ACME_shock_hrAdj",0]) > 0.01}
+        || {_u getVariable ["ACME_shock_warm",false]}
+        || {_u getVariable ["ACME_shock_ownsCirc",false]};
     private _forced = _u getVariable ["ACME_shock_forced", []];
     if (_forced isEqualType [] && {count _forced >= 2}) then {
         private _until = _forced param [2,-1];
@@ -21,20 +47,28 @@ private _now = CBA_missionTime;
         };
     };
 
+    private _tension = _u getVariable ["ACM_breathing_TensionPneumothorax_State", false];
+    private _htx = (_u getVariable ["ACM_breathing_Hemothorax_Fluid",0]) max 0;
+    private _circProbe = _u getVariable ["ACME_circ_State", createHashMap];
+    private _circShock = (_circProbe isEqualType createHashMap) && {_circProbe getOrDefault ["shockActive",false]}
+        && {!(_u getVariable ["ACME_shock_ownsCirc",false])};
+    private _blood = _u getVariable ["ACM_circulation_Blood_Volume",6];
+    private _forcedActive = _type != "none";
+
+    // A healthy unit with no previous shock output is completely silent. Once a
+    // phenotype existed, run one neutralization pass and then retire naturally.
+    if (!_forcedActive && {!_tension} && {_htx < 0.75} && {!_circShock} && {_blood >= 5.1} && {!_hadShock}) then {continue};
+
     if (_type == "none") then {
         // Obstructive shock outranks hypovolemia because its pulse/pressure character is clinically distinct.
-        private _tension = _u getVariable ["ACM_breathing_TensionPneumothorax_State", false];
-        private _htx = (_u getVariable ["ACM_breathing_Hemothorax_Fluid",0]) max 0;
         if (_tension || {_htx >= 0.75}) then {
             _type = "obstructive";
             _sev = (if (_tension) then {0.70} else {0}) max (linearConversion [0.5,1.5,_htx,0.25,1,true]);
         } else {
-            private _circ = _u getVariable ["ACME_circ_State", createHashMap];
-            if (_circ isEqualType createHashMap && {_circ getOrDefault ["shockActive",false]} && {!(_u getVariable ["ACME_shock_ownsCirc",false])}) then {
+            if (_circShock) then {
                 _type = "distributive";
-                _sev = (_circ getOrDefault ["shockSeverity",0.4]) max 0 min 1;
+                _sev = (_circProbe getOrDefault ["shockSeverity",0.4]) max 0 min 1;
             } else {
-                private _blood = _u getVariable ["ACM_circulation_Blood_Volume",6];
                 if (_blood < 5.1) then {
                     _type = "hemorrhagic";
                     _sev = linearConversion [5.1,2.8,_blood,0.12,1,true];
@@ -55,8 +89,8 @@ private _now = CBA_missionTime;
 
     // Publish source-separated hemodynamic drives. The authoritative fork-native HR/resistance endpoints
     // compose these once with native physiology; this PFH never fights those writers directly.
-    [_u,"ACME_shock_resistDelta",_svrAdj,0.10,2] call ACME_fnc_setVarNetApprox;
-    [_u,"ACME_shock_hrAdj",_hrAdj,0.10,2] call ACME_fnc_setVarNetApprox;
+    [_u,"ACME_shock_resistDelta",_svrAdj,([0.10,0] select (_svrAdj == 0)),0] call ACME_fnc_setVarNetApprox;
+    [_u,"ACME_shock_hrAdj",_hrAdj,([0.10,0] select (_hrAdj == 0)),0] call ACME_fnc_setVarNetApprox;
 
     // Forced cardiogenic/neurogenic shock needs a pressure-failure component even with preserved blood volume.
     // Reuse ACME's established shock MAP-drop state, and relinquish it cleanly when this layer no longer owns it.
@@ -94,6 +128,7 @@ private _now = CBA_missionTime;
     };
 
     [_u,"ACME_shock_phenotype",_type] call ACME_fnc_setVarNet;
-    [_u,"ACME_shock_severity",_sev,0.002,2] call ACME_fnc_setVarNetApprox;
+    [_u,"ACME_shock_severity",_sev,([0.002,0] select (_sev == 0)),0] call ACME_fnc_setVarNetApprox;
     [_u,"ACME_shock_warm",(_type == "distributive" || {_type == "neurogenic"})] call ACME_fnc_setVarNet;
-} forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
+} forEach _patients;
+ACME_shock_activePatients = _patients select {[_x] call _candidate};

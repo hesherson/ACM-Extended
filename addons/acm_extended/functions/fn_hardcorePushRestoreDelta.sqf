@@ -19,5 +19,5 @@ private _parts = +(_row param [5,[],[[]]]);
 } forEach _comp;
 _row set [5,_parts];
 _store set [_idx,_row];
-_medic setVariable ["ACME_narcStore",_store,false];
+[_medic,_store,false] call ACME_fnc_narcStoreCommit;
 true

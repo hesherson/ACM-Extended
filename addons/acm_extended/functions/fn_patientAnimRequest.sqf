@@ -48,6 +48,18 @@ if (_active) then {
     _rejected = !_sameOwner && {_oldPriority >= _lockPriority};
 };
 if (_rejected) exitWith {""};
+// An accepted clinical body controller preempts decorative waking, never the other way round.
+if (!isNil "ACME_fnc_wakeAnimationStop") then {[_patient] call ACME_fnc_wakeAnimationStop;};
+
+// B220: invalidate recovery only AFTER this roll wins arbitration, and BEFORE
+// changing the pose. Release of a pending recovery token cannot clear the new roll.
+private _animationLC = toLowerANSI _animation;
+if (((_animationLC find "rolltofront") >= 0 || {(_animationLC find "rolltoback") >= 0})
+    && {_patient getVariable ["ACM_airway_RecoveryPosition_State", false]
+        || {(_patient getVariable ["ACM_airway_RecoveryPosition_Pending", []]) isNotEqualTo []}
+        || {(_patient getVariable ["ACM_airway_RecoveryPosition_Episode", ""]) != ""}}) then {
+    [_provider, _patient, false, true, "interrupt"] call ACM_airway_fnc_setRecoveryPosition;
+};
 
 _leaseSeconds = _leaseSeconds max 0.15;
 private _expires = _now + _leaseSeconds;

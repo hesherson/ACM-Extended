@@ -87,6 +87,9 @@ if ("ace_dragging" call ACEFUNC(common,isModLoaded)) then {
             [{
                 ACEGVAR(medical_gui,target) setVariable [QEGVAR(core,Lying_State), true, true];
                 [QACEGVAR(common,switchMove), [ACEGVAR(medical_gui,target), "ACM_LyingState"]] call CBA_fnc_globalEvent;
+                if (!isNil "ACME_fnc_aiProtectionSync") then {
+                    ["ACME_aiProtectionRefresh", [ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
+                };
                 [QEGVAR(core,getUpPrompt), [ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
                 [QACEGVAR(common,displayTextStructured), [LELSTRING(core,SupinePosition_Hint), 2, ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
                 [LELSTRING(core,SupinePosition_Complete), 2, ACE_player] call ACEFUNC(common,displayTextStructured);
@@ -154,5 +157,17 @@ private _orderedExamine = [];
 _orderedExamine append (_examine select {(_x param [9, ""]) == ""});
 private _rest = _mapped select {
     (_x param [1, ""]) != "examine" && {!((_x param [9, ""]) in ["iv_access", "narc_box"])}
+};
+// B216: order the actual action rows, so both flat lists and Breathing dropdown children
+// place the timed respiratory observation immediately below Check Breathing in any language.
+private _measures = _rest select {toLower (_x param [8, ""]) == "acme_measurerespirations"};
+if !(_measures isEqualTo []) then {
+    private _checkIndex = _rest findIf {toLower (_x param [8, ""]) == "checkbreathing"};
+    if (_checkIndex >= 0) then {
+        _rest = _rest select {toLower (_x param [8, ""]) != "acme_measurerespirations"};
+        _checkIndex = _rest findIf {toLower (_x param [8, ""]) == "checkbreathing"};
+        _rest = (_rest select [0, _checkIndex + 1]) + _measures
+            + (_rest select [_checkIndex + 1, (count _rest) - _checkIndex - 1]);
+    };
 };
 ace_medical_gui_actions = _iv + _narc + _orderedExamine + _rest + _dogTags;
