@@ -27,9 +27,13 @@ def test_scope_display_owns_cursor_audio_tick():
     close = read(FN / "fn_stethoscopeClose.sqf")
     assert 'ACME_stethTickPFH' in init
     assert '[_patient] call ACME_fnc_stethoscopeTick;' in init
+    assert '"ACME_stethAudioGeneration"' in init
+    assert '[_channels] call ACME_fnc_stethoscopeAudioStop;' in init
+    assert '(_display getVariable ["ACME_stethTickPFH",-1]) == _handle' in init
     assert '[_display, _patient, _medic] call ACME_fnc_stethoscopeInit;' in use
     assert '\n    [_patient] call ACME_fnc_stethoscopeTick;\n' not in use
     assert 'ACME_fnc_chestAccessVestEvent' in close
+    assert '[_display getVariable ["ACME_stethChannels",[]]] call ACME_fnc_stethoscopeAudioStop;' in close
 
 def test_scope_display_owns_exact_pose_and_action_generations():
     s = read(FN / "fn_beginStethoscopeAction.sqf")

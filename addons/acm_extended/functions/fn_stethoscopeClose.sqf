@@ -18,11 +18,7 @@ _display setVariable ["ACME_stethFlipPFH", -1];
 _display setVariable ["ACME_stethFlipToken", ""];
 _display setVariable ["ACME_stethFlipActive", false];
 
-{
-    _x params ["_emitter","_sound"];
-    if (!isNull _sound) then {deleteVehicle _sound;};
-    if (!isNull _emitter) then {deleteVehicle _emitter;};
-} forEach (_display getVariable ["ACME_stethChannels",[]]);
+[_display getVariable ["ACME_stethChannels",[]]] call ACME_fnc_stethoscopeAudioStop;
 _display setVariable ["ACME_stethChannels",[]];
 _display setVariable ["ACME_stethPressed",false];
 

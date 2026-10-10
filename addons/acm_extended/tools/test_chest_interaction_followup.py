@@ -79,13 +79,17 @@ def test_scope_input_is_hold_based_and_display_owned():
 
 def test_scope_mixes_playing_channels_and_preserves_pathology_and_cleanup():
     tick = fn("stethoscopeTick")
-    assert "say3D" in tick
-    assert not any(t.kind == "ident" and t.value == "fadeSound" for t in lex(tick))
+    audio = fn("stethoscopeAudioUpdate")
+    stop = fn("stethoscopeAudioStop")
+    assert "call ACME_fnc_stethoscopeAudioUpdate" in tick
+    assert "playSoundUI [_channel select 1,_gain,_channel select 3,false,_offset]" in audio
+    assert not any(t.kind == "ident" and t.value in ("say3D", "fadeSound", "fadeRadio")
+                   for source in (tick, audio, stop) for t in lex(source))
     assert "ACME_stethNextBeat" in tick and "ACME_stethNextBreath" in tick
     assert "ACME_aspiration_edema" in tick and "ACM_circulation_Overload_Volume" in tick
     assert '"Shallow","Dull","Crackles"' in tick
-    assert "deleteVehicle _sound" in fn("stethoscopeClose")
-    assert "deleteVehicle _emitter" in fn("stethoscopeClose")
+    assert '[_display getVariable ["ACME_stethChannels",[]]] call ACME_fnc_stethoscopeAudioStop;' in fn("stethoscopeClose")
+    assert "call ACME_fnc_stethoscopeAudioOwned" in stop and "stopSound (_x select 0)" in stop
     assert "ACME_stethChannels" in fn("stethoscopeClose")
     weights = fn("stethoscopeWeights")
     assert "_diaphragm" in weights and "_centerline" in weights
@@ -95,6 +99,7 @@ def test_scope_mixes_playing_channels_and_preserves_pathology_and_cleanup():
 def test_new_sqf_functions_are_registered_and_balanced():
     config = (ADDON / "config.cpp").read_text()
     for name in ("chestSealFlipTick", "chestSealBurpReady",
-                 "stethoscopeInit", "stethoscopeTick", "stethoscopeWeights", "stethoscopeClose"):
+                 "stethoscopeInit", "stethoscopeTick", "stethoscopeWeights", "stethoscopeClose",
+                 "stethoscopeAudioOwned", "stethoscopeAudioStop", "stethoscopeAudioUpdate"):
         assert config.count(f"class {name} {{}};") == 1
         matching(lex(fn(name)))

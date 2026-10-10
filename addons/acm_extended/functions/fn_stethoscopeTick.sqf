@@ -3,6 +3,8 @@ disableSerialization;
 params ["_patient"];
 private _display = findDisplay 81000;
 if (isNull _display || {isNull _patient}) exitWith {};
+// A queued tick for an earlier patient must not drive a replacement dialog's voices or clinical refresh.
+if !((_display getVariable ["ACME_stethPatient",objNull]) isEqualTo _patient) exitWith {};
 private _now = diag_tickTime;
 private _dt = ((_now - (_display getVariable ["ACME_stethLastFrame",_now])) max 0) min 0.1;
 _display setVariable ["ACME_stethLastFrame",_now];
@@ -81,8 +83,7 @@ for "_i" from 0 to 1 do {
     _gains set [3 + _i,_gain * _blend];
 };
 
-// Four alternating cardiac emitters let each heartbeat sample finish naturally before that emitter is reused.
-// They all follow the same live bell attenuation, so overlapping tails do not change the listening position.
+// Four alternating cardiac voices preserve overlapping heartbeat tails at the current bell gain.
 private _targets = [
     _gains select 0,
     _gains select 1,
@@ -93,27 +94,13 @@ private _targets = [
     _gains select 2,
     _gains select 2
 ];
-{
-    _x params ["_emitter","_sound","_gain"];
-    private _target = _targets select _forEachIndex;
-    _gain = _gain + (_target - _gain) * (1 - exp (-_dt / 0.08));
-    // Zero means actual silence, including the lower lateral chest and a lifted bell.
-    if (_target <= 0.0001) then {_gain = 0;};
-    _x set [2,_gain];
-    private _distance = if (_gain <= 0.0001) then {22} else {1 + 19 * (1 - _gain)};
-    _emitter setPosASL (AGLToASL (positionCameraToWorld [0,_distance,0]));
-} forEach _channels;
-
-private _play = {
-    params ["_index","_class",["_pitch",1]];
-    private _channel = _channels select _index;
-    _channel params ["_emitter","_oldSound"];
-    if (!isNull _oldSound) then {deleteVehicle _oldSound;};
-    // Speech routing bypasses ACE's environmental fadeSound while retaining distance crossfades.
-    private _sound = _emitter say3D [_class,20,_pitch,true];
-    _channel set [1,_sound];
-};
-if (alive _patient && {_hr > 0} && {!(_patient getVariable ["ace_medical_inCardiacArrest",false])}
+private _requests = [];
+private _heartAudible = (_gains select 2) > 0.0001;
+private _breathAudible = ((_gains select 0) + (_gains select 1) + (_gains select 3) + (_gains select 4)) > 0.0001;
+// No-contact time does not consume diagnostic cadences. Re-entry starts a fresh audible cycle immediately.
+if (!_heartAudible) then {_display setVariable ["ACME_stethNextBeat",-1];};
+if (!_breathAudible) then {_display setVariable ["ACME_stethNextBreath",-1];};
+if (_heartAudible && {alive _patient} && {_hr > 0} && {!(_patient getVariable ["ace_medical_inCardiacArrest",false])}
     && {_now >= (_display getVariable ["ACME_stethNextBeat",-1])}) then {
     private _delay = 60 / (_hr max 1);
     _display setVariable ["ACME_stethNextBeat",_now + _delay];
@@ -122,22 +109,23 @@ if (alive _patient && {_hr > 0} && {!(_patient getVariable ["ace_medical_inCardi
     private _voice = _display getVariable ["ACME_stethHeartVoice",0];
     private _heartChannel = _heartVoices select (_voice mod (count _heartVoices));
     _display setVariable ["ACME_stethHeartVoice",(_voice + 1) mod (count _heartVoices)];
-    [_heartChannel,format ["ACM_Stethoscope_HeartBeat_%1_%2",_rate,1 + floor random 3],1 + random 0.1] call _play;
+    _requests pushBack [_heartChannel,format ["ACM_Stethoscope_HeartBeat_%1_%2",_rate,1 + floor random 3],1 + random 0.1,_delay];
 };
-if (alive _patient && {_rr >= 1} && {_now >= (_display getVariable ["ACME_stethNextBreath",-1])}) then {
+if (_breathAudible && {alive _patient} && {_rr >= 1} && {_now >= (_display getVariable ["ACME_stethNextBreath",-1])}) then {
     private _delay = 60 / _rr;
     _display setVariable ["ACME_stethNextBreath",_now + _delay];
     for "_i" from 0 to 1 do {
         private _state = _lungStates param [_i,0];
         private _type = ["Normal","Shallow","Dull","Crackles"] param [_state,"Normal"];
         private _rate = if (_delay < 2) then {"Fast"} else {if (_delay > 5) then {"Slow"} else {"Normal"}};
-        [3 + _i,format ["ACM_Stethoscope_Breath_%1_Crackles",_rate]] call _play;
+        _requests pushBack [3 + _i,format ["ACM_Stethoscope_Breath_%1_Crackles",_rate],1,_delay];
         if (_state == 3) then {
             private _fast = _overload >= (missionNamespace getVariable ["ACME_edema_crackleFastVol",0.5])
                 || {_aspEdema >= (missionNamespace getVariable ["ACME_aspiration_edemaCrackleFast",0.55])};
             _rate = if (_fast) then {"Fast"} else {"Normal"};
         };
-        [_i,format ["ACM_Stethoscope_Breath_%1_%2",_rate,_type]] call _play;
+        _requests pushBack [_i,format ["ACM_Stethoscope_Breath_%1_%2",_rate,_type],1,_delay];
     };
 };
+[_channels,_targets,_dt,_now,_requests] call ACME_fnc_stethoscopeAudioUpdate;
 _display setVariable ["ACME_stethChannels",_channels];

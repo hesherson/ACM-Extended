@@ -59,19 +59,45 @@ def tick_engine():
     return adapt(linear_primitive(source))
 
 
+def audio_engine(source):
+    """Adapt only native UI voice commands; production ownership/phase code runs."""
+    source = re.sub(r'\bsoundParams\s+(_\w+)', r'(\1 call _soundParams)', source)
+    source = re.sub(r'\bstopSound\s+(\([^;]+?\)|_\w+);', r'[\1] call _stopSound;', source)
+    tokens = lex(source)
+    pairs = matching(tokens)
+    edits = []
+    for index, token in enumerate(tokens[:-1]):
+        if token.kind == 'ident' and token.value == 'playSoundUI':
+            assert tokens[index + 1].value == '['
+            end = tokens[pairs[index + 1]].offset + 1
+            edits.append((token.offset, end,
+                          '(' + source[tokens[index + 1].offset:end] + ' call _playSoundUI)'))
+    for start, end, value in reversed(edits):
+        source = source[:start] + value + source[end:]
+    return adapt(source)
+
+
+def audio_helpers():
+    return ''.join('ACME_fnc_' + name + '={' + audio_engine(read(name)) + '};'
+                   for name in ('stethoscopeAudioOwned', 'stethoscopeAudioStop', 'stethoscopeAudioUpdate'))
+
+
 def mixer():
-    return setup() + 'ACME_fnc_stethoscopeTick={' + tick_engine() + '};' + r'''
+    return setup() + audio_helpers() + 'ACME_fnc_stethoscopeTick={' + tick_engine() + '};' + r'''
         private _mousePosition=[7,6.6];
         private _bellPosition=[]; private _emitterDistances=[];
         private _played=[]; private _deletedSounds=[];
         private _say3D={_played pushBack _this;objNull};
+        private _playSoundUI={_played pushBack _this;-1};
+        private _soundParams={[]}; private _stopSound={_deletedSounds pushBack (_this select 0);};
         ACME_fnc_clinicalEpoch={0};
+        missionNamespace setVariable ["ACME_stethPatient",_patient];
         missionNamespace setVariable ["ACME_stethPressed",true];
         missionNamespace setVariable ["ACME_stethNextBeat",100];
         missionNamespace setVariable ["ACME_stethNextBreath",100];
         private _resetChannels={
             private _channels=[];
-            for "_i" from 0 to 7 do {_channels pushBack [objNull,objNull,0];};
+            for "_i" from 0 to 7 do {_channels pushBack [-1,"",0,1,0,0,[],-1,0,0,0];};
             missionNamespace setVariable ["ACME_stethChannels",_channels];
             missionNamespace setVariable ["ACME_stethLastFrame",_nowTime-0.1];
         };
