@@ -1,6 +1,6 @@
 private _context = [] call ACME_fnc_getSelectedActiveBagContext;
 if (_context isEqualTo []) exitWith {
-    ["Select an active saline or blood line first.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    ["Select an active normal saline bag first.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
 _context params ["_patient", "_bodyPart", "_trueIndex", "_type", "_accessType", "_bagAccessSite", "_bagIV", "_bloodType", "_volume", "_freshBloodID", "_remainingVolume", "_selectedIV", "_accessSite"];
@@ -34,7 +34,7 @@ private _hasAllowedMedication = false;
 } forEach _allowedVials;
 
 if (!_hasAllowedMedication) exitWith {
-    ["You need a supported infusion medication vial, including ketamine or propofol.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    ["You need a medication vial suitable for mixing into saline. Spike propofol bottles directly.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
 

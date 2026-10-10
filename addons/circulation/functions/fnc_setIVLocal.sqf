@@ -53,7 +53,7 @@ private _retained = false;
     // bagIdentity stamps the source bag in place; fetch it to retain the UID.
     _bag = (_map get _bodyPart) select _forEachIndex;
     private _drug = (_entries findIf {(_x param [23, ""]) == _uid}) >= 0;
-    private _special = _bagType in ["FreshBlood","FBTK","ACME_SalineY","ACME_Empty","ACME_EmptySaline"];
+    private _special = _bagType in ["FreshBlood","FBTK","ACME_SalineY","ACME_Empty","ACME_EmptySaline","ACME_Propofol"];
     private _returnVolume = [_volume] call FUNC(getReturnVolume);
     private _item = if (_returnVolume > 0 && {!_drug} && {!_special}) then {
         [_bagType, _returnVolume, _bloodType] call FUNC(formatFluidBagName)

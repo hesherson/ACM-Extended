@@ -12,6 +12,9 @@ if (!isNull (findDisplay 86200)) exitWith {};
 // the menu scrambled after spike, prep and give. the menu refreshes cleanly the instant the draw dialog
 // closes.
 if (!isNull (findDisplay 84000)) exitWith {};
+// The read-only details popup uses a snapshot of the exact access. Repaint only
+// that snapshot while it is open, preserving the parent menu's native selection.
+if (!isNull (findDisplay 86190)) exitWith {call ACME_fnc_updateTransfusionLineDetails;};
 
 // UI never writes a remote patient's complete bag map. Ask the owner to repair empty slots
 // from its current topology instead, at most once a second per open display.
@@ -95,7 +98,7 @@ private _bagRowSelected = (!isNull _ctrlTransfusionList) && {(lbCurSel _ctrlTran
 private _activeContext = [] call ACME_fnc_getSelectedActiveBagContext;
 private _canActive = false;
 private _hasInfusion = false;
-private _rateText = "Select medicated saline bag";
+private _rateText = "Select an infusion";
 
 if ((uiNamespace getVariable ["ACME_infusion_LayoutDisplay", displayNull]) != _display) then {
     // a new menu instance. the entire custom layout, the spike, prep, give, prepared, infuse, flush and hang
@@ -304,7 +307,7 @@ if (!isNull _ctrlRightList) then {
 // updatebaglist, which clears and rebuilds 86005 on a body-part, iv or inventory change, never touches our set
 // rows. it is re-asserted every pass, so it holds through ACM's event-driven rebuilds.
 private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode", false];
-private _preparedSetCountB50 = count (ACE_player getVariable ["ACME_preparedIVSets", []]);
+private _preparedSetCountB50 = {(_x param [8, ""]) != "propofol"} count (ACE_player getVariable ["ACME_preparedIVSets", []]);
 private _ctrlSetsBtn = _display displayCtrl 86144;
 if (!isNull _ctrlSetsBtn) then {
     [_ctrlSetsBtn,"position",[_rightX, _setsBtnY, _rightW, _setsBtnH]] call ACME_fnc_transfusionUiSet;
@@ -426,6 +429,9 @@ if (_moveBase isNotEqualTo [] && {_removeBase isNotEqualTo []}) then {
 if !(_activeContext isEqualTo []) then {
     _activeContext params ["_patient", "_bodyPart", "_bagIndex", "_type", "_accessType", "_bagAccessSite", "_bagIV", "_bloodType", "_volume", "_freshBloodID", "_remainingVolume"];
     _canActive = [_activeContext] call ACME_fnc_canMedicateBagContext;
+    // Owner registration can accept its dedicated emulsion carrier, but its UI
+    // must never offer the saline admixture workspace for that bottle.
+    if (_type == "ACME_Propofol") then {_canActive = false;};
     private _entries = _patient getVariable ["ACME_infusion_BagMedications", []];
     // the same matcher the infusions sub-list uses, so the adjust readout and the list can never disagree about
     // whether this bag is infusing. the active bag context carries the selected access site and true index, so hand
@@ -799,7 +805,7 @@ if (!isNull _ctrlMove) then {
 // native move and remove column. the side offset and the gap are taken from ACM's own geometry, so it reads as
 // stock.
 private _infSelected = false;
-if (!isNull _ctrlActiveInfList && {ctrlShown _ctrlActiveInfList}) then {
+if (!isNull _ctrlActiveInfList && {ctrlShown _ctrlActiveInfList || {(_display getVariable ["ACME_txActionMenu", ""]) == "infusion"}}) then {
     _infSelected = (lbCurSel _ctrlActiveInfList) >= 0;
 };
 private _sideGap = _btnGap;
@@ -945,10 +951,10 @@ if (!isNull _ctrlSpike) then {
         // is a direct reserve refill. blood shows "Unit running" while one is up and needs a flush when the line is
         // dirty, and saline shows "Reserve set" while a live reserve is still hanging. it is grayed during a spike
         // beat.
-        private _txt = "Spike Bag";
+        private _txt = if (_selClass == "ACM_Vial_Propofol") then {"Spike Bottle"} else {"Spike Bag"};
         private _en = (_selClass != "");
         if (_isSpikingSel) then {
-            _txt = "Spiking Bag...";
+            _txt = if (_selClass == "ACM_Vial_Propofol") then {"Spiking Bottle..."} else {"Spiking Bag..."};
             _en = false;
         } else {
             if (_selIsBlood && _lineYd) then {
@@ -983,6 +989,13 @@ if (!isNull _ctrlSpike) then {
         if (_selIsFBTK && {!_ivSel}) then {
             _txt = "IV required";
             _en = false;
+        };
+        if (_selClass == "ACM_Vial_Propofol") then {
+            _en = _en && {(count _spikingActive) == 0}
+                && {([ACE_player,_targetPatient,"ACME_IVLine"] call ACME_fnc_treatmentSupplyCount) > 0};
+            _ctrlSpike ctrlSetTooltip "Spike an unopened 50 mL propofol bottle with one IV line. It becomes a Prepared Infusion.";
+        } else {
+            _ctrlSpike ctrlSetTooltip "Spike the selected bag with an IV line, or refill its existing Y tubing.";
         };
         _ctrlSpike ctrlSetText _txt;
         [_ctrlSpike,"enable",_en] call ACME_fnc_transfusionUiSet;
@@ -1195,7 +1208,9 @@ if (!isNull _ctrlSetsList) then {
     private _shown = [];
     {
         private _tied = _x param [5, ""];
-        if (_tied == "" || {_tied == _tgtNet}) then { _shown pushBack [_x param [0, ""], _x param [6, ""]]; };
+        // Bottle infusions have paired custody records but belong exclusively
+        // to Prepared Infusions, never the plain prepared-fluid overlay.
+        if ((_x param [8, ""]) != "propofol" && {_tied == "" || {_tied == _tgtNet}}) then { _shown pushBack [_x param [0, ""], _x param [6, ""]]; };
     } forEach _sets;
     private _wantSig = str _shown;
     // rebuild on a signature change, or when the displayed row count does not match what should show. the row-count
@@ -1228,5 +1243,7 @@ if (!isNull _ctrlSetsList) then {
 // temporary diagnostic. it reached the end without aborting.
 
 // B227: paint live cuff levels after control positioning, without an extra refresh worker.
+[_display] call ACME_fnc_layoutTransfusionMenu;
+[_display] call ACME_fnc_paintTransfusionYBracket;
 [_display,(_display displayCtrl 86148),["transfusion"] call ACME_fnc_getSelectedActiveBagContext,86151] call ACME_fnc_pressureInfuserPaint;
 [_display,(_display displayCtrl 86149),["infusion"] call ACME_fnc_getSelectedActiveBagContext,86152] call ACME_fnc_pressureInfuserPaint;

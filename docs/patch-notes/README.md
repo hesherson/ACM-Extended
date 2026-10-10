@@ -42,6 +42,7 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [B273 transfusion menu and propofol bottles](2026-10-10-b273-transfusion-menu.md)
 - [Stethoscope audio correction](2026-09-20-stethoscope-audio.md)
 - [Restore ACM BVM flow](2026-09-20-bvm-native-flow.md)
 - [BVM startup cancellation](2026-09-20-bvm-startup.md)

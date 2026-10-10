@@ -223,10 +223,19 @@ def test_fbtk_ack_settles_only_matching_pending_receipt_once(ok):
 
 def ui_setup():
     text=read('transfusionUiSet')
+    # Native handles carry their owning display and numeric IDC. Model those
+    # engine primitives explicitly; retain the full production layout guard.
+    text=text.replace('ctrlParent _c','(_c getVariable ["fixtureParent",objNull])')
+    text=text.replace('ctrlIDC _c','(_c getVariable ["fixtureIDC",-1])')
     for command,prop in [('ctrlPosition','position'),('ctrlShown','show'),('ctrlEnabled','enable'),('ctrlTextColor','color'),('ctrlText','text')]:
         text=text.replace(f'{command} _c',f'(_state get "{prop}")')
     text=ui_commands(adapt(text))
     return r'''
+        private _uiDisplay=missionNamespace;
+        _uiDisplay setVariable ["ACME_txLayoutManaged",false];
+        _uiDisplay setVariable ["ACME_txLayoutWriting",false];
+        _medic setVariable ["fixtureParent",_uiDisplay];
+        _medic setVariable ["fixtureIDC",86004];
         private _state=createHashMapFromArray [["position",[0,0,1,1]],["show",true],["enable",true],["text","same"],["color",[1,1,1,1]]];
         private _writes=[];
         private _write={params ["_c","_cmd","_value"];_writes pushBack _this;
@@ -245,6 +254,61 @@ def test_static_buttons_do_not_recommit_or_toggle_every_frame(property,value,new
         private _n=count _writes;
         [_medic,"{property}",{new}] call ACME_fnc_transfusionUiSet;
         [count _writes==_n,"no repeated hit-rectangle commit"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('managed,writing,idc,allowed', [
+    (False,False,86004,True),  # A normal unmanaged display may set its rectangle.
+    (True,False,86004,False),  # Historical Fluids positions cannot displace B273.
+    (True,False,86129,False),  # The active infusion list has the same ownership.
+    (True,False,86132,False),  # Infusion popover action positions are also owned.
+    (True,True,86004,True),    # The layout helper explicitly enters its write phase.
+    (True,False,99999,True),   # Unrelated control rectangles remain writable.
+])
+def test_managed_layout_executes_position_ownership_guard(managed,writing,idc,allowed):
+    execute(ui_setup()+f'''
+        _uiDisplay setVariable ["ACME_txLayoutManaged",{str(managed).lower()}];
+        _uiDisplay setVariable ["ACME_txLayoutWriting",{str(writing).lower()}];
+        _medic setVariable ["fixtureIDC",{idc}];
+        private _accepted=[_medic,"position",[1,1,1,1]] call ACME_fnc_transfusionUiSet;
+        [_accepted,"owned legacy rectangle rejection must remain a successful no-op"] call _check;
+        [count _writes=={2 if allowed else 0},"layout ownership wrote or blocked the wrong rectangle"] call _check;
+        [(_state get "position") isEqualTo { '[1,1,1,1]' if allowed else '[0,0,1,1]' },
+            "position state changed despite ownership or failed to change"] call _check;
+        if ({str(allowed).lower()}) then {{
+            [(_writes select 0 select 1)=="ctrlSetPosition" && {{(_writes select 1 select 1)=="ctrlCommit"}},
+                "changed rectangle was not set and committed exactly once"] call _check;
+        }};
+        private _n=count _writes;
+        [_medic,"position",[1,1,1,1]] call ACME_fnc_transfusionUiSet;
+        [count _writes==_n,"repeat rectangle caused churn"] call _check;
+    ''')
+
+
+def test_layout_guard_reads_control_parent_instead_of_an_unrelated_managed_display():
+    execute(ui_setup()+r'''
+        _uiDisplay setVariable ["ACME_txLayoutManaged",true];
+        private _otherDisplay=profileNamespace;
+        _otherDisplay setVariable ["ACME_txLayoutManaged",false];
+        _otherDisplay setVariable ["ACME_txLayoutWriting",false];
+        _medic setVariable ["fixtureParent",_otherDisplay];
+        [_medic,"position",[1,1,1,1]] call ACME_fnc_transfusionUiSet;
+        [count _writes==2 && {(_state get "position") isEqualTo [1,1,1,1]},
+            "unrelated managed display blocked this control's owner"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('property,value,new', [('show','true','false'),('enable','true','false'),('text','"same"','"new"'),('color','[1,1,1,1]','[1,0,0,1]')])
+def test_managed_layout_keeps_nonposition_properties_change_only(property,value,new):
+    execute(ui_setup()+f'''
+        _uiDisplay setVariable ["ACME_txLayoutManaged",true];
+        for "_i" from 0 to 50 do {{[_medic,"{property}",{value}] call ACME_fnc_transfusionUiSet;}};
+        [count _writes==0,"managed stable frame caused UI churn"] call _check;
+        [_medic,"{property}",{new}] call ACME_fnc_transfusionUiSet;
+        [count _writes==1 && {{(_state get "{property}") isEqualTo {new}}},
+            "position ownership blocked or repeated a changed nonposition property"] call _check;
+        [_medic,"{property}",{new}] call ACME_fnc_transfusionUiSet;
+        [count _writes==1,"managed unchanged property wrote again"] call _check;
     ''')
 
 

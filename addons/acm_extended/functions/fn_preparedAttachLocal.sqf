@@ -35,6 +35,25 @@ if (_customStaged) then {
     _ok = _ok && {_hasPreparedSet};
     if (!_hasPreparedSet) then {_reason = "prepared-set-missing";};
 };
+private _isPropofolBottle = _carrierType == "ACME_Propofol";
+if (_isPropofolBottle) then {
+    private _sets = _medic getVariable ["ACME_preparedIVSets", []];
+    private _si = _sets findIf {(_x param [0, ""]) == (_prepared param [0, ""])};
+    private _set = if (_si >= 0) then {_sets select _si} else {[]};
+    _ok = _ok && {_customStaged} && {_item == "ACM_Vial_Propofol"}
+        && {_action == "ACME_PropofolIV_50"} && {_carrierVolume == 50}
+        && {(_prepared param [17, ""]) == "propofol-bottle"}
+        && {(_prepared param [10, 0]) == 50}
+        && {_components isEqualTo [["Propofol", 500, 1]]}
+        && {(_set param [1, ""]) == "ACM_Vial_Propofol"}
+        && {(_set param [2, ""]) == "ACME_PropofolIV_50"}
+        && {(_set param [8, ""]) == "propofol"}
+        && {(_set param [9, 0]) == 50};
+} else {
+    // Legacy prepared saline mixtures are retained in custody but cannot be hung
+    // as new propofol infusions. Already-running legacy bags are not recreated.
+    _ok = _ok && {(_components findIf {(_x select 0) == "Propofol"}) < 0};
+};
 if !(_staged isEqualTo []) then {
     private _sets = _medic getVariable ["ACME_preparedIVSets", []];
     _ok = _ok && {(toLowerANSI (getText (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type"))) in keys (missionNamespace getVariable ["ACME_infusion_premixedByType", createHashMap])} && {(_sets findIf {(_x select 0) == (_staged select 0)}) >= 0};

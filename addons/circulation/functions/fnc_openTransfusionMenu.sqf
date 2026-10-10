@@ -136,10 +136,10 @@ _display setVariable ["ACM_TX_CloseID", _closeID];
 // list/button anchors that are resized. Fade preserves ctrlShow/ctrlEnable state, unlike ctrlShow false, so controls
 // which are intentionally visible-by-config (Prep Infusion, Give Infusion, Hang Bag, etc.) are not stranded hidden.
 private _initialLayoutControls = [
-    86004, 86005, 86006, 86007, 86008,
+    86002, 86003, 86004, 86005, 86006, 86007, 86008, 86037,
     86120, 86121, 86122, 86123, 86124, 86125, 86126, 86127, 86128, 86129, 86130,
     86131, 86132, 86133, 86134, 86140, 86141, 86142, 86143, 86144, 86145, 86146,
-    86147, 86148, 86149
+    86147, 86148, 86149, 86160, 86161, 86162, 86163, 86173, 86174, 86175, 86180, 86181, 86182
 ];
 {
     private _ctrl = _display displayCtrl _x;

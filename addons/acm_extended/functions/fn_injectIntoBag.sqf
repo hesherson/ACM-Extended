@@ -32,6 +32,11 @@ _ml = _resolved select 1;
 private _concentration = getNumber (configFile >> "ACM_Medication" >> "Concentration" >> _med >> "concentration");
 if (_concentration <= 0) exitWith {};
 private _ctx = _context select [1, 11];
+// Prepared contexts carry an access-site number here; only active bag contexts
+// have a fluid type at index 3.
+if (_mode != "prepared" && {(_ctx param [3, ""]) == "ACME_Propofol"}) exitWith {
+    [ACE_player, "The propofol bottle is a standalone infusion and cannot receive injected medication."] call ACME_fnc_clinicalNotice;
+};
 private _valid = false;
 if (_mode == "prepared") then {
     private _sid = _context param [20, ""];

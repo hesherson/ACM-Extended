@@ -56,13 +56,18 @@ if (_type in ["ACME_Empty", "ACME_EmptySaline"]) exitWith {
 
 private _uid = _bag param [8, "", [""]];
 private _entries = +(_patient getVariable ["ACME_infusion_BagMedications", []]);
-private _wasInfusion = false;
+// A spiked emulsion bottle cannot be salvaged as a plain used fluid even if its
+// medication-state replica was temporarily absent during recovery.
+private _wasInfusion = _type == "ACME_Propofol";
 private _kept = _entries select {
     private _same = if (_uid != "") then {(_x param [23, ""]) == _uid} else {
         ((_x param [1, ""]) == _part) && {(_x param [2, -1]) == _idx}
             && {(_x param [4, -1]) == _site} && {(_x param [5, true]) == _iv}
     };
-    if (_same) then {_wasInfusion = true;};
+    if (_same) then {
+        [_patient, _x, true] call ACME_fnc_infusionDeliver;
+        _wasInfusion = true;
+    };
     !_same
 };
 if (_wasInfusion) then {[_patient, _kept] call ACME_fnc_infusionMedicationStateCommit;};

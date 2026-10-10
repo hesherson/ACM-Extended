@@ -28,6 +28,12 @@ if (_solutionMl < 0 || {!finite _solutionMl}) exitWith {""};
 if (_doseMg <= 0 || {!finite _doseMg} || {_remainingVolume <= 0}) exitWith {""};
 private _actualContext = [_patient, _bodyPart, _bagIndex, _foundBag param [0, _type], _foundBag param [2, _accessType], _bagAccessSite, _bagIV, _bloodType, _volume, _freshBloodID, _remainingVolume];
 if !([_actualContext] call ACME_fnc_canMedicateBagContext) exitWith {""};
+private _isPropofolBottle = (_foundBag param [0, ""]) == "ACME_Propofol";
+// No newly prepared saline/other carrier can receive propofol. A bottle cannot
+// receive a second medication or syringe solution. Existing running legacy
+// infusions retain their delivered history and continue through fluidCommit.
+if (((_medication == "Propofol") isNotEqualTo _isPropofolBottle)
+    || {_isPropofolBottle && {_solutionMl > 0 || {!(_existing isEqualTo [])}}}) exitWith {""};
 private _classIV = (missionNamespace getVariable ["ACME_infusion_deliveryClassOverride", createHashMap]) getOrDefault [_medication, format ["%1_IV", _medication]];
 
 if (_durationSeconds <= 0) then {

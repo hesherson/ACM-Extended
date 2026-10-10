@@ -18,9 +18,18 @@
 
 private _display = uiNamespace getVariable [QGVAR(TransfusionMenu_DLG), displayNull];
 private _ctrlBagPanel = _display displayCtrl IDC_TRANSFUSIONMENU_LEFTLISTPANEL;
-private _selectionIndex = lbCurSel _ctrlBagPanel;
+// The Fluids list excludes drug infusions and its rows retain their selection
+// index in lbValue. The infusion pane passes that index directly, without
+// selecting an unrelated visible fluid row to proxy the native move action.
+private _selectionIndex = _this param [0, -1];
+if !(_selectionIndex isEqualType 0) then {_selectionIndex = -1;};
+if (_selectionIndex < 0) then {
+    private _row = lbCurSel _ctrlBagPanel;
+    if (_row >= 0) then {_selectionIndex = _ctrlBagPanel lbValue _row;};
+};
 
-if (_selectionIndex < 0 && !(GVAR(TransfusionMenu_Move_Active))) exitWith {};
+if ((_selectionIndex < 0 || {_selectionIndex >= count GVAR(TransfusionMenu_Selection_IVBags)})
+    && !(GVAR(TransfusionMenu_Move_Active))) exitWith {};
 
 private _ctrlMoveButton = _display displayCtrl IDC_TRANSFUSIONMENU_BUTTON_MOVEBAG;
 

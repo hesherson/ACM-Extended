@@ -11,41 +11,142 @@ class GVAR(TransfusionMenu_Dialog) {
     class ControlsBackground {
         class MenuBackground: RscText {
             idc = -1;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W * 0.35));
+            x = QUOTE(ACM_TRANSFUSION_WINDOW_X);
             y = QUOTE(safeZoneY + (safeZoneH * 0.08));
-            w = QUOTE(ACM_UI_CANVAS_W * 0.70);
+            w = QUOTE(ACM_TRANSFUSION_WINDOW_W);
             h = QUOTE(safeZoneH * 0.84);
-            colorBackground[] = {0,0,0,0.7};
+            colorBackground[] = {0.043,0.082,0.188,0.97};
+        };
+        // Presentation panels stay behind the shared body-map artwork and its device overlays.
+        class HeaderBackground: RscText {
+            idc = -1;
+            x = QUOTE(ACM_TRANSFUSION_WINDOW_X);
+            y = QUOTE(safeZoneY + safeZoneH * 0.08);
+            w = QUOTE(ACM_TRANSFUSION_WINDOW_W);
+            h = QUOTE(safeZoneH * 0.066);
+            colorBackground[] = ACM_TRANSFUSION_COLOR_PANEL;
+        };
+        class PatientPanelBackground: HeaderBackground {
+            idc = 86180;
+            x = QUOTE(ACM_TRANSFUSION_LEFT_X - ACM_UI_CANVAS_W * 0.007);
+            y = QUOTE(safeZoneY + safeZoneH * 0.152);
+            w = QUOTE(ACM_TRANSFUSION_LEFT_W + ACM_UI_CANVAS_W * 0.014);
+            h = QUOTE(safeZoneH * 0.739);
+        };
+        class MapPanelBackground: PatientPanelBackground {
+            idc = 86181;
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.35);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.30);
+            colorBackground[] = {0.043,0.075,0.153,0.94};
+        };
+        class PreparationPanelBackground: PatientPanelBackground {
+            idc = 86182;
+            x = QUOTE(ACM_TRANSFUSION_RIGHT_X - ACM_UI_CANVAS_W * 0.007);
+            w = QUOTE(ACM_TRANSFUSION_RIGHT_W + ACM_UI_CANVAS_W * 0.014);
+        };
+        // Local action popovers live in the background layer, below the unchanged native action buttons.
+        class BagActionsBackground: PatientPanelBackground {
+            idc = 86173;
+            x = QUOTE(safeZoneX - 1);
+            y = QUOTE(safeZoneY + safeZoneH * 0.214);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.206);
+            h = QUOTE(safeZoneH * 0.237);
+            colorBackground[] = {0.063,0.110,0.212,1};
+        };
+        class InfusionActionsBackground: BagActionsBackground {
+            idc = 86174;
+            y = QUOTE(safeZoneY + safeZoneH * 0.593);
+            h = QUOTE(safeZoneH * 0.142);
+        };
+        class TransfusionTitle: RscText {
+            idc = -1;
+            text = "ACME  TRANSFUSION";
+            x = QUOTE(ACM_TRANSFUSION_LEFT_X);
+            y = QUOTE(safeZoneY + safeZoneH * 0.095);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.28);
+            h = QUOTE(safeZoneH * 0.032);
+            font = "RobotoCondensed";
+            sizeEx = QUOTE(safeZoneH * 0.021);
+            colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
+            colorBackground[] = {0,0,0,0};
+            shadow = 0;
+        };
+        class FluidsTitle: TransfusionTitle {
+            idc = 86160;
+            text = "Fluids";
+            x = QUOTE(ACM_TRANSFUSION_LEFT_X);
+            y = QUOTE(safeZoneY + safeZoneH * 0.164);
+            w = QUOTE(ACM_TRANSFUSION_LEFT_W);
+            h = QUOTE(safeZoneH * 0.029);
+        };
+        class InventoryTitle: FluidsTitle {
+            idc = 86161;
+            text = "Inventory";
+            x = QUOTE(ACM_TRANSFUSION_RIGHT_X + ACM_UI_CANVAS_W * 0.008);
+            w = QUOTE(ACM_TRANSFUSION_RIGHT_W - ACM_UI_CANVAS_W * 0.008);
+        };
+        class SelectedAccessCaption: FluidsTitle {
+            idc = 86162;
+            text = "SELECTED ACCESS";
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.35);
+            y = QUOTE(safeZoneY + safeZoneH * 0.157);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.30);
+            h = QUOTE(safeZoneH * 0.020);
+            style = ST_CENTER;
+            sizeEx = QUOTE(safeZoneH * 0.015);
+            colorText[] = ACM_TRANSFUSION_COLOR_MUTED;
+        };
+        class SelectedAccessStatus: SelectedAccessCaption {
+            idc = 86175;
+            text = "";
+            y = QUOTE(safeZoneY + safeZoneH * 0.213);
+            h = QUOTE(safeZoneH * 0.025);
+            sizeEx = QUOTE(safeZoneH * 0.017);
+        };
+        class FooterHint: TransfusionTitle {
+            idc = 86163;
+            text = "Select access on the body map.   Esc: Back";
+            x = QUOTE(ACM_TRANSFUSION_LEFT_X);
+            y = QUOTE(safeZoneY + safeZoneH * 0.897);
+            w = QUOTE(ACM_TRANSFUSION_WINDOW_W - ACM_UI_CANVAS_W * 0.03);
+            h = QUOTE(safeZoneH * 0.021);
+            sizeEx = QUOTE(safeZoneH * 0.015);
+            colorText[] = ACM_TRANSFUSION_COLOR_MUTED;
         };
         class PatientName: RscText {
             idc = IDC_TRANSFUSIONMENU_PATIENTNAME;
             style = ST_CENTER;
             font = "RobotoCondensed";
-            x = QUOTE(ACM_UI_CANVAS_X);
-            y = QUOTE(safeZoneY + (safeZoneH * 0.095));
-            w = QUOTE(ACM_UI_CANVAS_W);
-            h = QUOTE(safeZoneH / 20);
-            colorText[] = {1,1,1,1};
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.46);
+            y = QUOTE(safeZoneY + safeZoneH * 0.095);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.40);
+            h = QUOTE(safeZoneH * 0.032);
+            colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
             colorBackground[] = {0,0,0,0};
             text = "";
             lineSpacing = 0;
-            sizeEx = QUOTE(GUI_GRID_H * 1.8 * NORMALIZE_SIZEEX);
+            sizeEx = QUOTE(safeZoneH * 0.022);
             shadow = 1;
             colorShadow[] = {0,0,0,0.5};
         };
         class SelectedLimbText: PatientName {
             idc = IDC_TRANSFUSIONMENU_SELECTIONTEXT;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W / 3.28));
-            y = QUOTE(safeZoneY + (safeZoneH * 0.155));
-            w = QUOTE(ACM_UI_CANVAS_W / 5.9);
-            h = QUOTE(safeZoneH / 25);
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.35);
+            y = QUOTE(safeZoneY + safeZoneH * 0.177);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.30);
+            h = QUOTE(safeZoneH * 0.031);
             text = "";
-            sizeEx = QUOTE(GUI_GRID_H * 1.1 * NORMALIZE_SIZEEX);
+            sizeEx = QUOTE(safeZoneH * 0.021);
         };
         class SelectedInventoryText: SelectedLimbText {
             idc = IDC_TRANSFUSIONMENU_SELECTION_INV_TEXT;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) + (ACM_UI_CANVAS_W / 7.75));
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.673);
             text = __EVAL(call compile QUOTE(format [ARR_2(C_LLSTRING(Common_InventoryTarget),C_LLSTRING(Common_Self))]));
+            y = QUOTE(safeZoneY + safeZoneH * 0.193);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.160);
+            h = QUOTE(safeZoneH * 0.030);
+            sizeEx = QUOTE(safeZoneH * 0.019);
+            style = 0;
         };
         class BodyBackground: RscPictureKeepAspect {
             idc = -1;
@@ -227,26 +328,27 @@ class GVAR(TransfusionMenu_Dialog) {
         class LeftPanelList: RscListBox
         {
             idc = IDC_TRANSFUSIONMENU_LEFTLISTPANEL;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W / 3.28));
-            y = QUOTE(safeZoneY + (safeZoneH * 0.22));
-            w = QUOTE(ACM_UI_CANVAS_W / 5.9);
-            h = QUOTE(safeZoneH * 0.62);
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.137);
+            y = QUOTE(safeZoneY + safeZoneH * 0.205);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.200);
+            h = QUOTE(safeZoneH * 0.237);
             rowHeight = QUOTE(safeZoneH / 20);
-            colorText[] = {1,1,1,1};
-            colorSelect[] = {0,0,0,1};
-            colorSelect2[] = {0,0,0,1};
-            colorBackground[] = {0,0,0,0.1};
-            colorSelectBackground[] = {0.7,0.7,0.7,1};
-            colorSelectBackground2[] = {0.7,0.7,0.7,1};
-            sizeEx = QUOTE(GUI_GRID_H * 0.9 * NORMALIZE_SIZEEX);
+            colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
+            colorSelect[] = ACM_TRANSFUSION_COLOR_TEXT;
+            colorSelect2[] = ACM_TRANSFUSION_COLOR_TEXT;
+            colorBackground[] = {0.043,0.075,0.153,0.75};
+            colorSelectBackground[] = ACM_TRANSFUSION_COLOR_SELECTED;
+            colorSelectBackground2[] = ACM_TRANSFUSION_COLOR_SELECTED;
+            sizeEx = QUOTE(safeZoneH * 0.019);
             class Items {};
+            font = "RobotoCondensed";
         };
         class SwitchTargetInventory: RscButtonMenu {
-            idc = -1;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) + (ACM_UI_CANVAS_W / 7.8));
-            y = QUOTE(safeZoneY + (safeZoneH * 0.155));
-            w = QUOTE(ACM_UI_CANVAS_W / 65);
-            h = QUOTE(safeZoneH / 35);
+            idc = IDC_TRANSFUSIONMENU_SWITCHTARGET;
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.838);
+            y = QUOTE(safeZoneY + safeZoneH * 0.193);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.033);
+            h = QUOTE(safeZoneH * 0.030);
             shadow = 0;
             font = "RobotoCondensed";
             sizeEx = "0";
@@ -268,40 +370,41 @@ class GVAR(TransfusionMenu_Dialog) {
         };
         class StopTransfusionButton: RscButton {
             text = "";
-            colorText[] = {1,1,1,1};
-            colorDisabled[] = {1,1,1,1};
-            colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,1};
-            colorBackgroundActive[] = {0,0,0,1};
-            colorFocused[] = {0,0,0,1};
+            colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
+            colorDisabled[] = {0.73,0.76,0.81,0.35};
+            colorBackground[] = ACM_TRANSFUSION_COLOR_BUTTON;
+            colorBackgroundDisabled[] = {0.043,0.075,0.153,0.50};
+            colorBackgroundActive[] = ACM_TRANSFUSION_COLOR_SELECTED;
+            colorFocused[] = ACM_TRANSFUSION_COLOR_SELECTED;
             colorBorder[] = {0,0,0,0};
             idc = IDC_TRANSFUSIONMENU_BUTTON_STOPIV;
             style = ST_CENTER;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W / 3.28));
-            y = QUOTE(safeZoneY + (safeZoneH * 0.18));
-            w = QUOTE(ACM_UI_CANVAS_W / 5.9);
-            h = QUOTE(safeZoneH / 40);
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.355);
+            y = QUOTE(safeZoneY + safeZoneH * 0.821);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.137);
+            h = QUOTE(safeZoneH * 0.033);
             shadow = 0;
             font = "RobotoCondensed";
-            sizeEx = QUOTE(GUI_GRID_H * 0.9 * NORMALIZE_SIZEEX);
+            sizeEx = QUOTE(safeZoneH * 0.020);
             action = QUOTE(call FUNC(TransfusionMenu_ToggleIVFlow));
             tooltip = "";
         };
         class MoveBagButton: StopTransfusionButton {
-            colorDisabled[] = {1,1,1,0.25};
-            colorBackgroundDisabled[] = {0,0,0,0.35};
+            colorDisabled[] = {0.73,0.76,0.81,0.35};
+            colorBackgroundDisabled[] = {0.043,0.075,0.153,0.50};
             text = CSTRING(TransfusionMenu_MoveBag_Display);
             idc = IDC_TRANSFUSIONMENU_BUTTON_MOVEBAG;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W / 8));
-            y = QUOTE(safeZoneY + (safeZoneH * 0.22));
-            w = QUOTE(ACM_UI_CANVAS_W / 22);
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.141);
+            y = QUOTE(safeZoneY + safeZoneH * 0.226);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.180);
             action = QUOTE(call FUNC(TransfusionMenu_MoveBag));
             tooltip = CSTRING(TransfusionMenu_MoveBag_ToolTip);
+            h = QUOTE(safeZoneH * 0.033);
         };
         class RemoveBagButton: MoveBagButton {
             text = CSTRING(TransfusionMenu_RemoveBag_Display);
             idc = IDC_TRANSFUSIONMENU_BUTTON_REMOVEBAG;
-            y = QUOTE(safeZoneY + (safeZoneH * 0.255));
+            y = QUOTE(safeZoneY + safeZoneH * 0.265);
             action = QUOTE(call FUNC(TransfusionMenu_RemoveBag));
             tooltip = CSTRING(TransfusionMenu_RemoveBag_ToolTip);
         };
@@ -316,14 +419,19 @@ class GVAR(TransfusionMenu_Dialog) {
         class RightPanelList: LeftPanelList
         {
             idc = IDC_TRANSFUSIONMENU_RIGHTLISTPANEL;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) + (ACM_UI_CANVAS_W / 7.75));
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.673);
+            y = QUOTE(safeZoneY + safeZoneH * 0.279);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.202);
+            h = QUOTE(safeZoneH * 0.235);
         };
         class AddBagButton: StopTransfusionButton {
             text = CSTRING(TransfusionMenu_AddBag_Display);
             idc = IDC_TRANSFUSIONMENU_BUTTON_ADDBAG;
-            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) + (ACM_UI_CANVAS_W / 6.8));
+            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.673);
             action = QUOTE(call FUNC(TransfusionMenu_AddBag));
             tooltip = CSTRING(TransfusionMenu_AddBag_ToolTip);
+            y = QUOTE(safeZoneY + safeZoneH * 0.526);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.202);
         };
     };
 };

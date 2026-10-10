@@ -79,7 +79,8 @@ private _extendedFluids = [
     ["ACME_PlasmaLyteBag_250", "PlasmaLyteIV_250"],
     ["ACME_PlasmaLyteBag_100", "PlasmaLyteIV_100"],
     ["ACME_SalineBag_50", "SalineIV_50"],
-    ["ACME_SalineBag_100", "SalineIV_100"]
+    ["ACME_SalineBag_100", "SalineIV_100"],
+    ["ACM_Vial_Propofol", "ACME_PropofolIV_50"]
 ];
 {
     _x params ["_item", "_fluidData"];

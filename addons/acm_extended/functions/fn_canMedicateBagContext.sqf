@@ -26,4 +26,6 @@ if ([_context] call ACME_fnc_isYLineBagContext) exitWith {false};
 // mannitol, are also valid carriers for their own premixed drug, registered through fn_syncpremixedbags, so they
 // must pass this gate too. without this, a premixed type that is not plain saline, such as mannitol, is blocked
 // and never registers as a running infusion.
-(_type in ACME_infusion_allowedBagTypes) || {(toLowerANSI _type) in keys ACME_infusion_premixedByType}
+// The dedicated emulsion carrier is admitted for its own registration only.
+// infusionRegisterCore enforces Propofol and forbids injecting other solutions.
+(_type == "ACME_Propofol") || {(_type in ACME_infusion_allowedBagTypes)} || {(toLowerANSI _type) in keys ACME_infusion_premixedByType}

@@ -25,6 +25,10 @@ if (_idx < 0) exitWith {
 private _class = ((_right lbData _idx) splitString "|") param [0, ""];
 if (_class isEqualTo "") exitWith {};
 
+// Direct emulsion bottles enter Prepared Infusions with their own administration
+// line. They never enter the generic saline-bag spike or Y-refill paths.
+if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};
+
 // the FBTK, the field blood transfusion kit, is not a blood product to pre-stage and it is not a y set. it is
 // hung as a single bag that collects the patient's own blood, then becomes a usable blood unit when removed.
 // that is native ACM behavior end to end. the spike, stage and y logic below treats anything whose class

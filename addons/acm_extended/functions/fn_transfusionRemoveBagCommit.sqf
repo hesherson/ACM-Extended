@@ -53,7 +53,7 @@ if (_idx < 0) exitWith {[false, [], "That bag changed or was already removed."] 
 private _bag = +(_arr select _idx);
 private _actualUid = _bag param [8, "", [""]];
 // Medication infusions have their own discard transaction; native Remove Bag must not orphan their dose record.
-if (_actualUid != "" && {((_patient getVariable ["ACME_infusion_BagMedications", []]) findIf {(_x param [23, ""]) == _actualUid}) >= 0}) exitWith {
+if ((_bag param [0, ""]) == "ACME_Propofol" || {_actualUid != "" && {((_patient getVariable ["ACME_infusion_BagMedications", []]) findIf {(_x param [23, ""]) == _actualUid}) >= 0}}) exitWith {
     [false, [], "Use Remove Infusion for a medicated bag."] call _reply
 };
 

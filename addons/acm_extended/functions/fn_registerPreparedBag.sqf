@@ -1,5 +1,6 @@
 /* Commit one injection into the same spiked set. There is no push or single-drug cap. */
 params ["_context", "_medication", "_dose", ["_solutionMl", 0]];
+if (_medication == "Propofol") exitWith {false};
 private _sid = _context param [20, "", [""]];
 if (_sid == "" || {_dose <= 0} || {!finite _dose} || {_solutionMl <= 0} || {!finite _solutionMl}) exitWith {false};
 private _sets = ACE_player getVariable ["ACME_preparedIVSets", []];

@@ -78,7 +78,7 @@ private _stagedId = _prepared param [15, ""];
 private _isStaged = _stagedId != "";
 if (_isStaged) then {_available = if (((ACE_player getVariable ["ACME_preparedIVSets", []]) findIf {(_x select 0) == _stagedId}) >= 0) then {1} else {0};};
 if (_available < 1) exitWith {
-    ["The prepared saline bag item is no longer available.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    ["The prepared infusion is no longer available.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
 private _label = [_prepared] call ACME_fnc_formatPreparedLabel;

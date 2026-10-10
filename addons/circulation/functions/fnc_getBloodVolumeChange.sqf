@@ -434,6 +434,11 @@ if (_hasFluidBags) then {
                 };
 
                 switch (_type) do {
+                    case "ACME_Propofol": {
+                        // Lipid emulsion delivers medication through fluidCommit.
+                        // It is not resuscitation saline, plasma, or blood and must
+                        // never enter the incompatible-blood fallback below.
+                    };
                     case "Plasma": {
                         _plasmaVolumeChange = _plasmaVolumeChange + (_admitted / 1000);
                         _plateletCountChange = _plateletCountChange + (_admitted / 600);

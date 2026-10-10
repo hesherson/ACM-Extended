@@ -1818,6 +1818,9 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
 class ace_medical_treatment {
     class IV {
         class SalineIV;
+        // A directly spiked 50 mL emulsion bottle. The native drainer consumes its
+        // carrier volume but never credits it as saline or a resuscitation fluid.
+        class ACME_PropofolIV_50: SalineIV { type = "ACME_Propofol"; volume = 50; };
         class EsmololIV_250: SalineIV { type = "Esmolol";   volume = 250; };
         class HTSIV_250:     SalineIV { type = "HTS";       volume = 250; };
         class MagnesiumIV_50: SalineIV { type = "Magnesium"; volume = 50; };
@@ -2372,6 +2375,12 @@ class CfgFunctions {
             class ivFinishSyringeHit {};
             class ivCatheterPull {};
             class transfusionUiSet {};
+            class layoutTransfusionMenu {};
+            class transfusionYRows {};
+            class paintTransfusionYBracket {};
+            class transfusionLineDetails {};
+            class updateTransfusionLineDetails {};
+            class spikePropofolBottle {};
             class ivAccessoryUnplug {};
             class fbtkHang {};
             class fbtkHangCommit {};
@@ -3290,6 +3299,8 @@ class RscListBox;
 class RscXSliderH;
 class RscEdit;
 
+#include "TransfusionMenu_Styles.hpp"
+
 // add chest-tube markers to ACE's medical-menu body image. they inherit the torso chest-seal position, use our
 // textures and airway blue, and are hidden by default. the ace_medical_gui_updateBodyImage event toggles them
 // per side. see postinit.
@@ -3709,6 +3720,7 @@ class ACME_SK_HotspotButton: ACME_SK_StyledButton {
 // it uses the same pickup and return behavior, and guides the needle to the patient-side fifth intercostal
 // space. a flip checks the opposite side without a close of the procedure. the logic is in acme_fnc_chestseal*.
 class RscStructuredText;
+#include "TransfusionDetails_Dialog.hpp"
 class ACME_ChestSeal_Dialog {
     idd = 86400;
     movingEnable = 0;
@@ -4802,11 +4814,11 @@ class ACM_circulation_TransfusionMenu_Dialog {
             h = "safeZoneH / 10";
             rowHeight = "safeZoneH / 25";
             colorText[] = {1,1,1,1};
-            colorSelect[] = {0,0,0,1};
-            colorSelect2[] = {0,0,0,1};
+            colorSelect[] = {0.94,0.91,0.82,1};
+            colorSelect2[] = {0.94,0.91,0.82,1};
             colorBackground[] = {0,0,0,0.25};
-            colorSelectBackground[] = {0.7,0.7,0.7,1};
-            colorSelectBackground2[] = {0.7,0.7,0.7,1};
+            colorSelectBackground[] = {0.188,0.255,0.353,1};
+            colorSelectBackground2[] = {0.188,0.255,0.353,1};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 50";
             onLBSelChanged = "params ['_ctrl','_index']; if (_index >= 0) then {missionNamespace setVariable ['ACME_infusion_SelectedPreparedIndex', _ctrl lbValue _index];};";
@@ -4828,7 +4840,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         };
         class ACME_RateReadout: RscText {
             idc = 86126;
-            text = "Select medicated saline bag";
+            text = "Select an infusion";
             x = "safeZoneX + (safeZoneW / 2) - (safeZoneW / 4.35)";
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 4.75)";
             w = "safeZoneW / 3.1";

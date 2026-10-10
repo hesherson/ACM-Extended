@@ -60,6 +60,12 @@ if (!_isSingle) then {
     if (_si >= 0) then {_salineAction = _fad param [_si, _salineAction];};
 };
 if (_bloodAction == "" || {!_isSingle && {_salineAction == ""}}) exitWith {[false, "The staged fluid definition is no longer valid. Rebuild the set."] call _finish;};
+// A direct bottle must use the medicated prepared-attach transaction. A missing
+// or late PreparedBags replica must never fall back to a plain, running carrier.
+if (_kind == "propofol" || {_bloodClass == "ACM_Vial_Propofol"}
+    || {(getText (configFile >> "ace_medical_treatment" >> "IV" >> _bloodAction >> "type")) == "ACME_Propofol"}) exitWith {
+    [false, "Select the propofol bottle in Prepared Infusions and use Give Infusion. The bottle was not consumed."] call _finish;
+};
 
 private _lineKey = format ["%1#%2#%3", _part, _iv, _site];
 private _lineKeyLower = toLowerANSI _lineKey;

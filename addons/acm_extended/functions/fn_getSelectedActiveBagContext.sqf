@@ -15,7 +15,9 @@ private _selection = missionNamespace getVariable ["ACM_circulation_TransfusionM
 if (_pane == "auto") then {_pane = _display getVariable ["ACME_txActivePane", "transfusion"];};
 if !(_pane in ["transfusion", "infusion"]) exitWith {[]};
 private _list = _display displayCtrl ([86004, 86129] select (_pane == "infusion"));
-if (isNull _list || {!ctrlShown _list}) exitWith {[]};
+private _menu = _display getVariable ["ACME_txActionMenu", ""];
+private _ownsPopover = (_pane == "transfusion" && {_menu == "bag"}) || {_pane == "infusion" && {_menu == "infusion"}};
+if (isNull _list || {!ctrlShown _list && {!_ownsPopover}}) exitWith {[]};
 private _row = lbCurSel _list;
 if (_row < 0) exitWith {[]};
 private _selectionIndex = _list lbValue _row;
