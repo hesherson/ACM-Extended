@@ -34,7 +34,7 @@ class CfgWeapons {
         picture = QPATHTOF(ui\autoinjector_ATNA_ca.paa);
         displayName = CSTRING(Autoinjector_ATNA);
         descriptionShort = CSTRING(Autoinjector_ATNA_Desc);
-        ACE_isMedicalItem = 1;
+        ACE_isMedicalItem = 1.8;
         class ItemInfo: CBA_MiscItem_ItemInfo {
             mass = 1;
         };
