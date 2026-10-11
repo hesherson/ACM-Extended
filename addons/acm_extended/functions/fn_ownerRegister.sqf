@@ -9,6 +9,15 @@ private _owned = missionNamespace getVariable ["ACME_clinical_ownedUnits", []];
 _owned pushBackUnique _patient;
 missionNamespace setVariable ["ACME_clinical_ownedUnits", _owned];
 _patient setVariable ["ACME_ownerRegisterSeen", owner _patient, false];
+// Escrow replication can follow the Local event. The existing next-frame and
+// delayed registrations also adopt outstanding provider transactions.
+[_patient] call ACME_fnc_piggybackRecover;
+[_patient] call ACME_fnc_lineWarmerRecover;
+if (count (_patient getVariable ["ACME_lineWarmerReturns",createHashMap]) > 0) then {
+    private _pending = missionNamespace getVariable ["ACME_lineWarmerReturnPatients",[]];
+    _pending pushBackUnique _patient;
+    missionNamespace setVariable ["ACME_lineWarmerReturnPatients",_pending];
+};
 
 [_patient] call ACME_fnc_aiProtectionSync;
 [_patient] call ACME_fnc_transientStateReconcile;

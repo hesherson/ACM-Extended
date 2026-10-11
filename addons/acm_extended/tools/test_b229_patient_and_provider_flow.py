@@ -175,6 +175,7 @@ def saline_paint():
     s=s.replace('_rl lbSetColor [','_colors set [')
     return basic()+'''private _rows=["ACE_salineIV_500|saline","ACM_BloodBag_ON_500|blood","ACE_salineIV|saline"];
       private _colors=[[1,1,1,1],[1,1,1,1],[1,1,1,1]];
+      private _selectingPiggyback=false;
       ACME_fnc_isSalineItem={(_this select 1)=="saline"};
     '''+'private _paintSaline={'+adapt(s)+'};'
 

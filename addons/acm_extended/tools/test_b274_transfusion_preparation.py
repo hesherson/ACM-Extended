@@ -36,10 +36,13 @@ def picker_setup():
     return r'''
       private _display=missionNamespace;
       private _refreshes=[];
+      // Native inventory was already painted for this baseline context.
+      _display setVariable ["ACME_txPickerSignature",str [false,[]]];
       ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory={_refreshes pushBack _this;};
       uiNamespace setVariable ["ACME_preparedListMode",false];
       missionNamespace setVariable ["ACME_yPending",""];
       missionNamespace setVariable ["ACME_yPendingSaline",""];
+      missionNamespace setVariable ["ACME_piggybackPending",[]];
     ''' + compiled("transfusionFilterInventory") + compiled("togglePreparedSets")
 
 
@@ -113,7 +116,7 @@ def test_production_cooler_and_used_overlay_inputs_obey_the_temporary_saline_fil
       private _usedStock=[["blood","Blood",400],["saline","Saline",150],["y-saline","ACME_SalineY",75],["plasma","Plasma",100],["plasmalyte","PlasmaLyte",200]];
       ACE_player setVariable ["ACME_usedBags",_usedStock];
       private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
-    ''' + f'private _ownInventory={str(own).lower()};private _selectingSalineInventoryB274={str(selecting).lower()};' + primitives(adapt(cooler + used)) + f'''
+    ''' + f'private _ownInventory={str(own).lower()};private _selectingSalineInventoryB274={str(selecting).lower()};private _selectingPiggyback=false;' + primitives(adapt(cooler + used)) + f'''
       [count _want=={int(own and not selecting)},"cooler blood leaked into saline picker or another source"] call _check;
       [count _usedBags=={(2 if selecting else 5) if own else 0},"used overlay ignored source or saline filter"] call _check;
       if (_selectingSalineInventoryB274) then {{[(_usedBags findIf {{!((_x select 1) in ["Saline","ACME_SalineY"])}})<0,"used non-saline shown during picker"] call _check;}};

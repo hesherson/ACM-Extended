@@ -129,7 +129,9 @@ def model_setup():
             _netCache set [toLower _key,["FIXTURE-UNPUBLISHED"]];
         } forEach [["ACME_ptx_state",[]],["ACME_ptx_tensionSeverity",0],["ACME_ptx_observationRevision",1],
           ["ACME_CS_sealOcclusion",0],["ACME_CS_sealVenting",0],
-          ["ACME_ptx_nativeSealCount",-1],["ACME_ptx_nativeSealHoleCount",-1]];
+          ["ACME_ptx_nativeSealCount",-1],["ACME_ptx_nativeSealHoleCount",-1],
+          ["ACME_lineWarmers",createHashMap],["ACME_lineWarmerCustody",createHashMap],
+          ["ACME_PiggybackLines",createHashMap]];
         _patient setVariable ["ACME_net_scalarCache",_netCache];
         _patient setVariable ["ACME_net_cacheOwner",[7,true]];
         _patient setVariable ["ACME_net_approxCache",createHashMap];
@@ -656,7 +658,7 @@ def test_new_canonical_state_receives_current_observation_revision_without_claim
 
 def restore_setup():
     return model_setup() + "".join(function(name) for name in (
-        "clinicalFields", "clinicalEncodedValid", "clinicalCodec", "clinicalValidate", "clinicalRestore",
+        "clinicalFields", "clinicalEncodedValid", "clinicalCodec", "clinicalValidate", "lineWarmerRestore", "clinicalRestore",
     )) + r'''
         // These are unrelated engine/session rehydration boundaries. The full
         // production validator, codec, field whitelist and restore all execute.

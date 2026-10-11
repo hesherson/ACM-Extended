@@ -9,6 +9,7 @@ from test_b156_procedure_supplies import primitives, suction_setup
 from test_b222_suction_input import block
 from test_historical_pose_lifecycle import setup as pose_setup, pose_source
 from test_historical_medication_rows import iteration_scopes
+from test_b275_transfusion_presentation import presentation_setup
 
 
 def compiled(name):
@@ -89,10 +90,10 @@ def bag_ui_setup():
 def test_actual_live_update_uses_lbvalue_after_an_infusion_row_is_hidden(type,filtered):
     # Selection index 0 may be an infusion moved to its own overlay. Visible row 0 then owns index 1.
     execute(bag_ui_setup()+f'''
-      private _first=["Epinephrine",49,0,0,false,-1,50,-1,0];
+      private _first=["Epinephrine",49,0,0,false,-1,50,-1,"infusion-uid"];
       private _bag=["{type}",393,0,0,false,3,500,27,"stable-uid"];
       _patient setVariable ["ACM_circulation_IV_Bags",createHashMapFromArray [["body",[_first,_bag]]]];
-      ACM_circulation_TransfusionMenu_Selection_IVBags=[_first,["{type}",500,0,0,false,3,500,27,1]];
+      ACM_circulation_TransfusionMenu_Selection_IVBags=[["Epinephrine",49,0,0,false,-1,50,-1,0,"infusion-uid"],["{type}",500,0,0,false,3,500,27,1,"stable-uid"]];
       _labels={ '["My fluid (500ml) [Y] [Warmed]"]' if filtered else '["Infusion (49ml)","My fluid (500ml) [Y] [Warmed]"]' };
       _values={ '[1]' if filtered else '[0,1]' };
       [true] call _updateBags;
@@ -227,10 +228,10 @@ def test_empty_inventory_is_cleared_before_no_bags_return_and_extras_follow_sele
     assert 'ACME_preparedListMode", false' in s
     ui=read('updateTransfusionControls')
     assert 'private _ownInventory' in ui
-    # B274: the source still isolates provider cooler stock, and the temporary
-    # flush-saline picker must suppress both carried and nearby cooler blood.
-    assert 'if (_ownInventory && {!_selectingSalineInventoryB274}) then {ACE_player getVariable ["ACME_coolerStore"' in ui
-    assert 'if (_ownInventory && {!_selectingSalineInventoryB274}) then {nearestObjects' in ui
+    # B275 keeps selected-source isolation and suppresses cooler blood while
+    # either connected-line picker is selecting a compatible secondary.
+    assert 'if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {ACE_player getVariable ["ACME_coolerStore"' in ui
+    assert 'if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {nearestObjects' in ui
     assert 'if (_ownInventory) then {ACE_player getVariable ["ACME_usedBags"' in ui
     assert 'call ACME_fnc_transfusionTakeSelected' in read('transfusionSpikeOrAdd')
 
@@ -292,24 +293,48 @@ def test_actual_inventory_cycle_exposes_vehicle_without_mixing_provider_bags():
     ''')
 
 
-@pytest.mark.parametrize('warmed,cold,color,tag',[
-    (False,False,[1,1,1,1],''),(False,True,[.45,.72,1,1],' [Cooled]'),
-    (True,False,[1,.55,.13,1],' [Warmed]'),(True,True,[1,.55,.13,1],' [Warmed]')])
-def test_actual_thermal_paint_clears_empty_red_and_uses_patient_temperature(warmed,cold,color,tag):
+@pytest.mark.parametrize('warmed,cold,paused,color',[
+    (False,False,False,[1,1,1,1]),(False,True,False,[.45,.72,1,1]),
+    (True,False,False,[1,.55,.13,1]),(True,True,False,[1,.55,.13,1]),
+    (True,False,True,[1,1,1,1]),(True,True,True,[1,1,1,1])], ids=[
+    'False-False-color0-', 'False-True-color1- [Cooled]',
+    'True-False-color2- [Warmed]', 'True-True-color3- [Warmed]',
+    'True-False-paused-white', 'True-True-paused-white'])
+def test_actual_thermal_paint_clears_empty_red_and_uses_patient_temperature(warmed,cold,paused,color):
     s=read('updateTransfusionControls')
-    a=s.index('private _ctrlActive = _display displayCtrl 86004;');b=s.index('// cooler blood surfaced',a)
-    s=s[a:b].replace('private _ctrlActive = _display displayCtrl 86004;','private _ctrlActive = missionNamespace;')
-    s=s.replace('lbSize _ctrlActive','count _labels').replace('_ctrlActive lbValue _r','_r').replace('_ctrlActive lbText _r','(_labels select _r)')
-    s=s.replace('_ctrlActive lbSetColor','_colors set').replace('_ctrlActive lbSetText','_labels set')
-    s=re.sub(r'_ctrlActive lbSet(?:Picture|Tooltip) \[[^;]+;','',s)
-    execute('private _mapDefault={params ["_m","_args"];_args params ["_k","_d"];if (_k in _m) then {_m get _k} else {_d}};'+compiled('lineWarmer')+'''
+    a=s.index('private _warmingReadout = [];');b=s.index('// cooler blood surfaced',a)
+    # Execute the actual shared repaint; only native list/control primitives are
+    # replaced. The production presentation helper owns physical UID and flow.
+    s=s[a:b].replace('_display displayCtrl _x','(if (_x==86004) then {missionNamespace} else {objNull})')
+    s=s.replace('!isNull _list','_list isNotEqualTo objNull').replace('lbSize _list','count _labels')
+    s=s.replace('_list lbValue _r','_r').replace('_list lbText _r','(_labels select _r)').replace('_list lbColor _r','(_colors select _r)')
+    s=s.replace('_list lbSetText [_r,_label];','_labels set [_r,_label];_writes=_writes+1;')
+    s=s.replace('_list lbSetColor [_r,_color];','_colors set [_r,_color];_writes=_writes+1;')
+    s=s.replace('_list lbSetTooltip [_r,_tooltip];','_tips set [_r,_tooltip];_writes=_writes+1;')
+    s=re.sub(r'_list lbSetPicture \[[^;]+;','',s).replace('_display displayCtrl 86213','missionNamespace')
+    execute(presentation_setup()+'''
       private _labels=["Blood O- (498ml) [Y] [Cooled]"];private _colors=[[1,0,0,1]];
-      private _targetPatient=_patient;private _lineYd=true;
-      missionNamespace setVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags",[["Blood",498]]];
-      CBA_fnc_replace={params ["_s","_from","_to"];private _i=_s find _from;if (_i<0) exitWith {_s};(_s select [0,_i])+_to+(_s select [_i+count _from])};
-    '''+f'_patient setVariable ["ACME_warmedBlood",{str(warmed).lower()}];_patient setVariable ["ACME_coldBlood",{str(cold).lower()}];'+adapt(s)+f'''
+      private _display=missionNamespace;private _tips=[];private _writes=0;private _caption="";private _captionColor=[];
+      ACME_fnc_transfusionUiSet={params ["_ctrl","_kind","_value"];if (_kind=="text") then {_caption=_value;};if (_kind=="color") then {_captionColor=_value;};};
+      private _targetPatient=_patient;private _targetBodyPart="leftarm";
+      _primary set [0,"Blood"];_primary set [1,498];
+      private _selection=[["Blood",498,1,0,true,-1,500,-1,0,"primary"]];
+      _patient setVariable ["ACME_PiggybackLines",createHashMap];
+      _patient setVariable ["ACME_YLines",[_key]];
+      _patient setVariable ["ACME_YLinePrimed",createHashMapFromArray [[_key,true]]];
+      missionNamespace setVariable ["ACME_txTooltip_0",""];
+    '''+f'''
+      _patient setVariable ["ACME_lineWarmers",createHashMapFromArray [[_key,{str(warmed).lower()}]]];
+      _patient setVariable ["ACME_coldBlood",{str(cold).lower()}];
+      (_patient getVariable "ACM_circulation_FluidBagsFlow_IV" select 2) set [0,{0 if paused else 1}];
+      private _paint={{ {primitives(adapt(s))} }};
+      call _paint;
       [(_colors select 0) isEqualTo {color},"refilled blood kept red or wrong thermal color"] call _check;
-      [(_labels select 0)=="Blood O- (498ml) [Y]{tag}","thermal tag stale/duplicated"] call _check;
+      [(_labels select 0)=="Blood O- (498ml) [Y]","thermal tag stale/duplicated"] call _check;
+      [(_caption find "LW Quantum · Warming"==0) isEqualTo {str(warmed and not paused).lower()},"caption warming did not follow actual flow"] call _check;
+      [_captionColor isEqualTo [1,.55,.13,1],"warming caption and bag color disagree"] call _check;
+      private _before=_writes;call _paint;
+      [_writes==_before,"steady repaint churned native row text/color/tooltip"] call _check;
     ''')
 
 

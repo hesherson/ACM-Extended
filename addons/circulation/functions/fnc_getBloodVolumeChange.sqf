@@ -251,6 +251,9 @@ if (_hasFluidBags) then {
             private _servicing = _serviceKey in (_unit getVariable ["ACME_yFlushJobs", createHashMap]);
             if (_bagUid == "") then {_bagUid = [_unit, _targetBodyPart, _acmeBagIndex] call ACME_fnc_bagIdentity;};
             private _acmeOriginalBag = +_x; _acmeOriginalBag set [8, _bagUid];
+            private _piggyback = [_unit, _targetBodyPart, _iv, _accessSite, _bagUid] call ACME_fnc_piggybackFlow;
+            _piggyback params ["_piggybackHeld", "_piggybackSecondary"];
+            private _piggybackConnected = !(([_unit, _targetBodyPart, _iv, _accessSite] call ACME_fnc_piggybackLine) isEqualTo []);
             // two kinds of entry are returned untouched, with no drain, no blood math and no removal.
             // a persisted [empty bag] marker, which is a y-tubing slot waiting for the next unit.
             // and the y saline limb. a saline bag sitting on a y line is the flush reserve and must never waste a drop on
@@ -267,7 +270,7 @@ if (_hasFluidBags) then {
                 _heldDetached = false;
                 [_unit, "ACME_detachedBags", _detached - [_bagUid]] call ACME_fnc_setVarNet;
             };
-            if (_heldDetached || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
+            if (_heldDetached || {_piggybackHeld} || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
                 if (_isYSaline && {_type == "Saline"}) then {
                     // self-heal a missed or late menu retag. a plain saline on a y line is the reserve, so it is returned
                     // permanently re-typed as ACME_SalineY. from the next tick the type-based clamp holds it with no dependence on
@@ -318,9 +321,9 @@ if (_hasFluidBags) then {
                 };
                 private _bagChange = 0;
                 if (_acmeControlledFlow) then {
-                    _bagChange = (_deltaT * ([_unit, _partIndex, _iv, _accessSite, _acmeBagClamp, _bagUid] call EFUNC(circulation,getIVFlowRate)) * ([_IOFlowMultiplier, _IVFlowMultiplier] select _iv)) min _bagVolumeRemaining;
+                    _bagChange = (_deltaT * ([_unit, _partIndex, _iv, _accessSite, _acmeBagClamp, _bagUid, _piggybackSecondary] call EFUNC(circulation,getIVFlowRate)) * ([_IOFlowMultiplier, _IVFlowMultiplier] select _iv)) min _bagVolumeRemaining;
                 } else {
-                    _bagChange = ((_deltaT * ACEGVAR(medical,ivFlowRate) * ([_unit, _partIndex, _iv, _accessSite, _acmeBagClamp, _bagUid] call EFUNC(circulation,getIVFlowRate))) * ([_IOFlowMultiplier, _IVFlowMultiplier] select _iv) * _fluidFlowRate);  // the absolute value of the change, in milliliters.
+                    _bagChange = ((_deltaT * ACEGVAR(medical,ivFlowRate) * ([_unit, _partIndex, _iv, _accessSite, _acmeBagClamp, _bagUid, _piggybackSecondary] call EFUNC(circulation,getIVFlowRate))) * ([_IOFlowMultiplier, _IVFlowMultiplier] select _iv) * _fluidFlowRate);  // the absolute value of the change, in milliliters.
 
                     if (_type == "FBTK") then {
                         // native ACM fills an FBTK at 1.2 times the saline flow, which is about 5 ml/s on a 16g and about 7.5 on a 14g.
@@ -347,7 +350,7 @@ if (_hasFluidBags) then {
                         // ACM stock has no divisor. This division is ours, so this fault is ours.
                         // The divisor is a count of bags to share the flow between. One bag is the minimum,
                         // because this loop is running for a bag.
-                        private _divisor = _activeBagTypesBodyPart max 1;
+                        private _divisor = if (_piggybackConnected) then {1} else {_activeBagTypesBodyPart max 1};
                         // on a y line the paired saline is clamped, so it counts as an active type and is not flowing. do not let it
                         // dilute the flow of the blood, so drop it from the divisor for blood and fresh blood.
                         if ((_type in ["Blood", "FreshBlood"]) && _onYLine) then {
@@ -396,6 +399,13 @@ if (_hasFluidBags) then {
                     _bagChange = ((_bagChange min _capChange) min _bagVolumeRemaining) max 0;
                 };
 
+                // Secondary uses the ordinary gravity/gauge calculation above without
+                // cuff/Hang Bag boost or sharing with its held primary. Preserve a slower clamp.
+                if (_deltaT > 0) then {
+                    private _warmerRate = [_unit, _targetBodyPart, _iv, _accessSite, _type, (_bagChange / _deltaT) * 60] call ACME_fnc_lineWarmerRate;
+                    _bagChange = _bagChange min (_deltaT * (_warmerRate / 60));
+                };
+
                 // Final perfusion gate after every fixed-rate override, including the blood warmer. No CPR means
                 // no forward circulation in arrest, therefore no bag volume may be consumed or credited.
                 if (!_fluidPerfusionOpen) then {_bagChange = 0;};
@@ -424,6 +434,11 @@ if (_hasFluidBags) then {
                 };
 
                 private _admitted = _bagChange * _fluidPassRatio;
+                // One downstream device warms whichever connected fluid actually entered circulation.
+                // Held primary/reserve bags add no heat, and an infusion carrier is warmed only once.
+                if (_warmedFlag && {_type != "FBTK"} && {_admitted > 0}) then {
+                    _warmthAdd = _warmthAdd + ((_admitted / 1000) * _warmerTempPerLiter);
+                };
                 if (_type != "FBTK") then {
                     [_unit, _targetBodyPart, _acmeBagIndex, _acmeOriginalBag, _bagChange, _admitted, _deltaT] call ACME_fnc_fluidCommit;
                 };
@@ -481,9 +496,7 @@ if (_hasFluidBags) then {
                             // blood instead pulls the core temperature down by the volume passed, which is the transfusion hypothermia the
                             // tag warns about. normal room-temperature blood, with neither flag, is temperature-neutral. run a cold unit
                             // through the LifeWarmer to flip it to the heat-adding path. the toggle and the rate are CBA-tunable.
-                            if (_warmedFlag) then {
-                                _warmthAdd = _warmthAdd + ((_admitted / 1000) * _warmerTempPerLiter);
-                            } else {
+                            if (!_warmedFlag) then {
                                 if (_coldFlag && {_coldFrac > 0} && {missionNamespace getVariable ["ACME_coldBloodHypothermia", true]}) then {
                                     // the cooling effect scales with how cold the unit still is, so a unit left to rewarm chills less.
                                     _coolDrop = _coolDrop + ((_admitted / 1000) * (missionNamespace getVariable ["ACME_cooler_tempDropPerLiter", 1.1]) * _coldFrac);
@@ -549,9 +562,14 @@ if (_hasFluidBags) then {
                     };
                     ["ACME_Empty", 0, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
                 } else {
-                    // a non-blood bag, saline or crystalloid, that drains is removed, as ACM does.
-                    _updateCountBodyPartArray pushBack _targetBodyPart;
-                    []
+                    // Retain the empty secondary as the physical PiB branch and its role indicator.
+                    // The next tick releases the primary; completed medication has already been retired.
+                    if (_piggybackSecondary) then {
+                        [_type, 0, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
+                    } else {
+                        _updateCountBodyPartArray pushBack _targetBodyPart;
+                        []
+                    }
                 }
             } else {
                 [_type, (_bagVolumeRemaining min _originalVolume), _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
@@ -586,6 +604,7 @@ if (_hasFluidBags) then {
     };
 
     if (count _fluidBags < 1) then {
+        if (count (_unit getVariable ["ACME_PiggybackLines",createHashMap]) > 0) then {[_unit,createHashMap,true] call ACME_fnc_piggybackLinesCommit;};
         _unit setVariable ["ACME_ivBagsPublishedSig", nil, false];
         _unit setVariable [QEGVAR(circulation,IV_Bags), nil, true];  // no bags are left, so clear the variable. always sync this globally.
         _unit setVariable [QEGVAR(circulation,IV_Bags_Active), false, true];
@@ -621,7 +640,7 @@ if (_hasFluidBags) then {
             || {_acmeBagUiLastAt < 0}
             || {(CBA_missionTime - _acmeBagUiLastAt) >= 1};
 
-        [_unit, _fluidBags, _acmeBagUiPublish] call FUNC(setIVBagsState);
+        [_unit, _fluidBags, _acmeBagUiPublish] call ACME_fnc_ivBagsCommit;
         if (_acmeBagUiPublish) then {
             _unit setVariable ["ACME_transfusionUiBagStructSig", _acmeBagStructSig, false];
             _unit setVariable ["ACME_transfusionUiBagSyncAt", CBA_missionTime, false];
@@ -640,7 +659,7 @@ if (_hasFluidBags) then {
 // 37 c, because a warmer can prevent transfusion-driven cooling and not overheat the patient.
 if (_warmthAdd > 0) then {
     private _t = _unit getVariable ["ACME_hypo_temp", 37];
-    _unit setVariable ["ACME_hypo_temp", ((_t + _warmthAdd) min 37), _syncValues];
+    _unit setVariable ["ACME_hypo_temp", (_t + (_warmthAdd min ((37 - _t) max 0))), _syncValues];
 };
 
 // cold, unwarmed, cooler-stored blood. subtract the accumulated cooling of the tick from the hypothermia temp of

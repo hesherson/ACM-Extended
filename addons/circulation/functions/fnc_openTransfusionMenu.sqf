@@ -8,6 +8,7 @@
  * 0: Medic <OBJECT>
  * 1: Patient <OBJECT>
  * 2: Body Part <STRING>
+ * 3: Exact return route [IV, site] <ARRAY> (optional)
  *
  * Return Value:
  * None
@@ -18,7 +19,12 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart"];
+params ["_medic", "_patient", "_bodyPart", ["_returnAccess", [], [[]]]];
+_bodyPart = toLowerANSI _bodyPart;
+// Reopening presentation does not abandon inventory already reserved for an
+// owner transaction. Reconcile the same durable request identities first.
+[_medic] call ACME_fnc_piggybackRecover;
+[_medic] call ACME_fnc_lineWarmerRecover;
 
 if !(isNull findDisplay IDC_TRANSFUSIONMENU) exitWith {};
 
@@ -51,6 +57,19 @@ GVAR(TransfusionMenu_Selection_IVBags) = [];
 GVAR(TransfusionMenu_Selected_AccessSite) = -1;
 GVAR(TransfusionMenu_Selected_BodyPart) = toLowerANSI _bodyPart;
 GVAR(TransfusionMenu_Selected_Inventory) = -1;
+
+// Restore the precise return route before creating controls or running a single picker refresh.
+// This preserves a piggyback intent on lower/middle IVs, IO and either EJ through the existing prep workspace.
+if (count _returnAccess == 2) then {
+    _returnAccess params [["_returnIV",true,[true]],["_returnSite",-1,[0]]];
+    private _validReturn = if (_returnIV) then {
+        _returnSite >= 0 && {[_patient,_bodyPart,0,_returnSite] call FUNC(hasIV)}
+    } else {[_patient,_bodyPart,0] call FUNC(hasIO)};
+    if (_validReturn) then {
+        GVAR(TransfusionMenu_SelectIV) = _returnIV;
+        GVAR(TransfusionMenu_Selected_AccessSite) = if (_returnIV) then {_returnSite} else {0};
+    };
+};
 
 GVAR(TransfusionMenu_Move_Active) = false;
 GVAR(TransfusionMenu_Move_Active_Moving) = false;
@@ -122,6 +141,8 @@ _display displayAddEventHandler ["KeyDown", {
     if !(_bound isEqualType 0 && {_bound >= 0} && {_bound < 0xF0}
         && {_key == _bound} && {!_shift && {!_ctrl && {!_alt}}}) exitWith {false};
     private _target = _dialog getVariable ["ACME_TX_CloseTarget", objNull];
+    uiNamespace setVariable ["ACME_lineWarmerConfirm",[]];
+    ["cancel"] call ACME_fnc_piggybackWorkflow;
     _dialog closeDisplay 0;
     if (!isNull _target) then {[ace_medical_gui_fnc_openMenu, _target] call CBA_fnc_execNextFrame;};
     true

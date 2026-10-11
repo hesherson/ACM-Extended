@@ -52,3 +52,13 @@ class ACME_TransfusionInlineDetails: RscControlsGroupNoHScrollbars {
         };
     };
 };
+
+// B275: quiet patient/access captions; exact source icon artwork is displayed separately.
+class ACME_TransfusionCenteredCaption: ACME_TransfusionCaption {
+    style = 2;
+    sizeEx = "safeZoneH * 0.017";
+};
+
+class ACME_TransfusionAccessCaption: ACME_TransfusionCenteredCaption {
+    style = 0;
+};

@@ -25,6 +25,22 @@ private _selectionIndex = _list lbValue _row;
 if (_selectionIndex < 0 || {_selectionIndex >= count _selection}) exitWith {[]};
 
 private _bag = _selection select _selectionIndex;
-_bag params ["_type", "_remainingVolume", "_accessType", "_bagAccessSite", "_bagIV", ["_bloodType", -1], ["_volume", 0], ["_freshBloodID", -1], ["_trueIndex", -1]];
+private _trueIndex = _bag param [8, -1];
+private _physicalUID = _bag param [9, ""];
+private _latest = (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [_bodyPart, []];
+if (_physicalUID != "") then {
+    _trueIndex = _latest findIf {(_x param [8, ""]) == _physicalUID};
+} else {
+    // Legacy selection tuples have no captured UID. Only the immutable native
+    // fields can authorize their original index; changing volume is expected.
+    if (_trueIndex >= 0 && {_trueIndex < count _latest}) then {
+        private _candidate = _latest select _trueIndex;
+        if (([0,2,3,4,5,6,7] findIf {(_candidate param [_x, -1]) isNotEqualTo (_bag param [_x, -1])}) >= 0) then {_trueIndex = -1;};
+    };
+};
+if (_trueIndex < 0 || {_trueIndex >= count _latest}) exitWith {[]};
+_bag = _latest select _trueIndex;
+_bag params ["_type", "_remainingVolume", "_accessType", "_bagAccessSite", "_bagIV", ["_bloodType", -1], ["_volume", 0], ["_freshBloodID", -1]];
+if (_bagAccessSite != _accessSite || {_bagIV isNotEqualTo _selectedIV}) exitWith {[]};
 
 [_patient, _bodyPart, _trueIndex, _type, _accessType, _bagAccessSite, _bagIV, _bloodType, _volume, _freshBloodID, _remainingVolume, _selectedIV, _accessSite]

@@ -19,6 +19,7 @@ private _required = createHashMapFromArray [
     ["ACME_do2_dilution","ARRAY"], ["ACME_piCuffs","HASHMAP"],
     ["ACME_circ_State","HASHMAP"], ["ACME_tbi_State","HASHMAP"],
     ["ACME_yFlushJobs","HASHMAP"], ["ACME_lineWarmers","HASHMAP"], ["ACME_YLinePrimed","HASHMAP"], ["ACME_bagMoves","HASHMAP"],
+    ["ACME_lineWarmerCustody","HASHMAP"], ["ACME_PiggybackLines","HASHMAP"],
     ["ACME_infusion_BagMedications","ARRAY"], ["ACME_detachedBags","ARRAY"],
     ["ACME_IV_SiteState","ARRAY"], ["ACME_CS_holeData","ARRAY"],
     ["ACME_nrb_medic","OBJECT"], ["ACME_vent_operator","OBJECT"],
@@ -96,6 +97,25 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
         case "ACME_lineWarmers";
         case "ACME_YLinePrimed": {
             _bad = ((keys _v) findIf {!(_x isEqualType "") || {!((_v get _x) isEqualType true)}}) >= 0;
+        };
+        case "ACME_lineWarmerCustody": {
+            _bad = ((keys _v) findIf {
+                private _row = _v get _x;
+                !(_x isEqualType "" && {_row isEqualType []} && {count _row == 3}
+                    && {(_row select 0) isEqualType ""} && {(_row select 0) != ""}
+                    && {(_row select 1) isEqualType objNull} && {[_row select 2] call _number}
+                    && {(_row select 2) >= 0})
+            }) >= 0;
+        };
+        case "ACME_PiggybackLines": {
+            _bad = ((keys _v) findIf {
+                private _row = _v get _x;
+                !(_x isEqualType "" && {_row isEqualType []} && {count _row == 3}
+                    && {(_row select 0) isEqualType ""} && {(_row select 0) != ""}
+                    && {(_row select 1) isEqualType ""} && {(_row select 1) != ""}
+                    && {(_row select 0) != (_row select 1)} && {[_row select 2] call _number}
+                    && {(_row select 2) >= 0})
+            }) >= 0;
         };
         case "ACME_piCuffs": {
             _bad = ((keys _v) findIf {

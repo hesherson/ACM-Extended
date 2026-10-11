@@ -274,6 +274,18 @@ if (_invalid != "") exitWith {
     _state call CBA_fnc_deleteNamespace;
 
 };
+// Resolve downstream device identities before reset can return physical items.
+// Missing pre-B275 fields mean those devices are omitted, rather than borrowed
+// from the live patient. Decoding occurs only after both validated write plans.
+private _restoreWarmers = createHashMap;
+private _restoreWarmerCustody = createHashMap;
+if (_clinical isNotEqualTo []) then {
+    {
+        if ((_x select 0) == "ACME_lineWarmers") then {_restoreWarmers = [_x select 1, false] call ACME_fnc_clinicalCodec;};
+        if ((_x select 0) == "ACME_lineWarmerCustody") then {_restoreWarmerCustody = [_x select 1, false] call ACME_fnc_clinicalCodec;};
+    } forEach (_clinical select 1);
+};
+[_unit, _restoreWarmers, _restoreWarmerCustody, [_unit] call ACME_fnc_clinicalEpoch, "prepare"] call ACME_fnc_lineWarmerRestore;
 _unit setVariable ["ACME_clinicalRestoring", true, false];
 [_unit] call ACME_fnc_clearAllAilments;
 {

@@ -25,6 +25,17 @@ if (_idx < 0) exitWith {
 private _class = ((_right lbData _idx) splitString "|") param [0, ""];
 if (_class isEqualTo "") exitWith {};
 
+private _piggybackIntent = missionNamespace getVariable ["ACME_piggybackPending", []];
+if !(_piggybackIntent isEqualTo []) then {
+    private _same = count _piggybackIntent >= 6 && {(_piggybackIntent select [0,4]) isEqualTo [missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1]]};
+    if (!_same) then {["cancel"] call ACME_fnc_piggybackWorkflow; _piggybackIntent = [];};
+};
+private _piggybackAllowed = true;
+if !(_piggybackIntent isEqualTo []) then {
+    _piggybackAllowed = count _piggybackIntent >= 6 && {[_piggybackIntent select 0,_piggybackIntent select 1,_piggybackIntent select 2,_piggybackIntent select 3,getText(configFile >> "ace_medical_treatment" >> "IV" >> (((_right lbData _idx) splitString "|") param [1,""]))] call ACME_fnc_piggybackEligible};
+};
+if (!_piggybackAllowed) exitWith {[ACE_player,"Choose a matching non-blood piggyback fluid."] call ACME_fnc_clinicalNotice;};
+
 // Direct emulsion bottles enter Prepared Infusions with their own administration
 // line. They never enter the generic saline-bag spike or Y-refill paths.
 if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};
@@ -66,7 +77,7 @@ if (_fromUsed) exitWith {
     private _contexts = uiNamespace getVariable ["ACME_usedRehangContext",createHashMap];
     _contexts set [_requestId,[ACE_player,_target2,_usedId]];
     uiNamespace setVariable ["ACME_usedRehangContext",_contexts];
-    private _warmer=([ACE_player,_target2,"ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount)>=1;
+    private _warmer=false;
     [_target2,"rehangUsedBag",[_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer,serverTime]] call ACME_fnc_ownerDispatch;
 };
 
@@ -143,7 +154,7 @@ private _requestYRefill = {
     private _inventoryMode = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory", 0];
     // Cooler rows were materialized into the medic's inventory above before this claim is requested.
     if (_fromCooler) then {_inventoryMode = 0;};
-    private _warmer = ([ACE_player, _target, "ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount) >= 1;
+    private _warmer = false;
     private _epoch = [_target] call ACME_fnc_clinicalEpoch;
     private _requestId = format ["yrefill:%1:%2:%3", clientOwner, diag_frameNo, floor (diag_tickTime * 1000)];
     private _pending = uiNamespace getVariable ["ACME_yRefillPending", createHashMap];

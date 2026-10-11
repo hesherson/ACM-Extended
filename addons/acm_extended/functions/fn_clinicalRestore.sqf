@@ -1,9 +1,23 @@
 params ["_patient", "_payload", ["_epoch", -1]];
 if (!local _patient) exitWith {[_patient, "restore", _this] call ACME_fnc_ownerDispatch;};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {};
-if (_payload isEqualTo []) exitWith {[_patient] call ACME_fnc_ownerRegister;};
+if (_payload isEqualTo []) exitWith {
+    if (count (_patient getVariable ["ACME_lineWarmerRestorePlan", []]) == 2) then {
+        [_patient, createHashMap, createHashMap, _epoch, "apply"] call ACME_fnc_lineWarmerRestore;
+    };
+    [_patient] call ACME_fnc_ownerRegister;
+};
 private _validation = [_payload] call ACME_fnc_clinicalValidate;
 if !(_validation select 0) exitWith {};
+private _restoreWarmers = createHashMap;
+private _restoreWarmerCustody = createHashMap;
+{
+    if ((_x select 0) == "ACME_lineWarmers") then {_restoreWarmers = [_x select 1, false] call ACME_fnc_clinicalCodec;};
+    if ((_x select 0) == "ACME_lineWarmerCustody") then {_restoreWarmerCustody = [_x select 1, false] call ACME_fnc_clinicalCodec;};
+} forEach (_payload select 1);
+if (count (_patient getVariable ["ACME_lineWarmerRestorePlan", []]) != 2) then {
+    [_patient, _restoreWarmers, _restoreWarmerCustody, _epoch, "prepare"] call ACME_fnc_lineWarmerRestore;
+};
 private _allowed = ((call ACME_fnc_clinicalFields) select {_x param [3, true]}) apply {_x select 0};
 // Restoring a pre-B271 episode onto an existing casualty must not borrow the
 // current casualty's marker and turn an old quiet timer into closure readiness.
@@ -43,6 +57,9 @@ private _toxicityFiredRestore = createHashMap;
 {
     _x params ["_name", "_encoded"];
     if !(_name in _allowed) then {continue;};
+    // These physical identities were reconciled before native teardown. An old
+    // snapshot must not overwrite retirement evidence or create a second device.
+    if (_name in ["ACME_lineWarmers", "ACME_lineWarmerCustody"]) then {continue;};
     private _value = [_encoded, false] call ACME_fnc_clinicalCodec;
     if (isNil "_value") then {continue;};
     if (_name in ["ACME_nrb_on", "ACME_nrb_hasO2", "ACME_nrb_delivering"]) then {
@@ -254,6 +271,15 @@ if (_toxicityFiredRestoreSet && {_toxicityFiredRestore isEqualType createHashMap
 private _jobs = _patient getVariable ["ACME_yFlushJobs", createHashMap];
 {private _j = _jobs get _x; _j set [6, if (count _j >= 13) then {serverTime} else {CBA_missionTime}]; _j set [8, _epoch];} forEach keys _jobs;
 _patient setVariable ["ACME_yFlushJobs", _jobs, true];
+// B275 downstream equipment and priority roles resume on the restored clinical
+// episode, while their physical bag/device identities remain unchanged.
+{
+    private _field = _x;
+    private _map = _patient getVariable [_field,createHashMap];
+    {private _row = +(_map get _x); _row set [2,_epoch]; _map set [_x,_row];} forEach keys _map;
+    [_patient,_field,_map] call ACME_fnc_setVarNet;
+} forEach ["ACME_PiggybackLines"];
+[_patient, _restoreWarmers, _restoreWarmerCustody, _epoch, "apply"] call ACME_fnc_lineWarmerRestore;
 private _moves = _patient getVariable ["ACME_bagMoves", createHashMap];
 {private _m = _moves get _x; _m set [3, CBA_missionTime - 121]; _m set [4, _epoch];} forEach keys _moves;
 _patient setVariable ["ACME_bagMoves", _moves, true];

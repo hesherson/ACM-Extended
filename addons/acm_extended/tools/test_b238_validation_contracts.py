@@ -2,6 +2,7 @@
 from pathlib import Path
 import pytest
 from test_menu_death_lifecycle import execute, ROOT
+from test_b227_line_service_and_assessments import basic, fn
 
 @pytest.mark.parametrize('value,expected',[
     ('[]',False),('["a"]',False),('["a","b"]',False),
@@ -47,8 +48,9 @@ def test_current_blood_envelope_uses_continuous_pressure_without_losing_cap(cold
     assert block.count(lookup)==1
     block=block.replace(lookup,'(_unit getVariable ["ACME_piCuffs", missionNamespace]) getVariable [_bagUid, []]')
     expected=(base+(300-base)*pressure)/60
-    execute(f'''
+    execute(basic()+fn('lineWarmer')+fn('lineWarmerRate')+f'''
         private _unit=_patient;private _type="Blood";private _bagUid="bag";
+        private _targetBodyPart="leftarm";private _iv=true;private _accessSite=0;
         private _coldFlag={str(cold).lower()};private _warmedFlag={str(warm).lower()};
         private _deltaT=1;private _bagChange=1;private _bagVolumeRemaining=500;
         _unit setVariable ["ACME_hang_flowMult",{2 if hang else 1}];

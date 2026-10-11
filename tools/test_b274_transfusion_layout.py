@@ -128,7 +128,7 @@ def test_line_details_are_inline_and_do_not_create_a_nested_display():
     assert "createDialog" not in open_details + update_details
     assert "findDisplay 86190" not in LAYOUT + open_details + update_details
     assert "call ACME_fnc_updateTransfusionLineDetails" in LAYOUT
-    assert runtime_rect(86171) == pytest.approx((.355, .795, .290, .090))
+    assert runtime_rect(86171) == pytest.approx((.355, .812, .290, .078))
     # The inline painter stays on the existing menu tick and cannot modify care.
     assert "ownerDispatch" not in update_details
     assert "addPerFrameHandler" not in update_details
@@ -142,6 +142,15 @@ def inline_fixture():
         sys.path.insert(0, str(helpers))
     from test_menu_death_lifecycle import adapt, execute
     from test_historical_vial_execution import map_defaults
+    from test_b275_piggyback import fn
+    presentation = "".join(fn(name) for name in (
+        "isYLineAccess", "piggybackLine", "piggybackRole", "piggybackFlow",
+        "fluidLabelVolume", "transfusionBagPresentation",
+    ))
+    # Native weapon configuration is an engine boundary; leave the production
+    # label/role/thermal logic intact and let its type fallback name the bag.
+    presentation = presentation.replace('private _cfg = configFile >> "CfgWeapons" >> _class;', 'private _cfg = configFile;')
+    presentation = presentation.replace('getText (_cfg >> "shortName")', '""').replace('getText (_cfg >> "displayName")', '""')
     source = (FUN / "fn_updateTransfusionLineDetails.sqf").read_text()
     source = source.replace("findDisplay 86000", "_displayFixture")
     source = source.replace("findDisplay 86200", "_clampFixture")
@@ -174,7 +183,14 @@ def inline_fixture():
         ACME_fnc_transfusionAccessValid={true};
         ACME_fnc_yServiceState={_serviceState};
         ACME_fnc_lineWarmer={false};
-        ACME_fnc_pressureLevel={.5};
+        ACM_circulation_fnc_getIVFlowRate={0};
+        ACM_circulation_fnc_formatFluidBagName={_this select 0};
+        CBA_fnc_replace={params ["_value","_search","_replacement"];
+            private _at=_value find _search;
+            while {_at>=0} do {_value=(_value select [0,_at])+_replacement+(_value select [_at+count _search]);_at=_value find _search;};
+            _value
+        };
+        ACME_fnc_pressureLevel={if ((_this select 0 select 0)==1) then {.5} else {.9}};
         ACME_fnc_formatDose={format ["%1 %2mg",_this select 0,_this select 1]};
         _displayFixture setVariable ["ACME_detailsContent",""];
         ACM_circulation_TransfusionMenu_Target=_patient;
@@ -188,12 +204,12 @@ def inline_fixture():
             ["rightarm",[["Saline",200,1,0,true,-1,500,-1,"right"]]]];
         _patient setVariable ["ACM_circulation_IV_Bags",_bags];
         _patient setVariable ["ACME_YLines",["leftarm#true#0"]];
-        _patient setVariable ["ACME_piCuffs",createHashMapFromArray [["blood",[1]]]];
+        _patient setVariable ["ACME_piCuffs",createHashMapFromArray [["blood",[1]],["neighbor",[2]],["io",[2]]]];
         _patient setVariable ["ACME_infusion_BagMedications",[
             ["calcium","leftarm",0,"Blood",0,true,-1,500,-1,0,0,"Calcium",0,0,100],
             ["other","leftarm",1,"Saline",1,true,-1,100,-1,0,0,"Propofol",0,0,300]]];
     '''
-    return setup + "ACME_fnc_updateTransfusionLineDetails={" + source + "};\n", execute
+    return setup + presentation + "ACME_fnc_updateTransfusionLineDetails={" + source + "};\n", execute
 
 
 def test_inline_details_follow_exact_live_access_and_repaint_only_changed_content():
@@ -202,10 +218,10 @@ def test_inline_details_follow_exact_live_access_and_repaint_only_changed_conten
         private _before=str (_patient getVariable "ACM_circulation_IV_Bags");
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
         private _first=_paints select 0;
-        [_first find "Blood: 300 mL remaining" >=0 && {_first find "Calcium 100mg remaining" >=0}
+        [_first find "Calcium 100mg remaining" >=0
             && {_first find "Pressure cuff: 50%" >=0} && {_first find "Y line: Prime needed" >=0},
             "inline details lost selected access information"] call _check;
-        [_first find "Saline: 20" <0 && {_first find "Propofol" <0},
+        [_first find "Pressure cuff: 90%" <0 && {_first find "Propofol" <0},
             "inline details leaked a neighboring IV or IO access"] call _check;
         [_before isEqualTo str (_patient getVariable "ACM_circulation_IV_Bags"),
             "read-only inline painter mutated patient bags"] call _check;
@@ -213,18 +229,21 @@ def test_inline_details_follow_exact_live_access_and_repaint_only_changed_conten
         [count _paints==1,"unchanged details replayed structured text"] call _check;
         (_bags get "leftarm" select 0) set [1,250];
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
-        [count _paints==2 && {(_paints select 1) find "Blood: 250 mL remaining" >=0},
-            "details did not refresh live remaining volume"] call _check;
+        [count _paints==1,"bag-list volume tick repainted unchanged inline metadata"] call _check;
+        (_patient getVariable "ACME_infusion_BagMedications" select 0) set [14,75];
+        [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
+        [count _paints==2 && {(_paints select 1) find "Calcium 75mg remaining" >=0},
+            "details did not refresh live remaining medication"] call _check;
         ACM_circulation_TransfusionMenu_Selected_BodyPart="rightarm";
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
-        [count _paints==3 && {(_paints select 2) find "Saline: 200 mL remaining" >=0}
-            && {(_paints select 2) find "Blood" <0} && {(_paints select 2) find "Calcium" <0},
+        [count _paints==3 && {(_paints select 2) find "Y line" <0}
+            && {(_paints select 2) find "Pressure cuff" <0} && {(_paints select 2) find "Calcium" <0},
             "details retained the previous selected access"] call _check;
         ACM_circulation_TransfusionMenu_Selected_BodyPart="leftarm";
         _serviceState=[40,50,false,true,true,"Flush"];
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
         private _service=_paints select 3;
-        [_service find "Y line: Primed" >=0 && {_service find "Saline reserve: 40 mL (clamped)" >=0}
+        [_service find "Y line: Primed" >=0 && {_service find "Reserve Flush Saline: 40 mL" >=0}
             && {_service find "Flush in progress: 50 mL reserved" >=0}
             && {_service find "Flush required before" <0},
             "inline service details lost reserve or active operation state"] call _check;

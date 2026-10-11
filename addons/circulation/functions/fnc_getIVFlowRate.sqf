@@ -9,7 +9,7 @@
 // Fifth argument: -2 = legacy site cache, -1 = physical wide-open access,
 // >=0 = the exact bag's requested mL/s. Native four-argument calls stay compatible.
 // Sixth argument is the physical bag identity; unspecific native queries have no cuff boost.
-params ["_patient", "_partIndex", "_iv", "_accessSite", ["_bagClamp", -2], ["_bagId", ""]];
+params ["_patient", "_partIndex", "_iv", "_accessSite", ["_bagClamp", -2], ["_bagId", ""], ["_gravityOnly", false]];
 if (_partIndex < 0 || {_partIndex > 5} || {_iv && {!(_accessSite in [0,1,2])}}) exitWith {0};
 private _acmeBinding = "NA4:getIVFlowRate";
 if ([_patient, _partIndex] call ACME_fnc_aajtOccludes) exitWith {0};
@@ -60,10 +60,10 @@ private _rate = switch (_type) do {
 // gravity, boost, which only raises the ceiling, so a titrated drip below the cap is unaffected. with no tracked
 // infusion here, where the rate is below 0, it is wide open.
 // ACM stays the single writer of the bag volume, so the displayed amount does not ping-pong.
-private _hang = _patient getVariable ["ACME_hang_flowMult", 1];
+private _hang = if (_gravityOnly) then {1} else {_patient getVariable ["ACME_hang_flowMult", 1]};
 private _pressure = 1;
 private _cuff = (_patient getVariable ["ACME_piCuffs", createHashMap]) getOrDefault [_bagId, []];
-if (_bagId != "" && {!(_cuff isEqualTo [])}) then {
+if (!_gravityOnly && {_bagId != ""} && {!(_cuff isEqualTo [])}) then {
     private _p = [_cuff] call ACME_fnc_pressureLevel;
     if (_p > 0) then {_pressure = 1 + ((missionNamespace getVariable ["ACME_pressureInfuser_boost", 2.5]) - 1) * _p;};
 };

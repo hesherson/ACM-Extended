@@ -1,4 +1,4 @@
-/* B274: inline selected-access information, using the existing UI tick only. */
+/* B275: inline selected-access information, using the existing UI tick only. */
 disableSerialization;
 params [["_display", findDisplay 86000]];
 // Preserve the roller-clamp and medication workspaces: no main-menu text leaks into their popups.
@@ -23,24 +23,31 @@ private _lines = [];
 if (_isY) then {
     ([_patient,_part,_iv,_site] call ACME_fnc_yServiceState) params ["_reserve","_reserved","_blood","_dirty","_primed","_service"];
     _lines pushBack format ["Y line: %1",if (_primed) then {"Primed"} else {"Prime needed"}];
-    _lines pushBack format ["Saline reserve: %1 mL (clamped)",round _reserve];
+    _lines pushBack format ["Reserve Flush Saline: %1 mL",round _reserve];
     if (_service != "") then {_lines pushBack format ["%1 in progress: %2 mL reserved",_service,round _reserved];};
     if (_primed && {_dirty} && {!_blood} && {_service == ""}) then {_lines pushBack "Flush required before the next unit";};
 };
+private _thermalLines = [];
 {
-    private _type = _x param [0, ""];
-    if !(_type in ["ACME_Empty","ACME_EmptySaline","ACME_SalineY"]) then {
-        private _name = getText (configFile >> "CfgWeapons" >> ([_type,_x param [6,0],_x param [5,-1]] call ACM_circulation_fnc_formatFluidBagName) >> "displayName");
-        if (_name == "") then {_name = _type;};
-        _lines pushBack format ["%1: %2 mL remaining",_name,round (_x param [1,0])];
+    ([_patient,_part,_x] call ACME_fnc_transfusionBagPresentation) params ["_label","_color","_thermal","_role","_flowing"];
+    if (_role != "") then {
+        private _status = if (_flowing) then {["Running","Gravity flow"] select (_role == "Secondary")} else {["Held","Paused"] select (_role == "Secondary")};
+        _lines pushBack format ["<t color='#c9b9e4'>Piggyback %1</t>: %2",_role,_status];
+    };
+    if (_thermal != "") then {
+        private _line = if (_flowing && {(_thermal find "Warming") >= 0}) then {format ["<t color='#ff8c21'>%1</t>",_thermal]} else {_thermal};
+        _thermalLines pushBackUnique _line;
     };
 } forEach _bags;
+// One downstream device has one status even though either connected bag can pass through it.
+private _warmingThermal = _thermalLines select {(_x find "Warming") >= 0};
+_lines append (if (_warmingThermal isEqualTo []) then {_thermalLines} else {_warmingThermal});
 {
     if ((toLowerANSI (_x param [1, ""])) == toLowerANSI _part && {(_x param [4,-1]) == _site} && {(_x param [5,false]) isEqualTo _iv}) then {
         _lines pushBack format ["%1 remaining",[_x param [11, ""],_x param [14,0]] call ACME_fnc_formatDose];
     };
 } forEach (_patient getVariable ["ACME_infusion_BagMedications",[]]);
-_lines pushBack format ["LifeWarmer Quantum: %1",if ([_patient,_part,_iv,_site] call ACME_fnc_lineWarmer) then {"Inline"} else {"Not fitted"}];
+
 private _cuffs = _patient getVariable ["ACME_piCuffs",createHashMap];
 {
     private _cuff = _cuffs getOrDefault [_x param [8,""],[]];

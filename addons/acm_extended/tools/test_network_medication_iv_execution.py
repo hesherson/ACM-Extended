@@ -148,12 +148,17 @@ def test_iv_cache_suppresses_repeats_but_preserves_in_place_change_and_restore()
 
 def test_native_iv_writers_share_cache_and_final_nil_explicitly_invalidates_it():
     expected = {
-        C / "fnc_getBloodVolumeChange.sqf": "[_unit, _fluidBags, _acmeBagUiPublish] call FUNC(setIVBagsState);",
+        C / "fnc_getBloodVolumeChange.sqf": "[_unit, _fluidBags, _acmeBagUiPublish] call ACME_fnc_ivBagsCommit;",
         C / "fnc_resetVariables.sqf": "[_patient, createHashMap, true] call FUNC(setIVBagsState);",
         C / "fnc_setIVLocal.sqf": "[_patient, _map, true] call FUNC(setIVBagsState);",
         ROOT / "addons/core/overrides/fnc_ivBagLocal.sqf": "[_patient, _IVBags, !_deferPremixed] call EFUNC(circulation,setIVBagsState);",
     }
     for path, call in expected.items():
         assert call in path.read_text(), path
+    # B275 also reconciles connected endpoints/device custody at the commit
+    # boundary. Publication still crosses the same native cache exactly once.
+    commit = (F / "fn_ivBagsCommit.sqf").read_text()
+    native_call = "[_patient, _bags, _public] call ACM_circulation_fnc_setIVBagsState;"
+    assert commit.count(native_call) == 1
     volume = (C / "fnc_getBloodVolumeChange.sqf").read_text()
     assert '_unit setVariable ["ACME_ivBagsPublishedSig", nil, false];\n        _unit setVariable [QEGVAR(circulation,IV_Bags), nil, true];' in volume

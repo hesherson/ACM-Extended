@@ -2,6 +2,17 @@
 params ["_patient", ["_phase", "finish"], ["_preserveJunctional", false]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_phase == "begin") exitWith {
+    // A reusable downstream warmer keeps physical custody when a full heal
+    // detaches the patient's lines. Each exact assembly returns once.
+    private _warmerRestore = _patient getVariable ["ACME_lineWarmerRestorePlan", []];
+    if (!(_patient getVariable ["ACME_clinicalRestoring", false]) || {count _warmerRestore != 2}) then {
+        {
+            private _parts = _x splitString "#";
+            if (count _parts == 3) then {
+                [_patient,_parts select 0,(_parts select 1) == "true",parseNumber (_parts select 2)] call ACME_fnc_lineWarmerDetach;
+            };
+        } forEach keys (_patient getVariable ["ACME_lineWarmers",createHashMap]);
+    };
     [_patient, "reset"] call ACME_fnc_aiProtectionSync;
     // A pre-roll placement can be pending before headElevated is set. A full heal ends that episode too.
     _patient setVariable ["ACME_headElev_startEpoch", (_patient getVariable ["ACME_headElev_startEpoch", 0]) + 1, false];
@@ -135,6 +146,7 @@ _patient forceWalk _preservedLegXStat;
 {_patient setVariable [_x, 0, true];} forEach ["ACME_resp_neuralRR", "ACME_resp_deliveredRR", "ACME_rhythm_painContribution"];
 _patient setVariable ["ACME_yFlushJobs", createHashMap, true];
 _patient setVariable ["ACME_bagMoves", createHashMap, true];
+[_patient,"ACME_PiggybackLines",createHashMap] call ACME_fnc_setVarNet;
 [_patient, []] call ACME_fnc_detachedBagsCommit;
 [_patient,"ACME_IV_DisconnectedBagUIDs",[]] call ACME_fnc_setVarNet;
 [_patient, []] call ACME_fnc_infusionMedicationStateCommit;

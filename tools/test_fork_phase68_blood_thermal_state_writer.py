@@ -12,8 +12,16 @@ def test_current_phase68_blood_thermal_state_writer():
     commit=read('addons/acm_extended/functions/fn_bloodThermalStateCommit.sqf')
     for name in ('ACME_warmedBlood','ACME_coldBlood','ACME_coldBloodHungAt','ACME_tempFlagHoldUntil'):
         assert name in commit
-    for rel in ('fn_yLineAttach.sqf','fn_clinicalRestore.sqf','fn_clinicalReset.sqf'):
+    for rel in ('fn_clinicalRestore.sqf','fn_clinicalReset.sqf'):
         assert 'ACME_fnc_bloodThermalStateCommit' in read('addons/acm_extended/functions/'+rel), rel
+    attach=read('addons/acm_extended/functions/fn_yLineAttach.sqf')
+    assert 'ACME_fnc_bloodThermalStateCommit' not in attach
+    assert 'ACME_LifeWarmer' not in attach
+    # B275 fits one inventoried device explicitly on the owner; possessing a
+    # warmer while hanging a Y set must not grant a free thermal state flag.
+    warmer=read('addons/acm_extended/functions/fn_lineWarmerCommit.sqf')
+    assert 'ACME_lineWarmerCustody' in warmer
+    assert 'ACME_fnc_lineWarmer' in warmer
     from owner_route_contract import assert_owner_route
     assert_owner_route('fn_hangPreparedSet.sqf','preparedHang','preparedHangCommit','bloodThermalStateCommit')
     assert_owner_route('fn_transfusionSpikeOrAdd.sqf','yRefill','yRefillCommit','bloodThermalStateCommit')

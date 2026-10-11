@@ -38,28 +38,7 @@ private _selectedPart = toLowerANSI (missionNamespace getVariable ["ACM_circulat
 private _selectedIV = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true];
 private _selectedSite = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite", -1];
 private _bagsMap = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
-
-private _fluidAbbrev = {
-    params ["_type"];
-    switch (toLowerANSI _type) do {
-        case "blood";
-        case "freshblood": {"B"};
-        case "plasma": {"P"};
-        case "saline";
-        case "acme_saliney": {"NS"};
-        case "plasmalyte": {"PL"};
-        case "mannitol": {"Mtol"};
-        case "hts";
-        case "hts3": {"HTS"};
-        case "magnesium": {"MgSO₄"};
-        case "esmolol": {"Esm"};
-        case "fbtk": {"FBTK"};
-        default {
-            private _s = _type;
-            if ((count _s) > 5) then {_s select [0,5]} else {_s}
-        };
-    };
-};
+private _bagMedications = _patient getVariable ["ACME_infusion_BagMedications", []];
 
 private _partLabel = {
     params ["_part"];
@@ -69,6 +48,7 @@ private _partLabel = {
 
 private _placedLabels = [];
 {
+    private _siteIndex = _forEachIndex;
     _x params ["_key", "_part", "_site", "_nativeImageIDC", "_unusedInputIDC", "_uv"];
     private _isIO = _site < 0;
     private _isEJ = _nativeImageIDC in [7290020,7290021];
@@ -103,7 +83,7 @@ private _placedLabels = [];
     private _hw = (_uw * _drawW) + (2 * _padX);
     private _hh = (_uh * _drawH) + (2 * _padY);
 
-    private _hotIDC = 86900 + _forEachIndex;
+    private _hotIDC = 86900 + _siteIndex;
     private _hot = _display displayCtrl _hotIDC;
     if (isNull _hot) then {
         _hot = _display ctrlCreate ["ACME_EJTransfusionHotspot", _hotIDC];
@@ -150,50 +130,77 @@ private _placedLabels = [];
         [_image,"color",_col] call ACME_fnc_transfusionUiSet;
     };
 
-    // Fluid shorthand sits beside the true access site, not at a generic limb location.
-    private _abbr = [];
-    if (_has) then {
-        private _arr = _bagsMap getOrDefault [_part, []];
-        {
-            private _bType = _x param [0, ""];
-            private _remaining = _x param [1, 0];
-            private _bSite = _x param [3, -1];
-            private _bIV = _x param [4, true];
-            private _match = (_remaining > 0.01) && {if (_isIO) then {!_bIV} else {_bIV && {_bSite == _site}}};
-            if (_match && {!(_bType in ["ACME_Empty","ACME_EmptySaline"])}) then {
-                private _a = [_bType] call _fluidAbbrev;
-                private _uid = _x param [8, ""];
-                private _drugs = (_patient getVariable ["ACME_infusion_BagMedications", []]) select {(_x param [23, ""]) == _uid && {_uid != ""}};
-                if (_drugs isNotEqualTo []) then {_a = (_drugs apply {[_x select 11] call ACME_fnc_infusionName}) joinString "/";};
-                if (_a != "") then {_abbr pushBackUnique _a;};
-            };
-        } forEach _arr;
-    };
-    private _labelIDC = 87000 + _forEachIndex;
+    // Only bags/infusions on this exact access label it. Empty sites remain artwork only.
+    private _text = if (_has) then {[_bagsMap getOrDefault [_part, []],_bagMedications,!_isIO,_site] call ACME_fnc_transfusionAccessLabel} else {""};
+    private _labelIDC = 87000 + _siteIndex;
     private _label = _display displayCtrl _labelIDC;
     if (isNull _label) then {
         _label = _display ctrlCreate ["RscText", _labelIDC];
-        _label ctrlSetBackgroundColor [0.043,0.082,0.188,0.82];
-        [_label,"color",[0.94,0.91,0.82,1]] call ACME_fnc_transfusionUiSet;
+        _label ctrlSetBackgroundColor [0.055,0.055,0.055,0.94];
+        _label ctrlSetFont "RobotoCondensed";
         [_label,"enable",false] call ACME_fnc_transfusionUiSet;
     };
-    private _showLabel = _has && {!(_abbr isEqualTo [])};
+    private _leader = _display displayCtrl (87030 + _siteIndex);
+    private _tagHit = _display displayCtrl (87240 + _siteIndex);
+    private _borders = [];
+    for "_edge" from 0 to 3 do {_borders pushBack (_display displayCtrl (87130 + _siteIndex * 4 + _edge));};
+    private _showLabel = _has && {_text != ""};
     if (_showLabel) then {
+        // Reuse native line/text controls; no texture, draw loop or custom body artwork.
+        if (isNull _leader) then {
+            _leader = _display ctrlCreate ["RscLine", 87030 + _siteIndex];
+            [_leader,"enable",false] call ACME_fnc_transfusionUiSet;
+        };
+        // Indexed loop keeps the site's control range intact across all four edges.
+        for "_edge" from 0 to 3 do {
+            if (isNull (_borders select _edge)) then {
+                private _border = _display ctrlCreate ["RscText", 87130 + _siteIndex * 4 + _edge];
+                [_border,"enable",false] call ACME_fnc_transfusionUiSet;
+                _borders set [_edge,_border];
+            };
+        };
+        if (isNull _tagHit) then {
+            _tagHit = _display ctrlCreate ["ACME_EJTransfusionHotspot", 87240 + _siteIndex];
+            _tagHit ctrlAddEventHandler ["ButtonClick", {
+                params ["_ctrl"];
+                (_ctrl getVariable ["ACME_TX_Access", ["",true,-1]]) call ACME_fnc_selectTransfusionAccess;
+            }];
+        };
+        _tagHit setVariable ["ACME_TX_Access", [_part, !_isIO, _site]];
+        _tagHit ctrlSetTooltip _siteText;
+        private _isPiggyback = !isNil "ACME_fnc_piggybackLine"
+            && {([_patient,_part,!_isIO,_site] call ACME_fnc_piggybackLine) isNotEqualTo []};
+        private _tagColor = if (_isPiggyback) then {[0.79,0.73,0.89,1]} else {[0.82,0.82,0.82,1]};
+        [_label,"color",_tagColor] call ACME_fnc_transfusionUiSet;
+        [_leader,"color",_tagColor] call ACME_fnc_transfusionUiSet;
+        {if ((_x getVariable ["ACME_TX_BorderColor",[]]) isNotEqualTo _tagColor) then {_x ctrlSetBackgroundColor _tagColor;_x setVariable ["ACME_TX_BorderColor",_tagColor];};} forEach _borders;
         private _labelH = (_drawH * 0.035) max (14 * pixelH);
-        private _text = _abbr joinString "+";
         _label ctrlSetFontHeight (_labelH * 0.68);
         [_label,"text",_text] call ACME_fnc_transfusionUiSet;
         private _labelW = ((ctrlTextWidth _label) + 8 * pixelW) max (22 * pixelW);
         _labelW = _labelW min (_drawW * 0.18);
         private _left = (_hx + _hw / 2) < (_drawX + _drawW / 2);
-        private _rect = [[_hx,_hy,_hw,_hh],[_labelW,_labelH],[_outerX,_outerY,_outerW,_outerH],_placedLabels,3 * pixelH,_left] call ACME_fnc_transfusionTagRect;
+        private _above = _isEJ || {_v < 0.35} || {!_left && {_v < 0.55}};
+        private _anchor = [_hx,_hy,_hw,_hh];
+        private _rect = [_anchor,[_labelW,_labelH],[_outerX,_outerY,_outerW,_outerH],_placedLabels,3 * pixelH,_left,_above] call ACME_fnc_transfusionTagRect;
         if (_rect isEqualTo []) then {_showLabel = false;} else {
             _placedLabels pushBack _rect;
             [_label,"position",_rect] call ACME_fnc_transfusionUiSet;
-
+            [_tagHit,"position",_rect] call ACME_fnc_transfusionUiSet;
+            [_leader,"position",[_anchor,_rect,_left] call ACME_fnc_transfusionTagLeader] call ACME_fnc_transfusionUiSet;
+            _rect params ["_tx","_ty","_tw","_th"];
+            // The short horizontal leader IS the rectangle's top edge. Its inner
+            // corner coincides with the diagonal endpoint, without a second rail.
+            {
+                [(_borders select _forEachIndex),"position",_x] call ACME_fnc_transfusionUiSet;
+            } forEach [[_tx,_ty,_tw,pixelH],[_tx,_ty,pixelW,_th],[_tx,_ty + _th - pixelH,_tw,pixelH],[_tx + _tw - pixelW,_ty,pixelW,_th]];
         };
     };
     [_label,"show",_showLabel] call ACME_fnc_transfusionUiSet;
+    [_leader,"show",_showLabel] call ACME_fnc_transfusionUiSet;
+    [_tagHit,"show",_showLabel] call ACME_fnc_transfusionUiSet;
+    [_tagHit,"enable",_showLabel] call ACME_fnc_transfusionUiSet;
+    {[_x,"show",_showLabel] call ACME_fnc_transfusionUiSet;} forEach _borders;
 } forEach _geometry;
 
 // Keep ACM's header descriptive now that there is no route toggle and the artwork itself is the selector.

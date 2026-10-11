@@ -95,30 +95,35 @@ def test_line_flow_service_and_details_have_distinct_rows(has_service):
         assert not overlap(actions, details)
 
 
-@pytest.mark.parametrize("y_available", [False, True])
-def test_spike_and_y_setup_keep_inventory_list_and_prepared_list_selectable(y_available):
-    # Prepared-mode Hang Set also shares this row with Prep Infusion; select
-    # the authored split/full geometry by width instead of branch occurrence.
+@pytest.mark.parametrize("mode", ["loose", "prepared", "blood"])
+def test_spike_and_y_setup_keep_inventory_list_and_prepared_list_selectable(mode):
     candidates = re.findall(r"\[86141,(0\.\d+),(0\.\d+),(0\.\d+),(0\.\d+)\] call _place", LAYOUT)
     spike = next(tuple(map(float, row)) for row in candidates
-                 if float(row[2]) == (.097 if y_available else .202))
+                 if (float(row[2]) == .097 if mode == "prepared" else float(row[1]) == (.564 if mode == "blood" else .526) and float(row[2]) == .202))
     assert not overlap(spike, fixed_layout()[86005])
     assert not overlap(spike, fixed_layout()[86130])
     assert not overlap(spike, fixed_layout()[86127])
-    if y_available:
+    if mode == "blood":
         y_setup = authored_place(86142)
+        dropdown = authored_place(86212)
         assert not overlap(spike, y_setup)
-        assert spike[1:] == y_setup[1:]
+        assert not overlap(dropdown, y_setup)
+        assert not overlap(dropdown, spike)
+        assert dropdown[1] == y_setup[1]
+    elif mode == "prepared":
+        prep = authored_place(86121)
+        assert not overlap(spike, prep)
+        assert spike[1] == prep[1]
 
 
 def popover(menu):
     backdrop = authored_place(86173 if menu == "bag" else 86174)
-    first = LAYOUT.index('} forEach [86007,86146,86147,86134,86148,86120];' if menu == "bag"
+    first = LAYOUT.index('} forEach [86007,86146,86147,86134,86148,86120,86194];' if menu == "bag"
                          else '} forEach [86132,86133,86149];')
     fragment = LAYOUT[:first]
     call = re.findall(r'\[_x,(0\.\d+),(0\.\d+) \+ _forEachIndex \* (0\.\d+),(0\.\d+),(0\.\d+)\] call _place', fragment)[-1]
     x, y, pitch, w, h = map(float, call)
-    return backdrop, [(x, y + index * pitch, w, h) for index in range(6 if menu == "bag" else 3)]
+    return backdrop, [(x, y + index * pitch, w, h) for index in range(7 if menu == "bag" else 3)]
 
 
 @pytest.mark.parametrize("menu", ["bag", "infusion"])

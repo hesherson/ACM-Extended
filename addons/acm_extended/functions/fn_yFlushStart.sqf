@@ -54,5 +54,8 @@ if (_job isNotEqualTo []) then {
     if (_id != "") then {_job = [_part,_iv,_site,_id,_total,_total / ((missionNamespace getVariable ["ACME_YFlushSeconds",5]) max 0.1),serverTime,_medic,_epoch,[],_mode,_total,0,_request];};
 };
 if (_job isEqualTo []) exitWith {};
+// Priming opens the service path; blood remains held by YLinePrimed until the
+// owner has actually delivered the full 25 mL through the usable access.
+if (_mode == "prime" && {!([_p,_part,_iv,_site,true] call ACME_fnc_setTransfusionLineFlow)}) exitWith {};
 _jobs set [_key,_job];
 [_p, "ACME_yFlushJobs", _jobs] call ACME_fnc_setVarNet;

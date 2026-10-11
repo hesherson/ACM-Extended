@@ -10,6 +10,8 @@
 // only a blood refill is allowed, and the clamped saline reserve stays.
 // a unit still running on this site refuses.
 // a set is single-use, so hanging it consumes it.
+if ((missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []) exitWith {["add"] call ACME_fnc_piggybackWorkflow;};
+
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 
@@ -144,7 +146,7 @@ private _epoch = [_target] call ACME_fnc_clinicalEpoch;
 private _serial = (missionNamespace getVariable ["ACME_preparedHangSerial", 0]) + 1;
 missionNamespace setVariable ["ACME_preparedHangSerial", _serial];
 private _requestId = format ["preparedHang:%1:%2:%3", clientOwner, _serial, floor (diag_tickTime * 1000)];
-private _warmer = ([ACE_player, _target, "ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount) >= 1;
+private _warmer = false; // A warmer is fitted only through explicit Add Fluid Warmer custody.
 private _args = [_target, ACE_player, _requestId, _id, _bodyPart, _iv, _site, _epoch, _warmer, _freshEntry];
 _pending set [_requestId, [_target, _args, CBA_missionTime, false]];
 missionNamespace setVariable ["ACME_preparedHangPending", _pending];

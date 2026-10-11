@@ -45,7 +45,7 @@ def test_both_service_modes_pause_without_debit_and_resume_without_catchup(mode,
       {blocked}[20] call _advance;
       [call _stock==100 && {{_credited==0}},"blocked access delivered fluid"] call _check;
       _patient setVariable ["ACM_circulation_FluidBagsFlow_IO",[1,1,1,1,1,1]];
-      _patient setVariable ["ace_medical_inCardiacArrest",false];_co=5;_admissionRate=1;
+      _patient setVariable ["ace_medical_inCardiacArrest",false];_co=5;_admissionRate=10;
       [1] call _advance;[_credited=={5 if mode=='prime' else 10},"blocked time caused catch-up bolus"] call _check;
       [8] call _advance;[_credited=={25 if mode=='prime' else 50},"service did not resume exactly"] call _check;
     ''')
@@ -283,7 +283,7 @@ def test_single_service_button_and_diagnostic_free_stop_label_source_contract():
     assert 'ctrlSetBackgroundColor' in paint and 'sin (360' in paint
     assert 'playSoundUI' in paint and '"soundClick"' in paint
     assert '"MouseButtonUp"' not in paint  # no second queue cancel or click sound
-    assert 'LifeWarmer Quantum inline: %1 mL remaining.' in read('updateTransfusionControls')
+    assert 'LW Quantum · Warming' in read('transfusionBagPresentation')
 
 
 def test_renderer_never_publishes_viewer_bag_map_and_slot_repair_is_bounded():
@@ -374,7 +374,7 @@ def service_paint_setup():
     text=read('transfusionServicePaint')
     i=text.index('if !(_flush getVariable');body=text[:i]
     body=body.replace('private _flush = _display displayCtrl 86143;', 'private _flush = missionNamespace;')
-    body=body.replace('_flush ctrlShow _isY;', '_visible=_isY;')
+    body=re.sub(r'_flush ctrlShow ([^;]+);', r'_visible=\1;', body)
     body=body.replace('_flush ctrlEnable ', '_enabled=')
     body=body.replace('ctrlText _flush', '_textValue').replace('_flush ctrlSetText _text;', '_textValue=_text;')
     body=body.replace('_flush ctrlSetTooltip _tip;', '_tooltip=_tip;')
@@ -388,8 +388,11 @@ def service_paint_setup():
       private _textColor=[];private _background=[];private _sounds=[];private _clicks=0;private _cancelAllowed=true;
       private _nativeSound=["native-click.ogg",.09,1.15];
       ACME_fnc_yServiceState={_state};
+      private _selected=[_patient,"body",0,"ACME_SalineY",100,0,false,-1,500,-1,-1,"reserve",""];
+      ACME_fnc_getSelectedActiveBagContext={_selected};
+      _patient setVariable ["ACM_circulation_IV_Bags",createHashMapFromArray [["body",[["ACME_SalineY",500,0,0,false,-1,500,-1,"reserve"]]]]];
       ACME_fnc_transfusionFlushLine={_clicks=_clicks+1;_cancelAllowed};
-    '''+'private _paint={'+adapt(body)+'};'+'private _right={'+adapt(callback)+'};'
+    '''+'private _paint={'+primitives(adapt(body))+'};'+'private _right={'+adapt(callback)+'};'
 
 
 @pytest.mark.parametrize('primed,kind,expected',[(False,'','Prime Line (25 mL)'),(False,'prime','Priming...'),(True,'','Flush Line'),(True,'flush','Flush In Progress... (2)')])

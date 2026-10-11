@@ -54,11 +54,7 @@ if (local _target) then {
 // record the completed intervention in the activity log of the patient.
 [_target, "activity", "%1 hung blood on a Y-line with paired saline", [[ACE_player, false, true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
 
-// an inline blood warmer means the unit goes in warm.
-if (([ACE_player, _target, "ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount) >= 1) then {
-    [_target, true] call ACME_fnc_bloodThermalStateCommit;
-    ["Blood warmer inline.", 2, ACE_player] call ace_common_fnc_displayTextStructured;
-};
+// Downstream warming is fitted explicitly through Add Fluid Warmer.
 
 // rebuild the menu, so both new rows and the decremented inventory counts show. it mirrors the close and reopen of
 // addbag. the dialog is closed now, and the short delay lets it fully tear down and lets the ivbag attach events

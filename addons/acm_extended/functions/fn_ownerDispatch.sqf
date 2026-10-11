@@ -425,6 +425,12 @@ switch (_operation) do {
     case "yEnsureSlots": {[_patient] call ACME_fnc_yEnsureSlots;};
     case "ySalineSetup": {_args call ACME_fnc_ySalineSetup;};
     case "yFlush": {_args call ACME_fnc_yFlushStart;};
+    case "piggybackAttach": {
+        if ((_args param [1,objNull]) isEqualTo _patient) then {_args call ACME_fnc_piggybackAttachLocal;};
+    };
+    case "lineWarmer": {
+        if ((_args param [0,objNull]) isEqualTo _patient) then {_args call ACME_fnc_lineWarmerCommit;};
+    };
     case "bagMove": {_args call ACME_fnc_clinicalBagMove;};
     case "hangBagClaim": {isNil {[_patient, "claim", _args] call ACME_fnc_hangBagClaimLocal;};};
     case "hangBagRenew": {isNil {[_patient, "renew", _args] call ACME_fnc_hangBagClaimLocal;};};

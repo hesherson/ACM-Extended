@@ -2,10 +2,19 @@
 disableSerialization;
 params ["_display", "_patient", "_part", "_iv", "_site", "_isY"];
 private _flush = _display displayCtrl 86143;
-_flush ctrlShow _isY;
-if (!_isY || {isNull _patient}) exitWith {};
+if (!_isY || {isNull _patient}) exitWith {_flush ctrlShow false;};
 private _state = [_patient,_part,_iv,_site] call ACME_fnc_yServiceState;
 _state params ["_reserve","_reserved","_blood","_dirty","_primed","_kind","_id","_job"];
+private _context = ["transfusion"] call ACME_fnc_getSelectedActiveBagContext;
+private _selectedReserve = count _context >= 13 && {(_context select 0) isEqualTo _patient}
+    && {(_context select 1) == _part} && {(_context select 5) == _site}
+    && {(_context select 6) isEqualTo _iv} && {(_context select 3) in ["Saline","ACME_SalineY"]};
+if (_selectedReserve) then {
+    private _bags = (_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_part,[]];
+    _selectedReserve = ((_bags param [_context select 2,[]]) param [8,""]) == _id;
+};
+_flush ctrlShow (!_primed || {_selectedReserve});
+if (_primed && {!_selectedReserve}) exitWith {};
 private _mode = ["prime", "flush"] select _primed;
 private _plan = [_mode,_reserve,_reserved,_blood,_dirty,_primed,_kind] call ACME_fnc_yServicePlan;
 private _canCancel = _kind == "flush" && {count (_job param [9,[]]) > 0};

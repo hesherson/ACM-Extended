@@ -17,6 +17,9 @@ ACME_NA2_ownerInstalled = true;
 ["ACME_transfusionPullResult", {_this call ACME_fnc_transfusionPullResult;}] call CBA_fnc_addEventHandler;
 ["ACME_rehangUsedBagResult", {_this call ACME_fnc_rehangUsedBagResult;}] call CBA_fnc_addEventHandler;
 ["ACME_yRefillResult", {_this call ACME_fnc_yRefillResult;}] call CBA_fnc_addEventHandler;
+["ACME_piggybackAttachAck", {_this call ACME_fnc_piggybackAttachAck;}] call CBA_fnc_addEventHandler;
+["ACME_lineWarmerAck", {_this call ACME_fnc_lineWarmerAck;}] call CBA_fnc_addEventHandler;
+["ACME_lineWarmerReturn", {_this call ACME_fnc_lineWarmerReturn;}] call CBA_fnc_addEventHandler;
 ["ACME_discardYTubingResult", {_this call ACME_fnc_discardYTubingResult;}] call CBA_fnc_addEventHandler;
 ["ACME_vialLeaseResult", {_this call ACME_fnc_vialLeaseResult;}] call CBA_fnc_addEventHandler;
 ["ACME_supplySettle", {_this call ACME_fnc_treatmentSupplyRefund;}] call CBA_fnc_addEventHandler;
@@ -82,6 +85,12 @@ ACME_NA2_ownerInstalled = true;
 ["ACME_thoraOutput", { if (isServer) then { isNil { _this call ACME_fnc_thoraOutput; }; }; }] call CBA_fnc_addEventHandler;
 ["CAManBase", "Local", {
     params ["_unit", "_isLocal"];
+    if (_isLocal) then {
+        // Provider custody is replicated independently of any open medical menu.
+        // Adopt outstanding transactions on this ownership period and reconcile ACKs.
+        [_unit] call ACME_fnc_piggybackRecover;
+        [_unit] call ACME_fnc_lineWarmerRecover;
+    };
     [_unit, "retire"] call ACME_fnc_aiProtectionSync;
     private _ownedNow = missionNamespace getVariable ["ACME_clinical_ownedUnits", []];
     if (_isLocal && {alive _unit}) then {_ownedNow pushBackUnique _unit;} else {_ownedNow = _ownedNow - [_unit];};
@@ -93,6 +102,20 @@ ACME_NA2_ownerInstalled = true;
     _unit setVariable ["ACME_wakeRepairTicket", (_unit getVariable ["ACME_wakeRepairTicket", 0]) + 1, false];
     // Provider input workers must also retire after away/back transfers between their scheduled ticks.
     _unit setVariable ["ACME_providerLocalityEpoch", (_unit getVariable ["ACME_providerLocalityEpoch", 0]) + 1, false];
+    if (_isLocal) then {
+        private _custodyEpoch = _unit getVariable ["ACME_providerLocalityEpoch", 0];
+        // A public escrow may arrive after this event. Bounded retries belong
+        // to this ownership period; an old callback cannot resume after handoff.
+        {
+            [{
+                params ["_unit", "_custodyEpoch"];
+                if (isNull _unit || {!local _unit}
+                    || {(_unit getVariable ["ACME_providerLocalityEpoch", -1]) != _custodyEpoch}) exitWith {};
+                [_unit] call ACME_fnc_piggybackRecover;
+                [_unit] call ACME_fnc_lineWarmerRecover;
+            }, [_unit, _custodyEpoch], _x] call CBA_fnc_waitAndExecute;
+        } forEach [2, 5, 10];
+    };
     // B268: carrier preparation callbacks belong to this exact local ownership
     // period. Clear machine-local wait markers on both edges, including rapid
     // away/back transfers. Replicated custody/clinical leases remain intact.
@@ -272,6 +295,12 @@ ACME_NA2_ownerInstalled = true;
 }, true, [], true] call CBA_fnc_addClassEventHandler;
 [{
     [] call ACME_fnc_aiProtectionTick;
+    // Equipment receipts outlive fluid delivery and also settle on dead patients.
+    private _returns = (missionNamespace getVariable ["ACME_lineWarmerReturnPatients",[]]) select {
+        !isNull _x && {local _x} && {count (_x getVariable ["ACME_lineWarmerReturns",createHashMap]) > 0}
+    };
+    missionNamespace setVariable ["ACME_lineWarmerReturnPatients",_returns];
+    {[_x] call ACME_fnc_lineWarmerReturnsTick;} forEach _returns;
     // Provider stale-state repair and registry pruning stay responsive at 1 Hz. Local/init events maintain the
     // owner registry directly. The 30 s world sweep is now only a missed-event audit: it calls ownerRegister solely
     // for units absent from the registry/owner generation, so hundreds of healthy AI never get rebuilt in one spike.

@@ -21,6 +21,8 @@ params [["_update", false]];
 private _display = uiNamespace getVariable [QGVAR(TransfusionMenu_DLG), displayNull];
 
 private _ctrlBagPanel = _display displayCtrl IDC_TRANSFUSIONMENU_LEFTLISTPANEL;
+private _patientPresentation = GVAR(TransfusionMenu_Target);
+private _partPresentation = GVAR(TransfusionMenu_Selected_BodyPart);
 
 private _IVBagsOnBodyPart = (GVAR(TransfusionMenu_Target) getVariable [QGVAR(IV_Bags), createHashMap]) getOrDefault [GVAR(TransfusionMenu_Selected_BodyPart), []];
 
@@ -58,11 +60,11 @@ if !(_update) then {
 
     {
         _x params ["_bag", "_trueIndex"];
-        _bag params ["_type", "_remainingVolume", "_accessType", "_accessSite", "_iv", "_bloodType", "_volume", ["_id", -1]];
+        _bag params ["_type", "_remainingVolume", "_accessType", "_accessSite", "_iv", "_bloodType", "_volume", ["_id", -1], ["_physicalUID", ""]];
 
         private _bagIndex = count GVAR(TransfusionMenu_Selection_IVBags);
 
-        GVAR(TransfusionMenu_Selection_IVBags) pushBack [_type, _remainingVolume, _accessType, _accessSite, _iv, _bloodType, _volume, _id, _trueIndex];
+        GVAR(TransfusionMenu_Selection_IVBags) pushBack [_type, _remainingVolume, _accessType, _accessSite, _iv, _bloodType, _volume, _id, _trueIndex, _physicalUID];
 
         private _itemClassName = [_type, _volume, _bloodType] call FUNC(formatFluidBagName);
 
@@ -94,7 +96,9 @@ if !(_update) then {
         if !(_type in ["ACME_Empty", "ACME_EmptySaline"]) then {
             _name = [_name, _remainingVolume] call ACME_fnc_fluidLabelVolume;
         };
-        private _i = _ctrlBagPanel lbAdd _name;
+        ([_patientPresentation,_partPresentation,_bag,_name] call ACME_fnc_transfusionBagPresentation) params ["_rowName","_rowColor"];
+        private _i = _ctrlBagPanel lbAdd _rowName;
+        _ctrlBagPanel lbSetColor [_i,_rowColor];
         _ctrlBagPanel lbSetPicture [_i, getText (_config >> "picture")];
         _ctrlBagPanel lbSetValue [_i, _bagIndex];
         _ctrlBagPanel lbSetTooltip [_i, (format [([(LLSTRING(TransfusionMenu_FluidRemaining)), ("%1ml filled")] select (_type == "FBTK")), round(_remainingVolume)])];
@@ -110,16 +114,16 @@ if !(_update) then {
     private _rebuild = false;
     {
         _x params ["_bag", "_trueIndex"];
-        _bag params ["_type", "_remainingVolume", "_accessType", "_accessSite", "_iv", "_bloodType", "_volume", ["_id", -1]];
+        _bag params ["_type", "_remainingVolume", "_accessType", "_accessSite", "_iv", "_bloodType", "_volume", ["_id", -1], ["_physicalUID", ""]];
         private _selectionIndex = _forEachIndex;
 
         if (_selectionIndex >= count GVAR(TransfusionMenu_Selection_IVBags)) exitWith {
             _rebuild = true;
         };
 
-        (GVAR(TransfusionMenu_Selection_IVBags) select _selectionIndex) params ["_cType", "_cRemainingVolume", "_cAccessType", "_cAccessSite", "_cIV", "_cBloodType", "_cVolume", "_cID", "_cIndex"];
+        (GVAR(TransfusionMenu_Selection_IVBags) select _selectionIndex) params ["_cType", "_cRemainingVolume", "_cAccessType", "_cAccessSite", "_cIV", "_cBloodType", "_cVolume", "_cID", "_cIndex", ["_cUID", ""]];
 
-        if (_cIndex != _trueIndex || _cType != _type || _cAccessType != _accessType || _cAccessSite != _accessSite || _cIV isNotEqualTo _iv || _cBloodType != _bloodType || _cVolume != _volume || _cID != _id) exitWith {
+        if (_cIndex != _trueIndex || _cType != _type || _cAccessType != _accessType || _cAccessSite != _accessSite || _cIV isNotEqualTo _iv || _cBloodType != _bloodType || _cVolume != _volume || _cID != _id || _cUID != _physicalUID) exitWith {
             _rebuild = true;
         };
 
@@ -135,7 +139,7 @@ if !(_update) then {
             if (_liveLabel != (_ctrlBagPanel lbText _row)) then {_ctrlBagPanel lbSetText [_row, _liveLabel];};
         };
         if (_cRemainingVolume != _remainingVolume) then {
-            GVAR(TransfusionMenu_Selection_IVBags) set [_selectionIndex, [_cType, _remainingVolume, _cAccessType, _cAccessSite, _cIV, _cBloodType, _cVolume, _cID, _trueIndex]];
+            GVAR(TransfusionMenu_Selection_IVBags) set [_selectionIndex, [_cType, _remainingVolume, _cAccessType, _cAccessSite, _cIV, _cBloodType, _cVolume, _cID, _trueIndex, _cUID]];
             if (_row >= 0) then {
                 _ctrlBagPanel lbSetTooltip [_row, (format [([(LLSTRING(TransfusionMenu_FluidRemaining)), ("%1ml filled")] select (_type == "FBTK")), round(_remainingVolume)])];
             };

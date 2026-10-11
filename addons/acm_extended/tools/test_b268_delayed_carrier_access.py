@@ -189,13 +189,17 @@ def local_carrier_block():
     text = source('ownerInit')
     start = text.index('    _unit setVariable ["ACME_providerLocalityEpoch",')
     end = text.index('    // Pending prone-to-Semi-Fowler', start)
-    return adapt(text[start:end])
+    # B275 adds bounded provider inventory recovery alongside this carrier
+    # callback. Keep that independent scheduler queue separate from the carrier
+    # waiter exercised here; its transaction bodies have focused B275 fixtures.
+    return adapt(text[start:end]).replace('call CBA_fnc_waitAndExecute;', 'call _scheduleRecovery;')
 
 
 @pytest.mark.parametrize('source_label', ['chest-access-vest', 'chest-access-vest-restore', 'other-procedure'])
 def test_local_edges_retire_machine_markers_and_only_old_carrier_animation(source_label):
     execute(setup() + begin() + r'''
         private _unit=_patient; private _isLocal=false;
+        private _recoveryWaits=[];private _scheduleRecovery={_recoveryWaits pushBack _this;};
         _patient setVariable ["ACME_chestAccess_frontBusy","old-front"];
         _patient setVariable ["ACME_chestAccess_vestBusy","old-busy"];
         _patient setVariable ["ACME_CS_frontBusy","old-cs-front"];

@@ -2,6 +2,12 @@
    Supplier transaction ledgers and runtime handler ownership are not saved patient state. */
 [
   ["ACME_lineWarmers", "", true, true],
+  ["ACME_lineWarmerCustody", "", true, true],
+  ["ACME_lineWarmerResults", "", false, false],
+  ["ACME_lineWarmerReturns", "", false, false],
+  ["ACME_lineWarmerRetired", "", false, false],
+  ["ACME_PiggybackLines", "", true, true],
+  ["ACME_piggybackResults", "", false, false],
   ["ACME_YLinePrimed", "", true, true],
   ["ACME_yServiceReceipts", "", false, false],
   // Wake injury history may survive saves; pose records, PFH IDs and cross-owner tokens never do.

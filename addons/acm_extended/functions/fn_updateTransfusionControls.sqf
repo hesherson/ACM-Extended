@@ -45,6 +45,8 @@ if (!isNull _yTarget && {count (_yTarget getVariable ["ACME_YLines", []]) > 0}
 // or pair. outside that step, with nothing pending, the rows keep their default color. it is re-applied every
 // pass, so it holds through rebuilds.
 private _selectingSalineInventoryB274 = call ACME_fnc_transfusionFilterInventory;
+private _piggybackPending = missionNamespace getVariable ["ACME_piggybackPending",[]];
+private _selectingPiggyback = count _piggybackPending >= 6;
 private _rl = _display displayCtrl 86005;
 if (!isNull _rl) then {
     private _selectingSaline = (missionNamespace getVariable ["ACME_yPending", ""]) != ""
@@ -53,7 +55,7 @@ if (!isNull _rl) then {
     for "_r" from 0 to ((lbSize _rl) - 1) do {
         ((_rl lbData _r) splitString "|") params [["_rClass", ""], ["_rAction", ""]];
         if (_rClass != "" && {[_rClass, _rAction] call ACME_fnc_isSalineItem}) then {
-            _rl lbSetColor [_r, if (_selectingSaline) then {[0.45,0.95,0.55,0.4 + 0.45 * _p]} else {[1,1,1,1]}];
+            _rl lbSetColor [_r, if (_selectingSaline) then {[0.45,0.95,0.55,0.4 + 0.45 * _p]} else {if (_selectingPiggyback) then {[0.79,0.73,0.89,1]} else {[1,1,1,1]}}];
         };
     };
 };
@@ -317,14 +319,8 @@ if (!isNull _ctrlSetsBtn) then {
     } else {
         format ["Prepared IV sets (%1)  >>", _preparedSetCountB50]
     });
-    private _setPulse = 0.5 + 0.5 * sin (360 * (diag_tickTime % 1));
-    if (_preparedSetCountB50 > 0) then {
-        _ctrlSetsBtn ctrlSetBackgroundColor [0.20, 0.65, 0.20, 0.30 + 0.45 * _setPulse];
-        _ctrlSetsBtn ctrlSetTextColor [0.82, 1.00, 0.82, 1];
-    } else {
-        _ctrlSetsBtn ctrlSetBackgroundColor [0, 0, 0, 0.55];
-        _ctrlSetsBtn ctrlSetTextColor [1, 1, 1, 1];
-    };
+    _ctrlSetsBtn ctrlSetBackgroundColor [0,0,0,0.75];
+    _ctrlSetsBtn ctrlSetTextColor [1,1,1,1];
 
     [_ctrlSetsBtn,"show",true] call ACME_fnc_transfusionUiSet;
 };
@@ -566,71 +562,6 @@ if (!isNull _ctrlLeftList) then {
         };
     };
 
-    // infusion marker. an actively flowing saline bag is an infusion in progress, so relabel ACM's "[S:" saline
-    // marker to "[I:" and tint the row yellow, so the running bag reads as an infusion rather than just hung
-    // saline. listbox rows cannot color a single glyph, so the whole row carries the color. the native rows for
-    // bags ACME has pulled into its own infusions list are already gone above.
-    if (!isNull _targetPatient && {_targetBodyPart != ""}) then {
-        private _partIdx = ACME_infusion_bodyParts find toLowerANSI _targetBodyPart;
-        private _flowIV = _targetPatient getVariable ["ACM_circulation_FluidBagsFlow_IV", []];
-        private _flowIO = _targetPatient getVariable ["ACM_circulation_FluidBagsFlow_IO", []];
-        for "_r" from 0 to ((lbSize _ctrlLeftList) - 1) do {
-            private _selIdx = _ctrlLeftList lbValue _r;
-            if (_selIdx >= 0 && {_selIdx < count _selection}) then {
-                (_selection select _selIdx) params [["_sType", ""], "", "", ["_sAccessSite", -1], ["_sIV", false]];
-                // saline rows ship without artwork, because the saline fluid config carries no picture, so give them the ACE
-                // saline-bag icon. that matches how blood units already show their bag art.
-                if (_sType in ["Saline", "ACME_SalineY"]) then { _ctrlLeftList lbSetPicture [_r, "\z\ace\addons\medical_treatment\ui\salineIV_ca.paa"]; };
-                private _flowing = false;
-                if (_partIdx >= 0) then {
-                    if (_sIV) then {
-                        if (_partIdx < count _flowIV) then {
-                            private _pf = _flowIV select _partIdx;
-                            if (_sAccessSite >= 0 && {_sAccessSite < count _pf}) then {_flowing = (_pf select _sAccessSite) > 0};
-                        };
-                    } else {
-                        if (_partIdx < count _flowIO) then {_flowing = (_flowIO select _partIdx) > 0};
-                    };
-                };
-                if (_flowing) then {
-                    private _txt = _ctrlLeftList lbText _r;
-                    private _at = _txt find "[S";
-                    if (_at >= 0) then {
-                        _ctrlLeftList lbSetText [_r, (_txt select [0, _at]) + "[I" + (_txt select [_at + 2])];
-                    };
-                    _ctrlLeftList lbSetColor [_r, [1, 0.85, 0.16, 1]];  // pillar amber.
-                };
-                // Blood temperature presentation is applied once below from patient thermal state.
-                // y line linkage. blood on a y-tubing'd line gets a [y] tag, so the unit and its paired saline read as one
-                // line.
-                if (_sType in ["Blood", "FreshBlood"]) then {
-                    private _rowLineKey = format ["%1#%2#%3", _targetBodyPart, _sIV, _sAccessSite];
-                    if (_rowLineKey in (_targetPatient getVariable ["ACME_YLines", []])) then {
-                        private _ytxt = _ctrlLeftList lbText _r;
-                        if ((_ytxt find " [Y]") < 0) then { _ctrlLeftList lbSetText [_r, _ytxt + " [Y]"]; };
-                    };
-                };
-
-                // medications infusing through this bag. instead of listing them as separate infusion-tab rows, tag the bag with
-                // "(Infusing...)" and put the drug names and doses in the hover tooltip of the row.
-                (_selection select _selIdx) params [["_rType",""], "", "", ["_rAccessSite",-1], ["_rIV",false], ["_rBloodType", -1], ["_rVolume", 0], ["_rFreshBloodID", -1], ["_rTrueIndex", -1]];
-                private _medsHere = [];
-                {
-                    _x params ["", "_eBodyPart", "_eBagIndex", "_eType", "_eAccessSite", "_eIV", "_eBloodType", "_eVolume", "_eFreshBloodID", "", "", "_eMedication", "", "_eDoseTotal", "_eDoseRemaining"];
-                    if ((toLowerANSI _eBodyPart == toLowerANSI _targetBodyPart) && {_eType == _rType} && {_eIV == _rIV} && {_eBloodType == _rBloodType} && {_eVolume == _rVolume} && {_eFreshBloodID == _rFreshBloodID}) then {
-                        private _mn = localize (format ["STR_ACM_Circulation_Medication_%1", _eMedication]);
-                        if (_mn == "") then {_mn = _eMedication};
-                        _medsHere pushBack ([_eMedication, _eDoseRemaining] call ACME_fnc_formatDose);
-                    };
-                } forEach _entriesForTarget;
-                if !(_medsHere isEqualTo []) then {
-                    private _itxt = _ctrlLeftList lbText _r;
-                    if ((_itxt find " (Infusing...)") < 0) then { _ctrlLeftList lbSetText [_r, _itxt + " (Infusing...)"]; };
-                    _ctrlLeftList lbSetTooltip [_r, format ["Infusing: %1", _medsHere joinString ", "]];
-                };
-            };
-        };
-    };
 };
 
 if (!isNull _ctrlActiveInfList) then {
@@ -719,32 +650,45 @@ private _selectedPrepared = -1;
 
 _display setVariable ["ACME_txRebuilding", false];
 
+private _shownPrepared = [];
+{
+    private _entry = _x;
+    private _canShow = true;
+    if (_selectingPiggyback) then {
+        private _carrier = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "type");
+        _canShow = [_targetPatient,_targetBodyPart,_flIV,_flSite,_carrier,true] call ACME_fnc_piggybackEligible;
+        // The direct propofol emulsion bottle cannot run as a piggyback carrier.
+        if ((_entry param [16,""]) == "propofol" || {(_entry param [1,""]) == "ACM_Vial_Propofol"}) then {_canShow = false;};
+    };
+    if (_canShow) then {_shownPrepared pushBack [_entry,_forEachIndex];};
+} forEach _preparedEntries;
 if (!isNull _ctrlPreparedList) then {
-    private _signature = str (_preparedEntries apply {[_x param [0, ""], _x param [3, ""], _x param [4, 0], _x param [10, -1]]});
+    private _signature = str [_selectingPiggyback,_shownPrepared apply {[_x select 1,(_x select 0) param [0,""],(_x select 0) param [3,""],(_x select 0) param [4,0],(_x select 0) param [10,-1]]}];
     if ((uiNamespace getVariable ["ACME_infusion_PreparedListSignature", ""]) != _signature) then {
         private _oldSelected = missionNamespace getVariable ["ACME_infusion_SelectedPreparedIndex", -1];
         lbClear _ctrlPreparedList;
-        if (_preparedEntries isEqualTo []) then {
-            private _i = _ctrlPreparedList lbAdd "No prepped infusions";
-            _ctrlPreparedList lbSetValue [_i, -1];
+        if (_shownPrepared isEqualTo []) then {
+            private _i = _ctrlPreparedList lbAdd "No prepared infusions";
+            _ctrlPreparedList lbSetValue [_i,-1];
         } else {
             {
-                private _label = [_x] call ACME_fnc_formatPreparedLabel;
+                _x params ["_entry","_index"];
+                private _label = [_entry] call ACME_fnc_formatPreparedLabel;
+                if (_selectingPiggyback) then {_label = _label + " [PiB]";};
                 private _i = _ctrlPreparedList lbAdd _label;
-                _ctrlPreparedList lbSetValue [_i, _forEachIndex];
-                _ctrlPreparedList lbSetTooltip [_i, _label];
-            } forEach _preparedEntries;
-            if (_oldSelected < 0 || {_oldSelected >= count _preparedEntries}) then {_oldSelected = 0};
-            _ctrlPreparedList lbSetCurSel _oldSelected;
-            missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex", _oldSelected];
+                _ctrlPreparedList lbSetValue [_i,_index];
+                _ctrlPreparedList lbSetTooltip [_i,_label];
+                if (_selectingPiggyback) then {_ctrlPreparedList lbSetColor [_i,[0.79,0.73,0.89,1]];};
+                if (_index == _oldSelected) then {_ctrlPreparedList lbSetCurSel _i;};
+            } forEach _shownPrepared;
+            if (lbCurSel _ctrlPreparedList < 0) then {_ctrlPreparedList lbSetCurSel 0;};
         };
-        uiNamespace setVariable ["ACME_infusion_PreparedListSignature", _signature];
+        uiNamespace setVariable ["ACME_infusion_PreparedListSignature",_signature];
     };
-
     private _row = lbCurSel _ctrlPreparedList;
     if (_row >= 0) then {
         _selectedPrepared = _ctrlPreparedList lbValue _row;
-        if (_selectedPrepared >= 0) then {missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex", _selectedPrepared];};
+        if (_selectedPrepared >= 0) then {missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",_selectedPrepared];};
     };
     [_ctrlPreparedList,"show",true] call ACME_fnc_transfusionUiSet;
 };
@@ -769,9 +713,9 @@ if (!isNull _ctrlInfuse) then {[_ctrlInfuse,"enable",(_bagRowSelected && {_canAc
 if (!isNull _ctrlGivePrep) then {
     private _canGive = _selectedAccessValid && {(_selectedPrepared >= 0 && {_selectedPrepared < _preparedCount})} && {!_preparedLineIsY};
     [_ctrlGivePrep,"enable",_canGive] call ACME_fnc_transfusionUiSet;
-    _ctrlGivePrep ctrlSetText "Give Infusion";
-    // yellow when an infusion is selected, because this action is transfusion-bound.
-    _ctrlGivePrep ctrlSetTextColor ([[1, 1, 1, 1], (["warning", 1] call ACME_fnc_a11yColor)] select _canGive);
+    _ctrlGivePrep ctrlSetText (["Give Infusion","Add to Piggyback"] select _selectingPiggyback);
+    // Bag temperature and topology carry color; the action stays neutral.
+    _ctrlGivePrep ctrlSetTextColor [1,1,1,1];
 };
 
 if (!isNull _ctrlDrop) then {[_ctrlDrop,"show",false] call ACME_fnc_transfusionUiSet;};
@@ -940,7 +884,7 @@ if (!isNull _ctrlSpike) then {
         // with non-empty lbdata, is selected in the overlay list.
         private _setSel = if (!isNull _ctrlSetsList) then { lbCurSel _ctrlSetsList } else { -1 };
         private _setOk = _selectedAccessValid && {(_setSel >= 0)} && {!isNull _ctrlSetsList} && {(_ctrlSetsList lbData _setSel) != ""};
-        _ctrlSpike ctrlSetText "Hang Set";
+        _ctrlSpike ctrlSetText (["Hang Set","Add to Piggyback"] select _selectingPiggyback);
         [_ctrlSpike,"enable",_setOk] call ACME_fnc_transfusionUiSet;
     } else {
         // loose-bag mode. by default the spike button spikes the selected bag and stages it into the prepared iv sets.
@@ -1028,66 +972,43 @@ if (!isNull _ctrlY) then {
 
 [_display,_flTarget,_flPart,_flIV,_flSite,_flLineYd] call ACME_fnc_transfusionServicePaint;
 
-// relabel the active list, 86004, so y-tubing rows read clearly.
-// persisted markers render blank from ACM, so they become "[Empty Bag]".
-// the clamped y saline, ACME_SalineY, renders blank, so it becomes "Saline (<vol>ml) [Y]", and the volume drops
-// 50 per flush.
-// blood and fresh blood on a y'd line get a " [Y]" suffix, so it is clearly part of the y set.
-private _ctrlActive = _display displayCtrl 86004;
-if (!isNull _ctrlActive) then {
-    private _selBags = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags", []];
-    // an attention pulse for empty-bag rows. it is the same red pulse at about 1.1 hz that the flush line button
-    // uses, so an empty bag visually flags itself the same way the flush prompt does.
-    private _emptyPulse = 0.5 + (0.5 * sin (360 * ((diag_tickTime * 1.1) % 1)));
-    private _emptyCol = [1, 0.20 + (0.20 * _emptyPulse), 0.20 + (0.20 * _emptyPulse), 0.65 + (0.35 * _emptyPulse)];
-    for "_r" from 0 to ((lbSize _ctrlActive) - 1) do {
-        private _vi = _ctrlActive lbValue _r;
-        if (_vi >= 0 && {_vi < count _selBags}) then {
-            (_selBags select _vi) params [["_bType", ""], ["_bVol", 0]];
-            private _cur = _ctrlActive lbText _r;
-            // default this row to normal white text. the empty-bag branches below override it to pulsing red. this reset is
-            // what stops a refilled slot, which was empty and now holds a live unit, from keeping the red color.
-            _ctrlActive lbSetColor [_r, [1, 1, 1, 1]];
-            if (_bType isEqualTo "ACME_Empty") then {
-                if (_cur isNotEqualTo "[Empty Blood Bag] [Y]") then { _ctrlActive lbSetText [_r, "[Empty Blood Bag] [Y]"]; };
-                _ctrlActive lbSetColor [_r, _emptyCol];  // pulsing red, meaning this needs attention.
-            } else {
-                if (_bType isEqualTo "ACME_EmptySaline") then {
-                    if (_cur isNotEqualTo "[Empty Saline Bag] [Y]") then { _ctrlActive lbSetText [_r, "[Empty Saline Bag] [Y]"]; };
-                    _ctrlActive lbSetColor [_r, _emptyCol];  // pulsing red, meaning this needs attention.
-                } else {
-                if (_bType isEqualTo "ACME_SalineY" || {_lineYd && {_bType isEqualTo "Saline"}}) then {
-                    private _want = format ["Saline (%1ml) [Y]", round _bVol];
-                    if (_cur isNotEqualTo _want) then { _ctrlActive lbSetText [_r, _want]; };
-                    // the y saline reserve ships no artwork, so give it the ACE saline-bag icon, like blood.
-                    _ctrlActive lbSetPicture [_r, "\z\ace\addons\medical_treatment\ui\salineIV_ca.paa"];
-                } else {
-                    if (_bType in ["Blood", "FreshBlood"]) then {
-                        // Native UpdateBagList now updates every fluid, not just blood. Repaint tags/color
-                        // from current thermal state, never the provider's unrelated cooler inventory.
-                        _cur = [_cur, " [Warmed]", ""] call CBA_fnc_replace;
-                        _cur = [_cur, " [Cooled]", ""] call CBA_fnc_replace;
-                        if (_lineYd && {(_cur find "[Y]") < 0}) then {_cur = _cur + " [Y]";};
-                        if ([_targetPatient, missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""], missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true], missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite", -1]] call ACME_fnc_lineWarmer) then {
-                            _cur = _cur + " [Warmed]";
-                            _ctrlActive lbSetTooltip [_r, format ["LifeWarmer Quantum inline: %1 mL remaining.", round _bVol]];
-                            _ctrlActive lbSetColor [_r, [1, 0.55, 0.13, 1]];
-                        } else {
-                            // Do not retain a warmer tooltip after selecting a different/unwarmed line.
-                            _ctrlActive lbSetTooltip [_r, format ["%1 mL remaining", round _bVol]];
-                            if (_targetPatient getVariable ["ACME_coldBlood", false]) then {
-                                _cur = _cur + " [Cooled]";
-                                _ctrlActive lbSetColor [_r, [0.45, 0.72, 1, 1]];
-                            };
-                        };
-                        if (_cur != (_ctrlActive lbText _r)) then {_ctrlActive lbSetText [_r, _cur];};
+// B275: physical identity owns role, current-flow and temperature presentation in both panes.
+// Volume ticks and 1 Hz warming dots are in-place writes; never clear a selected list.
+private _warmingReadout = [];
+{
+    private _list = _display displayCtrl _x;
+    if (!isNull _list) then {
+        for "_r" from 0 to ((lbSize _list) - 1) do {
+            private _selIdx = _list lbValue _r;
+            if (_selIdx >= 0 && {_selIdx < count _selection}) then {
+                private _selectedRow = _selection select _selIdx;
+                private _physicalBags = (_targetPatient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_targetBodyPart,[]];
+                private _physical = _physicalBags param [_selectedRow param [8,-1],[]];
+                if (_physical isNotEqualTo [] && {(_selectedRow param [9,_physical param [8,""]]) == (_physical param [8,""])}) then {
+                    ([_targetPatient,_targetBodyPart,_physical,_list lbText _r] call ACME_fnc_transfusionBagPresentation)
+                        params ["_label","_color","_thermal","_role","_flowing"];
+                    if ((_list lbText _r) != _label) then {_list lbSetText [_r,_label];};
+                    if ((_list lbColor _r) isNotEqualTo _color) then {_list lbSetColor [_r,_color];};
+                    private _tooltip = format ["%1 mL remaining",round (_physical param [1,0])];
+                    if (_role != "") then {_tooltip = format ["Piggyback %1 · %2",_role,_tooltip];};
+                    if (_thermal != "") then {_tooltip = _tooltip + " · " + _thermal;};
+                    private _tipKey = format ["ACME_txTooltip_%1",_r];
+                    if ((_list getVariable [_tipKey,""]) != _tooltip) then {
+                        _list lbSetTooltip [_r,_tooltip];
+                        _list setVariable [_tipKey,_tooltip];
                     };
-                };
+                    if (_thermal != "" && {_flowing}) then {_warmingReadout pushBackUnique _thermal;};
+                    private _type = _physical param [0,""];
+                    if (_type in ["Saline","ACME_SalineY"]) then {_list lbSetPicture [_r,"\z\ace\addons\medical_treatment\ui\salineIV_ca.paa"];};
                 };
             };
         };
     };
-};
+} forEach [86004,86129];
+private _warmingCaption = _display displayCtrl 86213;
+[_warmingCaption,"text",_warmingReadout joinString " · "] call ACME_fnc_transfusionUiSet;
+[_warmingCaption,"color",[1,0.55,0.13,1]] call ACME_fnc_transfusionUiSet;
+
 // cooler blood surfaced in the available-bags list on the right.
 // units sitting in the blood cooler of the medic appear as selectable [cooled] rows, so they can be spiked and
 // hung without a manual unload first, and spiking one pulls it from the cooler, in
@@ -1106,10 +1027,10 @@ if (!isNull _ctrlRightList
     // Carried/nearby cooler contents are not a frame-time signal. nearestObjects plus inventory scans were being
     // repeated by the UI refresher; cache that discovery cadence independently from button/list repaint cadence.
     _display setVariable ["ACME_txCoolerNextScan", diag_tickTime + 0.75];
-    private _store = if (_ownInventory && {!_selectingSalineInventoryB274}) then {ACE_player getVariable ["ACME_coolerStore", createHashMap]} else {createHashMap};
+    private _store = if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {ACE_player getVariable ["ACME_coolerStore", createHashMap]} else {createHashMap};
     // only blood inside a cooler the medic is carrying is usable here. a cooler that has been dropped or handed off
     // keeps its blood in the store, preserved, and must not appear as spikeable until it is carried again.
-    private _heldNow = if (_selectingSalineInventoryB274) then {[]} else {
+    private _heldNow = if (_selectingSalineInventoryB274 || {_selectingPiggyback}) then {[]} else {
         ((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player)) select { (_x find "ACME_BloodCooler_") == 0 }
     };
     private _want = createHashMap;
@@ -1134,7 +1055,7 @@ if (!isNull _ctrlRightList
         {
             if ((_x find "ACM_BloodBag_") == 0) then { _want set [_x, (_want getOrDefault [_x, 0]) + 1]; };
         } forEach (itemCargo _bx);
-    } forEach (if (_ownInventory && {!_selectingSalineInventoryB274}) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]} else {[]});
+    } forEach (if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]} else {[]});
 
     // a signature of class and count, so we rebuild on a cooler-content change. the row-count check catches an ACM
     // list rebuild that wiped our rows. fn_transfusionspikeoradd sets the sig to "__force__" after a pull to force
@@ -1179,6 +1100,9 @@ if (!isNull _ctrlRightList) then {
     if (_selectingSalineInventoryB274) then {
         _usedBags = _usedBags select {(_x param [1, ""]) in ["Saline", "ACME_SalineY"]};
     };
+    if (_selectingPiggyback) then {
+        _usedBags = _usedBags select {[_targetPatient,_targetBodyPart,_flIV,_flSite,_x param [1,""],false] call ACME_fnc_piggybackEligible};
+    };
     private _usedSig = "";
     { _usedSig = _usedSig + format ["%1:%2;", (_x param [0, ""]), round (_x param [2, 0])]; } forEach _usedBags;
     private _ourUsedRows = [];
@@ -1192,7 +1116,7 @@ if (!isNull _ctrlRightList) then {
             _x params [["_id", ""], ["_type", ""], ["_remVol", 0], ["_accessType", 0], ["_bloodType", -1], ["_origVol", 1000], ["_name", ""]];
             private _row = _ctrlRightList lbAdd (format ["%1 %2 mL [Used]", _name, round _remVol]);
             _ctrlRightList lbSetData [_row, format ["%1|usedbag|USED|%2", _type, _id]];
-            _ctrlRightList lbSetColor [_row, [1, 0.55, 0.1, 1]];  // strong orange, distinct from the cooler blue and the y amber.
+            _ctrlRightList lbSetColor [_row, if (_selectingPiggyback) then {[0.79,0.73,0.89,1]} else {[1,1,1,1]}];  // Purple identifies an eligible piggyback candidate; ordinary used stock stays neutral.
             _ctrlRightList lbSetTooltip [_row, format ["Used bag: %1 mL remaining of %2 mL. Hang to re-use.", round _remVol, round _origVol]];
         } forEach _usedBags;
         uiNamespace setVariable ["ACME_usedRowSig", _usedSig];
@@ -1213,7 +1137,17 @@ if (!isNull _ctrlSetsList) then {
         private _tied = _x param [5, ""];
         // Bottle infusions have paired custody records but belong exclusively
         // to Prepared Infusions, never the plain prepared-fluid overlay.
-        if ((_x param [8, ""]) != "propofol" && {_tied == "" || {_tied == _tgtNet}}) then { _shown pushBack [_x param [0, ""], _x param [6, ""]]; };
+        private _canShow = (_x param [8,""]) != "propofol" && {_tied == "" || {_tied == _tgtNet}};
+        if (_canShow && {_selectingPiggyback}) then {
+            private _candidateType = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_x param [2,""]) >> "type");
+            _canShow = !((_x param [8,"yset"]) in ["yset","blood","propofol"])
+                && {[_targetPatient,_targetBodyPart,_flIV,_flSite,_candidateType,false] call ACME_fnc_piggybackEligible};
+        };
+        if (_canShow) then {
+            private _label = _x param [6,""];
+            if (_selectingPiggyback) then {_label = _label + " [PiB]";};
+            _shown pushBack [_x param [0,""],_label];
+        };
     } forEach _sets;
     private _wantSig = str _shown;
     // rebuild on a signature change, or when the displayed row count does not match what should show. the row-count
@@ -1235,6 +1169,7 @@ if (!isNull _ctrlSetsList) then {
                 _ctrlSetsList lbSetData [_i, _sid];
                 _ctrlSetsList lbSetTooltip [_i, _slabel];
                 if ((_slabel find "[Cooled]") >= 0) then { _ctrlSetsList lbSetColor [_i, [0.45, 0.72, 1, 1]]; };
+                if (_selectingPiggyback) then {_ctrlSetsList lbSetColor [_i,[0.79,0.73,0.89,1]];};
             } forEach _shown;
             if (_oldSel < 0 || {_oldSel >= (count _shown)}) then { _oldSel = 0; };
             _ctrlSetsList lbSetCurSel _oldSel;

@@ -28,7 +28,10 @@ private _changed = false; private _topology = false;
         // A late blood attach cannot bypass empty-blood-only servicing.
         private _blood = (_arr findIf {(_x param [0, ""]) in ["Blood","FreshBlood"] && {(_x param [1,0]) > 0.01} && {(_x param [3,-1]) == _site} && {(_x param [4,true]) isEqualTo _iv}}) >= 0;
         private _flow = if (_iv) then {((_p getVariable ["ACM_circulation_FluidBagsFlow_IV", [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]]]) select _pi) param [_site,0]} else {(_p getVariable ["ACM_circulation_FluidBagsFlow_IO", [1,1,1,1,1,1]]) param [_pi,0]};
-        if ((_kind == "flush" && {_blood}) || {_flow <= 0} || {([_p,_pi,_iv,_site,-1] call ACM_circulation_fnc_getIVFlowRate) <= 0}) then {_drain = 0;};
+        private _accessRate = [_p,_pi,_iv,_site,-1] call ACM_circulation_fnc_getIVFlowRate;
+        private _serviceRate = [_p,_part,_iv,_site,"Saline",(_rate min _accessRate) * 60] call ACME_fnc_lineWarmerRate;
+        _drain = (_serviceRate / 60 * _dt) min _remaining min (_e select 1);
+        if ((_kind == "flush" && {_blood}) || {_flow <= 0} || {_accessRate <= 0}) then {_drain = 0;};
         private _co = [_p] call ace_medical_status_fnc_getCardiacOutput;
         if !(_co isEqualType 0 && {finite _co}) then {_co = 0;};
         private _perfusing = ([_p] call ACM_core_fnc_cprActive) || {
@@ -46,6 +49,11 @@ private _changed = false; private _topology = false;
         call {
             private _admitted = _drain * _pass;
             [_p,_part,_idx,_e,_drain,_admitted,_dt,true] call ACME_fnc_fluidCommit;
+            if (_admitted > 0 && {[_p,_part,_iv,_site] call ACME_fnc_lineWarmer}) then {
+                private _temperature = _p getVariable ["ACME_hypo_temp",37];
+                private _heat = (_admitted / 1000) * (missionNamespace getVariable ["ACME_warmer_tempPerLiter",0.8]);
+                [_p,_temperature + (_heat min ((37 - _temperature) max 0)),true,false] call ACME_fnc_hypothermiaTemperatureCommit;
+            };
             [_p,[["salineVolume",(_p getVariable ["ACM_circulation_Saline_Volume",0]) + _admitted / 1000]],true] call ACM_circulation_fnc_setRuntimeState;
             if (!_iv && {_admitted > 0}) then {[_p,_part,"fluid"] call ACME_fnc_ioPainResponse;};
         };
@@ -59,6 +67,9 @@ private _changed = false; private _topology = false;
         if (_kind == "prime" && {_delivered >= 24.999}) then {
             private _primed = _p getVariable ["ACME_YLinePrimed",createHashMap]; _primed set [_key,true];
             [_p,"ACME_YLinePrimed",_primed] call ACME_fnc_setVarNet;
+            // Completion starts the blood path on this exact line. This occurs
+            // only after actual saline delivery, never at request/animation time.
+            [_p,_part,_iv,_site,true] call ACME_fnc_setTransfusionLineFlow;
         };
         if (_kind == "flush" && {_delivered >= 24.999}) then {
             {private _m = _p getVariable [_x,createHashMap]; _m set [_key,0]; [_p,_x,_m] call ACME_fnc_setVarNet;} forEach ["ACME_YLineUnitsSinceFlush","ACME_YLineVolSinceFlush"];

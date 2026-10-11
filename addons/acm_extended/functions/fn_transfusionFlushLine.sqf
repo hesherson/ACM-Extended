@@ -8,6 +8,19 @@ private _site = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_S
 ([_p,_part,_iv,_site] call ACME_fnc_yServiceState) params ["_reserve","_reserved","_blood","_dirty","_primed","_kind","_reserveId","_job"];
 if (_reserveId == "") exitWith {false};
 if (_mode == "auto") then {_mode = ["prime", "flush"] select _primed;};
+// Flush and right-click cancellation belong to the selected reserve bag. Prime
+// remains available from either unprimed Y branch.
+if (_mode in ["flush","cancel"]) then {
+    private _context = ["transfusion"] call ACME_fnc_getSelectedActiveBagContext;
+    private _bags = (_p getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_part,[]];
+    private _selectedId = if (count _context >= 13 && {(_context select 0) isEqualTo _p}
+        && {(_context select 1) == _part} && {(_context select 5) == _site}
+        && {(_context select 6) isEqualTo _iv} && {(_context select 3) in ["Saline","ACME_SalineY"]}) then {
+        (_bags param [_context select 2,[]]) param [8,""]
+    } else {""};
+    if (_selectedId != _reserveId) then {_mode = "";};
+};
+if (_mode == "") exitWith {false};
 private _eligible = if (_mode == "cancel") then {_kind == "flush" && {count (_job param [9,[]]) > 0}} else {
     ([_mode,_reserve,_reserved,_blood,_dirty,_primed,_kind] call ACME_fnc_yServicePlan) select 0
 };

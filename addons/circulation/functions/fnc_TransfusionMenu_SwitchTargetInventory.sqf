@@ -167,6 +167,13 @@ if (_index < 0) exitWith {};
 private _fnc_addToInventoryPanel = {
     params ["_ctrlInventoryPanel", "_fluidsArrayData", "_count", "_entry", "_index"];
     if (_selectingSaline && {!([_entry, _fluidsArrayData select _index] call ACME_fnc_isSalineItem)}) exitWith {};
+    private _piggyback = missionNamespace getVariable ["ACME_piggybackPending",[]];
+    private _piggybackEligible = true;
+    if (_piggyback isNotEqualTo []) then {
+        private _type = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_fluidsArrayData select _index) >> "type");
+        _piggybackEligible = count _piggyback >= 6 && {[_piggyback select 0,_piggyback select 1,_piggyback select 2,_piggyback select 3,_type,false] call ACME_fnc_piggybackEligible};
+    };
+    if (!_piggybackEligible) exitWith {};
 
     private _config = (configFile >> "CfgWeapons" >> _entry);
     private _name = "";
@@ -195,6 +202,7 @@ private _fnc_addToInventoryPanel = {
     _ctrlInventoryPanel lbSetPicture [_i, getText (_config >> "picture")];
     _ctrlInventoryPanel lbSetData [_i, (format ["%1|%2",_entry,_fluidsArrayData select _index])];
     _ctrlInventoryPanel lbSetTooltip [_i, (format [LLSTRING(Common_Available), _count])];
+    if (_piggyback isNotEqualTo []) then {_ctrlInventoryPanel lbSetColor [_i,[0.79,0.73,0.89,1]];};
 };
 
 if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {

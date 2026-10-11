@@ -85,11 +85,15 @@ def test_service_planner_same_predicate_for_ui_and_owner(available,dirty,primed,
 def service_setup():
     return basic()+'''
       ACME_infusion_bodyParts=["head","body","leftarm","rightarm","leftleg","rightleg"];
-      private _ioCalls=0;ACME_fnc_ioPainResponse={_ioCalls=_ioCalls+1;};private _credited=0;private _waste=0;private _admissionRate=1;private _fraction=1; private _co=5; private _cpr=false;
+      private _ioCalls=0;ACME_fnc_ioPainResponse={_ioCalls=_ioCalls+1;};private _credited=0;private _waste=0;private _admissionRate=10;private _fraction=1; private _co=5; private _cpr=false;
       ace_medical_status_fnc_getCardiacOutput={_co}; ACM_core_fnc_cprActive={_cpr};
       ACM_circulation_fnc_getIVFlowRate={_admissionRate};ACME_fnc_medicationLineFraction={_fraction};
       ACME_fnc_fluidCommit={_credited=_credited+(_this select 5);};
-      ACM_circulation_fnc_setRuntimeState={params ["_p","_rows"];{_p setVariable ["ACM_circulation_Saline_Volume",_x select 1];} forEach _rows;};
+      private _heating=[];ACME_fnc_hypothermiaTemperatureCommit={_heating pushBack _this;};
+      ACM_circulation_fnc_setRuntimeState={params ["_p","_rows"];{
+        private _key=switch (_x select 0) do {case "fluidBagsFlowIV": {"ACM_circulation_FluidBagsFlow_IV"}; case "fluidBagsFlowIO": {"ACM_circulation_FluidBagsFlow_IO"}; default {"ACM_circulation_Saline_Volume"};};
+        _p setVariable [_key,_x select 1];
+      } forEach _rows;};
       ACME_fnc_ivBagsCommit={params ["_p","_map"];_p setVariable ["ACM_circulation_IV_Bags",_map];};
       ACME_fnc_bagIdentity={"reserve"};
       private _key="body#false#0";
@@ -105,12 +109,14 @@ def service_setup():
         _patient setVariable ["ACME_yFlushJobs",createHashMap];
         _patient setVariable ["ACME_yServiceReceipts",createHashMap];
         _patient setVariable ["ACM_circulation_Saline_Volume",0];
+        _patient setVariable ["ACM_circulation_FluidBagsFlow_IV",[[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]]];
+        _patient setVariable ["ACM_circulation_FluidBagsFlow_IO",[1,1,1,1,1,1]];
       };
       private _request={params ["_mode","_id"];private _j=(_patient getVariable "ACME_yFlushJobs") get _key; private _jid=if (isNil "_j") then {""} else {_j param [13,""]}; [_patient,_medic,"body",false,0,_liveEpoch,_mode,_id,_serverTime,"reserve",_jid] call ACME_fnc_yFlushStart;};
       private _advance={params ["_seconds"];for "_i" from 1 to _seconds do {
         _serverTime=_serverTime+1;_nowTime=_nowTime+1;[_patient] call ACME_fnc_yFlushTick;
       };};
-    '''+fn('yServicePlan')+fn('yServiceState')+fn('yFlushStart')+fn('yFlushTick')
+    '''+fn('lineWarmer')+fn('lineWarmerRate')+fn('setTransfusionLineFlow')+fn('yServicePlan')+fn('yServiceState')+fn('yFlushStart')+fn('yFlushTick')
 
 
 @pytest.mark.parametrize('clicks',[1,2,3,5])
@@ -249,7 +255,8 @@ def test_bilateral_tags_keep_compact_rectangles_inside_canvas_without_overlap(le
 def test_inline_warmer_persists_across_bags_but_not_other_sites(site,iv):
     execute(basic()+fn('lineWarmer')+f'''
       private _supply=1;ACME_fnc_treatmentSupplyCount={{_supply}};
-      [[_patient,"body",{str(iv).lower()},{site},true,_medic] call ACME_fnc_lineWarmer,"warm fitting failed"] call _check;
+      [!([_patient,"body",{str(iv).lower()},{site},true,_medic] call ACME_fnc_lineWarmer),"possession fitted a free warmer through read-only helper"] call _check;
+      _patient setVariable ["ACME_lineWarmers",createHashMapFromArray [[format ["body#%1#%2",{str(iv).lower()},{site}],true]]];
       _supply=0;_patient setVariable ["ACME_warmedBlood",false];
       [[_patient,"body",{str(iv).lower()},{site}] call ACME_fnc_lineWarmer,"warmer lost between bags"] call _check;
       [!([_patient,"body",{str(iv).lower()},{site+1}] call ACME_fnc_lineWarmer),"other access inherited warmth"] call _check;
@@ -358,7 +365,8 @@ def test_real_blood_drainer_interpolates_tier_instead_of_binary_infinite_pressur
     original=(ROOT/'addons/circulation/functions/fnc_getBloodVolumeChange.sqf').read_text()
     work=original.split('// Blood has an explicit device/temperature flow envelope',1)[1].split('// Final perfusion gate',1)[0]
     work=primitives(adapt('//' + work)).replace('_unit getVariable','_patient getVariable')
-    execute(basic()+fn('pressureLevel')+f'''
+    execute(basic()+fn('pressureLevel')+fn('lineWarmer')+fn('lineWarmerRate')+f'''
+      private _unit=_patient;private _targetBodyPart="body";private _iv=false;private _accessSite=0;private _piggybackSecondary=false;
       private _type="Blood";private _coldFlag={str(cold).lower()};private _warmedFlag={str(warm).lower()};
       private _bagUid="bag";private _deltaT=1;private _bagVolumeRemaining=500;private _bagChange=2;
       _patient setVariable ["ACME_piCuffs",createHashMapFromArray [["bag",[100,{p},"server"]]]];
