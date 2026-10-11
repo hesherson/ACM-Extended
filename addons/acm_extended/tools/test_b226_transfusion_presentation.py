@@ -227,7 +227,10 @@ def test_empty_inventory_is_cleared_before_no_bags_return_and_extras_follow_sele
     assert 'ACME_preparedListMode", false' in s
     ui=read('updateTransfusionControls')
     assert 'private _ownInventory' in ui
-    assert 'if (_ownInventory) then {ACE_player getVariable ["ACME_coolerStore"' in ui
+    # B274: the source still isolates provider cooler stock, and the temporary
+    # flush-saline picker must suppress both carried and nearby cooler blood.
+    assert 'if (_ownInventory && {!_selectingSalineInventoryB274}) then {ACE_player getVariable ["ACME_coolerStore"' in ui
+    assert 'if (_ownInventory && {!_selectingSalineInventoryB274}) then {nearestObjects' in ui
     assert 'if (_ownInventory) then {ACE_player getVariable ["ACME_usedBags"' in ui
     assert 'call ACME_fnc_transfusionTakeSelected' in read('transfusionSpikeOrAdd')
 

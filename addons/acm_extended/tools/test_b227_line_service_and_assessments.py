@@ -273,12 +273,15 @@ def test_no_obsolete_catheter_inspection_actions_are_advertised():
 
 def test_clamp_uses_persistent_change_only_text_not_rebuilt_mouse_tooltips_or_dose_rate():
     s=read('updateClampDialog')
-    assert 'RscText' in s and '86210' in s
+    # B274 keeps the persistent native bottom readout and removes the rejected
+    # duplicate which used backdrop IDC 86210 as a second text control.
+    assert 'private _ctrlRate = _display displayCtrl 86206;' in s
+    assert 'ctrlCreate' not in s and '_readout ctrlSetText' not in s
     assert 'ctrlSetTooltip _hint' not in s
     assert 'nominal' not in s.lower() and 'mg/min' not in s
     rate=read('formatRate')
     assert 'mg/min' not in rate and 'nominal' not in rate.lower()
-    assert 'ctrlText _ctrlInfo' in s or 'ctrlText _readout' in s
+    assert 'if (ctrlText _ctrlRate != _rateText) then {_ctrlRate ctrlSetText _rateText;};' in s
 
 
 def test_crouch_return_flag_is_consumed_before_old_menu_pose_clears_it():

@@ -1,10 +1,19 @@
-/* Uses the existing UI tick; no owner writes or additional refresh worker. */
-private _display = findDisplay 86190;
-if (isNull _display) exitWith {};
-private _context = uiNamespace getVariable ["ACME_TransfusionDetailsContext", []];
-if (count _context < 5) exitWith {_display closeDisplay 0;};
-_context params ["_patient", "_part", "_iv", "_site", "_caption"];
-if (isNull _patient || {isNull (findDisplay 86000)}) exitWith {_display closeDisplay 0;};
+/* B274: inline selected-access information, using the existing UI tick only. */
+disableSerialization;
+params [["_display", findDisplay 86000]];
+// Preserve the roller-clamp and medication workspaces: no main-menu text leaks into their popups.
+if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)}) exitWith {};
+private _group = _display displayCtrl 86171;
+if (isNull _group) exitWith {};
+private _ctrl = _group controlsGroupCtrl 86192;
+if (isNull _ctrl) exitWith {};
+private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
+private _part = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""];
+private _iv = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true];
+private _site = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite", -1];
+if (isNull _patient || {!([_patient,_part,_iv,_site] call ACME_fnc_transfusionAccessValid)}) exitWith {
+    [_group,"show",false] call ACME_fnc_transfusionUiSet;
+};
 private _bags = ((_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_part,[]]) select {
     (_x param [3,-1]) == _site && {(_x param [4,false]) isEqualTo _iv}
 };
@@ -38,10 +47,13 @@ private _cuffs = _patient getVariable ["ACME_piCuffs",createHashMap];
     if (_cuff isNotEqualTo []) then {_lines pushBack format ["Pressure cuff: %1%2",round (([_cuff] call ACME_fnc_pressureLevel) * 100),"%"];};
 } forEach _bags;
 if (_bags isEqualTo []) then {_lines = ["No bag connected"] + _lines;};
-[(_display displayCtrl 86191),"text","Line Details"] call ACME_fnc_transfusionUiSet;
-_lines = [_caption] + _lines;
 private _content = _lines joinString "<br/>";
 if ((_display getVariable ["ACME_detailsContent", ""]) != _content) then {
-    (_display displayCtrl 86192) ctrlSetStructuredText parseText _content;
+    _ctrl ctrlSetStructuredText parseText _content;
     _display setVariable ["ACME_detailsContent", _content];
+    // A vertical scrollbar keeps every detail directly available when long names or many rows wrap.
+    private _rect = ctrlPosition _ctrl;
+    _rect set [3, (ctrlTextHeight _ctrl + safeZoneH * 0.006) max ((ctrlPosition _group) select 3)];
+    [_ctrl,"position",_rect] call ACME_fnc_transfusionUiSet;
 };
+[_group,"show",true] call ACME_fnc_transfusionUiSet;

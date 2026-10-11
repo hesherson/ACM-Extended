@@ -1,7 +1,7 @@
-/* B273: final presentation of existing native transfusion controls, without replacing their actions. */
+/* B274: final presentation of existing native transfusion controls, without replacing their actions. */
 disableSerialization;
 params [["_display", findDisplay 86000]];
-if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)} || {!isNull (findDisplay 86190)}) exitWith {};
+if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)}) exitWith {};
 
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
 private _uiX = safeZoneX + ((safeZoneW - _uiW) / 2);
@@ -19,20 +19,19 @@ private _ensure = {
     private _ctrl = _display displayCtrl _idc;
     if (isNull _ctrl) then {
         _ctrl = _display ctrlCreate [_class, _idc];
-        _ctrl ctrlSetText _text;
+        if (_class != "ACME_TransfusionInlineDetails") then {_ctrl ctrlSetText _text;};
     };
     if (_class == "ACME_TransfusionCaption") then {_ctrl ctrlEnable false;};
     _ctrl
 };
 private _bagActions = [86170,"ACME_TransfusionActionButton","Bag Actions >"] call _ensure;
-private _lineDetails = [86171,"ACME_TransfusionActionButton","Line Details >"] call _ensure;
+private _lineDetails = [86171,"ACME_TransfusionInlineDetails",""] call _ensure;
 private _infActions = [86172,"ACME_TransfusionActionButton","Infusion Actions >"] call _ensure;
 private _bagBackdrop = [86173,"ACME_TransfusionCaption",""] call _ensure;
 private _infBackdrop = [86174,"ACME_TransfusionCaption",""] call _ensure;
 private _infEmpty = [86176,"ACME_TransfusionCaption","No infusions at this access"] call _ensure;
 private _preparedEmpty = [86177,"ACME_TransfusionCaption","No prepared infusions"] call _ensure;
 private _fluidEmpty = [86178,"ACME_TransfusionCaption","No fluids at this access"] call _ensure;
-private _flowHint = [86179,"ACME_TransfusionCaption",""] call _ensure;
 
 if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
     _display setVariable ["ACME_txLayoutHooks", true];
@@ -50,7 +49,6 @@ if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
             [_parent] call ACME_fnc_layoutTransfusionMenu;
         }];
     } forEach [[_bagActions,"bag","transfusion"],[_infActions,"infusion","infusion"]];
-    _lineDetails ctrlAddEventHandler ["ButtonClick", {call ACME_fnc_transfusionLineDetails;}];
     // Closing a local popover never replays the control action. Its config handler remains the single
     // treatment/move/remove entry point, including the native Move -> Place operation.
     {
@@ -96,8 +94,8 @@ if !(_display getVariable ["ACME_txStylesReady", false]) then {
         if (!isNull _ctrl) then {
             _ctrl ctrlSetFont "RobotoCondensed";
             _ctrl ctrlSetFontHeight _fontH;
-            _ctrl ctrlSetTextColor [0.94,0.91,0.82,1];
-            _ctrl ctrlSetBackgroundColor [0.043,0.075,0.153,1];
+            _ctrl ctrlSetTextColor [1,1,1,1];
+            _ctrl ctrlSetBackgroundColor [0,0,0,1];
         };
     } forEach [86006,86007,86146,86120,86147,86121,86122,86131,86132,86133,86134,86141,86142,86148,86149];
     {
@@ -105,7 +103,7 @@ if !(_display getVariable ["ACME_txStylesReady", false]) then {
         if (!isNull _ctrl) then {
             _ctrl ctrlSetFont "RobotoCondensed";
             _ctrl ctrlSetFontHeight (safeZoneH * 0.019);
-            _ctrl ctrlSetBackgroundColor [0.043,0.075,0.153,0.75];
+            _ctrl ctrlSetBackgroundColor [0,0,0,0.75];
         };
     } forEach [86004,86005,86127,86129,86145];
 };
@@ -125,8 +123,8 @@ private _place = {
     [86002,0.350,0.177,0.300,0.031],
     [86003,0.673,0.193,0.160,0.030],
     [86037,0.838,0.193,0.033,0.030],
-    [86004,0.137,0.205,0.200,0.237],
-    [86170,0.125,0.461,0.212,0.033],
+    [86006,0.125,0.188,0.212,0.029],
+    [86004,0.137,0.228,0.200,0.230],
     [86128,0.125,0.538,0.212,0.029],
     [86129,0.125,0.575,0.212,0.187],
     [86131,0.125,0.778,0.212,0.033],
@@ -136,23 +134,24 @@ private _place = {
     [86145,0.673,0.279,0.202,0.235],
     [86130,0.673,0.595,0.202,0.029],
     [86127,0.673,0.636,0.202,0.149],
-    [86121,0.673,0.810,0.097,0.034],
-    [86122,0.778,0.810,0.097,0.034],
-    [86171,0.355,0.862,0.290,0.033],
-    [86179,0.355,0.785,0.290,0.026],
+    [86121,0.778,0.526,0.097,0.034],
+    [86122,0.673,0.810,0.202,0.034],
+    [86171,0.355,0.795,0.290,0.090],
     [86176,0.133,0.581,0.196,0.029],
     [86177,0.681,0.643,0.186,0.029],
-    [86178,0.145,0.212,0.184,0.029],
+    [86178,0.145,0.235,0.184,0.029],
     [86126,0.125,0.895,0.750,0.024]
 ];
 private _yButton = _display displayCtrl 86142;
 private _showY = !isNull _yButton && {ctrlShown _yButton};
-if (_showY) then {
+private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode", false];
+if (_preparedMode || {_showY}) then {
     [86141,0.673,0.526,0.097,0.034] call _place;
     [86142,0.778,0.526,0.097,0.034] call _place;
 } else {
     [86141,0.673,0.526,0.202,0.034] call _place;
 };
+[(_display displayCtrl 86121),"show",_preparedMode] call ACME_fnc_transfusionUiSet;
 
 private _menu = _display getVariable ["ACME_txActionMenu", ""];
 if (_moveBusy) then {_menu = "bag"; _display setVariable ["ACME_txActionMenu",_menu];};
@@ -181,8 +180,7 @@ private _status = if (_valid) then {
     format ["%1 | %2", if (_isY) then {"Y line"} else {"Established access"}, if (_flowing) then {"Open"} else {"Paused"}]
 } else {"Select an established IV or IO"};
 [(_display displayCtrl 86175),"text",_status] call ACME_fnc_transfusionUiSet;
-[_flowHint,"text",if (_moveBusy) then {"Select destination access, then Place Bag"} else {"Line flow and service"}] call ACME_fnc_transfusionUiSet;
-[_lineDetails,"enable",_valid] call ACME_fnc_transfusionUiSet;
+[_lineDetails,"show",_valid] call ACME_fnc_transfusionUiSet;
 [_bagActions,"enable",_moveBusy || {!isNull _ctrlFluids && {lbCurSel _ctrlFluids >= 0}}] call ACME_fnc_transfusionUiSet;
 [_infActions,"enable",!isNull _ctrlInfusions && {lbCurSel _ctrlInfusions >= 0}] call ACME_fnc_transfusionUiSet;
 // Empty sections keep their heading and a quiet nonselectable caption, rather than changing the menu layout.
@@ -197,19 +195,19 @@ private _status = if (_valid) then {
     private _ctrl = _display displayCtrl _x;
     if (!isNull _ctrl) then {
         _ctrl ctrlSetFontHeight (safeZoneH * 0.021);
-        _ctrl ctrlSetTextColor [0.94,0.91,0.82,1];
+        _ctrl ctrlSetTextColor [1,1,1,1];
         _ctrl ctrlSetBackgroundColor [0,0,0,0];
     };
 } forEach [86128,86130];
 
-// Pause and Prime/Flush still invoke their native single handlers. Their scope is the selected access.
+// Stop remains above Fluids. Prime/Flush belongs beside Bag Actions for the selected access.
 private _service = _display displayCtrl 86143;
 private _hasService = !isNull _service && {ctrlShown _service};
 if (_hasService) then {
-    [86006,0.355,0.821,0.137,0.033] call _place;
-    [86143,0.508,0.821,0.137,0.033] call _place;
+    [86170,0.125,0.478,0.100,0.033] call _place;
+    [86143,0.237,0.478,0.100,0.033] call _place;
 } else {
-    [86006,0.355,0.821,0.290,0.033] call _place;
+    [86170,0.125,0.478,0.212,0.033] call _place;
 };
 
 [_ctrlFluids,"show",_menu != "bag"] call ACME_fnc_transfusionUiSet;
@@ -219,16 +217,16 @@ if (!isNull _rate) then {_rate ctrlSetFontHeight (safeZoneH * 0.017);};
 [(_display displayCtrl 86163),"show",isNull _rate || {!ctrlShown _rate}] call ACME_fnc_transfusionUiSet;
 [_bagActions,"text",if (_menu == "bag") then {"< Bag Actions"} else {"Bag Actions >"}] call ACME_fnc_transfusionUiSet;
 [_infActions,"text",if (_menu == "infusion") then {"< Infusion Actions"} else {"Infusion Actions >"}] call ACME_fnc_transfusionUiSet;
-_bagBackdrop ctrlSetBackgroundColor [0.063,0.110,0.212,1];
-_infBackdrop ctrlSetBackgroundColor [0.063,0.110,0.212,1];
-[86173,0.128,0.214,0.206,0.237] call _place;
+_bagBackdrop ctrlSetBackgroundColor [0.09,0.09,0.09,1];
+_infBackdrop ctrlSetBackgroundColor [0.09,0.09,0.09,1];
+[86173,0.128,0.228,0.206,0.234] call _place;
 [86174,0.128,0.593,0.206,0.142] call _place;
 [_bagBackdrop,"show",_menu == "bag"] call ACME_fnc_transfusionUiSet;
 [_infBackdrop,"show",_menu == "infusion"] call ACME_fnc_transfusionUiSet;
 {
     private _ctrl = _display displayCtrl _x;
     if (!isNull _ctrl) then {
-        [_x,0.141,0.220 + _forEachIndex * 0.038,0.180,0.032] call _place;
+        [_x,0.141,0.234 + _forEachIndex * 0.037,0.180,0.031] call _place;
         [_ctrl,"show",_menu == "bag"] call ACME_fnc_transfusionUiSet;
     };
 } forEach [86007,86146,86147,86134,86148,86120];
@@ -252,4 +250,5 @@ _infBackdrop ctrlSetBackgroundColor [0.063,0.110,0.212,1];
         [_bar,"show",ctrlShown _button] call ACME_fnc_transfusionUiSet;
     };
 } forEach [[86148,86151],[86149,86152]];
+[_display] call ACME_fnc_updateTransfusionLineDetails;
 _display setVariable ["ACME_txLayoutWriting", false];

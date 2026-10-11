@@ -7,7 +7,12 @@
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 
-private _on = !(uiNamespace getVariable ["ACME_preparedListMode", false]);
+// A successful spike opens the prepared view explicitly. Manual presses still
+// toggle; repeated completion refreshes must not toggle it back to Loose Bags.
+private _requested = _this param [0, ""];
+private _on = if (_requested isEqualType true) then {_requested} else {
+    !(uiNamespace getVariable ["ACME_preparedListMode", false])
+};
 uiNamespace setVariable ["ACME_preparedListMode", _on];
 
 // leaving a half-finished y build armed while flipping the list is confusing, so clear any pending pairing.
@@ -22,3 +27,5 @@ if (_on) then {
 // signature is unchanged, and this guarantees the mode switch takes effect at once.
 uiNamespace setVariable ["ACME_coolerRowSig", "__force__"];
 uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
+_display setVariable ["ACME_txActivePane", ["inventory", "prepared"] select _on];
+call ACME_fnc_transfusionFilterInventory;

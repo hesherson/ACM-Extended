@@ -12,9 +12,6 @@ if (!isNull (findDisplay 86200)) exitWith {};
 // the menu scrambled after spike, prep and give. the menu refreshes cleanly the instant the draw dialog
 // closes.
 if (!isNull (findDisplay 84000)) exitWith {};
-// The read-only details popup uses a snapshot of the exact access. Repaint only
-// that snapshot while it is open, preserving the parent menu's native selection.
-if (!isNull (findDisplay 86190)) exitWith {call ACME_fnc_updateTransfusionLineDetails;};
 
 // UI never writes a remote patient's complete bag map. Ask the owner to repair empty slots
 // from its current topology instead, at most once a second per open display.
@@ -47,6 +44,7 @@ if (!isNull _yTarget && {count (_yTarget getVariable ["ACME_YLines", []]) > 0}
 // list is tinted a soft green whose opacity pulses, as an at-a-glance indicator of which bag to pick to flush
 // or pair. outside that step, with nothing pending, the rows keep their default color. it is re-applied every
 // pass, so it holds through rebuilds.
+private _selectingSalineInventoryB274 = call ACME_fnc_transfusionFilterInventory;
 private _rl = _display displayCtrl 86005;
 if (!isNull _rl) then {
     private _selectingSaline = (missionNamespace getVariable ["ACME_yPending", ""]) != ""
@@ -1108,10 +1106,12 @@ if (!isNull _ctrlRightList
     // Carried/nearby cooler contents are not a frame-time signal. nearestObjects plus inventory scans were being
     // repeated by the UI refresher; cache that discovery cadence independently from button/list repaint cadence.
     _display setVariable ["ACME_txCoolerNextScan", diag_tickTime + 0.75];
-    private _store = if (_ownInventory) then {ACE_player getVariable ["ACME_coolerStore", createHashMap]} else {createHashMap};
+    private _store = if (_ownInventory && {!_selectingSalineInventoryB274}) then {ACE_player getVariable ["ACME_coolerStore", createHashMap]} else {createHashMap};
     // only blood inside a cooler the medic is carrying is usable here. a cooler that has been dropped or handed off
     // keeps its blood in the store, preserved, and must not appear as spikeable until it is carried again.
-    private _heldNow = ((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player)) select { (_x find "ACME_BloodCooler_") == 0 };
+    private _heldNow = if (_selectingSalineInventoryB274) then {[]} else {
+        ((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player)) select { (_x find "ACME_BloodCooler_") == 0 }
+    };
     private _want = createHashMap;
     {
         if (_x in _heldNow) then {
@@ -1134,7 +1134,7 @@ if (!isNull _ctrlRightList
         {
             if ((_x find "ACM_BloodBag_") == 0) then { _want set [_x, (_want getOrDefault [_x, 0]) + 1]; };
         } forEach (itemCargo _bx);
-    } forEach (if (_ownInventory) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]} else {[]});
+    } forEach (if (_ownInventory && {!_selectingSalineInventoryB274}) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]} else {[]});
 
     // a signature of class and count, so we rebuild on a cooler-content change. the row-count check catches an ACM
     // list rebuild that wiped our rows. fn_transfusionspikeoradd sets the sig to "__force__" after a pull to force
@@ -1176,6 +1176,9 @@ if (!isNull _ctrlRightList
 // rows after an ACM list rebuild wipes them.
 if (!isNull _ctrlRightList) then {
     private _usedBags = if (_ownInventory) then {ACE_player getVariable ["ACME_usedBags", []]} else {[]};
+    if (_selectingSalineInventoryB274) then {
+        _usedBags = _usedBags select {(_x param [1, ""]) in ["Saline", "ACME_SalineY"]};
+    };
     private _usedSig = "";
     { _usedSig = _usedSig + format ["%1:%2;", (_x param [0, ""]), round (_x param [2, 0])]; } forEach _usedBags;
     private _ourUsedRows = [];

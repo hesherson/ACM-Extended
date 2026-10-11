@@ -78,27 +78,14 @@ private _ctrlBG = _display displayCtrl 86201;
 private _ctrlDrop = _display displayCtrl 86207;
 private _ctrlClamp = _display displayCtrl 86208;
 
-private _percent = round (((_position max 0) min 1) * 100);
-private _mlPerMinute = if (_dropSet > 0) then {_dropsPerMinute / _dropSet} else {0};
-private _tooltip = format ["Roller clamp: %1%2 open | %3 gtt/mL | %4 gtt/min | %5 mL/min", _percent, "%", round _dropSet, round _dropsPerMinute, _mlPerMinute toFixed 1];
-
 // Native tooltips are static: changing them under the cursor repeatedly restarts the popup.
 if !(_display getVariable ["ACME_clampReadoutReady",false]) then {
     _display setVariable ["ACME_clampReadoutReady",true];
     {_x ctrlSetTooltip "";} forEach [_ctrlTitle,_ctrlRate,_ctrlDrag,_ctrlWheel,_ctrlBG];
     _ctrlDrop ctrlSetTooltip "Cycle the drop set (gtt/mL).";
 };
-private _readout = _display displayCtrl 86210;
-if (isNull _readout) then {
-    _readout = _display ctrlCreate ["RscText",86210];
-    _readout ctrlEnable false;
-    _readout ctrlSetBackgroundColor [0,0,0,0.6];
-    _readout ctrlSetFont "RobotoCondensed";
-    _readout ctrlSetFontHeight (safeZoneH * 0.019);
-    _readout ctrlSetPosition [safeZoneX + safeZoneW * 0.60,safeZoneY + safeZoneH * 0.72,safeZoneW * 0.37,safeZoneH * 0.045];
-    _readout ctrlCommit 0;
-};
-if (ctrlText _readout != _tooltip) then {_readout ctrlSetText _tooltip;};
+// The existing bottom rate strip is the sole live readout. IDC 86210 is the
+// backdrop; writing a tooltip into it displays a duplicate across the panel.
 private _heading = [format ["Roller Clamp - %1",_medName],"Roller Clamp"] select (_medName == "");
 if (ctrlText _ctrlTitle != _heading) then {_ctrlTitle ctrlSetText _heading;};
 if (ctrlText _ctrlRate != _rateText) then {_ctrlRate ctrlSetText _rateText;};

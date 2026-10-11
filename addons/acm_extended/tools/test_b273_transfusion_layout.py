@@ -23,7 +23,9 @@ def fixed_layout():
 
 
 def rect(idc, aspect, origin=(-0.3, -0.1)):
-    x, y, w, h = fixed_layout()[idc]
+    # Bag Actions expands into the service slot only when Prime/Flush is absent.
+    # Use its widest authored branch for the main-menu interaction bounds.
+    x, y, w, h = authored_place(86170, 1) if idc == 86170 else fixed_layout()[idc]
     canvas = min(aspect, 1.7777778)
     canvas_x = origin[0] + (aspect - canvas) / 2
     return canvas_x + canvas * x, origin[1] + y, canvas * w, h
@@ -42,8 +44,8 @@ def test_all_main_interaction_rectangles_fit_window_and_do_not_overlap(aspect):
     bounds = (canvas_x + 0.11 * canvas, -0.1 + 0.08, 0.78 * canvas, 0.84)
     # Inventory's prepared overlay shares its stock-list rectangle intentionally, and the
     # nonselectable empty captions occupy their owning list; omit only those overlays.
-    ids = [86002, 86003, 86037, 86004, 86170, 86128, 86129, 86131,
-           86172, 86144, 86005, 86130, 86127, 86121, 86122, 86171, 86179, 86126]
+    ids = [86002, 86003, 86037, 86006, 86004, 86170, 86128, 86129, 86131,
+           86172, 86144, 86005, 86130, 86127, 86121, 86122, 86171, 86126]
     boxes = [rect(idc, aspect) for idc in ids]
     bx, by, bw, bh = bounds
     for idc, (x, y, w, h) in zip(ids, boxes):
@@ -74,20 +76,32 @@ def authored_place(idc, occurrence=0):
 
 @pytest.mark.parametrize("has_service", [False, True])
 def test_line_flow_service_and_details_have_distinct_rows(has_service):
-    stop = authored_place(86006, 0 if has_service else 1)
+    # B274 restores the native Stop row above Fluids and places service beside
+    # Bag Actions. Details stay visible inline below the unchanged body map.
+    stop = fixed_layout()[86006]
     details = fixed_layout()[86171]
     assert not overlap(stop, details)
-    assert stop[1] >= fixed_layout()[86179][1] + fixed_layout()[86179][3]
+    assert stop[1] + stop[3] <= fixed_layout()[86004][1]
     if has_service:
         service = authored_place(86143)
+        actions = authored_place(86170, 0)
         assert not overlap(stop, service)
         assert not overlap(service, details)
-        assert stop[1:] == service[1:]
+        assert not overlap(actions, service)
+        assert actions[1:] == service[1:]
+    else:
+        actions = authored_place(86170, 1)
+        assert actions[2] == pytest.approx(fixed_layout()[86004][2] + .012)
+        assert not overlap(actions, details)
 
 
 @pytest.mark.parametrize("y_available", [False, True])
 def test_spike_and_y_setup_keep_inventory_list_and_prepared_list_selectable(y_available):
-    spike = authored_place(86141, 0 if y_available else 1)
+    # Prepared-mode Hang Set also shares this row with Prep Infusion; select
+    # the authored split/full geometry by width instead of branch occurrence.
+    candidates = re.findall(r"\[86141,(0\.\d+),(0\.\d+),(0\.\d+),(0\.\d+)\] call _place", LAYOUT)
+    spike = next(tuple(map(float, row)) for row in candidates
+                 if float(row[2]) == (.097 if y_available else .202))
     assert not overlap(spike, fixed_layout()[86005])
     assert not overlap(spike, fixed_layout()[86130])
     assert not overlap(spike, fixed_layout()[86127])

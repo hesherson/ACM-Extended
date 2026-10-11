@@ -155,12 +155,18 @@ if (_advance) then {
     uiNamespace setVariable ["ACME_preparedListMode", false];
     {missionNamespace setVariable [_x, ""];} forEach ["ACME_yPending", "ACME_yPendingData", "ACME_yPendingSaline", "ACME_yPendingSalineData"];
 };
+// While pairing the Y set, offer only compatible saline. Advancing the source
+// cancels the pairing above and therefore restores the ordinary inventory list.
+private _selectingSaline = !(uiNamespace getVariable ["ACME_preparedListMode", false])
+    && {(missionNamespace getVariable ["ACME_yPending", ""]) != ""}
+    && {(missionNamespace getVariable ["ACME_yPendingSaline", ""]) == ""};
 private _index = _fluidsArray findIf {_x in _cachedItems};
 if (_index < 0) exitWith {};
 
 
 private _fnc_addToInventoryPanel = {
     params ["_ctrlInventoryPanel", "_fluidsArrayData", "_count", "_entry", "_index"];
+    if (_selectingSaline && {!([_entry, _fluidsArrayData select _index] call ACME_fnc_isSalineItem)}) exitWith {};
 
     private _config = (configFile >> "CfgWeapons" >> _entry);
     private _name = "";

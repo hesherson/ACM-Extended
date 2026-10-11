@@ -2381,6 +2381,7 @@ class CfgFunctions {
             class transfusionLineDetails {};
             class updateTransfusionLineDetails {};
             class spikePropofolBottle {};
+            class transfusionFilterInventory {};
             class ivAccessoryUnplug {};
             class fbtkHang {};
             class fbtkHangCommit {};
@@ -3292,6 +3293,8 @@ class CfgFontFamilies {
 };
 
 class RscText;
+class RscStructuredText;
+class RscControlsGroupNoHScrollbars;
 class RscButton;
 class RscPicture;
 class RscPictureKeepAspect;
@@ -3305,7 +3308,6 @@ class RscEdit;
 // textures and airway blue, and are hidden by default. the ace_medical_gui_updateBodyImage event toggles them
 // per side. see postinit.
 class RscControlsGroupNoScrollbars;
-class RscControlsGroupNoHScrollbars;
 class ace_medical_gui_BodyImage: RscControlsGroupNoScrollbars {
     class Controls {
         class Torso_ChestSeal;
@@ -3719,8 +3721,6 @@ class ACME_SK_HotspotButton: ACME_SK_StyledButton {
 // chest seal. while held, the seal follows the cursor and a body click places it. the NAR SPEAR tray beneath
 // it uses the same pickup and return behavior, and guides the needle to the patient-side fifth intercostal
 // space. a flip checks the opposite side without a close of the procedure. the logic is in acme_fnc_chestseal*.
-class RscStructuredText;
-#include "TransfusionDetails_Dialog.hpp"
 class ACME_ChestSeal_Dialog {
     idd = 86400;
     movingEnable = 0;
@@ -4682,10 +4682,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_PrepMedicationBagButton: ACME_InjectMedicationBagButton {
             text = "Prep Infusion";
             idc = 86121;
-            x = "safeZoneX + (safeZoneW / 2) + (safeZoneW / 6.8)";
-            y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 6)";
-            w = "safeZoneW / 12";
-            h = "safeZoneH / 40";
+            x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.278";
+            y = "safeZoneY + safeZoneH * 0.526";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.097";
+            h = "safeZoneH * 0.034";
             sizeEx = "safeZoneH / 50";
             action = "call ACME_fnc_openPrepFromInventoryMenu";
             tooltip = "Inject medication into a saline bag before starting the transfusion";
@@ -4693,7 +4693,9 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_GivePreparedBagButton: ACME_PrepMedicationBagButton {
             text = "Give Infusion";
             idc = 86122;
-            y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 6) + (safeZoneH / 20)";
+            x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.173";
+            y = "safeZoneY + safeZoneH * 0.810";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.202";
             action = "call ACME_fnc_givePreparedBag";
             tooltip = "Start the selected prepared medication saline bag";
         };
@@ -4749,9 +4751,9 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_SpikeBagButton: ACME_GivePreparedBagButton {
             text = "Spike Bag";
             idc = 86141;
-            x = "safeZoneX + (safeZoneW / 2) + (safeZoneW / 7.75)";
-            y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 12)";
-            w = "safeZoneW / 8.5";
+            x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.173";
+            y = "safeZoneY + safeZoneH * 0.526";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.202";
             action = "call ACME_fnc_transfusionSpikeOrAdd";
             tooltip = "Spike the selected bag (consumes one IV line), then press again to hang it.";
         };

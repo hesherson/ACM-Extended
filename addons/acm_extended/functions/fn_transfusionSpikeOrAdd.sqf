@@ -250,10 +250,10 @@ call ACME_fnc_updateTransfusionControls;
 
     ["Bag spiked and staged to Prepared IV sets.", 2, _medic] call ace_common_fnc_displayTextStructured;
 
-    if (!isNil "ACM_circulation_fnc_TransfusionMenu_UpdateBagList") then {
-        [false] call ACM_circulation_fnc_TransfusionMenu_UpdateBagList;
-    };
+    // A spike creates carried prepared custody, not a hung bag. Refresh the
+    // source inventory, then reveal the prepared list without touching Fluids.
     if (!isNull (findDisplay 86000)) then {[false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;};
+    [true] call ACME_fnc_togglePreparedSets;
 }, [_class, _action, _setItem, _setName, _kind, (_isBlood && _fromCooler), ACE_player, _target,
     (if (_fromCooler) then {0} else {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory", 0]}),
     objectParent ACE_player], 1.6] call CBA_fnc_waitAndExecute;
