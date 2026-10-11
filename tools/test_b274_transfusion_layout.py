@@ -241,4 +241,3 @@ def test_inline_painter_stops_before_ui_writes_when_native_popup_is_open(popup):
         [(_displayFixture getVariable "ACME_detailsContent")=="",
             "popup guard advanced the menu content cache"] call _check;
     ''')
-
