@@ -1,4 +1,4 @@
-"""B38 mixture regression models and source contracts, without an Arma/SQF runtime.
+"""B38 mixture models, source contracts, and acknowledged-refund SQF execution.
 
 Uses the checked-out native and Extended configs, resolved by the existing source
 inventory helper. Pair coverage checks freedom and mass, not clinical safety.
@@ -197,7 +197,69 @@ class B38Mixtures(unittest.TestCase):
     def test_refund_retry_preserve_complete_payload(self):
         self.assertIn('_doses,_site,_identity', src('medicationRequest'))
         self.assertIn('_refund', src('medicationRequest'))
-        self.assertIn('_store pushBack (+_x)', src('medicationRefund'))
+        # Execute the production refund, retry and ACK paths. A rejected aliquot
+        # merges into its original identity and retains current canonical tags;
+        # packet retries and duplicate ACKs never manufacture another syringe.
+        from test_b279_syringe_inventory import setup as inventory_setup, function
+        from test_menu_death_lifecycle import execute
+        # The existing fixture uses namespaces for native object identity.
+        execute(inventory_setup() + ''.join(function(name).replace(
+            'isNull (_row select 0)', '((_row select 0) isEqualTo objNull)') for name in (
+            'medicationEscrowCommit', 'medicationRetry', 'medicationAck')) + r'''
+            private _complete=["Ketamine",10,3,"current-provider mixture",2,
+                [["Ketamine",2],["Propofol",1]],"dilutionB13","blue_opioid",
+                "current correct tag","current line two","current line three","mix-id","flush","inventoryB279"];
+            private _other=+_row; _other set [11,"other-id"]; _other set [8,"other label"];
+            private _remaining=+_complete; _remaining set [2,1.8]; _remaining set [4,1.2];
+            _remaining set [5,[["Ketamine",1.2],["Propofol",0.6]]];
+            private _returned=+_complete; _returned set [2,1.2]; _returned set [4,0.8];
+            _returned set [5,[["Ketamine",0.8],["Propofol",0.4]]];
+            _returned set [3,"old refund label"]; _returned set [8,"old refund tag"];
+            // A whole rejected syringe absent from inventory keeps every payload field.
+            _medic setVariable ["ACME_narcStore",[_other]];
+            [_medic,[[],[_complete],[]],false] call ACME_fnc_medicationRefund;
+            private _restored=_medic getVariable "ACME_narcStore";
+            [_restored isEqualTo [_other,_complete],"whole refund dropped mixture, saline, tag or stable identity"] call _check;
+            // Missing ACK: retry the exact immutable request, without a dose refund.
+            _medic setVariable ["ACME_narcStore",[_other,_remaining]];
+            private _args=[_patient,_medic,1,"mixed-request","administer","leftarm",
+                [["Ketamine_IV",40,true,"mixture",20,true,["rate","K"]],
+                 ["Propofol_IV",4,true,"mixture",20,true,["rate","P"]]],0,[0,3,100],
+                ["syringeB279","custody-request","mix-id"]];
+            private _refund=[[],[_returned],[]];
+            private _meta=_args select 9;
+            private _escrow=createHashMapFromArray [["mixed-request",[_patient,_args,_refund,0,0,_meta]]];
+            _medic setVariable ["ACME_medicationEscrow",_escrow];
+            missionNamespace setVariable ["ACME_clinical_ownedUnits",[_medic]];
+            private _retryDt=1; private _retried=[];
+            ACME_fnc_clinicalTickDelta={_retryDt};
+            ACME_fnc_ownerDispatch={_retried pushBack _this;};
+            call ACME_fnc_medicationRetry;
+            [count _retried==0 && {(_medic getVariable "ACME_narcStore") isEqualTo [_other,_remaining]},"missing ACK refunded or dispatched before retry interval"] call _check;
+            call ACME_fnc_medicationRetry;
+            [_retried isEqualTo [[_patient,"medicationLine",_args]],"retry dropped mixture dose, route, catheter, duration or custody metadata"] call _check;
+            [(_medic getVariable "ACME_narcStore") isEqualTo [_other,_remaining],"retry invented another syringe or volume"] call _check;
+            // Rejection merges into the existing physical identity, preserving its current label.
+            [_medic,"mixed-request",false,"rejected"] call ACME_fnc_medicationAck;
+            private _settled=_medic getVariable "ACME_narcStore";
+            [count _settled==2 && {(_settled select 0) isEqualTo _other},"refund duplicated stable identity or touched another syringe"] call _check;
+            private _mixed=_settled select 1;
+            [abs ((_mixed select 2)-3)<0.000001 && {abs ((_mixed select 4)-2)<0.000001},"rejected aliquot lost medication or saline volume"] call _check;
+            private _parts=_mixed select 5;
+            [count _parts==2 && {(_parts select 0 select 0)=="Ketamine"} && {abs ((_parts select 0 select 1)-2)<0.000001}
+                && {(_parts select 1 select 0)=="Propofol"} && {abs ((_parts select 1 select 1)-1)<0.000001},"refund dropped or reassigned mixture components"] call _check;
+            [(_mixed select [7,7]) isEqualTo (_complete select [7,7]) && {(_mixed select 3)==(_complete select 3)},"stale refund overwrote canonical tag, identity or barrel"] call _check;
+            private _settleCount=count _settlements;
+            [_medic,"mixed-request",false,"duplicate"] call ACME_fnc_medicationAck;
+            call ACME_fnc_medicationRetry;
+            [(_medic getVariable "ACME_narcStore") isEqualTo _settled && {count _settlements==_settleCount} && {count _retried==1},"duplicate ACK/retry repaid the same aliquot twice"] call _check;
+            // An accepted slice never restores the reserved medication, even with a repeated ACK.
+            _medic setVariable ["ACME_narcStore",[_other,_remaining]];
+            _medic setVariable ["ACME_medicationEscrow",createHashMapFromArray [["accepted-request",[_patient,_args,_refund,0,0,_meta]]]];
+            [_medic,"accepted-request",true,"accepted"] call ACME_fnc_medicationAck;
+            [_medic,"accepted-request",true,"duplicate"] call ACME_fnc_medicationAck;
+            [(_medic getVariable "ACME_narcStore") isEqualTo [_other,_remaining],"accepted delivery was refunded"] call _check;
+        ''')
         self.assertIn('[_row select 0,"medicationLine",_row select 1]', src('medicationRetry'))
         self.assertIn('_receipts getOrDefault [_id', src('medicationLineLocal'))
 

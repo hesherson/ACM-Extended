@@ -16,10 +16,17 @@ private _escrow = _owner getVariable ["ACME_inventoryEscrow",createHashMap];
     private _token = _index getOrDefault [_key,0];
     if (_token == 0 || {_key in _pending}) then {
         private _previous = _pending getOrDefault [_key,[]];
-        _pending set [_key,[_kind,_sid,_payload,_owner getVariable ["ACME_equipmentKitEpoch",0],0,0,"pending"]];
-        _owner setVariable ["ACME_inventoryPending",_pending,true];
+        private _sameBlocked = count _previous >= 7 && {(_previous select 6) == "blocked"}
+            && {(_previous select 3) == (_owner getVariable ["ACME_equipmentKitEpoch",0])}
+            && {(_previous select 2) isEqualTo _payload};
+        // An unchanged same-kit publication cannot repair a terminal allocation
+        // rejection. Changed contents or a fresh kit may make one new attempt.
+        if (!_sameBlocked) then {
+            _pending set [_key,[_kind,_sid,_payload,_owner getVariable ["ACME_equipmentKitEpoch",0],0,0,"pending"]];
+            _owner setVariable ["ACME_inventoryPending",_pending,true];
+            ["ACME_inventoryBroker",["register",_owner,_kind,_sid,_payload,""]] call CBA_fnc_serverEvent;
+        };
         _cache set [_key,[_payload,0]];
-        ["ACME_inventoryBroker",["register",_owner,_kind,_sid,_payload,""]] call CBA_fnc_serverEvent;
     } else {
         private _held = (_native findIf {(_x select 0) == _token}) >= 0;
         private _reserved = (values _escrow findIf {(_x param [0,0]) == _token}) >= 0;

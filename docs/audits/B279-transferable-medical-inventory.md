@@ -23,6 +23,8 @@ Retries are idempotent and use backoff. Allocation, claim, and settlement tolera
 
 The inventory worker tracks participating owners rather than scanning all mission units. Tokens 1 through 65534 are never reused within a mission; exhaustion retains the funded pending preparation and blocks further allocation instead of recycling identity.
 
+An exhausted allocation emits one failed acknowledgement and one server diagnostic per mission. Replayed failures do not republish blocked state. An unchanged same-kit metadata commit keeps that blocked preparation intact; changed contents or a fresh kit may make one repair attempt.
+
 Carrier metadata is mission-scoped. Campaign/savegame persistence across a mission or server restart is outside this change.
 
 ## Automated verification

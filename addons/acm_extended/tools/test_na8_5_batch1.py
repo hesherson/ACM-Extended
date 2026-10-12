@@ -55,6 +55,8 @@ class QuietOutput(unittest.TestCase):
             'functions/fn_carrierInventoryRestore.sqf':2,
             'functions/fn_chestSealOpen.sqf':2,
             'functions/fn_hangBagRestoreWeapons.sqf':1,
+            # Mission-wide terminal token exhaustion only; replay guards execute below.
+            'functions/fn_inventoryLedgerBroker.sqf':1,
             'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
             'functions/fn_manualPlateCarrierAutoReturn.sqf':1,
             'functions/fn_compatCheck.sqf':2,
@@ -81,6 +83,8 @@ class QuietOutput(unittest.TestCase):
             if found:
                 emitters[p.relative_to(R).as_posix()]=len(found)
         self.assertEqual(emitters,approved)
+        from test_b279_inventory_diagnostics import assert_inventory_failure_diagnostics_bounded
+        assert_inventory_failure_diagnostics_bounded()
     def test_scan_finds_quoted_config_callback(self):
         self.assertEqual(logs('onLoad = "diag_log \'message\';";',True),['diag_log'])
     def test_scan_ignores_comments_and_messages(self):

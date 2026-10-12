@@ -12,9 +12,17 @@ if (_mode == "register") exitWith {
     if (count _pending < 4 || {(_pending select 3) != (_owner getVariable ["ACME_equipmentKitEpoch",0])}) exitWith {}; // event may precede object publication; durable allocation retries.
     // An older queued registration cannot replace a newer funded preparation.
     _payload = +(_pending select 2);
+    // Token exhaustion is permanent for this mission. Reject once at register scope;
+    // an inner exitWith would fall through and send a second failure ACK.
+    if (_token == 0 && {(missionNamespace getVariable ["ACME_inventoryTokenSequence",0]) >= 65534}) exitWith {
+        if (!(missionNamespace getVariable ["ACME_inventoryExhaustionReported",false])) then {
+            missionNamespace setVariable ["ACME_inventoryExhaustionReported",true];
+            diag_log "[ACME INVENTORY] Token space exhausted; funded preparation retained, no identity reused.";
+        };
+        [false] call _reply;
+    };
     if (_token == 0) then {
         _token = (missionNamespace getVariable ["ACME_inventoryTokenSequence",0]) + 1;
-        if (_token >= 65535) exitWith {[false] call _reply; diag_log "[ACME INVENTORY] Token space exhausted; funded preparation retained, no identity reused.";};
         missionNamespace setVariable ["ACME_inventoryTokenSequence",_token];
         _index set [_key,_token]; missionNamespace setVariable ["ACME_inventoryLedgerIndex",_index,true];
         _record = [_kind,_sid,+_payload,_owner,"","held",0];

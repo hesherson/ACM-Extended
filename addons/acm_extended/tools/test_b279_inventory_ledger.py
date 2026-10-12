@@ -152,12 +152,61 @@ def test_kit_replacement_cannot_restore_old_pending_or_reserved_item():
 
 
 def test_capacity_failure_spills_same_token_and_exhaustion_retains_funded_payload():
-    execute(setup()+r'''
+    # Diagnostic output is an engine boundary; execute the actual allocation,
+    # failed reply and blocked-payload updates while recording emitter count.
+    fixture='private _inventoryDiagnostics=[];' + setup().replace('diag_log ','_inventoryDiagnostics pushBack ')
+    execute(fixture+r'''
     _medic setVariable ["capacity",false];call _issue;
     [count (_medic getVariable "native")==0 && {(_holder getVariable "native") isEqualTo [[1,"prepared"]]},"full kit lost or defaulted spilled token"] call _check;
+    [count _inventoryDiagnostics==0,"ordinary capacity spill emitted inventory diagnostics"] call _check;
     missionNamespace setVariable ["ACME_inventoryTokenSequence",65534];
-    private _other=["set2",_set,[]];[_medic,"prepared",[_other]] call ACME_fnc_inventoryLedgerCommit;call _flush;
-    [count (_medic getVariable "ACME_inventoryPending")==1 && {(missionNamespace getVariable "ACME_inventoryTokenSequence")==65534},"exhaustion lost funded row or reused ID"] call _check;
+    private _otherSet=+_set;_otherSet set [0,"set2"];
+    private _other=["set2",_otherSet,[]];
+    [_medic,"prepared",[_other]] call ACME_fnc_inventoryLedgerCommit;call _broker;
+    [count _replies==1 && {!((_replies select 0) select 6)},"exhausted registration must emit exactly one failed terminal ACK"] call _check;
+    private _failed=_replies select 0;call _reply;
+    private _pending=(_medic getVariable "ACME_inventoryPending") get "prepared:set2";
+    [count (_medic getVariable "ACME_inventoryPending")==1 && {(_pending select 2) isEqualTo _other} && {(_pending select 6)=="blocked"},"exhaustion lost funded row or failed to block retries"] call _check;
+    [count _inventoryDiagnostics==1,"exhaustion diagnostic was omitted or duplicated by client reply"] call _check;
+    for "_i" from 1 to 3 do {
+        ["register",_medic,"prepared","set2",_other,""] call ACME_fnc_inventoryLedgerBroker;
+        [count _replies==1 && {!((_replies select 0) select 6)},"replayed registration emitted duplicate or successful ACK"] call _check;
+        call _reply;_failed call ACME_fnc_inventoryLedgerReply;
+    };
+    [count _inventoryDiagnostics==1,"exhaustion retry or duplicate ACK emitted repeated diagnostics"] call _check;
+    [_medic,"prepared",[_other]] call ACME_fnc_inventoryLedgerCommit;
+    private _unchanged=(_medic getVariable "ACME_inventoryPending") get "prepared:set2";
+    [count _queue==0 && {(_unchanged select 6)=="blocked"} && {(_unchanged select 2) isEqualTo _other},"unchanged same-kit commit rearmed failed allocation"] call _check;
+    private _latest=+_other;private _latestMed=+_med;
+    _latestMed set [0,"set2"];_latestMed set [15,"set2"];_latestMed set [10,139.25];
+    _latest set [2,_latestMed];
+    [_medic,"prepared",[_latest]] call ACME_fnc_inventoryLedgerCommit;
+    // An actual payload change may repair a generic registration rejection;
+    // permit one new attempt while retaining every newly funded component.
+    [count _queue==1,"changed pending payload did not get one repair attempt"] call _check;
+    call _broker;
+    [count _replies==1 && {!((_replies select 0) select 6)},"changed exhausted payload emitted duplicate or successful ACK"] call _check;
+    call _reply;
+    [_medic,"prepared",[_latest]] call ACME_fnc_inventoryLedgerCommit;
+    private _blocked=(_medic getVariable "ACME_inventoryPending") get "prepared:set2";
+    [count _queue==0 && {(_blocked select 6)=="blocked"} && {(_blocked select 2) isEqualTo _latest} && {count _inventoryDiagnostics==1},"unchanged repaired payload rearmed failure, repeated diagnostics or lost contents"] call _check;
+    [count ([_medic,"prepared","set2","unissued"] call ACME_fnc_inventoryLedgerReserve)==0,"unissued funded row acquired physical custody"] call _check;
+    private _thirdSet=+_set;_thirdSet set [0,"set3"];
+    private _third=["set3",_thirdSet,[]];
+    [_receiver,"prepared",[_third]] call ACME_fnc_inventoryLedgerCommit;call _broker;
+    [count _replies==1 && {!((_replies select 0) select 6)},"another exhausted owner did not get one failed ACK"] call _check;
+    call _reply;
+    [count (_receiver getVariable "ACME_inventoryPending")==1 && {count _inventoryDiagnostics==1},"exhaustion discarded another funded row or logged per owner"] call _check;
+    _receiver setVariable ["ACME_equipmentKitEpoch",1];
+    [_receiver,"prepared",[_third]] call ACME_fnc_inventoryLedgerCommit;
+    [count _queue==1,"fresh-kit funded publication retained a previous generation block"] call _check;
+    call _broker;[count _replies==1,"fresh-kit rejection sent duplicate ACK"] call _check;call _reply;
+    private _fresh=(_receiver getVariable "ACME_inventoryPending") get "prepared:set3";
+    [(_fresh select 3)==1 && {(_fresh select 6)=="blocked"} && {(_fresh select 2) isEqualTo _third} && {count _inventoryDiagnostics==1},"fresh-kit rejection lost funded generation or repeated diagnostics"] call _check;
+    private _index=missionNamespace getVariable "ACME_inventoryLedgerIndex";
+    [(missionNamespace getVariable "ACME_inventoryTokenSequence")==65534 && {!('prepared:set2' in _index)} && {!('prepared:set3' in _index)},"failed allocation wrote an invalid token or reused identity"] call _check;
+    [isNil {missionNamespace getVariable "ACME_inventoryToken_0"} && {isNil {missionNamespace getVariable "ACME_inventoryToken_65535"}},"failed allocation created an invalid zero/default-ammo record"] call _check;
+    [(_medic getVariable "native") isEqualTo [] && {(_receiver getVariable "native") isEqualTo []} && {(_holder getVariable "native") isEqualTo [[1,"prepared"]]},"failed allocation materialized or spilled invalid carrier"] call _check;
     ''')
 
 

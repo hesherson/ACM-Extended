@@ -15,6 +15,10 @@ C = ROOT / 'addons/circulation/functions'
 
 
 def code(text, component='circulation'):
+    # SQF-VM returns nil for the missing typed B279 marker on legacy rows.
+    # Preserve Arma's empty-string default without changing a present marker
+    # or the physical possession/canonical-claim branch it selects.
+    text = text.replace('param [13,"",[""]]', 'param [13,""]')
     fields = {
         'IN_CRDC_ARRST': ('ace_medical_inCardiacArrest', 'false'),
         'GET_CIRCULATIONSTATE': ('ACM_circulation_CirculationState', 'true'),

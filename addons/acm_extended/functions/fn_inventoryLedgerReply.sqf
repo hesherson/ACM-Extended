@@ -22,7 +22,10 @@ if (_mode == "register") exitWith {
     private _key = _kind + ":" + _sid;
     private _row = _pending getOrDefault [_key,[]];
     if (_row isEqualTo []) exitWith {}; // duplicate allocation ACK never adds a second magazine.
-    if (!_ok) exitWith {_row set [6,"blocked"]; _pending set [_key,_row]; _owner setVariable ["ACME_inventoryPending",_pending,true]; diag_log format ["[ACME INVENTORY] Allocation unavailable for %1; funded payload remains pending.",_key];};
+    if (!_ok) exitWith {
+        if ((_row param [6,"pending"]) == "blocked") exitWith {}; // duplicate failure ACK is inert.
+        _row set [6,"blocked"]; _pending set [_key,_row]; _owner setVariable ["ACME_inventoryPending",_pending,true];
+    };
     if ((_row select 3) != (_owner getVariable ["ACME_equipmentKitEpoch",0])) exitWith {_pending deleteAt _key; _owner setVariable ["ACME_inventoryPending",_pending,true];};
     if ((_record select 2) isNotEqualTo (_row select 2)) exitWith {}; // pending registration retries retain latest funded payload.
     if ((_record select 3) isNotEqualTo _owner || {(_record select 5) != "held"}) exitWith {};

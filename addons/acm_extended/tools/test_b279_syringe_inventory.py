@@ -302,3 +302,118 @@ def test_previous_kit_pending_and_foreign_tag_escrow_are_read_only():
         missionNamespace setVariable ["ACME_inventoryToken_99",["syringe","id-b",["id-b",_b],_medic,"tag-request","reserved",1]];
         [[_medic,_b] call ACME_fnc_skInventoryEditable,"owned in-flight tag request interrupted continuous typing"] call _check;
     ''')
+
+
+def test_tangible_epinephrine_consumer_claim_receipt_preserves_identity_and_remaining_solution():
+    """Real epi consumer/claims/patient receipts; cargo, transport and physiology are engine boundaries."""
+    from test_b279_inventory_ledger import setup as ledger_setup
+    consumers = '\n'.join(function(name) for name in (
+        'skInventoryCommit','narcStoreCommit','skInventoryImportNative','skStoreEnsureIds',
+        'skInventoryReconcile','skInventoryReserve','skInventorySettle','skInventoryInjectClaim',
+        'epinephrinePushStored','medicationRequest','medicationEscrowCommit','medicationAck',
+        'medicationRefund','medicationLineLocal'))
+    # The fixture represents engine objects by namespaces and supplies finite
+    # numeric inputs. Opaque carriers are distinct from stock ACM syringe cargo.
+    consumers = consumers.replace('["_owner", ACE_player, [objNull]]','["_owner", ACE_player]')
+    consumers = re.sub(r'\bfinite (_\w+)', r'(\1 call _finite)', consumers)
+    consumers = consumers.replace('finite (_x select 1)','((_x select 1) call _finite)')
+    consumers = consumers.replace('netId _medic','"medic"')
+    execute(ledger_setup()+consumers+r'''
+        private _nativeRows=[]; // no stock ACM dose magazines; token possession uses real ledger/native() below.
+        private _removedMags=[]; private _returnedMags=[]; private _publications=[];
+        private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
+        private _lineIdentity=[1,2,100]; private _patientRequests=[]; private _patientAcks=[];
+        private _dispatchStores=[]; private _dispatchProofs=[]; private _drugDeliveries=[];
+        ACM_circulation_fnc_hasIV={count _this < 4 || {(_this select 3)==1}};
+        ACM_circulation_fnc_hasIO={false};
+        ACME_fnc_clinicalEpoch={(_this select 0) getVariable ["ACME_clinicalEpoch",1]};
+        ACME_fnc_medicationRouteAllowed={params ["_class","_iv"];_class=="Epinephrine_IV" && {_iv}};
+        ACME_fnc_medicationLineIdentity={_lineIdentity};
+        ACME_fnc_medicationLineBloodBusy={false};
+        ACME_fnc_medicationLineFraction={1};
+        ACME_fnc_medicationLeak={};
+        ACME_fnc_ownerRegister={};
+        ace_medical_treatment_fnc_addToTriageCard={};
+        ace_medical_treatment_fnc_medicationLocal={_drugDeliveries pushBack _this;};
+        ACME_fnc_ownerDispatch={
+            params ["_target","_operation","_args"];
+            [_operation=="medicationLine","unexpected patient transport operation"] call _check;
+            _patientRequests pushBack _args;
+            _dispatchStores pushBack (+(_medic getVariable ["ACME_narcStore",[]]));
+            private _meta=_args select 9;
+            _dispatchProofs pushBack ([_medic,"syringe",_meta select 2,_meta select 1] call ACME_fnc_inventoryLedgerCertificate);
+        };
+        CBA_fnc_targetEvent={
+            params ["_event","_args"];
+            if (_event=="ACME_inventoryReply") then {_replies pushBack _args;} else {
+                [_event=="ACME_medicationAck","unexpected provider transport event"] call _check;
+                _patientAcks pushBack _args;
+            };
+        };
+        private _settlePatient={while {count _patientAcks>0} do {(_patientAcks deleteAt 0) call ACME_fnc_medicationAck;};call _flush;};
+        private _initial=["EpinephrineCardiac",10,1,"Push-dose epinephrine 10 mcg/mL",9,[],"epiMixB12",
+            "violet_vasopressor","correct epi label","10 mcg/mL","owner tag","epi-physical","flush","inventoryB279"];
+        [_medic,[_initial]] call ACME_fnc_narcStoreCommit;call _flush;
+        private _epiToken=(missionNamespace getVariable "ACME_inventoryLedgerIndex") get "syringe:epi-physical";
+        private _epiRecord={missionNamespace getVariable [format ["ACME_inventoryToken_%1",_epiToken],[]]};
+        [(_medic getVariable "native") isEqualTo [[_epiToken,"syringe"]]
+            && {(call _epiRecord select 3) isEqualTo _medic} && {(call _epiRecord select 5)=="held"},"owned canonical epi carrier not established"] call _check;
+        // The actual epi wrapper selects its inventoryB279 branch. Reserve
+        // removes the exact token and no patient work precedes the server claim.
+        [[_medic,_patient,"leftarm",0,2,1,20] call ACME_fnc_epinephrinePushStored,"owned 2 mL physical epi push rejected"] call _check;
+        [(_medic getVariable "native") isEqualTo [] && {count _patientRequests==0}
+            && {(_medic getVariable "ACME_narcStore") isEqualTo [_initial]},"epi debit/dispatched before certified claim or left carrier transferable"] call _check;
+        call _flush;
+        [count _patientRequests==1 && {count (_dispatchProofs select 0)==2}
+            && {(call _epiRecord select 5)=="reserved"} && {(_medic getVariable "native") isEqualTo []},"physical epi consumer bypassed canonical custody proof"] call _check;
+        private _first=_patientRequests select 0;
+        [abs ((_first select 6 select 0 select 1)-0.02)<0.000001
+            && {(_first select 6 select 0 select 4)==20} && {(_first select 7)==1},"physical 2 mL epi push changed dose, duration or access"] call _check;
+        private _left=_medic getVariable "ACME_narcStore";
+        [(_dispatchStores select 0) isEqualTo _left,"physical epi medication request preceded its exact syringe debit"] call _check;
+        [count _left==1 && {abs ((_left select 0 select 2)-0.8)<0.000001}
+            && {abs ((_left select 0 select 4)-7.2)<0.000001}
+            && {(_left select 0 select [7,7]) isEqualTo (_initial select [7,7])},"physical partial debit lost exact solution or label identity"] call _check;
+        _first call ACME_fnc_medicationLineLocal;_first call ACME_fnc_medicationLineLocal;
+        [count _drugDeliveries==1 && {abs ((_drugDeliveries select 0 select 3)-0.02)<0.000001}
+            && {(_medic getVariable "native") isEqualTo []},"duplicate patient receipt delivered twice or returned token before provider ACK"] call _check;
+        call _settlePatient;
+        private _accepted=+(_medic getVariable "ACME_narcStore");
+        [(_medic getVariable "native") isEqualTo [[_epiToken,"syringe"]]
+            && {(call _epiRecord select 2) isEqualTo ["epi-physical",_accepted select 0]}
+            && {(call _epiRecord select 5)=="held"},"accepted partial receipt changed token or failed to return exact remaining solution"] call _check;
+        // A later real patient-owner rejection returns the exact aliquot into
+        // that same SID. Repeated rejection ACKs cannot add volume/carriers.
+        [[_medic,_patient,"leftarm",0,1,1,3] call ACME_fnc_epinephrinePushStored,"second physical epi push rejected before patient receipt"] call _check;
+        [count _patientRequests==1 && {(_medic getVariable "native") isEqualTo []},"second push dispatched before server claim"] call _check;
+        call _flush;
+        private _second=_patientRequests select 1;
+        [abs ((_second select 6 select 0 select 1)-0.01)<0.000001,"physical 1 mL epi request dose changed"] call _check;
+        _lineIdentity=[1,3,101]; // actual catheter-generation validation rejects this submitted request.
+        _second call ACME_fnc_medicationLineLocal;_second call ACME_fnc_medicationLineLocal;
+        [count _drugDeliveries==1 && {(_medic getVariable "native") isEqualTo []},"rejected request delivered drug or returned carrier before ACK"] call _check;
+        call _settlePatient;
+        private _restored=_medic getVariable "ACME_narcStore";
+        [count _restored==1 && {abs ((_restored select 0 select 2)-0.8)<0.000001}
+            && {abs ((_restored select 0 select 4)-7.2)<0.000001}
+            && {(_restored select 0 select [7,7]) isEqualTo (_initial select [7,7])}
+            && {(_medic getVariable "native") isEqualTo [[_epiToken,"syringe"]]},"rejected receipt lost solution/tag/SID or cloned physical epi carrier"] call _check;
+        [(call _epiRecord select 2) isEqualTo ["epi-physical",_restored select 0]
+            && {(missionNamespace getVariable "ACME_inventoryTokenSequence")==1},"receipt restoration reminted an identity or left canonical contents stale"] call _check;
+        [_medic,_second select 3,false,"late duplicate"] call ACME_fnc_medicationAck;call _flush;
+        [(_medic getVariable "ACME_narcStore") isEqualTo _restored
+            && {(_medic getVariable "native") isEqualTo [[_epiToken,"syringe"]]}
+            && {(call _epiRecord select 2) isEqualTo ["epi-physical",_restored select 0]},"late duplicate rejection ACK repaid returned physical syringe"] call _check;
+        // Native transfer removes original possession. A stale row at either
+        // provider remains unusable until the foreign carrier is adopted.
+        private _foreign=parsingNamespace;
+        _foreign setVariable ["native",_medic getVariable "native"];
+        _foreign setVariable ["ACME_narcStore",+_restored];
+        _medic setVariable ["native",[]];
+        _lineIdentity=[1,2,100];
+        [!([_medic,_patient,"leftarm",0,1,1,3] call ACME_fnc_epinephrinePushStored),"stale original provider pushed a moved token"] call _check;
+        [!([_foreign,_patient,"leftarm",0,1,1,3] call ACME_fnc_epinephrinePushStored),"unadopted holder pushed foreign canonical epi contents"] call _check;
+        [count _patientRequests==2 && {count _queue==0} && {count _drugDeliveries==1}
+            && {(_medic getVariable "ACME_narcStore") isEqualTo _restored}
+            && {(_foreign getVariable "native") isEqualTo [[_epiToken,"syringe"]]},"failed possession/canonical proof mutated stock or administered medication"] call _check;
+    ''')
