@@ -2376,6 +2376,13 @@ class CfgFunctions {
             class ivCatheterPull {};
             class transfusionUiSet {};
             class layoutTransfusionMenu {};
+            class transfusionRoundedFrame {};
+            class transfusionCardIdentity {};
+            class transfusionCardResolve {};
+            class transfusionCardWindow {};
+            class transfusionCardSelect {};
+            class transfusionCardData {};
+            class updateTransfusionCards {};
             class transfusionYRows {};
             class paintTransfusionYBracket {};
             class transfusionLineDetails {};
@@ -3070,6 +3077,17 @@ class CfgFunctions {
             class ventCustodyTick {};
             class ventItemGate {};
             class ventOxygenGate {};
+            class ventOxygenReserve {};
+            class ventOxygenSource {};
+            class ventOxygenState {};
+            class ventOxygenFiO2 {};
+            class ventOxygenClear {};
+            class ventOxygenRequest {};
+            class ventOxygenCommit {};
+            class ventOxygenTick {};
+            class ventOxygenDraw {};
+            class ventOxygenAck {};
+            class ventOxygenUse {};
             class ventMinuteVolume {};
             class ventMVLimits {};
             class ventTechPrompt {};
@@ -3084,6 +3102,7 @@ class CfgFunctions {
             class ventPanelInit {};
             class ventPanelTick {};
             class ventPanelRefresh {};
+            class ventPanelOxygenRefresh {};
             class ventPanelFieldClick {};
             class ventPanelKnob {};
             class ventPanelStripClick {};
@@ -3106,6 +3125,7 @@ class CfgFunctions {
             class ventEffectiveSettings {};
             class ventSimpleManualBreath {};
             class ventManualBreath {};
+            class ventManualClaim {};
             class ventManualBreathCommit {};
             class ventAlarmTick {};
             class ventHoldClear {};
@@ -3337,7 +3357,6 @@ class RscEdit;
 // add chest-tube markers to ACE's medical-menu body image. they inherit the torso chest-seal position, use our
 // textures and airway blue, and are hidden by default. the ace_medical_gui_updateBodyImage event toggles them
 // per side. see postinit.
-class RscControlsGroupNoScrollbars;
 class ace_medical_gui_BodyImage: RscControlsGroupNoScrollbars {
     class Controls {
         class Torso_ChestSeal;
@@ -4646,6 +4665,9 @@ class ACME_SyringeKit_Dialog {
 };
 
 class ACM_circulation_TransfusionMenu_Dialog {
+    class ControlsBackground {
+        #include "TransfusionMenu_Chrome.hpp"
+    };
     class Controls {
         // forward-declare the button base chain of ACM, so our AddBagButton reopen inherits ACM's full property set.
         // that means style at st_center, plus the colors, font, sizeex, x, y, w and h. without this, a bare class
@@ -4835,7 +4857,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
             colorBackground[] = {0,0,0,0};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 58";
-            style = 0;
+            style = 2;
             shadow = 0;
         };
         class ACME_PreparedInfusionList: RscListBox {
@@ -4844,13 +4866,13 @@ class ACM_circulation_TransfusionMenu_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 6) + (safeZoneH / 10) + (safeZoneH / 45)";
             w = "safeZoneW / 8.5";
             h = "safeZoneH / 10";
-            rowHeight = "safeZoneH * 0.072";
+            rowHeight = "safeZoneH / 25";
             colorText[] = {1,1,1,1};
-            colorSelect[] = {1,1,1,1};
-            colorSelect2[] = {1,1,1,1};
-            colorBackground[] = {0,0,0,0};
-            colorSelectBackground[] = {0.20,0.20,0.20,0.18};
-            colorSelectBackground2[] = {0.20,0.20,0.20,0.18};
+            colorSelect[] = {0.94,0.91,0.82,1};
+            colorSelect2[] = {0.94,0.91,0.82,1};
+            colorBackground[] = {0,0,0,0.25};
+            colorSelectBackground[] = {0.188,0.255,0.353,1};
+            colorSelectBackground2[] = {0.188,0.255,0.353,1};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 50";
             onLBSelChanged = "params ['_ctrl','_index']; if (_index >= 0) then {missionNamespace setVariable ['ACME_infusion_SelectedPreparedIndex', _ctrl lbValue _index];};";
@@ -4881,7 +4903,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
             colorBackground[] = {0,0,0,0};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 55";
-            style = 0;
+            style = 2;
             shadow = 0;
         };
         class ACME_DropSetButton: ACME_InjectMedicationBagButton {
@@ -4927,7 +4949,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_AdjustInfusionButton: ACME_DropSetButton {
             text = "Adjust Infusion";
             idc = 86131;
-            colorText[] = {1,1,1,1};
+            colorText[] = {0.94,0.94,0.95,1};
             colorDisabled[] = {0.76,0.76,0.76,0.35};
             x = "safeZoneX + (safeZoneW / 2) - (safeZoneW / 4.05)";
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 14) - (safeZoneH / 38)";
@@ -5507,6 +5529,39 @@ class ACME_VentValG {
     text = "";
     colorText[] = {0.92,0.92,0.92,1};
     colorBackground[] = {0,0,0,0};
+};
+
+// Global class: dynamic oxygen actions must resolve outside the dialog's nested controls.
+class ACME_VentActionG {
+    type = 1;
+    idc = -1;
+    style = 2;
+    shadow = 0;
+    x = 0; y = 0; w = 0.1; h = 0.05;
+    font = "PuristaMedium";
+    sizeEx = 0.03;
+    text = "";
+    action = "";
+    colorText[] = {0.92,0.92,0.92,1};
+    colorDisabled[] = {0.55,0.55,0.55,1};
+    colorBackground[] = {0.06,0.08,0.10,1};
+    colorBackgroundDisabled[] = {0,0,0,0};
+    colorBackgroundActive[] = {0.04,0.14,0.25,1};
+    colorFocused[] = {0.04,0.14,0.25,1};
+    colorShadow[] = {0,0,0,0};
+    colorBorder[] = {0,0,0,0};
+    borderSize = 0;
+    offsetX = 0;
+    offsetY = 0;
+    offsetPressedX = 0;
+    offsetPressedY = 0;
+    soundEnter[] = {"",0,1};
+    soundPush[] = {"",0,1};
+    soundClick[] = {"",0,1};
+    soundEscape[] = {"",0,1};
+    tooltipColorText[] = {1,1,1,1};
+    tooltipColorBox[] = {1,1,1,1};
+    tooltipColorShade[] = {0,0,0,0.85};
 };
 
 class ACME_VentPicFill: RscPicture {

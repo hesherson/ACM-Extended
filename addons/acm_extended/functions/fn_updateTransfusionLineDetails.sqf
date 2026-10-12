@@ -44,7 +44,7 @@ private _warmingThermal = _thermalLines select {(_x find "Warming") >= 0};
 _lines append (if (_warmingThermal isEqualTo []) then {_thermalLines} else {_warmingThermal});
 {
     if ((toLowerANSI (_x param [1, ""])) == toLowerANSI _part && {(_x param [4,-1]) == _site} && {(_x param [5,false]) isEqualTo _iv}) then {
-        _lines pushBack format ["Medication: %1 remaining",[_x param [11, ""],_x param [14,0]] call ACME_fnc_formatDose];
+        _lines pushBack format ["%1: %2 remaining",[_x param [11, ""]] call ACME_fnc_infusionName,[_x param [11, ""],_x param [14,0]] call ACME_fnc_formatDose];
     };
 } forEach (_patient getVariable ["ACME_infusion_BagMedications",[]]);
 
@@ -54,12 +54,15 @@ private _cuffs = _patient getVariable ["ACME_piCuffs",createHashMap];
     if (_cuff isNotEqualTo []) then {_lines pushBack format ["Pressure cuff: %1%2",round (([_cuff] call ACME_fnc_pressureLevel) * 100),"%"];};
 } forEach _bags;
 if (_bags isEqualTo []) then {_lines = ["No bag connected"] + _lines;};
-private _content = "<t color='#dddddd' size='1.05'>Line details</t><br/>" + (_lines joinString "<br/>");
+private _content = _lines joinString "<br/>";
 if ((_display getVariable ["ACME_detailsContent", ""]) != _content) then {
     _ctrl ctrlSetStructuredText parseText _content;
     _display setVariable ["ACME_detailsContent", _content];
     // A vertical scrollbar keeps every detail directly available when long names or many rows wrap.
     private _rect = ctrlPosition _ctrl;
+    _rect set [0,safeZoneH * 0.007 * (pixelW / pixelH)];
+    _rect set [1,safeZoneH * 0.005];
+    _rect set [2,((ctrlPosition _group) select 2) - safeZoneH * 0.014 * (pixelW / pixelH)];
     _rect set [3, (ctrlTextHeight _ctrl + safeZoneH * 0.006) max ((ctrlPosition _group) select 3)];
     [_ctrl,"position",_rect] call ACME_fnc_transfusionUiSet;
 };

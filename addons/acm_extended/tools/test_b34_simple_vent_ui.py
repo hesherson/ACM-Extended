@@ -32,8 +32,12 @@ class SimpleVentUIContracts(unittest.TestCase):
         text = source("ventPanelKnob")
         guard = text[text.index('if (_simple) then {'):text.index('// an open alarm window')]
         for flag, reset in (("editingParam", "-1"), ("editingPeep", "false"),
-                            ("editingIE", "false"), ("editingFio2", "false")):
+                            ("editingIE", "false")):
             self.assertIn(f'setVariable ["ACME_vent_{flag}", {reset}]', guard)
+        # Oxygen is the sole manual addition to Simple mode. Stale advanced
+        # editors still clear, but an authorized O2 editor must survive the dial.
+        self.assertNotIn('setVariable ["ACME_vent_editingFio2", false]', guard)
+        self.assertIn('call ACME_fnc_ventOxygenRequest', text)
         self.assertIn('_screen == "alerts"', guard)
         self.assertIn('"ACME_vent_editingAlert", -1]) == 2', guard)
         self.assertIn('setVariable ["ACME_vent_editingAlert", -1]', guard)
@@ -59,7 +63,8 @@ class SimpleVentUIContracts(unittest.TestCase):
         early = router[:router.index('uiNamespace setVariable ["ACME_vent_screen"')]
         self.assertIn('_screen in ["weight", "mode", "interface"]', early)
         self.assertIn('then {"params"} else {"connect"}', early)
-        self.assertIn('_screen in ["o2", "ie", "peep"]', early)
+        self.assertIn('_screen in ["ie", "peep"]', early)
+        self.assertNotIn('_screen in ["o2", "ie", "peep"]', early)
         self.assertNotRegex(early, r'_target setVariable')
         nav = source("ventPanelNavClick")
         guard = nav.index('getVariable ["ACME_vent_simpleMode", false]')
@@ -96,6 +101,8 @@ class SimpleVentUIContracts(unittest.TestCase):
         self.assertIn('call ACME_fnc_ventMinuteVolume', refresh)
         self.assertIn('_selIdx == 1 && {!_simple}', source("ventPanelLiveRefresh"))
         self.assertIn('_target ctrlEnable (!_automatic)', source("ventPanelListRefresh"))
+        self.assertIn('_screen == "params" && {_i == 0}', source("ventPanelListRefresh"))
+        self.assertIn('_screen == "params" && {!_oxygenRow}', source("ventPanelListRefresh"))
         self.assertIn('exitWith { "SIMPLE" }', source("ventModeTitle"))
         tick = source("ventPanelTick")
         self.assertIn('_peepC = _effectiveFrame select 5', tick)

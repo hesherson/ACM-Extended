@@ -27,6 +27,7 @@ def gui(source, component="core"):
         r"([\1,\2] call _displayCtrl)", source)
     source = re.sub(r"\bctrlShown (_\w+)", r"([\1] call _shown)", source)
     source = re.sub(r"\blbCurSel (_\w+)", r"([\1] call _curSel)", source)
+    source = re.sub(r"\bctrlIDC (_\w+)", r"(\1 call _controlId)", source)
     source = re.sub(r"(_\w+) lbValue (_\w+)", r"([\1,\2] call _value)", source)
     source = re.sub(
         r"(_\w+) lbSetCurSel ([^;\n]+);",
@@ -61,6 +62,7 @@ def setup(native_source=None):
         private _shown={(_this select 0) getVariable ["fixtureShown",true]};
         private _curSel={(_this select 0) getVariable ["fixtureSelection",-1]};
         private _value={params ["_c","_r"];(_c getVariable ["fixtureValues",[]]) param [_r,-1]};
+        private _controlId={if (_this isEqualTo _fluidCtrl) then {86004} else {86129}};
         private _setSelection={params ["_c","_r"];
             _selectionWrites pushBack [_c,_r];
             private _size=count (_c getVariable ["fixtureValues",[]]);

@@ -303,6 +303,7 @@ if (_patient getVariable ["ACME_nrb_on", false]) then {
 [_patient, -1, -1, false, true, false] call ACME_fnc_nrbStateCommit;
 _patient setVariable ["ACME_nrb_lastDrawSend", -1, false];
 _patient setVariable ["ACME_nrb_sfxWanted", nil, false];
+[_patient] call ACME_fnc_ventOxygenClear;
 _patient setVariable ["ACME_vent_driving", false, true];
 _patient setVariable ["ACME_vent_effectiveRR", 0, true];
 _patient setVariable ["ACME_clinicalLastOwner", -1, false];

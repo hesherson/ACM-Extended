@@ -527,6 +527,12 @@ switch (_operation) do {
     case "ventSyncMask": {[_patient] call ACME_fnc_ventSyncMask;};
     case "ventSetMaskCPAP": {_args call ACME_fnc_ventSetMaskCPAP;};
     case "ventMaskApplyReply": {_args call ACME_fnc_ventMaskApplyReply;};
+    case "ventOxygen": {
+        if ((_args param [0,objNull]) isEqualTo _patient) then {_args call ACME_fnc_ventOxygenCommit;};
+    };
+    case "ventOxygenAck": {
+        if ((_args param [0,objNull]) isEqualTo _patient) then {_args call ACME_fnc_ventOxygenAck;};
+    };
     case "ventManualBreath": {_args call ACME_fnc_ventManualBreathCommit;};
     case "ventBattery": {
         _patient setVariable ["ACME_vent_battery", 100, true];

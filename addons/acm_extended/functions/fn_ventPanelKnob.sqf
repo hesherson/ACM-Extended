@@ -107,7 +107,6 @@ if (_simple) then {
     uiNamespace setVariable ["ACME_vent_editingParam", -1];
     uiNamespace setVariable ["ACME_vent_editingPeep", false];
     uiNamespace setVariable ["ACME_vent_editingIE", false];
-    uiNamespace setVariable ["ACME_vent_editingFio2", false];
     if (_screen == "alerts" && {(uiNamespace getVariable ["ACME_vent_editingAlert", -1]) == 2}) then {
         uiNamespace setVariable ["ACME_vent_editingAlert", -1];
     };
@@ -159,10 +158,14 @@ if ((_screen == "params") && {(uiNamespace getVariable ["ACME_vent_editingParam"
             [4, (if (_v == 0) then {"OFF"} else {str _v})] call ACME_fnc_ventPanelSetValue;  // the number only, row 4.
         };
         case 0: {  // o2 ENRICHMENT, 21 to 95 percent.
-            if !(call ACME_fnc_ventOxygenGate) exitWith {};
+            if !(([_tP] call ACME_fnc_ventOxygenState) select 1) exitWith {
+                uiNamespace setVariable ["ACME_vent_editingParam", -1];
+                uiNamespace setVariable ["ACME_vent_editingFio2", false];
+                [0, "21"] call ACME_fnc_ventPanelSetValue;
+            };
             private _v = ((if (isNull _tP) then {uiNamespace getVariable ["ACME_vent_fio2", 21]} else {_tP getVariable ["ACME_vent_fio2", 21]}) + _dir) max 21 min 95;  // the sparrow spec is an FiO2 of 21 to 95 percent. a turbine on ambient air with o2 enrichment cannot reach 100 percent.
             uiNamespace setVariable ["ACME_vent_fio2", _v];
-            if (!isNull _tP) then { _tP setVariable ["ACME_vent_fio2", _v, true]; };
+            [_tP, "fio2", ACE_player, _v] call ACME_fnc_ventOxygenRequest;
             [0, str _v] call ACME_fnc_ventPanelSetValue;  // the number only, because the percent sign is its own piece.
         };
         case 1: {  // the i:e ratio ladder.
@@ -288,32 +291,30 @@ if ((_screen == "alerts2") && {(uiNamespace getVariable ["ACME_vent_editingAlert
 
 
 if ((_screen == "o2") && {uiNamespace getVariable ["ACME_vent_editingFio2", false]}) exitWith {
-    if !(call ACME_fnc_ventOxygenGate) exitWith {};
+    if !(([_vTgt] call ACME_fnc_ventOxygenState) select 1) exitWith {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        if ((uiNamespace getVariable ["ACME_vent_editingParam", -1]) == 0) then {
+            uiNamespace setVariable ["ACME_vent_editingParam", -1];
+        };
+        [] call ACME_fnc_ventPanelOxygenRefresh;
+    };
     disableSerialization;
     private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
     private _v = (uiNamespace getVariable ["ACME_vent_fio2", 21]) + _dir;
     _v = _v max 21 min 95;  // the sparrow spec is an FiO2 of 21 to 95 percent, the same ceiling as the params-page path above.
     uiNamespace setVariable ["ACME_vent_fio2", _v];
-    _vTgt setVariable ["ACME_vent_fio2", _v, true];
+    [_vTgt, "fio2", ACE_player, _v] call ACME_fnc_ventOxygenRequest;
     private _vc = uiNamespace getVariable ["ACME_vent_o2ValCtrl", controlNull];
     if (!isNull _vc) then { _vc ctrlSetText format ["%1%2", _v, "%"]; };
 };
 
-// the o2 screen when not editing. the dial cycles 0 for the value and 1 for BACK, painting the back highlight on
-// 1.
+// O2 has one value, one physical supply action and BACK. A missing or empty
+// source blocks only the value; the source and navigation remain usable.
 if (_screen == "o2") exitWith {
     private _sel = (uiNamespace getVariable ["ACME_vent_selIdx", 0]) + _selDir;
-    _sel = ((_sel mod 2) + 2) mod 2;
+    _sel = ((_sel mod 3) + 3) mod 3;
     uiNamespace setVariable ["ACME_vent_selIdx", _sel];
-    disableSerialization;
-    private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
-    if (!isNull _dlg) then {
-        (_dlg displayCtrl 87756) ctrlSetBackgroundColor (if (_sel == 1) then {[0, 0.988, 0.992,1]} else {[0,0,0,0]});
-        // the value box. brighten its border-ish highlight when selected, because it already has the blue fill, so nudge
-        // the alpha.
-        private _vc = uiNamespace getVariable ["ACME_vent_o2ValCtrl", controlNull];
-        if (!isNull _vc) then { _vc ctrlSetBackgroundColor (if (_sel == 0) then {[0, 0, 0.996,1]} else {[0, 0, 0.62,1]}); };
-    };
+    [] call ACME_fnc_ventPanelOxygenRefresh;
 };
 
 // the logbook screen. the dial cycles the visible bottom chevrons. with more than one page, 0 is next, which is

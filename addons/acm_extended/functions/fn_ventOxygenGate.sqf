@@ -1,9 +1,9 @@
-/* FiO2 alone requires a usable portable cylinder. Resolve the same loose/EFAK
-   reserve and ACE equipment-sharing order as NRB oxygen, without drawing charge.
-   Recheck this at edit entry and at every FiO2 write so dropping the tank while
-   editing cannot leave an authorized dial session behind. */
+/* Compatibility entry point for integrations that used the B276 warning.
+   Enrichment requires a verified source attached to this physical ventilator;
+   carrying a cylinder alone never authorizes it. The native O2 page uses its
+   quiet supply status instead. This helper neither draws gas nor writes settings. */
 private _patient = uiNamespace getVariable ["ACME_vent_target", ACE_player];
-if (!isNull ([ACE_player, _patient] call ACME_fnc_nrbOxygenSource)) exitWith {true};
+if (([_patient] call ACME_fnc_ventOxygenState) select 1) exitWith {true};
 
 // Clear only oxygen edits; other ventilator settings remain independent.
 if ((uiNamespace getVariable ["ACME_vent_editingParam", -1]) == 0) then {

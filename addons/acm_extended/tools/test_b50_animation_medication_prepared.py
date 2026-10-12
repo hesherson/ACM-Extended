@@ -66,6 +66,10 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
     entries = re.search(r'private _preparedEntries = .*?;', s).group()
     prepared_filter = s[s.index('private _shownPrepared = [];'):s.index('if (!isNull _ctrlPreparedList) then {', s.index('private _shownPrepared = [];'))]
     prepared_filter = prepared_filter.replace('getText (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "type")', '"Saline"')
+    # B276 restores prepared selection by custody ID. Execute its real capture
+    # and fallback block so filtered rows still map to their original indices.
+    restore_start = s.index('private _oldSelected = missionNamespace getVariable ["ACME_infusion_SelectedPreparedIndex"')
+    restore_identity = s[restore_start:s.index('lbClear _ctrlPreparedList;', restore_start)]
     row_start = s.index('private _label = [_entry] call ACME_fnc_formatPreparedLabel;')
     row_begin = s.rfind('{', 0, row_start)
     row_end = s.index('} forEach _shownPrepared;', row_start) + len('} forEach _shownPrepared;')
@@ -89,12 +93,14 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
         private _tgtNet="";
         private _targetPatient=_patient;private _targetBodyPart="leftarm";private _flIV=true;private _flSite=0;
         private _selectingPiggyback=false;private _preparedMode=false;
-        private _oldSelected=0;private _restoredSelection=-1;
+        private _display=missionNamespace;private _restoredSelection=-1;
+        missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",0];
+        _display setVariable ["ACME_txPreparedIdentity",[]];
         private _renderedPrepared=[];private _renderedPreparedIndices=[];
         private _renderedPreparedColors=[];
         ACME_fnc_piggybackEligible={true};
         ACME_fnc_formatPreparedLabel={(_this select 0) param [0,""];};
-    ''' + adapt(count + shown + entries + prepared_filter + rows) + r'''
+    ''' + adapt(count + shown + entries + prepared_filter + restore_identity + rows) + r'''
         [_preparedSetCountB50==1,"paired bottle incorrectly counted as a plain IV set"] call _check;
         [_shown isEqualTo [["saline-set","Saline prepared"]],"bottle leaked into the plain Prepared IV Sets overlay"] call _check;
         [_renderedPrepared isEqualTo ["prop-bottle"] && {_renderedPreparedIndices isEqualTo [0]},"prepared bottle is missing or duplicated in Prepared Infusions"] call _check;
@@ -120,8 +126,9 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
         private _salineB=["saline-b","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
         ACE_player setVariable ["ACME_infusion_PreparedBags",[_salineA,_prepared,_salineB]];
         _selectingPiggyback=true;_oldSelected=2;_restoredSelection=-1;
+        missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",2];
         _renderedPrepared=[];_renderedPreparedIndices=[];_renderedPreparedColors=[];
-    ''' + adapt(entries + prepared_filter + rows) + r'''
+    ''' + adapt(entries + prepared_filter + restore_identity + rows) + r'''
         [_renderedPrepared isEqualTo ["saline-a [PiB]","saline-b [PiB]"] && {_renderedPreparedIndices isEqualTo [0,2]},"filtered prepared rows retargeted the original infusion indices"] call _check;
         [_restoredSelection==1 && {count _renderedPreparedColors==2},"filtered selection/highlight did not follow the visible row"] call _check;
         [count _preparedEntries==3 && {(ACE_player getVariable "ACME_infusion_PreparedBags") isEqualTo [_salineA,_prepared,_salineB]},"picker filtering consumed prepared custody"] call _check;

@@ -1,59 +1,45 @@
 """Execute FiO2 authorization at every edit entry and mutation boundary.
 
-Production ventilator handlers, NRB reserve selection and equipment-sharing
-order run in SQF-VM. Engine inventory reads are supplied by fixtures; native
-dialog rendering remains an Arma check.
+Production ventilator handlers, source selection, attach commit, reserve probe
+and equipment-sharing order run in SQF-VM. B277 requires verified attachment;
+the B276 warning entry point remains compatible. Native rendering is an Arma check.
 """
 import re
 
 import pytest
 
-from test_menu_death_lifecycle import ROOT, adapt, execute, read
-
-
-def function(name):
-    text = read(name)
-    if name == "nrbOxygenSource":
-        text = text.replace(
-            "[uniformContainer _unit, vestContainer _unit, backpackContainer _unit]",
-            "([_unit] call ACME_test_containers)",
-        ).replace("magazinesAmmoCargo _x", "_x")
-    if name == "ventOxygenGate":
-        # Native null-object predicate, with namespaces standing in for units.
-        text = text.replace(
-            '!isNull ([ACE_player, _patient] call ACME_fnc_nrbOxygenSource)',
-            '!(([ACE_player, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo objNull)',
-        )
-    # No native display exists in the VM. All source eligibility, flag clearing
-    # and callback routing still run; the dialog takes its no-interface exit.
-    text = text.replace("hasInterface", "_testHasInterface")
-    text = re.sub(r'playSound "[^"]+";', "", text)
-    text = text.replace("disableSerialization;", "")
-    adapted = adapt(text)
-    if name == "ventOxygenGate":
-        # The shared fixture adapts mission HandleDisconnect returns. This is
-        # an unrelated native display callback and must retain its closing.
-        adapted = adapted.replace('    false\n}] select 1);', '    false\n}];')
-    return "ACME_fnc_" + name + "={" + adapted + "};"
+from test_menu_death_lifecycle import ROOT, execute, read
+from test_b276_vent_oxygen import setup as oxygen_setup
+from test_b276_vent_oxygen_ui import function
 
 
 def fixture():
-    return r'''
-        private _testHasInterface = false;
+    return oxygen_setup() + r'''
         private _cargoMedic = [];
         private _cargoPatient = [];
         private _kitMedic = 0;
         private _kitPatient = 0;
         private _fieldWrites = [];
-        ACME_test_containers = {
-            if ((_this select 0) isEqualTo ACE_player) then {_cargoMedic} else {_cargoPatient}
+        private _ownerRequests = [];
+        // Cargo class names and charge stay exact at the engine inventory read.
+        // The production source/reserve/probe workers make every eligibility decision.
+        _magazines = {
+            params ["_unit", "_part"];
+            private _cargo=if (_unit isEqualTo _medic) then {_cargoMedic} else {_cargoPatient};
+            if (_part >= count _cargo) exitWith {[]};
+            _cargo select _part
         };
         ACME_fnc_itemCount = {
-            if ((_this select 0) isEqualTo ACE_player) then {_kitMedic} else {_kitPatient}
+            params ["_unit", "_class"];
+            if (_class=="ACM_OxygenTank_425_Empty") exitWith {_unit getVariable ["fixtureEmpty",0]};
+            if (_unit isEqualTo _medic) then {_kitMedic} else {_kitPatient}
         };
+        ACME_fnc_ownerDispatch = {_ownerRequests pushBack _this;(_this select 2) call ACME_fnc_ventOxygenCommit;};
         ace_medical_treatment_fnc_isMedic = {true};
         ACME_fnc_ventPanelListRefresh = {};
+        ACME_fnc_ventPanelOxygenRefresh = {};
         ACME_fnc_ventPanelShowScreen = {uiNamespace setVariable ["ACME_vent_screen", _this select 0];};
+        ACME_fnc_ventPanelNavClick = {uiNamespace setVariable ["ACME_vent_screen", "params"];};
         ACME_fnc_ventPanelSetValue = {_fieldWrites pushBack _this;};
         ACME_fnc_ventLogbookAdd = {};
         ACME_fnc_ventFormatIE = {str (_this select 0)};
@@ -72,8 +58,16 @@ def fixture():
         missionNamespace setVariable ["ACME_vent_simpleMode", false];
         missionNamespace setVariable ["ace_medical_treatment_allowSharedEquipment", 0];
         missionNamespace setVariable ["ACME_vent_scrollCooldown", 0];
+        private _attachVerified = {
+            private _source=[_medic,_patient] call ACME_fnc_ventOxygenSource;
+            if (_source isEqualTo objNull) exitWith {false};
+            if !([_patient,"attach",_medic,40,_source,"device",1,"",1] call ACME_fnc_ventOxygenCommit) exitWith {false};
+            call _roundtrip;
+            _medic setVariable ["ACME_vent_o2CommandSerial",1];
+            ([_patient] call ACME_fnc_ventOxygenState) select 1
+        };
     ''' + "".join(function(name) for name in [
-        "treatmentSupplyOrder", "nrbOxygenSource", "ventOxygenGate",
+        "ventOxygenGate",
         "ventPanelKnob", "ventPanelListClick", "ventPanelActivateSel",
     ])
 
@@ -99,19 +93,26 @@ def test_no_tank_refuses_each_fio2_edit_entry(screen, entry):
 def test_removing_tank_during_edit_refuses_wheel_write_and_preserves_setting(screen, direction):
     execute(fixture() + r'''
         _cargoMedic = [[["ACM_OxygenTank_425", 9]]];
+        [call _attachVerified,"real cylinder attachment failed"] call _check;
         [0] call ACME_fnc_ventPanelListClick;
-        [(uiNamespace getVariable "ACME_vent_editingParam") == 0,
-            "usable oxygen did not authorize edit"] call _check;
+        [0] call ACME_fnc_ventPanelListClick;
+        [uiNamespace getVariable "ACME_vent_editingFio2",
+            "verified oxygen did not authorize edit"] call _check;
         _cargoMedic = [];
+        // Observe the real source-owner probe, then test the stale UI callback.
+        _serverTime=102;[_patient] call ACME_fnc_ventOxygenTick;call _roundtrip;
     ''' + f'''
         uiNamespace setVariable ["ACME_vent_screen", "{screen}"];
+        uiNamespace setVariable ["ACME_vent_editingParam",0];
         uiNamespace setVariable ["ACME_vent_editingFio2", true];
         [{direction}] call ACME_fnc_ventPanelKnob;
     ''' + r'''
         [_patient getVariable ["ACME_vent_fio2",0] == 40
             && {uiNamespace getVariable ["ACME_vent_fio2",0] == 40},
             "tank loss still allowed a FiO2 write"] call _check;
-        [count _fieldWrites == 0, "denied wheel repainted an authorized value"] call _check;
+        [count _ownerRequests == 0, "denied wheel still sent an owner edit"] call _check;
+        [{!((_x select 1) isEqualTo "21")} count _fieldWrites == 0,
+            "denied wheel displayed enriched oxygen"] call _check;
         [(uiNamespace getVariable "ACME_vent_editingParam") == -1
             && {!(uiNamespace getVariable "ACME_vent_editingFio2")},
             "tank loss left stale oxygen editing flags"] call _check;
@@ -126,6 +127,8 @@ def test_removing_tank_during_edit_refuses_wheel_write_and_preserves_setting(scr
 def test_only_positive_compatible_portable_reserve_authorizes_fio2(cargo, allowed):
     execute(fixture() + f'''
         _cargoMedic = {cargo};
+        [!(call ACME_fnc_ventOxygenGate), "carrying a cylinder authorized an unattached ventilator"] call _check;
+        [call _attachVerified isEqualTo {str(allowed).lower()},"wrong reserve accepted attachment"] call _check;
         [call ACME_fnc_ventOxygenGate isEqualTo {str(allowed).lower()},
             "wrong cylinder reserve eligibility"] call _check;
         [_cargoMedic isEqualTo {cargo}, "setting gate drew oxygen charge"] call _check;
@@ -137,6 +140,7 @@ def test_patient_tank_uses_actual_ace_supply_sharing(sharing, allowed):
     execute(fixture() + f'''
         _cargoPatient = [[["ACM_OxygenTank_425", 12]]];
         missionNamespace setVariable ["ace_medical_treatment_allowSharedEquipment", {sharing}];
+        [call _attachVerified isEqualTo {str(allowed).lower()},"source attachment bypassed supply sharing"] call _check;
         [call ACME_fnc_ventOxygenGate isEqualTo {str(allowed).lower()},
             "FiO2 bypassed actual supply sharing"] call _check;
     ''')
@@ -149,6 +153,8 @@ def test_efak_tank_counts_after_empty_loose_tank_and_never_draws_charge(donor):
         efak_medical_fnc_drawCharge = {{_draws = _draws + 1; 10}};
         _kit{donor} = 1;
         _cargo{donor} = [[["ACM_OxygenTank_425", 0]]];
+        [!(call ACME_fnc_ventOxygenGate), "packed carried cylinder authorized an unattached ventilator"] call _check;
+        [call _attachVerified,"packed source attachment failed"] call _check;
         [call ACME_fnc_ventOxygenGate, "EFAK source rejected behind empty loose tank"] call _check;
         [_draws == 0 && {{_kit{donor} == 1}}, "FiO2 adjustment consumed packed cylinder"] call _check;
     ''')
@@ -159,6 +165,7 @@ def test_efak_tank_counts_after_empty_loose_tank_and_never_draws_charge(donor):
 def test_authorized_wheel_stays_within_sparrow_range(screen, initial, direction, want):
     execute(fixture() + f'''
         _cargoMedic = [[["ACM_OxygenTank_425", 9]]];
+        [call _attachVerified,"cylinder attachment failed"] call _check;
         uiNamespace setVariable ["ACME_vent_screen", "{screen}"];
         uiNamespace setVariable ["ACME_vent_editingParam", 0];
         uiNamespace setVariable ["ACME_vent_editingFio2", true];
@@ -168,6 +175,8 @@ def test_authorized_wheel_stays_within_sparrow_range(screen, initial, direction,
         [_patient getVariable ["ACME_vent_fio2",0] == {want}
             && {{uiNamespace getVariable ["ACME_vent_fio2",0] == {want}}},
             "authorized FiO2 dial changed range or ignored tank"] call _check;
+        [count _ownerRequests == 1 && {{((_ownerRequests select 0) select 2) select 1 == "fio2"}},
+            "FiO2 writer bypassed verified owner command"] call _check;
         [_cargoMedic isEqualTo [[["ACM_OxygenTank_425", 9]]],
             "FiO2 writer consumed oxygen"] call _check;
     ''')
@@ -193,6 +202,7 @@ def test_denied_oxygen_attempt_does_not_lock_next_parameter_edit():
         [0] call ACME_fnc_ventPanelListClick;
         [(uiNamespace getVariable "ACME_vent_editingParam") == -1,
             "denied FiO2 entry left an active edit"] call _check;
+        ["back"] call ACME_fnc_ventPanelNavClick;
         _patient setVariable ["ACME_vent_peep", 5];
         [2] call ACME_fnc_ventPanelListClick;
         [1] call ACME_fnc_ventPanelKnob;
@@ -223,7 +233,7 @@ def test_dialog_closes_to_parent_and_has_exact_message_without_patient_writes():
 def test_every_existing_fio2_writer_has_gate_at_its_branch_boundary():
     source = read("ventPanelKnob")
     param = source[source.index('case 0: {  // o2 ENRICHMENT'):source.index('case 1: {  // the i:e ratio ladder.')]
-    legacy = source[source.index('if ((_screen == "o2") &&'):source.index('// the o2 screen when not editing.')]
+    legacy = source[source.index('if ((_screen == "o2") &&'):source.index('// O2 has one value')]
     for branch in (param, legacy):
-        assert branch.index('call ACME_fnc_ventOxygenGate') < branch.index('setVariable ["ACME_vent_fio2"')
-        assert 'if !(call ACME_fnc_ventOxygenGate) exitWith {};' in branch
+        assert branch.index('call ACME_fnc_ventOxygenState') < branch.index('"fio2", ACE_player, _v] call ACME_fnc_ventOxygenRequest')
+        assert not re.search(r'_\w+ setVariable \["ACME_vent_fio2"', branch)

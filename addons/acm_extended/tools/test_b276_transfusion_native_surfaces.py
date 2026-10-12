@@ -8,26 +8,37 @@ import re
 
 import pytest
 
-from test_menu_death_lifecycle import execute
+from test_menu_death_lifecycle import execute, adapt
+from test_b156_procedure_supplies import primitives
 
 ROOT = Path(__file__).resolve().parents[3]
 LAYOUT = (ROOT / "addons/acm_extended/functions/fn_layoutTransfusionMenu.sqf").read_text()
 CONTROLLER = (ROOT / "addons/acm_extended/functions/fn_updateTransfusionControls.sqf").read_text()
 DIALOG = (ROOT / "addons/circulation/TransfusionMenu_Dialog.hpp").read_text()
 SURFACES = (ROOT / "addons/circulation/TransfusionMenu_Surfaces.hpp").read_text()
+CARDS = (ROOT / "addons/acm_extended/functions/fn_updateTransfusionCards.sqf").read_text()
+CHROME = (ROOT / "addons/acm_extended/TransfusionMenu_Chrome.hpp").read_text()
+STYLES = (ROOT / "addons/acm_extended/TransfusionMenu_Styles.hpp").read_text()
+DATA = (ROOT / "addons/acm_extended/functions/fn_transfusionCardData.sqf").read_text()
 
 
 def authored_geometry():
-    start = LAYOUT.index("        private _rowH = safeZoneH * 0.072;")
-    end = LAYOUT.index('            [_card,"show",_show]', start)
-    code = LAYOUT[start:end]
-    # Only engine reads/handles are fixture boundaries. Keep authored row/clip math.
-    code = code.replace("safeZoneH", "1").replace("pixelH", "0.001")
-    code = code.replace("lbSize _list", "_rowCount")
-    code = code.replace("ctrlScrollValues _list", "[_scrollValue,0]")
-    code = re.sub(r"private _(card|caption|track|fill) = _display displayCtrl .*?;\n", "", code)
-    code = code.replace("ctrlShown _list", "_visible")
-    return code
+    # B277 replaces four passive overlays with a bounded two-card fluid pool.
+    # Execute its actual viewport and authored rectangle arithmetic; original
+    # native lists remain the custody and selection model behind the cards.
+    capacity = re.search(r'private _panes = \[\[86004,(\d+),', CARDS).group(1)
+    start = CARDS.index("        private _gap = safeZoneH * 0.007;")
+    end = CARDS.index('        private _offsetKey =', start)
+    sizing = CARDS[start:end].replace("safeZoneH", "1")
+    rectangle = re.search(r'private _cardRect = \[[^;]+;', CARDS).group()
+    window = (ROOT / "addons/acm_extended/functions/fn_transfusionCardWindow.sqf").read_text()
+    return f"ACME_test_window={{" + window + "};" + f"private _capacity={capacity};private _h=_lh;private _py=_ly;private _px=0;private _w=.2;" + sizing + r'''
+        private _window=[_rowCount,_capacity,floor ((_rowCount-_capacity) max 0)*_scrollValue] call ACME_test_window;
+        private _rows=_rowCount;
+        for "_slot" from 0 to (_capacity-1) do {
+            private _row=(_window select 1) select _slot;
+            private _show=_visible && {_row>=0};
+    ''' + rectangle + 'private _cy=_cardRect select 1;'
 
 
 @pytest.mark.parametrize("height", [.149, .187, .210, .235])
@@ -50,10 +61,18 @@ def test_real_native_card_rectangles_never_escape_the_owning_list(height, rows, 
 
 
 def cache_predicate():
-    start = LAYOUT.index("                private _sourceRow = _cardSelection")
-    end = LAYOUT.index("                    _cache params", start)
-    code = LAYOUT[start:end]
-    return code.replace("_list lbValue _row", "_rowValue").replace("_list lbText _row", "_rowLabel")
+    # Exercise the production guard before any temperature/flow metadata read.
+    # B277 recomputes card metadata instead of borrowing a previous label cache.
+    end = DATA.index('    ([_patient,_part,_bag] call ACME_fnc_transfusionBagPresentation)')
+    code = DATA[:end] + '_metadataAdmitted=true;};'
+    replacements = {
+        '_list lbText _row': '_rowLabel', '_list lbColor _row': '[1,1,1,1]',
+        '_list lbPictureRight _row': '\"native-vial\"', '_list lbPicture _row': '\"native-fluid\"',
+        '_list lbValue _row': '_rowValue', 'ctrlIDC _list': '_listIDC',
+    }
+    for before, after in sorted(replacements.items(), key=lambda item: -len(item[0])):
+        code = code.replace(before, after)
+    return primitives(adapt(code))
 
 
 @pytest.mark.parametrize("mutation,allowed", [
@@ -63,54 +82,76 @@ def cache_predicate():
     ('_rowLabel="Blood (250 mL)";', False), ('_cache=[];', False),
 ])
 def test_same_text_on_a_new_access_cannot_reuse_old_flow_or_warmer_metadata(mutation, allowed):
+    # Empty/changed old caches now permit a fresh metadata read for the same
+    # physical bag; they never authorize reuse of the old warming/flow record.
+    fresh_same_bag = mutation in ('_rowLabel="Blood (250 mL)";', '_cache=[];')
     execute(r'''
         private _part="leftarm";private _iv=true;private _site=0;
+        private _list=missionNamespace;
         private _listIDC=86004;private _rowValue=0;private _rowLabel="Saline (250 mL)";
-        private _cardSelection=[[]];(_cardSelection select 0) set [9,"physical"];
+        private _cardSelection=[["Saline",250,1,0,true,-1,500,-1,0,"physical"]];
         private _cache=[250,500,"LW Quantum · Warming...","",true,"Saline","physical",_rowLabel,[_patient,_part,_iv,_site]];
-        private _allowed=false;
-    ''' + mutation + cache_predicate() + r'''
-        _allowed=true;
-    };
-    ''' + f'[_allowed isEqualTo {str(allowed).lower()},"stale card metadata escaped identity scope"] call _check;')
+        private _mapDefault={params["_map","_args"];_args params["_key","_default"];if(_key in _map)then{_map get _key}else{_default}};
+        _patient setVariable["ACM_circulation_IV_Bags",createHashMapFromArray[["leftarm",[["Saline",250,1,0,true,-1,500,-1,"physical"]]]]];
+        private _metadataAdmitted=false;
+    ''' + mutation + r'''
+        missionNamespace setVariable["ACM_circulation_TransfusionMenu_Target",_patient];
+        missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selected_BodyPart",_part];
+        missionNamespace setVariable["ACM_circulation_TransfusionMenu_SelectIV",_iv];
+        missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selected_AccessSite",_site];
+        missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selection_IVBags",_cardSelection];
+    ''' + 'private _scope={' + cache_predicate() + '};[_list,0]call _scope;' +
+        f'[_metadataAdmitted isEqualTo {str(allowed or fresh_same_bag).lower()},"stale card metadata escaped physical access scope"] call _check;')
+    assert '_cache' not in DATA
+    assert 'private _thermal = "";' in DATA
+    assert '[_patient,_part,_bag] call ACME_fnc_transfusionBagPresentation' in DATA
 
 
 def test_decorations_are_predeclared_behind_native_controls_and_never_register_care():
-    painter = LAYOUT.split("// B276: bounded predeclared decorations.", 1)[1]
+    painter = (ROOT / "addons/acm_extended/functions/fn_transfusionRoundedFrame.sqf").read_text()
     assert "ctrlCreate" not in painter
     assert "addPerFrameHandler" not in painter
     assert "ownerDispatch" not in painter
     assert "lbClear" not in painter and "lbSetCurSel" not in painter
     assert "_patient setVariable" not in painter
-    assert 'enable = 0;' in SURFACES
-    assert DIALOG.index('#include "TransfusionMenu_Surfaces.hpp"') < DIALOG.index("class Controls {")
-    assert "class Hit:" not in SURFACES
-    assert "TX_ROW_SURFACE(FluidCard3,86412);" in SURFACES
-    assert "TX_ROW_SURFACE(PreparedInfusionCard3,86492);" in SURFACES
+    assert "_piece ctrlEnable false;" in painter
+    patch = (ROOT / "addons/acm_extended/config.cpp").read_text().split("class ACM_circulation_TransfusionMenu_Dialog {", 1)[1]
+    assert patch.index('#include "TransfusionMenu_Chrome.hpp"') < patch.index("class Controls {")
+    assert "class Hit:" not in CHROME
+    assert "class ACME_TxButton_86006: ACME_TransfusionRoundedFrame" in CHROME
+    assert "class ACME_TxDetails: ACME_TransfusionRoundedFrame" in CHROME
+    # Card hits are the bounded interactive layer and resolve custody before
+    # delegating the existing native selection; decorations remain disabled.
+    select = (ROOT / "addons/acm_extended/functions/fn_transfusionCardSelect.sqf").read_text()
+    assert "call ACME_fnc_transfusionCardResolve" in select
+    assert "_list lbSetCurSel _row;" in select
+    assert "ownerDispatch" not in select
 
 
 def test_native_button_states_and_list_treatment_routes_remain_authoritative():
     assert 'ctrlEnabled _button' in LAYOUT and 'ctrlShown _button' in LAYOUT
     assert 'ctrlPosition _button' in LAYOUT
-    assert '"ACME_txSkinHover"' in LAYOUT and '"ACME_txSkinFocus"' in LAYOUT
+    assert '"ACME_txRoundHover"' in LAYOUT and '"ACME_txRoundFocus"' in LAYOUT
     assert '"ACME_txSkinTint"' in LAYOUT
-    assert '_ctrlSetsBtn ctrlSetBackgroundColor [0,0,0,0];' in CONTROLLER
     service = (ROOT / "addons/acm_extended/functions/fn_transfusionServicePaint.sqf").read_text()
     assert '_flush ctrlSetBackgroundColor [0,0,0,0];' in service
     assert '"ACME_txSkinTint"' in service
+    assert 'ctrlSetBackgroundColor [0,0,0,0];' in LAYOUT
     assert 'call FUNC(TransfusionMenu_ToggleIVFlow)' in DIALOG
     assert 'call FUNC(TransfusionMenu_MoveBag)' in DIALOG
 
 
 def test_every_row_and_topology_bracket_uses_the_authored_native_card_pitch():
-    block = (ROOT / "addons/acm_extended/config.cpp").read_text().split(
-        "class ACM_circulation_TransfusionMenu_Dialog {", 1)[1].split("// over-resuscitation", 1)[0]
+    # The native list pitch is now a hidden backing detail. Visible topology
+    # follows the exact card endpoints, including scrolling and mixed panes.
     bracket = (ROOT / "addons/acm_extended/functions/fn_paintTransfusionYBracket.sqf").read_text()
-    assert 'rowHeight = QUOTE(safeZoneH * 0.072);' in DIALOG
-    assert 'rowHeight = "safeZoneH * 0.072";' in block
-    assert 'private _rowH = safeZoneH * 0.072;' in bracket
-    assert 'private _paneRowH = safeZoneH * 0.072;' in bracket
-    assert 'ctrlScrollValues _list' in LAYOUT
+    assert '_endpoints set [_identity select 4,[_cardRect select 0,(_cardRect select 1) + _rowH / 2]]' in CARDS
+    assert '"ACME_txCardEndpoints"' in CARDS and '"ACME_txCardEndpoints"' in bracket
+    assert '"ACME_txCardsReady"' in bracket
+    assert 'count _cardPoints == count _rows' in bracket
+    assert 'private _gap = safeZoneH * 0.007;' in CARDS
+    assert '(_h - _gap * (_capacity - 1)) / _capacity' in CARDS
+    assert 'call ACME_fnc_transfusionCardWindow' in CARDS
 
 
 def test_shipped_surfaces_are_native_alpha_textures_with_reproducible_sources():

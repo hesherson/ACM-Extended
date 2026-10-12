@@ -181,7 +181,7 @@ switch (_screen) do {
     // apart.
     case "params": {
         private _tP  = uiNamespace getVariable ["ACME_vent_target", ACE_player];
-        private _fio = if (isNull _tP) then { uiNamespace getVariable ["ACME_vent_fio2", 21] } else { _tP getVariable ["ACME_vent_fio2", 21] };
+        private _fio = if (([_tP] call ACME_fnc_ventOxygenState) select 1) then { _tP getVariable ["ACME_vent_fio2", 21] } else {21};
         private _ieP = if (isNull _tP) then { 2.0 } else { _tP getVariable ["ACME_vent_ie", 2.0] };
         private _pep = if (isNull _tP) then { 5 } else { _tP getVariable ["ACME_vent_peep", 5] };
         private _mod = if (isNull _tP) then { "SIMV VC PS" } else { _tP getVariable ["ACME_vent_mode", "SIMV VC PS"] };
@@ -253,7 +253,7 @@ switch (_screen) do {
         ]};
         if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])})) then {
             _rowsP = if (_pg == 0) then {[
-                ["O2 ENRICHMENT", "AUTO", 4, "", false],
+                ["O2 ENRICHMENT", str _fio, 3, "%", false],
                 ["I:E RATIO", "AUTO", 4, "", false],
                 ["PEEP", "AUTO", 4, "", false],
                 ["P. SUPPORT", "AUTO", 4, "", false],

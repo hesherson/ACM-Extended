@@ -37,6 +37,29 @@ if (_simple != (uiNamespace getVariable ["ACME_vent_simpleShown", _simple])) the
     if !(_screen in ["boot", "selftest"]) then { [_screen] call ACME_fnc_ventPanelShowScreen; };
 };
 
+// A supply replica change repaints only oxygen. Keep the existing panel PFH;
+// never rescan cargo, rebuild the page or reset another parameter's editor.
+private _oxygenState = [_custodyTarget] call ACME_fnc_ventOxygenState;
+private _oxygenStamp = [_custodyTarget, _oxygenState select 0, _oxygenState select 1,
+    round (_oxygenState select 2), _oxygenState select 4,
+    _custodyTarget getVariable ["ACME_vent_fio2", 21]];
+if (_oxygenStamp isNotEqualTo (uiNamespace getVariable ["ACME_vent_o2PaintStamp", []])) then {
+    uiNamespace setVariable ["ACME_vent_o2PaintStamp", _oxygenStamp];
+    private _oxygenScreen = uiNamespace getVariable ["ACME_vent_screen", ""];
+    if !(_oxygenState select 1) then {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        if (_oxygenScreen == "params" && {(uiNamespace getVariable ["ACME_vent_paramsPage", 0]) == 0}
+            && {(uiNamespace getVariable ["ACME_vent_editingParam", -1]) == 0}) then {
+            uiNamespace setVariable ["ACME_vent_editingParam", -1];
+        };
+    };
+    if (_oxygenScreen == "o2") then { [] call ACME_fnc_ventPanelOxygenRefresh; };
+    if (_oxygenScreen == "params" && {(uiNamespace getVariable ["ACME_vent_paramsPage", 0]) == 0}) then {
+        [0, str (if (_oxygenState select 1) then {_custodyTarget getVariable ["ACME_vent_fio2", 21]} else {21})] call ACME_fnc_ventPanelSetValue;
+        [] call ACME_fnc_ventPanelListRefresh;
+    };
+};
+
 
 // slow measured BPM update, on a cadence of about 3 s. fn_ventpanelrefresh reads this stored value only, so
 // the live parenthetical no longer re-randomizes every time the operator scrolls the menu, which fires a

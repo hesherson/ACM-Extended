@@ -1,3 +1,4 @@
+class RscControlsGroupNoScrollbars;
 // These controls belong only to the transfusion menu. The roller clamp uses its existing classes unchanged.
 class ACME_TransfusionActionButton: RscButton {
     text = "";
@@ -42,8 +43,8 @@ class ACME_TransfusionInlineDetails: RscControlsGroupNoHScrollbars {
     class Controls {
         class Contents: RscStructuredText {
             idc = 86192;
-            x = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.006";
-            y = "safeZoneH * 0.006";
+            x = 0;
+            y = 0;
             w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.280";
             h = "safeZoneH * 0.090";
             size = "safeZoneH * 0.016";
@@ -62,3 +63,27 @@ class ACME_TransfusionCenteredCaption: ACME_TransfusionCaption {
 class ACME_TransfusionAccessCaption: ACME_TransfusionCenteredCaption {
     style = 0;
 };
+
+// B276: sliced native textures preserve circular corners instead of stretching a bitmap.
+#define ACME_TX_SLICE(Name, Id) class Name: RscPicture { idc = Id; x = 0; y = 0; w = 0; h = 0; text = ""; colorText[] = {1,1,1,1}; };
+#define ACME_TX_SLICES ACME_TX_SLICE(TL,0) ACME_TX_SLICE(T,1) ACME_TX_SLICE(TR,2) ACME_TX_SLICE(L,3) ACME_TX_SLICE(C,4) ACME_TX_SLICE(R,5) ACME_TX_SLICE(BL,6) ACME_TX_SLICE(B,7) ACME_TX_SLICE(BR,8)
+class ACME_TransfusionRoundedFrame: RscControlsGroupNoScrollbars {
+    x = "safeZoneX - 1"; y = "safeZoneY - 1"; w = 0; h = 0;
+    class Controls { ACME_TX_SLICES };
+};
+class ACME_TransfusionCard: ACME_TransfusionRoundedFrame {
+    class Controls {
+        ACME_TX_SLICES
+        class Hit: ACME_TransfusionActionButton { idc = 9; x = 0; y = 0; w = 0; h = 0; sizeEx = 0; };
+        class Name: ACME_TransfusionCaption { idc = 10; style = 0; sizeEx = "safeZoneH * 0.020"; colorText[] = {0.94,0.94,0.94,1}; };
+        class Detail: Name { idc = 11; sizeEx = "safeZoneH * 0.017"; colorText[] = {0.66,0.66,0.66,1}; };
+        class Status: Detail { idc = 12; style = 0; };
+        class Thermal: Detail { idc = 13; sizeEx = "safeZoneH * 0.015"; };
+        class BagIcon: RscPictureKeepAspect { idc = 14; x = 0; y = 0; w = 0; h = 0; text = ""; };
+        class VialIcon: BagIcon { idc = 15; };
+        class Track: RscText { idc = 16; x = 0; y = 0; w = 0; h = 0; colorBackground[] = {0.25,0.25,0.25,1}; };
+        class Progress: Track { idc = 17; colorBackground[] = {0.76,0.76,0.76,1}; };
+    };
+};
+#undef ACME_TX_SLICES
+#undef ACME_TX_SLICE

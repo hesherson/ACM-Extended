@@ -173,6 +173,7 @@ if ((uiNamespace getVariable ["ACME_infusion_LayoutDisplay", displayNull]) != _d
                     private _ti = if (_val >= 0 && {_val < count _sel}) then {(_sel select _val) param [8, -1]} else {-1};
                     missionNamespace setVariable ["ACME_infusion_SelectedActiveInfusionSelectionIndex", _val];
                     missionNamespace setVariable ["ACME_infusion_SelectedActiveInfusionTrueIndex", _ti];
+                    (ctrlParent _ctrl) setVariable ["ACME_txInfusionUID",(_sel param [_val,[]]) param [9,""]];
                     missionNamespace setVariable ["ACME_pull_selTrueIndex", _ti];
                 };
             }];
@@ -577,8 +578,7 @@ if (!isNull _ctrlActiveInfList) then {
         });
         if ((uiNamespace getVariable ["ACME_infusion_ActiveInfusionListSignature", ""]) != _signature
             || {(lbSize _ctrlActiveInfList) != (count _infusionLabels)}) then {
-            private _oldSelected = missionNamespace getVariable ["ACME_infusion_SelectedActiveInfusionSelectionIndex", -1];
-            private _oldTrueIndex = missionNamespace getVariable ["ACME_infusion_SelectedActiveInfusionTrueIndex", -1];
+            private _oldUID = _display getVariable ["ACME_txInfusionUID",""];
             _display setVariable ["ACME_txRebuilding", true];
             lbClear _ctrlActiveInfList;
             {
@@ -594,10 +594,9 @@ if (!isNull _ctrlActiveInfList) then {
                     private _vialPic = getText (configFile >> "CfgWeapons" >> ([_pMedication] call ACME_fnc_vialClass) >> "picture");
                     if (_vialPic != "") then {_ctrlActiveInfList lbSetPictureRight [_i, _vialPic];};
                 };
-                // re-select across a rebuild by the stable trueindex of the bag first, which survives ACM reordering the
-                // selection array when a unit empties or is pulled, and fall back to the positional selidx. this is what kept
-                // the infusion selected, so a medic can keep adjusting it after the first set.
-                if ((_pTrueIndex >= 0 && {_pTrueIndex == _oldTrueIndex}) || {_selIdx == _oldSelected}) then {_ctrlActiveInfList lbSetCurSel _i;};
+                // Only the same physical UID survives a rebuild. Native storage and selection indices may both shift.
+                private _newUID = ((missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags",[]]) param [_selIdx,[]]) param [9,""];
+                if (_oldUID != "" && {_newUID == _oldUID}) then {_ctrlActiveInfList lbSetCurSel _i;};
             } forEach _infusionLabels;
             uiNamespace setVariable ["ACME_infusion_ActiveInfusionListSignature", _signature];
         };
@@ -666,6 +665,8 @@ if (!isNull _ctrlPreparedList) then {
     private _signature = str [_selectingPiggyback,_shownPrepared apply {[_x select 1,(_x select 0) param [0,""],(_x select 0) param [3,""],(_x select 0) param [4,0],(_x select 0) param [10,-1]]}];
     if ((uiNamespace getVariable ["ACME_infusion_PreparedListSignature", ""]) != _signature) then {
         private _oldSelected = missionNamespace getVariable ["ACME_infusion_SelectedPreparedIndex", -1];
+        private _oldIdentity = _display getVariable ["ACME_txPreparedIdentity",[]];
+        if (_oldIdentity isEqualTo [] && {_oldSelected >= 0}) then {_oldIdentity = ["prepared",(_preparedEntries param [_oldSelected,[]]) param [0,""]];};
         lbClear _ctrlPreparedList;
         if (_shownPrepared isEqualTo []) then {
             private _i = _ctrlPreparedList lbAdd "No prepared infusions";
@@ -679,13 +680,14 @@ if (!isNull _ctrlPreparedList) then {
                 _ctrlPreparedList lbSetValue [_i,_index];
                 _ctrlPreparedList lbSetTooltip [_i,_label];
                 if (_selectingPiggyback) then {_ctrlPreparedList lbSetColor [_i,[0.79,0.73,0.89,1]];};
-                if (_index == _oldSelected) then {_ctrlPreparedList lbSetCurSel _i;};
+                if (["prepared",_entry param [0,""]] isEqualTo _oldIdentity) then {_ctrlPreparedList lbSetCurSel _i;};
             } forEach _shownPrepared;
-            if (lbCurSel _ctrlPreparedList < 0) then {_ctrlPreparedList lbSetCurSel 0;};
+            if (lbCurSel _ctrlPreparedList < 0 && {_oldIdentity isEqualTo []}) then {_ctrlPreparedList lbSetCurSel 0;};
         };
         uiNamespace setVariable ["ACME_infusion_PreparedListSignature",_signature];
     };
     private _row = lbCurSel _ctrlPreparedList;
+    if (_row < 0) then {missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",-1];};
     if (_row >= 0) then {
         _selectedPrepared = _ctrlPreparedList lbValue _row;
         if (_selectedPrepared >= 0) then {missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",_selectedPrepared];};
@@ -747,7 +749,7 @@ if (!isNull _ctrlMove) then {
 // native move and remove column. the side offset and the gap are taken from ACM's own geometry, so it reads as
 // stock.
 private _infSelected = false;
-if (!isNull _ctrlActiveInfList && {ctrlShown _ctrlActiveInfList || {(_display getVariable ["ACME_txActionMenu", ""]) == "infusion"}}) then {
+if (!isNull _ctrlActiveInfList && {ctrlShown _ctrlActiveInfList || {(_display getVariable ["ACME_txActionMenu", ""]) == "infusion"} || {((_display getVariable ["ACME_txCardLayout",createHashMap]) getOrDefault [86129,[]]) param [4,false]}}) then {
     _infSelected = (lbCurSel _ctrlActiveInfList) >= 0;
 };
 private _sideGap = _btnGap;
@@ -998,9 +1000,6 @@ private _warmingReadout = [];
                         _list setVariable [_tipKey,_tooltip];
                     };
                     if (_thermal != "" && {_flowing}) then {_warmingReadout pushBackUnique _thermal;};
-                    // Read-only second line/progress for the static native row cards. The current label
-                    // is its scope token, so a list rebuild cannot display metadata from an older row.
-                    _list setVariable [format ["ACME_txCard_%1",_r],[_physical param [1,0],_physical param [6,0],_thermal,_role,_flowing,_physical param [0,""],_physical param [8,""],_label,[_targetPatient,_targetBodyPart,_flIV,_flSite]]];
                     private _type = _physical param [0,""];
                     if (_type in ["Saline","ACME_SalineY"]) then {_list lbSetPicture [_r,"\z\ace\addons\medical_treatment\ui\salineIV_ca.paa"];};
                 };
@@ -1160,6 +1159,7 @@ if (!isNull _ctrlSetsList) then {
     private _wantRows = (count _shown) max 1;  // an empty set list still shows the one "No prepared IV sets" row.
     if (_wantSig != (uiNamespace getVariable ["ACME_preparedRowSig", ""]) || {(lbSize _ctrlSetsList) != _wantRows}) then {
         private _oldSel = lbCurSel _ctrlSetsList;
+        private _oldSetId = if (_oldSel >= 0) then {_ctrlSetsList lbData _oldSel} else {""};
         lbClear _ctrlSetsList;
         if (_shown isEqualTo []) then {
             private _i = _ctrlSetsList lbAdd "No prepared IV sets";
@@ -1174,8 +1174,9 @@ if (!isNull _ctrlSetsList) then {
                 if ((_slabel find "[Cooled]") >= 0) then { _ctrlSetsList lbSetColor [_i, [0.45, 0.72, 1, 1]]; };
                 if (_selectingPiggyback) then {_ctrlSetsList lbSetColor [_i,[0.79,0.73,0.89,1]];};
             } forEach _shown;
-            if (_oldSel < 0 || {_oldSel >= (count _shown)}) then { _oldSel = 0; };
-            _ctrlSetsList lbSetCurSel _oldSel;
+            private _restore = _shown findIf {(_x param [0,""]) == _oldSetId};
+            if (_oldSetId == "") then {_restore = 0;};
+            _ctrlSetsList lbSetCurSel _restore;
         };
         uiNamespace setVariable ["ACME_preparedRowSig", _wantSig];
     };

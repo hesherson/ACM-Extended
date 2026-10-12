@@ -10,6 +10,9 @@ if (_property == "position" && {_display getVariable ["ACME_txLayoutManaged", fa
     && {(ctrlIDC _c) in [86002,86003,86004,86005,86006,86007,86008,86037,
         86120,86121,86122,86126,86127,86128,86129,86130,86131,86132,86133,
         86134,86141,86142,86143,86144,86145,86146,86147,86148,86149]}) exitWith {true};
+// B276 backing lists retain native selection/events without drawing the old flat rows over cards.
+if (_property == "show" && {_value isEqualTo true} && {_display getVariable ["ACME_txCardsReady",false]}
+    && {(ctrlIDC _c) in [86004,86005,86129,86145,86127]}) exitWith {true};
 switch (_property) do {
     case "position": {if ((ctrlPosition _c) isNotEqualTo _value) then {_c ctrlSetPosition _value;_c ctrlCommit 0;};};
     case "show": {if ((ctrlShown _c) isNotEqualTo _value) then {_c ctrlShow _value;};};

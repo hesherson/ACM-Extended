@@ -145,12 +145,15 @@ def inline_fixture():
     from test_b275_piggyback import fn
     presentation = "".join(fn(name) for name in (
         "isYLineAccess", "piggybackLine", "piggybackRole", "piggybackFlow",
-        "fluidLabelVolume", "transfusionBagPresentation",
+        "fluidLabelVolume", "transfusionBagPresentation", "infusionName",
     ))
     # Native weapon configuration is an engine boundary; leave the production
     # label/role/thermal logic intact and let its type fallback name the bag.
     presentation = presentation.replace('private _cfg = configFile >> "CfgWeapons" >> _class;', 'private _cfg = configFile;')
     presentation = presentation.replace('getText (_cfg >> "shortName")', '""').replace('getText (_cfg >> "displayName")', '""')
+    # No engine localization table exists here; execute the alias and its
+    # production missing-translation fallback using the unchanged string key.
+    presentation = presentation.replace('localize format', 'format')
     source = (FUN / "fn_updateTransfusionLineDetails.sqf").read_text()
     source = source.replace("findDisplay 86000", "_displayFixture")
     source = source.replace("findDisplay 86200", "_clampFixture")
@@ -165,6 +168,7 @@ def inline_fixture():
     source = source.replace("ctrlPosition _group", "[0,0,.29,.09]")
     source = source.replace("ctrlTextHeight _ctrl", ".12")
     source = source.replace("safeZoneH", "1")
+    source = source.replace("pixelW", "(1/1920)").replace("pixelH", "(1/1080)")
     source = source.replace("_ctrl ctrlSetStructuredText parseText _content;", "_paints pushBack _content;")
     source = re.sub(r'getText \(configFile >> "CfgWeapons" >> .*? >> "displayName"\)', '""', source)
     source = adapt(map_defaults(source))

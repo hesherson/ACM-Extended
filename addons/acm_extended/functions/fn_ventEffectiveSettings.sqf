@@ -8,9 +8,8 @@ if (!(_bpm isEqualType 0) || {!finite _bpm}) then {_bpm = 12;};
 _bpm = _bpm max 1;
 if (_simple) exitWith {
     private _arrest = _patient getVariable ["ace_medical_inCardiacArrest", false];
-    // Preserve the existing ventilator's abstract oxygen source. B33 has no
-    // cylinder ledger; Simple adds no tank or mask requirement.
-    [true, "SIMPLE", _bpm min 60, if (_arrest) then {420} else {500}, 95,
+    // Room-air turbine ventilation remains available without a cylinder.
+    [true, "SIMPLE", _bpm min 60, if (_arrest) then {420} else {500}, [_patient] call ACME_fnc_ventOxygenFiO2,
         if (_arrest) then {0} else {5}, 20, 10, -2, 2, 70, 35]
 };
 private _mode = _patient getVariable ["ACME_vent_mode", "SIMV VC PS"];
@@ -23,7 +22,7 @@ if (_mode == "IMV VC (CPR)") then {
     _peep = 0;
 };
 private _pinsp = (_patient getVariable ["ACME_vent_pinsp", round (8 + (12 * (_vt / 500)))]) max (11 max (_peep + 1)) min 60;
-[false, _mode, _bpm, _vt, _patient getVariable ["ACME_vent_fio2", 21], _peep, _pinsp,
+[false, _mode, _bpm, _vt, [_patient] call ACME_fnc_ventOxygenFiO2, _peep, _pinsp,
     (_patient getVariable ["ACME_vent_psup", 10]) max 0 min 50,
     _patient getVariable ["ACME_vent_trigSensCmH2O", missionNamespace getVariable ["ACME_vent_trigSensCmH2O", -2]],
     _patient getVariable ["ACME_vent_ie", 2], _kg, _patient getVariable ["ACME_vent_alertPLimit", 40]]

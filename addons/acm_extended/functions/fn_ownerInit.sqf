@@ -80,6 +80,7 @@ ACME_NA2_ownerInstalled = true;
         ["Battery swap cancelled: another provider changed this ventilator.", 2, ACE_player] call ace_common_fnc_displayTextStructured;
     };
 }] call CBA_fnc_addEventHandler;
+["ACME_ventOxygenDraw", {isNil {_this call ACME_fnc_ventOxygenDraw;};}] call CBA_fnc_addEventHandler;
 ["ACME_nrbDraw", { isNil { _this call ACME_fnc_nrbOxygenDraw; }; }] call CBA_fnc_addEventHandler;
 ["ACME_nrbSound", { _this call ACME_fnc_nrbSoundServer; }] call CBA_fnc_addEventHandler;
 ["ACME_thoraOutput", { if (isServer) then { isNil { _this call ACME_fnc_thoraOutput; }; }; }] call CBA_fnc_addEventHandler;

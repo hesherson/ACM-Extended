@@ -23,6 +23,7 @@ if (_patient getVariable ["ACME_vent_recovering", false]) exitWith {
 };
 
 [_patient] call ACME_fnc_ventSyncMask;
+[_patient] call ACME_fnc_ventOxygenTick;
 
 // Owner-published mode episode rejects delayed manual commands across live toggles.
 private _simpleNow = missionNamespace getVariable ["ACME_vent_simpleMode", false];
@@ -146,7 +147,7 @@ private _wasDriving = _patient getVariable ["ACME_vent_driving", false];
 if (_driving) then {
     private _bpm = _effective select 2;
     private _vtSet = _effective select 3;
-    private _fio2 = _effective select 4;
+    private _fio2 = 21;
     private _simpleManualRR = if (_simple) then {count _simpleManual} else {0};
     private _cprBpm = _bpm + _simpleManualRR;
 
@@ -397,6 +398,12 @@ if (_driving) then {
     private _vtReference = if (_mode == "SIMV PC") then {500 * (((_pinsp - _peep) max 0) / 15)} else {_vtSet};
     [_patient, "ACME_vent_vtReference", _vtReference max 1] call ACME_fnc_setVarNet;
 
+    // Consume only actual inspiratory gas after pressure/volume limits. Manual breaths
+    // are charged at their accepted commit and excluded from this continuous flow.
+    private _inspiredLiters = ((_mandatoryBpm * _vtiMand) + (_spontBpm * _vtiSpont)) * _dt / 60000;
+    _fio2 = [_patient, _inspiredLiters, _patient getVariable ["ACME_vent_fio2",21]] call ACME_fnc_ventOxygenUse;
+    [_patient,"ACME_vent_effectiveFiO2",_fio2] call ACME_fnc_setVarNet;
+
     // Recruitment and positive-pressure effects.
     private _recruit = 0;
     if (_compEff < 0.95 && {_ie < 1.5}) then {
@@ -636,6 +643,7 @@ if (_driving) then {
     };
     [_patient, "ACME_vent_driving", true] call ACME_fnc_setVarNet;
 } else {
+    [_patient,"ACME_vent_effectiveFiO2",21] call ACME_fnc_setVarNet;
     // not driving. release the vent-driven BVM vars only, and never stomp a real medic-held BVM.
     if (_wasDriving || {(_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient}) then {
         if ((_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient) then {

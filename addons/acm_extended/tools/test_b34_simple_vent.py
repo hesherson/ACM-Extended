@@ -71,7 +71,14 @@ class SimpleVentContracts(unittest.TestCase):
             self.assertNotIn(key,simple)
         self.assertIn('420',simple)
         self.assertIn('500',simple)
-        self.assertIn('95',simple)
+        # B276 preserves automatic pressure/volume while resolving FiO2 through
+        # the real, read-only oxygen supply state instead of granting free 95%.
+        self.assertIn('[_patient] call ACME_fnc_ventOxygenFiO2',simple)
+        self.assertNotIn(', 95,',simple)
+        oxygen=source('ventOxygenFiO2')
+        self.assertNotIn('setVariable',oxygen)
+        self.assertIn('call ACME_fnc_ventOxygenState',oxygen)
+        self.assertIn('exitWith {21}',oxygen)
         self.assertNotIn('ACME_nrb_delivering',simple)
 
     def test_all_cross_system_dial_consumers_use_effective_settings(self):
@@ -121,7 +128,9 @@ class SimpleVentContracts(unittest.TestCase):
             self.assertIn(token,s)
         # _issued is a provider-client timestamp and must never be compared to the casualty owner's CBA clock.
         self.assertNotIn('_age > 3',s)
-        self.assertIn('ACME_vent_simpleManualReceipts", _receipts, false',s)
+        # Accepted breath receipts now follow patient locality so an owner
+        # transfer cannot replay the same breath and cylinder debit.
+        self.assertIn('ACME_vent_simpleManualReceipts", _receipts, true',s)
         request=source('ventManualBreath')
         simple=request[request.index('if (missionNamespace getVariable ["ACME_vent_simpleMode"'):request.index('private _configured =')]
         self.assertNotIn('ACME_vent_manualGaugeT',simple)

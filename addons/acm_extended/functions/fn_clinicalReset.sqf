@@ -2,6 +2,7 @@
 params ["_patient", ["_phase", "finish"], ["_preserveJunctional", false]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_phase == "begin") exitWith {
+    [_patient] call ACME_fnc_ventOxygenClear;
     // A reusable downstream warmer keeps physical custody when a full heal
     // detaches the patient's lines. Each exact assembly returns once.
     private _warmerRestore = _patient getVariable ["ACME_lineWarmerRestorePlan", []];

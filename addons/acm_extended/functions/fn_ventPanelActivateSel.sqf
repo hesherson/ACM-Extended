@@ -85,19 +85,30 @@ if (_screen in ["weight","mode","interface","connect","menu","params","advset","
 };
 
 if (_screen == "o2") exitWith {
-    if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])})) exitWith {
-        ["params"] call ACME_fnc_ventPanelShowScreen;
-    };
-    // the dial map: 0 is the OXYGEN value, where a middle-click toggles edit, and 1 is BACK. while editing, the dial
-    // changes the value, which the knob handles, and a middle-click commits by toggling edit off.
+    if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+    // The source action stays available in Simple delivery. Oxygen supply is
+    // independent of rate, volume, pressure, trigger and mode controls.
     playSound "ACME_VentClick";
     private _editing = uiNamespace getVariable ["ACME_vent_editingFio2", false];
-    if (_editing || {_selIdx == 0}) then {
-        if (!_editing && {!(call ACME_fnc_ventOxygenGate)}) exitWith {};
-        uiNamespace setVariable ["ACME_vent_editingFio2", !_editing];
-        ["o2"] call ACME_fnc_ventPanelShowScreen;  // rebuild with the new edit highlight.
-    } else {
-        ["back"] call ACME_fnc_ventPanelNavClick;
+    private _target = uiNamespace getVariable ["ACME_vent_target", objNull];
+    private _supply = [_target] call ACME_fnc_ventOxygenState;
+    if (_editing) exitWith {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        [] call ACME_fnc_ventPanelOxygenRefresh;
+    };
+    switch (_selIdx) do {
+        case 0: {
+            if (_supply select 1) then {
+                uiNamespace setVariable ["ACME_vent_fio2", (_target getVariable ["ACME_vent_fio2", 21]) max 21 min 95];
+                uiNamespace setVariable ["ACME_vent_editingFio2", true];
+            };
+            [] call ACME_fnc_ventPanelOxygenRefresh;
+        };
+        case 1: {
+            [_target, (if (_supply select 0) then {"detach"} else {"attach"}), ACE_player] call ACME_fnc_ventOxygenRequest;
+            [] call ACME_fnc_ventPanelOxygenRefresh;
+        };
+        default { ["back"] call ACME_fnc_ventPanelNavClick; };
     };
 };
 

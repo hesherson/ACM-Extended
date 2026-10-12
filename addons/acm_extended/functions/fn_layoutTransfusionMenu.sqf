@@ -1,11 +1,24 @@
-/* B276: rounded native surfaces and card presentation of existing native transfusion controls, without replacing their actions. */
+/* B277: rounded cards and final presentation of existing native transfusion controls, without replacing their actions. */
 disableSerialization;
 params [["_display", findDisplay 86000]];
 if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)}) exitWith {};
 
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
 private _uiX = safeZoneX + ((safeZoneW - _uiW) / 2);
-private _fontH = safeZoneH * 0.018;
+private _fontH = safeZoneH * 0.020;
+if ((_display getVariable ["ACME_txHeaderFontH",0]) != safeZoneH) then {
+    (_display displayCtrl 86001) ctrlSetFontHeight (safeZoneH * 0.026);
+    _display setVariable ["ACME_txHeaderFontH",safeZoneH];
+};
+{
+    _x params ["_id","_rx","_ry","_rw"];
+    private _rule = _display displayCtrl _id;
+    [_rule,"position",[_uiX + _uiW * _rx,safeZoneY + safeZoneH * _ry,_uiW * _rw,pixelH max 0.0005]] call ACME_fnc_transfusionUiSet;
+    _rule ctrlEnable false;
+} forEach [[86404,0.125,0.147,0.750],[86405,0.125,0.526,0.212],[86406,0.673,0.583,0.202]];
+// The authored native window draws first, so its opaque center never covers the body or device overlays.
+[(_display displayCtrl 86400),[_uiX + _uiW * 0.11,safeZoneY + safeZoneH * 0.08,_uiW * 0.78,safeZoneH * 0.84],"window",0.012] call ACME_fnc_transfusionRoundedFrame;
+{[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86091,86180,86181,86182];
 private _moveBusy = (missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active", false])
     || {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active_Moving", false]};
 
@@ -38,6 +51,7 @@ private _warmerNotice = [86196,"ACME_TransfusionCaption","This is your only flui
 private _warmerYes = [86197,"ACME_TransfusionActionButton","Yes"] call _ensure;
 private _warmerNo = [86198,"ACME_TransfusionActionButton","No"] call _ensure;
 private _bloodType = [86199,"ACME_TransfusionCenteredCaption","Blood Type: ???"] call _ensure;
+if ((_bloodType getVariable ["ACME_txFontH",0]) != safeZoneH) then {_bloodType ctrlSetFontHeight (safeZoneH * 0.014);_bloodType setVariable ["ACME_txFontH",safeZoneH];};
 private _accessKind = [86210,"ACME_TransfusionAccessCaption",""] call _ensure;
 private _accessIcon = [86211,"RscPictureKeepAspect",""] call _ensure;
 private _spikeDropdown = [86212,"ACME_TransfusionActionButton","v"] call _ensure;
@@ -138,19 +152,6 @@ if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
 
 if !(_display getVariable ["ACME_txStylesReady", false]) then {
     _display setVariable ["ACME_txStylesReady", true];
-    // Grey corner surfaces are background-only. Native buttons keep every existing action,
-    // tooltip, disabled state and keyboard focus; these hooks update decoration only.
-    {
-        private _ctrl = _display displayCtrl _x;
-        if (!isNull _ctrl) then {
-            _ctrl ctrlSetBackgroundColor [0,0,0,0];
-            _ctrl ctrlAddEventHandler ["MouseEnter",{params ["_ctrl"];_ctrl setVariable ["ACME_txSkinHover",true];[ctrlParent _ctrl] call ACME_fnc_layoutTransfusionMenu;}];
-            _ctrl ctrlAddEventHandler ["MouseExit",{params ["_ctrl"];_ctrl setVariable ["ACME_txSkinHover",false];[ctrlParent _ctrl] call ACME_fnc_layoutTransfusionMenu;}];
-            _ctrl ctrlAddEventHandler ["SetFocus",{params ["_ctrl"];_ctrl setVariable ["ACME_txSkinFocus",true];[ctrlParent _ctrl] call ACME_fnc_layoutTransfusionMenu;}];
-            _ctrl ctrlAddEventHandler ["KillFocus",{params ["_ctrl"];_ctrl setVariable ["ACME_txSkinFocus",false];[ctrlParent _ctrl] call ACME_fnc_layoutTransfusionMenu;}];
-        };
-    } forEach [86006,86007,86146,86147,86134,86148,86120,86121,86122,86131,86132,
-        86133,86149,86141,86142,86143,86144,86170,86172,86194,86195,86197,86198,86212];
     {
         private _ctrl = _display displayCtrl _x;
         if (!isNull _ctrl) then {
@@ -187,7 +188,6 @@ private _place = {
     [86210,0.382,0.777,0.236,0.024],
     [86211,0.363,0.777,0.019,0.024],
     [86213,0.141,0.441,0.184,0.027],
-    [86161,0.673,0.164,0.202,0.027],
     [86003,0.673,0.193,0.160,0.030],
     [86037,0.838,0.193,0.033,0.030],
     [86006,0.125,0.188,0.212,0.029],
@@ -207,7 +207,7 @@ private _place = {
     [86176,0.133,0.581,0.196,0.029],
     [86177,0.681,0.643,0.186,0.029],
     [86178,0.145,0.235,0.184,0.029],
-    [86126,0.355,0.892,0.290,0.024]
+    [86126,0.125,0.895,0.750,0.024]
 ];
 private _yButton = _display displayCtrl 86142;
 private _showY = !isNull _yButton && {ctrlShown _yButton};
@@ -300,7 +300,7 @@ if (_valid) then {
 {
     private _ctrl = _display displayCtrl _x;
     if (!isNull _ctrl) then {
-        _ctrl ctrlSetFontHeight (safeZoneH * 0.020);
+        _ctrl ctrlSetFontHeight (safeZoneH * 0.021);
         _ctrl ctrlSetTextColor [1,1,1,1];
         _ctrl ctrlSetBackgroundColor [0,0,0,0];
     };
@@ -323,7 +323,8 @@ if (!isNull _rate) then {_rate ctrlSetFontHeight (safeZoneH * 0.017);};
 [(_display displayCtrl 86163),"show",false] call ACME_fnc_transfusionUiSet;
 [_bagActions,"text",if (_menu == "bag") then {"< Bag Actions"} else {"Bag Actions >"}] call ACME_fnc_transfusionUiSet;
 [_infActions,"text",if (_menu == "infusion") then {"< Infusion Actions"} else {"Infusion Actions >"}] call ACME_fnc_transfusionUiSet;
-
+_bagBackdrop ctrlSetBackgroundColor [0,0,0,0];
+_infBackdrop ctrlSetBackgroundColor [0,0,0,0];
 [86173,0.128,0.228,0.206,0.249] call _place;
 [86174,0.128,0.593,0.206,0.181] call _place;
 [_bagBackdrop,"show",_menu == "bag"] call ACME_fnc_transfusionUiSet;
@@ -365,8 +366,7 @@ if (_menu == "infusion") then {
 };
 [_warmer,"show",_menu in ["bag","infusion"] && {_warmerShow} && {!_confirmWarmer}] call ACME_fnc_transfusionUiSet;
 {[_x,"show",_menu in ["bag","infusion"] && {_confirmWarmer}] call ACME_fnc_transfusionUiSet;} forEach [_warmerNotice,_warmerYes,_warmerNo];
-// Warming appears on its fluid card and inline details; suppress the former duplicate caption.
-[_warming,"show",false] call ACME_fnc_transfusionUiSet;
+[_warming,"show",_menu != "bag" && {ctrlText _warming != ""}] call ACME_fnc_transfusionUiSet;
 {
     private _ctrl = _display displayCtrl _x;
     if (!isNull _ctrl) then {
@@ -387,109 +387,38 @@ if (_menu == "infusion") then {
         [_bar,"show",ctrlShown _button] call ACME_fnc_transfusionUiSet;
     };
 } forEach [[86148,86151],[86149,86152]];
-// B276: bounded predeclared decorations. Paint uses the existing 0.25 s worker;
-// it never creates controls, edits list records, moves a bag or sends owner events.
-private _surfaceRoot = "\x\ACM\addons\circulation\ui\transfusionmenu\surfaces\";
-{
-    _x params ["_buttonIDC","_skinIDC"];
-    private _button = _display displayCtrl _buttonIDC;
-    private _skin = _display displayCtrl _skinIDC;
-    private _show = !isNull _button && {ctrlShown _button};
-    [_skin,"show",_show] call ACME_fnc_transfusionUiSet;
-    if (_show) then {
-        private _variant = if (!ctrlEnabled _button) then {"button_disabled"} else {
-            if ((_button getVariable ["ACME_txSkinHover",false]) || {_button getVariable ["ACME_txSkinFocus",false]}) then {"button_hover"} else {"button"}
-        };
-        private _skinRect = ctrlPosition _button;
-        // Full-width buttons use a flatter texture than split actions. Choose using physical
-        // pixels so interface size and ultrawide safe zones do not select the wrong shape.
-        private _aspect = ((_skinRect select 2) / pixelW) / (((_skinRect select 3) / pixelH) max 1);
-        if (_aspect >= 10) then {_variant = _variant + "_wide";};
-        [_skin,"color",_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionUiSet;
-        [_skin,"position",ctrlPosition _button] call ACME_fnc_transfusionUiSet;
-        [_skin,"text",_surfaceRoot + _variant + "_ca.paa"] call ACME_fnc_transfusionUiSet;
-    };
-} forEach [[86006,86300],[86007,86301],[86146,86302],[86147,86303],[86134,86304],
-    [86148,86305],[86120,86306],[86121,86307],[86122,86308],[86131,86309],[86132,86310],
-    [86133,86311],[86149,86312],[86141,86313],[86142,86314],[86143,86315],[86144,86316],
-    [86170,86317],[86172,86318],[86194,86319],[86195,86320],[86197,86321],[86198,86322],[86212,86323]];
-{
-    _x params ["_caption","_skinIDC","_listIDC"];
-    private _skin = _display displayCtrl _skinIDC;
-    private _list = _display displayCtrl _listIDC;
-    private _show = ctrlShown _caption;
-    [_skin,"show",_show] call ACME_fnc_transfusionUiSet;
-    if (_show) then {
-        private _rect = ctrlPosition _list;
-        _rect set [3,safeZoneH * 0.072];
-        [_skin,"position",_rect] call ACME_fnc_transfusionUiSet;
-    };
-} forEach [[_fluidEmpty,86370,86004],[_infEmpty,86371,86129],[_preparedEmpty,86372,86127]];
-private _cardSelection = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags",[]];
-private _detailsSurface = _display displayCtrl 86373;
-[_detailsSurface,"show",_valid] call ACME_fnc_transfusionUiSet;
-[_detailsSurface,"position",ctrlPosition _lineDetails] call ACME_fnc_transfusionUiSet;
-{
-    _x params ["_listIDC","_baseIDC"];
-    private _list = _display displayCtrl _listIDC;
-    if (!isNull _list) then {
-        (ctrlPosition _list) params ["_lx","_ly","_lw","_lh"];
-        private _rowH = safeZoneH * 0.072;
-        private _rows = lbSize _list;
-        // Native scrollbar values are read-only. Cards show only complete visible rows;
-        // partially clipped rows retain the native selection highlight and hit rectangle.
-        private _scroll = ((ctrlScrollValues _list) param [0,0]) max 0 min 1;
-        private _offset = _scroll * ((_rows * _rowH - _lh) max 0);
-        private _first = floor (_offset / _rowH);
-        for "_slot" from 0 to 3 do {
-            private _row = _first + _slot;
-            private _cy = _ly + _row * _rowH - _offset;
-            private _card = _display displayCtrl (_baseIDC + _slot * 4);
-            private _caption = _display displayCtrl (_baseIDC + _slot * 4 + 1);
-            private _track = _display displayCtrl (_baseIDC + _slot * 4 + 2);
-            private _fill = _display displayCtrl (_baseIDC + _slot * 4 + 3);
-            private _show = ctrlShown _list && {_row < _rows} && {_cy >= _ly - pixelH}
-                && {_cy + _rowH <= _ly + _lh + pixelH};
-            [_card,"show",_show] call ACME_fnc_transfusionUiSet;
-            private _meta = "";
-            private _fraction = -1;
-            private _color = [0.65,0.65,0.65,1];
-            if (_show) then {
-                private _selected = (lbCurSel _list) == _row;
-                [_card,"position",[_lx,_cy + safeZoneH * 0.003,_lw,_rowH - safeZoneH * 0.006]] call ACME_fnc_transfusionUiSet;
-                [_card,"text",_surfaceRoot + (["row","row_selected"] select _selected) + "_ca.paa"] call ACME_fnc_transfusionUiSet;
-                private _cache = _list getVariable [format ["ACME_txCard_%1",_row],[]];
-                private _sourceRow = _cardSelection param [_list lbValue _row,[]];
-                if (_listIDC in [86004,86129] && {_cache isNotEqualTo []}
-                    && {(_cache param [8,[]]) isEqualTo [_patient,_part,_iv,_site]}
-                    && {(_cache param [6,""]) == (_sourceRow param [9,"__missing"])}
-                    && {(_cache param [7,""]) == (_list lbText _row)}) then {
-                    _cache params ["_remaining","_original","_thermal","_role","_flowing","_type"];
-                    _fraction = (_remaining / (_original max 1)) max 0 min 1;
-                    _meta = if (_thermal != "") then {_thermal} else {
-                        if (_type in ["ACME_SalineY","ACME_EmptySaline"]) then {"Reserve Flush Saline"} else {
-                            if (_role != "") then {"Piggyback " + _role} else {["Paused","Flowing"] select _flowing}
-                        }
-                    };
-                    _color = if (_thermal find "Warming" >= 0) then {[1,0.55,0.13,1]} else {
-                        if (_role != "") then {[0.79,0.73,0.89,1]} else {[0.65,0.65,0.65,1]}
-                    };
-                };
-                if (_listIDC == 86145 && {(_list lbData _row) != ""}) then {_meta = "Ready to hang";};
-                if (_listIDC == 86127 && {(_list lbValue _row) >= 0}) then {_meta = "Prepared infusion";};
-                [_caption,"position",[_lx + safeZoneH * 0.054,_cy + safeZoneH * 0.048,_lw - safeZoneH * 0.060,safeZoneH * 0.017]] call ACME_fnc_transfusionUiSet;
-                [_caption,"text",_meta] call ACME_fnc_transfusionUiSet;
-                [_caption,"color",_color] call ACME_fnc_transfusionUiSet;
-                private _trackRect = [_lx + _uiW * 0.006,_cy + _rowH - safeZoneH * 0.007,_lw - _uiW * 0.012,(2 * pixelH) max (safeZoneH * 0.0015)];
-                [_track,"position",_trackRect] call ACME_fnc_transfusionUiSet;
-                _trackRect set [2,(_trackRect select 2) * (_fraction max 0)];
-                [_fill,"position",_trackRect] call ACME_fnc_transfusionUiSet;
-            };
-            [_caption,"show",_show && {_meta != ""}] call ACME_fnc_transfusionUiSet;
-            [_track,"show",_show && {_fraction >= 0}] call ACME_fnc_transfusionUiSet;
-            [_fill,"show",_show && {_fraction > 0}] call ACME_fnc_transfusionUiSet;
-        };
-    };
-} forEach [[86004,86400],[86129,86420],[86005,86440],[86145,86460],[86127,86480]];
 [_display] call ACME_fnc_updateTransfusionLineDetails;
+// Native action handlers stay on their original controls. Their nine-slice backgrounds live in ControlsBackground.
+private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,86133,86134,86141,86142,86143,86144,86148,86149,86170,86172,86194,86195,86197,86198,86212];
+{
+    private _button = _display displayCtrl _x;
+    private _frame = _display displayCtrl (86410 + _forEachIndex);
+    if (!isNull _button) then {
+        if !(_button getVariable ["ACME_txRoundedHooks",false]) then {
+            _button setVariable ["ACME_txRoundedHooks",true];
+            _button ctrlSetBackgroundColor [0,0,0,0];
+            _button ctrlAddEventHandler ["MouseEnter",{(_this select 0) setVariable ["ACME_txRoundHover",true];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
+            _button ctrlAddEventHandler ["MouseExit",{(_this select 0) setVariable ["ACME_txRoundHover",false];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
+            _button ctrlAddEventHandler ["SetFocus",{(_this select 0) setVariable ["ACME_txRoundFocus",true];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
+            _button ctrlAddEventHandler ["KillFocus",{(_this select 0) setVariable ["ACME_txRoundFocus",false];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
+        };
+        [_frame,ctrlPosition _button,["button","selected"] select ((_button getVariable ["ACME_txRoundHover",false]) || {_button getVariable ["ACME_txRoundFocus",false]}),0.006,ctrlShown _button,_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionRoundedFrame;
+        private _enabled = ctrlEnabled _button;
+        if ((_frame getVariable ["ACME_txButtonEnabled",-1]) isNotEqualTo _enabled) then {
+            _frame setVariable ["ACME_txButtonEnabled",_enabled];_frame ctrlSetFade (if (_enabled) then {0} else {0.45});_frame ctrlCommit 0;
+        };
+        _frame ctrlEnable false;
+        // B277 prepared chooser caption fits a narrow screen while retaining the familiar workflow text.
+        private _fontHeight = safeZoneH * 0.020;
+        if ((ctrlIDC _button) == 86144 && {((ctrlPosition _button) param [2,0]) < safeZoneH * 0.36 * (pixelW / pixelH)}) then {_fontHeight = safeZoneH * 0.018;};
+        if ((_button getVariable ["ACME_txFontH",0]) != _fontHeight) then {_button ctrlSetFontHeight _fontHeight;_button setVariable ["ACME_txFontH",_fontHeight];};
+    };
+} forEach _roundButtons;
+[(_display displayCtrl 86401),ctrlPosition _bagBackdrop,"popup",0.007,_menu == "bag"] call ACME_fnc_transfusionRoundedFrame;
+[(_display displayCtrl 86402),ctrlPosition _infBackdrop,"popup",0.007,_menu == "infusion"] call ACME_fnc_transfusionRoundedFrame;
+[(_display displayCtrl 86403),ctrlPosition _lineDetails,"panel",0.007,_valid] call ACME_fnc_transfusionRoundedFrame;
+{(_display displayCtrl _x) ctrlEnable false;} forEach [86400,86401,86402,86403];
+// Dose/temperature information belongs to its card and the selected-line panel; the roller-clamp bottom stats are untouched.
+{[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86126,86213,86176,86177,86178];
+[_display] call ACME_fnc_updateTransfusionCards;
 _display setVariable ["ACME_txLayoutWriting", false];

@@ -4,6 +4,7 @@ Engine objects, UI, network transport and inventory primitives are fixtures.
 Eligibility, protocol receipts, pressure/volume arithmetic and airway debits run
 from the checked-out source. Arma scheduling/rendering are not certified here.
 """
+import re
 import pytest
 
 from test_b156_procedure_supplies import primitives, supply_setup
@@ -15,6 +16,9 @@ from test_menu_death_lifecycle import ROOT, execute, read
 
 def source(name):
     text = read(name).replace('serverTime', '_serverTime')
+    # Native objects are namespace fixture handles, including compact B276
+    # oxygen helper signatures; retain the typed boundary with its VM type.
+    text = re.sub(r'objNull,\s*\[objNull\]', 'objNull, [profileNamespace]', text)
     text = text.replace('getPlayerUID _medic', '"provider"').replace('netId _medic', '"provider"')
     text = text.replace('(_x select 1) == _medic', '(_x select 1) isEqualTo _medic')
     text = text.replace('(_proof param [0, objNull]) == _patient', '(_proof param [0, objNull]) isEqualTo _patient')
@@ -45,7 +49,12 @@ def setup():
         CBA_fnc_serverEvent={_events pushBack _this;};
         ACME_fnc_ventEffectiveSettings={[true,"SIMPLE",12,500,95,5,0,0,0,0,0,35]};
         _patientAlive=false;
-    '''
+    ''' + ''.join(function(name) for name in (
+        # These scenarios carry no O2 session. Execute the real room-air path;
+        # the oxygen transaction suite separately exercises paid gas and loss.
+        'ventOxygenState', 'ventOxygenFiO2', 'ventOxygenClear',
+        'ventOxygenTick', 'ventOxygenUse',
+    ))
 
 
 @pytest.mark.parametrize('alive', [False, True])
@@ -78,9 +87,9 @@ def test_dead_patient_inventory_take_preserves_provider_and_supply_guards(blocke
 
 
 def breath_setup(simple):
-    return setup()+function('ventSimpleManualBreath' if simple else 'ventManualBreathCommit')+'''
-        missionNamespace setVariable ["ACME_vent_simpleMode",true];
-        _patient setVariable ["ACME_vent_simpleEpisode",[true,2]];
+    return setup()+function('ventManualClaim')+function('ventSimpleManualBreath' if simple else 'ventManualBreathCommit')+f'''
+        missionNamespace setVariable ["ACME_vent_simpleMode",{str(simple).lower()}];
+        _patient setVariable ["ACME_vent_simpleEpisode",[{str(simple).lower()},2]];
         _patient setVariable ["ACME_vent_custodyId","device-1"];
         _patient setVariable ["ACME_vent_circuit",true];
         _patient setVariable ["ACME_vent_powerOn",true];
@@ -95,9 +104,14 @@ def breath_setup(simple):
 
 
 def breath_call(simple, ident='breath-1', custody='device-1', epoch=1, episode=2):
+    # Match the real provider producer's canonical monotonic command. Duplicate
+    # calls retain their sequence; the refractory and next-breath cases advance.
+    sequence = {'breath-1': 1, 'too-soon': 2, 'next-breath': 3,
+                'delayed-before-toggle': 2, 'current-after-toggle': 3}[ident]
+    request_id = f'ventManual:provider:{epoch}:{custody}:{episode}:{sequence}'
     if simple:
-        return f'[_patient,_medic,"{custody}",{epoch},0,"{ident}",{episode}] call ACME_fnc_ventSimpleManualBreath;'
-    return f'[_patient,_medic,"{custody}",{epoch},"{ident}"] call ACME_fnc_ventManualBreathCommit;'
+        return f'[_patient,_medic,"{custody}",{epoch},0,"{request_id}",{episode},0,{sequence}] call ACME_fnc_ventSimpleManualBreath;'
+    return f'[_patient,_medic,"{custody}",{epoch},"{request_id}",{sequence},{episode}] call ACME_fnc_ventManualBreathCommit;'
 
 
 @pytest.mark.parametrize('simple', [False, True], ids=['advanced','simple'])

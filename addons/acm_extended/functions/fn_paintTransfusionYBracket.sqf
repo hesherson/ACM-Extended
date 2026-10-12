@@ -22,20 +22,30 @@ _relation params ["_rows", "_key"];
 private _piggyback = [_patient,_part,_iv,_site] call ACME_fnc_piggybackLine;
 [(_display displayCtrl 86160),"text",if (_key != "") then {"Fluids | Y line"} else {if (_piggyback isNotEqualTo []) then {"Fluids | Piggyback"} else {"Fluids"}}] call ACME_fnc_transfusionUiSet;
 (ctrlPosition _list) params ["_listX", "_listY", "_listW", "_listH"];
-private _rowH = safeZoneH * 0.072;
+private _rowH = safeZoneH / 20;
 // Native listboxes do not expose a stable row-scroll offset. Overflow keeps textual [Y]/[PiB] roles.
 private _fits = ((lbSize _list) * _rowH) <= _listH && {ctrlShown _list};
-private _show = _fits && {count _rows > 0};
+private _cardsReady = _display getVariable ["ACME_txCardsReady",false];
+private _cardEndpoints = _display getVariable ["ACME_txCardEndpoints",createHashMap];
+private _cardPoints = [];
+if (_cardsReady) then {
+    {
+        private _uid = (_selection param [_list lbValue _x,[]]) param [9,""];
+        private _point = _cardEndpoints getOrDefault [_uid,[]];
+        if (_point isNotEqualTo []) then {_cardPoints pushBack _point;};
+    } forEach _rows;
+};
+private _show = if (_cardsReady) then {count _cardPoints > 0 && {count _cardPoints == count _rows}} else {_fits && {count _rows > 0}};
 {[_x,"show",_show] call ACME_fnc_transfusionUiSet;} forEach _controls;
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
 if (_show) then {
     private _railX = _listX - _uiW * 0.006;
-    private _top = _listY + ((_rows select 0) + 0.5) * _rowH;
-    private _bottom = _listY + ((_rows select ((count _rows) - 1)) + 0.5) * _rowH;
+    private _top = if (_cardsReady) then {(_cardPoints select 0) select 1} else {_listY + ((_rows select 0) + 0.5) * _rowH};
+    private _bottom = if (_cardsReady) then {(_cardPoints select ((count _cardPoints) - 1)) select 1} else {_listY + ((_rows select ((count _rows) - 1)) + 0.5) * _rowH};
     if (count _rows == 1) then {_top = _top - _rowH * 0.18;};
     [(_controls select 0),"position",[_railX,_top,pixelW max 0.0005,(_bottom - _top) max pixelH]] call ACME_fnc_transfusionUiSet;
     {
-        [(_controls select (_forEachIndex + 1)),"position",[_railX,_listY + (_x + 0.5) * _rowH,_uiW * 0.006,pixelH max 0.0005]] call ACME_fnc_transfusionUiSet;
+        [(_controls select (_forEachIndex + 1)),"position",[_railX,if (_cardsReady) then {(_cardPoints select _forEachIndex) select 1} else {_listY + (_x + 0.5) * _rowH},_uiW * 0.006,pixelH max 0.0005]] call ACME_fnc_transfusionUiSet;
     } forEach _rows;
     if (count _rows == 1) then {[(_controls select 2),"show",false] call ACME_fnc_transfusionUiSet;};
 };
@@ -44,12 +54,13 @@ if (_piggyback isNotEqualTo []) then {
     private _physical = (_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_part,[]];
     {
         private _uid = _x;
-        private _endpoint = [];
+        private _endpoint = _cardEndpoints getOrDefault [_uid,[]];
+        if (!_cardsReady) then {
         {
             private _pane = _display displayCtrl _x;
             if (!isNull _pane && {ctrlShown _pane}) then {
                 (ctrlPosition _pane) params ["_px","_py","_pw","_ph"];
-                private _paneRowH = safeZoneH * 0.072;
+                private _paneRowH = safeZoneH / ([20,25] select ((ctrlIDC _pane) == 86129));
                 if ((lbSize _pane) * _paneRowH <= _ph) then {
                     for "_r" from 0 to ((lbSize _pane) - 1) do {
                         private _value = _pane lbValue _r;
@@ -61,6 +72,7 @@ if (_piggyback isNotEqualTo []) then {
             };
             if (_endpoint isNotEqualTo []) exitWith {};
         } forEach [86004,86129];
+        };
         if (_endpoint isNotEqualTo []) then {_endpoints pushBack _endpoint;};
     } forEach (_piggyback select [0,2]);
 };

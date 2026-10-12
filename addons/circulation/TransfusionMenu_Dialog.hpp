@@ -1,3 +1,4 @@
+class RscControlsGroupNoScrollbars;
 #include "TransfusionMenu_defines.hpp"
 
 class GVAR(TransfusionMenu_Dialog) {
@@ -9,17 +10,25 @@ class GVAR(TransfusionMenu_Dialog) {
     objects[] = {};
 
     class ControlsBackground {
-        class MenuBackground: RscPicture {
-            idc = -1;
+        // B276: this frame is authored first, beneath all native body/device artwork.
+        class MenuBackground: RscControlsGroupNoScrollbars {
+            idc = 86400;
             x = QUOTE(ACM_TRANSFUSION_WINDOW_X);
-            y = QUOTE(safeZoneY + (safeZoneH * 0.08));
+            y = QUOTE(safeZoneY + safeZoneH * 0.08);
             w = QUOTE(ACM_TRANSFUSION_WINDOW_W);
             h = QUOTE(safeZoneH * 0.84);
-            text = QPATHTOF(ui\transfusionmenu\surfaces\window_ca.paa);
-            colorText[] = {1,1,1,1};
-            enable = 0;
+            class Controls {
+                class Slice_0: RscPicture { idc = 0; x = QUOTE(0); y = QUOTE(0); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_tl_ca.paa"; };
+                class Slice_1: RscPicture { idc = 1; x = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(0); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.024 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_top_ca.paa"; };
+                class Slice_2: RscPicture { idc = 2; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(0); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_tr_ca.paa"; };
+                class Slice_3: RscPicture { idc = 3; x = QUOTE(0); y = QUOTE(safeZoneH * 0.012); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.024)); text = "\acm_extended\ui\transfusion\window_left_ca.paa"; };
+                class Slice_4: RscPicture { idc = 4; x = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * 0.012); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.024 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.024)); text = "\acm_extended\ui\transfusion\window_center_ca.paa"; };
+                class Slice_5: RscPicture { idc = 5; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * 0.012); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.024)); text = "\acm_extended\ui\transfusion\window_right_ca.paa"; };
+                class Slice_6: RscPicture { idc = 6; x = QUOTE(0); y = QUOTE(safeZoneH * (0.84 - 0.012)); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_bl_ca.paa"; };
+                class Slice_7: RscPicture { idc = 7; x = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * (0.84 - 0.012)); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.024 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_bottom_ca.paa"; };
+                class Slice_8: RscPicture { idc = 8; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * (0.84 - 0.012)); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_br_ca.paa"; };
+            };
         };
-        #include "TransfusionMenu_Surfaces.hpp"
         // Presentation panels stay behind the shared body-map artwork and its device overlays.
         class HeaderBackground: RscText {
             idc = 86091;
@@ -48,15 +57,13 @@ class GVAR(TransfusionMenu_Dialog) {
             w = QUOTE(ACM_TRANSFUSION_RIGHT_W + ACM_UI_CANVAS_W * 0.014);
         };
         // Local action popovers live in the background layer, below the unchanged native action buttons.
-        class BagActionsBackground: RscPicture {
+        class BagActionsBackground: PatientPanelBackground {
             idc = 86173;
             x = QUOTE(ACM_UI_CANVAS_X - 1);
             y = QUOTE(safeZoneY + safeZoneH * 0.228);
             w = QUOTE(ACM_UI_CANVAS_W * 0.206);
             h = QUOTE(safeZoneH * 0.234);
-            text = QPATHTOF(ui\transfusionmenu\surfaces\list_ca.paa);
-            colorText[] = {1,1,1,1};
-            enable = 0;
+            colorBackground[] = {0,0,0,0};
         };
         class InfusionActionsBackground: BagActionsBackground {
             idc = 86174;
@@ -123,9 +130,9 @@ class GVAR(TransfusionMenu_Dialog) {
             colorBackground[] = {0,0,0,0};
             text = "";
             lineSpacing = 0;
-            sizeEx = QUOTE(safeZoneH * 0.027);
-            shadow = 0;
-            colorShadow[] = {0,0,0,0};
+            sizeEx = QUOTE(GUI_GRID_H * 1.8 * NORMALIZE_SIZEEX);
+            shadow = 1;
+            colorShadow[] = {0,0,0,0.5};
         };
         class SelectedLimbText: PatientName {
             idc = IDC_TRANSFUSIONMENU_SELECTIONTEXT;
@@ -330,13 +337,13 @@ class GVAR(TransfusionMenu_Dialog) {
             y = QUOTE(safeZoneY + safeZoneH * 0.228);
             w = QUOTE(ACM_UI_CANVAS_W * 0.200);
             h = QUOTE(safeZoneH * 0.230);
-            rowHeight = QUOTE(safeZoneH * 0.072);
+            rowHeight = QUOTE(safeZoneH / 20);
             colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
             colorSelect[] = ACM_TRANSFUSION_COLOR_TEXT;
             colorSelect2[] = ACM_TRANSFUSION_COLOR_TEXT;
-            colorBackground[] = {0,0,0,0};
-            colorSelectBackground[] = {0.20,0.20,0.20,0.18};
-            colorSelectBackground2[] = {0.20,0.20,0.20,0.18};
+            colorBackground[] = {0,0,0,0.75};
+            colorSelectBackground[] = ACM_TRANSFUSION_COLOR_SELECTED;
+            colorSelectBackground2[] = ACM_TRANSFUSION_COLOR_SELECTED;
             sizeEx = QUOTE(safeZoneH * 0.019);
             class Items {};
             font = "RobotoCondensed";

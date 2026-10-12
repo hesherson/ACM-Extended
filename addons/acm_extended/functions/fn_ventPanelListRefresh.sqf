@@ -57,9 +57,13 @@ for "_i" from 0 to (_n - 1) do {
             _c ctrlSetTextColor [0.72,0.76,0.80,1];  // a printed label: dimmer than a value, and never selected.
         };
 
-        private _automatic = _simple && {_screen == "params" || {_screen == "alerts" && {_i == 2}}};
+        // In Simple delivery only FiO2 becomes manual. Even without a usable
+        // source its PARAMS row remains a route to the source-attachment page.
+        private _oxygenRow = _screen == "params" && {_i == 0} && {(uiNamespace getVariable ["ACME_vent_paramsPage", 0]) == 0};
+        private _oxygenLocked = _oxygenRow && {!(([(uiNamespace getVariable ["ACME_vent_target", objNull])] call ACME_fnc_ventOxygenState) select 1)};
+        private _automatic = _simple && {(_screen == "params" && {!_oxygenRow}) || {_screen == "alerts" && {_i == 2}}};
         _target ctrlEnable (!_automatic);
-        if (_automatic) then {
+        if (_automatic || {_oxygenLocked}) then {
             _target ctrlSetBackgroundColor [0,0,0,0];
             _target ctrlSetTextColor [0.55,0.58,0.62,1];
         } else { if (_i == _selIdx) then {

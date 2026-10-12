@@ -10,7 +10,8 @@ private _n = uiNamespace getVariable ["ACME_vent_listCount", 0];
 if (_row >= _n) exitWith {};
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
 if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])}) && {
-    _screen in ["weight", "mode", "interface", "params", "o2", "ie", "peep"]
+    _screen in ["weight", "mode", "interface", "ie", "peep"]
+    || {_screen == "params" && {!(_row == 0 && {(uiNamespace getVariable ["ACME_vent_paramsPage", 0]) == 0})}}
     || {_screen == "alerts" && {_row == 2}}
 }) exitWith {};
 
@@ -106,6 +107,10 @@ if (_screen == "alerts2") exitWith {
 // their sub-screen, with a flag so the sub-screen returns here when you pick something instead of dumping you on
 // the live screen.
 if (_screen == "params") exitWith {
+    if (_row == 0 && {(uiNamespace getVariable ["ACME_vent_paramsPage", 0]) == 0}) exitWith {
+        uiNamespace setVariable ["ACME_vent_editingParam", -1];
+        ["o2"] call ACME_fnc_ventPanelShowScreen;
+    };
     private _nav = uiNamespace getVariable ["ACME_vent_paramsNav", [false,false,false,false,false]];  // a safe fallback: never fire a sub-screen off a stale value.
     private _isNav = (_row < count _nav) && {_nav select _row};
     if (_isNav) then {
@@ -121,7 +126,6 @@ if (_screen == "params") exitWith {
     } else {
         // in-place editable, so toggle edit on this row.
         private _ed = uiNamespace getVariable ["ACME_vent_editingParam", -1];
-        if (_row == 0 && {_ed != _row} && {!(call ACME_fnc_ventOxygenGate)}) exitWith {};
         // committing this row, because it was being edited: log the new value.
         if (_ed == _row) then {
             private _tP2 = uiNamespace getVariable ["ACME_vent_target", ACE_player];
@@ -140,10 +144,14 @@ if (_screen == "params") exitWith {
 };
 
 if (_screen == "o2") exitWith {
+    private _target = uiNamespace getVariable ["ACME_vent_target", objNull];
+    if !(([_target] call ACME_fnc_ventOxygenState) select 1) exitWith {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        [] call ACME_fnc_ventPanelOxygenRefresh;
+    };
     private _ed = uiNamespace getVariable ["ACME_vent_editingFio2", false];
-    if (!_ed && {!(call ACME_fnc_ventOxygenGate)}) exitWith {};
     uiNamespace setVariable ["ACME_vent_editingFio2", !_ed];
-    [] call ACME_fnc_ventPanelListRefresh;
+    [] call ACME_fnc_ventPanelOxygenRefresh;
 };
 
 // ADV. SETTINGS: BRIGHTNESS, ALARM VOLUME and TECH MODE, which is the main MENU into ADV SETTINGS level of the

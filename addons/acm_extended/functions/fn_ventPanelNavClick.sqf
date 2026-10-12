@@ -22,7 +22,7 @@ private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (is
 playSound "ACME_VentClick";
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
 // A live addon-setting change may arrive before the panel tick rebuilds setup.
-if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {(!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false]) && {!([uiNamespace getVariable ["ACME_vent_target", objNull]] call ACME_fnc_ventMaskSelected)})}) && {_screen in ["weight", "mode", "interface", "o2", "ie", "peep"]}) exitWith {
+if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {(!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false]) && {!([uiNamespace getVariable ["ACME_vent_target", objNull]] call ACME_fnc_ventMaskSelected)})}) && {_screen in ["weight", "mode", "interface", "ie", "peep"]}) exitWith {
     [_screen] call ACME_fnc_ventPanelShowScreen;
 };
 // the selection comes from the unified dial index, clamped to the row range for row-commit purposes.

@@ -121,7 +121,10 @@ def test_old_mercy_callback_cannot_restore_obtundation_after_heal():
 
 def reset_setup():
     s=(F/'fn_clinicalReset.sqf').read_text().split('// Physical equipment is detached',1)[0]
+    oxygen=(F/'fn_ventOxygenClear.sqf').read_text()
+    oxygen=re.sub(r'objNull,\s*\[objNull\]', 'objNull, [profileNamespace]', oxygen)
     return setup()+'''
+        ACME_fnc_setVarNet={params ["_p","_key","_value"];_p setVariable [_key,_value];};
         ACME_fnc_headElevHoldClear = {};
         ACME_fnc_aajtDownedStop = {};
         ACME_fnc_ventDeviceFields = {["ACME_vent_batt","ACME_vent_o2"]};
@@ -129,7 +132,7 @@ def reset_setup():
         ACM_circulation_fnc_setRuntimeState = {};
         ACM_airway_fnc_setAirwayState = {};
         ACME_fnc_seizureMotion = {};
-    '''+'ACME_fnc_clinicalReset = {'+adapt(s)+'};'+'ACME_fnc_deadPhysiologyFreeze = {'+adapt((F/'fn_deadPhysiologyFreeze.sqf').read_text())+'};'
+    '''+'ACME_fnc_ventOxygenClear = {'+adapt(oxygen)+'};'+'ACME_fnc_clinicalReset = {'+adapt(s)+'};'+'ACME_fnc_deadPhysiologyFreeze = {'+adapt((F/'fn_deadPhysiologyFreeze.sqf').read_text())+'};'
 
 
 @pytest.mark.parametrize('death',[False,True])

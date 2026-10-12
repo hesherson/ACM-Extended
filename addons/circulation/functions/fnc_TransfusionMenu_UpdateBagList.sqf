@@ -51,6 +51,7 @@ private _selectedBags = [];
 
 if !(_update) then {
     private _previousRow = lbCurSel _ctrlBagPanel;
+    private _previousIdentity = if (_previousRow >= 0) then {[_ctrlBagPanel,_previousRow] call ACME_fnc_transfusionCardIdentity} else {[]};
     private _wasRebuilding = _display getVariable ["ACME_txRebuilding", false];
     _display setVariable ["ACME_txRebuilding", true];
     lbClear _ctrlBagPanel;
@@ -103,8 +104,10 @@ if !(_update) then {
         _ctrlBagPanel lbSetValue [_i, _bagIndex];
         _ctrlBagPanel lbSetTooltip [_i, (format [([(LLSTRING(TransfusionMenu_FluidRemaining)), ("%1ml filled")] select (_type == "FBTK")), round(_remainingVolume)])];
     } forEach _selectedBags;
-    // Keep an existing selection across replacement/topology refreshes, but do not auto-select on first open.
-    if (_previousRow >= 0) then {_ctrlBagPanel lbSetCurSel (_previousRow min ((count _selectedBags) - 1));};
+    // Reordering/removal cannot silently select another physical bag; the original UID must still exist.
+    if (_previousIdentity isNotEqualTo []) then {
+        _ctrlBagPanel lbSetCurSel ([_ctrlBagPanel,_previousIdentity] call ACME_fnc_transfusionCardResolve);
+    };
     _display setVariable ["ACME_txRebuilding", _wasRebuilding];
 } else {
     if (count GVAR(TransfusionMenu_Selection_IVBags) != count _selectedBags) exitWith {

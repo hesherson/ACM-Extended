@@ -18,6 +18,7 @@ from test_historical_procedure_trays import ui_code
 
 def production(name):
     s=read(name)
+    s=re.sub(r'objNull,\s*\[objNull\]', 'objNull, [profileNamespace]', s)
     s=re.sub(r'_\w+ isKindOf "CAManBase"','true',s)
     s=s.replace('getPlayerUID _medic','"provider"').replace('getPlayerUID (_origin select 0)','"donor"')
     s=s.replace('getPosASL _patient','[0,0,0]').replace('serverTime','_serverTime')
@@ -41,7 +42,12 @@ def setup():
         _patient setVariable ["ACM_breathing_RespirationRate",18];
         _patient setVariable ["ACE_isUnconscious",false];
         uiNamespace setVariable ["ACME_vent_target",_patient];
-    '''+func('ventNivEligible')+func('ventMaskSelected')+func('ventSyncMask')+func('ventEffectiveSettings')
+    '''+func('ventNivEligible')+func('ventMaskSelected')+func('ventSyncMask')+func('ventEffectiveSettings')+''.join(func(name) for name in (
+        # Existing NIV scenarios have no cylinder; resolve genuine room-air
+        # delivery without replacing the newly required supply helpers.
+        'ventOxygenState', 'ventOxygenFiO2', 'ventOxygenClear',
+        'ventOxygenTick', 'ventOxygenUse',
+    ))
 
 
 BLOCKERS={
