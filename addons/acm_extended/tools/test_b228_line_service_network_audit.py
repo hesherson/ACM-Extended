@@ -408,12 +408,17 @@ def test_one_control_changes_prime_flush_label_without_recreation(primed,kind,ex
 def test_required_flush_red_flash_stops_when_service_begins():
     execute(service_paint_setup()+'''
       _state=[500,0,false,true,true,"","reserve",[]];
-      [missionNamespace,_patient,"body",false,0,true] call _paint;private _first=+_background;
+      [missionNamespace,_patient,"body",false,0,true] call _paint;
+      private _first=+(missionNamespace getVariable ["ACME_txSkinTint",[]]);
       _nowTime=_nowTime+.25;[missionNamespace,_patient,"body",false,0,true] call _paint;
-      [!(_background isEqualTo _first) && {(_background select 1)==0},"required flush did not pulse red"] call _check;
+      private _tint=missionNamespace getVariable ["ACME_txSkinTint",[]];
+      [!(_tint isEqualTo _first) && {(_tint select 0)>(_tint select 1)}
+        && {(_tint select 0)>(_tint select 2)},"required flush did not pulse red"] call _check;
+      [_background isEqualTo [0,0,0,0],"flush pulse repainted square native corners"] call _check;
       _state set [5,"flush"];_state set [7,["body",false,0,"reserve",50,10,100,_medic,1,[],"flush",50,0,"one"]];
       [missionNamespace,_patient,"body",false,0,true] call _paint;
-      [_background isEqualTo [0,0,0,1],"in-progress flush still flashes"] call _check;
+      [(missionNamespace getVariable ["ACME_txSkinTint",[]]) isEqualTo [1,1,1,1]
+        && {_background isEqualTo [0,0,0,0]},"in-progress flush still flashes"] call _check;
     ''')
 
 

@@ -159,13 +159,17 @@ def test_menu_exit_speed_cleanup_not_blocked_by_dp_stance(new_owner):
 def test_prime_green_pulse_appears_only_before_active_service(kind):
     execute(service_paint_setup()+f'''
       _state=[500,0,false,false,false,"{kind}","reserve",[]];
-      [missionNamespace,_patient,"body",false,0,true] call _paint;private _first=+_background;
+      [missionNamespace,_patient,"body",false,0,true] call _paint;
+      private _first=+(missionNamespace getVariable ["ACME_txSkinTint",[]]);
       _nowTime=_nowTime+.25;[missionNamespace,_patient,"body",false,0,true] call _paint;
-      [(!(_background isEqualTo _first)) isEqualTo {str(kind=='').lower()},"prime pulse wrong phase"] call _check;
-      if ("{kind}"=="") then {{[(_background select 1)>0 && {{(_background select 0)==0}},"prime not green"] call _check;}};
+      private _tint=missionNamespace getVariable ["ACME_txSkinTint",[]];
+      [(!(_tint isEqualTo _first)) isEqualTo {str(kind=='').lower()},"prime pulse wrong phase"] call _check;
+      [_background isEqualTo [0,0,0,0],"prime pulse repainted square native corners"] call _check;
+      if ("{kind}"=="") then {{[(_tint select 1)>(_tint select 0) && {{(_tint select 1)>(_tint select 2)}},"prime not green"] call _check;}};
       _state set [4,true];_state set [5,""];
       [missionNamespace,_patient,"body",false,0,true] call _paint;
-      [_background isEqualTo [0,0,0,1],"green persisted after priming"] call _check;
+      [(missionNamespace getVariable ["ACME_txSkinTint",[]]) isEqualTo [1,1,1,1]
+        && {{_background isEqualTo [0,0,0,0]}},"green persisted after priming"] call _check;
     ''')
 
 
