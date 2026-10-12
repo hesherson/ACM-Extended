@@ -265,14 +265,33 @@ def test_native_button_tab_focus_keeps_visible_frame_and_no_treatment_action():
     source = (FUN / "fn_layoutTransfusionMenu.sqf").read_text()
     focus = re.search(r'_button ctrlAddEventHandler \["SetFocus",(\{[^\n]+\})\];', source).group(1)
     blur = re.search(r'_button ctrlAddEventHandler \["KillFocus",(\{[^\n]+\})\];', source).group(1)
-    expression = re.search(r'(\["button","selected"\] select .*?),0\.006,ctrlShown', source).group(1)
+    # Execute the production state/profile/frame call together. Tabs now have
+    # their own neutral skins; extracting the old inline RHS skipped that policy.
+    skin = source[source.index('        private _selectedFrame ='):source.index('        private _enabled =')]
+    skin = skin.replace('ctrlIDC _button', '_idc').replace('ctrlPosition _button', '[0,0,.2,.034]').replace('ctrlShown _button', 'true')
     focus = focus.replace('ctrlParent (_this select 0)', 'missionNamespace')
     blur = blur.replace('ctrlParent (_this select 0)', 'missionNamespace')
     execute(r'''
-        private _button=profileNamespace;private _refreshes=0;
+        private _button=profileNamespace;private _frame=missionNamespace;
+        private _refreshes=0;private _profile="";private _treatments=0;
         ACME_fnc_layoutTransfusionMenu={_refreshes=_refreshes+1;};
-    ''' + '[_button]call ' + focus + ';private _focused=' + expression + ';[_button]call ' + blur + ';private _blurred=' + expression + ';' + r'''
-        [_focused=="selected"&&{_blurred=="button"}&&{_refreshes==2},"Tab focus disappeared into transparent native background"]call _check;
+        ACME_fnc_transfusionRoundedFrame={_profile=_this select 2;};
+        ACME_fnc_transfusionYTubing={_treatments=_treatments+1;};
+    ''' + 'private _skin={' + adapt(skin) + '};' + r'''
+        {
+            private _idc=_x;_refreshes=0;
+            _button setVariable ["ACME_txTabSelected",false];
+            _button setVariable ["ACME_txRoundHover",false];
+    ''' + '[_button]call ' + focus + ';call _skin;private _focused=_profile;[_button]call ' + blur + ';call _skin;private _blurred=_profile;' + r'''
+            private _expected=if(_idc==86142)then{["selected","button"]}else{["tab_selected","tab"]};
+            [_focused==(_expected select 0)&&{_blurred==(_expected select 1)}&&{_refreshes==2},"native focus/blur lost its visible rounded frame or repeated refresh"]call _check;
+            [_treatments==0,"focus/blur activated a treatment instead of presentation"]call _check;
+            if(_idc!=86142)then{
+                _button setVariable ["ACME_txTabSelected",true];
+    ''' + '[_button]call ' + blur + ';call _skin;' + r'''
+                [_profile=="tab_selected","selected tab lost its frame when keyboard focus left"]call _check;
+            };
+        }forEach[86142,86144,86214];
     ''')
 
 
