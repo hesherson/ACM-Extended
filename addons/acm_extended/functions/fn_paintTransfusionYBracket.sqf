@@ -22,7 +22,7 @@ _relation params ["_rows", "_key"];
 private _piggyback = [_patient,_part,_iv,_site] call ACME_fnc_piggybackLine;
 [(_display displayCtrl 86160),"text",if (_key != "") then {"Fluids | Y line"} else {if (_piggyback isNotEqualTo []) then {"Fluids | Piggyback"} else {"Fluids"}}] call ACME_fnc_transfusionUiSet;
 (ctrlPosition _list) params ["_listX", "_listY", "_listW", "_listH"];
-private _rowH = safeZoneH / 20;
+private _rowH = safeZoneH * 0.072;
 // Native listboxes do not expose a stable row-scroll offset. Overflow keeps textual [Y]/[PiB] roles.
 private _fits = ((lbSize _list) * _rowH) <= _listH && {ctrlShown _list};
 private _show = _fits && {count _rows > 0};
@@ -49,7 +49,7 @@ if (_piggyback isNotEqualTo []) then {
             private _pane = _display displayCtrl _x;
             if (!isNull _pane && {ctrlShown _pane}) then {
                 (ctrlPosition _pane) params ["_px","_py","_pw","_ph"];
-                private _paneRowH = safeZoneH / ([20,25] select ((ctrlIDC _pane) == 86129));
+                private _paneRowH = safeZoneH * 0.072;
                 if ((lbSize _pane) * _paneRowH <= _ph) then {
                     for "_r" from 0 to ((lbSize _pane) - 1) do {
                         private _value = _pane lbValue _r;

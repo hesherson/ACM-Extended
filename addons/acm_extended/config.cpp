@@ -3069,6 +3069,7 @@ class CfgFunctions {
             class ventCustodyAck {};
             class ventCustodyTick {};
             class ventItemGate {};
+            class ventOxygenGate {};
             class ventMinuteVolume {};
             class ventMVLimits {};
             class ventTechPrompt {};
@@ -4667,7 +4668,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         // at runtime fn_updatetransfusioncontrols hides ACM's native remove button and drops this one into its slot.
         class ACME_PullBagButton: StopTransfusionButton {
             colorDisabled[] = {1,1,1,0.25};
-            colorBackgroundDisabled[] = {0,0,0,0.35};
+            colorBackgroundDisabled[] = {0,0,0,0};
             idc = 86146;
             text = "Pull Bag";
             x = "safeZoneX - 1";  // parked off-screen until the runtime drops it into the native remove slot.
@@ -4680,10 +4681,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
             text = "Discard Y Tubing";
             colorText[] = {1,1,1,1};
             colorDisabled[] = {1,1,1,0.25};
-            colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0.35};
-            colorBackgroundActive[] = {0,0,0,1};
-            colorFocused[] = {0,0,0,1};
+            colorBackground[] = {0,0,0,0};
+            colorBackgroundDisabled[] = {0,0,0,0};
+            colorBackgroundActive[] = {0,0,0,0};
+            colorFocused[] = {0,0,0,0};
             colorBorder[] = {0,0,0,0};
             idc = 86120;
             style = 2;
@@ -4831,10 +4832,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
             w = "safeZoneW / 8.5";
             h = "safeZoneH / 45";
             colorText[] = {1,1,1,1};
-            colorBackground[] = {0,0,0,0.55};
+            colorBackground[] = {0,0,0,0};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 58";
-            style = 2;
+            style = 0;
             shadow = 0;
         };
         class ACME_PreparedInfusionList: RscListBox {
@@ -4843,13 +4844,13 @@ class ACM_circulation_TransfusionMenu_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 6) + (safeZoneH / 10) + (safeZoneH / 45)";
             w = "safeZoneW / 8.5";
             h = "safeZoneH / 10";
-            rowHeight = "safeZoneH / 25";
+            rowHeight = "safeZoneH * 0.072";
             colorText[] = {1,1,1,1};
-            colorSelect[] = {0.94,0.91,0.82,1};
-            colorSelect2[] = {0.94,0.91,0.82,1};
-            colorBackground[] = {0,0,0,0.25};
-            colorSelectBackground[] = {0.188,0.255,0.353,1};
-            colorSelectBackground2[] = {0.188,0.255,0.353,1};
+            colorSelect[] = {1,1,1,1};
+            colorSelect2[] = {1,1,1,1};
+            colorBackground[] = {0,0,0,0};
+            colorSelectBackground[] = {0.20,0.20,0.20,0.18};
+            colorSelectBackground2[] = {0.20,0.20,0.20,0.18};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 50";
             onLBSelChanged = "params ['_ctrl','_index']; if (_index >= 0) then {missionNamespace setVariable ['ACME_infusion_SelectedPreparedIndex', _ctrl lbValue _index];};";
@@ -4877,10 +4878,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
             w = "safeZoneW / 3.1";
             h = "safeZoneH / 32";
             colorText[] = {1,1,1,1};
-            colorBackground[] = {0,0,0,0.55};
+            colorBackground[] = {0,0,0,0};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 55";
-            style = 2;
+            style = 0;
             shadow = 0;
         };
         class ACME_DropSetButton: ACME_InjectMedicationBagButton {
@@ -4926,8 +4927,8 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_AdjustInfusionButton: ACME_DropSetButton {
             text = "Adjust Infusion";
             idc = 86131;
-            colorText[] = {1, 0.85, 0.16, 1};
-            colorDisabled[] = {1, 0.85, 0.16, 0.25};
+            colorText[] = {1,1,1,1};
+            colorDisabled[] = {0.76,0.76,0.76,0.35};
             x = "safeZoneX + (safeZoneW / 2) - (safeZoneW / 4.05)";
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 14) - (safeZoneH / 38)";
             w = "safeZoneW / 8.5";

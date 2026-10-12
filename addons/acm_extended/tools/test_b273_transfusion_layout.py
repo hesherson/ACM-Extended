@@ -60,9 +60,11 @@ def test_all_main_interaction_rectangles_fit_window_and_do_not_overlap(aspect):
 def test_fluid_list_preserves_room_for_separate_y_bags_and_bracket():
     fluid = fixed_layout()[86004]
     x, _, w, h = fluid
-    # Native list rows remain safeZoneH/20; both blood and saline remain ordinary rows.
-    assert h / 0.05 >= 2
-    assert int(h / 0.05) >= 4
+    # B276 cards retain the native list identity and fit both independently selectable Y branches.
+    row_expression = re.search(r"rowHeight = QUOTE\((.*?)\);", DIALOG).group(1)
+    row_height = eval(row_expression, {"__builtins__": {}}, {"safeZoneH": 1})
+    assert h / row_height >= 2
+    assert int(h / row_height) >= 2
     assert x - 0.125 >= 0.0119, "bracket consumes the native bag hit target"
     assert x + w <= 0.337 + 1e-8
     assert w >= 0.19

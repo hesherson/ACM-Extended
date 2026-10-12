@@ -121,6 +121,7 @@ if (_screen == "params") exitWith {
     } else {
         // in-place editable, so toggle edit on this row.
         private _ed = uiNamespace getVariable ["ACME_vent_editingParam", -1];
+        if (_row == 0 && {_ed != _row} && {!(call ACME_fnc_ventOxygenGate)}) exitWith {};
         // committing this row, because it was being edited: log the new value.
         if (_ed == _row) then {
             private _tP2 = uiNamespace getVariable ["ACME_vent_target", ACE_player];
@@ -140,6 +141,7 @@ if (_screen == "params") exitWith {
 
 if (_screen == "o2") exitWith {
     private _ed = uiNamespace getVariable ["ACME_vent_editingFio2", false];
+    if (!_ed && {!(call ACME_fnc_ventOxygenGate)}) exitWith {};
     uiNamespace setVariable ["ACME_vent_editingFio2", !_ed];
     [] call ACME_fnc_ventPanelListRefresh;
 };

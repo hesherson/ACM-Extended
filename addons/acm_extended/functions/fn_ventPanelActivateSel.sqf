@@ -93,6 +93,7 @@ if (_screen == "o2") exitWith {
     playSound "ACME_VentClick";
     private _editing = uiNamespace getVariable ["ACME_vent_editingFio2", false];
     if (_editing || {_selIdx == 0}) then {
+        if (!_editing && {!(call ACME_fnc_ventOxygenGate)}) exitWith {};
         uiNamespace setVariable ["ACME_vent_editingFio2", !_editing];
         ["o2"] call ACME_fnc_ventPanelShowScreen;  // rebuild with the new edit highlight.
     } else {

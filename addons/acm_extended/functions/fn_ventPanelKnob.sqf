@@ -129,7 +129,7 @@ if (uiNamespace getVariable ["ACME_vent_alarmWinOpen", false]) exitWith {
 };
 
 // o2 enrichment edit mode, on its own screen, takes precedence, because the dial changes the value from 21 to
-// 100 percent. room air is 21 percent and 100 percent is pure oxygen. it is the same interaction model as the
+// 95 percent, the Sparrow's enrichment range. it is the same interaction model as the
 // BPM field.
 // PARAMS edits in place. rows 0 for o2, 1 for i:e and 2 for PEEP change on the PARAMS page itself, with no
 // sub-screen. it is the same dial-turns-the-value model as ALERTS, and ventPanelSetValue writes the field text
@@ -158,7 +158,8 @@ if ((_screen == "params") && {(uiNamespace getVariable ["ACME_vent_editingParam"
             if (!isNull _tP) then { _tP setVariable ["ACME_vent_trigSensCmH2O", _v, true]; };
             [4, (if (_v == 0) then {"OFF"} else {str _v})] call ACME_fnc_ventPanelSetValue;  // the number only, row 4.
         };
-        case 0: {  // o2 ENRICHMENT, 21 to 100 percent.
+        case 0: {  // o2 ENRICHMENT, 21 to 95 percent.
+            if !(call ACME_fnc_ventOxygenGate) exitWith {};
             private _v = ((if (isNull _tP) then {uiNamespace getVariable ["ACME_vent_fio2", 21]} else {_tP getVariable ["ACME_vent_fio2", 21]}) + _dir) max 21 min 95;  // the sparrow spec is an FiO2 of 21 to 95 percent. a turbine on ambient air with o2 enrichment cannot reach 100 percent.
             uiNamespace setVariable ["ACME_vent_fio2", _v];
             if (!isNull _tP) then { _tP setVariable ["ACME_vent_fio2", _v, true]; };
@@ -287,6 +288,7 @@ if ((_screen == "alerts2") && {(uiNamespace getVariable ["ACME_vent_editingAlert
 
 
 if ((_screen == "o2") && {uiNamespace getVariable ["ACME_vent_editingFio2", false]}) exitWith {
+    if !(call ACME_fnc_ventOxygenGate) exitWith {};
     disableSerialization;
     private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
     private _v = (uiNamespace getVariable ["ACME_vent_fio2", 21]) + _dir;

@@ -4,10 +4,10 @@ class ACME_TransfusionActionButton: RscButton {
     action = "";
     colorText[] = {1,1,1,1};
     colorDisabled[] = {0.76,0.76,0.76,0.35};
-    colorBackground[] = {0,0,0,1};
-    colorBackgroundDisabled[] = {0,0,0,0.50};
-    colorBackgroundActive[] = {0.20,0.20,0.20,1};
-    colorFocused[] = {0.20,0.20,0.20,1};
+    colorBackground[] = {0,0,0,0};
+    colorBackgroundDisabled[] = {0,0,0,0};
+    colorBackgroundActive[] = {0,0,0,0};
+    colorFocused[] = {0,0,0,0};
     colorBorder[] = {0,0,0,0};
     style = 2;
     shadow = 0;
@@ -42,8 +42,8 @@ class ACME_TransfusionInlineDetails: RscControlsGroupNoHScrollbars {
     class Controls {
         class Contents: RscStructuredText {
             idc = 86192;
-            x = 0;
-            y = 0;
+            x = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.006";
+            y = "safeZoneH * 0.006";
             w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.280";
             h = "safeZoneH * 0.090";
             size = "safeZoneH * 0.016";

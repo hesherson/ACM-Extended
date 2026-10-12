@@ -42,6 +42,8 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [B276 oxygen requirement and menu styling](2026-10-12-b276-oxygen-menu.md)
+
 - [B275 connected transfusion menu](2026-10-11-b275-connected-transfusion-menu.md)
 - [B274 transfusion menu corrections](2026-10-11-b274-transfusion-menu.md)
 - [B273 transfusion menu and propofol bottles](2026-10-10-b273-transfusion-menu.md)

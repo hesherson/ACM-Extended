@@ -44,7 +44,7 @@ private _warmingThermal = _thermalLines select {(_x find "Warming") >= 0};
 _lines append (if (_warmingThermal isEqualTo []) then {_thermalLines} else {_warmingThermal});
 {
     if ((toLowerANSI (_x param [1, ""])) == toLowerANSI _part && {(_x param [4,-1]) == _site} && {(_x param [5,false]) isEqualTo _iv}) then {
-        _lines pushBack format ["%1 remaining",[_x param [11, ""],_x param [14,0]] call ACME_fnc_formatDose];
+        _lines pushBack format ["Medication: %1 remaining",[_x param [11, ""],_x param [14,0]] call ACME_fnc_formatDose];
     };
 } forEach (_patient getVariable ["ACME_infusion_BagMedications",[]]);
 
@@ -54,7 +54,7 @@ private _cuffs = _patient getVariable ["ACME_piCuffs",createHashMap];
     if (_cuff isNotEqualTo []) then {_lines pushBack format ["Pressure cuff: %1%2",round (([_cuff] call ACME_fnc_pressureLevel) * 100),"%"];};
 } forEach _bags;
 if (_bags isEqualTo []) then {_lines = ["No bag connected"] + _lines;};
-private _content = _lines joinString "<br/>";
+private _content = "<t color='#dddddd' size='1.05'>Line details</t><br/>" + (_lines joinString "<br/>");
 if ((_display getVariable ["ACME_detailsContent", ""]) != _content) then {
     _ctrl ctrlSetStructuredText parseText _content;
     _display setVariable ["ACME_detailsContent", _content];

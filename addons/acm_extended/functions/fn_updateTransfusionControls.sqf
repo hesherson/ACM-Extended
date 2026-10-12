@@ -319,7 +319,7 @@ if (!isNull _ctrlSetsBtn) then {
     } else {
         format ["Prepared IV sets (%1)  >>", _preparedSetCountB50]
     });
-    _ctrlSetsBtn ctrlSetBackgroundColor [0,0,0,0.75];
+    _ctrlSetsBtn ctrlSetBackgroundColor [0,0,0,0];
     _ctrlSetsBtn ctrlSetTextColor [1,1,1,1];
 
     [_ctrlSetsBtn,"show",true] call ACME_fnc_transfusionUiSet;
@@ -998,6 +998,9 @@ private _warmingReadout = [];
                         _list setVariable [_tipKey,_tooltip];
                     };
                     if (_thermal != "" && {_flowing}) then {_warmingReadout pushBackUnique _thermal;};
+                    // Read-only second line/progress for the static native row cards. The current label
+                    // is its scope token, so a list rebuild cannot display metadata from an older row.
+                    _list setVariable [format ["ACME_txCard_%1",_r],[_physical param [1,0],_physical param [6,0],_thermal,_role,_flowing,_physical param [0,""],_physical param [8,""],_label,[_targetPatient,_targetBodyPart,_flIV,_flSite]]];
                     private _type = _physical param [0,""];
                     if (_type in ["Saline","ACME_SalineY"]) then {_list lbSetPicture [_r,"\z\ace\addons\medical_treatment\ui\salineIV_ca.paa"];};
                 };

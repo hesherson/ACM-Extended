@@ -9,22 +9,25 @@ class GVAR(TransfusionMenu_Dialog) {
     objects[] = {};
 
     class ControlsBackground {
-        class MenuBackground: RscText {
+        class MenuBackground: RscPicture {
             idc = -1;
             x = QUOTE(ACM_TRANSFUSION_WINDOW_X);
             y = QUOTE(safeZoneY + (safeZoneH * 0.08));
             w = QUOTE(ACM_TRANSFUSION_WINDOW_W);
             h = QUOTE(safeZoneH * 0.84);
-            colorBackground[] = {0,0,0,0.90};
+            text = QPATHTOF(ui\transfusionmenu\surfaces\window_ca.paa);
+            colorText[] = {1,1,1,1};
+            enable = 0;
         };
+        #include "TransfusionMenu_Surfaces.hpp"
         // Presentation panels stay behind the shared body-map artwork and its device overlays.
         class HeaderBackground: RscText {
-            idc = -1;
+            idc = 86091;
             x = QUOTE(ACM_TRANSFUSION_WINDOW_X);
             y = QUOTE(safeZoneY + safeZoneH * 0.08);
             w = QUOTE(ACM_TRANSFUSION_WINDOW_W);
             h = QUOTE(safeZoneH * 0.066);
-            colorBackground[] = ACM_TRANSFUSION_COLOR_PANEL;
+            colorBackground[] = {0,0,0,0};
         };
         class PatientPanelBackground: HeaderBackground {
             idc = 86180;
@@ -37,7 +40,7 @@ class GVAR(TransfusionMenu_Dialog) {
             idc = 86181;
             x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.35);
             w = QUOTE(ACM_UI_CANVAS_W * 0.30);
-            colorBackground[] = {0.06,0.06,0.06,0.94};
+            colorBackground[] = {0,0,0,0};
         };
         class PreparationPanelBackground: PatientPanelBackground {
             idc = 86182;
@@ -45,13 +48,15 @@ class GVAR(TransfusionMenu_Dialog) {
             w = QUOTE(ACM_TRANSFUSION_RIGHT_W + ACM_UI_CANVAS_W * 0.014);
         };
         // Local action popovers live in the background layer, below the unchanged native action buttons.
-        class BagActionsBackground: PatientPanelBackground {
+        class BagActionsBackground: RscPicture {
             idc = 86173;
             x = QUOTE(ACM_UI_CANVAS_X - 1);
             y = QUOTE(safeZoneY + safeZoneH * 0.228);
             w = QUOTE(ACM_UI_CANVAS_W * 0.206);
             h = QUOTE(safeZoneH * 0.234);
-            colorBackground[] = {0.09,0.09,0.09,1};
+            text = QPATHTOF(ui\transfusionmenu\surfaces\list_ca.paa);
+            colorText[] = {1,1,1,1};
+            enable = 0;
         };
         class InfusionActionsBackground: BagActionsBackground {
             idc = 86174;
@@ -118,9 +123,9 @@ class GVAR(TransfusionMenu_Dialog) {
             colorBackground[] = {0,0,0,0};
             text = "";
             lineSpacing = 0;
-            sizeEx = QUOTE(GUI_GRID_H * 1.8 * NORMALIZE_SIZEEX);
-            shadow = 1;
-            colorShadow[] = {0,0,0,0.5};
+            sizeEx = QUOTE(safeZoneH * 0.027);
+            shadow = 0;
+            colorShadow[] = {0,0,0,0};
         };
         class SelectedLimbText: PatientName {
             idc = IDC_TRANSFUSIONMENU_SELECTIONTEXT;
@@ -325,13 +330,13 @@ class GVAR(TransfusionMenu_Dialog) {
             y = QUOTE(safeZoneY + safeZoneH * 0.228);
             w = QUOTE(ACM_UI_CANVAS_W * 0.200);
             h = QUOTE(safeZoneH * 0.230);
-            rowHeight = QUOTE(safeZoneH / 20);
+            rowHeight = QUOTE(safeZoneH * 0.072);
             colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
             colorSelect[] = ACM_TRANSFUSION_COLOR_TEXT;
             colorSelect2[] = ACM_TRANSFUSION_COLOR_TEXT;
-            colorBackground[] = {0,0,0,0.75};
-            colorSelectBackground[] = ACM_TRANSFUSION_COLOR_SELECTED;
-            colorSelectBackground2[] = ACM_TRANSFUSION_COLOR_SELECTED;
+            colorBackground[] = {0,0,0,0};
+            colorSelectBackground[] = {0.20,0.20,0.20,0.18};
+            colorSelectBackground2[] = {0.20,0.20,0.20,0.18};
             sizeEx = QUOTE(safeZoneH * 0.019);
             class Items {};
             font = "RobotoCondensed";
@@ -365,10 +370,10 @@ class GVAR(TransfusionMenu_Dialog) {
             text = "";
             colorText[] = ACM_TRANSFUSION_COLOR_TEXT;
             colorDisabled[] = {0.76,0.76,0.76,0.35};
-            colorBackground[] = ACM_TRANSFUSION_COLOR_BUTTON;
-            colorBackgroundDisabled[] = {0,0,0,0.50};
-            colorBackgroundActive[] = ACM_TRANSFUSION_COLOR_SELECTED;
-            colorFocused[] = ACM_TRANSFUSION_COLOR_SELECTED;
+            colorBackground[] = {0,0,0,0};
+            colorBackgroundDisabled[] = {0,0,0,0};
+            colorBackgroundActive[] = {0,0,0,0};
+            colorFocused[] = {0,0,0,0};
             colorBorder[] = {0,0,0,0};
             idc = IDC_TRANSFUSIONMENU_BUTTON_STOPIV;
             style = ST_CENTER;
@@ -384,7 +389,7 @@ class GVAR(TransfusionMenu_Dialog) {
         };
         class MoveBagButton: StopTransfusionButton {
             colorDisabled[] = {0.76,0.76,0.76,0.35};
-            colorBackgroundDisabled[] = {0,0,0,0.50};
+            colorBackgroundDisabled[] = {0,0,0,0};
             text = CSTRING(TransfusionMenu_MoveBag_Display);
             idc = IDC_TRANSFUSIONMENU_BUTTON_MOVEBAG;
             x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.141);

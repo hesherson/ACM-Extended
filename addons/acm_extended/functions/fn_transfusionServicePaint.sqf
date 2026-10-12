@@ -37,9 +37,11 @@ private _pulse = 0.5 + 0.5 * sin (360 * ((diag_tickTime * 1.1) % 1));
 _flush ctrlSetTextColor (if (_indicated) then {[1,0.2 + 0.2 * _pulse,0.2 + 0.2 * _pulse,0.65 + 0.35 * _pulse]} else {
     if (_primeIndicated) then {[0.35,1,0.45,0.65 + 0.35 * _pulse]} else {[1,1,1,1]}
 });
-_flush ctrlSetBackgroundColor (if (_indicated) then {[0.25 + 0.45 * _pulse,0,0,0.7]} else {
-    if (_primeIndicated) then {[0,0.15 + 0.35 * _pulse,0,0.8]} else {[0,0,0,1]}
-});
+// Service cues tint the rounded background surface, never repaint square native corners.
+_flush setVariable ["ACME_txSkinTint",if (_indicated) then {[1,0.25,0.25,0.70 + 0.30 * _pulse]} else {
+    if (_primeIndicated) then {[0.35,1,0.45,0.80 + 0.20 * _pulse]} else {[1,1,1,1]}
+}];
+_flush ctrlSetBackgroundColor [0,0,0,0];
 if !(_flush getVariable ["ACME_serviceRightClick",false]) then {
     _flush setVariable ["ACME_serviceRightClick",true];
     _flush ctrlAddEventHandler ["MouseButtonDown", {
