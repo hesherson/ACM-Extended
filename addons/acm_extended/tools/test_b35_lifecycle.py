@@ -1,4 +1,8 @@
-"""PTX owner/reset/save source contracts; these checks do not execute Arma or CBA."""
+"""PTX owner/reset/save contracts, with production snapshot/restore SQF execution.
+
+Engine objects, clocks and transport use fixtures; native Arma remains required
+for real ownership and delivery acceptance.
+"""
 from historical_source import read_source
 from pathlib import Path
 import re
@@ -14,6 +18,62 @@ def read(relative):
 
 def source(name):
     return read(f"functions/fn_{name}.sqf")
+
+
+def _exercise_flight_snapshot_boundary(fields):
+    from test_b271_ptx_stability import execute, function, restore_setup
+    from test_historical_medication_rows import iteration_scopes
+
+    # Run the complete production registry, codec, validator, snapshot and
+    # restore. The retained PTX fixture supplies only unrelated engine/session
+    # boundaries; the persist/restore whitelist decisions are never mocked.
+    setup = restore_setup() + "ACME_fnc_clinicalFields={" + fields + "};\n"
+    setup += "".join(iteration_scopes(function(name)) for name in (
+        "clinicalSnapshot", "clinicalValidate", "clinicalRestore",
+    ))
+    execute(setup + r'''
+        private _transient=[
+            "ACME_alt_ptxSample", "ACME_alt_tickStamp", "ACME_alt_ambientRatio",
+            "ACME_flight_tickActive", "ACME_flightContainment",
+            "ACME_flightContainmentContext", "ACME_flightContainmentSerial",
+            "ACME_flightContainmentLocalSerial", "ACME_clock_altitude",
+            "ACME_clock_altitude_owner", "ACME_ptx_tensionProgress",
+            "ACM_breathing_Pneumothorax_PFH"
+        ];
+        private _sentinel=[7,9,900,"live-owner"];
+        {_patient setVariable [_x,+_sentinel];} forEach _transient;
+        private _durable=+(_patient getVariable "ACME_ptx_state");
+        private _snapshot=[_patient] call ACME_fnc_clinicalSnapshot;
+        private _names=(_snapshot select 1) apply {_x select 0};
+        {
+            [!(_x in _names),"flight runtime state was serialized: "+_x] call _check;
+        } forEach _transient;
+        {
+            [_x in _names,"durable PTX field was excluded from snapshot: "+_x] call _check;
+        } forEach ["ACME_ptx_state", "ACME_ptx_tensionSeverity",
+            "ACME_ptx_nativeSealCount", "ACME_ptx_nativeSealHoleCount"];
+        private _saved=(_snapshot select 1) select (_names find "ACME_ptx_state");
+        [([_saved select 1,false] call ACME_fnc_clinicalCodec) isEqualTo _durable,
+            "PTX model duration/payload changed during real codec roundtrip"] call _check;
+
+        // Old snapshots can contain runtime rows. The real validator accepts
+        // their structure, and the real restore whitelist must ignore them
+        // while still restoring the durable PTX rows that follow them.
+        private _injected=_transient apply {
+            [_x,[[123,456,789,"old-owner"],true] call ACME_fnc_clinicalCodec]
+        };
+        private _payload=[3,_injected+(_snapshot select 1)];
+        [([_payload] call ACME_fnc_clinicalValidate) select 0,
+            "runtime compatibility rows failed structural validation"] call _check;
+        _patient setVariable ["ACME_ptx_state",[1,2,0,0,0,0,2,2,2]];
+        [_patient,_payload,7] call ACME_fnc_clinicalRestore;
+        [(_patient getVariable "ACME_ptx_state") isEqualTo _durable,
+            "real restore did not apply durable PTX after ignored runtime rows"] call _check;
+        {
+            [(_patient getVariable _x) isEqualTo _sentinel,
+                "real restore applied old owner pressure/clock/lease state: "+_x] call _check;
+        } forEach _transient;
+    ''')
 
 
 class PtxLifecycle(unittest.TestCase):
@@ -96,10 +156,21 @@ class PtxLifecycle(unittest.TestCase):
             self.assertEqual(len(re.findall(rf'"{field}"', fields)), 1)
             self.assertIn(f'["{field}", "", true, true]', fields)
         self.assertIn('["ACME_ptx_tensionProgress", "", true, false]', fields)
-        self.assertNotIn('"ACME_alt_ptxSample"', fields)
+        for field in ("ACME_alt_ptxSample", "ACME_alt_tickStamp", "ACME_flight_tickActive",
+                      "ACME_flightContainment", "ACME_flightContainmentContext"):
+            self.assertEqual(len(re.findall(rf'"{field}"', fields)), 1)
+            self.assertIn(f'["{field}", "", true, false]', fields)
         self.assertNotIn('"ACM_breathing_Pneumothorax_PFH"', fields)
         self.assertIn("if (!_persist) then {continue;};", source("clinicalSnapshot"))
         self.assertIn("select {_x param [3, true]}", source("clinicalRestore"))
+        _exercise_flight_snapshot_boundary(fields)
+        # A persist=true regression must be rejected by the actual serializer
+        # behavior, not merely by checking the registry source spelling.
+        mutant = fields.replace('["ACME_alt_ptxSample", "", true, false]',
+                                '["ACME_alt_ptxSample", "", true, true]', 1)
+        self.assertNotEqual(mutant, fields)
+        with self.assertRaisesRegex(AssertionError, "flight runtime state was serialized"):
+            _exercise_flight_snapshot_boundary(mutant)
 
     def test_instant_seal_snapshot_only_accepts_absent_or_wound_count(self):
         validate = source("clinicalValidate")
