@@ -313,11 +313,11 @@ private _ctrlSetsBtn = _display displayCtrl 86144;
 if (!isNull _ctrlSetsBtn) then {
     [_ctrlSetsBtn,"position",[_rightX, _setsBtnY, _rightW, _setsBtnH]] call ACME_fnc_transfusionUiSet;
     _ctrlSetsBtn ctrlSetFontHeight _fontH;
-    // B50: the toggle advertises exactly how many complete IV sets the medic is carrying.  If any exist, pulse
-    // the button with the same circulation green family used elsewhere in the medical body map.
+    // The rounded frame owns the visible grey fill. Its native button face stays transparent.
+    // The label advertises the provider's prepared inventory records.
     _ctrlSetsBtn ctrlSetText (format ["Prepared IV sets (%1)",_preparedSetCountB50]);
     _ctrlSetsBtn ctrlSetFontHeight (safeZoneH * 0.017);
-    _ctrlSetsBtn ctrlSetBackgroundColor [0.18,0.18,0.18,1];
+    _ctrlSetsBtn ctrlSetBackgroundColor [0,0,0,0];
 
     [_ctrlSetsBtn,"show",true] call ACME_fnc_transfusionUiSet;
     // Browsing provider custody never requires an active patient bag or access.
@@ -956,6 +956,9 @@ if (!isNull _ctrlSpike) then {
 // Y Tubing", which assembles and stores the set.
 private _ctrlY = _display displayCtrl 86142;
 private _yPendingSaline = missionNamespace getVariable ["ACME_yPendingSaline", ""];
+private _yTubingCount = if (_selIsBlood || {_yPending != ""}) then {
+    [ACE_player,_targetPatient,"ACME_YTubing"] call ACME_fnc_treatmentSupplyCount
+} else {0};
 if (!isNull _ctrlY) then {
     if (diag_tickTime < (missionNamespace getVariable ["ACME_yBuildingActive", -1])) then {
         _ctrlY ctrlSetText "Building...";
@@ -972,7 +975,7 @@ if (!isNull _ctrlY) then {
             _ctrlY ctrlSetText "Spike Y tubing";
             // Staging a new set is provider inventory work, independent of the selected
             // patient access and any already-attached Y line or legacy class spike counter.
-            [_ctrlY,"enable",(_selIsBlood && {([ACE_player,_targetPatient,"ACME_YTubing"] call ACME_fnc_treatmentSupplyCount) > 0}
+            [_ctrlY,"enable",(_selIsBlood && {_yTubingCount > 0}
                 && {count _spikingActive == 0})] call ACME_fnc_transfusionUiSet;
         };
     };
@@ -1211,3 +1214,22 @@ if (_initialLayoutControls isNotEqualTo []) then {
 [_display] call ACME_fnc_paintTransfusionYBracket;
 [_display,(_display displayCtrl 86148),["transfusion"] call ACME_fnc_getSelectedActiveBagContext,86151] call ACME_fnc_pressureInfuserPaint;
 [_display,(_display displayCtrl 86149),["infusion"] call ACME_fnc_getSelectedActiveBagContext,86152] call ACME_fnc_pressureInfuserPaint;
+
+// B280 native-input observation: only relevant changed states, at most 16 lines
+// per opened display. Read after final layout so shown/enabled describe the face
+// Arma receives, without installing another input handler or treatment action.
+if (!isNull _ctrlY && {_selIsBlood || {_yPending != ""}}) then {
+    private _inputState = [
+        missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0],
+        _preparedMode,if (isNull _ctrlRightList) then {-1} else {lbCurSel _ctrlRightList},
+        _selClass,_selAction,_selIsBlood,_yPending,_yPendingSaline,_yTubingCount,
+        count _spikingActive > 0,diag_tickTime < (missionNamespace getVariable ["ACME_yBuildingActive",-1]),
+        ctrlShown _ctrlY,ctrlEnabled _ctrlY,ctrlText _ctrlY
+    ];
+    private _traceCount = _display getVariable ["ACME_txInputTraceCount",0];
+    if (_traceCount < 16 && {_inputState isNotEqualTo (_display getVariable ["ACME_txInputTraceLast",[]])}) then {
+        _display setVariable ["ACME_txInputTraceLast",_inputState];
+        _display setVariable ["ACME_txInputTraceCount",_traceCount + 1];
+        diag_log format ["[ACME B280 TX] [source,prepared,row,item,action,blood,pendingBlood,pendingSaline,tubing,busy,building,shown,enabled,label]=%1",_inputState];
+    };
+};

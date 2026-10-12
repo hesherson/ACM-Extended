@@ -217,7 +217,9 @@ private _showY = !isNull _yButton && {ctrlShown _yButton};
 private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode", false];
 {
     _x params ["_tab","_selected"];
-    _tab ctrlSetBackgroundColor (if (_selected) then {[0.30,0.30,0.30,1]} else {[0.18,0.18,0.18,1]});
+    // The rounded frame owns the fill; an opaque native rectangle covers its corners.
+    _tab ctrlSetBackgroundColor [0,0,0,0];
+    _tab setVariable ["ACME_txTabSelected",_selected];
     [_tab,"color",if (_selected) then {[1,1,1,1]} else {[0.75,0.75,0.75,1]}] call ACME_fnc_transfusionUiSet;
 } forEach [[_inventoryTab,!_preparedMode],[_display displayCtrl 86144,_preparedMode]];
 if (_preparedMode) then {
@@ -397,20 +399,23 @@ if (_menu == "infusion") then {
 } forEach [[86148,86151],[86149,86152]];
 [_display] call ACME_fnc_updateTransfusionLineDetails;
 // Native action handlers stay on their original controls. Their nine-slice backgrounds live in ControlsBackground.
-private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,86133,86134,86141,86142,86143,86144,86148,86149,86170,86172,86194,86195,86197,86198,86212];
+private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,86133,86134,86141,86142,86143,86144,86148,86149,86170,86172,86194,86195,86197,86198,86212,86214];
 {
     private _button = _display displayCtrl _x;
     private _frame = _display displayCtrl (86410 + _forEachIndex);
     if (!isNull _button) then {
         if !(_button getVariable ["ACME_txRoundedHooks",false]) then {
             _button setVariable ["ACME_txRoundedHooks",true];
-            if ((ctrlIDC _button) != 86144) then {_button ctrlSetBackgroundColor [0,0,0,0];};
+            _button ctrlSetBackgroundColor [0,0,0,0];
             _button ctrlAddEventHandler ["MouseEnter",{(_this select 0) setVariable ["ACME_txRoundHover",true];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
             _button ctrlAddEventHandler ["MouseExit",{(_this select 0) setVariable ["ACME_txRoundHover",false];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
             _button ctrlAddEventHandler ["SetFocus",{(_this select 0) setVariable ["ACME_txRoundFocus",true];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
             _button ctrlAddEventHandler ["KillFocus",{(_this select 0) setVariable ["ACME_txRoundFocus",false];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
         };
-        [_frame,ctrlPosition _button,["button","selected"] select ((_button getVariable ["ACME_txRoundHover",false]) || {_button getVariable ["ACME_txRoundFocus",false]}),0.006,ctrlShown _button,_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionRoundedFrame;
+        private _selectedFrame = (_button getVariable ["ACME_txTabSelected",false])
+            || {_button getVariable ["ACME_txRoundHover",false]} || {_button getVariable ["ACME_txRoundFocus",false]};
+        private _frameProfiles = if ((ctrlIDC _button) in [86144,86214]) then {["tab","tab_selected"]} else {["button","selected"]};
+        [_frame,ctrlPosition _button,_frameProfiles select _selectedFrame,0.006,ctrlShown _button,_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionRoundedFrame;
         private _enabled = ctrlEnabled _button;
         if ((_frame getVariable ["ACME_txButtonEnabled",-1]) isNotEqualTo _enabled) then {
             _frame setVariable ["ACME_txButtonEnabled",_enabled];_frame ctrlSetFade (if (_enabled) then {0} else {0.45});_frame ctrlCommit 0;
@@ -418,7 +423,7 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
         _frame ctrlEnable false;
         // B277 prepared chooser caption fits a narrow screen while retaining the familiar workflow text.
         private _fontHeight = safeZoneH * ([0.020,0.018] select ((ctrlIDC _button) in [86131,86172]));
-        if ((ctrlIDC _button) == 86144 && {((ctrlPosition _button) param [2,0]) < safeZoneH * 0.36 * (pixelW / pixelH)}) then {_fontHeight = safeZoneH * 0.017;};
+        if ((ctrlIDC _button) in [86144,86214]) then {_fontHeight = safeZoneH * 0.017;};
         if ((_button getVariable ["ACME_txFontH",0]) != _fontHeight) then {_button ctrlSetFontHeight _fontHeight;_button setVariable ["ACME_txFontH",_fontHeight];};
     };
 } forEach _roundButtons;

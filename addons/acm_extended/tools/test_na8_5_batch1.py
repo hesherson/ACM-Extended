@@ -57,6 +57,8 @@ class QuietOutput(unittest.TestCase):
             'functions/fn_hangBagRestoreWeapons.sqf':1,
             # Mission-wide terminal token exhaustion only; replay guards execute below.
             'functions/fn_inventoryLedgerBroker.sqf':1,
+            # Startup build identity plus capped changed-state native input observation.
+            'functions/fn_initForkStartupRuntime.sqf':1,
             'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
             'functions/fn_manualPlateCarrierAutoReturn.sqf':1,
             'functions/fn_compatCheck.sqf':2,
@@ -69,13 +71,15 @@ class QuietOutput(unittest.TestCase):
             'functions/fn_megacodeOpenPanel.sqf':2,
             'functions/fn_megacodePanelLoad.sqf':2,
             'functions/fn_networkCompatNotice.sqf':1,
-            'functions/fn_postInit.sqf':5,
+            # historical_source expands the startup callee here as well; one native startup line.
+            'functions/fn_postInit.sqf':6,
             'functions/fn_preparedAttachLocal.sqf':1,
             'functions/fn_providerStateReconcile.sqf':3,
             'functions/fn_registerChestAccessVestRuntime.sqf':1,
             'functions/fn_registerMedicalMenuOpenRuntime.sqf':4,
             'functions/fn_thoraOpen.sqf':3,
             'functions/fn_transientStateReconcile.sqf':1,
+            'functions/fn_updateTransfusionControls.sqf':1,
         }
         emitters={}
         for p in source_files(R):
@@ -85,6 +89,9 @@ class QuietOutput(unittest.TestCase):
         self.assertEqual(emitters,approved)
         from test_b279_inventory_diagnostics import assert_inventory_failure_diagnostics_bounded
         assert_inventory_failure_diagnostics_bounded()
+        from test_b280_transfusion_native_input import assert_native_input_diagnostics_bounded, assert_startup_identity_log_is_outside_callbacks
+        assert_native_input_diagnostics_bounded()
+        assert_startup_identity_log_is_outside_callbacks()
     def test_scan_finds_quoted_config_callback(self):
         self.assertEqual(logs('onLoad = "diag_log \'message\';";',True),['diag_log'])
     def test_scan_ignores_comments_and_messages(self):

@@ -7,7 +7,7 @@ private _rows = [];
     if (isNull _x) then {continue;};
     {
         _x params ["_class", "_token"];
-        private _k = switch (_class) do {case "ACME_PreparedIVSet": {"prepared"}; case "ACME_PreparedSyringe": {"syringe"}; default {""};};
+        private _k = getText (configFile >> "CfgMagazines" >> _class >> "ACME_inventoryKind");
         if (_k != "" && {_kind == "" || {_kind == _k}} && {_token > 0} && {_token < 65535}) then {_rows pushBack [_token, _k];};
     } forEach magazinesAmmoCargo _x;
 } forEach _containers;

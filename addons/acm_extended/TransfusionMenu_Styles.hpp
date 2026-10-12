@@ -21,9 +21,6 @@ class ACME_TransfusionActionButton: RscButton {
 };
 
 class ACME_TransfusionTabButton: ACME_TransfusionActionButton {
-    colorBackground[] = {0.18,0.18,0.18,1};
-    colorBackgroundActive[] = {0.28,0.28,0.28,1};
-    colorFocused[] = {0.28,0.28,0.28,1};
     sizeEx = "safeZoneH * 0.017";
 };
 
@@ -81,7 +78,6 @@ class ACME_TransfusionRoundedFrame: RscControlsGroupNoScrollbars {
 class ACME_TransfusionCard: ACME_TransfusionRoundedFrame {
     class Controls {
         ACME_TX_SLICES
-        class Hit: ACME_TransfusionActionButton { idc = 9; x = 0; y = 0; w = 0; h = 0; sizeEx = 0; };
         class Name: ACME_TransfusionCaption { idc = 10; style = 0; sizeEx = "safeZoneH * 0.018"; colorText[] = {0.94,0.94,0.94,1}; };
         class Detail: Name { idc = 11; sizeEx = "safeZoneH * 0.014"; colorText[] = {0.66,0.66,0.66,1}; };
         class Status: Detail { idc = 12; style = 0; sizeEx = "safeZoneH * 0.0125"; };
@@ -96,6 +92,9 @@ class ACME_TransfusionCard: ACME_TransfusionRoundedFrame {
         ACME_TX_MARK(6,24,35) ACME_TX_MARK(7,25,36) ACME_TX_MARK(8,26,37)
         ACME_TX_MARK(9,27,38) ACME_TX_MARK(10,28,39)
 #undef ACME_TX_MARK
+        // Last child is the native button face: decorative captions/art cannot
+        // sit above the hit target and swallow native mouse clicks or sounds.
+        class Hit: ACME_TransfusionActionButton { idc = 9; x = 0; y = 0; w = 0; h = 0; sizeEx = 0; };
     };
 };
 #undef ACME_TX_SLICES

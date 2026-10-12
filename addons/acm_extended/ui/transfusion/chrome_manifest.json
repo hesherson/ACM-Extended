@@ -35,6 +35,14 @@
       "fill": "#303239",
       "border": "#9498a2"
     },
+    "tab": {
+      "fill": "#2e2e2e",
+      "border": "#404040"
+    },
+    "tab_selected": {
+      "fill": "#4d4d4d",
+      "border": "#949494"
+    },
     "popup": {
       "fill": "#24262b",
       "border": "#50545e"
@@ -264,6 +272,114 @@
       "profile": "selected",
       "part": "br",
       "sha256": "cdb4a7693813acab03ae812b21298777ab21ae90163efe2df4354d251cf2522a"
+    },
+    {
+      "file": "tab_tl_ca.paa",
+      "profile": "tab",
+      "part": "tl",
+      "sha256": "898bdbd3afc88a0809f8ec1748e3ea50180f42d75ff7e7cb5a26d4ca7bf8aa78"
+    },
+    {
+      "file": "tab_top_ca.paa",
+      "profile": "tab",
+      "part": "top",
+      "sha256": "d3d65d78a8cb2de75a3e1528a14df2c0c9fcdb9aa8971c3d92f7525c3b7ef384"
+    },
+    {
+      "file": "tab_tr_ca.paa",
+      "profile": "tab",
+      "part": "tr",
+      "sha256": "88ce9547168ff7dd8eff4bdef9e9d08255d57acce09877001497a9f37fee49bf"
+    },
+    {
+      "file": "tab_left_ca.paa",
+      "profile": "tab",
+      "part": "left",
+      "sha256": "c684628ea18857f5451f8293899baeeb639770ded8edbaaafaa44035832e072b"
+    },
+    {
+      "file": "tab_center_ca.paa",
+      "profile": "tab",
+      "part": "center",
+      "sha256": "d9f8d000d727eaf5d3d46e0547dbee90bcf48a6cd2efe3182c75648eb9d68b28"
+    },
+    {
+      "file": "tab_right_ca.paa",
+      "profile": "tab",
+      "part": "right",
+      "sha256": "5c993a1430e8d905343a114227bc41b6149b7e5dc307e2a4a60479dd506b32df"
+    },
+    {
+      "file": "tab_bl_ca.paa",
+      "profile": "tab",
+      "part": "bl",
+      "sha256": "e39180e920e6f300599b72595684c4c6d7c236943fc08e2fdcfd1f14ea57c1b8"
+    },
+    {
+      "file": "tab_bottom_ca.paa",
+      "profile": "tab",
+      "part": "bottom",
+      "sha256": "73f2a8c78f5bdce9bb3fe99577aa1b538792abcad0178ba0bda8620feb491ffe"
+    },
+    {
+      "file": "tab_br_ca.paa",
+      "profile": "tab",
+      "part": "br",
+      "sha256": "1868c70aa40da14331dedeb1262e62b88a68f57bbf7267b84f8d33f8c2f33c66"
+    },
+    {
+      "file": "tab_selected_tl_ca.paa",
+      "profile": "tab_selected",
+      "part": "tl",
+      "sha256": "7d3954f4e1e74df2877d8f26eef6a616452177df5552c83d0be15d511e61eb28"
+    },
+    {
+      "file": "tab_selected_top_ca.paa",
+      "profile": "tab_selected",
+      "part": "top",
+      "sha256": "261507df0a6e5a6174d4a0e0de5228213257333445220e71a45cb476b767be1d"
+    },
+    {
+      "file": "tab_selected_tr_ca.paa",
+      "profile": "tab_selected",
+      "part": "tr",
+      "sha256": "335d413ccd9dca0ad4c7e1992247dd98f738a2bf7e51f834aa1fe2c413e88ea8"
+    },
+    {
+      "file": "tab_selected_left_ca.paa",
+      "profile": "tab_selected",
+      "part": "left",
+      "sha256": "cc733b768904ff71a02b94b2a1859f9faf157de216adf729c06e5ee18af4235c"
+    },
+    {
+      "file": "tab_selected_center_ca.paa",
+      "profile": "tab_selected",
+      "part": "center",
+      "sha256": "c8fb3ba9a64b17bc0359f94e1c4da93cf3622cd61de34996297d96880f9845a6"
+    },
+    {
+      "file": "tab_selected_right_ca.paa",
+      "profile": "tab_selected",
+      "part": "right",
+      "sha256": "7d95e2cff9607fc544bd35ec787cda643ced88aa9cdc2efdf1f73ee26309fa2f"
+    },
+    {
+      "file": "tab_selected_bl_ca.paa",
+      "profile": "tab_selected",
+      "part": "bl",
+      "sha256": "7db67472cdc08fbf815844fd4d95143e48fdfed0af87e7c93f292e31988d4252"
+    },
+    {
+      "file": "tab_selected_bottom_ca.paa",
+      "profile": "tab_selected",
+      "part": "bottom",
+      "sha256": "bc86df0914659980e5c734ece06fcfd74aeb01132766ab2c84c98b4f40bcdc78"
+    },
+    {
+      "file": "tab_selected_br_ca.paa",
+      "profile": "tab_selected",
+      "part": "br",
+      "sha256": "f9126c5fe996ce54270448348772299739fb9dfd503f63d76a723e7d50b99b92"
     },
     {
       "file": "popup_tl_ca.paa",

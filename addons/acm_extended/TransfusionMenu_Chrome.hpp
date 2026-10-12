@@ -26,6 +26,7 @@ class ACME_TxButton_86195: ACME_TransfusionRoundedFrame { idc = 86430; };
 class ACME_TxButton_86197: ACME_TransfusionRoundedFrame { idc = 86431; };
 class ACME_TxButton_86198: ACME_TransfusionRoundedFrame { idc = 86432; };
 class ACME_TxButton_86212: ACME_TransfusionRoundedFrame { idc = 86433; };
+class ACME_TxButton_86214: ACME_TransfusionRoundedFrame { idc = 86434; };
 class ACME_TxHeaderRule: RscText { idc = 86404; x = "safeZoneX - 1"; y = "safeZoneY - 1"; w = 0; h = 0; colorBackground[] = {0.20,0.20,0.20,1}; };
 class ACME_TxLeftRule: ACME_TxHeaderRule { idc = 86405; };
 class ACME_TxRightRule: ACME_TxHeaderRule { idc = 86406; };

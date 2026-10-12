@@ -5,7 +5,7 @@
  * Handle switching inventory target.
  *
  * Arguments:
- * None
+ * 0: Advance the inventory source <BOOL> (optional, default true)
  *
  * Return Value:
  * None
@@ -16,7 +16,10 @@
  * Public: No
  */
 
-params [["_advance", true, [true]]];
+// Native button callbacks and a bare call inherit their caller's _this. Only an
+// explicit Boolean changes this policy; provider/control payloads mean advance.
+private _advance = if (!isNil "_this" && {_this isEqualType []}) then {_this param [0,true]} else {true};
+if !(_advance isEqualType true) then {_advance = true;};
 private _targetInventory = GVAR(TransfusionMenu_Selected_Inventory);
 
 if (_advance) then {_targetInventory = _targetInventory + 1;};

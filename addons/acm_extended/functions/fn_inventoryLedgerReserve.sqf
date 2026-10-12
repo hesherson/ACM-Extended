@@ -14,7 +14,7 @@ private _cache = (_owner getVariable ["ACME_inventoryPayloadCache",createHashMap
 private _payload = if (!(_cache isEqualTo []) && {(_cache select 1) > (_record select 6)}) then {+(_cache select 0)} else {+(_record select 2)};
 // Wait for the exact latest settled payload before removing its carrier. Server update retries are durable.
 if (_payload isNotEqualTo (_record select 2)) exitWith {[]};
-private _class = ["ACME_PreparedIVSet","ACME_PreparedSyringe"] select (_kind == "syringe");
+private _class = _record param [8,["ACME_PreparedIVSet","ACME_PreparedSyringe"] select (_kind == "syringe")];
 if !([_owner,_class,_token] call ace_common_fnc_removeSpecificMagazine) exitWith {[]};
 _escrow set [_request,[_token,_payload,_kind,_request,_owner getVariable ["ACME_equipmentKitEpoch",0],false]];
 _owner setVariable ["ACME_inventoryEscrow",_escrow,true];

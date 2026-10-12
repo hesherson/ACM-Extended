@@ -259,10 +259,10 @@ private _id = format ["set:%1:%2:%3",clientOwner,netId _medic,_serial];
     private _sets = _medic getVariable ["ACME_preparedIVSets", []];
     _sets pushBack _rec;
     _medic setVariable ["ACME_preparedIVSets", _sets, true];
+    ["Bag spiked. Preparing the IV set.", 2, _medic] call ace_common_fnc_displayTextStructured;
     [_medic] call ACME_fnc_preparedInventoryCommit;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 
-    ["Bag spiked and staged to Prepared IV sets.", 2, _medic] call ace_common_fnc_displayTextStructured;
 
     // A spike creates carried prepared custody, not a hung bag. Refresh the
     // source inventory, then reveal the prepared list without touching Fluids.

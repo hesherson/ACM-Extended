@@ -45,7 +45,9 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             private _group = _display displayCtrl _groupId;
             if (isNull _group) then {
                 _group = _display ctrlCreate ["ACME_TransfusionCard",_groupId];
+                [_group,"enable",true] call ACME_fnc_transfusionUiSet;
                 private _hit = _group controlsGroupCtrl 9;
+                [_hit,"enable",true] call ACME_fnc_transfusionUiSet;
                 _hit ctrlAddEventHandler ["ButtonClick",{[_this select 0] call ACME_fnc_transfusionCardSelect;}];
                 _hit ctrlAddEventHandler ["MouseZChanged",{[_this select 0,"wheel",_this select 1] call ACME_fnc_transfusionCardSelect;}];
                 _hit ctrlAddEventHandler ["KeyDown",{[_this select 0,"key",_this select 1] call ACME_fnc_transfusionCardSelect;}];

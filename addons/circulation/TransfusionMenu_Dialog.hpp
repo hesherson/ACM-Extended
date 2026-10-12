@@ -365,7 +365,7 @@ class GVAR(TransfusionMenu_Dialog) {
             shadow = 0;
             font = "RobotoCondensed";
             sizeEx = "0";
-            action = QUOTE(call FUNC(TransfusionMenu_SwitchTargetInventory));
+            action = QUOTE([] call FUNC(TransfusionMenu_SwitchTargetInventory));
             textureNoShortcut = QPATHTOF(ui\transfusionmenu\inventory_select_ca.paa);
             tooltip = CSTRING(Common_SwitchTargetInventory);
             colorBackground[] = {1,1,1,0};

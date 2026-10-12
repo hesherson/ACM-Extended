@@ -599,10 +599,32 @@ class CfgMagazines {
         scope = 1; author = "mavis"; displayName = "Prepared IV Set";
         picture = "\acm_extended\ui\items\iv_line_qtts_ca.paa";
         descriptionShort = "Prepared fluid bag and administration line. Contents are retained when moved through Gear.";
-        ACE_isMedicalItem = 1; ACE_asItem = 1; count = 65535; mass = 18;
+        ACE_isMedicalItem = 1; ACE_asItem = 1; ace_disableRepacking = 1; count = 65535; mass = 18;
+        ACME_inventoryKind = "prepared";
     };
+    // Exact shipped bag(s) + IV line/Y tubing masses; identity remains the ammo token.
+    class ACME_PreparedIVSet_M11: ACME_PreparedIVSet { mass = 1.1; };
+    class ACME_PreparedIVSet_M21: ACME_PreparedIVSet { mass = 2.1; };
+    class ACME_PreparedIVSet_M26: ACME_PreparedIVSet { mass = 2.6; };
+    class ACME_PreparedIVSet_M31: ACME_PreparedIVSet { mass = 3.1; };
+    class ACME_PreparedIVSet_M37: ACME_PreparedIVSet { mass = 3.7; };
+    class ACME_PreparedIVSet_M47: ACME_PreparedIVSet { mass = 4.7; };
+    class ACME_PreparedIVSet_M51: ACME_PreparedIVSet { mass = 5.1; };
+    class ACME_PreparedIVSet_M52: ACME_PreparedIVSet { mass = 5.2; };
+    class ACME_PreparedIVSet_M62: ACME_PreparedIVSet { mass = 6.2; };
+    class ACME_PreparedIVSet_M72: ACME_PreparedIVSet { mass = 7.2; };
+    class ACME_PreparedIVSet_M77: ACME_PreparedIVSet { mass = 7.7; };
+    class ACME_PreparedIVSet_M81: ACME_PreparedIVSet { mass = 8.1; };
+    class ACME_PreparedIVSet_M101: ACME_PreparedIVSet { mass = 10.1; };
+    class ACME_PreparedIVSet_M102: ACME_PreparedIVSet { mass = 10.2; };
+    class ACME_PreparedIVSet_M112: ACME_PreparedIVSet { mass = 11.2; };
+    class ACME_PreparedIVSet_M122: ACME_PreparedIVSet { mass = 12.2; };
+    class ACME_PreparedIVSet_M127: ACME_PreparedIVSet { mass = 12.7; };
+    class ACME_PreparedIVSet_M152: ACME_PreparedIVSet { mass = 15.2; };
+    class ACME_PreparedIVSet_M202: ACME_PreparedIVSet { mass = 20.2; };
     class ACME_PreparedSyringe: ACME_PreparedIVSet {
         displayName = "Prepared Syringe";
+        ACME_inventoryKind = "syringe";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
         descriptionShort = "Prepared medication syringe. Exact contents follow it through Gear.";
         mass = 1;
@@ -3239,6 +3261,7 @@ class CfgFunctions {
             class inventoryLedgerAdopt {};
             class inventoryLedgerCertificate {};
             class inventoryLedgerNative {};
+            class inventoryLedgerClass {};
             class inventoryLedgerRows {};
             class inventoryLedgerPossessed {};
             class inventoryLedgerCommit {};
@@ -4874,9 +4897,9 @@ class ACM_circulation_TransfusionMenu_Dialog {
             text = "Prepared IV sets";
             idc = 86144;
             action = "[true] call ACME_fnc_togglePreparedSets";
-            colorBackground[] = {0.18,0.18,0.18,1};
-            colorBackgroundActive[] = {0.28,0.28,0.28,1};
-            colorFocused[] = {0.28,0.28,0.28,1};
+            colorBackground[] = {0,0,0,0};
+            colorBackgroundActive[] = {0,0,0,0};
+            colorFocused[] = {0,0,0,0};
             tooltip = "Show your prepared IV sets. Build one with Spike Y tubing, Select Flush Saline, then Build Y Tubing.";
         };
         // overlay listbox for the prepared iv sets. it shows in place of the native bag list, 86005, while the prepared

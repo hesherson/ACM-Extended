@@ -30,6 +30,8 @@ PROFILES = {
     "panel": ("#18191c", "#292b30"),
     "button": ("#202125", "#34363c"),
     "selected": ("#303239", "#9498a2"),
+    "tab": ("#2e2e2e", "#404040"),
+    "tab_selected": ("#4d4d4d", "#949494"),
     "popup": ("#24262b", "#50545e"),
     "piggyback": ("#28252e", "#a392bd"),
     "piggyback_selected": ("#302a3a", "#d2c2ec"),

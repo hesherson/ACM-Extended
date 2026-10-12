@@ -5,14 +5,15 @@ missionNamespace setVariable ["ACME_inventoryLedgerInitialized",true];
 // Native cargo reads deliberately bypass ACE's item-count cache during Take/Put.
 ["CAManBase","Take",{
     params ["_unit","_container","_class"];
-    if (!(_class in ["ACME_PreparedIVSet","ACME_PreparedSyringe"]) || {!local _unit}) exitWith {};
+    private _kind = getText (configFile >> "CfgMagazines" >> _class >> "ACME_inventoryKind");
+    if (!(_kind in ["prepared","syringe"]) || {!local _unit}) exitWith {};
     private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _unit; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];
     private _internal = _container isEqualTo _unit || {_container in [uniformContainer _unit,vestContainer _unit,backpackContainer _unit]}
         || {!isNull _container && {objectParent _container isEqualTo _unit}};
-    if (!_internal) then {[_unit,["prepared","syringe"] select (_class == "ACME_PreparedSyringe")] call ACME_fnc_inventoryLedgerMarkIncoming;};
+    if (!_internal) then {[_unit,_kind] call ACME_fnc_inventoryLedgerMarkIncoming;};
     [{[_this select 0] call ACME_fnc_inventoryLedgerReconcile;},[_unit]] call CBA_fnc_execNextFrame;
 }] call CBA_fnc_addClassEventHandler;
-["CAManBase","Put",{params ["_unit","_container","_class"]; if (_class in ["ACME_PreparedIVSet","ACME_PreparedSyringe"] && {local _unit}) then {private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _unit; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];[{[_this select 0] call ACME_fnc_inventoryLedgerReconcile;},[_unit]] call CBA_fnc_execNextFrame;};}] call CBA_fnc_addClassEventHandler;
+["CAManBase","Put",{params ["_unit","_container","_class"]; private _kind = getText (configFile >> "CfgMagazines" >> _class >> "ACME_inventoryKind"); if (_kind in ["prepared","syringe"] && {local _unit}) then {private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _unit; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];[{[_this select 0] call ACME_fnc_inventoryLedgerReconcile;},[_unit]] call CBA_fnc_execNextFrame;};}] call CBA_fnc_addClassEventHandler;
 ["CAManBase","Local",{
     params ["_unit","_local"];
     if (!_local || {isNull _unit}) exitWith {};

@@ -90,6 +90,7 @@ private _begin = {
                 _preparedIndex = _prepared pushBack _entry;
                 _medic setVariable ["ACME_preparedIVSets", _sets, true];
                 _medic setVariable ["ACME_infusion_PreparedBags", _prepared, true];
+                ["Propofol bottle spiked. Preparing the infusion.", 2, _medic] call ace_common_fnc_displayTextStructured;
                 [_medic] call ACME_fnc_preparedInventoryCommit;
                 [_bottleReceipt, false] call ACME_fnc_treatmentSupplyRefund;
                 [_lineReceipt, false] call ACME_fnc_treatmentSupplyRefund;
@@ -103,7 +104,6 @@ private _begin = {
     };
     missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex", _preparedIndex];
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
-    ["Propofol bottle spiked. Select it in Prepared Infusions, then Give Infusion.", 3, _medic, 13] call ace_common_fnc_displayTextStructured;
     if (!isNull (findDisplay 86000)) then {
         [false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;
         call ACME_fnc_updateTransfusionControls;

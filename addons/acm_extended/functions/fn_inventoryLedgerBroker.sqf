@@ -25,7 +25,7 @@ if (_mode == "register") exitWith {
         _token = (missionNamespace getVariable ["ACME_inventoryTokenSequence",0]) + 1;
         missionNamespace setVariable ["ACME_inventoryTokenSequence",_token];
         _index set [_key,_token]; missionNamespace setVariable ["ACME_inventoryLedgerIndex",_index,true];
-        _record = [_kind,_sid,+_payload,_owner,"","held",0];
+        _record = [_kind,_sid,+_payload,_owner,"","held",0,createHashMap,[_kind,_payload] call ACME_fnc_inventoryLedgerClass];
         missionNamespace setVariable [format ["ACME_inventoryToken_%1",_token],_record,true];
     };
     if (count _record >= 7 && {(_record select 3) isEqualTo _owner} && {(_record select 5) == "held"} && {!(_pending isEqualTo [])}) then {
@@ -75,6 +75,7 @@ if (_mode in ["return","consume"]) exitWith {
     _settled set [_request,[_owner,_mode,["held","spent"] select (_mode == "consume" || {_retired})]]; _record set [7,_settled];
     _record set [6,(_record select 6)+1];
     _record set [2,+_payload]; _record set [5,["held","spent"] select (_mode == "consume" || {_retired})];
+    _record set [8,[_kind,_payload] call ACME_fnc_inventoryLedgerClass];
     missionNamespace setVariable [format ["ACME_inventoryToken_%1",_token],_record,true];
     [true] call _reply;
 };

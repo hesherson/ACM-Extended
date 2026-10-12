@@ -350,6 +350,7 @@ private _rec = [_id, _blood, _bloodAction, _saline, _salineAction, "", _label, _
 private _sets = _medic getVariable ["ACME_preparedIVSets", []];
 _sets pushBack _rec;
 _medic setVariable ["ACME_preparedIVSets", _sets, true];
+    ["Y set built. Preparing the IV set.", 2, _medic] call ace_common_fnc_displayTextStructured;
     [_medic] call ACME_fnc_preparedInventoryCommit;
 
     call _fnc_clearPending;
@@ -359,5 +360,4 @@ _medic setVariable ["ACME_preparedIVSets", _sets, true];
     // rebuild the active Fluids pane while simply preparing a Y set.
     if (!isNull (findDisplay 86000)) then {[false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;};
     [true] call ACME_fnc_togglePreparedSets;
-    ["Y set built and staged to Prepared IV sets.", 4, _medic] call ace_common_fnc_displayTextStructured;
 }, [_blood, _bloodAction, _saline, _salineAction, _bloodFromCooler, _bloodExactVol, _salineExactVol, ACE_player, _target, (_bloodFromCooler || {_bloodUsedId != ""}), (_salineUsedId != "")], 2.5] call CBA_fnc_waitAndExecute;

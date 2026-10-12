@@ -142,6 +142,8 @@ uiNamespace setVariable ["ACME_infusion_LayoutDisplay", displayNull];
 uiNamespace setVariable ["ACME_infusion_PreparedListSignature", ""];
 uiNamespace setVariable ["ACME_infusion_ActiveInfusionListSignature", ""];
 uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
+_display setVariable ["ACME_txInputTraceCount",0];
+_display setVariable ["ACME_txInputTraceLast",[]];
 
 // The foreground menu consumes RMB without cancelling background holds. The hold's own
 // input guard also checks this display, so it does not depend on engine EH ordering.
@@ -271,7 +273,7 @@ if (!isNull _display && {!isNil "ACME_fnc_skPageNavigate"}) then {
 };
 
 call FUNC(TransfusionMenu_UpdateSelection);
-call FUNC(TransfusionMenu_SwitchTargetInventory);
+[] call FUNC(TransfusionMenu_SwitchTargetInventory);
 [false] call FUNC(TransfusionMenu_UpdateBagList);
 
 private _ctrlPatientName = _display displayCtrl IDC_TRANSFUSIONMENU_PATIENTNAME;

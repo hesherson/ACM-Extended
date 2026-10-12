@@ -10,7 +10,7 @@ import pytest
 from test_menu_death_lifecycle import F, adapt, execute
 from test_historical_vial_execution import map_defaults
 
-FUNCTIONS = ['inventoryLedgerMarkIncoming','inventoryLedgerAdopt','inventoryLedgerRows','inventoryLedgerPossessed','inventoryLedgerCommit',
+FUNCTIONS = ['inventoryLedgerClass','inventoryLedgerMarkIncoming','inventoryLedgerAdopt','inventoryLedgerRows','inventoryLedgerPossessed','inventoryLedgerCommit',
              'inventoryLedgerReserve','inventoryLedgerClaim','inventoryLedgerSettle',
              'inventoryLedgerBroker','inventoryLedgerReply','inventoryLedgerCertificate',
              'inventoryLedgerReconcile','preparedInventoryCommit']
@@ -19,7 +19,7 @@ FUNCTIONS = ['inventoryLedgerMarkIncoming','inventoryLedgerAdopt','inventoryLedg
 def adapted(text):
     text = text.replace('canSuspend','false').replace('local _owner','true')
     text = text.replace('isServer','true')
-    text = text.replace('_owner canAdd [_class,1]', '(_owner getVariable ["capacity",true])')
+    text = text.replace('_owner canAdd [_class,1,true]', '(_owner getVariable ["capacity",true])')
     text = text.replace('_owner addMagazine [_class,_token]', '[_owner,_class,_token] call _addNative')
     text = text.replace('createVehicle ["GroundWeaponHolder",getPosATL _owner,[],0,"CAN_COLLIDE"]','_holder')
     text = text.replace('_destination addMagazineAmmoCargo [_class,1,_token]', '[_destination,_class,_token] call _addNative')

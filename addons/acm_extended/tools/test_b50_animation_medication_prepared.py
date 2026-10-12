@@ -113,7 +113,7 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
         };
         {
             _nowTime=_x;call _paint;
-            [_paintBackground isEqualTo [0.18,0.18,0.18,1] && {_paintFontHeight==.017},"prepared tab lost its visible neutral grey surface or type size"] call _check;
+            [_paintBackground isEqualTo [0,0,0,0] && {_paintFontHeight==.017},"native tab face covered the rounded grey surface or lost its type size"] call _check;
             [_buttonLabel=="Prepared IV sets (1)","plain-set count missing from toggle"] call _check;
         } forEach [0,0.25,0.5,0.75];
         _preparedMode=true;call _paint;
@@ -122,7 +122,7 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
     ''' + adapt(count) + r'''
         [_preparedSetCountB50==0,"bottle-only inventory should show zero plain prepared IV sets"] call _check;
         call _paint;
-        [_paintBackground isEqualTo [0.18,0.18,0.18,1] && {_buttonLabel=="Prepared IV sets (0)"},"bottle-only custody changed plain-set count or grey tab surface"] call _check;
+        [_paintBackground isEqualTo [0,0,0,0] && {_buttonLabel=="Prepared IV sets (0)"},"bottle-only custody changed plain-set count or covered the rounded tab surface"] call _check;
         private _salineA=["saline-a","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
         private _salineB=["saline-b","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
         ACE_player setVariable ["ACME_infusion_PreparedBags",[_salineA,_prepared,_salineB]];
