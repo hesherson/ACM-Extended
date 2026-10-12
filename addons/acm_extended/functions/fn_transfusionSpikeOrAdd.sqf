@@ -252,11 +252,14 @@ call ACME_fnc_updateTransfusionControls;
     if (_nm isEqualTo "") then { _nm = _class; };
     private _label = format ["%1%2", _nm, ["", " [Cooled]"] select _cold];
 
-    private _id = format ["set_%1_%2", floor (diag_tickTime * 1000), floor (random 100000)];
+    private _serial = (missionNamespace getVariable ["ACME_preparedItemSerial",0])+1;
+missionNamespace setVariable ["ACME_preparedItemSerial",_serial];
+private _id = format ["set:%1:%2:%3",clientOwner,netId _medic,_serial];
     private _rec = [_id, _class, _action, "", "", "", _label, _cold, _kind];
     private _sets = _medic getVariable ["ACME_preparedIVSets", []];
     _sets pushBack _rec;
     _medic setVariable ["ACME_preparedIVSets", _sets, true];
+    [_medic] call ACME_fnc_preparedInventoryCommit;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 
     ["Bag spiked and staged to Prepared IV sets.", 2, _medic] call ace_common_fnc_displayTextStructured;

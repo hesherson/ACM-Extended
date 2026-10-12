@@ -22,6 +22,8 @@ def gui(source):
     source = re.sub(r"_right lbData (_\w+)", r"(_rowData select \1)", source)
     source = source.replace("_medic distance _target", "_distance")
     source = source.replace("objectParent ACE_player", "objNull")
+    # Native network identity is explicit at this namespace/object boundary.
+    source = source.replace("netId _medic", '"medic"')
     source = re.sub(r'getText \(_[a-zA-Z]+ >> "(?:displayName|shortName)"\)', '"Fixture bag"', source)
     source = re.sub(r'isText \(_[a-zA-Z]+ >> "shortName"\)', 'false', source)
     source = re.sub(r'(private _[a-zA-Z]+ = )configFile >> "CfgWeapons" >> _(?:class|blood);', r'\1configNull;', source)
@@ -138,6 +140,7 @@ def stage_setup():
       ACM_circulation_TransfusionMenu_SelectIV=true;
       ACM_circulation_TransfusionMenu_Selected_Inventory=0;
       ACME_fnc_updateTransfusionControls={};
+      ACME_fnc_preparedInventoryCommit={true};
       ACM_circulation_fnc_TransfusionMenu_UpdateBagList={_bagRefreshes=_bagRefreshes+1;};
       ACME_fnc_carrierSupplyTake={[objNull,"",false,objNull]};
       ACME_fnc_itemTake={params ["_u","_c"];private _a=+(_u getVariable ["fixtureStock",[]]);private _i=_a find _c;if (_i<0) exitWith {false};_a deleteAt _i;_u setVariable ["fixtureStock",_a];true};

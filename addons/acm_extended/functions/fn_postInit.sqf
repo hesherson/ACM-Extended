@@ -1,3 +1,4 @@
+call ACME_fnc_inventoryLedgerInit;
 // Phase 37: fork version/network bootstrap, chest-seal/vent custody and owner initialization.
 call ACME_fnc_initForkStartupRuntime;
 // Phase 37: debug-menu PFH plus EachFrame fallback registration.

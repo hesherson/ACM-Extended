@@ -1,8 +1,7 @@
-// B191: prepared/tagged syringes are current-life state; fresh kits also invalidate opened-vial remainder.
+// B279: physical prepared syringes remain on the corpse for native inventory transfer.
 if (hasInterface) then {
     player addEventHandler ["Killed", {
         params ["_unit"];
-        [_unit, []] call ACME_fnc_narcStoreCommit;
         uiNamespace setVariable ["ACME_SK_SelectedSyringeId", ""];
         uiNamespace setVariable ["ACME_SK_CarouselIdx", -1];
         uiNamespace setVariable ["ACME_SK_SelDrawn", -1];

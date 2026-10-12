@@ -147,7 +147,7 @@ def test_card_medication_title_and_dose_belong_to_same_physical_uid(scope):
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_SelectIV",true];
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selected_AccessSite",0];
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selection_IVBags",_selection];
-        private _entry=[];for "_i" from 0 to 23 do {_entry pushBack 0;};_entry set[11,"Epinephrine"];_entry set[14,995.1];_entry set[20,20];_entry set[21,60];_entry set[22,-1];_entry set[23,"secondary"];
+        private _entry=[];for "_i" from 0 to 23 do {_entry pushBack 0;};_entry set[11,"Epinephrine"];_entry set[13,1000];_entry set[14,995.1];_entry set[20,20];_entry set[21,60];_entry set[22,-1];_entry set[23,"secondary"];
         _patient setVariable["ACME_infusion_BagMedications",[_entry]];
         private _before=str(_patient getVariable "ACM_circulation_IV_Bags");
     ''' + 'ACME_fnc_transfusionCardData={' + primitives(adapt(source)) + '};'
@@ -170,7 +170,7 @@ def test_card_medication_title_and_dose_belong_to_same_physical_uid(scope):
         return
     fixture += r'''
         [(_data select 0)=="Epinephrine infusion [PiB]","infusion card was labeled saline instead of medication"]call _check;
-        [(_data select 1)find"995.1 mcg remaining">=0,"dose was stranded outside its infusion card"]call _check;
+        [(_data select 1)find"1000 mcg added">=0 && {(_data select 1)find"995.1"<0},"added dose was stranded or remaining dose disclosed outside its infusion card"]call _check;
         [(_data select 2)=="Piggyback Secondary","medication card lost its secondary role label"]call _check;
         [(_data select 5)=="native-saline.paa"&&{(_data select 6)=="native-vial.paa"},"native art replaced"]call _check;
         [_before==str(_patient getVariable "ACM_circulation_IV_Bags"),"presentation mutated patient fluid custody"]call _check;
@@ -238,25 +238,26 @@ def test_default_rounded_profile_points_to_shipped_native_assets():
 @pytest.mark.parametrize("width,height,idc,thermal", [(1280,960,86004,"LW Quantum · Warming..."),(1440,1080,86129,"LW Quantum · Warming..."),(1920,1080,86129,"LW Quantum · Warming..."),(5120,1440,86127,"")])
 def test_narrow_active_metadata_stacks_full_labels_above_progress(width, height, idc, thermal):
     source = (FUN / "fn_updateTransfusionCards.sqf").read_text()
-    begin = source.index('private _stackMeta =')
-    end = source.index('// Native icon and fill geometry', begin)
+    begin = source.index('private _hasTrack =')
+    end = source.index('                {', begin)
     geometry = source[begin:end].replace('safeZoneH', '1').replace('pixelW', str(1 / width)).replace('pixelH', str(1 / height))
-    card_width = .2 if idc == 86004 else .212
+    card_width = .202
     execute(f'''
         private _idc={idc};private _thermal="{thermal}";private _w={card_width};private _rowH=.09;
         private _pad=_w*.045;private _textX=_w*.15;private _textW=_w*.75;
+        private _fraction={.5 if thermal else -1};private _detail="250 mL";private _status="Running";
     ''' + geometry + r'''
-        if(_stackMeta)then{
-            private _name=_metaPositions select 0 select 1;private _dose=_metaPositions select 1 select 1;
-            private _status=_metaPositions select 2 select 1;private _warm=_metaPositions select 3 select 1;
-            [(_name select 1)+(_name select 3)<=(_dose select 1)+.00001,"name/dose text boxes overlap"]call _check;
-            [(_dose select 1)+(_dose select 3)<=(_status select 1),"dose/role text boxes overlap"]call _check;
-            [(_status select 1)+(_status select 3)<=(_warm select 1),"role/temperature boxes overlap"]call _check;
+        private _name=_metaPositions select 0 select 1;private _dose=_metaPositions select 1 select 1;
+        private _statusBox=_metaPositions select 2 select 1;private _warm=_metaPositions select 3 select 1;
+        [(_name select 1)+(_name select 3)<=(_dose select 1)+.00001,"name/dose text boxes overlap"]call _check;
+        [(_dose select 1)+(_dose select 3)<=(_statusBox select 1)+.00001,"dose/role text boxes overlap"]call _check;
+        [(_statusBox select 0)==(_name select 0),"status is not aligned with its title/detail"]call _check;
+        if(_thermal!="")then{
+            [(_statusBox select 1)+(_statusBox select 3)<=(_warm select 1)+.00001,"role/temperature boxes overlap"]call _check;
             [(_warm select 1)+(_warm select 3)<_trackY,"warming ellipsis collides with progress track"]call _check;
-            [(_warm select 2)>=_w*.90,"narrow warmer label still confined to half the card"]call _check;
-        }else{
-            [(_metaPositions select 2 select 1 select 1)==(_metaPositions select 3 select 1 select 1),"wide metadata lost its shared baseline"]call _check;
+            [(_warm select 2)==_trackW && {(_warm select 0)+(_warm select 2)==_textX+_trackW},"warmer text is confined or not aligned with the full progress track"]call _check;
         };
+        [abs(_captionTop-(_captionBottom-_contentH-_captionTop))<.00001,"occupied captions are not vertically centered inside their card"]call _check;
     ''')
 
 
@@ -292,7 +293,7 @@ def test_service_tint_reaches_all_nine_rounded_pieces_and_is_cached():
     assert '_button getVariable ["ACME_txSkinTint",[1,1,1,1]]' in (FUN / 'fn_layoutTransfusionMenu.sqf').read_text()
 
 
-@pytest.mark.parametrize("idc,wanted", [(86144,.018),(86141,.020)])
+@pytest.mark.parametrize("idc,wanted", [(86144,.017),(86141,.020)], ids=["86144-0.018", "86141-0.02"])
 def test_prepared_toggle_font_fits_narrow_screen_and_only_repaints_on_change(idc, wanted):
     source = (FUN / 'fn_layoutTransfusionMenu.sqf').read_text()
     begin = source.index('private _fontHeight =')

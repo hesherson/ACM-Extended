@@ -51,6 +51,14 @@ class GVAR(TransfusionMenu_Dialog) {
             w = QUOTE(ACM_UI_CANVAS_W * 0.30);
             colorBackground[] = {0,0,0,0};
         };
+        class BodyMapGradient: RscPictureKeepAspect {
+            idc = 86215;
+            x = QUOTE(ACM_UI_CANVAS_X + (ACM_UI_CANVAS_W / 2) - (ACM_UI_CANVAS_W / 6.8));
+            y = QUOTE(safeZoneY + (safeZoneH / 2) - (safeZoneH / 3.5));
+            w = QUOTE(ACM_UI_CANVAS_W / 3.4);
+            h = QUOTE(safeZoneH / 1.75);
+            text = "\acm_extended\ui\transfusion\body_gradient_ca.paa";
+        };
         class PreparationPanelBackground: PatientPanelBackground {
             idc = 86182;
             x = QUOTE(ACM_TRANSFUSION_RIGHT_X - ACM_UI_CANVAS_W * 0.007);

@@ -35,6 +35,12 @@ if (_customStaged) then {
     _ok = _ok && {_hasPreparedSet};
     if (!_hasPreparedSet) then {_reason = "prepared-set-missing";};
 };
+if (_customStaged || {!(_staged isEqualTo [])}) then {
+    private _certificate = [_medic,"prepared",_prepared select 0,_id] call ACME_fnc_inventoryLedgerCertificate;
+    private _reservedPrepared = _certificate param [2,[]];
+    private _samePrepared = !_customStaged || {!(_reservedPrepared isEqualTo []) && {(_reservedPrepared select [0,11]) isEqualTo (_prepared select [0,11])} && {(_reservedPrepared param [14,[]]) isEqualTo (_prepared param [14,[]])}};
+    _ok = _ok && {!(_certificate isEqualTo [])} && {_samePrepared} && {_staged isEqualTo [] || {(_certificate param [1,[]]) isEqualTo _staged}};
+};
 private _isPropofolBottle = _carrierType == "ACME_Propofol";
 if (_isPropofolBottle) then {
     private _sets = _medic getVariable ["ACME_preparedIVSets", []];

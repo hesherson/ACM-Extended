@@ -41,6 +41,7 @@ if (!_ok) then {
     if (!((_held select 4) isEqualTo []) && {(_meds findIf {(_x param [0,""]) == _setId}) < 0}) then {_meds pushBack +(_held select 4);};
     _medic setVariable ["ACME_infusion_PreparedBags",_meds,true];
 };
+[_medic,_id,_ok] call ACME_fnc_inventoryLedgerSettle;
 _escrow deleteAt _setId;
 _medic setVariable ["ACME_piggybackEscrow",_escrow,true];
 private _intent = missionNamespace getVariable ["ACME_piggybackPending",[]];

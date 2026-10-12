@@ -593,6 +593,20 @@ class CfgMods {
 // complete chain.
 class CfgMagazines {
     class CA_Magazine;
+    // Native magazine ammo carries an opaque non-recycled identity, never medication volume.
+    // Hidden from Arsenal: default ammo is deliberately outside the valid token range.
+    class ACME_PreparedIVSet: CA_Magazine {
+        scope = 1; author = "mavis"; displayName = "Prepared IV Set";
+        picture = "\acm_extended\ui\items\iv_line_qtts_ca.paa";
+        descriptionShort = "Prepared fluid bag and administration line. Contents are retained when moved through Gear.";
+        ACE_isMedicalItem = 1; ACE_asItem = 1; count = 65535; mass = 18;
+    };
+    class ACME_PreparedSyringe: ACME_PreparedIVSet {
+        displayName = "Prepared Syringe";
+        picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
+        descriptionShort = "Prepared medication syringe. Exact contents follow it through Gear.";
+        mass = 1;
+    };
     class ACM_Paracetamol: CA_Magazine {
         scope = 2;
         author = "Blue";
@@ -2382,6 +2396,7 @@ class CfgFunctions {
             class transfusionCardWindow {};
             class transfusionCardSelect {};
             class transfusionCardData {};
+            class transfusionGraduations {};
             class updateTransfusionCards {};
             class transfusionYRows {};
             class paintTransfusionYBracket {};
@@ -3220,6 +3235,30 @@ class CfgFunctions {
             class sedationOnBoard {};
             class sedationActive {};
             class preparedComponents {};
+            class inventoryLedgerMarkIncoming {};
+            class inventoryLedgerAdopt {};
+            class inventoryLedgerCertificate {};
+            class inventoryLedgerNative {};
+            class inventoryLedgerRows {};
+            class inventoryLedgerPossessed {};
+            class inventoryLedgerCommit {};
+            class inventoryLedgerReserve {};
+            class inventoryLedgerClaim {};
+            class inventoryLedgerSettle {};
+            class inventoryLedgerBroker {};
+            class inventoryLedgerReply {};
+            class preparedInventoryCommit {};
+            class preparedInventoryRecover {};
+            class inventoryLedgerReconcile {};
+            class inventoryLedgerInit {};
+            class skInventoryEditable {};
+            class skInventoryCommit {};
+            class skInventoryReconcile {};
+            class skInventoryImportNative {};
+            class skInventoryReserve {};
+            class skInventorySettle {};
+            class skInventoryDiscard {};
+            class skInventoryInjectClaim {};
             class vialHolder {};
             class vialClass {};
             class vialMedication {};
@@ -4834,7 +4873,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_PreparedSetsButton: ACME_SpikeBagButton {
             text = "Prepared IV sets";
             idc = 86144;
-            action = "[] call ACME_fnc_togglePreparedSets";
+            action = "[true] call ACME_fnc_togglePreparedSets";
+            colorBackground[] = {0.18,0.18,0.18,1};
+            colorBackgroundActive[] = {0.28,0.28,0.28,1};
+            colorFocused[] = {0.28,0.28,0.28,1};
             tooltip = "Show your prepared IV sets. Build one with Spike Y tubing, Select Flush Saline, then Build Y Tubing.";
         };
         // overlay listbox for the prepared iv sets. it shows in place of the native bag list, 86005, while the prepared

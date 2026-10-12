@@ -48,6 +48,58 @@ def function(name, baseline=False):
     return f'ACME_fnc_{name}={{' + adapted(raw(name, baseline)) + '};\n'
 
 
+def inventory_boundary():
+    """Stand in for the native token broker in isolated attachment endpoints.
+
+    These historical fixtures already supply exact carried or escrowed records.
+    The separate B279 ledger executions cover native token custody and transport;
+    attachment validation and receipt settlement still execute their real code.
+    """
+    return r'''
+    private _inventorySettlements=[];
+    ACME_fnc_preparedInventoryCommit={true};
+    ACME_fnc_inventoryLedgerPossessed={
+        params ["_owner","_kind","_sid"];
+        _kind=="prepared" && {((_owner getVariable ["ACME_preparedIVSets",[]]) findIf {(_x param [0,""])==_sid})>=0}
+    };
+    ACME_fnc_inventoryLedgerCertificate={
+        params ["_owner","_kind","_sid","_requestId"];
+        if (_kind!="prepared") exitWith {[]};
+        private _sets=_owner getVariable ["ACME_preparedIVSets",[]];
+        private _at=_sets findIf {(_x param [0,""])==_sid};
+        private _meds=_owner getVariable ["ACME_infusion_PreparedBags",[]];
+        private _mi=_meds findIf {(_x param [0,""])==_sid};
+        if (_at>=0) exitWith {[_sid,+(_sets select _at),if (_mi>=0) then {+(_meds select _mi)} else {[]}]};
+        private _held=(_owner getVariable ["ACME_piggybackEscrow",createHashMap]) getOrDefault [_sid,[]];
+        if (count _held<5 || {(_held select 0)!=_requestId}) exitWith {[]};
+        [_sid,+(_held select 3),+(_held select 4)]
+    };
+    ACME_fnc_inventoryLedgerReserve={
+        params ["_owner","_kind","_sid","_requestId"];
+        if !([_owner,_kind,_sid] call ACME_fnc_inventoryLedgerPossessed) exitWith {[]};
+        private _payload=[_owner,_kind,_sid,_requestId] call ACME_fnc_inventoryLedgerCertificate;
+        private _escrow=_owner getVariable ["ACME_inventoryEscrow",createHashMap];
+        _escrow set [_requestId,[1,_payload,_kind,_requestId,0,false]];
+        _owner setVariable ["ACME_inventoryEscrow",_escrow];
+        [1,_payload]
+    };
+    ACME_fnc_inventoryLedgerClaim={
+        params ["_owner","_requestId","_continuation",["_args",[]]];
+        private _held=(_owner getVariable ["ACME_inventoryEscrow",createHashMap]) getOrDefault [_requestId,[]];
+        [count _held>=6,_args] call _continuation;
+        count _held>=6
+    };
+    ACME_fnc_inventoryLedgerSettle={
+        params ["_owner","_requestId"];
+        _inventorySettlements pushBack _this;
+        private _escrow=_owner getVariable ["ACME_inventoryEscrow",createHashMap];
+        _escrow deleteAt _requestId;
+        _owner setVariable ["ACME_inventoryEscrow",_escrow];
+        true
+    };
+    '''
+
+
 def setup(baseline=False):
     text = r'''
     private _stringUid={params ["_array","_index"];if (count _array<=_index) exitWith {""};private _v=_array select _index;if (isNil "_v" || {!(_v isEqualType "")}) exitWith {""};_v};
@@ -95,6 +147,7 @@ def setup(baseline=False):
     _patient setVariable ["ACM_circulation_FluidBagsFlow_IV",[[1,1,1],[1,1,1],[0,1,1],[1,1,1],[1,1,1],[1,1,1]]];
     _patient setVariable ["ACM_circulation_FluidBagsFlow_IO",[1,0,1,1,1,1]];
     '''
+    text += inventory_boundary()
     for name in ('preparedComponents', 'clinicalEpoch', 'preparedAttachLocal', 'infusionRegisterLocal',
                  'infusionRegisterCore', 'canMedicateBagContext', 'isYLineBagContext', 'findTrackedBag',
                  'bagIdentity', 'infusionFlow', 'resumeSiteFlow', 'yBagReplaceEmpty', 'preparedAttachAck'):

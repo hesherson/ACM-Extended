@@ -31,7 +31,8 @@ def setup():
         ace_common_fnc_addToInventory={_magazines pushBack _this;};
         ACME_fnc_skPendingTagCommit={}; ACME_fnc_skApplyPendingTag={_this select 0};
         ACME_fnc_skRefreshDrawn={}; ACME_fnc_skAfterSaveOpenBody={};
-    ''' + 'ACM_circulation_fnc_Syringe_PrepareFinish={' + prep_code(native('Syringe_PrepareFinish')) + '};' +
+    ''' + 'ACME_fnc_narcStoreCommit={' + prep_code(read('narcStoreCommit').replace('local _owner','true').replace('_owner setVariable ["ACME_narcStore", _store, _public];','_owner setVariable ["ACME_narcStore",_store];')) + '};' +
+        'ACM_circulation_fnc_Syringe_PrepareFinish={' + prep_code(native('Syringe_PrepareFinish')) + '};' +
         'private _drawButton={' + button_code() + '};')
 
 
@@ -65,7 +66,7 @@ def test_native_draw_callback_saves_same_volume_as_physical_item_and_source(dose
         private _row=_store select 0;
         [abs ((_row select 2)-{ammo}/100)<0.000001,"saved row retained unrepresentable precision"] call _check;
         [((_magazines select 0) select 3)=={ammo},"physical syringe has wrong ammo"] call _check;
-        private _drug=_row select 2;private _size=_row select 1;private _med=_row select 0;private _virtual=false;
+        private _drug=_row select 2;private _size=_row select 1;private _med=_row select 0;private _virtual=false;private _inventoryBacked=false;
         private _physicalMagazines=_magazines apply {{[_x select 1,_x select 3]}};
         private _reserved=[];
         private _reserve={{''' + reserve_code() + '''true};

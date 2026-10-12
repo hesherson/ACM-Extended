@@ -13,6 +13,7 @@ from test_b227_line_service_and_assessments import basic, service_setup, src
 from test_historical_core_boundaries import block_at
 from test_historical_medication_rows import iteration_scopes
 from test_menu_death_lifecycle import ROOT, adapt, execute, read
+from test_b230_prepared_infusion_transaction import inventory_boundary
 
 
 def fn(name):
@@ -144,7 +145,7 @@ def test_shared_downstream_warmer_caps_only_the_exact_access_and_never_raises_fl
 
 
 def escrow_setup():
-    return basic() + r'''
+    return basic() + inventory_boundary() + r'''
         private _set=["set1","ACM_SalineBag_100","SalineIV_100","","",objNull,"Saline",false,"saline",100,0];
         private _prep=["set1","ACM_SalineBag_100","SalineIV_100","TXA",1000,0,20,60,1,100,100,0,objNull,objNull,[],"set1",100];
         private _args=[_medic,_patient,"request1","set1","leftarm",true,0,"primary",1,_set,_prep,100];

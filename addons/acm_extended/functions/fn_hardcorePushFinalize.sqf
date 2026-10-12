@@ -18,7 +18,7 @@ if (_keepRow) then {
     private _row = +(_store select _idx);
     private _total = ((_row param [2,0,[0]]) + (_row param [4,0,[0]])) max 0;
     if (_total <= 0.0005) then {_store deleteAt _idx; _keepRow = false;} else {
-        if !(_job getOrDefault ["virtual",false]) then {
+        if (!(_job getOrDefault ["virtual",false]) && {!(_job getOrDefault ["inventoryBacked",false])}) then {
             // Physical syringe magazines store 0.01 mL quanta. Keep the row and magazine exactly synchronized.
             private _ammo = round ((_row param [2,0,[0]]) * 100);
             _row set [2,_ammo / 100];
@@ -36,6 +36,9 @@ if (_keepRow) then {
 };
 [_medic,_store] call ACME_fnc_narcStoreCommit;
 missionNamespace setVariable ["ACME_HCMedPushJob",createHashMap];
+if (_job getOrDefault ["inventoryBacked",false]) then {
+    [_medic,_job getOrDefault ["inventoryRequest",""],_stable] call ACME_fnc_skInventorySettle;
+};
 uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
 uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
 private _h = missionNamespace getVariable ["ACME_HCMedPushPFH",-1];

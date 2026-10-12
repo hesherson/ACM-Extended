@@ -105,6 +105,11 @@ if (!_valid) exitWith {
 };
 private _selectedPresent = !_iv || {if (_siteIdx >= 0) then {[_patient, _bodyPart, 0, _siteIdx] call ACM_circulation_fnc_hasIV} else {[_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO}};
 if (!_selectedPresent || {ACE_player distance _patient > 5 && {isNull objectParent ACE_player || {objectParent ACE_player != objectParent _patient}}}) exitWith {};
+if ((_refundRow param [13,"",[""]]) == "inventoryB279") exitWith {
+    private _request = [ACE_player,_refundRow] call ACME_fnc_skInventoryReserve;
+    if (_request == "") exitWith {};
+    [ACE_player,_request,ACME_fnc_skInventoryInjectClaim,[ACE_player,_patient,_bodyPart,_doses,_siteIdx,_refundRow,[],_refundRow,_request]] call ACME_fnc_inventoryLedgerClaim;
+};
 // Compounds are virtual entries whose vial inventory was consumed at commit. Single drugs are physical magazines.
 if (!_virtual) then {
     private _magClass = format ["ACM_Syringe_%1_%2", _size, _med];

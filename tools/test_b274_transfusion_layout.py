@@ -210,8 +210,8 @@ def inline_fixture():
         _patient setVariable ["ACME_YLines",["leftarm#true#0"]];
         _patient setVariable ["ACME_piCuffs",createHashMapFromArray [["blood",[1]],["neighbor",[2]],["io",[2]]]];
         _patient setVariable ["ACME_infusion_BagMedications",[
-            ["calcium","leftarm",0,"Blood",0,true,-1,500,-1,0,0,"Calcium",0,0,100],
-            ["other","leftarm",1,"Saline",1,true,-1,100,-1,0,0,"Propofol",0,0,300]]];
+            ["calcium","leftarm",0,"Blood",0,true,-1,500,-1,0,0,"Calcium",0,100,75],
+            ["other","leftarm",1,"Saline",1,true,-1,100,-1,0,0,"Propofol",0,300,225]]];
     '''
     return setup + presentation + "ACME_fnc_updateTransfusionLineDetails={" + source + "};\n", execute
 
@@ -222,7 +222,7 @@ def test_inline_details_follow_exact_live_access_and_repaint_only_changed_conten
         private _before=str (_patient getVariable "ACM_circulation_IV_Bags");
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
         private _first=_paints select 0;
-        [_first find "Calcium 100mg remaining" >=0
+        [_first find "Calcium 100mg added" >=0 && {_first find "Calcium 75mg" <0}
             && {_first find "Pressure cuff: 50%" >=0} && {_first find "Y line: Prime needed" >=0},
             "inline details lost selected access information"] call _check;
         [_first find "Pressure cuff: 90%" <0 && {_first find "Propofol" <0},
@@ -234,10 +234,18 @@ def test_inline_details_follow_exact_live_access_and_repaint_only_changed_conten
         (_bags get "leftarm" select 0) set [1,250];
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
         [count _paints==1,"bag-list volume tick repainted unchanged inline metadata"] call _check;
-        (_patient getVariable "ACME_infusion_BagMedications" select 0) set [14,75];
+        // Delivery changes the internal remaining dose, not the label of what was added.
+        (_patient getVariable "ACME_infusion_BagMedications" select 0) set [14,50];
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
-        [count _paints==2 && {(_paints select 1) find "Calcium 75mg remaining" >=0},
-            "details did not refresh live remaining medication"] call _check;
+        [count _paints==1 && {(_paints select 0) find "Calcium 100mg added" >=0},
+            "remaining medication changed the fixed added-dose label or repainted unchanged details"] call _check;
+        // A further accepted injection increases the operator-known total and must repaint once.
+        (_patient getVariable "ACME_infusion_BagMedications" select 0) set [13,150];
+        (_patient getVariable "ACME_infusion_BagMedications" select 0) set [14,100];
+        [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
+        [count _paints==2 && {(_paints select 1) find "Calcium 150mg added" >=0}
+            && {(_paints select 1) find "Calcium 100mg" <0},
+            "details did not refresh a further confirmed medication addition"] call _check;
         ACM_circulation_TransfusionMenu_Selected_BodyPart="rightarm";
         [_displayFixture] call ACME_fnc_updateTransfusionLineDetails;
         [count _paints==3 && {(_paints select 2) find "Y line" <0}

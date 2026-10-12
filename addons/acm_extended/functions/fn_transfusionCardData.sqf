@@ -2,12 +2,14 @@
 params ["_list","_row"];
 private _name = _list lbText _row;
 private _detail = "";
+private _line = "";
 private _status = "";
 private _thermal = "";
 private _color = _list lbColor _row;
 private _icon = _list lbPicture _row;
 private _vial = _list lbPictureRight _row;
 private _fraction = -1;
+private _total = 0;
 private _idc = ctrlIDC _list;
 if (_idc in [86004,86129]) then {
     private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
@@ -29,7 +31,7 @@ if (_idc in [86004,86129]) then {
     _color = _temperatureColor;
     _thermal = _lineThermal;
     private _remaining = (_bag param [1,0]) max 0;
-    private _total = (_bag param [6,0]) max 1;
+    _total = (_bag param [9,_bag param [6,0]]) max 1;
     _fraction = (_remaining / _total) max 0 min 1;
     _detail = format ["%1 / %2 mL",round _remaining,round _total];
     _status = if (_flowing) then {"Running"} else {"Paused"};
@@ -47,7 +49,7 @@ if (_idc in [86004,86129]) then {
         _name = [_meds apply {_x param [11,""]}] call ACME_fnc_infusionTitle;
         if (_role != "") then {_name = _name + " [PiB]";};
         if ((_label find "[Y]") >= 0) then {_name = _name + " [Y]";};
-        private _doses = _meds apply {format ["%1 %2 remaining",[_x param [11,""]] call ACME_fnc_infusionName,[_x param [11,""],_x param [14,0]] call ACME_fnc_formatDose]};
+        private _doses = _meds apply {format ["%1 %2 added",[_x param [11,""]] call ACME_fnc_infusionName,[_x param [11,""],_x param [13,0]] call ACME_fnc_formatDose]};
         _detail = format ["%1 mL · %2",round _remaining,_doses joinString " + "];
         if (_vial == "") then {_vial = getText (configFile >> "CfgWeapons" >> ([(_meds select 0) param [11,""]] call ACME_fnc_vialClass) >> "picture");};
     };
@@ -66,7 +68,8 @@ if (_idc in [86004,86129]) then {
         if (_at >= 0) then {
             private _set = _sets select _at;
             _icon = getText (configFile >> "CfgWeapons" >> (_set param [1,""]) >> "picture");
-            _detail = if (_detail == "") then {"IV line fitted"} else {_detail};
+            _line = ["IV line fitted","Y tubing fitted"] select ((_set param [8,""]) == "yset");
+            _detail = if (_detail == "") then {_line} else {_detail + " · " + _line};
             _status = "Prepared";
         };
     };
@@ -85,4 +88,4 @@ if (_idc in [86004,86129]) then {
         _status = "Prepared";
     };
 };
-[_name,_detail,_status,_thermal,_color,_icon,_vial,_fraction]
+[_name,_detail,_status,_thermal,_color,_icon,_vial,_fraction,_total]

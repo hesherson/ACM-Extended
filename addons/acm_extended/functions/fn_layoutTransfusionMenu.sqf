@@ -56,6 +56,7 @@ private _accessKind = [86210,"ACME_TransfusionAccessCaption",""] call _ensure;
 private _accessIcon = [86211,"RscPictureKeepAspect",""] call _ensure;
 private _spikeDropdown = [86212,"ACME_TransfusionActionButton","v"] call _ensure;
 private _warming = [86213,"ACME_TransfusionCaption",""] call _ensure;
+private _inventoryTab = [86214,"ACME_TransfusionTabButton","Inventory"] call _ensure;
 
 if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
     _display setVariable ["ACME_txLayoutHooks", true];
@@ -75,6 +76,7 @@ if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
             [_parent] call ACME_fnc_layoutTransfusionMenu;
         }];
     } forEach [[_bagActions,"bag","transfusion"],[_infActions,"infusion","infusion"]];
+    _inventoryTab ctrlAddEventHandler ["ButtonClick",{[false] call ACME_fnc_togglePreparedSets;}];
     _piggyback ctrlAddEventHandler ["ButtonClick", { ["start"] call ACME_fnc_piggybackWorkflow; }];
     {
         _x params ["_button","_operation"];
@@ -191,12 +193,13 @@ private _place = {
     [86003,0.673,0.193,0.160,0.030],
     [86037,0.838,0.193,0.033,0.030],
     [86006,0.125,0.188,0.212,0.029],
-    [86004,0.137,0.228,0.200,0.210],
+    [86004,0.125,0.228,0.212,0.210],
     [86128,0.125,0.538,0.212,0.029],
     [86129,0.125,0.575,0.212,0.187],
     [86131,0.125,0.778,0.102,0.033],
     [86172,0.235,0.778,0.102,0.033],
-    [86144,0.673,0.232,0.202,0.034],
+    [86214,0.673,0.232,0.074,0.034],
+    [86144,0.750,0.232,0.125,0.034],
     [86005,0.673,0.279,0.202,0.235],
     [86145,0.673,0.279,0.202,0.235],
     [86130,0.673,0.595,0.202,0.029],
@@ -212,6 +215,11 @@ private _place = {
 private _yButton = _display displayCtrl 86142;
 private _showY = !isNull _yButton && {ctrlShown _yButton};
 private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode", false];
+{
+    _x params ["_tab","_selected"];
+    _tab ctrlSetBackgroundColor (if (_selected) then {[0.30,0.30,0.30,1]} else {[0.18,0.18,0.18,1]});
+    [_tab,"color",if (_selected) then {[1,1,1,1]} else {[0.75,0.75,0.75,1]}] call ACME_fnc_transfusionUiSet;
+} forEach [[_inventoryTab,!_preparedMode],[_display displayCtrl 86144,_preparedMode]];
 if (_preparedMode) then {
     [86141,0.673,0.526,0.097,0.034] call _place;
     [86121,0.778,0.526,0.097,0.034] call _place;
@@ -396,7 +404,7 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
     if (!isNull _button) then {
         if !(_button getVariable ["ACME_txRoundedHooks",false]) then {
             _button setVariable ["ACME_txRoundedHooks",true];
-            _button ctrlSetBackgroundColor [0,0,0,0];
+            if ((ctrlIDC _button) != 86144) then {_button ctrlSetBackgroundColor [0,0,0,0];};
             _button ctrlAddEventHandler ["MouseEnter",{(_this select 0) setVariable ["ACME_txRoundHover",true];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
             _button ctrlAddEventHandler ["MouseExit",{(_this select 0) setVariable ["ACME_txRoundHover",false];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
             _button ctrlAddEventHandler ["SetFocus",{(_this select 0) setVariable ["ACME_txRoundFocus",true];[ctrlParent (_this select 0)] call ACME_fnc_layoutTransfusionMenu;}];
@@ -410,7 +418,7 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
         _frame ctrlEnable false;
         // B277 prepared chooser caption fits a narrow screen while retaining the familiar workflow text.
         private _fontHeight = safeZoneH * ([0.020,0.018] select ((ctrlIDC _button) in [86131,86172]));
-        if ((ctrlIDC _button) == 86144 && {((ctrlPosition _button) param [2,0]) < safeZoneH * 0.36 * (pixelW / pixelH)}) then {_fontHeight = safeZoneH * 0.018;};
+        if ((ctrlIDC _button) == 86144 && {((ctrlPosition _button) param [2,0]) < safeZoneH * 0.36 * (pixelW / pixelH)}) then {_fontHeight = safeZoneH * 0.017;};
         if ((_button getVariable ["ACME_txFontH",0]) != _fontHeight) then {_button ctrlSetFontHeight _fontHeight;_button setVariable ["ACME_txFontH",_fontHeight];};
     };
 } forEach _roundButtons;

@@ -315,13 +315,9 @@ if (!isNull _ctrlSetsBtn) then {
     _ctrlSetsBtn ctrlSetFontHeight _fontH;
     // B50: the toggle advertises exactly how many complete IV sets the medic is carrying.  If any exist, pulse
     // the button with the same circulation green family used elsewhere in the medical body map.
-    _ctrlSetsBtn ctrlSetText (if (_preparedMode) then {
-        format ["<<  Loose Bags | Prepared IV sets (%1)", _preparedSetCountB50]
-    } else {
-        format ["Prepared IV sets (%1)  >>", _preparedSetCountB50]
-    });
-    _ctrlSetsBtn ctrlSetBackgroundColor [0,0,0,0];
-    _ctrlSetsBtn ctrlSetTextColor [1,1,1,1];
+    _ctrlSetsBtn ctrlSetText (format ["Prepared IV sets (%1)",_preparedSetCountB50]);
+    _ctrlSetsBtn ctrlSetFontHeight (safeZoneH * 0.017);
+    _ctrlSetsBtn ctrlSetBackgroundColor [0.18,0.18,0.18,1];
 
     [_ctrlSetsBtn,"show",true] call ACME_fnc_transfusionUiSet;
     // Browsing provider custody never requires an active patient bag or access.

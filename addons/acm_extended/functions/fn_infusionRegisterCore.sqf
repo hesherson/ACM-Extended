@@ -52,6 +52,8 @@ _clampPosition = (_clampPosition max 0) min 1;
 _dropsPerMinute = [_clampPosition] call ACME_fnc_clampPositionToDrops;
 
 private _entries = _patient getVariable ["ACME_infusion_BagMedications", []];
+// Legacy bags acquire nominal capacity before their first added medication volume.
+_foundBag set [9,_foundBag param [9,_foundBag param [6,_remainingVolume]]];
 private _newVolume = _remainingVolume + _solutionMl;
 private _original = (_foundBag param [6, _remainingVolume]) + _solutionMl;
 // All components share the one physical valve. A later injection must not reset it.

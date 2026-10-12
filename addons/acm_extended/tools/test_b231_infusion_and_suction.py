@@ -11,7 +11,7 @@ from test_menu_death_lifecycle import ROOT, F, adapt, execute
 from test_historical_vial_execution import map_defaults, setup as vial_setup, code as vial_code, function as vial_function
 from test_historical_laryngoscopy_execution import setup as airway_setup, code as airway_code, function as airway_function
 from test_historical_cardiac_execution import code as clinical_code
-from test_b230_prepared_infusion_transaction import setup as attach_setup, adapted as attach_code, function as attach_function
+from test_b230_prepared_infusion_transaction import setup as attach_setup, adapted as attach_code, function as attach_function, inventory_boundary
 
 BASE = '1e004396d1ca6644be121a757cbb004f2da03a88'
 
@@ -40,7 +40,7 @@ def test_resolver_does_not_hide_actual_stock_loss_or_invalid_draws(args):
 
 
 def injection_setup(before=False):
-    text=vial_setup()+r'''
+    text=vial_setup()+inventory_boundary()+r'''
         _drawDisplay=missionNamespace;
         private _holder=_medic;private _notices=[];private _corrections=[];private _refunds=[];private _syringes=2;
         private _lookupStock=1.957;

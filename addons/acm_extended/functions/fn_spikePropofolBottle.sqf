@@ -90,6 +90,7 @@ private _begin = {
                 _preparedIndex = _prepared pushBack _entry;
                 _medic setVariable ["ACME_preparedIVSets", _sets, true];
                 _medic setVariable ["ACME_infusion_PreparedBags", _prepared, true];
+                [_medic] call ACME_fnc_preparedInventoryCommit;
                 [_bottleReceipt, false] call ACME_fnc_treatmentSupplyRefund;
                 [_lineReceipt, false] call ACME_fnc_treatmentSupplyRefund;
             };

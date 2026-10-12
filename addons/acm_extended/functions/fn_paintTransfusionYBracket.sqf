@@ -39,7 +39,8 @@ private _show = if (_cardsReady) then {count _cardPoints > 0 && {count _cardPoin
 {[_x,"show",_show] call ACME_fnc_transfusionUiSet;} forEach _controls;
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
 if (_show) then {
-    private _railX = _listX - _uiW * 0.006;
+    private _cardLeft = if (_cardsReady) then {(_cardPoints select 0) select 0} else {_listX};
+    private _railX = _cardLeft - _uiW * 0.006;
     private _top = if (_cardsReady) then {(_cardPoints select 0) select 1} else {_listY + ((_rows select 0) + 0.5) * _rowH};
     private _bottom = if (_cardsReady) then {(_cardPoints select ((count _cardPoints) - 1)) select 1} else {_listY + ((_rows select ((count _rows) - 1)) + 0.5) * _rowH};
     if (count _rows == 1) then {_top = _top - _rowH * 0.18;};

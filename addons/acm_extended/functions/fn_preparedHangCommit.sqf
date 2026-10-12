@@ -18,15 +18,17 @@ params [
 if (isNull _patient || {_requestId == ""} || {_setId == ""}) exitWith {};
 if (!local _patient) exitWith {[_patient, "preparedHang", _this] call ACME_fnc_ownerDispatch;};
 
+private _fingerprint = +_this;
 private _results = _patient getVariable ["ACME_preparedHangResults", createHashMap];
 private _old = _results getOrDefault [_requestId, []];
 if !(_old isEqualTo []) exitWith {
+    if ((_old param [2,[]]) isNotEqualTo _fingerprint) exitWith {};
     ["ACME_preparedHangResult", [_requestId, _old param [0, false], _old param [1, ""]], _medic] call CBA_fnc_targetEvent;
 };
 
 private _finish = {
     params ["_ok", "_message"];
-    _results set [_requestId, [_ok, _message]];
+    _results set [_requestId, [_ok, _message, _fingerprint]];
     if (count _results > 128) then {_results deleteAt ((keys _results) select 0);};
     _patient setVariable ["ACME_preparedHangResults", _results, true];
     if (!isNull _medic) then {["ACME_preparedHangResult", [_requestId, _ok, _message], _medic] call CBA_fnc_targetEvent;};
@@ -42,6 +44,8 @@ private _sets = +(_medic getVariable ["ACME_preparedIVSets", []]);
 private _setIdx = _sets findIf {(_x param [0, ""]) isEqualTo _setId};
 if (_setIdx < 0) exitWith {[false, "That prepared set is no longer available."] call _finish;};
 private _rec = +(_sets select _setIdx);
+private _certificate = [_medic,"prepared",_setId,_requestId] call ACME_fnc_inventoryLedgerCertificate;
+if (_certificate isEqualTo [] || {(_certificate param [1,[]]) isNotEqualTo _rec}) exitWith {[false,"Prepared set inventory custody changed. The set was not attached."] call _finish;};
 _rec params [
     ["_id", ""], ["_bloodClass", ""], ["_bloodAction", ""], ["_salineClass", ""], ["_salineAction", ""],
     ["_tied", ""], ["_label", ""], ["_bloodCold", false], ["_kind", "yset"],

@@ -65,7 +65,8 @@ def renderer_source(name):
     source = re.sub(r"_rail ctrlSetBackgroundColor ([^;]+)", r'[_rail,"background",\1] call ACME_fnc_transfusionUiSet', source)
     source = source.replace('_hit ctrlSetTooltip _tooltip', '[_hit,"tooltip",_tooltip] call ACME_fnc_transfusionUiSet')
     source = control_metadata(source)
-    source = source.replace("safeZoneH", "1").replace("pixelW", "(1/1920)").replace("pixelH", "(1/1080)")
+    source = source.replace("finite _volume", "true") # SQF-VM engine boundary, all test volumes are finite.
+    source = source.replace("safeZoneW", "1.7777778").replace("safeZoneH", "1").replace("pixelW", "(1/1920)").replace("pixelH", "(1/1080)")
     return primitives(adapt(source))
 
 
@@ -81,7 +82,7 @@ def renderer_setup():
         private _registerEvent={_events pushBack _this;};
         ACME_fnc_transfusionUiSet={params["_c","_property","_value"];private _key=format["%1:%2",_c,_property];
             if(!(_key in _controlValues)||{(_controlValues get _key)isNotEqualTo _value})then{_controlValues set[_key,_value];_writes pushBack _this;};true};
-        private _positions=createHashMapFromArray[[86004,[.1,.2,.2,.21]],[86129,[.1,.55,.212,.187]],[86005,[.67,.279,.202,.235]],[86145,[.67,.279,.202,.235]],[86127,[.67,.636,.202,.149]]];
+        private _positions=createHashMapFromArray[[86004,[.1,.2,.212,.21]],[86129,[.1,.55,.212,.187]],[86005,[.67,.279,.202,.235]],[86145,[.67,.279,.202,.235]],[86127,[.67,.636,.202,.149]]];
         private _counts=createHashMapFromArray[[86004,8],[86129,8],[86005,8],[86145,8],[86127,8]];
         private _selected=createHashMapFromArray[[86004,0],[86129,0],[86005,0],[86145,0],[86127,0]];
         ACME_fnc_transfusionCardIdentity={params["_l","_r"];if(_r<0)exitWith{[]};["fixture",_l,_r]};
@@ -92,7 +93,7 @@ def renderer_setup():
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_SelectIV",true];
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selected_AccessSite",0];
     ''' + 'ACME_fnc_transfusionCardWindow={' + adapt((FUN / 'fn_transfusionCardWindow.sqf').read_text()) + '};' + \
-        '\n'.join('ACME_fnc_' + name + '={' + renderer_source(name) + '};' for name in ('transfusionRoundedFrame', 'updateTransfusionCards'))
+        '\n'.join('ACME_fnc_' + name + '={' + renderer_source(name) + '};' for name in ('transfusionRoundedFrame', 'transfusionGraduations', 'updateTransfusionCards'))
 
 
 def test_full_card_refresh_is_bounded_and_backing_lists_never_redraw():
@@ -154,7 +155,7 @@ def test_prepared_view_and_nested_menu_hide_only_their_own_cards():
 def test_corner_radius_uses_identical_whole_pixels_on_all_nine_slices(width, height):
     source = (FUN / "fn_transfusionRoundedFrame.sqf").read_text()
     source = source.replace("isNull _group", "false").replace("_group controlsGroupCtrl _i", "_i").replace("_piece ctrlEnable false;", "")
-    source = source.replace("safeZoneH", "1").replace("pixelW", f"(1/{width})").replace("pixelH", f"(1/{height})")
+    source = source.replace("safeZoneW", "1.7777778").replace("safeZoneH", "1").replace("pixelW", f"(1/{width})").replace("pixelH", f"(1/{height})")
     execute(r'''
         private _group=profileNamespace;private _pieces=[];
         ACME_fnc_transfusionUiSet={params["_c","_p","_v"];if(_p=="position"&&{_c isEqualType 0})then{_pieces set[_c,_v];};true};

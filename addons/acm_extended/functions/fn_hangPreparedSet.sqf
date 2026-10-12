@@ -28,6 +28,9 @@ if (_setIdx < 0) exitWith {
     ["That prepared set is no longer available.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 };
+if !([ACE_player,"prepared",_setId] call ACME_fnc_inventoryLedgerPossessed) exitWith {
+    [ACE_player,"That set is awaiting inventory confirmation or is no longer carried."] call ACME_fnc_clinicalNotice;
+};
 private _rec = _sets select _setIdx;
 _rec params [["_id", ""], ["_bloodClass", ""], ["_bloodAction", ""], ["_salineClass", ""], ["_salineAction", ""], ["_tied", ""], ["_label", ""], ["_bloodCold", false], ["_kind", "yset"], ["_bloodExactVol", 0], ["_salineExactVol", 0]];
 private _isSingle = (_kind != "yset");
@@ -148,8 +151,16 @@ missionNamespace setVariable ["ACME_preparedHangSerial", _serial];
 private _requestId = format ["preparedHang:%1:%2:%3", clientOwner, _serial, floor (diag_tickTime * 1000)];
 private _warmer = false; // A warmer is fitted only through explicit Add Fluid Warmer custody.
 private _args = [_target, ACE_player, _requestId, _id, _bodyPart, _iv, _site, _epoch, _warmer, _freshEntry];
+private _receipt = [ACE_player,"prepared",_id,_requestId] call ACME_fnc_inventoryLedgerReserve;
+if (_receipt isEqualTo []) exitWith {[ACE_player,"That prepared set is no longer carried."] call ACME_fnc_clinicalNotice;};
 _pending set [_requestId, [_target, _args, CBA_missionTime, false]];
 missionNamespace setVariable ["ACME_preparedHangPending", _pending];
 
 ["Connecting prepared set...", 2.5, ACE_player] call ace_common_fnc_displayTextStructured;
-[_target, "preparedHang", _args] call ACME_fnc_ownerDispatch;
+private _intents = ACE_player getVariable ["ACME_inventoryActionIntents",createHashMap]; _intents set [_requestId,["preparedHang",_args,0]]; ACE_player setVariable ["ACME_inventoryActionIntents",_intents,true];
+[ACE_player,_requestId,{
+    params ["_accepted","_args"];
+    _args params ["_target","_provider","_request"];
+    if (_accepted) then {[_target,"preparedHang",_args] call ACME_fnc_ownerDispatch;}
+    else {[_provider,_request,false] call ACME_fnc_inventoryLedgerSettle; [_request,false,"The prepared set could not be reserved."] call ACME_fnc_preparedHangResult;};
+},_args] call ACME_fnc_inventoryLedgerClaim;

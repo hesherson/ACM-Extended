@@ -26,6 +26,19 @@ _refundRow set [2,_drugMl * _fraction];
 _refundRow set [4,_nsMl * _fraction];
 _refundRow set [3,format ["Push-dose epinephrine 10 mcg/mL (%1 mL)",_pushMl toFixed 1]];
 private _remaining = (_total - _pushMl) max 0;
+if ((_entry param [13,"",[""]]) == "inventoryB279") exitWith {
+    private _request = [_medic,_entry] call ACME_fnc_skInventoryReserve;
+    if (_request == "") exitWith {false};
+    private _remainingRow = [];
+    if (_remaining >= 0.001) then {
+        _remainingRow = +_entry;
+        _remainingRow set [2,_drugMl * (1 - _fraction)];
+        _remainingRow set [4,_nsMl * (1 - _fraction)];
+        _remainingRow set [3,format ["Push-dose epinephrine 10 mcg/mL (%1 mL = %2 mcg left)",_remaining toFixed 1,(_remaining*10) toFixed 0]];
+    };
+    [_medic,_request,ACME_fnc_skInventoryInjectClaim,[_medic,_patient,_bodyPart,[["Epinephrine_IV",_doseMg,true,"B13_MEASURED_EPI",_pushSec]],_siteIdx,_entry,_remainingRow,_refundRow,_request]] call ACME_fnc_inventoryLedgerClaim;
+    true
+};
 if (_remaining < 0.001) then {_store deleteAt _index;} else {
     _entry set [2, _drugMl * (1 - _fraction)];
     _entry set [4, _nsMl * (1 - _fraction)];

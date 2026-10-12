@@ -30,6 +30,8 @@ if (_setId in _escrow) exitWith {false};
 private _serial = (missionNamespace getVariable ["ACME_piggybackSerial",0]) + 1;
 missionNamespace setVariable ["ACME_piggybackSerial",_serial];
 private _id = format ["pib:%1:%2:%3",clientOwner,_serial,floor(diag_tickTime*1000)];
+private _receipt = [ACE_player,"prepared",_setId,_id] call ACME_fnc_inventoryLedgerReserve;
+if (_receipt isEqualTo []) exitWith {[ACE_player,"That prepared bag is no longer carried."] call ACME_fnc_clinicalNotice;false};
 private _at = serverTime;
 _part = toLowerANSI _part;
 private _args = [ACE_player,_patient,_id,_setId,_part,_iv,_site,_primaryUid,_epoch,_set,_medication,_at];
@@ -45,5 +47,19 @@ _requests set [_id,[_args,CBA_missionTime,false]];
 missionNamespace setVariable ["ACME_piggybackRequests",_requests];
 private _source = findDisplay 86000;
 if (!isNull _source) then {_source setVariable ["ACME_piggybackConnecting",true]; _source closeDisplay 1;};
-[_id] call ACME_fnc_piggybackRetry;
+[ACE_player,_id,{
+    params ["_accepted","_id"];
+    if (_accepted) then {[_id] call ACME_fnc_piggybackRetry;}
+    else {
+        private _requests = missionNamespace getVariable ["ACME_piggybackRequests",createHashMap];
+        private _args = (_requests getOrDefault [_id,[[]]]) select 0;
+        if !(_args isEqualTo []) then {
+            private _medic = _args select 0;
+            [_medic,_id,false] call ACME_fnc_inventoryLedgerSettle;
+            private _escrow = _medic getVariable ["ACME_piggybackEscrow",createHashMap]; _escrow deleteAt (_args select 3); _medic setVariable ["ACME_piggybackEscrow",_escrow,true];
+            _requests deleteAt _id; missionNamespace setVariable ["ACME_piggybackRequests",_requests];
+            [_medic,"The prepared bag could not be reserved. Inventory custody is being returned."] call ACME_fnc_clinicalNotice;
+        };
+    };
+},_id] call ACME_fnc_inventoryLedgerClaim;
 true

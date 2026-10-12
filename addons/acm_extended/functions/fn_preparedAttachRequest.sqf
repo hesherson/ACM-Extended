@@ -25,10 +25,24 @@ if (_blocked != "") exitWith {[_medic, [_blocked] call ACME_fnc_preparedAttachMe
 private _serial = (missionNamespace getVariable ["ACME_preparedRequestSerial", 0]) + 1;
 missionNamespace setVariable ["ACME_preparedRequestSerial", _serial];
 private _id = format ["%1:%2", _key, _serial];
+private _physical = !(_staged isEqualTo []) || {(_prepared param [15,""]) != ""};
+if (_physical) then {
+    private _receipt = [_medic,"prepared",_prepared select 0,_id] call ACME_fnc_inventoryLedgerReserve;
+    if (_receipt isEqualTo []) then {_blocked = "prepared-set-missing";};
+};
+if (_blocked != "") exitWith {[_medic,[_blocked] call ACME_fnc_preparedAttachMessage] call ACME_fnc_clinicalNotice;};
 private _pending = missionNamespace getVariable ["ACME_preparedPending", createHashMap];
 if (_id in _pending) exitWith {};
 _pending set [_id, [_args, CBA_missionTime, false, _epoch]];
 missionNamespace setVariable ["ACME_preparedPending", _pending];
 private _source = findDisplay 86000;
 if (!isNull _source) then {_source closeDisplay 1;};
-[_patient, "preparedAttach", [_args, _id, _epoch]] call ACME_fnc_ownerDispatch;
+if (_physical) then {
+    private _intents = _medic getVariable ["ACME_inventoryActionIntents",createHashMap]; _intents set [_id,["preparedAttach",[_args,_id,_epoch],0]]; _medic setVariable ["ACME_inventoryActionIntents",_intents,true];
+    [_medic,_id,{
+        params ["_accepted","_request"];
+        _request params ["_args","_id","_epoch"];
+        if (_accepted) then {[_args select 1,"preparedAttach",_request] call ACME_fnc_ownerDispatch;}
+        else {[_args select 0,_id,false] call ACME_fnc_inventoryLedgerSettle; [_id,false,"","prepared-set-missing"] call ACME_fnc_preparedAttachAck;};
+    },[_args,_id,_epoch]] call ACME_fnc_inventoryLedgerClaim;
+} else {[_patient,"preparedAttach",[_args,_id,_epoch]] call ACME_fnc_ownerDispatch;};

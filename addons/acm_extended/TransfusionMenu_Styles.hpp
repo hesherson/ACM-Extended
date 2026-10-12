@@ -20,6 +20,13 @@ class ACME_TransfusionActionButton: RscButton {
     h = "safeZoneH * 0.033";
 };
 
+class ACME_TransfusionTabButton: ACME_TransfusionActionButton {
+    colorBackground[] = {0.18,0.18,0.18,1};
+    colorBackgroundActive[] = {0.28,0.28,0.28,1};
+    colorFocused[] = {0.28,0.28,0.28,1};
+    sizeEx = "safeZoneH * 0.017";
+};
+
 class ACME_TransfusionCaption: RscText {
     text = "";
     colorText[] = {0.76,0.76,0.76,1};
@@ -75,14 +82,20 @@ class ACME_TransfusionCard: ACME_TransfusionRoundedFrame {
     class Controls {
         ACME_TX_SLICES
         class Hit: ACME_TransfusionActionButton { idc = 9; x = 0; y = 0; w = 0; h = 0; sizeEx = 0; };
-        class Name: ACME_TransfusionCaption { idc = 10; style = 0; sizeEx = "safeZoneH * 0.020"; colorText[] = {0.94,0.94,0.94,1}; };
-        class Detail: Name { idc = 11; sizeEx = "safeZoneH * 0.017"; colorText[] = {0.66,0.66,0.66,1}; };
-        class Status: Detail { idc = 12; style = 0; };
-        class Thermal: Detail { idc = 13; sizeEx = "safeZoneH * 0.015"; };
+        class Name: ACME_TransfusionCaption { idc = 10; style = 0; sizeEx = "safeZoneH * 0.018"; colorText[] = {0.94,0.94,0.94,1}; };
+        class Detail: Name { idc = 11; sizeEx = "safeZoneH * 0.014"; colorText[] = {0.66,0.66,0.66,1}; };
+        class Status: Detail { idc = 12; style = 0; sizeEx = "safeZoneH * 0.0125"; };
+        class Thermal: Detail { idc = 13; style = 1; sizeEx = "safeZoneH * 0.0125"; };
         class BagIcon: RscPictureKeepAspect { idc = 14; x = 0; y = 0; w = 0; h = 0; text = ""; };
         class VialIcon: BagIcon { idc = 15; };
         class Track: RscText { idc = 16; x = 0; y = 0; w = 0; h = 0; colorBackground[] = {0.25,0.25,0.25,1}; };
         class Progress: Track { idc = 17; colorBackground[] = {0.76,0.76,0.76,1}; };
+#define ACME_TX_MARK(Index, TickID, LabelID) class Tick_##Index: Track { idc = TickID; colorBackground[] = {0.65,0.65,0.65,1}; }; class Mark_##Index: Detail { idc = LabelID; style = 2; sizeEx = "safeZoneH * 0.010"; };
+        ACME_TX_MARK(0,18,29) ACME_TX_MARK(1,19,30) ACME_TX_MARK(2,20,31)
+        ACME_TX_MARK(3,21,32) ACME_TX_MARK(4,22,33) ACME_TX_MARK(5,23,34)
+        ACME_TX_MARK(6,24,35) ACME_TX_MARK(7,25,36) ACME_TX_MARK(8,26,37)
+        ACME_TX_MARK(9,27,38) ACME_TX_MARK(10,28,39)
+#undef ACME_TX_MARK
     };
 };
 #undef ACME_TX_SLICES

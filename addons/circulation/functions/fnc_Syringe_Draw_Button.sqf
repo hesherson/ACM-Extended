@@ -32,6 +32,13 @@ if (_type > 0) then {
 
     [{
         _this params ["_display", "_push", "_orig", "_iv", "_pushSec"];
+        // Capture the exact freshly drawn magazine through the legacy push
+        // timer. The background inventory importer must not convert it while
+        // this callback still owns its original direct-push workflow.
+        private _drawMed = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medication", ""];
+        private _drawSize = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 10];
+        private _drawAmmo = round ((missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount",0])*100);
+        private _drawMedic = ACE_player;
         // finalize the drawn syringe, the same call the draw path of ACM makes, then show the push phase.
         private _prepared = [
             ACE_player,
@@ -43,22 +50,34 @@ if (_type > 0) then {
             if (!isNull _push) then {_push ctrlSetText _orig;};
             {private _c=_display displayCtrl _x; if (!isNull _c) then {_c ctrlEnable true};} forEach [84003,84004];
         };
+        private _pendingId = format ["nativePush:%1:%2:%3",clientOwner,diag_tickTime,_drawAmmo];
+        private _pending = _drawMedic getVariable ["ACME_nativeSyringePending",[]];
+        private _drawClass = format ["ACM_Syringe_%1_%2",_drawSize,_drawMed];
+        _pending pushBack [_drawClass,_drawAmmo,_pendingId,diag_tickTime + _pushSec + 30];
+        _drawMedic setVariable ["ACME_nativeSyringePending",_pending,false];
+        private _drawReceipt = [_drawClass,_drawAmmo,_pendingId];
+        private _drawPatient = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Target",objNull];
+        private _drawPart = missionNamespace getVariable ["ACM_circulation_SyringeDraw_TargetPart",""];
         if (!isNull _push) then { _push ctrlSetText "Pushing..."; };
 
         [{
-            _this params ["_display", "_push", "_orig", "_iv"];
+            _this params ["_display", "_push", "_orig", "_iv","_drawMedic","_drawPatient","_drawPart","_drawMed","_drawSize","_drawReceipt"];
             [
-                ACE_player,
-                missionNamespace getVariable ["ACM_circulation_SyringeDraw_Target", objNull],
-                missionNamespace getVariable ["ACM_circulation_SyringeDraw_TargetPart", ""],
-                missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medication", ""],
-                missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 10],
+                _drawMedic,
+                _drawPatient,
+                _drawPart,
+                _drawMed,
+                _drawSize,
                 _iv,
-                missionNamespace getVariable ["ACM_circulation_reusableSyringe", false]
+                missionNamespace getVariable ["ACM_circulation_reusableSyringe", false],
+                _drawReceipt
             ] call ACM_circulation_fnc_Syringe_Inject;
+            private _pending = _drawMedic getVariable ["ACME_nativeSyringePending",[]];
+            _pending = _pending select {(_x param [2,""]) != (_drawReceipt select 2)};
+            _drawMedic setVariable ["ACME_nativeSyringePending",_pending,false];
             if (!isNull _push) then { _push ctrlSetText _orig; };
             { private _c = _display displayCtrl _x; if (!isNull _c) then {_c ctrlEnable true}; } forEach [84003, 84004];
-        }, [_display, _push, _orig, _iv], _pushSec] call CBA_fnc_waitAndExecute;
+        }, [_display, _push, _orig, _iv,_drawMedic,_drawPatient,_drawPart,_drawMed,_drawSize,_drawReceipt], _pushSec] call CBA_fnc_waitAndExecute;
     }, [_display, _push, _orig, _iv, _pushSec], _drawSec] call CBA_fnc_waitAndExecute;
 } else {
     // draw only: "Drawing..." for _drawSec, then finalize. the button re-enables so the next drug can be drawn.
@@ -82,7 +101,7 @@ if (_type > 0) then {
             private _store = ACE_player getVariable ["ACME_narcStore", []];
             private _entry = [[_med, _size, _amt, _customName]] call ACME_fnc_skApplyPendingTag;
             _store pushBack _entry;
-            ACE_player setVariable ["ACME_narcStore", _store, true];
+            [ACE_player,_store] call ACME_fnc_narcStoreCommit;
             call ACME_fnc_skRefreshDrawn;
             call ACME_fnc_skAfterSaveOpenBody;
         };

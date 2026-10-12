@@ -37,6 +37,9 @@ private _held = (_medic getVariable ["ACME_piggybackEscrow",createHashMap]) getO
 // Escrow publication may arrive after the event. Retry, without changing custody.
 if (_held isEqualTo []) exitWith {false};
 if !((_held select [0,6]) isEqualTo [_id,_patient,_epoch,_set,_prepared,_issued]) exitWith {[false,"The reserved piggyback bag changed. It was not attached."] call _reply};
+private _inventoryCertificate = [_medic,"prepared",_setId,_id] call ACME_fnc_inventoryLedgerCertificate;
+if (_inventoryCertificate isEqualTo [] || {(_inventoryCertificate param [1,[]]) isNotEqualTo _set}
+    || {((_inventoryCertificate param [2,[]]) select [0,11]) isNotEqualTo (_prepared select [0,11])}) exitWith {[false,"Prepared bag inventory custody changed. It was not attached."] call _reply};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false,"Patient state changed. The prepared bag was returned."] call _reply};
 private _sameVehicle = !isNull objectParent _medic && {objectParent _medic isEqualTo objectParent _patient};
 if (!alive _patient || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)} || {_medic distance _patient > 5 && {!_sameVehicle}}) exitWith {[false,"Provider is unavailable or out of range. The prepared bag was returned."] call _reply};

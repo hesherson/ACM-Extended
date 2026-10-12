@@ -3,6 +3,7 @@ params ["_context", "_medication", "_dose", ["_solutionMl", 0]];
 if (_medication == "Propofol") exitWith {false};
 private _sid = _context param [20, "", [""]];
 if (_sid == "" || {_dose <= 0} || {!finite _dose} || {_solutionMl <= 0} || {!finite _solutionMl}) exitWith {false};
+if !([ACE_player,"prepared",_sid] call ACME_fnc_inventoryLedgerPossessed) exitWith {false};
 private _sets = ACE_player getVariable ["ACME_preparedIVSets", []];
 private _si = _sets findIf {(_x param [0, ""]) == _sid};
 if (_si < 0 || {((_sets select _si) param [8, ""]) != "saline"}) exitWith {false};
@@ -32,6 +33,7 @@ _set set [6, [_entry] call ACME_fnc_formatPreparedLabel];
 _sets set [_si, _set];
 ACE_player setVariable ["ACME_infusion_PreparedBags", _entries, true];
 ACE_player setVariable ["ACME_preparedIVSets", _sets, true];
+    [ACE_player] call ACME_fnc_preparedInventoryCommit;
 missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex", _index];
 uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 true

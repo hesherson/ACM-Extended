@@ -4,5 +4,8 @@
  */
 params ["_owner", "_store", ["_public", true, [true]]];
 if (isNull _owner || {!local _owner}) exitWith {false};
+if (_public && {!isNil "ACME_fnc_inventoryLedgerCommit"}) then {
+    _store = [_owner,_store] call ACME_fnc_skInventoryCommit;
+};
 _owner setVariable ["ACME_narcStore", _store, _public];
 true

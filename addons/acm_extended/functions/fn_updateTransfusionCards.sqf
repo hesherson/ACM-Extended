@@ -8,6 +8,7 @@ private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode",false];
 private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
 private _endpoints = createHashMap;
 private _layout = createHashMap;
+private _uiW = safeZoneW min (safeZoneH * 1.7777778);
 private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,3,!_preparedMode],[86145,3,_preparedMode],[86127,2,true]];
 {
     _x params ["_idc","_capacity","_shown"];
@@ -16,11 +17,15 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
     if (!isNull _list) then {
         private _rect = ctrlPosition _list;
         _rect params ["_px","_py","_listW","_h"];
+        private _viewportX = _px;
         // Reserve a stable gutter inside the native list viewport. Cards and
         // their text/artwork cannot reach the scrollbar, even at a narrow UI scale.
         private _railW = 3 * pixelW;
         private _railGap = (safeZoneH * 0.006 * (pixelW / pixelH)) max (5 * pixelW);
-        private _w = (_listW - _railW - _railGap) max (10 * pixelW);
+        // All panes share one physical card/content width. Wider left viewports center the same card.
+        private _cardViewportW = _listW min (_uiW * 0.202);
+        private _w = (_cardViewportW - _railW - _railGap) max (10 * pixelW);
+        _px = _px + ((_listW - _cardViewportW) / 2);
         private _gap = safeZoneH * 0.007;
         private _rowH = (_h - _gap * (_capacity - 1)) / _capacity;
         private _offsetKey = format ["ACME_txCardOffset_%1",_idc];
@@ -48,7 +53,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 _hit ctrlAddEventHandler ["MouseExit",{(ctrlParentControlsGroup (_this select 0)) setVariable ["ACME_txHover",false];[ctrlParent (_this select 0)] call ACME_fnc_updateTransfusionCards;}];
                 _hit ctrlAddEventHandler ["SetFocus",{(ctrlParentControlsGroup (_this select 0)) setVariable ["ACME_txFocus",true];[ctrlParent (_this select 0)] call ACME_fnc_updateTransfusionCards;}];
                 _hit ctrlAddEventHandler ["KillFocus",{(ctrlParentControlsGroup (_this select 0)) setVariable ["ACME_txFocus",false];[ctrlParent (_this select 0)] call ACME_fnc_updateTransfusionCards;}];
-                for "_child" from 10 to 17 do {(_group controlsGroupCtrl _child) ctrlEnable false;};
+                for "_child" from 10 to 39 do {(_group controlsGroupCtrl _child) ctrlEnable false;};
             };
             private _row = (_window select 1) select _slot;
             private _identity = if (_row >= 0) then {[_list,_row] call ACME_fnc_transfusionCardIdentity} else {[]};
@@ -56,7 +61,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             [_group,"show",_visible] call ACME_fnc_transfusionUiSet;
             if (_visible) then {
                 private _data = [_list,_row] call ACME_fnc_transfusionCardData;
-                _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction"];
+                _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction",["_total",0]];
                 if (_name == "") exitWith {
                     [_group,"show",false] call ACME_fnc_transfusionUiSet;
                     (_group controlsGroupCtrl 9) setVariable ["ACME_txIdentity",[]];
@@ -82,33 +87,55 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 private _vialH = (safeZoneH * 0.026) min (_rowH * 0.30);
                 private _vialW = _vialH * 0.55 * (pixelW / pixelH);
                 private _textW = (_w - _textX - _pad - (if (_vial != "") then {_vialW} else {0})) max 0;
-                // B277 responsive card text geometry. Narrow active cards stack role/temperature without shrinking type.
-                private _stackMeta = _idc in [86004,86129] && {_thermal != ""} && {_w < safeZoneH * 0.36 * (pixelW / pixelH)};
+                // Center the occupied caption block vertically, with one shared left edge for title/detail/status.
+                // Thermal text ends at the progress track's right edge, above its graduations.
+                private _hasTrack = _fraction >= 0;
+                private _trackW = _w - _textX - _pad;
+                private _trackY = _rowH * 0.79;
+                private _captionBottom = if (_hasTrack) then {_rowH * 0.75} else {_rowH * 0.91};
+                private _nameH = (safeZoneH * 0.021) min (_rowH * 0.25);
+                private _detailH = (safeZoneH * 0.017) min (_rowH * 0.22);
+                private _statusH = (safeZoneH * 0.015) min (_rowH * 0.20);
+                private _thermalH = (safeZoneH * 0.014) min (_rowH * 0.19);
+                private _contentH = _nameH + (if (_detail != "") then {_detailH} else {0}) + (if (_status != "") then {_statusH} else {0}) + (if (_thermal != "") then {_thermalH} else {0});
+                private _captionTop = ((_captionBottom - _contentH) / 2) max 0;
+                private _detailY = _captionTop + _nameH;
+                private _statusY = _detailY + (if (_detail != "") then {_detailH} else {0});
+                private _thermalW = _trackW;
+                private _thermalY = _statusY + (if (_status != "") then {_statusH} else {0});
                 private _metaPositions = [
-                    [10,[_textX,_rowH * 0.09,_textW,_rowH * 0.27]],
-                    [11,[_textX,_rowH * 0.37,_textW,_rowH * 0.25]],
-                    [12,[_pad,_rowH * 0.66,_w * 0.46,_rowH * 0.22]],
-                    [13,[_w * 0.49,_rowH * 0.66,_w * 0.46,_rowH * 0.22]]
+                    [10,[_textX,_captionTop,_textW,_nameH]],
+                    [11,[_textX,_detailY,_textW,_detailH]],
+                    [12,[_textX,_statusY,_trackW,_statusH]],
+                    [13,[_textX + _trackW - _thermalW,_thermalY,_thermalW,_thermalH]]
                 ];
-                if (_stackMeta) then {
-                    _metaPositions = [
-                        [10,[_textX,_rowH * 0.07,_textW,_rowH * 0.24]],
-                        [11,[_textX,_rowH * 0.31,_textW,_rowH * 0.21]],
-                        [12,[_textX,_rowH * 0.53,_w - _textX - _pad,_rowH * 0.19]],
-                        [13,[_pad,_rowH * 0.73,_w - 2 * _pad,_rowH * 0.18]]
-                    ];
-                };
-                private _trackY = _rowH - safeZoneH * ([0.009,0.004] select _stackMeta);
-                // Native icon and fill geometry follows the same card; no replacement medical artwork.
                 {
                     _x params ["_child","_position"];
                     [(_group controlsGroupCtrl _child),"position",_position] call ACME_fnc_transfusionUiSet;
                 } forEach (_metaPositions + [
-                    [14,[_pad,_rowH * 0.10,_iconW,_rowH * 0.53]],
-                    [15,[_w - _pad - _vialW,_rowH * 0.12,_vialW,_vialH]],
-                    [16,[_textX,_trackY,_w - _textX - _pad,safeZoneH * 0.0025]],
-                    [17,[_textX,_trackY,(_w - _textX - _pad) * (_fraction max 0),safeZoneH * 0.0025]]
+                    [14,[_pad,_captionTop,_iconW,_contentH]],
+                    [15,[_w - _pad - _vialW,_captionTop,_vialW,_vialH]],
+                    [16,[_textX,_trackY,_trackW,safeZoneH * 0.0025]],
+                    [17,[_textX,_trackY,_trackW * (_fraction max 0 min 1),safeZoneH * 0.0025]]
                 ]);
+                private _marks = [_total] call ACME_fnc_transfusionGraduations;
+                for "_mark" from 0 to 10 do {
+                    private _tick = _group controlsGroupCtrl (18 + _mark);
+                    private _label = _group controlsGroupCtrl (29 + _mark);
+                    private _shownMark = _hasTrack && {_mark < count _marks};
+                    {[_x,"show",_shownMark] call ACME_fnc_transfusionUiSet;} forEach [_tick,_label];
+                    if (_shownMark) then {
+                        (_marks select _mark) params ["_markFraction","_markMl"];
+                        private _tickX = _textX + _trackW * _markFraction;
+                        [_tick,"position",[_tickX - pixelW / 2,_trackY - safeZoneH * 0.002, pixelW max 0.0004,safeZoneH * 0.006]] call ACME_fnc_transfusionUiSet;
+                        // Center endpoint numbers on their ticks too. Half a label fits into the card padding;
+                        // clamping them into the track would halve the 0/next and last/previous spacing.
+                        private _labelW = (_trackW / ((count _marks) max 2)) min (_w * 0.15) min (2 * _pad);
+                        private _labelX = _tickX - _labelW / 2;
+                        [_label,"position",[_labelX,_trackY + safeZoneH * 0.004,_labelW,_rowH * 0.15]] call ACME_fnc_transfusionUiSet;
+                        [_label,"text",str _markMl] call ACME_fnc_transfusionUiSet;
+                    };
+                };
                 {[_group controlsGroupCtrl (10 + _forEachIndex),"text",_x] call ACME_fnc_transfusionUiSet;} forEach [_name,_detail,_status,_thermal];
                 [(_group controlsGroupCtrl 10),"color",_color] call ACME_fnc_transfusionUiSet;
                 [(_group controlsGroupCtrl 12),"color",if (_isPib) then {[0.79,0.73,0.89,1]} else {[0.66,0.66,0.66,1]}] call ACME_fnc_transfusionUiSet;
@@ -135,7 +162,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             if (_overflow) then {
                 private _thumbH = (_h * _capacity / lbSize _list) max (safeZoneH * 0.025);
                 private _thumbY = _py + (_h - _thumbH) * _offset / (((lbSize _list) - _capacity) max 1);
-                [_rail,"position",[_px + _listW - _railW,if (_piece == 0) then {_py} else {_thumbY},_railW,if (_piece == 0) then {_h} else {_thumbH}]] call ACME_fnc_transfusionUiSet;
+                [_rail,"position",[_viewportX + _listW - _railW,if (_piece == 0) then {_py} else {_thumbY},_railW,if (_piece == 0) then {_h} else {_thumbH}]] call ACME_fnc_transfusionUiSet;
             };
         };
         // Preserve lbValue/lbData/handlers. Only the native flat drawing is replaced by the card pool.

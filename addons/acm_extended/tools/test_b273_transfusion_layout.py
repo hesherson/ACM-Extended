@@ -45,7 +45,7 @@ def test_all_main_interaction_rectangles_fit_window_and_do_not_overlap(aspect):
     # Inventory's prepared overlay shares its stock-list rectangle intentionally, and the
     # nonselectable empty captions occupy their owning list; omit only those overlays.
     ids = [86002, 86003, 86037, 86006, 86004, 86170, 86128, 86129, 86131,
-           86172, 86144, 86005, 86130, 86127, 86121, 86122, 86171, 86126]
+           86172, 86214, 86144, 86005, 86130, 86127, 86121, 86122, 86171, 86126]
     boxes = [rect(idc, aspect) for idc in ids]
     bx, by, bw, bh = bounds
     for idc, (x, y, w, h) in zip(ids, boxes):
@@ -65,7 +65,13 @@ def test_fluid_list_preserves_room_for_separate_y_bags_and_bracket():
     row_height = eval(row_expression, {"__builtins__": {}}, {"safeZoneH": 1})
     assert h / row_height >= 2
     assert int(h / row_height) >= 2
-    assert x - 0.125 >= 0.0119, "bracket consumes the native bag hit target"
+    # B279 centers the same-width card in each viewport. The quiet bracket uses
+    # its actual card endpoint rather than consuming a permanent native-list inset.
+    card_left = x + (w - .202) / 2
+    rail_left = card_left - .006
+    assert rail_left >= .110 and rail_left < card_left
+    bracket = (ROOT / "addons/acm_extended/functions/fn_paintTransfusionYBracket.sqf").read_text()
+    assert "private _cardLeft = if (_cardsReady) then {(_cardPoints select 0) select 0}" in bracket
     assert x + w <= 0.337 + 1e-8
     assert w >= 0.19
 
@@ -93,7 +99,7 @@ def test_line_flow_service_and_details_have_distinct_rows(has_service):
         assert actions[1:] == service[1:]
     else:
         actions = authored_place(86170, 1)
-        assert actions[2] == pytest.approx(fixed_layout()[86004][2] + .012)
+        assert actions[2] == pytest.approx(fixed_layout()[86004][2])
         assert not overlap(actions, details)
 
 

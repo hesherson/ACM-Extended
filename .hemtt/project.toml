@@ -5,6 +5,16 @@ prefix = "ACM"
 mainprefix = "x"
 
 [files]
+exclude = [
+    "**/tools/**/*.py",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/tools/external_entry_points.json",
+    "**/tools/external_variables.json",
+    "**/tools/na8_5_b8_medication_routes.json",
+    "**/tools/na8_action_fixture.json"
+]
 include = [
     "mod.cpp",
     "logo.paa",

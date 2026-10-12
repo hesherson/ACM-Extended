@@ -86,6 +86,8 @@ if (count _newBag < 8) then {_newBag set [7, -1];};
 private _sequence = (_patient getVariable ["ACME_bagSequence", 0]) + 1;
 _patient setVariable ["ACME_bagSequence", _sequence, true];
 _newBag set [8, format ["%1:%2:%3:%4", netId _patient, [_patient] call ACME_fnc_clinicalEpoch, clientOwner, _sequence]];
+// Manufacturer capacity remains fixed when a later medication injection adds diluent.
+_newBag set [9,_newBag param [6,0]];
 // Replace the physical empty limb before publishing, including native Add Bag paths that bypass yRefill.
 _IVBagsBodyPart = [_IVBagsBodyPart, (count _IVBagsBodyPart) - 1] call ACME_fnc_yBagReplaceEmpty;
 _IVBags set [_bodyPart, _IVBagsBodyPart];

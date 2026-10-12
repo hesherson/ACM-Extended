@@ -8,6 +8,7 @@ if (_idx < 0 || {_idx >= count _store}) exitWith {false};
 private _entry = +(_store select _idx);
 private _id = _entry param [11,"",[""]];
 if (_id == "" || {(uiNamespace getVariable ["ACME_SK_DiscardArmedId",""]) != _id}) exitWith {false};
+if ((_entry param [13,"",[""]]) == "inventoryB279") exitWith {[ACE_player,_entry] call ACME_fnc_skInventoryDiscard};
 _entry params [["_med","",[""]],["_size",10,[0]],["_amt",0,[0]]];
 private _kind = _entry param [6,"",[""]];
 private _virtual = _kind in ["compoundB13","dilutionB13","epiMixB12"];

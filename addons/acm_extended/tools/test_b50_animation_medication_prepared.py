@@ -79,8 +79,9 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
     rows = rows.replace('_ctrlPreparedList lbSetTooltip [_i,_label];', '')
     rows = rows.replace('_ctrlPreparedList lbSetColor [_i,[0.79,0.73,0.89,1]];', '_renderedPreparedColors pushBack [0.79,0.73,0.89,1];')
     rows = rows.replace('_ctrlPreparedList lbSetCurSel _i;', '_restoredSelection=_i;')
-    paint = s[s.index('_ctrlSetsBtn ctrlSetText (if (_preparedMode) then {'):s.index('[_ctrlSetsBtn,"show",true]')]
+    paint = s[s.index('_ctrlSetsBtn ctrlSetText (format ["Prepared IV sets (%1)"'):s.index('[_ctrlSetsBtn,"show",true]')]
     paint = paint.replace('_ctrlSetsBtn ctrlSetText (', '_buttonLabel = (')
+    paint = paint.replace('_ctrlSetsBtn ctrlSetFontHeight', '_paintFontHeight =').replace('safeZoneH','1')
     paint = paint.replace('_ctrlSetsBtn ctrlSetBackgroundColor', '_paintBackground =')
     paint = paint.replace('_ctrlSetsBtn ctrlSetTextColor', '_paintText =')
     execute(r'''
@@ -106,22 +107,22 @@ def test_prepared_iv_sets_button_counts_and_pulses_green():
         [_renderedPrepared isEqualTo ["prop-bottle"] && {_renderedPreparedIndices isEqualTo [0]},"prepared bottle is missing or duplicated in Prepared Infusions"] call _check;
         [_restoredSelection==0,"prepared selection mapping was lost"] call _check;
         [count (ACE_player getVariable "ACME_preparedIVSets")==2,"UI filtering destroyed paired bottle custody"] call _check;
-        private _paintBackground=[];private _paintText=[];private _buttonLabel="";
+        private _paintBackground=[];private _paintText=[];private _buttonLabel="";private _paintFontHeight=0;
         private _paint={
     ''' + adapt(paint) + r'''
         };
         {
             _nowTime=_x;call _paint;
-            [_paintBackground isEqualTo [0,0,0,0] && {_paintText isEqualTo [1,1,1,1]},"prepared toggle obscured rounded surface or lost neutral text"] call _check;
-            [_buttonLabel=="Prepared IV sets (1)  >>","plain-set count missing from toggle"] call _check;
+            [_paintBackground isEqualTo [0.18,0.18,0.18,1] && {_paintFontHeight==.017},"prepared tab lost its visible neutral grey surface or type size"] call _check;
+            [_buttonLabel=="Prepared IV sets (1)","plain-set count missing from toggle"] call _check;
         } forEach [0,0.25,0.5,0.75];
         _preparedMode=true;call _paint;
-        [_buttonLabel=="<<  Loose Bags | Prepared IV sets (1)","prepared view cannot return to loose bags"] call _check;
+        [_buttonLabel=="Prepared IV sets (1)","prepared tab changed its title when selected"] call _check;
         ACE_player setVariable ["ACME_preparedIVSets",[_bottle]];
     ''' + adapt(count) + r'''
         [_preparedSetCountB50==0,"bottle-only inventory should show zero plain prepared IV sets"] call _check;
         call _paint;
-        [_paintBackground isEqualTo [0,0,0,0] && {_buttonLabel=="<<  Loose Bags | Prepared IV sets (0)"},"bottle-only custody changed plain-set count or transparent native overlay"] call _check;
+        [_paintBackground isEqualTo [0.18,0.18,0.18,1] && {_buttonLabel=="Prepared IV sets (0)"},"bottle-only custody changed plain-set count or grey tab surface"] call _check;
         private _salineA=["saline-a","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
         private _salineB=["saline-b","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
         ACE_player setVariable ["ACME_infusion_PreparedBags",[_salineA,_prepared,_salineB]];

@@ -8,7 +8,9 @@ private _provider = _args select 0;
 private _patient = _args select 1;
 if (isNull _provider || {!local _provider}) exitWith {};
 if (isNull _patient) exitWith {};
-[_patient,"piggybackAttach",_args] call ACME_fnc_ownerDispatch;
+if !(([_provider,"prepared",_args select 3,_id] call ACME_fnc_inventoryLedgerCertificate) isEqualTo []) then {
+    [_patient,"piggybackAttach",_args] call ACME_fnc_ownerDispatch;
+};
 // Keep reconciliation active but bounded. A later menu reopening can retry retained requests.
 if (CBA_missionTime - (_pending select 1) <= 120) then {
     [{_this call ACME_fnc_piggybackRetry;},[_id],1] call CBA_fnc_waitAndExecute;

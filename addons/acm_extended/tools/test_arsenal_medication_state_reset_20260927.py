@@ -1,5 +1,6 @@
 from historical_source import read_source
 from pathlib import Path
+from source_scan import lex, matching, render, split_args
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -38,6 +39,38 @@ def test_reset_function_is_registered():
 
 def test_death_keeps_the_partial_vial_ledger_on_the_corpse():
     s = read("functions/fn_registerSyringeLifecycleRuntime.sqf")
-    killed = s.split('player addEventHandler ["Killed"', 1)[1].split('player addEventHandler ["Respawn"', 1)[0]
-    assert "ACME_fnc_narcStoreCommit" in killed
-    assert "ACME_fnc_resetPersonalMedicationKit" not in killed
+    # B279 also preserves tangible prepared syringes. Parse the actual handler
+    # so a reset call or selection cleanup in a comment cannot satisfy the gate.
+    tokens = lex(s)
+    pairs = matching(tokens)
+    handlers = []
+    for i, token in enumerate(tokens[:-1]):
+        if token.kind != "ident" or token.value != "addEventHandler" or tokens[i + 1].value != "[":
+            continue
+        opening = i + 1
+        arguments = split_args(tokens, opening + 1, pairs[opening], pairs)
+        if len(arguments) == 2 and len(arguments[0]) == 1 and arguments[0][0].kind == "string" and arguments[0][0].value == "Killed":
+            assert arguments[1][0].value == "{" and arguments[1][-1].value == "}"
+            handlers.append(arguments[1])
+    assert len(handlers) == 1, "Expected one actual Killed handler"
+    killed = handlers[0]
+    references = {token.value for token in killed if token.kind == "ident"}
+    assert not references.intersection({
+        "ACME_fnc_narcStoreCommit", "ACME_fnc_openVialStoreCommit",
+        "ACME_fnc_resetPersonalMedicationKit", "ACME_fnc_inventoryLedgerCommit",
+        "ACME_fnc_inventoryLedgerSettle",
+    }), "Death must preserve opened-vial contents and transferable corpse syringes"
+    body = render(killed)
+    for statement in (
+        'uiNamespace setVariable ["ACME_SK_SelectedSyringeId", ""];',
+        'uiNamespace setVariable ["ACME_SK_CarouselIdx", -1];',
+        'uiNamespace setVariable ["ACME_SK_SelDrawn", -1];',
+    ):
+        assert render(lex(statement)) in body, ("Killed", statement)
+    killed_pairs = matching(killed)
+    for i, token in enumerate(killed[:-1]):
+        if token.kind == "ident" and token.value == "setVariable" and killed[i + 1].value == "[":
+            opening = i + 1
+            arguments = split_args(killed, opening + 1, killed_pairs[opening], killed_pairs)
+            assert not (arguments and len(arguments[0]) == 1 and arguments[0][0].kind == "string"
+                        and arguments[0][0].value in {"ACME_narcStore", "ACME_infusion_openVials"}), "Death must not overwrite corpse stock directly"
