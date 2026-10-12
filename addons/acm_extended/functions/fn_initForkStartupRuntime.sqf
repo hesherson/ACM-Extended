@@ -1,8 +1,8 @@
 ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");
 if (ACME_infusion_version == "") then { ACME_infusion_version = "1.2.4.1"; };
-ACME_buildBatch = "B280";
+ACME_buildBatch = "B281";
 ACME_debugRevision = "";
-ACME_networkAuditRevision = "NA8-B280-1.2.4.1-candidate";
+ACME_networkAuditRevision = "NA8-B281-1.2.4.1-candidate";
 diag_log format ["[ACME BUILD] version=%1 batch=%2 revision=%3",ACME_infusion_version,ACME_buildBatch,ACME_networkAuditRevision];
 
 /*
@@ -21,6 +21,7 @@ call ACME_fnc_chestSealNetInit;
 [] call ACME_fnc_ventCustodyInit;
 [] call ACME_fnc_aiProtectionInit;
 [{ call ACME_fnc_ownerInit; }, []] call CBA_fnc_execNextFrame;
+[] call ACME_fnc_registerFlightContainmentRuntime;
 call ACME_fnc_registerManualPlateCarrierRuntime;
 call ACM_core_fnc_registerEquipmentKitRuntime;
 

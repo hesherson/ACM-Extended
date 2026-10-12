@@ -1,6 +1,15 @@
 /* NA4 patient fields: [name, clock-kind, clear-on-full-heal, persist=true].
    Supplier transaction ledgers and runtime handler ownership are not saved patient state. */
 [
+  // Flight exposure is derived from current geometry/configuration; scheduler/containment leases are never saved.
+  ["ACME_alt_ambientRatio", "", true, false],
+  ["ACME_alt_ptxSample", "", true, false],
+  ["ACME_alt_tickStamp", "", true, false],
+  ["ACME_flight_tickActive", "", true, false],
+  ["ACME_flightContainment", "", true, false],
+  ["ACME_flightContainmentContext", "", true, false],
+  ["ACME_flightContainmentSerial", "", false, false],
+  ["ACME_flightContainmentLocalSerial", "", false, false],
   ["ACME_vent_o2Session","",true,false],
   ["ACME_vent_o2Source","",true,false],
   ["ACME_vent_o2Medic","",true,false],

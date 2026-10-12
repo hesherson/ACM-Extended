@@ -14,6 +14,7 @@ from test_b156_procedure_supplies import primitives
 from test_b156_shared_action_gates import setup as gate_setup, ACTIONS
 from test_b208_dead_device_interventions import breath_setup, breath_call
 from test_historical_procedure_trays import ui_code
+from b281_flight_fixture import ground_exposure_setup
 
 
 def production(name):
@@ -156,7 +157,7 @@ def test_missing_inventory_ack_releases_mask_reservation():
 
 
 def drive_setup():
-    return setup()+'''
+    return setup()+ground_exposure_setup()+'''
         private _runtime=[];
         ACME_fnc_clinicalTickDelta={0.25};
         ACME_fnc_ventShuntCommit={};

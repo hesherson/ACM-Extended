@@ -15,6 +15,7 @@ private _preox = if (_fullAudit) then {[]} else {(missionNamespace getVariable [
 private _aspiration = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_aspiration_activePatients", []]) - _units};
 private _shock = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_shock_activePatients", []]) - _units};
 private _rhythmThreshold = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_rhythmThreshold_activePatients", []]) - _units};
+private _flight = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_flight_activePatients", []]) - _units};
 // These three hot workers own their own retirement. Preserve an already enrolled local patient
 // through the discovery pass so a direct treatment/event enrollment cannot be erased before its first tick.
 private _circPatients = if (_fullAudit) then {
@@ -32,6 +33,14 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
 {
     private _u = _x;
     if (isNull _u || {!local _u} || {!alive _u}) then {continue};
+
+    // Flight exposure is independent of injury/treatment enrollment. Keep its
+    // 4 Hz work bounded to actually exposed occupants or a final cleanup pass.
+    // The guard also permits legacy isolated discovery fixtures without the
+    // newly registered production helper; compiled game runtime has it present.
+    if (!isNil "ACME_fnc_flightNeedsTick" && {[_u] call ACME_fnc_flightNeedsTick}) then {
+        _flight pushBackUnique _u;
+    };
 
     // Preoxygenation: displaced reserve, active respiratory support, or a state
     // capable of consuming/limiting reserve.
@@ -193,3 +202,4 @@ ACME_rhythmThreshold_activePatients = _rhythmThreshold;
 ACME_circ_activePatients = _circPatients;
 ACME_coag_activePatients = _coag;
 ACME_infusion_activePatients = _infusion;
+ACME_flight_activePatients = _flight;

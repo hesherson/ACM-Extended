@@ -83,7 +83,11 @@ class SimpleVentContracts(unittest.TestCase):
 
     def test_all_cross_system_dial_consumers_use_effective_settings(self):
         for f in ('ventDriveTick','ventAlarmTick','ventBatteryTick','blastLungTick','altitudeTick','oxygenDelivery','tbiHandle','hcVentTick','ventSimpleManualBreath'):
-            self.assertIn('call ACME_fnc_ventEffectiveSettings',source(f),f)
+            if f == 'altitudeTick':
+                self.assertIn('call ACME_fnc_altitudeOxygenCeiling',source(f),f)
+                self.assertIn('call ACME_fnc_ventEffectiveSettings',source('altitudeOxygenCeiling'))
+            else:
+                self.assertIn('call ACME_fnc_ventEffectiveSettings',source(f),f)
 
     def test_simple_mode_uses_real_hardware_and_airway(self):
         s=source('ventDriveTick')

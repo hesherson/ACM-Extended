@@ -169,6 +169,8 @@ ACME_NA2_ownerInstalled = true;
     _unit setVariable ["ACME_clinicalLastOwner", -1];
     _unit setVariable ["ACME_nativeWorkerOwner", nil, false];
     _unit setVariable ["ACME_alt_ptxSample", nil, false];
+    _unit setVariable ["ACME_alt_tickStamp", nil, false];
+    _unit setVariable ["ACME_flight_tickActive", nil, false];
     _unit setVariable ["ACME_nativeVomitWorker", [], false];
     {
         private _h = _unit getVariable [_x, -1];
@@ -183,7 +185,7 @@ ACME_NA2_ownerInstalled = true;
     {
         private _list = missionNamespace getVariable [_x, []];
         missionNamespace setVariable [_x, _list - [_unit]];
-    } forEach ["ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_coag_activePatients", "ACME_preox_activePatients", "ACME_aspiration_activePatients", "ACME_shock_activePatients", "ACME_rhythmThreshold_activePatients", "ACME_rhythm_activePatients"];
+    } forEach ["ACME_flight_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_coag_activePatients", "ACME_preox_activePatients", "ACME_aspiration_activePatients", "ACME_shock_activePatients", "ACME_rhythmThreshold_activePatients", "ACME_rhythm_activePatients"];
     private _drain = _unit getVariable ["ACME_thora_drainPFH", -1];
     if (_drain >= 0) then { [_drain] call CBA_fnc_removePerFrameHandler; };
     _unit setVariable ["ACME_thora_drainPFH", -1, false];
@@ -322,7 +324,7 @@ ACME_NA2_ownerInstalled = true;
     };
     {
         missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) select {!isNull _x && {local _x} && {alive _x}}];
-    } forEach ["ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_coag_activePatients", "ACME_preox_activePatients", "ACME_aspiration_activePatients", "ACME_shock_activePatients", "ACME_rhythmThreshold_activePatients", "ACME_rhythm_activePatients"];
+    } forEach ["ACME_flight_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_coag_activePatients", "ACME_preox_activePatients", "ACME_aspiration_activePatients", "ACME_shock_activePatients", "ACME_rhythmThreshold_activePatients", "ACME_rhythm_activePatients"];
 }, 1, []] call CBA_fnc_addPerFrameHandler;
 if (isServer) then {
     ACME_nrb_soundRegistry = createHashMap;

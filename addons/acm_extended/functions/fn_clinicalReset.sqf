@@ -2,6 +2,8 @@
 params ["_patient", ["_phase", "finish"], ["_preserveJunctional", false]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_phase == "begin") exitWith {
+    // Retire the exact local floor lease before its handler/context fields are cleared by a full heal.
+    if (!isNil "ACME_fnc_flightContainmentStop") then {[_patient] call ACME_fnc_flightContainmentStop;};
     [_patient] call ACME_fnc_ventOxygenClear;
     // A reusable downstream warmer keeps physical custody when a full heal
     // detaches the patient's lines. Each exact assembly returns once.
@@ -59,6 +61,8 @@ if (_phase == "begin") exitWith {
     _patient setVariable ["ACME_juncWorker", [], false];
     _patient setVariable ["ACME_nativeVomitWorker", [], false];
     _patient setVariable ["ACME_alt_ptxSample", nil, false];
+    _patient setVariable ["ACME_alt_tickStamp", nil, false];
+    _patient setVariable ["ACME_flight_tickActive", nil, false];
     _patient setVariable ["ACME_nativeVomitActive", false, true];
     _patient setVariable ["ACME_JuncBleedActive", false, false];
     _patient setVariable ["ACME_junctionalBleedLPS", 0, false];
@@ -67,7 +71,7 @@ if (_phase == "begin") exitWith {
     _patient setVariable ["ACME_nrb_session", "", true];
     _patient setVariable ["ACME_nrb_o2Pending", 0, true];
     {private _k = toLowerANSI _x; if ((_k find "acme_clock_") == 0 || {(_k find "acme_clamprate_") == 0}) then {_patient setVariable [_x, nil, false];};} forEach allVariables _patient;
-    {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_coag_activePatients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
+    {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_flight_activePatients", "ACME_coag_activePatients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
 };
 // Physical equipment is detached, not converted into inventory by a medical full heal.
 if ((_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient) then {

@@ -100,9 +100,8 @@ private _getMedEffect = {
     // running ventilator. if this patient is intubated, configured and connected to a running vent, the vent
     // breathes for them and keeps ACM's BVM oxygenation alive at the set rate and FiO2. that matters most for a
     // paralyzed, apneic casualty.
-    // order matters. altitude runs first, because it publishes the ambient pressure ratio the oxygenation model of
-    // the ventilator needs. run it the other way round and the vent computes a saturation that altitude then
-    // overwrites a few lines later, which silently throws away the whole shunt model on any terrain above 500 m.
+    // The independent flight worker samples pressure before this worker. Oxygen writers also resolve exposure
+    // directly, so healthy players and a teleport between scheduler passes use the same current pressure.
     // the tick delta is resolved before any sub-tick runs. it used to be computed further down, after the
     // ventilator ticks below were called. because call runs in the caller's scope, fn_ventdrivetick reads _dt
     // straight out of here. with the definition below the calls it was reading an undefined variable, erroring out
@@ -132,7 +131,6 @@ private _getMedEffect = {
     _state set ["acidTickDt", _acidDt];
 
     [_patient] call ACME_fnc_vomitDislodgeOPA;
-    [_patient] call ACME_fnc_altitudeTick;
     [_patient] call ACME_fnc_ventLeashTick;
     // slow air accumulation from repeated needle decompressions. see fn_ncdairleaktick.
     [_patient] call ACME_fnc_ncdAirLeakTick;

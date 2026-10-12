@@ -10,6 +10,7 @@ import pytest
 from test_menu_death_lifecycle import ROOT, read, adapt, execute
 from test_b156_procedure_supplies import primitives
 from source_scan import lex, matching
+from b281_flight_fixture import ground_exposure_setup
 
 HELPERS = ("ventOxygenReserve", "ventOxygenSource", "ventOxygenState", "ventOxygenFiO2",
            "ventOxygenClear", "ventOxygenRequest", "ventOxygenCommit", "ventOxygenTick",
@@ -285,7 +286,7 @@ def test_retired_sessions_pruned_live_pending_certificate_retained():
 
 
 def delivery_setup():
-    return setup() + r'''
+    return setup() + ground_exposure_setup() + r'''
       private _gasWrites=[];private _driveDelta=0.25;
       ACME_fnc_setVarNetApprox=ACME_fnc_setVarNet;
       ACME_fnc_clinicalTickDelta={_driveDelta};

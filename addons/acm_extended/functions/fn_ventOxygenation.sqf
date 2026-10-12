@@ -31,7 +31,10 @@ _shunt = (_shunt max 0) min 0.80;
 [_patient, _shunt, true, false] call ACME_fnc_ventShuntCommit;
 
 private _ceiling = 99 - (_shunt * 52);
-private _pRatio = _patient getVariable ["ACME_alt_pRatio", 1];
+private _exposure = [_patient] call ACME_fnc_flightExposure;
+private _pRatio = if ((missionNamespace getVariable ["ACME_sys_flight", true])
+    && {(missionNamespace getVariable ["ACME_altitude_enable", true])
+        || {missionNamespace getVariable ["ACM_breathing_altitudeAffectOxygen", false]}}) then {_exposure select 2} else {1};
 private _fio2Eff = ((_fio2 / 100) * _pRatio) max 0.21;
 private _fio2Lift = linearConversion [0.21, 1.0, _fio2Eff, 0, 1, true];
 private _targetSat = _ceiling - ((1 - _fio2Lift) * (_shunt * 30));
@@ -44,4 +47,6 @@ if (_comp < 0.35) then {
 // without turning every small aspiration into blast-lung-level stiffness.
 _targetSat = _targetSat - (3 * _aspInjury);
 
-((_targetSat max 55) min 99)
+// Retain shunt/recruitment/PEEP response, then constrain it by the same actual
+// cabin pressure and delivered oxygen used by the native saturation writer.
+((_targetSat max 55) min 99) min ([_patient, _exposure, _fio2] call ACME_fnc_altitudeOxygenCeiling)

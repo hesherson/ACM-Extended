@@ -40,6 +40,14 @@ if (_medicalWake) then {
     [_unit,true,true] call FUNC(setWasTreated);
     [_unit,true,true] call FUNC(setLyingState);
 };
+// B281 captures actual supported walkable-aircraft contact before native
+// ragdoll. Seated crew and unsupported HALO/freefall retain the native path.
+// The floor lease never changes ACE medical state or engine consciousness.
+if (!isNil "ACME_fnc_flightContainmentBegin") then {
+    if (_isUnconscious) then {[_unit] call ACME_fnc_flightContainmentBegin;} else {
+        [_unit] call ACME_fnc_flightContainmentStop;
+    };
+};
 _unit setUnconscious _isUnconscious;
 
 if (_isUnconscious) then {

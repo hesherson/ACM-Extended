@@ -33,12 +33,16 @@ def test_current_phase53_no_extended_acm_writers():
         text = read(rel)
         assert "ACM_CBRN_fnc_setBreathingAbilityState" in text, rel
 
-    for rel in (
-        "addons/acm_extended/functions/fn_altitudeTick.sqf",
-        "addons/acm_extended/functions/fn_ventDriveTick.sqf",
-    ):
-        text = read(rel)
-        assert "ACM_core_fnc_setTargetVitalsState" in text, rel
+    text = read("addons/acm_extended/functions/fn_ventDriveTick.sqf")
+    assert "ACM_core_fnc_setTargetVitalsState" in text
+    # Altitude now composes a read-only ceiling at the native oxygen writer;
+    # it must not replace a target owned by another clinical system.
+    altitude = read("addons/acm_extended/functions/fn_altitudeTick.sqf")
+    assert "call ACME_fnc_altitudeOxygenCeiling" in altitude
+    assert "call ACM_core_fnc_setTargetVitalsState" not in altitude
+    oxygen = read("addons/core/overrides/fnc_updateOxygen.sqf")
+    assert "call ACME_fnc_altitudeOxygenCeiling" in oxygen
+    assert "_nativeOxygenTarget min _altitudeCeiling" in oxygen
 
     # Reject direct native ACM publication from the Extended addon. Native reads are intentionally public API and remain valid.
     direct_literal = re.compile(r"\bsetVariable\s*\[\s*[\"']ACM_[^\"']+[\"']", re.I)
