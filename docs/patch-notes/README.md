@@ -42,6 +42,8 @@ Use this announcement format for release notes. Do not use em dashes or unnecess
 
 ## Individual patch records
 
+- [B278 transfusion input and labels](2026-10-12-b278-transfusion-input-and-labels.md)
+
 - [B277 ventilator oxygen and transfusion styling](2026-10-11-b277-ventilator-oxygen-and-transfusion-style.md)
 - [B276 oxygen requirement and menu styling](2026-10-12-b276-oxygen-menu.md)
 - [B275 connected transfusion menu](2026-10-11-b275-connected-transfusion-menu.md)

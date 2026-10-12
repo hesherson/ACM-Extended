@@ -5,8 +5,8 @@ if (_medications isNotEqualTo []) exitWith {
     {
         private _name = toLowerANSI (_x param [11, ""]);
         private _abbr = switch (_name) do {
-            case "calciumchloride";
-            case "calciumgluconate": {"Ca"};
+            case "calciumchloride": {"CaCl"};
+            case "calciumgluconate": {"CaGlu"};
             case "tranexamicacid";
             case "txa": {"TXA"};
             case "propofol": {"PRO"};
@@ -27,8 +27,8 @@ switch (toLowerANSI _type) do {
     case "hts";
     case "hts3": {"HTS"};
     case "magnesium": {"Mg"};
-    case "calciumchloride";
-    case "calciumgluconate": {"Ca"};
+    case "calciumchloride": {"CaCl"};
+    case "calciumgluconate": {"CaGlu"};
     case "tranexamicacid";
     case "txa": {"TXA"};
     case "propofol": {"PRO"};

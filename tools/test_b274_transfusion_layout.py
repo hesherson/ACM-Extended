@@ -128,7 +128,7 @@ def test_line_details_are_inline_and_do_not_create_a_nested_display():
     assert "createDialog" not in open_details + update_details
     assert "findDisplay 86190" not in LAYOUT + open_details + update_details
     assert "call ACME_fnc_updateTransfusionLineDetails" in LAYOUT
-    assert runtime_rect(86171) == pytest.approx((.355, .812, .290, .078))
+    assert runtime_rect(86171) == pytest.approx((.125, .822, .212, .068))
     # The inline painter stays on the existing menu tick and cannot modify care.
     assert "ownerDispatch" not in update_details
     assert "addPerFrameHandler" not in update_details

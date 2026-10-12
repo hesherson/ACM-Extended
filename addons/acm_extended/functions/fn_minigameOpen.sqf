@@ -21,8 +21,11 @@
 // to work. turn it on, open a thoracostomy, and answer the four questions in the patch notes. if the mouse holds
 // up, the other two follow in one build and a great deal of code gets deleted. if it does not, flip the switch
 // back and nothing was lost.
-params ["_dialogClass"];
+params ["_dialogClass", ["_guard", {true}, [{}]], ["_guardArgs", [], [[]]]];
 if (!hasInterface) exitWith {};
+// Callers with a deferred preparation episode can guard its exact identity.
+// Default callers retain the existing behavior; never close a newer UI first.
+if !(_guardArgs call _guard) exitWith {};
 
 // record how this panel is being opened rather than what the setting says. they are not the same thing, because
 // display mode currently converts only the thoracostomy, so with the switch on, the iv and chest seal are still
@@ -61,7 +64,8 @@ while {dialog} do { closeDialog 0; };
 // a frame, so the closing dialog is fully gone before the display takes its place. creating a display in the same
 // frame that a dialog is tearing down is asking for the focus to land in the wrong place.
 [{
-    params ["_cls", "_p"];
+    params ["_cls", "_p", "_guard", "_guardArgs"];
+    if !(_guardArgs call _guard) exitWith {};
     if (isNull _p) exitWith { createDialog _cls; };
     _p createDisplay _cls;
-}, [_dialogClass, _parent]] call CBA_fnc_execNextFrame;
+}, [_dialogClass, _parent, _guard, +_guardArgs]] call CBA_fnc_execNextFrame;

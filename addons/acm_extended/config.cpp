@@ -2820,6 +2820,7 @@ class CfgFunctions {
             class transfusionTakeSelected {};
             class fluidLabelVolume {};
             class infusionName {};
+            class infusionTitle {};
             class assessmentReadout {};
             class transfusionTagRect {};
             class lineWarmer {};
@@ -4680,7 +4681,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class AddBagButton: StopTransfusionButton {
             idc = 86140;
             text = "Spike Bag";
-            action = "call ACME_fnc_transfusionSpikeOrAdd";
+            action = "[] call ACME_fnc_transfusionSpikeOrAdd";
             tooltip = "Spike the selected bag (consumes one IV line), then press again to hang it.";
         };
         // a new pull bag button, for our exact-volume, y-preserving pull. it inherits the forward-declared
@@ -4806,7 +4807,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
             x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.173";
             y = "safeZoneY + safeZoneH * 0.526";
             w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.202";
-            action = "call ACME_fnc_transfusionSpikeOrAdd";
+            action = "[] call ACME_fnc_transfusionSpikeOrAdd";
             tooltip = "Spike the selected bag (consumes one IV line), then press again to hang it.";
         };
         // y-tubing button. it appears next to spike bag when a medic selects a blood bag. it builds a y set, which
@@ -4815,7 +4816,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_YTubingButton: ACME_SpikeBagButton {
             text = "Spike Y tubing";
             idc = 86142;
-            action = "call ACME_fnc_transfusionYTubing";
+            action = "[] call ACME_fnc_transfusionYTubing";
             tooltip = "Build a Y-type blood line: consumes a Y tubing set and pairs a saline bag to the blood unit.";
         };
         // flush line button. it appears above infuse when the selected blood line needs a flush between units.
@@ -4833,7 +4834,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_PreparedSetsButton: ACME_SpikeBagButton {
             text = "Prepared IV sets";
             idc = 86144;
-            action = "call ACME_fnc_togglePreparedSets";
+            action = "[] call ACME_fnc_togglePreparedSets";
             tooltip = "Show your prepared IV sets. Build one with Spike Y tubing, Select Flush Saline, then Build Y Tubing.";
         };
         // overlay listbox for the prepared iv sets. it shows in place of the native bag list, 86005, while the prepared

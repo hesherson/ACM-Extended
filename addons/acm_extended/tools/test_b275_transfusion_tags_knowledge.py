@@ -80,7 +80,7 @@ def test_malformed_dogtag_data_does_not_establish_blood_type_knowledge(data):
     ''')
 
 
-@pytest.mark.parametrize('kind,want',[('Blood','B'),('FreshBlood','B'),('ACME_SalineY','NS'),('Plasma','P'),('Saline','NS'),('TranexamicAcid','TXA'),('CalciumChloride','Ca'),('CalciumGluconate','Ca'),('Propofol','PRO')])
+@pytest.mark.parametrize('kind,want',[('Blood','B'),('FreshBlood','B'),('ACME_SalineY','NS'),('Plasma','P'),('Saline','NS'),('TranexamicAcid','TXA'),('CalciumChloride','CaCl'),('CalciumGluconate','CaGlu'),('Propofol','PRO')])
 def test_bag_tags_keep_compact_recognizable_fluid_shorthand(kind,want):
     execute(fn('transfusionFluidShorthand') + f'[["{kind}"] call ACME_fnc_transfusionFluidShorthand=="{want}","wrong native bag shorthand"] call _check;')
 

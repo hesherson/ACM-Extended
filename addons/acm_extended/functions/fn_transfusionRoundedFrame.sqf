@@ -9,8 +9,11 @@ if ((_group getVariable ["ACME_txFrameSignature",[]]) isEqualTo _signature) exit
 _group setVariable ["ACME_txFrameSignature",_signature];
 [_group,"position",_rect] call ACME_fnc_transfusionUiSet;
 _rect params ["","","_w","_h"];
-private _ry = (safeZoneH * _radius) min (_h / 2) min (_w * (pixelH / pixelW) / 2);
-private _rx = _ry * (pixelW / pixelH);
+// One integer pixel radius is shared by every corner. Fractional screen-unit
+// radii can round differently on opposing slices when the UI is stretched.
+private _radiusPixels = floor (((safeZoneH * _radius / pixelH) min (_h / pixelH / 2) min (_w / pixelW / 2)) max 0);
+private _ry = _radiusPixels * pixelH;
+private _rx = _radiusPixels * pixelW;
 private _widths = [_rx,(_w - 2 * _rx) max 0,_rx];
 private _heights = [_ry,(_h - 2 * _ry) max 0,_ry];
 private _xs = [0,_rx,_w - _rx];

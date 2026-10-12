@@ -23,6 +23,7 @@ if (!isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])
 ace_medical_gui_pendingReopen = false;
 call ACM_GUI_fnc_pauseMedicalMenuPFH;
 private _oldMedicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+private _sourceMedicalEpoch = uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0];
 if (!isNull _oldMedicalMenu) then {_oldMedicalMenu closeDisplay 1;};
 if (dialog) then {closeDialog 0;};
 uiNamespace setVariable ["ACME_CS_Medic", _medic];
@@ -56,8 +57,17 @@ uiNamespace setVariable ["ACME_CS_EntryKeys", _keys];
 // Register pending viewers too, so disconnect/death before onLoad cannot strand a workspace token.
 ["ACME_CS_session", [_patient, _medic, "join", _sessionToken]] call CBA_fnc_serverEvent;
 private _open = {
-    params ["_p", "_tok", "_m"];
+    params ["_p", "_tok", "_m", "_sourceMedicalMenu", "_generation", "_sourceMedicalEpoch", "_patientOwner"];
     if ((uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != _tok) exitWith {};
+    // Opening the medical menu during preparation is an explicit cancellation.
+    // Never replace that newer display, including on the readiness frame.
+    // Its renderer epoch also catches a key press/release that opened and
+    // closed the medical display before this preparation worker next ran.
+    private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+    if ((uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0]) != _sourceMedicalEpoch
+        || {!isNull _medicalMenu && {_medicalMenu isNotEqualTo _sourceMedicalMenu}}) exitWith {
+        [] call ACME_fnc_chestSealClose;
+    };
     if (isNull _p || {isNull _m} || {!alive _m} || {!local _m}
         || {_m getVariable ["ACE_isUnconscious", false]}
         || {objectParent _m isNotEqualTo objectParent _p}
@@ -80,7 +90,28 @@ private _open = {
     _m setVariable ["ACME_CS_providerHoldEpoch", _holdEpoch, false];
     uiNamespace setVariable ["ACME_CS_ProviderHoldEpoch", _holdEpoch];
 
-    ["ACME_ChestSeal_Dialog"] call ACME_fnc_minigameOpen;
+    // Experimental display mode creates its panel on the next frame. Recheck
+    // this exact session and source menu there too: a late open cannot replace
+    // an H-opened medical menu or create a dialog after cancel/retry.
+    private _mayOpen = {
+        params ["_token", "_sourceMenu", "_patient", "_medic", "_generation", "_kitEpoch", "_medicalEpoch",
+            "_patientOwner", "_providerLocalityEpoch"];
+        private _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+        (uiNamespace getVariable ["ACME_CS_SessionToken", ""]) == _token
+            && {(uiNamespace getVariable ["ACME_CS_SessionSerial", -1]) == _generation}
+            && {(uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0]) == _medicalEpoch}
+            && {!isNull _patient} && {!isNull _medic} && {local _medic} && {alive _medic}
+            && {!(_medic getVariable ["ACE_isUnconscious", false])}
+            && {(uiNamespace getVariable ["ACME_CS_Patient", objNull]) isEqualTo _patient}
+            && {(uiNamespace getVariable ["ACME_CS_Medic", objNull]) isEqualTo _medic}
+            && {(_patient getVariable ["ACME_equipmentKitEpoch", 0]) == _kitEpoch}
+            && {owner _patient == _patientOwner}
+            && {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) == _providerLocalityEpoch}
+            && {isNull _menu || {_menu isEqualTo _sourceMenu}}
+    };
+    ["ACME_ChestSeal_Dialog", _mayOpen, [_tok, _sourceMedicalMenu, _p, _m, _generation,
+        uiNamespace getVariable ["ACME_CS_PatientKitEpoch", 0], _sourceMedicalEpoch,
+        _patientOwner, _m getVariable ["ACME_providerLocalityEpoch", 0]]] call ACME_fnc_minigameOpen;
     [{
         params ["_p", "_tok"];
         if ((uiNamespace getVariable ["ACME_CS_SessionToken", ""]) == _tok
@@ -92,13 +123,18 @@ private _open = {
 private _entryPFH = [{
     params ["_args", "_pfh"];
     _args params ["_p", "_tok", "_m", "_open", "_patientOwner", "_joined", "_presentationUntil",
-        "_deadline", "_nextRetry", "_retryCount"];
+        "_deadline", "_nextRetry", "_retryCount", "_sourceMedicalMenu", "_generation", "_sourceMedicalEpoch"];
     if ((uiNamespace getVariable ["ACME_CS_SessionToken", ""]) != _tok) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };
     // A deleted patient is objNull on this machine. Do not attempt its
     // replicated token/member lookup after removal or respawn.
     if (isNull _p) exitWith {[] call ACME_fnc_chestSealClose;};
+    private _medicalMenu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
+    if ((uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0]) != _sourceMedicalEpoch
+        || {!isNull _medicalMenu && {_medicalMenu isNotEqualTo _sourceMedicalMenu}}) exitWith {
+        [] call ACME_fnc_chestSealClose;
+    };
     if ((_p getVariable ["ACME_equipmentKitEpoch", 0]) != (uiNamespace getVariable ["ACME_CS_PatientKitEpoch", 0])) exitWith {
         [] call ACME_fnc_chestSealClose;
     };
@@ -165,7 +201,7 @@ private _entryPFH = [{
     };
     if (_mode == "chestAccess" && {_stage < 3} && {CBA_missionTime < _presentationUntil}) exitWith {};
     [_pfh] call CBA_fnc_removePerFrameHandler;
-    [_p, _tok, _m] call _open;
+    [_p, _tok, _m, _sourceMedicalMenu, _generation, _sourceMedicalEpoch, _patientOwner] call _open;
 }, 0, [_patient, _sessionToken, _medic, _open, owner _patient, false, -1,
-    CBA_missionTime + 30, CBA_missionTime + 3, 0]] call CBA_fnc_addPerFrameHandler;
+    CBA_missionTime + 30, CBA_missionTime + 3, 0, _oldMedicalMenu, _serial, _sourceMedicalEpoch]] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_CS_EntryPFH", _entryPFH];

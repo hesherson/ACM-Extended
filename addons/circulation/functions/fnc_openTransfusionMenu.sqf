@@ -58,6 +58,12 @@ GVAR(TransfusionMenu_Selected_AccessSite) = -1;
 GVAR(TransfusionMenu_Selected_BodyPart) = toLowerANSI _bodyPart;
 GVAR(TransfusionMenu_Selected_Inventory) = -1;
 
+// Every dialog owns fresh selection handles. A previous patient's true index is
+// not a bag identity and must never select a different infusion after reopening.
+missionNamespace setVariable ["ACME_infusion_SelectedActiveInfusionSelectionIndex", -1];
+missionNamespace setVariable ["ACME_infusion_SelectedActiveInfusionTrueIndex", -1];
+missionNamespace setVariable ["ACME_pull_selTrueIndex", -1];
+
 // Restore the precise return route before creating controls or running a single picker refresh.
 // This preserves a piggyback intent on lower/middle IVs, IO and either EJ through the existing prep workspace.
 if (count _returnAccess == 2) then {
@@ -130,6 +136,13 @@ if (isNull _display) exitWith {
     };
 };
 
+// Layout anchors and selector signatures are display-scoped, including native
+// platforms that recycle a dialog handle after closing it.
+uiNamespace setVariable ["ACME_infusion_LayoutDisplay", displayNull];
+uiNamespace setVariable ["ACME_infusion_PreparedListSignature", ""];
+uiNamespace setVariable ["ACME_infusion_ActiveInfusionListSignature", ""];
+uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
+
 // The foreground menu consumes RMB without cancelling background holds. The hold's own
 // input guard also checks this display, so it does not depend on engine EH ordering.
 {_display displayAddEventHandler [_x, {(_this param [1, -1]) == 1}];} forEach ["MouseButtonDown", "MouseButtonUp"];
@@ -162,6 +175,10 @@ private _initialLayoutControls = [
     86131, 86132, 86133, 86134, 86140, 86141, 86142, 86143, 86144, 86145, 86146,
     86147, 86148, 86149, 86160, 86161, 86162, 86163, 86173, 86174, 86175, 86180, 86181, 86182
 ];
+// Keep the reveal pending on this exact dialog. The existing UI worker can
+// finish it after a delayed native build or workspace teardown.
+_display setVariable ["ACME_txInitialLayoutControls", +_initialLayoutControls];
+_display setVariable ["ACME_txInitialLayoutRevealed", false];
 {
     private _ctrl = _display displayCtrl _x;
     if (!isNull _ctrl) then {
@@ -174,6 +191,7 @@ private _revealInitialLayout = {
     params ["_d", "_controls"];
     if (isNull _d) exitWith {false};
     if ((uiNamespace getVariable ["ACME_infusion_LayoutDisplay", displayNull]) isNotEqualTo _d) exitWith {false};
+    if (_d getVariable ["ACME_txInitialLayoutRevealed", false]) exitWith {true};
     {
         private _ctrl = _d displayCtrl _x;
         if (!isNull _ctrl) then {
@@ -182,6 +200,7 @@ private _revealInitialLayout = {
         };
     } forEach _controls;
     _d setVariable ["ACME_txInitialLayoutRevealed", true];
+    _d setVariable ["ACME_txInitialLayoutControls", []];
     true
 };
 
@@ -239,12 +258,14 @@ if (!isNull _display && {!isNil "ACME_fnc_skPageNavigate"}) then {
     _lb ctrlSetPosition [_lx,_y,_w,_h];
     _lb ctrlSetText "< Body Map";
     _lb ctrlSetTooltip "Previous page";
+    _lb ctrlEnable true;
     _lb ctrlAddEventHandler ["ButtonClick",{["left"] call ACME_fnc_skPageNavigate;}];
     _lb ctrlCommit 0;
     private _rb = _display ctrlCreate ["ACME_TX_PageButton",86951];
     _rb ctrlSetPosition [_rx,_y,_w,_h];
     _rb ctrlSetText "Narc Box >";
     _rb ctrlSetTooltip "Next page";
+    _rb ctrlEnable true;
     _rb ctrlAddEventHandler ["ButtonClick",{["right"] call ACME_fnc_skPageNavigate;}];
     _rb ctrlCommit 0;
 };

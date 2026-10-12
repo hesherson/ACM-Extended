@@ -15,7 +15,12 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
     private _list = _display displayCtrl _idc;
     if (!isNull _list) then {
         private _rect = ctrlPosition _list;
-        _rect params ["_px","_py","_w","_h"];
+        _rect params ["_px","_py","_listW","_h"];
+        // Reserve a stable gutter inside the native list viewport. Cards and
+        // their text/artwork cannot reach the scrollbar, even at a narrow UI scale.
+        private _railW = 3 * pixelW;
+        private _railGap = (safeZoneH * 0.006 * (pixelW / pixelH)) max (5 * pixelW);
+        private _w = (_listW - _railW - _railGap) max (10 * pixelW);
         private _gap = safeZoneH * 0.007;
         private _rowH = (_h - _gap * (_capacity - 1)) / _capacity;
         private _offsetKey = format ["ACME_txCardOffset_%1",_idc];
@@ -74,7 +79,8 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 private _pad = _w * 0.045;
                 private _iconW = safeZoneH * 0.030 * (pixelW / pixelH);
                 private _textX = _pad + _iconW + _w * 0.025;
-                private _vialW = safeZoneH * 0.022 * (pixelW / pixelH);
+                private _vialH = (safeZoneH * 0.026) min (_rowH * 0.30);
+                private _vialW = _vialH * 0.55 * (pixelW / pixelH);
                 private _textW = (_w - _textX - _pad - (if (_vial != "") then {_vialW} else {0})) max 0;
                 // B277 responsive card text geometry. Narrow active cards stack role/temperature without shrinking type.
                 private _stackMeta = _idc in [86004,86129] && {_thermal != ""} && {_w < safeZoneH * 0.36 * (pixelW / pixelH)};
@@ -99,7 +105,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                     [(_group controlsGroupCtrl _child),"position",_position] call ACME_fnc_transfusionUiSet;
                 } forEach (_metaPositions + [
                     [14,[_pad,_rowH * 0.10,_iconW,_rowH * 0.53]],
-                    [15,[_w - _pad - _vialW,_rowH * 0.12,_vialW,_rowH * 0.45]],
+                    [15,[_w - _pad - _vialW,_rowH * 0.12,_vialW,_vialH]],
                     [16,[_textX,_trackY,_w - _textX - _pad,safeZoneH * 0.0025]],
                     [17,[_textX,_trackY,(_w - _textX - _pad) * (_fraction max 0),safeZoneH * 0.0025]]
                 ]);
@@ -129,7 +135,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             if (_overflow) then {
                 private _thumbH = (_h * _capacity / lbSize _list) max (safeZoneH * 0.025);
                 private _thumbY = _py + (_h - _thumbH) * _offset / (((lbSize _list) - _capacity) max 1);
-                [_rail,"position",[_px + _w + 3 * pixelW,if (_piece == 0) then {_py} else {_thumbY},2 * pixelW,if (_piece == 0) then {_h} else {_thumbH}]] call ACME_fnc_transfusionUiSet;
+                [_rail,"position",[_px + _listW - _railW,if (_piece == 0) then {_py} else {_thumbY},_railW,if (_piece == 0) then {_h} else {_thumbH}]] call ACME_fnc_transfusionUiSet;
             };
         };
         // Preserve lbValue/lbData/handlers. Only the native flat drawing is replaced by the card pool.

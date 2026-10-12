@@ -58,12 +58,19 @@ private _content = _lines joinString "<br/>";
 if ((_display getVariable ["ACME_detailsContent", ""]) != _content) then {
     _ctrl ctrlSetStructuredText parseText _content;
     _display setVariable ["ACME_detailsContent", _content];
-    // A vertical scrollbar keeps every detail directly available when long names or many rows wrap.
+};
+// Geometry also follows a resize when the selected content remains identical.
+// Leave a separate right gutter for this group's native vertical scrollbar.
+private _viewport = ctrlPosition _group;
+if ((_group getVariable ["ACME_txDetailsViewport",[]]) isNotEqualTo _viewport) then {
+    _group setVariable ["ACME_txDetailsViewport",_viewport];
     private _rect = ctrlPosition _ctrl;
     _rect set [0,safeZoneH * 0.007 * (pixelW / pixelH)];
     _rect set [1,safeZoneH * 0.005];
-    _rect set [2,((ctrlPosition _group) select 2) - safeZoneH * 0.014 * (pixelW / pixelH)];
-    _rect set [3, (ctrlTextHeight _ctrl + safeZoneH * 0.006) max ((ctrlPosition _group) select 3)];
+    _rect set [2,(_viewport select 2) - safeZoneH * 0.014 * (pixelW / pixelH) - 5 * pixelW];
     [_ctrl,"position",_rect] call ACME_fnc_transfusionUiSet;
 };
+private _rect = ctrlPosition _ctrl;
+_rect set [3, (ctrlTextHeight _ctrl + safeZoneH * 0.005) max ((_viewport select 3) - (_rect select 1))];
+[_ctrl,"position",_rect] call ACME_fnc_transfusionUiSet;
 [_group,"show",true] call ACME_fnc_transfusionUiSet;

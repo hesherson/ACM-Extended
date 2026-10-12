@@ -33,20 +33,20 @@ class ACME_TransfusionCaption: RscText {
     h = "safeZoneH * 0.027";
 };
 
-// Selected-line information stays visible under the shared body map. Long bag names
+// Selected-line information stays visible beneath the Infusions section. Long bag names
 // and multiple medication/cuff rows scroll inside this area instead of opening a modal.
 class ACME_TransfusionInlineDetails: RscControlsGroupNoHScrollbars {
     x = "safeZoneX - 1";
     y = "safeZoneY - 1";
-    w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.290";
-    h = "safeZoneH * 0.090";
+    w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.212";
+    h = "safeZoneH * 0.068";
     class Controls {
         class Contents: RscStructuredText {
             idc = 86192;
             x = 0;
             y = 0;
-            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.280";
-            h = "safeZoneH * 0.090";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.202";
+            h = "safeZoneH * 0.068";
             size = "safeZoneH * 0.016";
             colorBackground[] = {0,0,0,0};
             class Attributes {font = "RobotoCondensed";color = "#cccccc";align = "left";shadow = 0;};

@@ -29,3 +29,7 @@ uiNamespace setVariable ["ACME_coolerRowSig", "__force__"];
 uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 _display setVariable ["ACME_txActivePane", ["inventory", "prepared"] select _on];
 call ACME_fnc_transfusionFilterInventory;
+
+// The display that owns the click paints its new pane immediately. A cached picker
+// signature may be unchanged, so inventory filtering alone is not a presentation refresh.
+if (!isNil "ACME_fnc_updateTransfusionControls") then {call ACME_fnc_updateTransfusionControls;};

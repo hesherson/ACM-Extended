@@ -324,6 +324,8 @@ if (!isNull _ctrlSetsBtn) then {
     _ctrlSetsBtn ctrlSetTextColor [1,1,1,1];
 
     [_ctrlSetsBtn,"show",true] call ACME_fnc_transfusionUiSet;
+    // Browsing provider custody never requires an active patient bag or access.
+    [_ctrlSetsBtn,"enable",true] call ACME_fnc_transfusionUiSet;
 };
 private _ctrlSetsList = _display displayCtrl 86145;
 if (!isNull _ctrlSetsList) then {
@@ -585,7 +587,7 @@ if (!isNull _ctrlActiveInfList) then {
                 _x params ["_selIdx", "_label", "_remaining", "_pType", "_pBloodType", "_pVolume", "_pMedication", ["_pTrueIndex", -1]];
                 private _i = _ctrlActiveInfList lbAdd _label;
                 _ctrlActiveInfList lbSetValue [_i, _selIdx];
-                _ctrlActiveInfList lbSetTooltip [_i, format ["%1 mL physically remaining in bag", round _remaining]];
+                _ctrlActiveInfList lbSetTooltip [_i, format ["%1 · %2 mL physically remaining in bag", _label, round _remaining]];
                 // the same bag artwork ACM uses in its own list, with the vial icon at the right.
                 private _bagClass = [_pType, _pVolume, _pBloodType] call ACM_circulation_fnc_formatFluidBagName;
                 private _bagPic = getText (configFile >> "CfgWeapons" >> _bagClass >> "picture");
@@ -610,7 +612,7 @@ if (!isNull _ctrlActiveInfList) then {
             };
             if (_row >= 0 && {(_ctrlActiveInfList lbText _row) isNotEqualTo _label}) then {
                 _ctrlActiveInfList lbSetText [_row, _label];
-                _ctrlActiveInfList lbSetTooltip [_row, format ["%1 mL physically remaining in bag", round _remaining]];
+                _ctrlActiveInfList lbSetTooltip [_row, format ["%1 · %2 mL physically remaining in bag", _label, round _remaining]];
             };
         } forEach _infusionLabels;
     } else {
@@ -657,7 +659,10 @@ private _shownPrepared = [];
         private _carrier = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "type");
         _canShow = [_targetPatient,_targetBodyPart,_flIV,_flSite,_carrier,true] call ACME_fnc_piggybackEligible;
         // The direct propofol emulsion bottle cannot run as a piggyback carrier.
-        if ((_entry param [16,""]) == "propofol" || {(_entry param [1,""]) == "ACM_Vial_Propofol"}) then {_canShow = false;};
+        // Field 16 is the numeric carrier volume. The bottle discriminator is
+        // field 17; a numeric/string comparison aborts every refresh after
+        // preparing an ordinary piggyback infusion.
+        if ((_entry param [17,""]) isEqualTo "propofol-bottle" || {(_entry param [1,""]) isEqualTo "ACM_Vial_Propofol"}) then {_canShow = false;};
     };
     if (_canShow) then {_shownPrepared pushBack [_entry,_forEachIndex];};
 } forEach _preparedEntries;
@@ -749,7 +754,10 @@ if (!isNull _ctrlMove) then {
 // native move and remove column. the side offset and the gap are taken from ACM's own geometry, so it reads as
 // stock.
 private _infSelected = false;
-if (!isNull _ctrlActiveInfList && {ctrlShown _ctrlActiveInfList || {(_display getVariable ["ACME_txActionMenu", ""]) == "infusion"} || {((_display getVariable ["ACME_txCardLayout",createHashMap]) getOrDefault [86129,[]]) param [4,false]}}) then {
+private _infPaneShown = !isNull _ctrlActiveInfList && {ctrlShown _ctrlActiveInfList
+    || {(_display getVariable ["ACME_txActionMenu", ""]) == "infusion"}
+    || {((_display getVariable ["ACME_txCardLayout",createHashMap]) getOrDefault [86129,[]]) param [4,false]}};
+if (_infPaneShown) then {
     _infSelected = (lbCurSel _ctrlActiveInfList) >= 0;
 };
 private _sideGap = _btnGap;
@@ -765,7 +773,7 @@ if (_moveBase isNotEqualTo [] && {_leftBase isNotEqualTo []}) then {
             [_ctrl,"position",[_listX + _listW + _sideGap, _listY + (_slot * (_buttonH + _btnGap)), _buttonW, _buttonH]] call ACME_fnc_transfusionUiSet;
             _ctrl ctrlSetFontHeight _fontH;
 
-            [_ctrl,"show",(ctrlShown _ctrlActiveInfList)] call ACME_fnc_transfusionUiSet;
+            [_ctrl,"show",_infPaneShown] call ACME_fnc_transfusionUiSet;
         } else {
             [_ctrl,"show",false] call ACME_fnc_transfusionUiSet;
         };
@@ -947,7 +955,7 @@ if (!isNull _ctrlSpike) then {
 };
 
 // spike y tubing, 86142. it has three states while building a prepared set. with nothing pending it reads "Spike
-// Y tubing", grayed unless a fresh, un-spiked blood unit is selected. with blood pending and saline not, it
+// Y tubing", grayed unless an eligible blood unit and Y tubing are available. with blood pending and saline not, it
 // reads "Select Flush Saline", grayed unless a proper ACM saline is selected. with both pending it reads "Build
 // Y Tubing", which assembles and stores the set.
 private _ctrlY = _display displayCtrl 86142;
@@ -966,7 +974,10 @@ if (!isNull _ctrlY) then {
             [_ctrlY,"enable",_selValidSaline] call ACME_fnc_transfusionUiSet;
         } else {
             _ctrlY ctrlSetText "Spike Y tubing";
-            [_ctrlY,"enable",(_selIsBlood && {!_normalSpiked} && {!_yPrepped})] call ACME_fnc_transfusionUiSet;
+            // Staging a new set is provider inventory work, independent of the selected
+            // patient access and any already-attached Y line or legacy class spike counter.
+            [_ctrlY,"enable",(_selIsBlood && {([ACE_player,_targetPatient,"ACME_YTubing"] call ACME_fnc_treatmentSupplyCount) > 0}
+                && {count _spikingActive == 0})] call ACME_fnc_transfusionUiSet;
         };
     };
     };
@@ -991,7 +1002,7 @@ private _warmingReadout = [];
                         params ["_label","_color","_thermal","_role","_flowing"];
                     if ((_list lbText _r) != _label) then {_list lbSetText [_r,_label];};
                     if ((_list lbColor _r) isNotEqualTo _color) then {_list lbSetColor [_r,_color];};
-                    private _tooltip = format ["%1 mL remaining",round (_physical param [1,0])];
+                    private _tooltip = format ["%1 · %2 mL remaining",_label,round (_physical param [1,0])];
                     if (_role != "") then {_tooltip = format ["Piggyback %1 · %2",_role,_tooltip];};
                     if (_thermal != "") then {_tooltip = _tooltip + " · " + _thermal;};
                     private _tipKey = format ["ACME_txTooltip_%1",_r];
@@ -1186,6 +1197,21 @@ if (!isNull _ctrlSetsList) then {
 
 // B227: paint live cuff levels after control positioning, without an extra refresh worker.
 [_display] call ACME_fnc_layoutTransfusionMenu;
+// First-frame layout can be deferred for more than one frame by native dialog
+// construction or another workspace. Complete the same pending reveal on this
+// successful refresh; no additional worker or patient-state mutation is needed.
+private _initialLayoutControls = _display getVariable ["ACME_txInitialLayoutControls", []];
+if (_initialLayoutControls isNotEqualTo []) then {
+    {
+        private _ctrl = _display displayCtrl _x;
+        if (!isNull _ctrl) then {
+            _ctrl ctrlSetFade 0;
+            _ctrl ctrlCommit 0;
+        };
+    } forEach _initialLayoutControls;
+    _display setVariable ["ACME_txInitialLayoutControls", []];
+    _display setVariable ["ACME_txInitialLayoutRevealed", true];
+};
 [_display] call ACME_fnc_paintTransfusionYBracket;
 [_display,(_display displayCtrl 86148),["transfusion"] call ACME_fnc_getSelectedActiveBagContext,86151] call ACME_fnc_pressureInfuserPaint;
 [_display,(_display displayCtrl 86149),["infusion"] call ACME_fnc_getSelectedActiveBagContext,86152] call ACME_fnc_pressureInfuserPaint;

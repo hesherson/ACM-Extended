@@ -136,7 +136,7 @@ def test_card_medication_title_and_dose_belong_to_same_physical_uid(scope):
     source = re.sub(r'getText \(configFile >> "CfgWeapons" >>[^;]+\)', '""', source)
     presentation = presentation_setup().replace('private _cfg = configFile >> "CfgWeapons" >> _class;', 'private _cfg = configFile;')
     presentation = presentation.replace('getText (_cfg >> "shortName")', '""').replace('getText (_cfg >> "displayName")', '""')
-    fixture = presentation + r'''
+    fixture = presentation + 'ACME_fnc_infusionTitle={' + primitives(adapt((FUN / 'fn_infusionTitle.sqf').read_text())) + '};' + r'''
         ACM_circulation_fnc_formatFluidBagName={"Fixture"};
         ACME_fnc_infusionName={_this select 0};ACME_fnc_formatDose={format ["%1 mcg",_this select 1]};
         private _list=profileNamespace;private _row=0;
@@ -169,7 +169,7 @@ def test_card_medication_title_and_dose_belong_to_same_physical_uid(scope):
         ''')
         return
     fixture += r'''
-        [(_data select 0)=="Epinephrine [PiB]","infusion card was labeled saline instead of medication"]call _check;
+        [(_data select 0)=="Epinephrine infusion [PiB]","infusion card was labeled saline instead of medication"]call _check;
         [(_data select 1)find"995.1 mcg remaining">=0,"dose was stranded outside its infusion card"]call _check;
         [(_data select 2)=="Piggyback Secondary","medication card lost its secondary role label"]call _check;
         [(_data select 5)=="native-saline.paa"&&{(_data select 6)=="native-vial.paa"},"native art replaced"]call _check;

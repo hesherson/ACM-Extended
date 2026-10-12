@@ -194,8 +194,8 @@ private _place = {
     [86004,0.137,0.228,0.200,0.210],
     [86128,0.125,0.538,0.212,0.029],
     [86129,0.125,0.575,0.212,0.187],
-    [86131,0.125,0.778,0.212,0.033],
-    [86172,0.125,0.819,0.212,0.033],
+    [86131,0.125,0.778,0.102,0.033],
+    [86172,0.235,0.778,0.102,0.033],
     [86144,0.673,0.232,0.202,0.034],
     [86005,0.673,0.279,0.202,0.235],
     [86145,0.673,0.279,0.202,0.235],
@@ -203,7 +203,7 @@ private _place = {
     [86127,0.673,0.636,0.202,0.149],
     [86121,0.778,0.526,0.097,0.034],
     [86122,0.673,0.810,0.202,0.034],
-    [86171,0.355,0.812,0.290,0.078],
+    [86171,0.125,0.822,0.212,0.068],
     [86176,0.133,0.581,0.196,0.029],
     [86177,0.681,0.643,0.186,0.029],
     [86178,0.145,0.235,0.184,0.029],
@@ -409,7 +409,7 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
         };
         _frame ctrlEnable false;
         // B277 prepared chooser caption fits a narrow screen while retaining the familiar workflow text.
-        private _fontHeight = safeZoneH * 0.020;
+        private _fontHeight = safeZoneH * ([0.020,0.018] select ((ctrlIDC _button) in [86131,86172]));
         if ((ctrlIDC _button) == 86144 && {((ctrlPosition _button) param [2,0]) < safeZoneH * 0.36 * (pixelW / pixelH)}) then {_fontHeight = safeZoneH * 0.018;};
         if ((_button getVariable ["ACME_txFontH",0]) != _fontHeight) then {_button ctrlSetFontHeight _fontHeight;_button setVariable ["ACME_txFontH",_fontHeight];};
     };

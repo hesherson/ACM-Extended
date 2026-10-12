@@ -44,11 +44,10 @@ if (_idc in [86004,86129]) then {
     private _all = _patient getVariable ["ACME_infusion_BagMedications",[]];
     private _meds = _all select {(_x param [23,""]) == _uid && {_uid != ""}};
     if (_meds isNotEqualTo []) then {
-        private _names = _meds apply {[_x param [11,""]] call ACME_fnc_infusionName};
-        _name = (_names arrayIntersect _names) joinString " + ";
+        _name = [_meds apply {_x param [11,""]}] call ACME_fnc_infusionTitle;
         if (_role != "") then {_name = _name + " [PiB]";};
         if ((_label find "[Y]") >= 0) then {_name = _name + " [Y]";};
-        private _doses = _meds apply {format ["%1 remaining",[_x param [11,""],_x param [14,0]] call ACME_fnc_formatDose]};
+        private _doses = _meds apply {format ["%1 %2 remaining",[_x param [11,""]] call ACME_fnc_infusionName,[_x param [11,""],_x param [14,0]] call ACME_fnc_formatDose]};
         _detail = format ["%1 mL · %2",round _remaining,_doses joinString " + "];
         if (_vial == "") then {_vial = getText (configFile >> "CfgWeapons" >> ([(_meds select 0) param [11,""]] call ACME_fnc_vialClass) >> "picture");};
     };
@@ -73,6 +72,14 @@ if (_idc in [86004,86129]) then {
     };
     if (_idc == 86127) then {
         private _entry = (ACE_player getVariable ["ACME_infusion_PreparedBags",[]]) param [_list lbValue _row,[]];
+        if (_entry isNotEqualTo []) then {
+            private _piggyback = (_name find "[PiB]") >= 0 || {(_detail find "[PiB]") >= 0};
+            private _label = [_entry] call ACME_fnc_formatPreparedLabel;
+            private _split = _label find " | ";
+            _name = if (_split < 0) then {_label} else {_label select [0,_split]};
+            if (_piggyback) then {_name = _name + " [PiB]";};
+            if (_split >= 0) then {_detail = _label select [_split + 3];};
+        };
         _icon = getText (configFile >> "CfgWeapons" >> (_entry param [1,""]) >> "picture");
         _vial = getText (configFile >> "CfgWeapons" >> ([_entry param [3,""]] call ACME_fnc_vialClass) >> "picture");
         _status = "Prepared";

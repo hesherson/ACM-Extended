@@ -57,7 +57,7 @@ def test_chest_entry_pause_precedes_menu_close_and_ack_wait_is_bounded():
     close = read("addons/acm_extended/functions/fn_chestSealClose.sqf")
     assert s.index("call ACM_GUI_fnc_pauseMedicalMenuPFH;") < s.index("_oldMedicalMenu closeDisplay 1;")
     assert s.index("_oldMedicalMenu closeDisplay 1;") < s.index('uiNamespace setVariable ["ACME_CS_SessionToken", _sessionToken];')
-    assert "CBA_missionTime + 30, CBA_missionTime + 3, 0" in s
+    assert "CBA_missionTime + 30, CBA_missionTime + 3, 0, _oldMedicalMenu" in s
     assert "if (CBA_missionTime >= _deadline) exitWith {" in s
     assert 'if (!_member && {CBA_missionTime >= _nextRetry} && {_retryCount < 4}) then {' in s
     assert '[_p, "chestSealPatientBegin", [_p, _tok, _m]] call ACME_fnc_ownerDispatch;' in s
