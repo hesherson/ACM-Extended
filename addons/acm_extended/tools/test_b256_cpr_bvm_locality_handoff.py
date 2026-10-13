@@ -81,6 +81,6 @@ def test_source_handoff_and_cpr_worker_check_locality_generation():
     assert 'params ["_medic", "_patient", "_epoch", "_localityEpoch"];' in bvm
     assert '[_medic, _patient, _epoch, _localityEpoch], 0.1]' in bvm
     assert '(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch' in bvm
-    assert '"_lowerOwner", "_localityEpoch"];' in cpr
-    assert '_lowerRetries, _lowerOwner, _localityEpoch]] call CBA_fnc_addPerFrameHandler;' in cpr
+    assert '"_lowerOwner", "_localityEpoch", "_grant", "_admitUntil"];' in cpr
+    assert '_lowerRetries, _lowerOwner, _localityEpoch, _grant, serverTime +' in cpr
     assert '(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch' in cpr

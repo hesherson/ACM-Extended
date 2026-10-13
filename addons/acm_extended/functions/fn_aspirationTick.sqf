@@ -7,18 +7,13 @@
 private _now = CBA_missionTime;
 private _candidate = {
     params ["_u"];
-    if (isNull _u || {!local _u} || {!alive _u}) exitWith {false};
-    private _load = (_u getVariable ["ACME_aspiration_load",0]) max 0;
-    private _edema = (_u getVariable ["ACME_aspiration_edema",0]) max 0;
-    private _event = _u getVariable ["ACME_laryngo_emesis", []];
-    private _vomitState = _u getVariable ["ACM_airway_AirwayObstructionVomit_State",0];
-    private _eventKey = if (_event isEqualType [] && {count _event >= 3}) then {
-        format ["%1:%2:%3:%4", _event param [0,""], _event param [1,0], _event param [2,0], _vomitState]
-    } else {
-        format ["native:%1",_vomitState]
-    };
-    private _fresh = (_eventKey != (_u getVariable ["ACME_aspiration_lastEmesisKey",""]))
-        && {_vomitState > 0 || {count _event >= 3}};
+    if (isNull _u || {!local _u} || {!alive _u} || {_u getVariable ["ACME_clinicalRestoring",false]}) exitWith {false};
+    private _state = [_u] call ACME_fnc_aspirationState;
+    if (_state isEqualTo []) exitWith {false};
+    private _load = _state select 2;
+    private _edema = _state select 3;
+    private _episode = [_u] call ACME_fnc_aspirationEventKey;
+    private _fresh = (_episode select 2) && {(_episode select 0) != (_state select 1)};
     private _residue = (_u getVariable ["ACME_aspiration_injury",0]) > 0.0005
         || {(_u getVariable ["ACME_aspiration_SpO2Penalty",0]) > 0.001}
         || {abs (_u getVariable ["ACME_aspiration_RRDrive",0]) > 0.001}
@@ -30,19 +25,15 @@ private _candidate = {
 private _patients = (missionNamespace getVariable ["ACME_aspiration_activePatients", []]) select {[_x] call _candidate};
 {
     private _u = _x;
-    if (isNull _u || {!local _u} || {!alive _u}) then {continue};
+    if (isNull _u || {!local _u} || {!alive _u} || {_u getVariable ["ACME_clinicalRestoring",false]}) then {continue};
 
-    private _load = (_u getVariable ["ACME_aspiration_load",0]) max 0 min 1;
-    private _edema = (_u getVariable ["ACME_aspiration_edema",0]) max 0 min 1;
-    private _event = _u getVariable ["ACME_laryngo_emesis", []];
-    private _vomitState = _u getVariable ["ACM_airway_AirwayObstructionVomit_State",0];
-    private _eventKey = if (_event isEqualType [] && {count _event >= 3}) then {
-        format ["%1:%2:%3:%4", _event param [0,""], _event param [1,0], _event param [2,0], _vomitState]
-    } else {
-        format ["native:%1",_vomitState]
-    };
-    private _lastKey = _u getVariable ["ACME_aspiration_lastEmesisKey",""];
-    private _freshEvent = (_eventKey != _lastKey) && {_vomitState > 0 || {count _event >= 3}};
+    private _state = [_u] call ACME_fnc_aspirationState;
+    if (_state isEqualTo []) then {continue};
+    private _load = _state select 2;
+    private _edema = _state select 3;
+    private _episode = [_u] call ACME_fnc_aspirationEventKey;
+    _episode params ["_eventKey","_stage","_present","_serial"];
+    private _freshEvent = _present && {_eventKey != (_state select 1)};
     private _hadEffect = (_u getVariable ["ACME_aspiration_injury",0]) > 0.0005
         || {(_u getVariable ["ACME_aspiration_SpO2Penalty",0]) > 0.001}
         || {abs (_u getVariable ["ACME_aspiration_RRDrive",0]) > 0.001}
@@ -55,7 +46,8 @@ private _patients = (missionNamespace getVariable ["ACME_aspiration_activePatien
 
     if (_freshEvent) then {
         _u setVariable ["ACME_aspiration_lastEmesisKey",_eventKey,false];
-        private _stage = if (count _event >= 3) then {_event param [2,2]} else {2};
+        _state set [1,_eventKey];
+        _state set [4,(_state select 4) max _serial];
         private _protection = 1;
         private _ett = _u getVariable ["ACME_ETT_Inserted",false];
         private _cuff = _u getVariable ["ACME_ETT_CuffInflated",false];
@@ -69,7 +61,6 @@ private _patients = (missionNamespace getVariable ["ACME_aspiration_activePatien
         private _gain = linearConversion [1,8,_stage,0.06,0.32,true] * _protection;
         if (_gain > 0.005) then {
             _load = (_load + _gain) min 1;
-            [_u,"ACME_aspiration_load",_load,([0.001,0] select (_load == 0)),0] call ACME_fnc_setVarNetApprox;
             // Used only by this owner-side model; a raw scheduler timestamp has no
             // cross-machine meaning and never needs to be replicated.
             _u setVariable ["ACME_aspiration_lastAt",_now,false];
@@ -79,17 +70,15 @@ private _patients = (missionNamespace getVariable ["ACME_aspiration_activePatien
         };
     };
 
-    private _lastAt = _u getVariable ["ACME_aspiration_tickAt",_now-1];
-    private _dt = ((_now - _lastAt) max 0) min 3;
+    private _dt = [_u,"aspiration",0,3] call ACME_fnc_clinicalTickDelta;
     _u setVariable ["ACME_aspiration_tickAt",_now,false];
-    if (_dt <= 0) then {continue};
+    // Event receipt and burden are committed together even on a new owner's zero-delta first tick.
 
     // The particulate/chemical aspiration burden clears very slowly. Established alveolar injury is deliberately
     // slower than visible airway-fluid clearance, so suction does not magically normalize the lungs.
     if (_load > 0) then {
         private _recovery = if ((_u getVariable ["ace_medical_spo2",90]) >= 94) then {0.00006} else {0.00002};
         _load = (_load - (_recovery * _dt)) max 0;
-        [_u,"ACME_aspiration_load",_load,([0.001,0] select (_load == 0)),0] call ACME_fnc_setVarNetApprox;
     };
 
     // Aspiration pneumonitis can progress to non-cardiogenic pulmonary edema from inflammatory capillary leak.
@@ -103,6 +92,11 @@ private _patients = (missionNamespace getVariable ["ACME_aspiration_activePatien
         _edema = (_edema - (0.000035 * _dt)) max _edemaTarget;
     };
     _edema = _edema max 0 min 1;
+
+    _state set [2,_load];
+    _state set [3,_edema];
+    [_u,"ACME_aspiration_State",_state] call ACME_fnc_setVarNet;
+    [_u,"ACME_aspiration_load",_load,([0.001,0] select (_load == 0)),0] call ACME_fnc_setVarNetApprox;
 
     // Use one effective injury severity for oxygenation/RR/shunt. This is max(), not addition, so the edema
     // manifestation extends established injury without double-counting the same aspiration event.
@@ -126,14 +120,10 @@ private _patients = (missionNamespace getVariable ["ACME_aspiration_activePatien
         };
     };
 
-    // Tachypneic compensation while spontaneous respiratory drive exists. Compose against the previous target
-    // without accumulating our own last offset, and explicitly clear the old offset when aspiration resolves.
-    private _curRR = _u getVariable ["ACM_core_TargetVitals_RespirationRate",16];
-    private _lastAdj = _u getVariable ["ACME_aspiration_lastRRAdj",0];
-    private _nativeRR = (_curRR - _lastAdj) max 0;
+    // Diagnostic mirror only. The native respiratory endpoint composes the atomic injury once;
+    // aspiration never writes a composed result back into the native target.
     private _adj = 14 * _injury;
-    [_u, [["respirationRate", (_nativeRR + _adj) min 45, 0.02, 3]], true] call ACM_core_fnc_setTargetVitalsState;
-    _u setVariable ["ACME_aspiration_lastRRAdj",_adj,false];
+    _u setVariable ["ACME_aspiration_lastRRAdj",0,false];
     [_u,"ACME_aspiration_RRDrive",_adj,([0.02,0] select (_adj == 0)),0] call ACME_fnc_setVarNetApprox;
     [_u,"ACME_aspiration_shunt",0.30 * _injury,([0.0005,0] select (_injury == 0)),0] call ACME_fnc_setVarNetApprox;
 } forEach _patients;

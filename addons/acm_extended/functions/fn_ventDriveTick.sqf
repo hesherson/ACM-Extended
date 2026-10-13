@@ -410,8 +410,12 @@ if (_driving) then {
         _recruit = (linearConversion [0.95, 0.35, _compEff, 0, 1, true]) * (linearConversion [1.5, 0.5, _ie, 0, 1, true]);
     };
     [_patient, "ACME_vent_recruit", _recruit, 0.01, 1] call ACME_fnc_setVarNetApprox;
-    private _targetSat = [_patient, _compEff, _peep, _fio2, _recruit] call ACME_fnc_ventOxygenation;
-    _targetSat = (_targetSat - (_patient getVariable ["ACME_o2Drain_mainstem", 0]) - (_patient getVariable ["ACME_o2Drain_vili", 0])) max 0;
+    private _oxygenResult = [[_patient, _compEff, _peep, _fio2, _recruit] call ACME_fnc_ventOxygenation];
+    private _targetSatReady = !isNil {_oxygenResult select 0};
+    private _targetSat = if (_targetSatReady) then {_oxygenResult select 0} else {0};
+    if (_targetSatReady) then {
+        _targetSat = (_targetSat - (_patient getVariable ["ACME_o2Drain_mainstem", 0]) - (_patient getVariable ["ACME_o2Drain_vili", 0])) max 0;
+    };
 
     // B35: the shared pleural controller reads actual ACME_vent_driving/pip and
     // effective PEEP. Pressure can amplify an ongoing leak; residual collapse
@@ -450,8 +454,10 @@ if (_driving) then {
     private _mvPenaltyFactor = 1 - (linearConversion [0.35, 1.05, _mvAdequacy, 0, 0.8, true]);
     private _fightO2Penalty = (linearConversion [0.35, 1, _dys, 0, missionNamespace getVariable ["ACME_vent_fightO2PenaltyMax", 6], true])
         * (_mvPenaltyFactor max 0 min 1);
-    _targetSat = (_targetSat - _fightO2Penalty) max 0;
-    [_patient, [["oxygenSaturation", _targetSat]], true] call ACM_core_fnc_setTargetVitalsState;
+    if (_targetSatReady) then {
+        _targetSat = (_targetSat - _fightO2Penalty) max 0;
+        [_patient, [["oxygenSaturation", _targetSat]], true] call ACM_core_fnc_setTargetVitalsState;
+    };
 
     // Register the vent as the BVM gas-exchange provider only while meaningful minute ventilation exists.
     private _ventilating = _mvAdequacy > 0.05;
@@ -507,9 +513,10 @@ if (_driving) then {
         };
         // 3. recruit oxygenation. CPAP reverses the hypoxia of edema faster than baseline gas exchange.
         private _spo2 = _patient getVariable ["ace_medical_spo2", 97];
-        if (_spo2 < 97) then {
+        private _cpapCeiling = _targetSat min 97;
+        if (_targetSatReady && {_spo2 < _cpapCeiling}) then {
             private _o2Rate = missionNamespace getVariable ["ACME_vent_cpapO2Recruit", 1.5];  // percent per second.
-            [_patient, [["spo2", ((_spo2 + (_o2Rate * _dt)) min 97), true, true]]] call ACM_core_fnc_setAceMedicalState;
+            [_patient, [["spo2", ((_spo2 + (_o2Rate * _dt)) min _cpapCeiling), true, true]]] call ACM_core_fnc_setAceMedicalState;
         };
         [_patient, "ACME_vent_cpapTherapy", true] call ACME_fnc_setVarNet;
     } else {

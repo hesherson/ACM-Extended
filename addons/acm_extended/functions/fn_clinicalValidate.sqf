@@ -11,7 +11,7 @@ private _seen = createHashMap;
 private _budget = [100000];
 private _reason = "";
 private _required = createHashMapFromArray [
-    ["ACME_ptx_state","ARRAY"], ["ACME_ptx_tensionSeverity","SCALAR"],
+    ["ACME_aspiration_State","ARRAY"], ["ACME_ptx_state","ARRAY"], ["ACME_ptx_tensionSeverity","SCALAR"],
     ["ACME_ptx_observationRevision","SCALAR"],
     ["ACME_ptx_nativeSealCount","SCALAR"],
     ["ACME_ptx_nativeSealHoleCount","SCALAR"],
@@ -49,6 +49,17 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
     if (_want != "" && {typeName _v != _want}) exitWith {_reason = "Wrong field type: " + _name;};
     private _bad = false;
     switch (_name) do {
+        case "ACME_aspiration_State": {
+            _bad = count _v != 5;
+            if (!_bad) then {
+                _v params ["_epoch","_key","_load","_edema","_serial"];
+                _bad = !([_epoch] call _number) || {_epoch < 0} || {_epoch != floor _epoch}
+                    || {!(_key isEqualType "")}
+                    || {!([_load] call _number)} || {_load < 0 || {_load > 1}}
+                    || {!([_edema] call _number)} || {_edema < 0 || {_edema > 1}}
+                    || {!([_serial] call _number)} || {_serial < 0} || {_serial != floor _serial};
+            };
+        };
         case "ACME_ptx_state": {
             _bad = count _v != 9 || {(_v findIf {!([_x] call _number)}) >= 0};
             if (!_bad) then {

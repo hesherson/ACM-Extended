@@ -85,7 +85,8 @@ class SimpleVentContracts(unittest.TestCase):
         for f in ('ventDriveTick','ventAlarmTick','ventBatteryTick','blastLungTick','altitudeTick','oxygenDelivery','tbiHandle','hcVentTick','ventSimpleManualBreath'):
             if f == 'altitudeTick':
                 self.assertIn('call ACME_fnc_altitudeOxygenCeiling',source(f),f)
-                self.assertIn('call ACME_fnc_ventEffectiveSettings',source('altitudeOxygenCeiling'))
+                self.assertIn('call ACME_fnc_flightDeliveredFiO2',source('altitudeOxygenCeiling'))
+                self.assertIn('call ACME_fnc_ventEffectiveSettings',source('flightDeliveredFiO2'))
             else:
                 self.assertIn('call ACME_fnc_ventEffectiveSettings',source(f),f)
 

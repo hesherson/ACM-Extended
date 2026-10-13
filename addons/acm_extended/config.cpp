@@ -518,6 +518,26 @@ class CfgPatches {
             "ACM_IV_18g", "ACM_IV_20g", "ACM_SalineFlush_10", "ACME_Vial_EpinephrineCardiac",
             "ACM_Thermometer", "ACM_NRBMask", "ACM_HPMK", "ACM_EMMA", "ACM_CombatGauze", "ACME_NARSPEAR", "ACME_XStat", "ACME_Ventilator", "ACME_VentBattery", "ACME_Laryngoscope", "ACME_ETTube",
             "ACME_HTSBullet", "ACME_MannitolVial",
+            "ACME_VentBattery_0", "ACME_VentBattery_1", "ACME_VentBattery_2", "ACME_VentBattery_3", "ACME_VentBattery_4",
+            "ACME_VentBattery_5", "ACME_VentBattery_6", "ACME_VentBattery_7", "ACME_VentBattery_8", "ACME_VentBattery_9",
+            "ACME_VentBattery_10", "ACME_VentBattery_11", "ACME_VentBattery_12", "ACME_VentBattery_13", "ACME_VentBattery_14",
+            "ACME_VentBattery_15", "ACME_VentBattery_16", "ACME_VentBattery_17", "ACME_VentBattery_18", "ACME_VentBattery_19",
+            "ACME_VentBattery_20", "ACME_VentBattery_21", "ACME_VentBattery_22", "ACME_VentBattery_23", "ACME_VentBattery_24",
+            "ACME_VentBattery_25", "ACME_VentBattery_26", "ACME_VentBattery_27", "ACME_VentBattery_28", "ACME_VentBattery_29",
+            "ACME_VentBattery_30", "ACME_VentBattery_31", "ACME_VentBattery_32", "ACME_VentBattery_33", "ACME_VentBattery_34",
+            "ACME_VentBattery_35", "ACME_VentBattery_36", "ACME_VentBattery_37", "ACME_VentBattery_38", "ACME_VentBattery_39",
+            "ACME_VentBattery_40", "ACME_VentBattery_41", "ACME_VentBattery_42", "ACME_VentBattery_43", "ACME_VentBattery_44",
+            "ACME_VentBattery_45", "ACME_VentBattery_46", "ACME_VentBattery_47", "ACME_VentBattery_48", "ACME_VentBattery_49",
+            "ACME_VentBattery_50", "ACME_VentBattery_51", "ACME_VentBattery_52", "ACME_VentBattery_53", "ACME_VentBattery_54",
+            "ACME_VentBattery_55", "ACME_VentBattery_56", "ACME_VentBattery_57", "ACME_VentBattery_58", "ACME_VentBattery_59",
+            "ACME_VentBattery_60", "ACME_VentBattery_61", "ACME_VentBattery_62", "ACME_VentBattery_63", "ACME_VentBattery_64",
+            "ACME_VentBattery_65", "ACME_VentBattery_66", "ACME_VentBattery_67", "ACME_VentBattery_68", "ACME_VentBattery_69",
+            "ACME_VentBattery_70", "ACME_VentBattery_71", "ACME_VentBattery_72", "ACME_VentBattery_73", "ACME_VentBattery_74",
+            "ACME_VentBattery_75", "ACME_VentBattery_76", "ACME_VentBattery_77", "ACME_VentBattery_78", "ACME_VentBattery_79",
+            "ACME_VentBattery_80", "ACME_VentBattery_81", "ACME_VentBattery_82", "ACME_VentBattery_83", "ACME_VentBattery_84",
+            "ACME_VentBattery_85", "ACME_VentBattery_86", "ACME_VentBattery_87", "ACME_VentBattery_88", "ACME_VentBattery_89",
+            "ACME_VentBattery_90", "ACME_VentBattery_91", "ACME_VentBattery_92", "ACME_VentBattery_93", "ACME_VentBattery_94",
+            "ACME_VentBattery_95", "ACME_VentBattery_96", "ACME_VentBattery_97", "ACME_VentBattery_98", "ACME_VentBattery_99",
             "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100",
             "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_Spray_Esketamine",
             "ACM_Vial_Phentolamine", "ACM_Vial_Hyaluronidase", "ACM_Vial_CalciumGluconate", "ACM_Vial_Propofol", "ACM_Vial_Midazolam", "ACM_Vial_Fentanyl",
@@ -1116,9 +1136,11 @@ class CfgWeapons {
         displayName = "Ventway Sparrow Battery";
         descriptionShort = "Spare lithium battery pack for the Ventway Sparrow. Replaces a depleted battery in the field.";
         picture = "\acm_extended\ui\vent\ventway_sparrow_robust_battery_ca.paa";
+        ACME_batteryCharge = 100;
         // 0.52 lb, or 235 g. it was 28, which made a spare cell heavier than the machine it goes in.
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 5; };
     };
+    #include "vent_battery_items.hpp"
     class ACME_Laryngoscope: ACE_ItemCore {
         author = "mavis";
         dlc = "ACM_Extended";
@@ -2137,6 +2159,22 @@ class CfgFunctions {
             class suctionPublish {};
             class suctionObservers {};
             class ownerDispatch {};
+            class ownerRegisterNeedsRecovery {};
+            class respawnClinicalReset {};
+            class resusRequest {};
+            class resusCommit {};
+            class resusAck {};
+            class hardcorePushRecover {};
+            class ventBatteryExchange {};
+            class ventBatteryRequest {};
+            class ventBatteryAck {};
+            class ventBatteryItems {};
+            class ventBatteryCharge {};
+            class flightDeliveredFiO2 {};
+            class patientInteractionContact {};
+            class aspirationEventKey {};
+            class aspirationState {};
+            class aspirationRestore {};
             class patientInteractionDistance {};
             class headElevEffective {};
             class canCheckPatientDogtags {};

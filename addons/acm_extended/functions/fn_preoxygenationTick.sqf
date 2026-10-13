@@ -9,6 +9,8 @@ private _now = CBA_missionTime;
 private _candidate = {
     params ["_u"];
     if (isNull _u || {!local _u} || {!alive _u}) exitWith {false};
+    private _aspiration = [_u] call ACME_fnc_aspirationState;
+    if (_aspiration isEqualTo []) exitWith {false};
     private _reserve = (_u getVariable ["ACME_preox_reserve",0.30]) max 0 min 1;
     private _rr = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate",16])];
     private _support = alive (_u getVariable ["ACM_breathing_BVM_Medic",objNull])
@@ -19,7 +21,7 @@ private _candidate = {
         || {_u getVariable ["ace_medical_inCardiacArrest",false]}
         || {(_u getVariable ["ace_medical_spo2",97]) < 94}
         || {(_u getVariable ["ACME_blastLung_State",0]) > 0}
-        || {(_u getVariable ["ACME_aspiration_load",0]) > 0.001}
+        || {(_aspiration select 2) > 0.001}
         || {(_u getVariable ["ACME_alt_pRatio",1]) < 0.999};
     abs (_reserve - 0.30) > 0.001 || {_support} || {_physiology}
 };
@@ -27,6 +29,8 @@ private _patients = (missionNamespace getVariable ["ACME_preox_activePatients", 
 {
     private _u = _x;
     if (isNull _u || {!local _u} || {!alive _u}) then {continue};
+    private _aspiration = [_u] call ACME_fnc_aspirationState;
+    if (_aspiration isEqualTo []) then {continue};
 
     // Healthy room-air units must be network-silent. Only enter the full model when
     // reserve is displaced from baseline, oxygen/support is active, or physiology
@@ -41,17 +45,28 @@ private _patients = (missionNamespace getVariable ["ACME_preox_activePatients", 
         || {_u getVariable ["ace_medical_inCardiacArrest", false]}
         || {(_u getVariable ["ace_medical_spo2", 97]) < 94}
         || {(_u getVariable ["ACME_blastLung_State", 0]) > 0}
-        || {(_u getVariable ["ACME_aspiration_load", 0]) > 0.001}
+        || {(_aspiration select 2) > 0.001}
         || {(_u getVariable ["ACME_alt_pRatio", 1]) < 0.999};
     if (abs (_reserveProbe - 0.30) <= 0.001 && {!_supportProbe} && {!_physProbe}) then {continue};
 
-    private _lastAt = _u getVariable ["ACME_preox_lastTick", _now - 1];
-    private _dt = ((_now - _lastAt) max 0) min 3;
-    _u setVariable ["ACME_preox_lastTick", _now, false];
-    if (_dt <= 0) then {continue};
-
     private _spo2 = _u getVariable ["ace_medical_spo2", 97];
-    private _lastSpo2 = _u getVariable ["ACME_preox_lastSpO2", _spo2];
+    private _epoch = [_u] call ACME_fnc_clinicalEpoch;
+    private _sample = _u getVariable ["ACME_clock_preoxSample", []];
+    private _sampleValid = _sample isEqualType [] && {count _sample == 4};
+    if (_sampleValid) then {
+        _sampleValid = (_sample select 0) isEqualTo clientOwner
+            && {(_sample select 1) isEqualTo _epoch}
+            && {(_sample select 2) isEqualType 0} && {finite (_sample select 2)}
+            && {_now >= (_sample select 2)} && {_now - (_sample select 2) <= 3}
+            && {(_sample select 3) isEqualType 0} && {finite (_sample select 3)};
+    };
+    // Buffer only a newly observed native saturation loss. Another owner,
+    // reset/load or a long stall cannot turn an old 99% sample into an acute
+    // oxygen bolus for a patient who now genuinely measures 40%.
+    private _lastSpo2 = if (_sampleValid) then {_sample select 3} else {_spo2};
+    _u setVariable ["ACME_clock_preoxSample", [clientOwner, _epoch, _now, _spo2], false];
+    private _dt = [_u, "preoxygenation", 1, 3] call ACME_fnc_clinicalTickDelta;
+    if (_dt <= 0) then {continue};
     private _reserve = (_u getVariable ["ACME_preox_reserve", 0.30]) max 0 min 1;
 
     private _rr = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate", 16])];
@@ -60,35 +75,36 @@ private _patients = (missionNamespace getVariable ["ACME_preox_activePatients", 
     private _hasPulse = if (!isNil "ACM_circulation_fnc_hasPulse") then {[_u] call ACM_circulation_fnc_hasPulse} else {true};
 
     private _spontaneous = _hasPulse && {_rr > 1} && {_airway > 0.05} && {_breathing > 0.05};
-    private _bvm = alive (_u getVariable ["ACM_breathing_BVM_Medic", objNull]);
+    private _provider = _u getVariable ["ACM_breathing_BVM_provider", objNull];
+    private _bvm = _provider isEqualType objNull && {!isNull _provider} && {!(_provider isEqualTo _u)} && {alive _provider}
+        && {[_provider, _u] call ACM_breathing_fnc_bvmSessionValid};
     private _vent = (_u getVariable ["ACME_vent_onPatient", false]) && {_u getVariable ["ACME_vent_driving", false]};
-    private _nrb = (_u getVariable ["ACME_nrb_on", false]) && {_u getVariable ["ACME_nrb_hasO2", false]}
-        && {(_now - (_u getVariable ["ACME_nrb_lastO2Uptake", -1000])) < 3};
-
-    private _fio2Frac = 0.21;
-    if (_nrb) then {_fio2Frac = _fio2Frac max 0.90;};
-    if (_bvm) then {_fio2Frac = _fio2Frac max 0.95;};
-    if (_vent && {!isNil "ACME_fnc_ventEffectiveSettings"}) then {
-        private _vs = [_u] call ACME_fnc_ventEffectiveSettings;
-        _fio2Frac = _fio2Frac max (((_vs param [4,21]) / 100) max 0.21 min 1);
-    };
+    private _exposure = [_u] call ACME_fnc_flightExposure;
+    private _fio2Frac = ([_u, _exposure] call ACME_fnc_flightDeliveredFiO2) / 100;
 
     // Lung pathology and altitude reduce how much useful oxygen reserve can actually be built.
     private _blast = (_u getVariable ["ACME_blastLung_State",0]) max 0 min 1;
     private _edema = linearConversion [0.2,1.6,(_u getVariable ["ACM_circulation_Overload_Volume",0]),0,1,true];
-    private _asp = (_u getVariable ["ACME_aspiration_load",0]) max 0 min 1;
-    private _pRatio = (_u getVariable ["ACME_alt_pRatio",1]) max 0.45 min 1.1;
+    private _asp = (_aspiration select 2) max 0 min 1;
+    private _altitudeActive = (missionNamespace getVariable ["ACME_sys_flight", true])
+        && {(missionNamespace getVariable ["ACME_altitude_enable", true])
+            || {missionNamespace getVariable ["ACM_breathing_altitudeAffectOxygen", false]}};
+    private _pRatio = if (_altitudeActive) then {_exposure select 2} else {1};
+    private _oxygenAvailability = ((_fio2Frac * _pRatio) / 0.21) max 0 min 1;
     private _lungPenalty = ((0.35 * _blast) + (0.30 * _edema) + (0.35 * _asp)) min 0.75;
-    private _reserveCeiling = (1 - _lungPenalty) * linearConversion [0.55,1,_pRatio,0.55,1,true];
-    _reserveCeiling = (_reserveCeiling max 0.20) min 1;
+    private _reserveCeiling = ((1 - _lungPenalty) * _oxygenAvailability) max 0 min 1;
 
     private _effectiveVent = _bvm || {_vent} || {_spontaneous};
     private _supplemental = _fio2Frac > 0.22;
     if (_effectiveVent && {_supplemental} && {_spo2 >= 92}) then {
-        private _oxygenBonus = linearConversion [0.22,1,_fio2Frac,0,1,true];
-        private _buildPerSec = 0.0012 + (0.0032 * _oxygenBonus); // ~3-5 min from ordinary reserve to full preoxygenation.
-        if (_spo2 >= 96) then {_buildPerSec = _buildPerSec * 1.25;};
-        _reserve = (_reserve + (_buildPerSec * _dt)) min _reserveCeiling;
+        // A stale high displayed saturation during a teleport is not evidence
+        // that the current atmosphere can actually replenish body reserves.
+        if (_oxygenAvailability >= 0.55) then {
+            private _oxygenBonus = linearConversion [0.22,1,_fio2Frac,0,1,true];
+            private _buildPerSec = 0.0012 + (0.0032 * _oxygenBonus); // ~3-5 min from ordinary reserve to full preoxygenation.
+            if (_spo2 >= 96) then {_buildPerSec = _buildPerSec * 1.25;};
+            _reserve = (_reserve + (_buildPerSec * _dt)) min _reserveCeiling;
+        };
     };
 
     private _apneic = !_bvm && {!_vent} && {!_spontaneous || {_rr <= 2}};
@@ -126,7 +142,7 @@ private _patients = (missionNamespace getVariable ["ACME_preox_activePatients", 
     // Replicated object state already survives JIP. Stable reserve needs no heartbeat;
     // changes and ownership transfer are sufficient publication triggers.
     [_u,"ACME_preox_reserve",_reserve,([0.005,0] select (abs (_reserve - 0.30) <= 0.000001)),0] call ACME_fnc_setVarNetApprox;
-    _u setVariable ["ACME_preox_lastSpO2", _spo2, false];
+    _u setVariable ["ACME_clock_preoxSample", [clientOwner, _epoch, _now, _spo2], false];
     // Publish only the coarse label transition; setVarNet suppresses unchanged state.
     [_u,"ACME_preox_state",if (_reserve >= 0.80) then {"preoxygenated"} else {if (_reserve >= 0.40) then {"partial"} else {"low"}}] call ACME_fnc_setVarNet;
 } forEach _patients;

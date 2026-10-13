@@ -22,40 +22,17 @@ addMissionEventHandler ["EntityRespawned", {
     // airway devices, vascular access, chest interventions, AAJT-S, dressings or other treatment evidence.
     if (!isNull _oldUnit && {local _oldUnit}) then {[_oldUnit] call ACME_fnc_deathFreeze;};
 
-    // Only the freshly spawned life is scrubbed back to baseline.
-    if (!isNull _newUnit && {local _newUnit}) then {[_newUnit] call ACME_fnc_clearAllAilments;};
-    if (!isNull _newUnit) then {
-        [_newUnit, false, false, "", -1, local _newUnit] call ACME_fnc_obtundedStateCommit;
-        _newUnit setVariable ["ACME_obtunded_forcedBack", false, local _newUnit];
-        [_newUnit, 0, local _newUnit, false] call ACME_fnc_rhythmActiveCommit;
-        _newUnit setVariable ["ACME_rhythm_targetHR", 0, local _newUnit];
-        _newUnit setVariable ["ACME_rhythm_bpOffset", 0, local _newUnit];
-        _newUnit setVariable ["ACME_rhythm_savedTargetHR", nil, local _newUnit];
-        _newUnit setVariable ["ACME_rhythm_obtundUntil", -1, local _newUnit];
-        _newUnit setVariable ["ACME_rhythm_torsadesNonPerfusing", nil, local _newUnit];
-        _newUnit setVariable ["ACME_rhythm_torsadesPerfusion", nil, local _newUnit];
-        _newUnit setVariable ["ACME_rhythm_torsadesArrestRequestAt", nil, false];
-        [_newUnit, "", -1, local _newUnit, false] call ACME_fnc_rhythmNativeHoldCommit;
-        [_newUnit, 0, false, false, false] call ACME_fnc_rhythmNativeHighHRFloorCommit;
-        [_newUnit, 0, false, false] call ACME_fnc_rhythmNativeShockGraceCommit;
-        [_newUnit, [["cardiacRhythmState", 0]], local _newUnit] call ACM_circulation_fnc_setRuntimeState;
-        [_newUnit, false, false, false, local _newUnit, false] call ACME_fnc_nrbStateCommit;
-        [_newUnit, "", local _newUnit, false] call ACME_fnc_hpmkStateCommit;
-        _newUnit setVariable ["ACME_emma_bvmAttached", false, local _newUnit];
-        _newUnit setVariable ["ACME_emma_lastPatient", objNull];
-        _newUnit setVariable ["ACME_emma_lastBag", -1e9];
-    };
-
-    // Ownership of the new player can settle a moment after EntityRespawned. Re-run the NEW-life reset on whichever
-    // machine actually owns it; never touch the old corpse here.
+    // Initialize through the current owner once. The retry carries the original
+    // issue time and completion/clinical-epoch fence, so damage or medication
+    // acquired between this event and the retry can never be full-healed again.
+    private _issuedAt = serverTime;
+    [_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;
     [{
-        params ["_u"];
-        if (isNull _u || {!alive _u}) exitWith {};
-        if (local _u) then {[_u] call ACME_fnc_clearAllAilments;};
-    }, [_newUnit], 2.0] call CBA_fnc_waitAndExecute;
+        params ["_u", "_issuedAt"];
+        [_u, _issuedAt] call ACME_fnc_respawnClinicalReset;
+    }, [_newUnit, _issuedAt], 2.0] call CBA_fnc_waitAndExecute;
 
-    [_newUnit, false] call ACME_fnc_obtundedApply;
-    if (!isNil "ACME_hpmk_activePatients") then {ACME_hpmk_activePatients = ACME_hpmk_activePatients - [_oldUnit, _newUnit];};
+    if (!isNil "ACME_hpmk_activePatients") then {ACME_hpmk_activePatients = ACME_hpmk_activePatients - [_oldUnit];};
 }];
 
 

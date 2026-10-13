@@ -16,20 +16,20 @@
  * Public: No
  */
 
-params ["_medic", "_patient"];
+params ["_medic", "_patient", ["_grant", []]];
+if (isMultiplayer && {_grant isEqualTo []}) exitWith {["cpr",_medic,_patient] call ACME_fnc_resusRequest;};
 
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
     || {!([_medic] call ACEFUNC(common,isAwake))}
-    || {alive _patient && {!IS_UNCONSCIOUS(_patient)}}
-    || {(objectParent _medic) isNotEqualTo (objectParent _patient)}
-    || {isNull objectParent _medic && {(_medic distance2D _patient) > ACEGVAR(medical_gui,maxDistance)}}) exitWith {};
+    || {_grant isEqualTo [] && {alive _patient && {!IS_UNCONSCIOUS(_patient)}}}
+    || {!([_medic,_patient] call ACME_fnc_patientInteractionContact)}) exitWith {};
 private _reserved = _patient getVariable [QGVAR(CPR_Medic), objNull];
-if ([_reserved, _patient] call FUNC(cprSessionValid)) exitWith {
+if (_grant isEqualTo [] && {[_reserved, _patient] call FUNC(cprSessionValid)}) exitWith {
     [LLSTRING(CPR_Already), 2, _medic] call ACEFUNC(common,displayTextStructured);
 };
 
 private _oldSession = _patient getVariable [QGVAR(CPR_session), []];
-[_reserved, _patient, _oldSession param [1, -1]] call FUNC(cprRelease);
+if (_grant isEqualTo []) then {[_reserved, _patient, _oldSession param [1, -1]] call FUNC(cprRelease);};
 // Recover this client's interrupted controller before replacing its captured session.
 private _localSession = missionNamespace getVariable [QGVAR(CPR_LocalSession), []];
 if !(_localSession isEqualTo []) then {_localSession call FUNC(cprCleanupLocal);};
@@ -39,7 +39,7 @@ if !(_localSession isEqualTo []) then {_localSession call FUNC(cprCleanupLocal);
 // new AnimDone handler every time compressions resumed. Old handlers could therefore wake up during a later CPR
 // episode and repeatedly switchMove the provider back into ACM_CPR. One provider now owns one immutable epoch.
 // Keep the sequence on the provider too, so a new owner cannot reuse an old epoch.
-private _epoch = 1 + ((missionNamespace getVariable [QGVAR(CPR_Epoch), 0]) max (_medic getVariable [QGVAR(CPR_Sequence), 0]));
+private _epoch = if (_grant isEqualTo []) then {1 + ((missionNamespace getVariable [QGVAR(CPR_Epoch), 0]) max (_medic getVariable [QGVAR(CPR_Sequence), 0]))} else {_grant select 5};
 // B256: CPR's local episode can survive a fast away/back locality transfer
 // between PFH ticks. The provider's locality epoch is separate from CPR_Epoch.
 private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
@@ -51,9 +51,11 @@ _medic setVariable [QGVAR(CPR_StartedEpoch), -1, false];
 _medic setVariable [QGVAR(CPR_Loop), false, false];
 _medic setVariable [QGVAR(CPR_Cancel), false];
 _medic setVariable [QGVAR(CPR_lastSeen), CBA_missionTime, true];
-_patient setVariable [QGVAR(CPR_session), [_medic, _epoch], true];
+if (_grant isEqualTo []) then {_patient setVariable [QGVAR(CPR_session), [_medic, _epoch], true];};
 GVAR(CPR_LocalSession) = [_medic, _patient, _epoch];
-[QGVAR(cprTrack), [_medic, _patient, _epoch]] call CBA_fnc_serverEvent;
+GVAR(CPR_LocalGrant) = +_grant;
+[QGVAR(cprTrack), [_medic, _patient, _epoch, _grant]] call CBA_fnc_serverEvent;
+if !(_grant isEqualTo []) then {[_patient,"resus",["activate","cpr",_medic,_grant select 1,_grant select 2,_grant select 3,_grant select 4,_epoch,serverTime,[]]] call ACME_fnc_ownerDispatch;};
 
 // Synchronously retire input/EH leftovers before installing new handlers. Never leave an old F0/F1/F2 or
 // AnimDone callback around to operate on the new CPRTarget.
@@ -79,8 +81,10 @@ private _fnc_doCPRAnimation = {
 };
 
 // A reservation keeps chest custody during preparation, but must not deliver compressions before entry finishes.
-_patient setVariable [QACEGVAR(medical,CPR_provider), objNull, true];
-_patient setVariable [QGVAR(CPR_Medic), _medic, true];
+if (_grant isEqualTo []) then {
+    _patient setVariable [QACEGVAR(medical,CPR_provider), objNull, true];
+    _patient setVariable [QGVAR(CPR_Medic), _medic, true];
+};
 _medic setVariable [QGVAR(isPerformingCPR), true, true];
 
 GVAR(CPRTarget) = _patient;
@@ -128,7 +132,7 @@ GVAR(CPRCancel_EscapeID) = [0x01, [false, false, false], _cancelCode, "keydown",
 GVAR(CPRCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
 private _toggleCode = compile format [
-    "private _m = ACE_player; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; if ((_m getVariable ['ACM_circulation_CPR_StartedEpoch', -2]) != %1) exitWith {false}; private _p = _m getVariable ['ACM_circulation_CPR_Patient', objNull]; if (isNull _p) exitWith {false}; private _owner = _p getVariable ['ace_medical_CPR_provider', objNull]; if (isNull _owner) then {_p setVariable ['ace_medical_CPR_provider', _m, true];} else {if (_owner isEqualTo _m) then {_p setVariable ['ace_medical_CPR_provider', objNull, true];};}; false",
+    "private _m = ACE_player; if (isNull _m || {(_m getVariable ['ACM_circulation_CPR_Epoch', -2]) != %1}) exitWith {false}; if ((_m getVariable ['ACM_circulation_CPR_StartedEpoch', -2]) != %1) exitWith {false}; private _p = _m getVariable ['ACM_circulation_CPR_Patient', objNull]; if (isNull _p) exitWith {false}; if (isMultiplayer) exitWith {private _s=_m getVariable ['ACME_resusToken_cpr',[]]; if (count _s==6) then {[_p,'resus',['toggle','cpr',_m,_s select 1,_s select 2,_s select 3,_s select 4,_s select 5,serverTime,[]]] call ACME_fnc_ownerDispatch;}; false}; private _owner = _p getVariable ['ace_medical_CPR_provider', objNull]; if (isNull _owner) then {_p setVariable ['ace_medical_CPR_provider', _m, true];} else {if (_owner isEqualTo _m) then {_p setVariable ['ace_medical_CPR_provider', objNull, true];};}; false",
     _epoch
 ];
 GVAR(CPRToggle_MouseID) = [0xF1, [false, false, false], _toggleCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
@@ -183,7 +187,7 @@ if (_patient getVariable ["ACME_headElevated", false]) then {
 // session down on the next frame and can never leave a two-second delayed callback that later starts an old CPR.
 private _controller = [{
     params ["_args", "_idPFH"];
-    _args params ["_medic", "_patient", "_notInVehicle", "_readyAt", "_CPRStartTime", "_fnc_doCPRAnimation", "_epoch", "_needsLower", "_lowerDeadline", "_lowerRetryAt", "_lowerRetries", "_lowerOwner", "_localityEpoch"];
+    _args params ["_medic", "_patient", "_notInVehicle", "_readyAt", "_CPRStartTime", "_fnc_doCPRAnimation", "_epoch", "_needsLower", "_lowerDeadline", "_lowerRetryAt", "_lowerRetries", "_lowerOwner", "_localityEpoch", "_grant", "_admitUntil"];
 
     // A newer CPR episode owns the provider. The newer start synchronously removed these old input hooks, so the old
     // PFH retires itself only. It must not remove possibly reused handler ids or mutate any current client globals.
@@ -194,9 +198,9 @@ private _controller = [{
     private _patientCondition = isNull _patient || {(!(IS_UNCONSCIOUS(_patient)) && alive _patient)};
     private _medicCondition = isNull _medic || {!(alive _medic)} || {IS_UNCONSCIOUS(_medic)} || {!local _medic}
         || {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch};
-    private _vehicleCondition = (objectParent _medic isNotEqualTo objectParent _patient);
+    private _vehicleCondition = !([_medic,_patient] call ACME_fnc_patientInteractionContact);
     private _enteredVehicle = _notInVehicle && {!isNull objectParent _medic};
-    private _distanceCondition = (!isNull _patient) && {(_patient distance2D _medic) > ACEGVAR(medical_gui,maxDistance)};
+    private _distanceCondition = _vehicleCondition;
     private _ownsCPR = !isNull _patient
         && {(_patient getVariable [QGVAR(CPR_session), []]) isEqualTo [_medic, _epoch]}
         && {(_patient getVariable [QGVAR(CPR_Medic), objNull]) isEqualTo _medic};
@@ -204,7 +208,7 @@ private _controller = [{
     private _lowerTimedOut = _needsLower && {CBA_missionTime >= _lowerDeadline}
         && {(_medic getVariable [QGVAR(CPR_StartedEpoch), -1]) != _epoch};
 
-    if (_patientCondition || _medicCondition || !_ownsCPR || _swapToBVM || _lowerTimedOut || dialog
+    if (_patientCondition || _medicCondition || (!_ownsCPR && {serverTime >= _admitUntil}) || _swapToBVM || _lowerTimedOut || dialog
         || {_medic getVariable [QGVAR(CPR_Cancel), false]}
         || {_enteredVehicle} || {(!_notInVehicle && _vehicleCondition) || {(_notInVehicle && _distanceCondition)}}) exitWith {
         private _started = (_medic getVariable [QGVAR(CPR_StartedEpoch), -1]) == _epoch;
@@ -215,7 +219,7 @@ private _controller = [{
             _medic setVariable ["ACME_chestAccessManeuverHandoff", [_patient, CBA_missionTime + 1.00], false];
             [_patient, "chestAccessManeuverHandoff", [1.00]] call ACME_fnc_ownerDispatch;
         };
-        if !([_medic, _patient, _epoch] call FUNC(cprCleanupLocal)) exitWith {};
+        if !([_medic, _patient, _epoch, _grant] call FUNC(cprCleanupLocal)) exitWith {};
 
         if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo ACE_player} && {isNull objectParent _medic}) then {
             [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
@@ -229,8 +233,10 @@ private _controller = [{
             private _CPRTime = (CBA_missionTime - _CPRStartTime) max 0;
             private _time = [_CPRTime, "MM:SS"] call BIS_fnc_secondsToString;
             [_patient, "activity", LLSTRING(CPR_ActionLog_Stopped), [[_medic, false, true] call ACEFUNC(common,getName), _time]] call ACEFUNC(medical_treatment,addToLog);
-            _patient setVariable [QGVAR(CPR_StoppedTotal), _CPRTime, true];
-            _patient setVariable [QGVAR(CPR_StoppedTime), CBA_missionTime, true];
+            if (_grant isEqualTo []) then {
+                _patient setVariable [QGVAR(CPR_StoppedTotal), _CPRTime, true];
+                _patient setVariable [QGVAR(CPR_StoppedTime), CBA_missionTime, true];
+            };
         };
 
         // A dead/replaced provider must not close or reopen the new player's interface.
@@ -279,7 +285,7 @@ private _controller = [{
 
         _CPRStartTime = CBA_missionTime;
         _args set [4, _CPRStartTime];
-        _patient setVariable [QACEGVAR(medical,CPR_provider), _medic, true];
+        if (_grant isEqualTo []) then {_patient setVariable [QACEGVAR(medical,CPR_provider), _medic, true];};
         GVAR(CPRActive) = true;
         if (currentWeapon _medic != "") then {[_medic] call ACEFUNC(weaponselect,putWeaponAway);};
         [LLSTRING(CPR_Stop), LLSTRING(CPR_Pause), ""] call ACEFUNC(interaction,showMouseHint);
@@ -314,7 +320,11 @@ private _controller = [{
         _medic setVariable [QGVAR(CPR_AnimEH), _animEH, false];
         _medic setVariable [QGVAR(CPR_StartedEpoch), _epoch, false];
 
-        [QGVAR(handleCPR), [_patient, _CPRStartTime], _patient] call CBA_fnc_targetEvent;
+        if (_grant isEqualTo []) then {
+            [QGVAR(handleCPR), [_patient, _CPRStartTime], _patient] call CBA_fnc_targetEvent;
+        } else {
+            [_patient,"resus",["start","cpr",_medic,_grant select 1,_grant select 2,_grant select 3,_grant select 4,_epoch,serverTime,[]]] call ACME_fnc_ownerDispatch;
+        };
         if (_notInVehicle) then {[_medic, _epoch] call _fnc_doCPRAnimation;};
     };
 
@@ -396,6 +406,6 @@ private _controller = [{
         };
         _medic setVariable [QGVAR(isPerformingCPR), GVAR(CPRActive), true];
     };
-}, 0, [_medic, _patient, _notInVehicle, _readyAt, _CPRStartTime, _fnc_doCPRAnimation, _epoch, _needsLower, _lowerDeadline, _lowerRetryAt, _lowerRetries, _lowerOwner, _localityEpoch]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_medic, _patient, _notInVehicle, _readyAt, _CPRStartTime, _fnc_doCPRAnimation, _epoch, _needsLower, _lowerDeadline, _lowerRetryAt, _lowerRetries, _lowerOwner, _localityEpoch, _grant, serverTime + ([0,5] select (!(_grant isEqualTo [])))]] call CBA_fnc_addPerFrameHandler;
 
 GVAR(CPR_ControllerPFH) = _controller;

@@ -11,10 +11,14 @@ if (isNull _d || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"
 if (!_standardTimed && {!(missionNamespace getVariable ["ACME_hcEff_medications",false])}) exitWith {false};
 private _existing = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
 if (_existing isEqualType createHashMap && {count _existing > 0}) exitWith {false};
-// Ownership changes cannot transfer this client-local plunger transaction safely. Keep its evidence until
-// the provider receives a fresh kit, without preventing another provider from starting a separate push.
+// Reconcile only stopped jobs from this same provider ownership period. Flow never resumes.
+[ACE_player] call ACME_fnc_hardcorePushRecover;
+// Keep unresolved evidence bounded. A malformed historical archive cannot prove
+// which syringe remains reserved, so its provider still fails closed.
 private _retired = missionNamespace getVariable ["ACME_HCMedPushRetiredJobs",[]];
-if (count _retired >= 32 || {(_retired findIf {(_x select 0) isEqualTo ACE_player}) >= 0}) exitWith {
+if (count _retired >= 32 || {(_retired findIf {(_x param [0,objNull]) isEqualTo ACE_player
+    && {count _x < 3 || {!((_x select 2) isEqualType createHashMap)}
+        || {((_x select 2) getOrDefault ["stableId",""]) == ""}}}) >= 0}) exitWith {
     ["An unsettled syringe push was retained after a provider change. Reset the affected provider's kit before reusing it.",5,ACE_player,13] call ace_common_fnc_displayTextStructured;
     false
 };
@@ -40,6 +44,14 @@ if (_idx < 0 || {_idx >= count _store}) exitWith {false};
 private _row = +(_store select _idx);
 private _stable = _row param [11,"",[""]];
 if (_stable == "") exitWith {false};
+// One unresolved syringe cannot prevent treatment with another funded syringe.
+// Its exact stable identity remains blocked until its receipts settle.
+if ((_retired findIf {(_x param [0,objNull]) isEqualTo ACE_player
+    && {((_x select 2) getOrDefault ["stableId",""]) == _stable}}) >= 0) exitWith {
+    ["That syringe has an unsettled push. Use another prepared syringe while its receipt is pending.",5,ACE_player,13]
+        call ace_common_fnc_displayTextStructured;
+    false
+};
 private _med = _row param [0,"",[""]];
 private _size = _row param [1,10,[0]];
 private _drug = _row param [2,0,[0]];
@@ -171,6 +183,7 @@ private _session = format ["hcpush:%1:%2:%3",clientOwner,floor(diag_tickTime*100
 private _job = createHashMapFromArray [
     ["medic",ACE_player],["patient",_patient],["bodyPart",toLowerANSI _body],["site",_site],["route","vascular"],
     ["providerLocalityEpoch",ACE_player getVariable ["ACME_providerLocalityEpoch",0]],
+    ["kitEpoch",ACE_player getVariable ["ACME_equipmentKitEpoch",0]],["providerOwner",clientOwner],
     ["identity",_identity],["stableId",_stable],["size",_size],["med",_med],["kind",_kind],["virtual",_virtual],
     ["inventoryBacked",_inventoryBacked],["inventoryRequest",_inventoryRequest],
     ["label",_row param [3,"",[""]]],["pushLabel",_pushLabel],["barrelMarker",_row param [12,"",[""]]],

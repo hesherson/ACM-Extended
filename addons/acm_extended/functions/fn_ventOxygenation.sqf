@@ -1,13 +1,17 @@
 // Ventilator oxygenation/shunt model.  Aspiration is an additional recruitable shunt: PEEP can improve some
 // collapsed/flooded units but suctioning visible airway contents does not erase established aspiration injury.
 params ["_patient", "_comp", "_peep", "_fio2", "_recruit"];
+private _aspiration = [_patient] call ACME_fnc_aspirationState;
+// Do not publish a new shunt/target from half of an incoming clinical packet.
+// The caller continues delivering breaths and gas while this model defers.
+if (_aspiration isEqualTo []) exitWith {nil};
 
 private _overload = _patient getVariable ["ACM_circulation_Overload_Volume", 0];
 private _ptx      = _patient getVariable ["ACM_breathing_Pneumothorax_State", 0];
 private _htxFluid = _patient getVariable ["ACM_breathing_Hemothorax_Fluid", 0];
 private _blast    = _patient getVariable ["ACME_blastLung_State", 0];
-private _asp      = (_patient getVariable ["ACME_aspiration_load", 0]) max 0 min 1;
-private _aspEdema = (_patient getVariable ["ACME_aspiration_edema", 0]) max 0 min 1;
+private _asp      = (_aspiration select 2) max 0 min 1;
+private _aspEdema = (_aspiration select 3) max 0 min 1;
 private _aspInjury = _asp max (0.85 * _aspEdema);
 
 private _edemaN = linearConversion [0.2, 1.6, _overload, 0, 1, true];

@@ -19,20 +19,21 @@
  * Public: No
  */
 
-params ["_medic", "_patient", ["_useOxygen", false], ["_portableOxygen", false]];
+params ["_medic", "_patient", ["_useOxygen", false], ["_portableOxygen", false], ["_grant", []]];
+if (isMultiplayer && {_grant isEqualTo []}) exitWith {["bvm",_medic,_patient,[_useOxygen,_portableOxygen]] call ACME_fnc_resusRequest;};
 
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
     || {!([_medic] call ACEFUNC(common,isAwake))}
     || {missionNamespace getVariable [QEGVAR(core,ContinuousAction_Active), false]}
-    || {!([_medic, _patient, true] call FUNC(canUseBVM))}) exitWith {};
+    || {_grant isEqualTo [] && {!([_medic, _patient, true] call FUNC(canUseBVM))}}) exitWith {};
 private _reserved = _patient getVariable [QGVAR(BVM_Medic), objNull];
-if ([_reserved, _patient] call FUNC(bvmSessionValid)) exitWith {
+if (_grant isEqualTo [] && {[_reserved, _patient] call FUNC(bvmSessionValid)}) exitWith {
     [LLSTRING(BVM_Already), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
 };
 
 // Recover a dead, disconnected or abandoned provider reservation before a new start.
 private _oldSession = _patient getVariable [QGVAR(BVM_session), []];
-[_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);
+if (_grant isEqualTo []) then {[_reserved, _patient, _oldSession param [1, -1]] call FUNC(bvmRelease);};
 
 // A provider-supported Semi-Fowler has no prop and cannot survive the supporting provider yielding to BVM.
 // Supported backpack/carrier Semi-Fowler is compatible with BVM and is intentionally left elevated.
@@ -55,13 +56,15 @@ if (_dpSamePatient) then {
     _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
 };
 
-[[_medic, _patient, "head", [_useOxygen, _portableOxygen]], { // On Start
+[[_medic, _patient, "head", [_useOxygen, _portableOxygen, -1, _grant]], { // On Start
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
     _extraArgs params ["_useOxygen", "_portableOxygen"];
 
     private _epoch = missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", -1];
     _extraArgs set [2, _epoch];
+    _extraArgs set [4,serverTime+5];
     GVAR(BVM_LocalSession) = [_medic, _patient, _epoch];
+    GVAR(BVM_LocalGrant) = +(_extraArgs param [3,[]]);
 
     // 1.2.3: a successful BVM start completes any CPR -> BVM chest-access handoff.
     private _chestHandoff = _medic getVariable ["ACME_chestAccessManeuverHandoff", []];
@@ -71,12 +74,12 @@ if (_dpSamePatient) then {
 
     _medic setVariable [QGVAR(BVM_patient), _patient, true];
     _medic setVariable [QGVAR(BVM_epoch), _epoch, true];
-    _patient setVariable [QGVAR(BVM_session), [_medic, _epoch], true];
-    [QGVAR(bvmTrack), [_medic, _patient, _epoch]] call CBA_fnc_serverEvent;
+    if (_extraArgs param [3,[]] isEqualTo []) then {_patient setVariable [QGVAR(BVM_session), [_medic, _epoch], true];};
+    [QGVAR(bvmTrack), [_medic, _patient, _epoch, _extraArgs param [3,[]]]] call CBA_fnc_serverEvent;
 
     "ACM_UseBVM" cutRsc ["RscUseBVM", "PLAIN", 0, false];
 
-    _patient setVariable [QGVAR(BVM_Medic), _medic, true];
+    if (_extraArgs param [3,[]] isEqualTo []) then {_patient setVariable [QGVAR(BVM_Medic), _medic, true];};
 
     GVAR(BVMTarget) = _patient;
     GVAR(BVMActive) = false;
@@ -87,7 +90,7 @@ if (_dpSamePatient) then {
     GVAR(BVM_OxygenActive) = _useOxygen;
     GVAR(BVM_PortableOxygen) = _portableOxygen;
 
-    _patient setVariable [QGVAR(BVM_ConnectedOxygen), _useOxygen, true];
+    if (_extraArgs param [3,[]] isEqualTo []) then {_patient setVariable [QGVAR(BVM_ConnectedOxygen), _useOxygen, true];};
 
     GVAR(BVM_BreathCount) = 0;
 
@@ -113,7 +116,7 @@ if (_dpSamePatient) then {
     GVAR(BVMCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
     private _toggleCode = compile format [
-        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (isNull _t) exitWith {false}; if ((_t getVariable ['ACM_breathing_BVM_provider', objNull]) isEqualTo objNull) then {_t setVariable ['ACM_breathing_BVM_provider', ACE_player, true];} else {_t setVariable ['ACM_breathing_BVM_provider', objNull, true];}; false",
+        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (isNull _t) exitWith {false}; if (isMultiplayer) exitWith {private _m=ACE_player; private _s=_m getVariable ['ACME_resusToken_bvm',[]]; if (count _s==6) then {[_t,'resus',['toggle','bvm',_m,_s select 1,_s select 2,_s select 3,_s select 4,_s select 5,serverTime,[]]] call ACME_fnc_ownerDispatch;}; false}; if ((_t getVariable ['ACM_breathing_BVM_provider', objNull]) isEqualTo objNull) then {_t setVariable ['ACM_breathing_BVM_provider', ACE_player, true];} else {_t setVariable ['ACM_breathing_BVM_provider', objNull, true];}; false",
         _epoch
     ];
     GVAR(BVMToggle_MouseID) = [0xF1, [false, false, false], _toggleCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
@@ -133,7 +136,10 @@ if (_dpSamePatient) then {
     // Keep compressor and ventilator ownership independent instead.
     private _assisting = [_patient] call EFUNC(core,cprActive);
     GVAR(CPRActive) = _assisting;
-    _patient setVariable [QGVAR(BVM_provider), _medic, true];
+    private _state = _extraArgs param [3,[]];
+    if (_state isEqualTo []) then {_patient setVariable [QGVAR(BVM_provider), _medic, true];} else {
+        [_patient,"resus",["activate","bvm",_medic,_state select 1,_state select 2,_state select 3,_state select 4,_epoch,serverTime,[_useOxygen]]] call ACME_fnc_ownerDispatch;
+    };
     GVAR(BVMActive) = true;
     [LLSTRING(BVM_Stop), LLSTRING(BVM_Pause), ""] call ACEFUNC(interaction,showMouseHint);
 
@@ -187,7 +193,7 @@ if (_dpSamePatient) then {
         [_patient, "chestAccessManeuverHandoff", [_handoffSec]] call ACME_fnc_ownerDispatch;
     };
 
-    if !([_medic, _patient, _epoch] call FUNC(bvmCleanupLocal)) exitWith {};
+    if !([_medic, _patient, _epoch, _extraArgs param [3,[]]] call FUNC(bvmCleanupLocal)) exitWith {};
     // Death/respawn/locality loss releases ownership without reopening menus on the replacement player.
     if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
         || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {};
@@ -212,8 +218,7 @@ if (_dpSamePatient) then {
                 || {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}
                 || {isNull _medic} || {isNull _patient} || {!local _medic} || {!alive _medic}
                 || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}
-                || {(objectParent _medic) isNotEqualTo (objectParent _patient)}
-                || {isNull objectParent _medic && {(_medic distance2D _patient) > ACEGVAR(medical_gui,maxDistance)}}) exitWith {};
+                || {!([_medic,_patient] call ACME_fnc_patientInteractionContact)}) exitWith {};
             [LLSTRING(BVM_SwappedToCPR), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
             if (vest _patient != "" && {isNull objectParent _patient}) then {
                 // Only CPR needs the carrier removed. Existing open-chest swaps keep their direct path.
@@ -231,6 +236,16 @@ if (_dpSamePatient) then {
 }, { // PerFrame
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
     _extraArgs params ["_useOxygen", "_portableOxygen"];
+
+    if ((_patient getVariable [QGVAR(BVM_provider),objNull]) isEqualTo _patient
+        && {serverTime >= (_extraArgs param [4,-1])}) exitWith {EGVAR(core,ContinuousAction_Active)=false;};
+    private _grant = _extraArgs param [3,[]];
+    if (!(_grant isEqualTo []) && {
+        (_grant select 2) != ([_patient] call ACME_fnc_clinicalEpoch)
+        || {serverTime >= (_extraArgs param [4,-1]) && {
+            (_patient getVariable [QGVAR(BVM_session),[]]) isNotEqualTo [_medic,_extraArgs param [2,-1]]
+        }}
+    }) exitWith {EGVAR(core,ContinuousAction_Active)=false;};
 
     private _updateMouseHint = false;
     private _updateText = false;
@@ -281,7 +296,7 @@ if (_dpSamePatient) then {
         };
     };
 
-    if (alive (_patient getVariable [QGVAR(BVM_provider), objNull])) then {
+    if ((_patient getVariable [QGVAR(BVM_provider), objNull]) isEqualTo _medic) then {
         if !([_medic, _patient, true] call FUNC(canUseBVM)) exitWith {
             EGVAR(core,ContinuousAction_Active) = false;
         };
@@ -293,14 +308,22 @@ if (_dpSamePatient) then {
             if (GVAR(BVM_BreathCount) > 1 && (GET_AIRWAYSTATE(_patient) > 0)) then {
                 // Oxygen physiology consumes these timestamps on the casualty owner. Never stamp them with the
                 // provider client's mission clock; one owner-routed event per delivered breath is sufficient.
-                [_patient, "bvmBreath", [_patient getVariable [QGVAR(BVM_ConnectedOxygen), false]]] call ACME_fnc_ownerDispatch;
+                private _state = _extraArgs param [3,[]];
+                if (_state isEqualTo []) then {
+                    [_patient, "bvmBreath", [_patient getVariable [QGVAR(BVM_ConnectedOxygen), false]]] call ACME_fnc_ownerDispatch;
+                } else {
+                    [_patient, "bvmBreath", [_patient getVariable [QGVAR(BVM_ConnectedOxygen), false],_medic,_state,GVAR(BVM_BreathCount),serverTime]] call ACME_fnc_ownerDispatch;
+                };
             };
 
             if (GVAR(BVM_PortableOxygen)) then {
                 private _success = [_medic] call FUNC(useOxygenTankReserve);
                 if !(_success) then {
                     [LLSTRING(BVM_UsingBVM_OxygenTankDepleted), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
-                    _patient setVariable [QGVAR(BVM_ConnectedOxygen), false, true];
+                    private _state = _extraArgs param [3,[]];
+                    if (_state isEqualTo []) then {_patient setVariable [QGVAR(BVM_ConnectedOxygen), false, true];} else {
+                        [_patient,"resus",["oxygen","bvm",_medic,_state select 1,_state select 2,_state select 3,_state select 4,_state select 5,serverTime,[false]]] call ACME_fnc_ownerDispatch;
+                    };
                     GVAR(BVM_PortableOxygen) = false;
                 };
             };

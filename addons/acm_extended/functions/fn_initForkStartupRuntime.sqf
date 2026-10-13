@@ -1,8 +1,8 @@
 ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");
 if (ACME_infusion_version == "") then { ACME_infusion_version = "1.2.4.1"; };
-ACME_buildBatch = "B281";
+ACME_buildBatch = "B282";
 ACME_debugRevision = "";
-ACME_networkAuditRevision = "NA8-B281-1.2.4.1-candidate";
+ACME_networkAuditRevision = "NA8-B282-1.2.4.1-candidate";
 diag_log format ["[ACME BUILD] version=%1 batch=%2 revision=%3",ACME_infusion_version,ACME_buildBatch,ACME_networkAuditRevision];
 
 /*

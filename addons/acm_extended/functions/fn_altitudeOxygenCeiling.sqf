@@ -13,17 +13,9 @@ if (!_flight && {!_nativeAltitude}) exitWith {99};
 if (count _exposure != 5) then {_exposure = [_patient] call ACME_fnc_flightExposure;};
 if (!_nativeAltitude && {(_exposure select 0) < (missionNamespace getVariable ["ACME_altitude_minMetres", 500])}) exitWith {99};
 private _pRatio = _exposure select 2;
-private _fio2 = if (_exposure select 3) then {100} else {21};
+private _fio2 = [_patient, _exposure] call ACME_fnc_flightDeliveredFiO2;
 if (_deliveredFiO2 isEqualType 0 && {finite _deliveredFiO2} && {_deliveredFiO2 >= 21}) then {
     _fio2 = _deliveredFiO2 min 100;
-} else {
-    if (_patient getVariable ["ACME_vent_driving", false]) then {
-        _fio2 = ([_patient] call ACME_fnc_ventEffectiveSettings) select 4;
-    } else {
-        if ((_patient getVariable ["ACME_nrb_on", false])
-            && {_patient getVariable ["ACME_nrb_hasO2", false]}
-            && {_patient getVariable ["ACME_nrb_delivering", false]}) then {_fio2 = _fio2 max 70;};
-    };
 };
 if !(_fio2 isEqualType 0 && {finite _fio2}) then {_fio2 = 21;};
 _fio2 = (_fio2 max 21) min 100;

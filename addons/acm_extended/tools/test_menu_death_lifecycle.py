@@ -92,7 +92,7 @@ def adapt(s, component='core'):
         # Match command/identifier boundaries on both sides. In particular,
         # `stance _p` must not match the tail of `_m distance _p`.
         s = re.sub(r'(?<!\w)' + re.escape(old) + (r'\b' if old[-1].isalnum() else ''), lambda _: new, s)
-    s = s.replace('objNull, [objNull]', 'objNull, [profileNamespace]')
+    s = re.sub(r'\bobjNull\s*,\s*\[objNull\]', 'objNull, [profileNamespace]', s)
     # Objects are namespace stand-ins here. This SQF-VM returns nil for missing
     # typed-object param values instead of Arma's objNull fallback; adapt only
     # that engine type boundary, preserving the actual default and lease logic.
@@ -194,6 +194,15 @@ PREAMBLE += "\nACME_fnc_isTorsoBandage={" + adapt(read("isTorsoBandage")) + "};"
 PREAMBLE += "\nACME_fnc_yBagReplaceEmpty={" + adapt(read("yBagReplaceEmpty")) + "};"
 
 
+GROUND_CONTACT_SOURCE = adapt(read('patientInteractionContact'))
+GROUND_CONTACT_SOURCE = re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',GROUND_CONTACT_SOURCE)
+PREAMBLE += 'ACME_fnc_patientInteractionDistance={'+adapt(read('patientInteractionDistance'))+'};'
+PREAMBLE += 'ACME_fnc_flightAirframe={objNull};ACME_fnc_patientInteractionContact={'+GROUND_CONTACT_SOURCE+'};'
+
+
+# New read-only aspiration authority is executed by retained production paths.
+# Delayed import inside execute avoids the fixture module's intentional import of this adapter.
+
 def execute(code):
     vm = os.environ.get('SQFVM') or shutil.which('sqfvm')
     if not vm:
@@ -202,7 +211,8 @@ def execute(code):
     # A temporary input file preserves every source byte without truncation or weakening assertions.
     with tempfile.TemporaryDirectory(prefix="acme-sqf-test-") as directory:
         source_path = Path(directory) / "case.sqf"
-        source_path.write_text(PREAMBLE + code + '\ndiag_log (if (_ok) then {"MENU_FIX_OK"} else {"MENU_FIX_FAIL"});', encoding="utf-8")
+        from b282_aspiration_fixture import definitions as aspiration_definitions
+        source_path.write_text(PREAMBLE + aspiration_definitions() + code + '\ndiag_log (if (_ok) then {"MENU_FIX_OK"} else {"MENU_FIX_FAIL"});', encoding="utf-8")
         result = subprocess.run([vm, '--automated', '--suppress-welcome', '--no-execute-print', '--no-work-print', '--input-sqf', str(source_path)], capture_output=True, text=True, timeout=15)
     output = result.stdout + result.stderr
     assert result.returncode == 0 and '[ERR]' not in output and '[FAT]' not in output, output

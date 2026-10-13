@@ -56,7 +56,7 @@ def setup():
       private _events=[];private _debits=0;private _emptyReturns=0;private _kitDraws=0;
       private _linear={params ["_a","_b","_value","_lo","_hi",["_clamp",false]];private _fraction=(_value-_a)/(_b-_a);if (_clamp) then {_fraction=_fraction max 0 min 1;};_lo+(_hi-_lo)*_fraction};
       private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
-      private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];private _value=_map get _key;if (isNil "_value") exitWith {_default};_value};
+      private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
       private _magazines={params ["_u","_part"];private _bags=_u getVariable ["fixtureTanks",[[],[],[]]];(_bags select _part) apply {["ACM_OxygenTank_425",_x]}};
       private _magazineCargo={params ["_container","_direction","_charge"];_container params ["_u","_part"];private _bags=+(_u getVariable ["fixtureTanks",[[],[],[]]]);private _row=+(_bags select _part);if (_direction<0) then {private _i=_row find _charge;if (_i>=0) then {_row deleteAt _i;_debits=_debits+1;};} else {_row pushBack _charge;};_bags set [_part,_row];_u setVariable ["fixtureTanks",_bags];};
       ACME_fnc_clinicalEpoch={_liveEpoch};

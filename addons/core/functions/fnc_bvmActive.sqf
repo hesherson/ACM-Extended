@@ -17,4 +17,6 @@
 
 params ["_patient"];
 
-alive (_patient getVariable [QEGVAR(breathing,BVM_provider), objNull])
+private _provider = _patient getVariable [QEGVAR(breathing,BVM_provider),objNull];
+// Mechanical ventilation uses the unconscious patient as its native provider sentinel.
+alive _provider && {_provider isEqualTo _patient || {!(_provider getVariable ["ACE_isUnconscious",false])}}

@@ -1,8 +1,11 @@
 #include "..\script_component.hpp"
 // Retire animation re-entry and public ownership before any input/UI operation can fail.
-params ["_medic", "_patient", "_epoch"];
-private _ownsMedic = !isNull _medic && {(_medic getVariable [QGVAR(CPR_Epoch), -1]) == _epoch};
-private _ownsLocal = (missionNamespace getVariable [QGVAR(CPR_LocalSession), []]) isEqualTo [_medic, _patient, _epoch];
+params ["_medic", "_patient", "_epoch", ["_capturedGrant",[]]];
+private _localGrant = missionNamespace getVariable [QGVAR(CPR_LocalGrant),[]];
+if (isMultiplayer && {_capturedGrant isEqualTo []}) then {_capturedGrant = +_localGrant;};
+private _sameGrant = !isMultiplayer || {count _capturedGrant == 6 && {_capturedGrant isEqualTo _localGrant}};
+private _ownsMedic = _sameGrant && {!isNull _medic} && {(_medic getVariable [QGVAR(CPR_Epoch), -1]) == _epoch};
+private _ownsLocal = _sameGrant && {(missionNamespace getVariable [QGVAR(CPR_LocalSession), []]) isEqualTo [_medic, _patient, _epoch]};
 if (_ownsMedic || {_ownsLocal && {!isNull _medic} && {local _medic}
     && {(_medic getVariable [QGVAR(CPR_Epoch), -1]) == -1}}) then {
     // The server may already have invalidated this epoch. Its local animation handler still needs removal.
@@ -12,9 +15,10 @@ if (_ownsMedic || {_ownsLocal && {!isNull _medic} && {local _medic}
     if (_animEH >= 0) then {_medic removeEventHandler ["AnimDone", _animEH];};
     _medic setVariable [QGVAR(CPR_StartedEpoch), -1];
 };
-[_medic, _patient, _epoch] call FUNC(cprRelease);
+[_medic, _patient, _epoch, _capturedGrant] call FUNC(cprRelease);
 if (!_ownsLocal) exitWith {false};
 GVAR(CPR_LocalSession) = [];
+GVAR(CPR_LocalGrant) = [];
 GVAR(loopCPR) = false;
 GVAR(CPRActive) = false;
 GVAR(CPRTarget) = objNull;

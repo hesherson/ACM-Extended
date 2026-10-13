@@ -20,6 +20,29 @@ if (_expectedLease != "" && {_lease != _expectedLease}) exitWith {false};
 if (_reason == "replace-timeout" && {_state != "restoring"}) exitWith {false};
 
 private _provider = _patient getVariable ["ACME_manualPlateCarrierProvider", objNull];
+// Owner-local failure bookkeeping is keyed by live equipment and generations.
+// A changed vest, custody, lease or kit bypasses the retry delay immediately.
+private _retryKey = {
+    [_patient getVariable ["ACME_manualPlateCarrierLease", ""],
+        _patient getVariable ["ACME_manualPlateCarrierState", ""],
+        _patient getVariable ["ACME_equipmentKitEpoch", 0],
+        _patient getVariable ["ACME_clinicalEpoch", 0],
+        _patient getVariable ["ACME_providerLocalityEpoch", 0],
+        vest _patient, _patient getVariable ["ACME_carrierCargo", objNull],
+        +(_patient getVariable ["ACME_chestAccess_vestLoadout", []]),
+        _patient getVariable ["ACME_chestAccess_vestLoadoutSettled", false],
+        _patient getVariable ["ACME_chestAccess_vestBusy", ""],
+        _patient getVariable ["ACME_headElev_manualCarrierBorrowed", false]]
+};
+private _retry = _patient getVariable ["ACME_manualPlateCarrierReturnRetry", []];
+private _retrying = count _retry >= 3 && {(_retry select 0) isEqualTo (call _retryKey)};
+private _now = CBA_missionTime;
+if (_retrying && {_now < (_retry select 1)}) exitWith {false};
+private _leases = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
+if !(_leases isEqualType createHashMap) then {_leases = createHashMap;};
+// The first attempt retires the exact presentation episode. Identical retries
+// only retry its physical cargo return; they cannot rebroadcast every teardown.
+if (!_retrying) then {
 
 // If Semi-Fowler is borrowing this manual carrier, retire that posture first without playing a visible lowering
 // animation. The head-elevation vest restore hook only releases the borrowed support back to manual custody;
@@ -33,8 +56,6 @@ if (_patient getVariable ["ACME_headElev_manualCarrierBorrowed", false]) then {
 };
 
 // Retire the persistent manual lease without disturbing unrelated chest-access leases.
-private _leases = _patient getVariable ["ACME_chestAccess_leases", createHashMap];
-if !(_leases isEqualType createHashMap) then {_leases = createHashMap;};
 if (_lease != "") then {
     [_patient, [_lease]] call ACME_fnc_chestAccessLeaseRetire;
     _leases deleteAt _lease;
@@ -73,6 +94,8 @@ if (_busy != "") then {
     [_patient, true] call ACME_fnc_headElevCollision;
 };
 
+};
+
 // Force means transport/wake correctness outranks reverse theatre. The restore function returns the exact
 // saved vest slot, deletes the parked prop and clears temporary chest-access custody in this same owner frame.
 private _saved = +(_patient getVariable ["ACME_chestAccess_vestLoadout", []]);
@@ -85,20 +108,41 @@ if (_hadCustody) then {
 // The previous code discarded both even when an equipment mod refused restore.
 if (_hadCustody && {!_restored}) exitWith {
     if (_lease != "") then {
-        _leases set [_lease, [_provider, CBA_missionTime, "manualplatecarrier"]];
-        _patient setVariable ["ACME_chestAccess_leases", _leases, true];
-        _patient setVariable ["ACME_chestAccess_readyLease", _lease, true];
+        if !(_lease in _leases) then {
+            _leases set [_lease, [_provider, CBA_missionTime, "manualplatecarrier"]];
+            _patient setVariable ["ACME_chestAccess_leases", _leases, true];
+        };
+        if ((_patient getVariable ["ACME_chestAccess_readyLease", ""]) != _lease) then {
+            _patient setVariable ["ACME_chestAccess_readyLease", _lease, true];
+        };
     };
-    _patient setVariable ["ACME_manualPlateCarrierState", "off", true];
-    ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
-    diag_log format ["[ACME MANUAL PC B264] carrier return refused, custody retained patient=%1 reason=%2",
-        netId _patient, _reason];
-    if (_reason != "remove-timeout" && {!isNull _provider}) then {
+    if ((_patient getVariable ["ACME_manualPlateCarrierState", ""]) != "off") then {
+        _patient setVariable ["ACME_manualPlateCarrierState", "off", true];
+        ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
+    };
+    private _nextLog = _retry param [2, -1];
+    if (!_retrying || {_now >= _nextLog}) then {
+        diag_log format ["[ACME MANUAL PC B264] carrier return refused, custody retained patient=%1 reason=%2",
+            netId _patient, _reason];
+        _nextLog = _now + 30;
+    };
+    _patient setVariable ["ACME_manualPlateCarrierReturnRetry", [call _retryKey, _now + 2, _nextLog], false];
+    if (!_retrying && {_reason != "remove-timeout"} && {!isNull _provider}) then {
         ["ACME_manualPlateCarrierAck", [_patient, true, false], _provider] call CBA_fnc_targetEvent;
     };
     false
 };
 
+// A successful bounded retry now retires the retained manual lease once.
+if (_retrying && {_lease != ""}) then {
+    [_patient, [_lease]] call ACME_fnc_chestAccessLeaseRetire;
+    _leases deleteAt _lease;
+    _patient setVariable ["ACME_chestAccess_leases", _leases, true];
+    if ((_patient getVariable ["ACME_chestAccess_readyLease", ""]) == _lease) then {
+        _patient setVariable ["ACME_chestAccess_readyLease", "", true];
+    };
+};
+if !(_retry isEqualTo []) then {_patient setVariable ["ACME_manualPlateCarrierReturnRetry", [], false];};
 _patient setVariable ["ACME_manualPlateCarrierState", "", true];
 ["ACME_manualPlateCarrierTrack", [_patient]] call CBA_fnc_localEvent;
 _patient setVariable ["ACME_manualPlateCarrierLease", "", true];

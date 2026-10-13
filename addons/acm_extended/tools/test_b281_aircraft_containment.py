@@ -30,15 +30,21 @@ def code(name):
         ('vectorUp _expectedAir', '_airUp'), ('vectorUp _air', '_airUp'),
         ('_air vectorModelToWorld [1,0,0]', '[1,0,0]'),
         ('eyePos _patient', '_headPosition'), ('clientOwner', '_client'),
+        ('objectParent _ancestor', '(_ancestor getVariable ["fixtureParent",objNull])'),
+        ('attachedTo _ancestor', '(_ancestor getVariable ["fixtureAttachedTo",objNull])'),
+        ('isVehicleCargo _ancestor', '(_ancestor getVariable ["fixtureCargoParent",objNull])'),
+        ('alive _ancestor', '(_ancestor getVariable ["fixtureAlive",true])'),
         ('serverTime', 'CBA_missionTime'),
         ('_patient setPosWorld _anchor;', '_positions pushBack +_anchor;_rootPosition=+_anchor;'),
-        ('_patient setVelocity _airVelocity;', '_velocities pushBack +_airVelocity;'),
+        ('_patient setVelocity _velocity;', '_velocities pushBack +_velocity;'),
     ):
         s = s.replace(old, new)
     s = re.sub(r'(\_\w+) isKindOf "Air"', r'(\1 getVariable ["isAir",false])', s)
     s = re.sub(r'lineIntersectsSurfaces (\[[\s\S]*?\]);', r'(\1 call _ray);', s)
     s = s.replace('isEqualType objNull', 'isEqualType profileNamespace')
     s = s.replace('finite _x', '([_x] call _finite)')
+    s = s.replace('finite _lastTime', '([_lastTime] call _finite)')
+    s = s.replace('finite CBA_missionTime', '([CBA_missionTime] call _finite)')
     return 'ACME_fnc_' + name + '={' + adapt(s) + '};'
 
 
@@ -51,7 +57,7 @@ def setup():
         private _parentObject=objNull;private _attachment=objNull;
         private _airOrigin=[100,200,10000];private _feetPosition=[101,202,10000.02];
         private _axes=[[1,0,0],[0,1,0],[0,0,1]];private _scale=1;
-        private _validFinite=true;private _finite={_validFinite};
+        private _validFinite=true;private _finite={params ["_value"];_validFinite && {_value isEqualType 0} && {abs _value < 1e30}};
         private _vectorToModel={private _v=+_this;_axes apply {(_v vectorDotProduct _x)/_scale}};
         private _modelToWorld={private _v=+_this;private _p=+_airOrigin;
             {_p=_p vectorAdd (_x vectorMultiply ((_v select _forEachIndex)*_scale));} forEach _axes;_p};
@@ -261,7 +267,7 @@ def test_local_gain_bounded_retries_adopt_delayed_context_only_in_same_owner_lif
         _patient setVariable ["ACME_flightContainmentContext",_context];
     ''' + change + '''
         private _next=_waits deleteAt 0;(_next select 1) call (_next select 0);
-    ''' + ('[count (_patient getVariable ["ACME_flightContainment",[]])==8,"delayed live context was lost"] call _check;'
+    ''' + ('[count (_patient getVariable ["ACME_flightContainment",[]])==10,"delayed live context was lost"] call _check;'
            if not change else '[(_patient getVariable ["ACME_flightContainment",[]]) isEqualTo [],"old owner/life retry acquired casualty"] call _check;'))
 
 
@@ -279,7 +285,7 @@ def test_actual_native_hook_captures_before_ragdoll_and_keeps_native_incapacitat
     hook = s[start:end].replace('_unit setUnconscious _isUnconscious;', '_nativeEdges pushBack _isUnconscious;')
     execute(setup() + 'private _unit=_patient;private _isUnconscious=true;private _nativeEdges=[];' +
             adapt(hook) + '''
-        [count (_patient getVariable ["ACME_flightContainment",[]])==8 && {_nativeEdges isEqualTo [true]},"native unconscious edge omitted or unsupported order"] call _check;
+        [count (_patient getVariable ["ACME_flightContainment",[]])==10 && {_nativeEdges isEqualTo [true]},"native unconscious edge omitted or unsupported order"] call _check;
         _isUnconscious=false;
     ''' + adapt(hook) + '''
         [(_patient getVariable ["ACME_flightContainment",[]]) isEqualTo [] && {_nativeEdges isEqualTo [true,false]},"wake did not retire and preserve native wake edge"] call _check;

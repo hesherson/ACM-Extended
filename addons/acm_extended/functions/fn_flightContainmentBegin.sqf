@@ -6,8 +6,16 @@ params [["_patient",objNull,[objNull]], ["_resume",false,[false]]];
 if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {false};
 if (!(_patient getVariable ["ACE_isUnconscious",false])
     || {!isNull objectParent _patient} || {!isNull attachedTo _patient}
-    || {_patient getVariable ["ace_dragging_isDragged",false]}
-    || {_patient getVariable ["ace_dragging_isCarried",false]}
+    || {(_patient getVariable ["ace_dragging_isDragged",false]) isEqualTo true}
+    || {(_patient getVariable ["ace_dragging_isCarried",false]) isEqualTo true}
+    || {!isNil "ace_common_fnc_isBeingDragged" && {
+        private _dragged = _patient call ace_common_fnc_isBeingDragged;
+        !isNil "_dragged" && {_dragged isEqualTo true}
+    }}
+    || {!isNil "ace_common_fnc_isBeingCarried" && {
+        private _carried = _patient call ace_common_fnc_isBeingCarried;
+        !isNil "_carried" && {_carried isEqualTo true}
+    }}
     || {((_patient getVariable ["ACME_patientAnimLock",[]]) param [4,-1]) > serverTime}) exitWith {false};
 private _current = _patient getVariable ["ACME_flightContainment",[]];
 if !(_current isEqualTo []) exitWith {true};
@@ -38,7 +46,8 @@ private _serial = (_patient getVariable ["ACME_flightContainmentSerial",0]) + 1;
 _patient setVariable ["ACME_flightContainmentSerial",_serial,true];
 _support params ["_air","_feet","_root"];
 _patient setVariable ["ACME_flightContainmentContext",[_serial,_air,_feet,_root,_epoch],true];
-private _record = [_serial,_air,_feet,_root,_epoch,-1,getPosWorld _patient,clientOwner];
+// Motion prediction is armed only after this worker actually sets root/velocity.
+private _record = [_serial,_air,_feet,_root,_epoch,-1,getPosWorld _patient,clientOwner,CBA_missionTime,[]];
 _patient setVariable ["ACME_flightContainment",_record,false];
 private _pfh = [{_this call ACME_fnc_flightContainmentTick;},0,[_patient,_serial]] call CBA_fnc_addPerFrameHandler;
 _record set [5,_pfh];

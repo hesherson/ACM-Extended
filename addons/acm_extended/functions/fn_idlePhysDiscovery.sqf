@@ -42,6 +42,8 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         _flight pushBackUnique _u;
     };
 
+    private _aspState = [_u] call ACME_fnc_aspirationState;
+
     // Preoxygenation: displaced reserve, active respiratory support, or a state
     // capable of consuming/limiting reserve.
     private _reserve = (_u getVariable ["ACME_preox_reserve",0.30]) max 0 min 1;
@@ -54,7 +56,7 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         || {_u getVariable ["ace_medical_inCardiacArrest",false]}
         || {(_u getVariable ["ace_medical_spo2",97]) < 94}
         || {(_u getVariable ["ACME_blastLung_State",0]) > 0}
-        || {(_u getVariable ["ACME_aspiration_load",0]) > 0.001}
+        || {!(_aspState isEqualTo []) && {(_aspState select 2) > 0.001}}
         || {(_u getVariable ["ACME_alt_pRatio",1]) < 0.999};
     if (abs (_reserve - 0.30) > 0.001 || {_support} || {_preoxPhys}) then {
         _preox pushBack _u;
@@ -62,24 +64,17 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
 
     // Aspiration: a fresh emesis edge, retained lung burden, or one final
     // replicated/local drive that still needs neutralization.
-    private _load = (_u getVariable ["ACME_aspiration_load",0]) max 0;
-    private _edema = (_u getVariable ["ACME_aspiration_edema",0]) max 0;
-    private _event = _u getVariable ["ACME_laryngo_emesis", []];
-    private _vomitState = _u getVariable ["ACM_airway_AirwayObstructionVomit_State",0];
-    private _eventKey = if (_event isEqualType [] && {count _event >= 3}) then {
-        format ["%1:%2:%3:%4", _event param [0,""], _event param [1,0], _event param [2,0], _vomitState]
-    } else {
-        format ["native:%1",_vomitState]
-    };
-    private _freshAspiration = (_eventKey != (_u getVariable ["ACME_aspiration_lastEmesisKey",""]))
-        && {_vomitState > 0 || {count _event >= 3}};
+    private _load = if (_aspState isEqualTo []) then {0} else {_aspState select 2};
+    private _edema = if (_aspState isEqualTo []) then {0} else {_aspState select 3};
+    private _episode = [_u] call ACME_fnc_aspirationEventKey;
+    private _freshAspiration = !(_aspState isEqualTo []) && {(_episode select 2)} && {(_episode select 0) != (_aspState select 1)};
     private _aspResidue = (_u getVariable ["ACME_aspiration_injury",0]) > 0.0005
         || {(_u getVariable ["ACME_aspiration_SpO2Penalty",0]) > 0.001}
         || {abs (_u getVariable ["ACME_aspiration_RRDrive",0]) > 0.001}
         || {(_u getVariable ["ACME_aspiration_shunt",0]) > 0.0001}
         || {_u getVariable ["ACME_aspiration_edemaActive",false]}
         || {abs (_u getVariable ["ACME_aspiration_lastRRAdj",0]) > 0.001};
-    if (_freshAspiration || {_load > 0.0005} || {_edema > 0.0005} || {_aspResidue}) then {
+    if (!(_u getVariable ["ACME_clinicalRestoring",false]) && {!(_aspState isEqualTo [])} && {_freshAspiration || {_load > 0.0005} || {_edema > 0.0005} || {_aspResidue}}) then {
         _aspiration pushBack _u;
     };
 

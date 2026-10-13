@@ -36,6 +36,8 @@ def execute(code):
 def flight_code(text):
     text = re.sub(r'objNull,\s*\[objNull\]', 'objNull, [profileNamespace]', text)
     text = text.replace('clientOwner', '_fixtureOwner')
+    text = text.replace('serverTime', '_fixtureServerTime').replace('isMultiplayer', '_fixtureMultiplayer')
+    text = text.replace('_provider isEqualType objNull', '(_provider isEqualType profileNamespace || {_provider isEqualTo objNull})')
     text = text.replace('_patient == ACE_player', '_patient isEqualTo ACE_player')
     text = text.replace('local _patient', '_patientLocal')
     text = text.replace('_patient isKindOf "CAManBase"', '_isPatient')
@@ -109,6 +111,7 @@ def native_oxygen():
 def flight_setup():
     return r'''
       private _patientLocal=true; private _isPatient=true; private _fixtureOwner=7;
+      private _fixtureServerTime=100; private _fixtureMultiplayer=false;
       private _world="Terrain_A"; private _worldSize=100; private _worldBase=0;
       private _terrainMinimum=0; private _terrainReads=0;
       private _flightFinite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
@@ -145,8 +148,8 @@ def flight_setup():
       _patient setVariable ["ACME_ptx_state",[1,0,0,0,0,0,0,0,0]];
       _airframe setVariable ["fixtureClass","AnyModdedAirframe"];
     ''' + ''.join(flight_function(name) for name in (
-        'pressureAtAltitude','altitudeDatum','altitudeTrue','oxygenSupply','flightExposure',
-        'altitudeOxygenCeiling','clinicalEpoch','clinicalTickDelta','ptxAmbientChange','altitudeTick','ventOxygenation',
+        'pressureAtAltitude','altitudeDatum','altitudeTrue','oxygenSupply','flightExposure','flightDeliveredFiO2',
+        'altitudeOxygenCeiling','clinicalEpoch','clinicalTickDelta','aspirationState','ptxAmbientChange','altitudeTick','ventOxygenation',
     )) + native_oxygen()
 
 
@@ -159,10 +162,12 @@ def ground_exposure_setup():
     """
     return r'''
       private _world="VentilationGroundFixture";private _worldSize=0;private _worldBase=0;
+      private _fixtureServerTime=100;private _fixtureMultiplayer=false;
       private _flightFinite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
       private _flightLinear={params ["_lo","_hi","_value","_a","_b",["_clamp",false]];private _f=(_value-_lo)/(_hi-_lo);if (_clamp) then {_f=(_f max 0) min 1;};_a+(_b-_a)*_f};
       private _flightMapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
       ACME_fnc_flightAirframe={objNull};ACME_fnc_flightEnclosed={false};
-    ''' + ''.join(flight_function(name) for name in (
-        'pressureAtAltitude','altitudeDatum','altitudeTrue','oxygenSupply','flightExposure','altitudeOxygenCeiling',
+    ''' + 'if (isNil "ACME_fnc_clinicalEpoch") then {' + flight_function('clinicalEpoch') + '};\n' + ''.join(flight_function(name) for name in (
+        'pressureAtAltitude','altitudeDatum','altitudeTrue','oxygenSupply','flightExposure','flightDeliveredFiO2','altitudeOxygenCeiling',
+        'aspirationState',
     ))

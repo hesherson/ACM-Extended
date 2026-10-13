@@ -6,12 +6,18 @@ requests at the engine boundary, not measured wire traffic or Arma replication.
 import pytest
 
 from test_historical_medication_preparation import prep_code
+from test_historical_medication_rows import iteration_scopes
 from test_historical_vial_execution import source, setup as vial_setup
 from test_menu_death_lifecycle import execute
 
 
 def function(name):
     text = source(name)
+    # Native typed optional strings in this VM become nil when omitted. Arma
+    # retains the declared default; preserve it while running the same decisions.
+    if name == 'hardcorePushRecover':
+        text = text.replace('canSuspend', 'false')
+        text = text.replace('["_session","",[""]]', '["_session",""]').replace('["_requestId","",[""]]', '["_requestId",""]')
     text = text.replace('local _owner', '_medicLocal').replace('local ACE_player', '_medicLocal')
     text = text.replace('_owner setVariable ["ACME_narcStore", _store, _public];',
                         '_publicationFlags pushBack _public; _owner setVariable ["ACME_narcStore", _store];')
@@ -23,7 +29,7 @@ def function(name):
     text = text.replace('isClass (configFile >> "ACM_Medication" >> "Medications" >> _source)', 'true')
     text = text.replace('_medic addMagazine [_magClass,_ammo];', '_returnedMagazines pushBack [_magClass,_ammo];')
     text = text.replace('_medic == ACE_player', '_medic isEqualTo ACE_player')
-    return 'ACME_fnc_' + name + '={' + prep_code(text) + '};'
+    return 'ACME_fnc_' + name + '={' + prep_code(iteration_scopes(text)) + '};'
 
 
 def setup():
@@ -43,7 +49,7 @@ def setup():
     ''' + ''.join(function(name) for name in (
         'narcStoreCommit', 'hardcorePushStart', 'hardcorePushTick', 'hardcorePushStop',
         'hardcorePushSendBatch', 'hardcorePushAck', 'hardcorePushFinalize', 'hardcorePushRestoreDelta',
-        'hardcorePushRetire'))
+        'hardcorePushRetire', 'hardcorePushRecover'))
 
 
 @pytest.mark.parametrize('public', [True, False])

@@ -4,8 +4,10 @@
  * Result: [aircraft, feet/model, model-root/model]. A bounding box is not support.
  * Optional point/air arguments validate a previously owned floor anchor only. */
 params [["_patient",objNull,[objNull]], ["_foot",[],[[]]],
-    ["_expectedAir",objNull,[objNull]], ["_checkMotion",true,[false]]];
-if (isNull _patient || {!alive _patient}) exitWith {[]};
+    ["_expectedAir",objNull,[objNull]], ["_checkMotion",true,[false]], ["_allowDeadContact",false,[false]]];
+// Medical reachability may inspect a dead casualty's actual floor. No default
+// physiology or containment caller enables this read-only contact exception.
+if (isNull _patient || {!_allowDeadContact && {!alive _patient}}) exitWith {[]};
 if (_foot isEqualTo []) then {_foot = getPosASL _patient;};
 if (count _foot != 3 || {(_foot findIf {!(_x isEqualType 0) || {!finite _x}}) >= 0}) exitWith {[]};
 private _best = [];

@@ -64,8 +64,9 @@ def test_chest_preparation_range_loss_is_terminal_and_launch_revalidates():
     assert '_m setVariable ["ACME_chestAccessPreflightCancel", true, false];' in treatment
     assert 'private _stillTreatable = _args call ace_medical_treatment_fnc_canTreatCached;' in treatment
     assert 'private _stillInteractive = [_m, _p, [["isNotInside","isNotSwimming","isNotInZeus"],["isNotSwimming","isNotInZeus"]]' in treatment
-    assert 'call ACME_fnc_patientInteractionDistance' in treatment
-    assert 'objectParent _m isNotEqualTo objectParent _p' in treatment
+    assert '[_m,_p] call ACME_fnc_patientInteractionContact' in treatment
+    contact = acme("functions/fn_patientInteractionContact.sqf")
+    assert 'call ACME_fnc_patientInteractionDistance' in contact
 
 
 def test_provider_pose_is_retired_locally_before_native_intervention_launch():

@@ -52,7 +52,11 @@ _unit setUnconscious _isUnconscious;
 
 if (_isUnconscious) then {
     // eject from static weapon
-    if (vehicle _unit isKindOf "StaticWeapon" && {!(vehicle _unit isKindOf "Pod_Heli_Transport_04_crewed_base_F")}) then {
+    // Attached/ViV seat helpers can be StaticWeapon while their actual carrier
+    // is a live aircraft. Keep its native seated unconscious path; ground
+    // turrets still eject. No helper class or particular aircraft is whitelisted.
+    if (vehicle _unit isKindOf "StaticWeapon" && {!(vehicle _unit isKindOf "Pod_Heli_Transport_04_crewed_base_F")}
+        && {isNil "ACME_fnc_flightAirframe" || {isNull ([_unit] call ACME_fnc_flightAirframe)}}) then {
         TRACE_2("ejecting from static weapon",_unit,vehicle _unit);
         [_unit] call ACEFUNC(common,unloadPerson);
     };

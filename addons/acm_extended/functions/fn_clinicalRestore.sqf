@@ -309,5 +309,6 @@ _patient setVariable ["ACME_vent_effectiveRR", 0, true];
 _patient setVariable ["ACME_clinicalLastOwner", -1, false];
 // Ordered after the reset event, from the same sender. Server owns the chest edit epoch and snapshot.
 ["ACME_clinicalChestRestore", [_patient, _chest, _epoch]] call CBA_fnc_serverEvent;
+[_patient,_payload] call ACME_fnc_aspirationRestore;
 [_patient] call ACME_fnc_ownerRegister;
 [_patient] call ace_medical_status_fnc_updateWoundBloodLoss;

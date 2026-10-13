@@ -27,7 +27,7 @@ if (_kind == "" && {_secretionStage > 0}) then {
     _target = _secretionStage;
     _stamp pushBack (_secretions param [0, ""]);
 };
-if (_kind == "v" && {count _emesis == 3} && {(_emesis select 1) == _vom}) then {
+if (_kind == "v" && {count _emesis in [3,5]} && {(_emesis select 1) == _vom} && {!((_emesis select 0) isEqualType "") || {((_emesis select 0) find "ACME-native-vomit:") != 0}}) then {
     _target = (_emesis select 2) max 1 min 8;
 };
 private _pool = +(_patient getVariable ["ACME_laryngo_pool", []]);

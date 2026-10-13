@@ -14,7 +14,7 @@ if (_last != _expectedLast) exitWith {
 // Base ACM's AED_Provider is the casualty itself, not the operator. Validate the actual medic carried by the
 // monitor/API request instead of comparing against that legacy sentinel.
 if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}
-    || {(_medic distance _patient) > ace_medical_gui_maxDistance}) exitWith {};
+    || {([_medic,_patient] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}) exitWith {};
 if (!([_medic, _patient] call ACM_circulation_fnc_AED_CanAdministerShock)) exitWith {};
 private _rhythm = [_patient] call ACME_fnc_rhythmGet;
 private _organized = _rhythm in [4,100,101,103,104]; // B67: native perfusing VT is an organized SYNC rhythm, not a defibrillation rhythm.

@@ -13,7 +13,7 @@ private _meta = _row param [5,[]];
 if (_meta isEqualType [] && {(_meta param [0,""]) == "syringeB279"}) then {
     [_medic,_meta param [1,""],_meta param [2,""]] call ACME_fnc_skInventorySettle;
 };
-if (_meta isEqualType [] && {(_meta param [0,""]) == "hcPush"}) then {[_medic,_meta,_accepted,_reason] call ACME_fnc_hardcorePushAck;};
+if (_meta isEqualType [] && {(_meta param [0,""]) == "hcPush"}) then {[_medic,_meta,_accepted,_reason,_id] call ACME_fnc_hardcorePushAck;};
 // B18 transaction acknowledgements remain silent.
 if (hasInterface && {_medic == ACE_player}) then {
     if (!isNull findDisplay 84000) then {call ACME_fnc_skRefreshDrawn;call ACME_fnc_skBuildHotspots;};

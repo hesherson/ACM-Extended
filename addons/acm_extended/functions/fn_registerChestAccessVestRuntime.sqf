@@ -93,6 +93,14 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
             private _preparing = (_m getVariable ["ACME_chestAccessPreflightActive", false])
                 && {((_m getVariable ["ACME_chestAccess_treatment", []]) param [0,objNull]) isEqualTo _p};
 
+            // MP admission may still be in flight after the short native launcher completed.
+            // Keep the exact existing lease while that bounded provider intent awaits its ACK.
+            private _pending = _m getVariable ["ACME_resusPending",[]];
+            _preparing = _preparing || {count _pending == 9
+                && {(_pending select 0) in ["cpr","bvm"]}
+                && {(_pending select 1) isEqualTo _p}
+                && {serverTime < (_pending select 8)}};
+
             private _maneuverActive = [_p] call ACME_fnc_chestAccessManeuverActive;
 
             !_maneuverActive && {!_handoffActive} && {!_ownerHandoffActive} && {!_preparing}

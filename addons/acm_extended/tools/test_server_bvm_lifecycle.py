@@ -13,6 +13,7 @@ F = ROOT / 'addons/breathing/functions'
 def source(name):
     s = (F / f'fnc_{name}.sqf').read_text()
     s = re.sub(r'^#include.*$', '', s, flags=re.M)
+    s = s.replace("isMultiplayer", "false")  # Explicit single-player engine boundary.
     for macro, prefix, quote in [('QEGVAR', 'ACM', True), ('EGVAR', 'ACM', False), ('ACEGVAR', 'ace', False)]:
         s = re.sub(r'\b' + macro + r'\((\w+),\s*(\w+)\)', lambda m: ('"' if quote else '') + f'{prefix}_{m[1]}_{m[2]}' + ('"' if quote else ''), s)
     for macro, prefix, quote in [('QGVAR', 'ACM_breathing_', True), ('GVAR', 'ACM_breathing_', False), ('FUNC', 'ACM_breathing_fnc_', False)]:
@@ -40,6 +41,15 @@ def source(name):
         s = s.replace('    }];\n    _disconnectHandler', '    }] select 1);\n    _disconnectHandler')
         s = s.replace('        false\n    }];', '        false\n    }] select 1);')
     return s
+
+
+def contact_source():
+    from test_menu_death_lifecycle import adapt
+    text=(ROOT/'addons/acm_extended/functions/fn_patientInteractionContact.sqf').read_text()
+    text=text.replace('objectParent _medic','_medicVehicle').replace('objectParent _patient','_patientVehicle')
+    text=text.replace('_medic distance _patient','_distance')
+    text=re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',text)
+    return 'ACME_fnc_patientInteractionDistance={_distance};ACME_fnc_flightAirframe={objNull};ACME_fnc_patientInteractionContact={'+adapt(text)+'};'
 
 
 def execute(scenario, runtime=False):
@@ -95,6 +105,7 @@ def execute(scenario, runtime=False):
         CBA_fnc_addPlayerEventHandler = {_unitHandler = _this select 1;};
         private _check = {if !(_this select 0) then {_ok = false; diag_log ("SERVER_FIX_FAIL " + (_this select 1));};};
     '''
+    code += contact_source()
     for name in ('bvmSessionValid', 'bvmRelease', 'bvmCleanupLocal', 'registerBVMRuntime'):
         code += f'ACM_breathing_fnc_{name} = {{' + source(name) + '};\n'
     if runtime:

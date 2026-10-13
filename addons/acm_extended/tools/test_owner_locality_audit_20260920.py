@@ -364,13 +364,24 @@ def test_vent_rear_battery_exchange_is_owner_serialized_and_acknowledged():
     flip = src('functions/fn_ventFlip.sqf')
     owner = src('functions/fn_ownerDispatch.sqf')
     init = src('functions/fn_ownerInit.sqf')
-    assert '"ventBatteryExchange"' in flip
+    request = src('functions/fn_ventBatteryRequest.sqf')
+    commit = src('functions/fn_ventBatteryExchange.sqf')
+    ack = src('functions/fn_ventBatteryAck.sqf')
+    # Both local and remote hatch completion now enter one immutable request
+    # route. Keep this retained route contract while examining its actual new
+    # ownership/decision/settlement boundaries rather than retired inline code.
+    assert 'ACME_fnc_ventBatteryRequest' in flip
+    assert 'ACME_vent_batteryIntent' in flip
+    assert '[_patient, "ventBatteryExchange", ["apply", _request]]' in request
     assert 'case "ventBatteryExchange"' in owner
-    assert 'ACME_vent_batterySwapReceipts' in owner
-    assert 'ACME_vent_batterySwapLockUntil' in owner
+    assert '_args call ACME_fnc_ventBatteryExchange' in owner
+    assert 'ACME_vent_batterySwapReceipts' in commit
+    assert 'ACME_vent_batterySwapLockUntil' in commit
+    assert '!local _patient' in commit
     assert 'ACME_ventBatteryExchangeResult' in init
-    remote = flip.split('if (local _holder) then {', 1)[1]
-    assert '[_holder, "ventBatteryExchange"' in remote
+    assert '_this call ACME_fnc_ventBatteryAck' in init
+    assert '!local _medic' in ack
+    assert 'ACME_supplyReceipts' in ack and 'ACME_fnc_treatmentSupplyRefund' in ack
 
 
 def test_hpmk_prep_is_two_phase_and_loser_refunds_provider_item():

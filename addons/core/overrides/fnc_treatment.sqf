@@ -374,8 +374,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
             private _cancelled = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
                 || {_m getVariable ["ACE_isUnconscious", false]}
-                || {isNull objectParent _m && {([_m, _p] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}}
-                || {objectParent _m isNotEqualTo objectParent _p};
+                || {!([_m,_p] call ACME_fnc_patientInteractionContact)};
             if (_cancelled) exitWith {
                 [_m,_p,_leaseId,_classKey,_tok,_finish,true] call _abort;
             };
@@ -385,8 +384,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
             // into a delayed treatment start.
             private _stillTreatable = _args call ace_medical_treatment_fnc_canTreatCached;
             private _stillInteractive = [_m, _p, [["isNotInside","isNotSwimming","isNotInZeus"],["isNotSwimming","isNotInZeus"]] select (!isNull objectParent _m && {objectParent _m isEqualTo objectParent _p})] call ace_common_fnc_canInteractWith;
-            if (!_stillTreatable || {!_stillInteractive} || {isNull objectParent _m && {([_m, _p] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}}
-                || {objectParent _m isNotEqualTo objectParent _p}) exitWith {
+            if (!_stillTreatable || {!_stillInteractive} || {!([_m,_p] call ACME_fnc_patientInteractionContact)}) exitWith {
                 _m setVariable ["ACME_chestAccessPreflightCancel", true, false];
                 [_m,_p,_leaseId,_classKey,_tok,_finish,true] call _abort;
             };
@@ -441,8 +439,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
             private _invalid = (_m getVariable ["ACME_chestAccessPreflightCancel", false])
                 || {!alive _m}
                 || {_m getVariable ["ACE_isUnconscious", false]}
-                || {isNull objectParent _m && {([_m, _p] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}}
-                || {objectParent _m isNotEqualTo objectParent _p}
+                || {!([_m,_p] call ACME_fnc_patientInteractionContact)}
                 || {!([_m, _p, [["isNotInside","isNotSwimming","isNotInZeus"],["isNotSwimming","isNotInZeus"]] select (!isNull objectParent _m && {objectParent _m isEqualTo objectParent _p})] call ace_common_fnc_canInteractWith)};
             if (_invalid) exitWith {
                 _m setVariable ["ACME_chestAccessPreflightCancel", true, false];

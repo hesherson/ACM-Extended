@@ -17,12 +17,16 @@ def controller_source():
 
 
 def setup():
+    contact = (ROOT / 'addons/acm_extended/functions/fn_patientInteractionContact.sqf').read_text()
+    contact = contact.replace('objectParent _medic','_medicParent').replace('objectParent _patient','_patientParent')
+    contact = re.sub(r'\bfinite (_\w+)', r'(\1 isEqualType 0)', contact)
     return bvm_setup() + '''
         private _providerStance="PRONE"; private _providerLocal=true; private _providerAnimation="";
         private _medicParent=objNull; private _patientParent=objNull;
         private _cancelled=0;
         private _drainWaits={private _pending=+_waits;_waits=[];{(_x select 1) call (_x select 0);} forEach _pending;};
-    ''' + 'ACM_core_fnc_beginContinuousAction={' + controller_source() + '};'
+    ''' + 'ACME_fnc_patientInteractionContact={' + adapt(contact) + '};' + \
+        'ACM_core_fnc_beginContinuousAction={' + controller_source() + '};'
 
 
 @pytest.mark.parametrize('legacy_allow', ['', ',false', ',true'])

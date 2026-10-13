@@ -2,6 +2,10 @@
    No patient physiology is cleared on ownership loss. PFH IDs never travel. */
 params ["_patient"];
 if (isNull _patient || {!local _patient} || {_patient getVariable ["ACME_clinicalRestoring", false]}) exitWith {};
+private _batteryPeriod = [clientOwner, _patient getVariable ["ACME_providerLocalityEpoch", 0]];
+if ((_patient getVariable ["ACME_vent_batterySwapOwnerPeriod", []]) isNotEqualTo _batteryPeriod) then {
+    _patient setVariable ["ACME_vent_batterySwapOwnerPeriod", _batteryPeriod, true];
+};
 
 // Event-driven ownership registry. Keeping this current makes the periodic world sweep a cheap missed-event fallback
 // instead of a scheduler rebuild across every local unit.
@@ -13,6 +17,7 @@ _patient setVariable ["ACME_ownerRegisterSeen", owner _patient, false];
 // delayed registrations also adopt outstanding provider transactions.
 [_patient] call ACME_fnc_piggybackRecover;
 [_patient] call ACME_fnc_lineWarmerRecover;
+["recover", _patient] call ACME_fnc_ventBatteryRequest;
 if (count (_patient getVariable ["ACME_lineWarmerReturns",createHashMap]) > 0) then {
     private _pending = missionNamespace getVariable ["ACME_lineWarmerReturnPatients",[]];
     _pending pushBackUnique _patient;
@@ -157,6 +162,14 @@ if (_patient getVariable ["ACME_nativeBloodObstructionActive", false]) then {
 };
 if (_patient getVariable ["ACME_nativeHemolysisActive", false]) then {
     [_patient, true] call ACM_circulation_fnc_handleHemolyticReaction;
+};
+
+// Adopt only an accepted, activated CPR episode whose independently replicated
+// native provider/session have also arrived. Reconstruct elapsed clinical time
+// in this owner's CBA clock; the native handler deduplicates exact ownership.
+if ([_patient, "cpr"] call ACME_fnc_ownerRegisterNeedsRecovery) then {
+    private _cprGrant = _patient getVariable ["ACME_resus_cpr", []];
+    [_patient, CBA_missionTime - ((serverTime - (_cprGrant select 9)) max 0), _cprGrant] call ACM_circulation_fnc_handleCPR;
 };
 
 // Recovery is keyed by actual worker absence, not a once-per-owner attempt.

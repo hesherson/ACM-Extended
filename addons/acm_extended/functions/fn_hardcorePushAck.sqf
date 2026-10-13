@@ -1,12 +1,15 @@
 /* B121: settlement hook for one incremental push request. Rejected slices go back into the SAME stable syringe,
    never as a duplicate store row. */
-params ["_medic",["_meta",[],[[]]],"_accepted",["_reason","",[""]]];
+params ["_medic",["_meta",[],[[]]],"_accepted",["_reason","",[""]],["_requestId","",[""]]];
 if (isNull _medic || {!local _medic} || {(_meta param [0,""]) != "hcPush"}) exitWith {false};
 private _session = _meta param [1,"",[""]];
 private _stable = _meta param [2,"",[""]];
 private _delta = _meta param [3,[0,0,[]],[[]]];
 private _job = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
-if !(_job isEqualType createHashMap && {count _job > 0} && {(_job getOrDefault ["session",""]) == _session}) exitWith {false};
+if !(_job isEqualType createHashMap && {count _job > 0} && {(_job getOrDefault ["session",""]) == _session}) exitWith {
+    if (_requestId == "") exitWith {false};
+    [_medic,_session,_requestId,_meta,_accepted] call ACME_fnc_hardcorePushRecover
+};
 private _localityEpoch = _job getOrDefault ["providerLocalityEpoch",-1];
 if (_localityEpoch >= 0 && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) != _localityEpoch}) exitWith {
     [_session,missionNamespace getVariable ["ACME_HCMedPushPFH",-1],"provider-epoch-changed"] call ACME_fnc_hardcorePushRetire;

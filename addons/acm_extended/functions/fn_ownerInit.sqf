@@ -2,6 +2,9 @@
 if (missionNamespace getVariable ["ACME_NA2_ownerInstalled", false]) exitWith {};
 ACME_NA2_ownerInstalled = true;
 ["ACME_ownerCommand", { isNil { _this call ACME_fnc_ownerDispatch; }; }] call CBA_fnc_addEventHandler;
+["ACME_resusAck", {_this call ACME_fnc_resusAck;}] call CBA_fnc_addEventHandler;
+["ACME_resusValidate", {_this call ACME_fnc_resusCommit;}] call CBA_fnc_addEventHandler;
+["ACME_resusCommit", {_this call ACME_fnc_resusCommit;}] call CBA_fnc_addEventHandler;
 ["ACME_netNotice", { _this call ACME_fnc_netNotice; }] call CBA_fnc_addEventHandler;
 ["ACME_aiProtectionRefresh", {
     params [["_unit", objNull, [objNull]]];
@@ -42,42 +45,12 @@ ACME_NA2_ownerInstalled = true;
     };
 }] call CBA_fnc_addEventHandler;
 ["ACME_ventBatteryExchangeResult", {
-    params [
-        ["_patient", objNull, [objNull]],
-        ["_requestId", "", [""]],
-        ["_accepted", false, [false]],
-        ["_returnedPct", 100, [0]],
-        ["_installedPct", 100, [0]]
-    ];
-    if (!hasInterface || {isNull ACE_player}) exitWith {};
-    private _pending = uiNamespace getVariable ["ACME_vent_batterySwapRequest", ""];
-    if (_pending != _requestId) exitWith {};
-    uiNamespace setVariable ["ACME_vent_batterySwapRequest", ""];
-    private _supply = uiNamespace getVariable ["ACME_vent_batterySwapSupply", []];
-    uiNamespace setVariable ["ACME_vent_batterySwapSupply", []];
-    if (count _supply == 4) then {
-        private _source = if (isNull (_supply select 2)) then {_supply select 0} else {_supply select 2};
-        if (_accepted && {!isNull _source}) then {_source setVariable ["ACME_vent_spareBattery", _returnedPct, true];};
-        [_supply] call ACME_fnc_treatmentSupplyRefund;
-    };
-    private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
-    if (_accepted) then {
-        // Compatibility with an already-issued pre-B156 exchange without an item reservation.
-        if (_supply isEqualTo []) then {ACE_player setVariable ["ACME_vent_spareBattery", _returnedPct, true];};
-        if (!isNull _dlg && {(uiNamespace getVariable ["ACME_vent_target", objNull]) isEqualTo _patient}) then {
-            private _ban = _dlg displayCtrl 88001;
-            _ban ctrlSetText format ["BATTERY %1%2 OFF", round _installedPct, "%"];
-            _ban ctrlShow true;
-            uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2.5];
-        };
-    } else {
-        if (!isNull _dlg) then {
-            private _ban = _dlg displayCtrl 88001;
-            _ban ctrlSetText "SWAP CONFLICT";
-            _ban ctrlShow true;
-            uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2.5];
-        };
-        ["Battery swap cancelled: another provider changed this ventilator.", 2, ACE_player] call ace_common_fnc_displayTextStructured;
+    isNil {_this call ACME_fnc_ventBatteryAck;};
+}] call CBA_fnc_addEventHandler;
+["ACME_ventBatteryDispositionClaim", {
+    if (isServer) then {
+        params [["_request", [], [[]]], ["_claim", [], [[]]], ["_operation", "authorize", [""]]];
+        isNil {[_operation, _request, _claim] call ACME_fnc_ventBatteryExchange;};
     };
 }] call CBA_fnc_addEventHandler;
 ["ACME_ventOxygenDraw", {isNil {_this call ACME_fnc_ventOxygenDraw;};}] call CBA_fnc_addEventHandler;
@@ -102,8 +75,47 @@ ACME_NA2_ownerInstalled = true;
     // Also invalidates an old callback on an away-and-back locality change.
     _unit setVariable ["ACME_wakeRepairTicket", (_unit getVariable ["ACME_wakeRepairTicket", 0]) + 1, false];
     // Provider input workers must also retire after away/back transfers between their scheduled ticks.
+    // Release only captured resuscitation grants, on both locality edges.
+    // A late old release cannot clear a replacement provider/session.
+    {
+        private _kind = _x;
+        private _key = "ACME_resusToken_" + _kind;
+        private _captured = _unit getVariable [_key, []];
+        _unit setVariable [_key, [], false];
+        if (count _captured == 6) then {
+            _captured params ["_patient", "_token", "_epoch", "_owner", "_generation", "_episode"];
+            if (!isNull _patient) then {
+                [_patient,"resus",["release",_kind,_unit,_token,_epoch,_owner,_generation,_episode,serverTime,[]]] call ACME_fnc_ownerDispatch;
+            };
+        };
+    } forEach ["cpr", "bvm"];
+    private _resusPending = _unit getVariable ["ACME_resusPending", []];
+    _unit setVariable ["ACME_resusPending", [], false];
+    if (count _resusPending == 9) then {
+        _resusPending params ["_kind", "_patient", "_token", "_epoch", "_owner", "_generation", "_episode"];
+        if (!isNull _patient) then {
+            [_patient,"resus",["release",_kind,_unit,_token,_epoch,_owner,_generation,_episode,serverTime,[]]] call ACME_fnc_ownerDispatch;
+        };
+    };
+    if (_isLocal) then {
+        // Public provider flags can arrive from the previous ownership period.
+        // Retiring that input session must not strand the incoming provider busy.
+        [_unit, [["cprPerforming", false], ["cprPatient", objNull], ["cprEpoch", -1]], true] call ACM_circulation_fnc_setRuntimeState;
+        [_unit, [["bvmUsing", false], ["bvmPatient", objNull], ["bvmEpoch", -1]], true] call ACM_breathing_fnc_setRuntimeState;
+    };
     _unit setVariable ["ACME_providerLocalityEpoch", (_unit getVariable ["ACME_providerLocalityEpoch", 0]) + 1, false];
     if (_isLocal) then {
+        _unit setVariable ["ACME_vent_batterySwapOwnerPeriod",
+            [clientOwner, _unit getVariable ["ACME_providerLocalityEpoch", 0]], true];
+    };
+    if (_isLocal) then {
+        private _cprGrant = _unit getVariable ["ACME_resus_cpr", []];
+        if ([_unit,"cpr"] call ACME_fnc_ownerRegisterNeedsRecovery) then {
+            [_unit,CBA_missionTime-((serverTime-(_cprGrant select 9)) max 0),_cprGrant] call ACM_circulation_fnc_handleCPR;
+        };
+    };
+    if (_isLocal) then {
+        ["recover", _unit] call ACME_fnc_ventBatteryRequest;
         private _custodyEpoch = _unit getVariable ["ACME_providerLocalityEpoch", 0];
         // A public escrow may arrive after this event. Bounded retries belong
         // to this ownership period; an old callback cannot resume after handoff.
@@ -114,6 +126,7 @@ ACME_NA2_ownerInstalled = true;
                     || {(_unit getVariable ["ACME_providerLocalityEpoch", -1]) != _custodyEpoch}) exitWith {};
                 [_unit] call ACME_fnc_piggybackRecover;
                 [_unit] call ACME_fnc_lineWarmerRecover;
+                ["recover", _unit] call ACME_fnc_ventBatteryRequest;
             }, [_unit, _custodyEpoch], _x] call CBA_fnc_waitAndExecute;
         } forEach [2, 5, 10];
     };
@@ -318,6 +331,14 @@ ACME_NA2_ownerInstalled = true;
         missionNamespace setVariable ["ACME_clinical_ownedUnits", _actualOwned];
         {[_x] call ACME_fnc_ownerRegister;} forEach _missingOwned;
     };
+    // Public clinical state may arrive after Local/init registration. Inspect
+    // the existing owner list at 1 Hz and enroll only a missing live worker or
+    // registry; healthy owners never receive another registration/publication.
+    {
+        if ([_x] call ACME_fnc_ownerRegisterNeedsRecovery) then {
+            [_x] call ACME_fnc_ownerRegister;
+        };
+    } forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
     if ((hasInterface && {!isNil "ACE_player"} && {!isNull ACE_player})
         || {!((missionNamespace getVariable ["ACM_core_ContinuousAction_Controller", []]) isEqualTo [])}) then {
         [] call ACME_fnc_providerStateReconcile;

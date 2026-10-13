@@ -8,6 +8,8 @@ from test_menu_death_lifecycle import ROOT, adapt, core, execute
 
 def breathing(name):
     source = (ROOT / 'addons/breathing/functions' / f'fnc_{name}.sqf').read_text()
+    source = source.replace('serverTime', 'CBA_missionTime')
+    source = source.replace('isMultiplayer', 'false')  # Native same-machine startup; MP admission has dedicated tests.
     source = source.replace('_medic distance2D _patient', '_distance')
     source = source.replace('GET_AIRWAYSTATE(_patient)', '1')
     source = re.sub(r'alive (\(_patient getVariable \[[^;\n]+?\]\))', r'(\1 isNotEqualTo objNull)', source)

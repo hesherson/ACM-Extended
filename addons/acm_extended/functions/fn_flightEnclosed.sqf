@@ -5,7 +5,10 @@
 params [["_patient",objNull,[objNull]], ["_air",objNull,[objNull]]];
 if (isNull _patient || {isNull _air} || {!(_air isKindOf "Air")}) exitWith {false};
 private _parent = objectParent _patient;
-if (!isNull _parent) exitWith {_parent isEqualTo _air};
+if (_parent isEqualTo _air) exitWith {true};
+// A helper seat establishes aircraft ancestry, not cabin enclosure. Confirm
+// actual same-airframe boundaries for seats on an external rack or FFV mount.
+if (!isNull _parent && {!(([_patient] call ACME_fnc_flightAirframe) isEqualTo _air)}) exitWith {false};
 private _head = eyePos _patient;
 private _up = vectorUp _air;
 private _enclosed = false;

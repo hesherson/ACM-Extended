@@ -657,7 +657,15 @@ def test_new_canonical_state_receives_current_observation_revision_without_claim
 
 
 def restore_setup():
-    return model_setup() + "".join(function(name) for name in (
+    from b282_aspiration_fixture import definitions as aspiration_definitions
+    from test_historical_medication_rows import iteration_scopes
+    aspiration_seed = r'''private _aspCache=_patient getVariable "ACME_net_scalarCache";
+        { _patient setVariable [_x select 0,_x select 1];_aspCache set [toLower (_x select 0),["FIXTURE-UNPUBLISHED"]]; } forEach [
+          ["ACME_aspiration_State",[7,"",0,0,0]],["ACME_aspiration_load",0],["ACME_aspiration_edema",0],
+          ["ACME_aspiration_injury",0],["ACME_aspiration_edemaActive",false],
+          ["ACME_aspiration_SpO2Penalty",0],["ACME_aspiration_RRDrive",0],["ACME_aspiration_shunt",0],
+          ["ACME_laryngo_emesis",[]]];'''
+    return model_setup() + aspiration_seed + aspiration_definitions() + "".join(iteration_scopes(function(name)) for name in (
         "clinicalFields", "clinicalEncodedValid", "clinicalCodec", "clinicalValidate", "lineWarmerRestore", "ventOxygenClear", "clinicalRestore",
     )) + r'''
         // These are unrelated engine/session rehydration boundaries. The full

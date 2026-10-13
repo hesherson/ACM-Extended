@@ -19,6 +19,10 @@ if (!local _patient) exitWith {
     } else {  };
 };
 switch (_operation) do {
+    case "respawnClinicalReset": {
+        if ((_args param [0,objNull]) isEqualTo _patient) then {_args call ACME_fnc_respawnClinicalReset;};
+    };
+    case "resus": {[_patient,_args] call ACME_fnc_resusCommit;};
     case "vialRefund": {
         _args params [["_id",""],["_components",[]]];
         [_patient,_id,_components] call ACME_fnc_vialRefundLocal;
@@ -34,7 +38,10 @@ switch (_operation) do {
         };
     };
     case "bvmBreath": {
-        _args params [["_oxygen", false, [false]]];
+        _args params [["_oxygen", false, [false]], ["_medic",objNull,[objNull]], ["_state",[],[[]]], ["_sequence",-1,[0]], ["_sentAt",-1,[0]]];
+        if (isMultiplayer) exitWith {
+            if (count _state == 6) then {[_patient,["breath","bvm",_medic,_state select 1,_state select 2,_state select 3,_state select 4,_state select 5,_sentAt,[_oxygen,_sequence]]] call ACME_fnc_resusCommit;};
+        };
         private _now = CBA_missionTime;
         private _changes = [["bvmLastBreath", _now]];
         if (_oxygen) then {_changes pushBack ["bvmLastBreathOxygen", _now];};
@@ -43,7 +50,10 @@ switch (_operation) do {
         _patient setVariable ["ACME_bvm_lastBreathServer", serverTime, true];
     };
     case "bvmTelemetry": {
-        _args params [["_rate", 0, [0]]];
+        _args params [["_rate", 0, [0]], ["_medic",objNull,[objNull]], ["_state",[],[[]]], ["_sentAt",-1,[0]]];
+        if (isMultiplayer) exitWith {
+            if (count _state == 6) then {[_patient,["telemetry","bvm",_medic,_state select 1,_state select 2,_state select 3,_state select 4,_state select 5,_sentAt,[_rate]]] call ACME_fnc_resusCommit;};
+        };
         if (finite _rate && {_rate >= 0} && {_rate <= 80}) then {
             [_patient, "ACME_bvm_rate", _rate] call ACME_fnc_setVarNet;
             _patient setVariable ["ACME_bvm_lastBreathServer", serverTime, true];
@@ -554,34 +564,13 @@ switch (_operation) do {
     };
     case "ventHardStop": {_args call ACME_fnc_ventHardStopCommit;};
     case "ventBatteryExchange": {
-        _args params [
-            ["_medic", objNull, [objNull]],
-            ["_requestId", "", [""]],
-            ["_sparePct", 100, [0]],
-            ["_sentAt", 0, [0]]
-        ];
-        if (isNull _medic || {_requestId == ""}) exitWith {};
-        private _receipts = +(_patient getVariable ["ACME_vent_batterySwapReceipts", []]);
-        if (_requestId in _receipts) exitWith {};
-        _receipts pushBack _requestId;
-        if (count _receipts > 24) then {_receipts deleteRange [0, count _receipts - 24];};
-        _patient setVariable ["ACME_vent_batterySwapReceipts", _receipts, true];
-
-        private _valid = alive _medic
-            && {[_medic] call ace_common_fnc_isAwake}
-            && {(_medic distance _patient) <= ace_medical_gui_maxDistance}
-            && {abs (serverTime - _sentAt) <= 12};
-        private _lockUntil = _patient getVariable ["ACME_vent_batterySwapLockUntil", -1];
-        private _accepted = _valid && {serverTime >= _lockUntil};
-        private _returned = _medic getVariable ["ACME_vent_spareBattery", 100];
-        if (_accepted) then {
-            _returned = _patient getVariable ["ACME_vent_battery", 100];
-            _patient setVariable ["ACME_vent_battery", (_sparePct max 0) min 100, true];
-            _patient setVariable ["ACME_vent_battWarned", 0, true];
-            // Long enough to reject a second provider who completed the same 4.375 s physical hatch exchange.
-            _patient setVariable ["ACME_vent_batterySwapLockUntil", serverTime + 1.0, true];
+        // ACME_vent_batterySwapReceipts retains immutable decisions; the
+        // ACME_vent_batterySwapLockUntil is enforced by the owner helper.
+        private _request = _args param [1, []];
+        if (_request isEqualType [] && {count _request == 10}
+            && {(_request select 0) isEqualTo _patient}) then {
+            _args call ACME_fnc_ventBatteryExchange;
         };
-        ["ACME_ventBatteryExchangeResult", [_patient, _requestId, _accepted, _returned, (_sparePct max 0) min 100], parseNumber ((_requestId splitString ":") select 0)] call CBA_fnc_ownerEvent;
     };
     case "treatmentPatientSettle": {_args call ACME_fnc_treatmentPatientSettle;};
 };

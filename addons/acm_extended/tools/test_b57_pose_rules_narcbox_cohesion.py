@@ -115,7 +115,8 @@ def test_hard_reset_scrubs_only_full_heal_and_new_life_not_corpses():
     assert '["ace_medical_FullHeal", {_this call ACME_fnc_clearAllAilments}]' in life
     assert 'addMissionEventHandler ["EntityRespawned"' in resp
     assert '[_oldUnit] call ACME_fnc_deathFreeze' in resp
-    assert '[_newUnit] call ACME_fnc_clearAllAilments' in resp
+    assert '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset' in resp
+    assert '[_newUnit] call ACME_fnc_clearAllAilments' in txt('functions/fn_respawnClinicalReset.sqf')
     assert 'forEach [_oldUnit, _newUnit]' not in resp
     assert '[_patient, "begin", true] call ACME_fnc_clinicalReset' in death
     assert 'ACME_fnc_clearAllAilments' not in death

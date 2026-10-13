@@ -16,8 +16,10 @@ def test_same_vehicle_is_zero_effective_treatment_distance():
 
 def test_core_treatment_uses_vehicle_aware_proximity():
     s = read("addons/core/overrides/fnc_treatment.sqf")
-    assert "ACME_fnc_patientInteractionDistance" in s
-    assert "objectParent _m isNotEqualTo objectParent _p" in s
+    assert "ACME_fnc_patientInteractionContact" in s
+    contact = read("addons/acm_extended/functions/fn_patientInteractionContact.sqf")
+    assert "ACME_fnc_patientInteractionDistance" in contact
+    assert "_medicVehicle isEqualTo _patientVehicle" in contact
     assert "(_m distance _p) > ace_medical_gui_maxDistance" not in s
 
 
@@ -47,8 +49,9 @@ def test_direct_pressure_same_vehicle_does_not_fail_raw_seat_distance():
 def test_continuous_actions_keep_same_vehicle_session_alive():
     core = read("addons/core/functions/fnc_beginContinuousAction.sqf")
     steth = read("addons/acm_extended/functions/fn_beginStethoscopeAction.sqf")
+    assert "ACME_fnc_patientInteractionContact" in core
+    assert "objectParent _medic isNotEqualTo objectParent _patient" in steth
     for s in (core, steth):
-        assert "objectParent _medic isNotEqualTo objectParent _patient" in s
         assert "(!_notInVehicle && _vehicleCondition)" in s
 
 

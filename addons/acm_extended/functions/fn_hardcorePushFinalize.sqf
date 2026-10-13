@@ -1,6 +1,9 @@
 /* B121: settle the active syringe after completion or an intentional/safety stop. This is the only place a
    physical partial syringe is returned to inventory. */
-private _job = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+private _retiredJob = if (!isNil "_this" && {_this isEqualType []} && {count _this == 1}
+    && {(_this select 0) isEqualType createHashMap}) then {_this select 0} else {createHashMap};
+private _detached = count _retiredJob > 0;
+private _job = if (_detached) then {_retiredJob} else {missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap]};
 if !(_job isEqualType createHashMap && {count _job > 0}) exitWith {false};
 if ((_job getOrDefault ["pendingAcks",0]) > 0) exitWith {false};
 private _unsent = _job getOrDefault ["unsentDelta",[0,0,[]]];
@@ -35,10 +38,13 @@ if (_keepRow) then {
     };
 };
 [_medic,_store] call ACME_fnc_narcStoreCommit;
-missionNamespace setVariable ["ACME_HCMedPushJob",createHashMap];
 if (_job getOrDefault ["inventoryBacked",false]) then {
     [_medic,_job getOrDefault ["inventoryRequest",""],_stable] call ACME_fnc_skInventorySettle;
 };
+// A stopped, captured archive settles inventory only. It cannot clear another
+// provider's active job, UI controls or numeric CBA handler.
+if (_detached) exitWith {true};
+missionNamespace setVariable ["ACME_HCMedPushJob",createHashMap];
 uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
 uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
 private _h = missionNamespace getVariable ["ACME_HCMedPushPFH",-1];

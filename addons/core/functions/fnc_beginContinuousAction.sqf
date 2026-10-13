@@ -37,7 +37,8 @@ _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
 // Preserve native exclusivity. An incoming provider's absent heartbeat says nothing about the current owner.
 // The existing reconciliation pass recovers the recorded controller through its own cancellation callback.
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
-    || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}) exitWith {false};
+    || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}
+    || {!([_medic,_patient] call ACME_fnc_patientInteractionContact)}) exitWith {false};
 
 // Bind only a session started by the local controlled unit. AI/local scripted
 // providers retain their existing behavior when the player changes units.
@@ -180,9 +181,9 @@ private _worker = {
     private _identityChanged = _playerBound && {!(_medic isEqualTo ACE_player)};
     private _localityChanged = (_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch;
     private _medicCondition = (isNull _medic || {!local _medic} || {_localityChanged} || {!(alive _medic)} || {IS_UNCONSCIOUS(_medic)});
-    private _vehicleCondition = (objectParent _medic isNotEqualTo objectParent _patient);
+    private _vehicleCondition = !([_medic,_patient] call ACME_fnc_patientInteractionContact);
     private _enteredVehicle = _notInVehicle && {!isNull objectParent _medic};
-    private _distanceCondition = (!isNull _patient) && {(_patient distance2D _medic) > ACEGVAR(medical_gui,maxDistance)};
+    private _distanceCondition = _vehicleCondition;
 
     private _dialogCondition = false;
     if (_isDialog) then {

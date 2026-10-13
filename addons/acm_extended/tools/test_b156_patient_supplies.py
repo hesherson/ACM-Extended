@@ -231,26 +231,11 @@ def test_deleted_ai_vent_donor_falls_back_to_original_operator_at_last_position(
 
 @pytest.mark.parametrize("accepted", [True, False])
 def test_battery_exchange_ack_returns_item_and_charge_to_exact_donor_once(accepted):
-    source = (FUNCTIONS / "fn_ownerInit.sqf").read_text().split('["ACME_ventBatteryExchangeResult", {', 1)[1].split('}] call CBA_fnc_addEventHandler;', 1)[0]
-    source = source.replace("hasInterface", "true").replace("isNull ACE_player", '(ACE_player isEqualTo "")')
-    source = source.replace("isNull _source", '(_source isEqualTo "")').replace("isNull (_supply select 2)", '((_supply select 2) isEqualTo "")')
-    source = source.replace('_source setVariable ["ACME_vent_spareBattery", _returnedPct, true]', '_charges set [_source, _returnedPct]')
-    source = source.replace("objNull", '""').replace("displayNull", '""').replace("isNull _dlg", '(_dlg isEqualTo "")')
-    execute('''
-        ACE_player = "medic";
-        private _charges = createHashMapFromArray [["patient", 98], ["medic", 17]];
-        ace_medical_treatment_allowSharedEquipment = 0;
-        _inventory set ["patient", ["ACME_VentBattery"]]; _inventory set ["medic", []];
-        private _supply = ["medic", "patient", ["ACME_VentBattery"]] call ACME_fnc_treatmentSupplyTake;
-        uiNamespace setVariable ["ACME_vent_batterySwapRequest", "exchange:1"];
-        uiNamespace setVariable ["ACME_vent_batterySwapSupply", _supply];
-        private _ack = {''' + source + '''};
-    ''' + f'''
-        ["patient", "exchange:1", {str(accepted).lower()}, 42, 98] call _ack;
-        ["patient", "exchange:1", {str(accepted).lower()}, 42, 98] call _ack;
-        [(_charges get "patient") == {42 if accepted else 98} && {{(_charges get "medic") == 17}}, "charge moved to provider or changed on rejection"] call _check;
-        [count (_inventory get "patient") == 1 && {{count (_inventory get "medic") == 0}}, "battery donor changed/duplicated"] call _check;
-    ''')
+    # B282 retains this exact donor/charge/refund-once case while executing the
+    # immutable provider escrow, owner decision, original ACK event and actual
+    # supply-refund implementation. The UI-only five-field protocol is retired.
+    from test_b282_vent_battery import scenario_exact_donor_ack
+    scenario_exact_donor_ack(accepted)
 
 
 def test_battery_panel_close_refunds_only_unsubmitted_reservation():
