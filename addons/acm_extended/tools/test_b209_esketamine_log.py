@@ -14,7 +14,13 @@ from test_menu_death_lifecycle import ROOT, adapt, execute
 
 
 def spray_config():
-    source = (ROOT / 'addons/acm_extended/config.cpp').read_text()
+    config = ROOT / 'addons/acm_extended/config.cpp'
+    source = config.read_text()
+    # The lightweight subtree reader is not an Arma preprocessor. Expand the
+    # real local include so its directive cannot swallow the following item classes.
+    directive = '#include "vent_battery_items.hpp"'
+    assert source.count(directive) == 1
+    source = source.replace(directive, (config.parent / 'vent_battery_items.hpp').read_text())
     action = subtree(source, 'ace_medical_treatment_actions')['classes']['ACME_Esketamine_IN']['props']
     item = subtree(source, 'CfgWeapons')['classes']['ACME_Spray_Esketamine']['props']
     return action, item

@@ -138,9 +138,18 @@ class PressureSourceContracts(unittest.TestCase):
             self.assertNotIn('ACM_breathing_TensionPneumothorax_State', s)
 
     def test_simple_vent_and_hypobaric_oxygen_still_use_effective_settings(self):
+        from source_scan import lex
+        def has_call(name, call):
+            actual = [token.value for token in lex(source(name))]
+            expected = [token.value for token in lex(call)]
+            return any(actual[start:start + len(expected)] == expected
+                       for start in range(len(actual) - len(expected) + 1))
         self.assertIn('call ACME_fnc_ventEffectiveSettings', source('ventDriveTick'))
         self.assertIn('call ACME_fnc_altitudeOxygenCeiling', source('altitudeTick'))
-        self.assertIn('call ACME_fnc_ventEffectiveSettings', source('altitudeOxygenCeiling'))
+        self.assertTrue(has_call('altitudeOxygenCeiling',
+                             '[_patient, _exposure] call ACME_fnc_flightDeliveredFiO2'))
+        self.assertTrue(has_call('flightDeliveredFiO2',
+                             '[_patient] call ACME_fnc_ventEffectiveSettings'))
         self.assertIn('(_fio2 * _pRatio) / 21', source('altitudeOxygenCeiling'))
         self.assertNotIn('call ACM_core_fnc_setTargetVitalsState',source('altitudeTick'))
 

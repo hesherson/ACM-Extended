@@ -3,6 +3,7 @@ import re
 import pytest
 from test_menu_death_lifecycle import ROOT, F, adapt, execute
 from test_historical_cardiac_execution import code as engine_code
+from b282_locality_fixture import definitions as locality_dependencies
 
 
 def native(component, name):
@@ -205,7 +206,7 @@ def test_due_hemolysis_onset_moves_to_new_owner_without_a_second_delay():
 
 def test_owner_register_resumes_each_native_worker_once_and_retains_severity():
     registration=(F/'fn_ownerRegister.sqf').read_text().split('// Resume only native physiology workers',1)[1].split('\n',1)[1].split('// Recovery is keyed',1)[0]
-    execute(setup()+
+    execute(setup()+locality_dependencies(lambda text: adapt(text.replace('local _patient', '_patientLocal').replace('owner _patient', '_ownerNum')), predicate_only=True)+
         'ACM_airway_fnc_handleAirwayCollapse={'+native('airway','handleAirwayCollapse')+'};'+
         'ACM_airway_fnc_handleAirwayObstruction_Blood={'+native('airway','handleAirwayObstruction_Blood')+'};'+
         'ACM_circulation_fnc_handleHemolyticReaction={'+native('circulation','handleHemolyticReaction')+'};'+

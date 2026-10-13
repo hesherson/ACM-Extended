@@ -10,6 +10,7 @@ import pytest
 from historical_source import switch_case_body
 from test_b206_direct_pressure_network import network_source, setup as network_setup
 from test_menu_death_lifecycle import execute, read
+from b282_locality_fixture import definitions as locality_dependencies
 
 
 def source(name, text=None):
@@ -59,6 +60,7 @@ def setup():
         text += f'ACME_fnc_{name}={{' + source(name) + '};'
     # Execute the real Local event's generation/registry prefix. The following unrelated
     # patient lifecycle operations are outside this provider-worker regression's scope.
+    text += locality_dependencies(lambda body: source('ownerInit', body))
     local_prefix = read('ownerInit').split('["CAManBase", "Local", {', 1)[1].split('[_unit] call ACME_fnc_aajtDownedStop;', 1)[0]
     text += 'private _localEvent={' + source('ownerInit', local_prefix) + '};'
     text += 'private _dispatch=ACME_fnc_ownerDispatch;ACME_fnc_ownerDispatch={params ["_patient","_command","_args"];'

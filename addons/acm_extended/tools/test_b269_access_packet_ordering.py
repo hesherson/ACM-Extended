@@ -297,7 +297,23 @@ def test_failed_manual_force_return_keeps_custody_and_allows_explicit_retry():
         [_patient,_medic,"manual",true,"manualplatecarrier"] call ACME_fnc_chestAccessVestEvent;
         [count _acquireRequests==0,"retained internal recovery lease admitted canceled external preparation"] call _check;
         _restoreAllowed=true;
+        private _retryStart=CBA_missionTime;
+        private _restoreCount=count _restores;
+        private _retainedLeases=str (_patient getVariable "ACME_chestAccess_leases");
+        private _closedBefore=+(_patient getVariable "ACME_chestAccess_closedLeases");
+        // This invokes the automatic state watchdog path. Actual user Replace
+        // uses manualPlateCarrierCommit and remains independent of this cadence.
+        [!([_patient,"state","manual"] call ACME_fnc_manualPlateCarrierAutoReturn),"same-frame automatic retry bypassed failed-return cadence"] call _check;
+        CBA_missionTime=_retryStart+1.9;
+        [!([_patient,"state","manual"] call ACME_fnc_manualPlateCarrierAutoReturn),"automatic retry ran before two-second deadline"] call _check;
+        [count _restores==_restoreCount
+            && {(str (_patient getVariable "ACME_chestAccess_leases"))==_retainedLeases}
+            && {(_patient getVariable "ACME_chestAccess_closedLeases") isEqualTo _closedBefore}
+            && {(_patient getVariable "ACME_chestAccess_vestLoadout") isEqualTo ["Vest_A",[["seal",2]]]},
+            "held retry repeated restoration/retirement or discarded exact custody"] call _check;
+        CBA_missionTime=_retryStart+2;
         [[_patient,"state","manual"] call ACME_fnc_manualPlateCarrierAutoReturn,"explicit restoration retry blocked by tombstone"] call _check;
+        [count _restores==_restoreCount+1,"due automatic retry failed or restored more than once"] call _check;
         [_vest=="Vest_A" && {(_patient getVariable ["ACME_manualPlateCarrierLease",""])==""}
             && {(_patient getVariable ["ACME_chestAccess_vestLoadout",[1]]) isEqualTo []},"explicit retry lost exact saved carrier"] call _check;
     ''')

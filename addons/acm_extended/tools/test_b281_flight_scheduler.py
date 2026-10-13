@@ -91,7 +91,7 @@ def fixture():
         ACME_clinical_ownedUnits=[_patient,_medic];
     ''' + "".join(function(name) for name in (
         "altitudeTrue", "pressureAtAltitude", "altitudeOxygenCeiling",
-        "clinicalTickDelta", "altitudeTick", "flightNeedsTick", "flightTick", "idlePhysDiscovery",
+        "flightDeliveredFiO2", "clinicalTickDelta", "altitudeTick", "flightNeedsTick", "flightTick", "idlePhysDiscovery",
     )) + r'''
         // Cabin/equipment classification is tested separately against actual
         // config and geometry. This fixture's engine exposure read still uses
@@ -334,7 +334,7 @@ def test_healthy_owner_discovery_to_native_oxygen_uses_actual_exposure_pipeline(
         private _finite=_flightFinite;
         private _linear=_flightLinear;
     ''' + "".join(function(name) for name in (
-        "flightNeedsTick", "flightTick", "idlePhysDiscovery",
+        "flightNeedsTick", "flightTick", "idlePhysDiscovery", "aspirationEventKey",
     )) + r'''
         private _activations=[];
         CBA_fnc_localEvent={_activations pushBack _this;

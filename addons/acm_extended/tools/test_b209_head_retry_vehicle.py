@@ -4,9 +4,11 @@ Actual startup/stop/bridge SQF runs. CBA scheduling, inventory/animation and veh
 parents are explicit stand-ins; these tests do not certify Arma animation or MP transport.
 """
 import pytest
+import re
 
 from test_menu_death_lifecycle import ROOT, adapt, execute
 from test_bounded_head_start_contracts import start_setup
+from b282_locality_fixture import definitions as locality_dependencies
 
 
 def pending(route):
@@ -114,9 +116,17 @@ def locality_handler():
     return adapt(source)
 
 
+def locality_engine(text):
+    for unit in ('_unit', '_patient', '_medic'):
+        text = re.sub(r'\blocal ' + re.escape(unit) + r'\b', '_patientLocal', text)
+        text = re.sub(r'\bowner ' + re.escape(unit) + r'\b', '_ownerNum', text)
+        text = re.sub(r'\balive ' + re.escape(unit) + r'\b', '_patientAlive', text)
+    return adapt(text.replace('serverTime', '_serverClock'))
+
+
 @pytest.mark.parametrize("route", ["physical", "nonphysical", "denied", "timeout"])
 def test_actual_away_and_back_locality_handler_retires_pending_start(route):
-    execute(pending(route) + '''
+    execute(pending(route) + locality_dependencies(locality_engine) + '''
         ACME_fnc_aajtDownedStop={}; ACME_fnc_providerStanceOwned={false};
         ACME_fnc_ownerRegister={}; CBA_fnc_execNextFrame={};
     ''' + 'private _onLocal={' + locality_handler() + '};' + '''

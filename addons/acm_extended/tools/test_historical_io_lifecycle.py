@@ -11,6 +11,7 @@ from source_scan import lex, matching
 from test_menu_death_lifecycle import ROOT, adapt, execute
 from test_historical_medication_preparation import line_setup
 from test_historical_vial_execution import map_defaults
+from b282_locality_fixture import definitions as locality_dependencies
 
 F=ROOT/'addons/acm_extended/functions'
 
@@ -24,7 +25,7 @@ def function(name):
 
 
 def setup():
-    return function('clinicalEpoch')+function('ioPainResponse')+'''
+    return locality_dependencies(lambda text: adapted(text.replace('local _unit', '_patientLocal').replace('owner _unit', '_patientOwner')))+function('clinicalEpoch')+function('ioPainResponse')+'''
         private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
         private _patientLocal=true;
         private _patientOwner=7;

@@ -8,6 +8,7 @@ tests do not prove actual vehicle seat replication or network delivery ordering.
 Set ACME_B268_BASELINE=5526413e to execute the same cases against unchanged B267.
 """
 import os
+import re
 import subprocess
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ import pytest
 from test_menu_death_lifecycle import ROOT, adapt, execute
 import test_historical_chest_workspace as workspace
 import test_chestseal_preparation_progress as prep
+from b282_locality_fixture import definitions as locality_dependencies
 
 
 def source(name):
@@ -195,9 +197,17 @@ def local_carrier_block():
     return adapt(text[start:end]).replace('call CBA_fnc_waitAndExecute;', 'call _scheduleRecovery;')
 
 
+def locality_engine(text):
+    for unit in ('_unit', '_patient', '_medic'):
+        text = re.sub(r'\blocal ' + re.escape(unit) + r'\b', '_patientLocal', text)
+        text = re.sub(r'\bowner ' + re.escape(unit) + r'\b', '_ownerNum', text)
+        text = re.sub(r'\balive ' + re.escape(unit) + r'\b', '_patientAlive', text)
+    return adapt(text.replace('serverTime', '_serverClock'))
+
+
 @pytest.mark.parametrize('source_label', ['chest-access-vest', 'chest-access-vest-restore', 'other-procedure'])
 def test_local_edges_retire_machine_markers_and_only_old_carrier_animation(source_label):
-    execute(setup() + begin() + r'''
+    execute(setup() + locality_dependencies(locality_engine) + begin() + r'''
         private _unit=_patient; private _isLocal=false;
         private _recoveryWaits=[];private _scheduleRecovery={_recoveryWaits pushBack _this;};
         _patient setVariable ["ACME_chestAccess_frontBusy","old-front"];

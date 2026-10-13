@@ -108,11 +108,15 @@ def test_old_bilateral_inguinal_state_migrates_to_one_side():
 def test_dead_patient_freezes_workers_but_keeps_interventions_and_old_corpse():
     life = acme("registerClinicalLifecycleRuntime")
     resp = acme("registerRhythmLifecycleRuntime")
+    reset = acme("respawnClinicalReset")
     death = acme("deathFreeze")
     assert 'EntityKilled' in life and 'ACME_fnc_deathFreeze' in life
     assert '["ace_medical_FullHeal", {_this call ACME_fnc_clearAllAilments}]' in life
     assert '[_oldUnit] call ACME_fnc_deathFreeze' in resp
-    assert '[_newUnit] call ACME_fnc_clearAllAilments' in resp
+    assert '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;' in resp
+    assert '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;' in resp
+    assert '[_newUnit] call ACME_fnc_clearAllAilments;' in reset
+    assert 'ACME_fnc_clearAllAilments' not in resp
     assert 'forEach [_oldUnit, _newUnit]' not in resp
     assert '[_patient, "begin", true] call ACME_fnc_clinicalReset' in death
     assert 'ACME_fnc_clearAllAilments' not in death
