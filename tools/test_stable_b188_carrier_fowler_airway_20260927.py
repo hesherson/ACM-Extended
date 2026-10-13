@@ -122,9 +122,10 @@ def test_wake_getup_transport_auto_return_cancels_borrowed_semi_fowler_before_re
     runtime = read("addons/acm_extended/functions/fn_registerManualPlateCarrierRuntime.sqf")
 
     stop = auto.index('[objNull, _patient, true, true] call ACME_fnc_headElevateStop;')
-    lease = auto.index('private _leases = _patient getVariable ["ACME_chestAccess_leases", createHashMap];')
+    lease = auto.index('[_patient, [_lease]] call ACME_fnc_chestAccessLeaseRetire;')
+    lease_removed = auto.index('_leases deleteAt _lease;')
     restore = auto.index('[_patient, true, _provider, "access", true] call ACME_fnc_chestAccessVestRestore;')
-    assert stop < lease < restore
+    assert stop < lease < lease_removed < restore
 
     assert '[_patient, "getup"] call ACME_fnc_manualPlateCarrierAutoReturn;' in getup
     assert '"ace_dragging_setupDrag"' in runtime

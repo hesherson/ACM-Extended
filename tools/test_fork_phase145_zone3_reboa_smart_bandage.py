@@ -62,7 +62,12 @@ def test_current_phase145_zone3_reboa_smart_bandage():
     resp = txt("addons/acm_extended/functions/fn_registerRhythmLifecycleRuntime.sqf")
     death = txt("addons/acm_extended/functions/fn_deathFreeze.sqf")
     need('EntityKilled' in life and 'ACME_fnc_deathFreeze' in life, "death: corpse freeze path missing")
-    need('[_oldUnit] call ACME_fnc_deathFreeze' in resp and '[_newUnit] call ACME_fnc_clearAllAilments' in resp,
+    reset = txt("addons/acm_extended/functions/fn_respawnClinicalReset.sqf")
+    need(_has(resp, '[_oldUnit] call ACME_fnc_deathFreeze;')
+         and _has(resp, '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;')
+         and _has(resp, '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;')
+         and _has(reset, '[_newUnit] call ACME_fnc_clearAllAilments;')
+         and 'ACME_fnc_clearAllAilments' not in resp,
          "death: old corpse and new-life reset are not separated")
     need('[_patient, "begin", true] call ACME_fnc_clinicalReset' in death and 'ACME_fnc_clearAllAilments' not in death,
          "death: durable intervention evidence is still being hard-reset")

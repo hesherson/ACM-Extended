@@ -103,7 +103,11 @@ def test_same_vehicle_treatment_is_clinical_without_forcing_animation():
     assert "private _sameVehicleTreatment" in bridge
     assert "private _interactionChecks" in bridge
     assert "private _rangeOkay = _sameVehicleTreatment" in bridge
-    assert "call ACME_fnc_patientInteractionDistance" in bridge
+    from current_source_contracts import _has
+    contact = read("addons/acm_extended/functions/fn_patientInteractionContact.sqf")
+    assert _has(bridge, "[_m,_p] call ACME_fnc_patientInteractionContact")
+    assert _has(contact, "[_medic,_patient] call ACME_fnc_patientInteractionDistance")
+    assert 'if (!isNull _medicVehicle && {_medicVehicle isEqualTo _patientVehicle}) exitWith {true};' in contact
 
     assert "!((vehicle _unit) isEqualTo _unit)" in blocked
 

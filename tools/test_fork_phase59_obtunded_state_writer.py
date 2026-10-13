@@ -11,8 +11,12 @@ commit=read('addons/acm_extended/functions/fn_obtundedStateCommit.sqf')
 for key in ('ACME_obtunded','ACME_obtunded_manual','ACME_obtunded_posture'):
     assert key in commit
 assert 'if (_on) then {"free"} else {""}' in commit
-for rel in ('fn_obtundedSet.sqf','fn_obtundedApply.sqf','fn_registerRhythmLifecycleRuntime.sqf','fn_clearAllAilments.sqf'):
+for rel in ('fn_obtundedSet.sqf','fn_obtundedApply.sqf','fn_respawnClinicalReset.sqf','fn_clearAllAilments.sqf'):
     assert 'ACME_fnc_obtundedStateCommit' in read('addons/acm_extended/functions/'+rel), rel
+from current_source_contracts import _has
+respawn=read('addons/acm_extended/functions/fn_registerRhythmLifecycleRuntime.sqf')
+assert _has(respawn, '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;')
+assert _has(respawn, '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;')
 clear=read('addons/acm_extended/functions/fn_clearAllAilments.sqf')
 assert '"ACME_obtunded", "ACME_obtunded_manual", "ACME_obtunded_posture"' not in clear
 viol=[]
