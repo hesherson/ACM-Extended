@@ -1,10 +1,16 @@
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // activate a list row. ventPanelActivateSel calls it through a middle-click, and the dial is the only input. the
 // blue selection bar already shows which row the dial is on, and this acts on it. the behavior per screen is:
 // setup, meaning weight, mode and interface, commits the selection and advances the flow to the next screen.
 // menu, params and tech activate the row, opening the sub-screen or performing the action.
 // the blue bar is the persistent cursor and is never cleared here.
 params ["_row"];
-if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
 playSound "ACME_VentClick";
 private _n = uiNamespace getVariable ["ACME_vent_listCount", 0];
 if (_row >= _n) exitWith {};
@@ -45,7 +51,7 @@ if (_screen == "ie") exitWith {
 };
 
 if (_screen == "alerts") exitWith {
-    private _tA = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _tA = uiNamespace getVariable ["ACME_vent_target", _viewer];
     if (_row == 4) exitWith {
         // INV i:e is a toggle rather than a dial, so flip it on the spot.
         private _inv = _tA getVariable ["ACME_vent_alertInvIE", true];
@@ -82,7 +88,7 @@ if (_screen == "alerts") exitWith {
 // every row on page 2 is a dialled value, and on PARAMS only row 0, p.SUPPORT, is, while rows 1 to 3 route on to
 // their sub-screens.
 if (_screen == "alerts2") exitWith {
-    private _t2 = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _t2 = uiNamespace getVariable ["ACME_vent_target", _viewer];
     private _ed = uiNamespace getVariable ["ACME_vent_editingAlert", -1];
     // committing this row, because it was being edited: log the new value.
     if (_ed == _row) then {
@@ -128,7 +134,7 @@ if (_screen == "params") exitWith {
         private _ed = uiNamespace getVariable ["ACME_vent_editingParam", -1];
         // committing this row, because it was being edited: log the new value.
         if (_ed == _row) then {
-            private _tP2 = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+            private _tP2 = uiNamespace getVariable ["ACME_vent_target", _viewer];
             private _entry = switch (_row) do {
                 case 0: { format ["O2 enrichment: %1%2", (if (isNull _tP2) then {uiNamespace getVariable ["ACME_vent_fio2", 21]} else {_tP2 getVariable ["ACME_vent_fio2", 21]}), "%"] };
                 case 1: { format ["I:E ratio: %1", [(if (isNull _tP2) then {2.0} else {_tP2 getVariable ["ACME_vent_ie", 2.0]})] call ACME_fnc_ventFormatIE] };

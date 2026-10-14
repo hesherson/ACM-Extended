@@ -38,6 +38,7 @@ if (_isRollPose && {_epoch >= 0}) then {
 if (alive _medic && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic}) then {
     _medic setAnimSpeedCoef 1;
     _medic setUnitPos "AUTO";
+    if ((_pose param [21, false]) || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}) exitWith {};
     if (_enteredProne) then {
         [_medic, "AmovPpneMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;
     } else {

@@ -5,16 +5,16 @@ disableSerialization;
 private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
 private _provider = _dlg getVariable ["ACME_vent_viewer", objNull];
-if (isNull _provider || {!alive _provider} || {_provider isNotEqualTo ACE_player}
+if (isNull _provider || {!alive _provider} || {_provider isNotEqualTo (call ACME_fnc_controlledProvider)}
     || {_provider getVariable ["ACE_isUnconscious", false]}
     || {isNull (uiNamespace getVariable ["ACME_vent_target", objNull])}) exitWith {_dlg closeDisplay 2;};
-if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {
+if !([_provider, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {
     [87700] call ACME_fnc_minigameClose;
 };
 [_dlg] call ACME_fnc_ventFlipKeyHint;
 private _custodyTarget = uiNamespace getVariable ["ACME_vent_target", objNull];
-private _tgtM = uiNamespace getVariable ["ACME_vent_target", ACE_player];
-if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo ACE_player}
+private _tgtM = uiNamespace getVariable ["ACME_vent_target", _provider];
+if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo _provider}
     && {!(_custodyTarget getVariable ["ACME_vent_onPatient", false]) || {_custodyTarget getVariable ["ACME_vent_recovering", false]}}) exitWith {
     [87700] call ACME_fnc_minigameClose;
 };
@@ -208,11 +208,11 @@ if (!isNull _ambFace) then {
         private _src = _x;
         private _i = 0;
         if (!isNil "ace_common_fnc_lightIntensityFromObject") then {
-            _i = [ACE_player, _src] call ace_common_fnc_lightIntensityFromObject;
+            _i = [_provider, _src] call ace_common_fnc_lightIntensityFromObject;
         };
         if (_i > 0.01) then {
             // a distance falloff on top of the intensity, so a lamp across the road tints less than one at arm's reach.
-            private _d = ACE_player distance _src;
+            private _d = _provider distance _src;
             private _f = _i * (1 - ((_d / _rad) min 1));
             if (_f > 0.005) then {
                 private _t = typeOf _src;
@@ -230,7 +230,7 @@ if (!isNull _ambFace) then {
                 _cw = _cw + _f;
             };
         };
-    } forEach (ACE_player nearObjects _rad);
+    } forEach (_provider nearObjects _rad);
 
     if (_cw > 0) then {
         // the local light adds to the sky rather than replacing it, so a chemlight at night tints a dark machine
@@ -379,7 +379,7 @@ private _battIco = switch (missionNamespace getVariable ["ACME_vent_batteryState
             } else { "vent_battery_default" };
         } else {
             // no machine is bound yet, so fall back to whether the medic is under external power.
-            if (!isNull objectParent ACE_player) then { "vent_battery_plugged" } else { "vent_battery_default" }
+            if (!isNull objectParent _provider) then { "vent_battery_plugged" } else { "vent_battery_default" }
         };
     };
 };
@@ -409,7 +409,7 @@ if (!isNull _bFill) then {
         // the same holder the swap writes to. the fitted battery lives on the casualty when one is connected and on
         // the medic when a medic carries the machine, so reading only the casualty meant a battery swapped on an
         // unconnected machine showed the old charge until it was hooked up.
-        private _battHolder = if (isNull _battTgt) then { ACE_player } else { _battTgt };
+        private _battHolder = if (isNull _battTgt) then { _provider } else { _battTgt };
         private _pctB = _battHolder getVariable ["ACME_vent_battery", 100];
         _pctB = (_pctB max 0) min 100;
 
@@ -575,13 +575,13 @@ if (_booting) then {
     if (_bootT0 >= 0) then {
         // boot just finished. clear the flag, restore the normal dark screen, both the rect and the color, and run the
         // automatic self-test before routing to the real first screen. read configured from the bound target, the
-        // patient the panel is bound to, and not from ACE_player, so it decides live against setup correctly.
+        // patient the panel is bound to, and not from _provider, so it decides live against setup correctly.
         uiNamespace setVariable ["ACME_vent_bootT0", -1];
         (_dlg displayCtrl 87760) ctrlShow false;
         (_dlg displayCtrl 87710) ctrlSetPosition [_scrX, _scrY + _scrH*0.132, _scrW, _scrH*0.741];  // the measured window runs 0.132 to 0.873.
         (_dlg displayCtrl 87710) ctrlSetBackgroundColor [0.02,0.03,0.04,1];  // substrate: literal. back to black for everything else.
         (_dlg displayCtrl 87710) ctrlCommit 0;
-        private _target = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+        private _target = uiNamespace getVariable ["ACME_vent_target", _provider];
         private _configured = _target getVariable ["ACME_vent_configured", false];
         uiNamespace setVariable ["ACME_vent_postSelfTest", if (_configured) then {"live"} else {"weight"}];
         ["selftest"] call ACME_fnc_ventPanelShowScreen;
@@ -636,7 +636,7 @@ if ((uiNamespace getVariable ["ACME_vent_screen", "live"]) == "selftest") then {
         // handles a vent that is actually ventilating a casualty.
         if !(uiNamespace getVariable ["ACME_vent_stStartupPlayed", false]) then {
             uiNamespace setVariable ["ACME_vent_stStartupPlayed", true];
-            playSound3D ["acm_extended\sound\ventilator_startup_sfx.ogg", ACE_player, false, getPosASL ACE_player, 3, 1, 30];
+            playSound3D ["acm_extended\sound\ventilator_startup_sfx.ogg", _provider, false, getPosASL _provider, 3, 1, 30];
 
             // both following clips are scheduled off this moment, not off the progress ring. the shutdown used to be fired
             // by the step that filled the ring, which meant its timing depended on how the ring happened to advance.
@@ -650,18 +650,24 @@ if ((uiNamespace getVariable ["ACME_vent_screen", "live"]) == "selftest") then {
             private _shutAt = _runAt + ((_rLen - _ov) max 0);  // and the spool-down starts one overlap under the hum tail.
 
             [{
+                params ["_provider", "_dialog"];
+                if (isNull _dialog || {_dialog isNotEqualTo (uiNamespace getVariable ["ACME_vent_dlg", displayNull])}
+                    || {_provider isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
                 if ((uiNamespace getVariable ["ACME_vent_screen", ""]) != "selftest") exitWith {};
                 if (uiNamespace getVariable ["ACME_vent_stRunPlayed", false]) exitWith {};
                 uiNamespace setVariable ["ACME_vent_stRunPlayed", true];
-                playSound3D ["acm_extended\sound\ventilator_running_sfx.ogg", ACE_player, false, getPosASL ACE_player, 3, 1, 30];
-            }, [], _runAt] call CBA_fnc_waitAndExecute;
+                playSound3D ["acm_extended\sound\ventilator_running_sfx.ogg", _provider, false, getPosASL _provider, 3, 1, 30];
+            }, [_provider, _dlg], _runAt] call CBA_fnc_waitAndExecute;
 
             [{
+                params ["_provider", "_dialog"];
+                if (isNull _dialog || {_dialog isNotEqualTo (uiNamespace getVariable ["ACME_vent_dlg", displayNull])}
+                    || {_provider isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
                 if ((uiNamespace getVariable ["ACME_vent_screen", ""]) != "selftest") exitWith {};
                 if (uiNamespace getVariable ["ACME_vent_stShutPlayed", false]) exitWith {};
                 uiNamespace setVariable ["ACME_vent_stShutPlayed", true];
-                playSound3D ["acm_extended\sound\ventilator_shutdown_sfx.ogg", ACE_player, false, getPosASL ACE_player, 3, 1, 30];
-            }, [], _shutAt] call CBA_fnc_waitAndExecute;
+                playSound3D ["acm_extended\sound\ventilator_shutdown_sfx.ogg", _provider, false, getPosASL _provider, 3, 1, 30];
+            }, [_provider, _dlg], _shutAt] call CBA_fnc_waitAndExecute;
         };
         if (diag_tickTime >= (uiNamespace getVariable ["ACME_vent_stStepNextT", 0])) then {
             private _step = uiNamespace getVariable ["ACME_vent_stStep", 0];
@@ -699,7 +705,7 @@ if ((uiNamespace getVariable ["ACME_vent_screen", "live"]) == "selftest") then {
     private _peep = 0.12;
     // scale the gauge to the real peak pressure from the drive engine, across the 0 to 50 cmH2O span, so a stiff
     // lung under volume control visibly pegs the bar instead of every breath looking identical.
-    private _vTgP = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _vTgP = uiNamespace getVariable ["ACME_vent_target", _provider];
     private _pipReal = if (isNull _vTgP) then { 20 } else { _vTgP getVariable ["ACME_vent_pip", 20] };
     if (_simple) then { _peep = (_effectiveFrame select 5) / 60; };
 
@@ -772,7 +778,7 @@ if ((uiNamespace getVariable ["ACME_vent_screen", "live"]) == "selftest") then {
     // the gauge color reflects the airway pressure state from the drive engine. green is safe, amber is caution
     // at about 30 cmH2O or more, and red is danger at about 35 or more. at danger the lung is accumulating
     // barotrauma, and the fix is to drop to SIMV pc, which caps pressure, or to back the vt down.
-    private _vTg = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _vTg = uiNamespace getVariable ["ACME_vent_target", _provider];
     private _pipState = if (isNull _vTg) then { 0 } else { _vTg getVariable ["ACME_vent_pipState", 0] };  // danger: red.
     private _greenCol = switch (_pipState) do {  // caution: amber.
         case 2: { [0.95,0.25,0.20,1] };  // safe: green.
@@ -1140,7 +1146,7 @@ if ((uiNamespace getVariable ["ACME_vent_screen", "live"]) == "selftest") then {
             // VTe sitting far below VTi is the cousin of the capnograph: the gas is leaving through a hole.
             private _vtRow = uiNamespace getVariable ["ACME_vent_graphVtRow", controlNull];
             if (!isNull _vtRow) then {
-                private _tgtV = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+                private _tgtV = uiNamespace getVariable ["ACME_vent_target", _provider];
                 if (!isNull _tgtV) then {
                     private _vti = _tgtV getVariable ["ACME_vent_vti", -1];
                     private _vte = _tgtV getVariable ["ACME_vent_vte", -1];

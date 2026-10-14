@@ -18,13 +18,24 @@
 // the medical menu opened.
 ["ace_medicalMenuOpened", {
     params ["_medic", "_target", "_display"];
+    // ACE's final onLoad may publish its still-stale curator avatar. This
+    // actual local display boundary is reliable even when our onMenuOpen
+    // override cannot be installed; other display/event payloads keep their actor.
+    if (hasInterface && {!isNull _display}
+        && {_display isEqualTo (uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull])}) then {
+        private _controlled = call ACME_fnc_controlledProvider;
+        if (!isNull _controlled) then {
+            _medic = _controlled;
+            ACE_player = _controlled;
+        };
+    };
     [false, false] call ACME_fnc_respirationStop;
 
     // B169 renderer ownership: do not rely on ACE's single global menuPFH lifetime. The stock onLoad/onUnload pair
     // is final in this runtime and rapid medical-menu replacement can let an older display's unload retire the PFH
     // which a newer display is using. That leaves a visible menu with stale/unbound action rows until some unrelated
     // control forces updateActions. Own one independent renderer driver per concrete display generation instead.
-    if (!isNull _display && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+    if (!isNull _display && {hasInterface} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
         private _rendererEpoch = (uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0]) + 1;
         uiNamespace setVariable ["ACME_medicalMenuRendererEpoch", _rendererEpoch];
         _display setVariable ["ACME_medicalMenuRendererEpoch", _rendererEpoch];
@@ -98,7 +109,7 @@
     };
 
     private _cancelledHandsOn = false;
-    if (!isNull _medic && {local _medic} && {hasInterface} && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+    if (!isNull _medic && {local _medic} && {hasInterface} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
         // A valid continuous action refreshes LastSeen every <=2 s. If that heartbeat disappeared, release only
         // the orphaned global gate before the menu evaluates treatment eligibility.
         if (missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]) then {
@@ -157,7 +168,7 @@
     [_target] call ACME_fnc_syncPremixedBags;
 
     // Bind Unload to its original provider and generation, never a later ACE_player/menu.
-    if (_medic isEqualTo ACE_player) then {
+    if (_medic isEqualTo (call ACME_fnc_controlledProvider)) then {
         // Let the cancelled hands-on controller run its exact onCancel/provider-exit cleanup first. The menu itself
         // is already live and fully interactive; it does not need to seize a crouch animation on this same frame.
         if (!_cancelledHandsOn) then {

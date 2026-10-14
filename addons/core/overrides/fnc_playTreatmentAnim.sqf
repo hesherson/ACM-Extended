@@ -19,6 +19,7 @@
  */
 
 params ["_medic", "_patient", "_actionName", "_isSelfTreatment"];
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
 TRACE_3("playTreatmentAnim",_medic,_actionName,_isSelfTreatment);
 
 if (!isNull objectParent _medic) exitWith {};

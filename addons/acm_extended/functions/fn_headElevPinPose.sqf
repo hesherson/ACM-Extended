@@ -17,6 +17,7 @@
 // a step back as they take the weight, and that step moves the player away from the casualty.
 params [["_patient", objNull, [objNull]], ["_seconds", -1, [0]], ["_pinDir", true, [true]]];
 if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
 if (!isNull objectParent _patient) exitWith {};
 
 if (_seconds <= 0) then {_seconds = missionNamespace getVariable ["ACME_headElev_pinTime", 2.5];};
@@ -30,6 +31,7 @@ _patient setVariable ["ACME_headElev_pinToken", _token, false];
     params ["_args", "_pfh"];
     _args params ["_p", "_token", "_pos", "_dir", "_until", "_pinDir"];
     private _stop = isNull _p || {!local _p} || {!alive _p} || {!isNull objectParent _p}
+        || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
         || {(_p getVariable ["ACME_headElev_pinToken", -1]) != _token};
     if (!_stop) then {
         if ((getPosASL _p) distance _pos > 0.005) then {_p setPosASL _pos;};

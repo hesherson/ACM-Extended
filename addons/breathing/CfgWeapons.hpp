@@ -10,7 +10,7 @@ class CfgWeapons {
         descriptionShort = CSTRING(ChestSeal_Desc);
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 0.856;
         };
     };
 
@@ -19,7 +19,7 @@ class CfgWeapons {
         displayName = CSTRING(PulseOximeter);
         descriptionShort = CSTRING(PulseOximeter_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.6;
         };
     };
 
@@ -28,7 +28,7 @@ class CfgWeapons {
         displayName = CSTRING(Stethoscope);
         descriptionShort = CSTRING(Stethoscope_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 3.125;
         };
     };
 
@@ -37,7 +37,7 @@ class CfgWeapons {
         displayName = CSTRING(NCDKit);
         descriptionShort = CSTRING(NCDKit_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.625;
         };
     };
 
@@ -46,7 +46,7 @@ class CfgWeapons {
         displayName = CSTRING(ChestTubeKit);
         descriptionShort = CSTRING(ChestTubeKit_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 4;
+            mass = 6.125;
         };
     };
 
@@ -55,7 +55,7 @@ class CfgWeapons {
         displayName = CSTRING(ThoracostomyKit);
         descriptionShort = CSTRING(ThoracostomyKit_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 4;
+            mass = 3.3;
         };
     };
 
@@ -64,7 +64,7 @@ class CfgWeapons {
         displayName = CSTRING(PocketBVM);
         descriptionShort = CSTRING(PocketBVM_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 5;
+            mass = 10.1125;
         };
     };
 
@@ -93,7 +93,7 @@ class CfgWeapons {
         displayName = CSTRING(OxygenTank_425_Empty);
         descriptionShort = CSTRING(OxygenTank_425_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 20;
+            mass = 85;
         };
     };
 };

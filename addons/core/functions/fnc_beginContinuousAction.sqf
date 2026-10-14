@@ -33,6 +33,7 @@ params [
     ["_reopenOnEnd", false, [false]]
 ];
 _args params ["_medic", "_patient", "_bodyPart", ["_extraArgs", []]];
+_suppressProviderAnim = _suppressProviderAnim || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])};
 
 // Preserve native exclusivity. An incoming provider's absent heartbeat says nothing about the current owner.
 // The existing reconciliation pass recovers the recorded controller through its own cancellation callback.
@@ -42,7 +43,7 @@ if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
 
 // Bind only a session started by the local controlled unit. AI/local scripted
 // providers retain their existing behavior when the player changes units.
-private _playerBound = hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player};
+private _playerBound = hasInterface && {_medic isEqualTo (call ACME_fnc_controlledProvider)};
 // B252: a continuous-action generation is machine-local. The same provider can
 // leave and return before its PFH samples a nonlocal frame, so bind this action
 // to the locality generation advanced by ACME_fnc_ownerInit on both edges.
@@ -134,9 +135,9 @@ if (_notInVehicle && {!_suppressProviderAnim}) then {
 
             [{
                 params ["_medic", "_epoch", "_playerBound", "_localityEpoch"];
-                if (GVAR(ContinuousAction_Active) && {GVAR(ContinuousAction_Epoch) == _epoch}
+                if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {GVAR(ContinuousAction_Active)} && {GVAR(ContinuousAction_Epoch) == _epoch}
                     && {local _medic} && {alive _medic} && {isNull objectParent _medic}
-                    && {!_playerBound || {_medic isEqualTo ACE_player}}
+                    && {!_playerBound || {_medic isEqualTo (call ACME_fnc_controlledProvider)}}
                     && {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) == _localityEpoch}) then {
                     // The provider can go prone while the standing entry is still queued.
                     private _current = toLowerANSI animationState _medic;
@@ -156,7 +157,7 @@ if (_notInVehicle && {!_suppressProviderAnim}) then {
     };
 };
 
-if (currentWeapon _medic != "") then {
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {currentWeapon _medic != ""}) then {
     [_medic] call ACEFUNC(weaponselect,putWeaponAway);
 };
 
@@ -178,7 +179,7 @@ private _worker = {
     };
 
     private _patientCondition = (isNull _patient);
-    private _identityChanged = _playerBound && {!(_medic isEqualTo ACE_player)};
+    private _identityChanged = _playerBound && {!(_medic isEqualTo (call ACME_fnc_controlledProvider))};
     private _localityChanged = (_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch;
     private _medicCondition = (isNull _medic || {!local _medic} || {_localityChanged} || {!(alive _medic)} || {IS_UNCONSCIOUS(_medic)});
     private _vehicleCondition = !([_medic,_patient] call ACME_fnc_patientInteractionContact);

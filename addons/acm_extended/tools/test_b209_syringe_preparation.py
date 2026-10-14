@@ -17,6 +17,7 @@ def native(name):
 
 def button_code():
     text = native('Syringe_Draw_Button')
+    text = text.replace('findDisplay 84000', '_drawDisplay')
     text = re.sub(r'(_\w+) displayCtrl (?:_\w+|\d+)', 'objNull', text)
     text = re.sub(r'ctrlText _\w+', '"Draw"', text)
     text = text.replace('localize (format ["STR_ACM_Circulation_Medication_%1", _medication])', '_medication')
@@ -27,6 +28,11 @@ def button_code():
 
 def setup():
     return (transaction_setup() + '''
+        private _drawDisplay=parsingNamespace;
+        ACM_circulation_SyringeDraw_Medic=_medic;
+        // This fixture enters a live UI with one deliberately selected 10 mL
+        // vial; source funding/refund/rounding below still execute production code.
+        ACME_fnc_vialSession={if ((_this select 0)=="clear") then {0} else {10}};
         private _magazines=[];
         ace_common_fnc_addToInventory={_magazines pushBack _this;};
         ACME_fnc_skPendingTagCommit={}; ACME_fnc_skApplyPendingTag={_this select 0};

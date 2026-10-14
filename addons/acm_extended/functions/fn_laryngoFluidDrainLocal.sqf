@@ -41,6 +41,12 @@ if (_removed > 0 && {_kind in ["b", "s"]}) then {
     _patient setVariable [_field, CBA_missionTime + 30, true];
 };
 // Blood has its own partial-volume ledger, even when vomit temporarily covers it.
+if (_kind == "v") then {
+    _patient setVariable ["ACME_laryngo_vomitRemaining", [
+        _patient getVariable ["ACM_airway_AirwayObstructionVomit_State", 0],
+        _remaining, +(_patient getVariable ["ACME_laryngo_emesis", []])
+    ], true];
+};
 if (_kind == "b") then {
     _patient setVariable ["ACME_laryngo_bloodRemaining", [_patient getVariable ["ACM_airway_AirwayObstructionBlood_State", 0], _remaining], true];
 };

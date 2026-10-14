@@ -51,10 +51,14 @@ def test_treatment_pose_selects_ambulatory_provider_presentation_only():
     assert 'call ACME_fnc_poseUprightState' in s
     assert 'AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown' in s
     assert 'private _ambulatoryContact = false;' in s
-    state = [item.strip() for item in s.split('private _state = [', 1)[1].split('];', 1)[0].split(',')]
+    # The default visible controller retains its original 21-field layout. B283 adds a separate ownership-only
+    # state with one optional trailing flag; do not accidentally parse that earlier branch as the visible state.
+    state = [item.strip() for item in ('_epoch, _mode, _main,' + s.split('private _state = [_epoch, _mode, _main,', 1)[1]).split('];', 1)[0].split(',')]
     assert len(state) == 21
     assert state[16] == '_upright'
     assert state[19:] == ['_ambulatoryContact', '_enteredProne']
+    passive = [item.strip() for item in ('_epoch, _mode, "",' + s.split('private _state = [_epoch, _mode, "",', 1)[1]).split('];', 1)[0].split(',')]
+    assert len(passive) == 22 and passive[20:] == ['_enteredProne', 'true']
     assert 'if (!_enteredProne && {_ambulatoryPatient} && {_mode == "stethoscope"}) then {' in s
     assert 'if (!_enteredProne && {!(_mode in ["assessmentAirway", "assessmentBreathing"])}) then {' in s
     assert 'case "assessmentAirway": {"AinvPknlMstpSnonWnonDr_medic5"};' in s

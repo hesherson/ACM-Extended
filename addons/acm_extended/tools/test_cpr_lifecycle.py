@@ -122,6 +122,7 @@ def execute(scenario, runtime=False):
         CBA_missionTime = 20;
         private _serverClock = 1000;
         ACE_player = _medic;
+        ACME_fnc_controlledProvider = {ACE_player};
         ace_medical_gui_maxDistance = 3;
         ACM_breathing_SwapToCPR = false;
         ACM_core_ContinuousAction_Active = false;

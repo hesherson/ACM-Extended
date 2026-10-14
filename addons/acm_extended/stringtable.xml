@@ -5,64 +5,78 @@
             <Key ID="STR_ACM_Circulation_Medication_EpinephrineCardiac">
                 <Original>Epinephrine 1:10,000</Original>
                 <English>Epinephrine 1:10,000</English>
+                <Spanish>Epinefrina 1:10,000</Spanish>
             </Key>
         </Container>
         <Container name="ClinicalAndRuntimeFixes">
             <Key ID="STR_ACME_Disability_InspectForFracture_Confirmed">
                 <Original>Patient&apos;s %1 has crepitus on assessment.</Original>
                 <English>Patient&apos;s %1 has crepitus on assessment.</English>
+                <Spanish>Se detecta crepitación en la evaluación (%1 del paciente).</Spanish>
             </Key>
             <Key ID="STR_ACME_Disability_InspectForFracture_Confirmed_Short">
                 <Original>Crepitus present</Original>
                 <English>Crepitus present</English>
+                <Spanish>Crepitación presente</Spanish>
             </Key>
             <Key ID="STR_ACME_Disability_InspectForFracture_Indeterminate">
                 <Original>Patient&apos;s %1 requires reassessment; contusion and crepitus findings are indeterminate.</Original>
                 <English>Patient&apos;s %1 requires reassessment; contusion and crepitus findings are indeterminate.</English>
+                <Spanish>El %1 del paciente requiere reevaluación; los hallazgos de contusión y crepitación son indeterminados.</Spanish>
             </Key>
             <Key ID="STR_ACME_Disability_InspectForFracture_Indeterminate_Short">
                 <Original>Limb findings indeterminate; reassess</Original>
                 <English>Limb findings indeterminate; reassess</English>
+                <Spanish>Hallazgos indeterminados en la extremidad; reevaluar</Spanish>
             </Key>
             <Key ID="STR_ACME_Disability_InspectForFracture_Stabilized">
                 <Original>Patient&apos;s %1 has been stabilized; crepitus was not reassessed.</Original>
                 <English>Patient&apos;s %1 has been stabilized; crepitus was not reassessed.</English>
+                <Spanish>El %1 del paciente ha sido estabilizado; la crepitación no fue reevaluada.</Spanish>
             </Key>
             <Key ID="STR_ACME_Disability_InspectForFracture_Stabilized_Short">
                 <Original>Limb stabilized; crepitus not reassessed</Original>
                 <English>Limb stabilized; crepitus not reassessed</English>
+                <Spanish>Extremidad estabilizada; crepitación no reevaluada</Spanish>
             </Key>
             <Key ID="STR_ACM_Breathing_BVM_UsingBVM_OxygenTankDepleted">
                 <Original>Portable oxygen tank depleted.</Original>
                 <English>Portable oxygen tank depleted.</English>
+                <Spanish>Tanque de oxígeno portátil agotado.</Spanish>
             </Key>
         </Container>
         <Container name="Medications">
             <Key ID="STR_ACM_Circulation_Medication_CalciumGluconate">
                 <Original>Calcium Gluconate</Original>
                 <English>Calcium Gluconate</English>
+                <Spanish>Gluconato Cálcico</Spanish>
             </Key>
             <Key ID="STR_ACM_Circulation_Medication_Ceftriaxone">
                 <Original>Ceftriaxone</Original>
                 <English>Ceftriaxone</English>
+                <Spanish>Ceftriaxona</Spanish>
             </Key>
             <Key ID="STR_ACM_Circulation_Medication_Midazolam">
                 <Original>Midazolam</Original>
                 <English>Midazolam</English>
+                <Spanish>Midazolam</Spanish>
             </Key>
             <Key ID="STR_ACM_Circulation_Medication_Norepinephrine">
                 <Original>Norepinephrine</Original>
                 <English>Norepinephrine</English>
+                <Spanish>Norepinefrina</Spanish>
             </Key>
             <Key ID="STR_ACM_Circulation_Medication_Propofol">
                 <Original>Propofol</Original>
                 <English>Propofol</English>
+                <Spanish>Propofol</Spanish>
             </Key>
         </Container>
         <Container name="TBI">
             <Key ID="STR_ACME_ElevateHead30">
                 <Original>Elevate Head 30 deg</Original>
                 <English>Elevate Head 30 deg</English>
+                <Spanish>Elevar Cabeza 30°</Spanish>
             </Key>
         </Container>
     </Package>

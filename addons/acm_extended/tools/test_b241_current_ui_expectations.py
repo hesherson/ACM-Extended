@@ -31,7 +31,7 @@ def pending_block(source):
 def pending_reopen_contract(source):
     block=pending_block(source)
     assert has(block,"if (_groupKey isEqualTo '' && {!(_actionClass in ["+','.join(repr(x) for x in EXCLUDED)+"])}) then")
-    assert has(block,'if !(ACE_player getVariable ["ACME_chestAccessPreflightActive", false]) then { ace_medical_gui_pendingReopen = true; };')
+    assert has(block,'if !((call ACME_fnc_controlledProvider) getVariable ["ACME_chestAccessPreflightActive", false]) then { ace_medical_gui_pendingReopen = true; };')
     statement="_ctrl ctrlAddEventHandler ['ButtonClick', _statement];"
     assert has(source,statement)
     assert source.index(statement)<source.index(block.rstrip(';'))

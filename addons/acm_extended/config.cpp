@@ -642,6 +642,32 @@ class CfgMagazines {
     class ACME_PreparedIVSet_M127: ACME_PreparedIVSet { mass = 12.7; };
     class ACME_PreparedIVSet_M152: ACME_PreparedIVSet { mass = 15.2; };
     class ACME_PreparedIVSet_M202: ACME_PreparedIVSet { mass = 20.2; };
+    // Current PR bag weights; historical variants above remain valid for saved gear.
+    class ACME_PreparedIVSet_M16: ACME_PreparedIVSet { mass = 1.6; };
+    class ACME_PreparedIVSet_M29: ACME_PreparedIVSet { mass = 2.9; };
+    class ACME_PreparedIVSet_M63: ACME_PreparedIVSet { mass = 6.3; };
+    class ACME_PreparedIVSet_M64: ACME_PreparedIVSet { mass = 6.4; };
+    class ACME_PreparedIVSet_M68: ACME_PreparedIVSet { mass = 6.8; };
+    class ACME_PreparedIVSet_M84: ACME_PreparedIVSet { mass = 8.4; };
+    class ACME_PreparedIVSet_M94: ACME_PreparedIVSet { mass = 9.4; };
+    class ACME_PreparedIVSet_M97: ACME_PreparedIVSet { mass = 9.7; };
+    class ACME_PreparedIVSet_M119: ACME_PreparedIVSet { mass = 11.9; };
+    class ACME_PreparedIVSet_M121: ACME_PreparedIVSet { mass = 12.1; };
+    class ACME_PreparedIVSet_M130: ACME_PreparedIVSet { mass = 13; };
+    class ACME_PreparedIVSet_M146: ACME_PreparedIVSet { mass = 14.6; };
+    class ACME_PreparedIVSet_M156: ACME_PreparedIVSet { mass = 15.6; };
+    class ACME_PreparedIVSet_M159: ACME_PreparedIVSet { mass = 15.9; };
+    class ACME_PreparedIVSet_M169: ACME_PreparedIVSet { mass = 16.9; };
+    class ACME_PreparedIVSet_M181: ACME_PreparedIVSet { mass = 18.1; };
+    class ACME_PreparedIVSet_M231: ACME_PreparedIVSet { mass = 23.1; };
+    class ACME_PreparedIVSet_M235: ACME_PreparedIVSet { mass = 23.5; };
+    class ACME_PreparedIVSet_M251: ACME_PreparedIVSet { mass = 25.1; };
+    class ACME_PreparedIVSet_M267: ACME_PreparedIVSet { mass = 26.7; };
+    class ACME_PreparedIVSet_M277: ACME_PreparedIVSet { mass = 27.7; };
+    class ACME_PreparedIVSet_M280: ACME_PreparedIVSet { mass = 28; };
+    class ACME_PreparedIVSet_M302: ACME_PreparedIVSet { mass = 30.2; };
+    class ACME_PreparedIVSet_M352: ACME_PreparedIVSet { mass = 35.2; };
+    class ACME_PreparedIVSet_M1_75: ACME_PreparedIVSet { mass = 1.75; }; // 50 mL propofol bottle + line.
     class ACME_PreparedSyringe: ACME_PreparedIVSet {
         displayName = "Prepared Syringe";
         ACME_inventoryKind = "syringe";
@@ -649,6 +675,10 @@ class CfgMagazines {
         descriptionShort = "Prepared medication syringe. Exact contents follow it through Gear.";
         mass = 1;
     };
+    class ACME_PreparedSyringe_1: ACME_PreparedSyringe { mass = 1; };
+    class ACME_PreparedSyringe_3: ACME_PreparedSyringe { mass = 1.2; };
+    class ACME_PreparedSyringe_5: ACME_PreparedSyringe { mass = 1.7; };
+    class ACME_PreparedSyringe_10: ACME_PreparedSyringe { mass = 2.6; };
     class ACM_Paracetamol: CA_Magazine {
         scope = 2;
         author = "Blue";
@@ -693,7 +723,7 @@ class CfgMagazines {
         displayName = "Syringe (10 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -702,7 +732,7 @@ class CfgMagazines {
         displayName = "Syringe (5 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -711,7 +741,7 @@ class CfgMagazines {
         displayName = "Syringe (3 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -720,7 +750,7 @@ class CfgMagazines {
         displayName = "Syringe (1 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Norepinephrine: ACM_Syringe_10_Epinephrine {
@@ -730,7 +760,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Norepinephrine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -739,7 +769,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Norepinephrine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -748,7 +778,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Norepinephrine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -757,7 +787,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // phentolamine, an alpha-blocker. it is the reversal agent for catecholamine vasopressor extravasation, from
@@ -771,7 +801,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Phentolamine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -780,7 +810,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Phentolamine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -789,7 +819,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Phentolamine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -798,7 +828,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // hyaluronidase, an enzyme that breaks down hyaluronic acid in connective tissue and lets an extravasated drug
@@ -812,7 +842,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Hyaluronidase: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -821,7 +851,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Hyaluronidase: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -830,7 +860,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Hyaluronidase: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -839,7 +869,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Midazolam: ACM_Syringe_10_Epinephrine {
@@ -849,7 +879,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Midazolam: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -858,7 +888,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Midazolam: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -867,7 +897,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Midazolam: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -876,7 +906,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Rocuronium: ACM_Syringe_10_Epinephrine {
@@ -886,7 +916,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Rocuronium: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -895,7 +925,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Rocuronium: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -904,7 +934,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Rocuronium: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -913,7 +943,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // sugammadex syringes. the narc box and draw system instantiate ACM_Syringe_<size>_<drug> directly, so every
@@ -927,7 +957,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Sugammadex: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -936,7 +966,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Sugammadex: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -945,7 +975,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Sugammadex: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -954,7 +984,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_CalciumGluconate: ACM_Syringe_10_Epinephrine {
@@ -964,7 +994,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_CalciumGluconate: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -973,7 +1003,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_CalciumGluconate: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -982,7 +1012,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_CalciumGluconate: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -991,7 +1021,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // propofol syringes. it is a sedative-hypnotic at 500 mg in 50 ml, or 10 mg/ml. it draws and pushes, and the
@@ -1003,7 +1033,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Propofol: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -1012,7 +1042,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Propofol: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -1021,7 +1051,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Propofol: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -1030,7 +1060,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Ceftriaxone: ACM_Syringe_10_Epinephrine {
@@ -1040,7 +1070,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Ceftriaxone: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -1049,7 +1079,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Ceftriaxone: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -1058,7 +1088,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Ceftriaxone: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -1067,7 +1097,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
 };
@@ -1087,7 +1117,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
         descriptionShort = "Premixed 3% hypertonic saline. Osmotherapy for raised ICP.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 6.2; };
     };
     // the herniation rescue. 23.4 percent hypertonic saline in a 30 ml bullet, which is the concentrated push that
     // buys minutes of ICP reduction when a pupil has blown, as opposed to the 3 percent bag above which is a drip.
@@ -1101,7 +1131,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
         descriptionShort = "Concentrated osmotherapy bolus for herniation. Central access preferred. Buys minutes, does not fix the lesion.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1.2; };
     };
     // mannitol as a push rather than a bag. it draws water out of the brain and it also makes the casualty pass it,
     // so it drops the circulating volume, which is why it is the wrong choice in someone who is already dry.
@@ -1149,7 +1179,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\vent\laryngoscope_ca.paa";
         descriptionShort = "Rigid laryngoscope for direct-vision orotracheal intubation. Needed with an ET tube to intubate.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 4; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 7.7; };
     };
     class ACME_ETTube: ACE_ItemCore {
         author = "mavis";
@@ -1159,7 +1189,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\vent\et_tube_ca.paa";
         descriptionShort = "Cuffed endotracheal tube. Passed under direct laryngoscopy to secure a definitive airway.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.5; };
     };
     class ACME_MagnesiumBag: ACE_ItemCore {
         author = "mavis";
@@ -1197,30 +1227,29 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\plasmalyte-a_ca.paa";
         descriptionShort = "Balanced crystalloid, 1000 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable; no cells/protein/clotting factors (not plasma).";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 10; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 23.4; };
     };
-    // smaller plasma-lyte a volumes, at 100, 250 and 500 ml. it is the same balanced crystalloid, and the mass
-    // scales at about 1 per 100 ml.
+    // Smaller plasma-lyte volumes include the fluid and bag packaging mass.
     class ACME_PlasmaLyteBag_500: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (500mL)";
         descriptionShort = "Balanced crystalloid, 500 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 5; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 12; };
     };
     class ACME_PlasmaLyteBag_250: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (250mL)";
         descriptionShort = "Balanced crystalloid, 250 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 6.3; };
     };
     class ACME_PlasmaLyteBag_100: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (100mL)";
         descriptionShort = "Balanced crystalloid, 100 mL. Small volume / carrier. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2.8; };
     };
     // small-volume saline bags, at 50 and 100 ml. these are flush and keep-open reserves. they are ideal as the
     // y-line saline reserve, because each flush line bleeds 50 ml, so a 50 ml bag is one flush and a 100 ml bag is
@@ -1233,7 +1262,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineiv_50ml_ca.paa";
         descriptionShort = "0.9% sodium chloride, 50 mL. Small flush / keep-vein-open volume. As a Y-line reserve this is one line flush.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1.5; };
     };
     class ACME_SalineBag_100: ACE_ItemCore {
         author = "mavis";
@@ -1243,7 +1272,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineiv_100ml_ca.paa";
         descriptionShort = "0.9% sodium chloride, 100 mL. Small flush / keep-vein-open volume. As a Y-line reserve this is two line flushes.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2.8; };
     };
 
     // intranasal esketamine atomizer. it gives battlefield analgesia with no iv access, and a medic administers it
@@ -1300,7 +1329,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -1317,7 +1346,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.11;
         };
     };
 
@@ -1335,7 +1364,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.11;
         };
     };
 
@@ -1355,7 +1384,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1374,7 +1403,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -1392,7 +1421,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1409,7 +1438,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.65;
         };
     };
 
@@ -1426,7 +1455,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.65;
         };
     };
 
@@ -1442,7 +1471,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 class ACM_Vial_Fentanyl: ACE_ItemCore {
@@ -1455,7 +1484,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1503,7 +1532,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\quantum_bloodwarmer_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 0.3;
+            mass = 13.75;
         };
     };
 
@@ -1537,7 +1566,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\nar_boa_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 0.2;
+            mass = 0.7;
         };
     };
 
@@ -1564,7 +1593,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACE_isMedicalItem = 1;
         ACME_premixedBag = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 6.2;
         };
     };
 
@@ -1657,7 +1686,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\salineFlush_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.6;
         };
     };
 
@@ -1672,7 +1701,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\suretemp690_thermometer_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 7.9;
         };
     };
 
@@ -1699,7 +1728,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         nameSound = "";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 35;
         };
     };
     // EMMA mainstream capnograph. it attaches inline on a BVM, and the HUD reads out while a medic ventilates.
@@ -1712,7 +1741,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\emma\emma_etco2_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 1.3;
         };
     };
     // combat gauze, hemostatic packing for junctional hemorrhage.
@@ -1729,7 +1758,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\combat_gauze_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1785,7 +1814,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\xstat_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;  // about 71 g. it has barely any footprint.
+            mass = 1.56;  // about 71 g. it has barely any footprint.
         };
     };
 
@@ -1811,8 +1840,8 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // capacity, and any blood once the coolant lapses, is left out in the warm and spoils. see postinit for the
     // loose-blood timer. the real cold-chain figures of 48, 24 and 72 h are compressed hard for operations of
     // about 4 h. tune them in postinit or here.
-    // mass is bulk, because arma has a single stat. the 4u is huge on purpose, so it only fits vehicle cargo or a
-    // very large pack. it cannot go in a uniform, a vest or a normal ruck.
+    // Mass values follow the contributed carrier weights; native inventory capacity
+    // decides which uniform, vest, pack or vehicle can contain a given carrier.
 
     // pelican golden hour one-v. it holds 1 unit, a single 500 ml bag, weighs about 2 lb and is the smallest. it
     // has the longest validated cold chain.
@@ -1827,7 +1856,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 500;
         ACME_coolerColdChainTime = 7200;  // 2 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 50;
+            mass = 20;
         };
     };
 
@@ -1838,19 +1867,18 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         scope = 2;
         author = "mavis";
         displayName = "Golden Minute CSWB-2U";
-        descriptionShort = "Two-unit blood cold-chain carrier. 2000 mL total capacity.";
+        descriptionShort = "Two-unit blood cold-chain carrier. 1000 mL total capacity.";
         picture = "\acm_extended\ui\items\goldenminute_cswb2u_ca.paa";
         ACE_isMedicalItem = 1;
         ACME_coolerCapacityMl = 1000;
         ACME_coolerColdChainTime = 5400;  // 1.5 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 100;
+            mass = 42;
         };
     };
 
-    // golden hour CSWB-4u soft container. it holds 4 units, 2000 ml in any bag combination, and weighs about 7.5
-    // lb. it is dimensionally massive, so it fits vehicle cargo and very large packs only. it has the longest
-    // coolant life.
+    // Golden Hour CSWB-4U soft container holds 2000 ml in any bag combination,
+    // weighs about 7.5 lb and has the longest coolant life.
     class ACME_BloodCooler_CSWB4U: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
@@ -1862,7 +1890,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 2000;
         ACME_coolerColdChainTime = 10800;  // 3 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 330;  // huge on purpose, so it fits vehicle cargo or a very large pack only.
+            mass = 75;
         };
     };
 };
@@ -2159,6 +2187,7 @@ class CfgFunctions {
             class suctionPublish {};
             class suctionObservers {};
             class ownerDispatch {};
+            class controlledProvider {};
             class ownerRegisterNeedsRecovery {};
             class respawnClinicalReset {};
             class resusRequest {};

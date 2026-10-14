@@ -6,6 +6,24 @@ private _lockedUntil = uiNamespace getVariable ["ACME_CS_FlipLockedUntil", 0];
 if ((_lockedUntil isEqualType 0) && {_lockedUntil > _now}) exitWith {};
 if (isNull _patient) exitWith {};
 
+// Clinical placement commits before its gesture starts. Every accepted Flip, including a view-only Flip,
+// retires that gesture generation so its delayed completion cannot reclaim the provider after this click.
+private _provider = uiNamespace getVariable ["ACME_CS_Medic", objNull];
+private _applyPFH = uiNamespace getVariable ["ACME_CS_ApplyPFH", -1];
+if (_applyPFH isEqualType 0 && {_applyPFH >= 0}) then {[_applyPFH] call CBA_fnc_removePerFrameHandler;};
+uiNamespace setVariable ["ACME_CS_ApplyPFH", -1];
+uiNamespace setVariable ["ACME_CS_ApplyAnimSerial", (uiNamespace getVariable ["ACME_CS_ApplyAnimSerial", 0]) + 1];
+uiNamespace setVariable ["ACME_CS_ApplyGestureUntil", 0];
+private _placementStopped = false;
+if (!isNull _provider && {local _provider}) then {
+    private _pose = _provider getVariable ["ACME_treatmentPoseState", []];
+    private _epoch = _pose param [0, -1];
+    if ((_pose param [1, ""]) == "chestSeal" && {_epoch >= 0}) then {
+        [_provider, "chestSeal", _epoch, true] call ACME_fnc_treatmentPoseStop;
+        _placementStopped = true;
+    };
+};
+
 private _uiCurrent = uiNamespace getVariable ["ACME_CS_Side", "front"];
 private _newSide = if (_uiCurrent == "front") then {"back"} else {"front"};
 
@@ -29,9 +47,13 @@ if (!_willAnimate) exitWith {
     uiNamespace setVariable ["ACME_CS_FlipLockedUntil", 0];
     uiNamespace setVariable ["ACME_CS_VirtualFlip", true];
     [] call ACME_fnc_chestSealRender;
+    if (_placementStopped) then {
+        private _holdEpoch = [_provider, _patient] call ACME_fnc_chestSealProviderHoldStart;
+        _provider setVariable ["ACME_CS_providerHoldEpoch", _holdEpoch, false];
+        uiNamespace setVariable ["ACME_CS_ProviderHoldEpoch", _holdEpoch];
+    };
 };
 
-private _provider = uiNamespace getVariable ["ACME_CS_Medic", objNull];
 private _display = uiNamespace getVariable ["ACME_CS_DLG", displayNull];
 if (isNull _provider || {!local _provider} || {isNull _display}) exitWith {};
 private _session = uiNamespace getVariable ["ACME_CS_SessionToken", ""];
@@ -53,14 +75,6 @@ if ((_provider getVariable ["ACME_DP_Active", false])
     _provider setVariable ["ACME_DP_InPose", false];
     _provider setVariable ["ACME_DP_LastPoseAssert", 0];
 };
-
-// Flip has absolute precedence inside the live chest procedure. Invalidate the seal-placement worker BEFORE
-// touching provider animation so its old 2.65 s callback can never wake up and restore medic3/workspace over Flip.
-private _applyPFH = uiNamespace getVariable ["ACME_CS_ApplyPFH", -1];
-if (_applyPFH isEqualType 0 && {_applyPFH >= 0}) then {[_applyPFH] call CBA_fnc_removePerFrameHandler;};
-uiNamespace setVariable ["ACME_CS_ApplyPFH", -1];
-uiNamespace setVariable ["ACME_CS_ApplyAnimSerial", (uiNamespace getVariable ["ACME_CS_ApplyAnimSerial", 0]) + 1];
-uiNamespace setVariable ["ACME_CS_ApplyGestureUntil", 0];
 
 // Retire ANY ACME-owned provider pose as a handoff. This includes seal medic3 and NCD medic1. Keep the old
 // visible chest pose in place for the handoff; do not play an intermediate neutral/weapon-restoring exit.

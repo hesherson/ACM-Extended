@@ -13,7 +13,10 @@ def test_current_phase8_getup():
         assert tok in t
     from current_source_contracts import _has
     assert _has(t, 'if (!local _patient) exitWith')
-    assert _has(t, '[_patient, _roll, 2] call ACME_fnc_doAnim;')
+    # Get Up repairs an isolated engine state. Its guarded priority-2 escape must survive disabling treatment
+    # presentation, while ordinary ACME_fnc_doAnim remains presentation-only.
+    assert _has(t, '[_patient, _roll, 2] call ace_common_fnc_doAnimation;')
+    assert _has(t, 'if !([_patient] call ACME_fnc_animBlocked) then {')
     assert not _has(t, 'call ACME_fnc_animQueue;')
     assert _has(t, 'if (_carryOwned) exitWith')
     assert t.index('if (_carryOwned) exitWith') < t.index('_patient setVariable ["ACM_core_Lying_State", false, true];')

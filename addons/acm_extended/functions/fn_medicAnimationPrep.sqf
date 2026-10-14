@@ -4,6 +4,9 @@
  * entering must wait on it, never issue another put-away animation. Weapons are never automatically restored.
  */
 params [["_medic", objNull, [objNull]]];
+// No RTM will follow in presentation-disabled mode. Report immediate readiness without starting a holster or
+// changing the existing one-shot reservation; the caller still owns clinical timing and treatment callbacks.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {0};
 if (isNull _medic || {!local _medic} || {!alive _medic} || {[_medic] call ACME_fnc_animBlocked}) exitWith {0};
 
 // Empty hands are not ready until BOTH Arma's logical weapon selection and the visible animation agree.

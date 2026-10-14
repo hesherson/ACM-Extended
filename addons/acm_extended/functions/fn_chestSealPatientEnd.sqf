@@ -94,7 +94,8 @@ private _forceFrontRest = {
 
     _p setVariable ["ACME_CS_facing", "front", true];
 
-    if (alive _p && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
+    if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+        && {alive _p} && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
         private _actual = [_p, "front"] call ACME_fnc_chestSealActualSide;
         if (_actual != "front") then {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp", "ACM_LyingState"];

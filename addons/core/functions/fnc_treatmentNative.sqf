@@ -19,6 +19,7 @@
  */
 
 params ["_medic", "_patient", "_bodyPart", "_classname"];
+private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];
 if (_classname == "ACME_FeelSkin") exitWith {_this call ACME_fnc_feelSkinStart;};
 
 // Delay by a frame if cursor menu is open to prevent progress bar failing
@@ -91,7 +92,7 @@ if (isNumber (_config >> "ACM_cancelRecovery")) then {
 };
 
 // play patient animation
-if (alive _patient) then {
+if (_animationsEnabled && {alive _patient}) then {
     private _animationStatePatient = animationState _patient;
 
     if (_animationStatePatient != "acm_recoveryposition" || (_animationStatePatient == "acm_recoveryposition" && _cancelsRecoveryPosition)) then {
@@ -154,7 +155,7 @@ if (_medic isNotEqualTo player || {!_isInZeus}) then {
     // breathing-check motions a frame after ACME started them.
     private _suppressNativeAnim = _torsoDressing || {(_medic getVariable ["ACME_suppressNativeTreatmentAnim", false])}
         || {(isNumber (_config >> "ACME_suppressNativeTreatmentAnim")) && {(getNumber (_config >> "ACME_suppressNativeTreatmentAnim")) > 0}};
-    if (_suppressNativeAnim) then {
+    if (_suppressNativeAnim || {!_animationsEnabled}) then {
         _medicAnim = "";
     };
 

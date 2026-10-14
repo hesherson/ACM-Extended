@@ -48,7 +48,7 @@ def test_long_chest_prep_is_one_click_closes_menu_and_is_cancellable():
     assert '[0x01, [false,false,false], _cancelCode' in treatment
     assert '[0xF0, [false,false,false], _cancelCode' in treatment
     assert '["ACM_core_openMedicalMenu", _p] call CBA_fnc_localEvent;' in treatment
-    assert 'if !(ACE_player getVariable ["ACME_chestAccessPreflightActive", false]) then {' in gui
+    assert 'if !((call ACME_fnc_controlledProvider) getVariable ["ACME_chestAccessPreflightActive", false]) then {' in gui
 
 
 def test_native_roll_actions_do_not_enter_roll_only_chest_preparation():

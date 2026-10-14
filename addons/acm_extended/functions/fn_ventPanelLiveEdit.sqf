@@ -1,8 +1,14 @@
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // the live screen, in edit mode: the dial changes the value of the currently selected field, the BPM or the vt. it is
 // called from the knob when editing is active, and _dir is already reversed by the caller.
 params ["_dir"];
-if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
-private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (isNull _vTgt) then { _vTgt = ACE_player; };
+if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+private _vTgt = uiNamespace getVariable ["ACME_vent_target", _viewer]; if (isNull _vTgt) then { _vTgt = _viewer; };
 private _selIdx = uiNamespace getVariable ["ACME_vent_selIdx", 0];
 // Recheck at the mutation boundary, including a setting toggle between frames.
 if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])}) && {_selIdx != 0}) exitWith {

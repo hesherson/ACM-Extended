@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import pytest
 from test_menu_death_lifecycle import ROOT, read, execute
-from b282_aspiration_fixture import boundary, definitions
+from b282_aspiration_fixture import boundary, definitions, airway_fluid_definitions
 
 
 def setup(mutation=None):
@@ -20,7 +20,7 @@ def setup(mutation=None):
     if mutation=='scalar_authority': state=state.replace('+_state','[_epoch,_key,_patient getVariable ["ACME_aspiration_load",0],_patient getVariable ["ACME_aspiration_edema",0],_serial]')
     if mutation=='no_receipt': tick=tick.replace('_state set [4,(_state select 4) max _serial];','')
     rr=(ROOT/'addons/breathing/functions/fnc_updateRespirationRate.sqf').read_text()
-    return definitions()+''.join('ACME_fnc_'+n+'={'+boundary(s)+'};' for n,s in [('aspirationState',state),('aspirationEventKey',event),('aspirationTick',tick)])+\
+    return definitions()+airway_fluid_definitions()+''.join('ACME_fnc_'+n+'={'+boundary(s)+'};' for n,s in [('aspirationState',state),('aspirationEventKey',event),('aspirationTick',tick)])+\
         'ACM_breathing_fnc_updateRespirationRate={'+boundary(rr,'breathing')+'};'+r'''
         private _public=createHashMap;private _logs=[];private _writes=0;
         ACME_fnc_setVarNet={params ["_u","_key","_value"];if !((_u getVariable [_key,[]]) isEqualTo _value) then {_writes=_writes+1;};_u setVariable [_key,_value];_public set [_key,_value];};

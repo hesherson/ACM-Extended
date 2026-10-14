@@ -31,6 +31,35 @@ if (_presentation isNotEqualTo [] && {
     || {(_presentation param [4, -1]) != (_medic getVariable ["ACME_headElev_medicAnimToken", 0])}
 }) exitWith {};
 
+// Clinical posture and its timing are independent of this provider-only sequence. Do not create a watchdog for
+// an RTM that presentation-disabled mode intentionally never emits. Retire any older presentation generation.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    private _hadSequence = _medic getVariable ["ACME_headElev_seqActive", false];
+    private _oldPFH = _medic getVariable ["ACME_headElev_seqPFH", -1];
+    if (_oldPFH >= 0) then {[_oldPFH] call CBA_fnc_removePerFrameHandler;};
+    private _token = (_medic getVariable ["ACME_headElev_medicAnimToken", 0]) + 1;
+    _medic setVariable ["ACME_headElev_medicAnimToken", _token, false];
+    _medic setVariable ["ACME_headElev_medicAnimStage", -1, false];
+    _medic setVariable ["ACME_headElev_seqActive", false, false];
+    _medic setVariable ["ACME_headElev_seqMode", "", false];
+    _medic setVariable ["ACME_headElev_seqPFH", -1, false];
+    private _pause = _medic getVariable ["ACME_DP_PauseTreatmentClass", ""];
+    if ((_medic getVariable ["ACME_DP_Active", false]) && {_pause in ["acme_elevatehead", "acme_lowerhead"]}) then {
+        _medic setVariable ["ACME_DP_Paused", false, false];
+        _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
+        _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
+        _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
+    };
+    if (_hadSequence && {!([_medic] call ACME_fnc_providerAnimSpeedOwned)}) then {
+        _medic setAnimSpeedCoef 1;
+        ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
+        if !([_medic] call ACME_fnc_providerStanceOwned) then {_medic setUnitPos "AUTO";};
+    };
+    if (_mode == "chestsealexit") then {
+        _medic setVariable ["ACME_CS_ProviderExitReady", [_exitSession, _token, true, serverTime], true];
+    };
+};
+
 private _prone = stance _medic == "PRONE";
 _medic setVariable ["ACME_headElev_providerProne", _prone, false];
 // A new head-position episode supersedes any stale local provider theatre immediately.
@@ -167,6 +196,9 @@ private _providerPFH = [{
         _args set [5, _second]; _args set [6, _rest];
         _args set [12, true];
         _seen = false; _args set [8, false];
+    };
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+        [_u, _pfh, _rest, _token, true, _prone] call _finalize;
     };
     if (!alive _u || {!local _u} || {_u getVariable ["ACE_isUnconscious", false]}
         || {[_u] call ACME_fnc_animBlocked}) exitWith {

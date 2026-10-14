@@ -48,19 +48,22 @@ params ["_unit", "_anim", ["_hold", 1.2], ["_prio", 1], ["_localOnly", false]];
 if (isNull _unit) exitWith {};
 // Provider-owned input loops opt in; remote patient choreography retains the existing default.
 if (_localOnly && {!local _unit}) exitWith {};
-if ([_unit] call ACME_fnc_animBlocked) exitWith {};
-
 private _gen = (_unit getVariable ["ACME_dah_gen", 0]) + 1;
 private _localityEpoch = _unit getVariable ["ACME_providerLocalityEpoch", 0];
 _unit setVariable ["ACME_dah_gen", _gen, false];
 if (isNull _unit) exitWith {};
+// Empty requests are cancellation, including equipment-kit changes while theatre is off. Retire the old
+// generation before this gate so a rapid off/on cycle cannot resurrect its deferred reassertion worker.
 if (_anim isEqualTo "") exitWith {};
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
+if ([_unit] call ACME_fnc_animBlocked) exitWith {};
 
 [{
     params ["_args", "_pfh"];
     _args params ["_u", "_a", "_tEnd", "_tries", "_g", "_asserts", "_p", "_localOnly", "_localityEpoch"];
 
     if (isNull _u || {_localOnly && {!local _u || {(_u getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}}}
+        || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
         || {!alive _u} || {CBA_missionTime > _tEnd} || {_tries > 12}) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };

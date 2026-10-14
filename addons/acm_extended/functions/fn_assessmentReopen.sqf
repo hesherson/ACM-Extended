@@ -1,12 +1,12 @@
 /* Deferred menu handoff after ACE success/failure and any carrier return release their owners.
  * A successor click, menu, locality change or range loss cancels this exact return request. */
 params ["_medic", "_patient", "_epoch"];
-if (isNull _medic || {!local _medic} || {!([_medic] call ace_common_fnc_isPlayer)}) exitWith {};
+if (isNull _medic || {!local _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
 private _request = [_epoch, _patient, _medic getVariable ["ACME_providerLocalityEpoch", 0], _medic getVariable ["ACME_menuPoseEpoch", 0]];
 _medic setVariable ["ACME_assessmentReturn", _request, false];
 private _valid = {
     params ["_m", "_p", "_request"];
-    !isNull _m && {local _m} && {alive _m} && {!(_m getVariable ["ACE_isUnconscious", false])}
+    !isNull _m && {_m isEqualTo (call ACME_fnc_controlledProvider)} && {local _m} && {alive _m} && {!(_m getVariable ["ACE_isUnconscious", false])}
         && {!isNull _p} && {(_m getVariable ["ACME_assessmentReturn", []]) isEqualTo _request}
         && {(_m getVariable ["ACME_providerLocalityEpoch", 0]) == (_request select 2)}
         && {(_m getVariable ["ACME_menuPoseEpoch", 0]) == (_request select 3)}

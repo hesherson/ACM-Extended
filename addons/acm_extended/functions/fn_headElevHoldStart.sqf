@@ -73,6 +73,13 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
     private _animToken = format ["manual-sf:%1:%2:%3", clientOwner, _animSerial, _token];
     _medic setVariable ["ACME_headElev_manualAnimToken", _animToken, false];
 
+    // The continuous-action session, cancel key and patient/provider support identity above remain authoritative.
+    // Disabling presentation must not convert an unsupported active maneuver into free passive elevation.
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+        _medic setVariable ["ACME_headElev_manualAnimPFH", -1, false];
+        _medic setVariable ["ACME_headElev_manualPoseEpoch", -1, false];
+    };
+
     private _prone = stance _medic == "PRONE";
     _medic setVariable ["ACME_headElev_manualProne", _prone, false];
     private _entry = [_medic, "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown", _prone] call ACME_fnc_providerAnimation;
@@ -117,6 +124,21 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
                 };
                 _m setVariable ["ACME_headElev_manualCancelID",-1,false];
             };
+        };
+
+        // A mission setting may change during an active hold. Retire only this provider's presentation episode;
+        // the separate continuous-action worker still monitors contact, cancellation and clinical support.
+        if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+            [_handle] call CBA_fnc_removePerFrameHandler;
+            _m setVariable ["ACME_headElev_manualAnimPFH", -1, false];
+            if ((_m getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [_poseEpoch, true]) then {
+                _m setVariable ["ACME_treatmentPoseEpisode", [_poseEpoch, false], true];
+                [format ["ACME_treatmentPose_%1_%2", netId _m, _poseEpoch]] call CBA_fnc_removeGlobalEventJIP;
+                private _packet = [_m, _poseEpoch, "release", "", -1, clientOwner, 1];
+                _packet call ACME_fnc_treatmentPoseSync;
+                ["ACME_treatmentPoseSync", _packet] call CBA_fnc_globalEvent;
+            };
+            _m setVariable ["ACME_headElev_manualPoseEpoch", -1, false];
         };
 
         if (!_prone && {([_m, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon"}) then {
@@ -222,7 +244,8 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
     if (_ownsPose) then {
         _medic setVariable ["ACME_treatmentPoseEpisode", [_poseEpoch, false], true];
         [format ["ACME_treatmentPose_%1_%2", netId _medic, _poseEpoch]] call CBA_fnc_removeGlobalEventJIP;
-        private _canExit = alive _medic && {isNull objectParent _medic} && {!(_medic getVariable ["ACE_isUnconscious",false])};
+        private _canExit = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+            && {alive _medic} && {isNull objectParent _medic} && {!(_medic getVariable ["ACE_isUnconscious",false])};
         private _rate = if (_canExit) then {call ACME_fnc_choreographyRate} else {1};
         private _packet = [_medic, _poseEpoch, ["release", "exit"] select _canExit, "", 2.1 / _rate, clientOwner, _rate];
         _packet call ACME_fnc_treatmentPoseSync;
@@ -230,7 +253,8 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
     };
 
     // Use the authored Putdown exit, the same provider animation family used to return a patient to supine.
-    if (_ownsPose && {alive _medic} && {local _medic} && {isNull objectParent _medic}
+    if (_ownsPose && {missionNamespace getVariable ["ACME_interventionAnimations", true]}
+        && {alive _medic} && {local _medic} && {isNull objectParent _medic}
         && {!(_medic getVariable ["ACE_isUnconscious",false])}) then {
         private _prone = _medic getVariable ["ACME_headElev_manualProne", false];
         private _rest = [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation;
@@ -245,6 +269,7 @@ private _started = [[ _medic, _patient, _bodyPart, [_token] ], {
         [{
             params ["_m","_serial","_rest"];
             if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}
+                || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
                 || {_m getVariable ["ACE_isUnconscious",false]}) exitWith {};
             if ((_m getVariable ["ACME_headElev_manualExitSerial",-1]) != _serial) exitWith {};
             if ([_m] call ACME_fnc_providerStanceOwned) exitWith {};

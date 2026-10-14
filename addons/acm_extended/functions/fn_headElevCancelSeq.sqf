@@ -1,6 +1,6 @@
 // B88 cancel/release for the provider-only head-position sequence.
 // The patient head position is never changed here. Provider animation control returns to an unarmed idle in the provider's posture.
-private _medic = ACE_player;
+private _medic = call ACME_fnc_controlledProvider;
 if (isNull _medic || {!local _medic}) exitWith {};
 if !(_medic getVariable ["ACME_headElev_seqActive", false]) exitWith {};
 
@@ -29,7 +29,7 @@ _medic setVariable ["ACME_headElev_seqKey", -1, false];
 _medic setVariable ["ACME_headElev_pinToken", (_medic getVariable ["ACME_headElev_pinToken", 0]) + 1, false];
 ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
 
-if (alive _medic && {isNull objectParent _medic}) then {
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {alive _medic} && {isNull objectParent _medic}) then {
     _medic selectWeapon "";
     private _prone = _medic getVariable ["ACME_headElev_providerProne", false];
     _prone = _prone || {([_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon"};

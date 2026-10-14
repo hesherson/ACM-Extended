@@ -40,27 +40,28 @@ private _pfh = [{
     private _current = toLowerANSI animationState _m;
     private _inExit = _current == "ainvpknlmstpsnonwnondnon_medicend";
     private _expired = serverTime - _sentAt > _duration + 2;
-    private _inactive = !(_record select 1) || {_known && {!(_public select 3)}};
+    private _inactive = !(missionNamespace getVariable ["ACME_interventionAnimations", true]) || {!(_record select 1)} || {_known && {!(_public select 3)}};
     private _unavailable = !alive _m || {_m getVariable ["ACE_isUnconscious", false]} || {!isNull objectParent _m};
     private _left = (_record select 3) && {!_inExit};
     // Public state can overtake both packets for the next exit. Keep the old ownership token passively until
     // its new receiver inherits it, or visible movement permits cleanup. Never reassert rate for that successor.
     private _publicExpired = _newer && {serverTime - (_public select 0) > _duration + 2};
-    if (_newer && {_record select 3} && {!_poseChanged} && {!_transferred} && {!_unavailable}
+    if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {_newer} && {_record select 3} && {!_poseChanged} && {!_transferred} && {!_unavailable}
         && {_inExit} && {!_publicExpired}) exitWith {};
     if (_newer || {_poseChanged} || {_transferred} || {_expired} || {_inactive} || {_unavailable} || {_left}) exitWith {
         _record set [1, false];
         [_pfh] call CBA_fnc_removePerFrameHandler;
         // Restore the exact tagged rate even when the next state is armed locomotion.
         // A newer explicit rate/freeze owner wins; never restore a captured acceleration.
-        if ((_record select 3) && {!_newer || {!_inExit} || {_publicExpired} || {_transferred} || {_unavailable}} && {!([_m] call ACME_fnc_providerAnimSpeedOwned)}
+        if ((_record select 3) && {!_newer || {!_inExit} || {_publicExpired} || {_transferred} || {_unavailable}
+            || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}} && {!([_m] call ACME_fnc_providerAnimSpeedOwned)}
             && {abs ((getAnimSpeedCoef _m) - 1.5) < 0.01}) then {
             _m setAnimSpeedCoef 1;
         };
         _record set [3, false];
     };
     // Unknown public state is pending replication, not authorization to touch the provider yet.
-    if (_known && {_inExit} && {!([_m] call ACME_fnc_providerAnimSpeedOwned)}) then {
+    if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {_known} && {_inExit} && {!([_m] call ACME_fnc_providerAnimSpeedOwned)}) then {
         _record set [3, true];
         if (abs ((getAnimSpeedCoef _m) - 1.5) > 0.01) then {_m setAnimSpeedCoef 1.5;};
     };

@@ -32,6 +32,8 @@ if (_medic getVariable ["ACME_DP_Active", false]) then {
     _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
     _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
 };
+// Clinical preparation and DP yield above remain active without animation/temporary weapon custody.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
 [_medic] call ACME_fnc_medicAnimationPrep;
 _medic setUnitPos (["MIDDLE", "DOWN"] select _prone);
 

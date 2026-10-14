@@ -1,3 +1,9 @@
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // the nav-strip actions, confirm, home, back and next, that drive the setup flow and menu navigation.
 // the flow order is weight, mode, interface, connect, live. home jumps to live once configured, or stays in the
 // flow. back steps to the previous screen. confirm and next commit the current selection and advance. the
@@ -14,11 +20,11 @@ if !(uiNamespace getVariable ["ACME_vent_powered", false]) exitWith {};
 
 
 params ["_action"];
-if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
 private _custodyTarget = uiNamespace getVariable ["ACME_vent_target", objNull];
-if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo ACE_player}
+if (!isNull _custodyTarget && {_custodyTarget isNotEqualTo _viewer}
     && {!(_custodyTarget getVariable ["ACME_vent_onPatient", false]) || {_custodyTarget getVariable ["ACME_vent_recovering", false]}}) exitWith {};
-private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (isNull _vTgt) then { _vTgt = ACE_player; };
+private _vTgt = uiNamespace getVariable ["ACME_vent_target", _viewer]; if (isNull _vTgt) then { _vTgt = _viewer; };
 playSound "ACME_VentClick";
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
 // A live addon-setting change may arrive before the panel tick rebuilds setup.
@@ -153,14 +159,14 @@ switch (_action) do {
                 ["connect"] call ACME_fnc_ventPanelShowScreen;
             };
             case "connect":   {
-                if !([ACE_player, "ventilator"] call ACME_fnc_procedureAllowed) exitWith {};
+                if !([_viewer, "ventilator"] call ACME_fnc_procedureAllowed) exitWith {};
                 if (!isNull _vTgt && {_vTgt getVariable ["ACME_vent_recovering", false]}) exitWith {};
                 // Setup and START share the same physical circuit reach. Presetting
                 // a carried machine does not connect a patient and needs no leash.
                 private _preset = uiNamespace getVariable ["ACME_vent_presetMode", false];
                 private _leash = missionNamespace getVariable ["ACME_vent_leash", 2.5];
-                if (!_preset && {(objectParent ACE_player) isNotEqualTo (objectParent _vTgt)
-                    || {(ACE_player distance _vTgt) > _leash}}) exitWith {
+                if (!_preset && {(objectParent _viewer) isNotEqualTo (objectParent _vTgt)
+                    || {(_viewer distance _vTgt) > _leash}}) exitWith {
                     ["Out of range of the patient. Move closer to connect the circuit.", 2.5] call ace_common_fnc_displayTextStructured;
                 };
                 // with a patient connected, mark configured and connected, which is running, register into the circulation loop
@@ -173,7 +179,7 @@ switch (_action) do {
                     ["menu"] call ACME_fnc_ventPanelShowScreen;
                 };
                 _vTgt setVariable ["ACME_vent_connected", true, true];
-                _vTgt setVariable ["ACME_vent_operator", ACE_player, true];  // tie the circuit to this medic, as the leash origin.
+                _vTgt setVariable ["ACME_vent_operator", _viewer, true];  // tie the circuit to this medic, as the leash origin.
                 if (!isNil "ACME_circ_activePatients") then { ACME_circ_activePatients pushBackUnique _vTgt; };
                 ["live"] call ACME_fnc_ventPanelShowScreen;
             };
@@ -189,7 +195,7 @@ switch (_action) do {
                             ["Ventilation stopped.", 1.5] call ace_common_fnc_displayTextStructured;
                         } else {
                             // START VENT. resume driving the patient, who is still configured and intubated.
-                            if !([ACE_player, "ventilator"] call ACME_fnc_procedureAllowed) exitWith {};
+                            if !([_viewer, "ventilator"] call ACME_fnc_procedureAllowed) exitWith {};
                             // never connect a circuit to the medic. presetting configures the machine and does not attach it to a chest.
                             // this is precisely the line that used to make you your own ventilated patient.
                 if (uiNamespace getVariable ["ACME_vent_presetMode", false]) exitWith {
@@ -202,13 +208,13 @@ switch (_action) do {
                 // before it re-ties the machine to them.
                 private _leash = missionNamespace getVariable ["ACME_vent_leash", 2.5];
                 if (isNull _vTgt
-                    || {(objectParent ACE_player) isNotEqualTo (objectParent _vTgt)}
-                    || {(ACE_player distance _vTgt) > _leash}) exitWith {
+                    || {(objectParent _viewer) isNotEqualTo (objectParent _vTgt)}
+                    || {(_viewer distance _vTgt) > _leash}) exitWith {
                     ["Out of range of the patient. Move closer to connect the circuit.", 2.5] call ace_common_fnc_displayTextStructured;
                     ["menu"] call ACME_fnc_ventPanelShowScreen;
                 };
                 _vTgt setVariable ["ACME_vent_connected", true, true];
-                _vTgt setVariable ["ACME_vent_operator", ACE_player, true];  // tie, or re-tie, the circuit to this medic.
+                _vTgt setVariable ["ACME_vent_operator", _viewer, true];  // tie, or re-tie, the circuit to this medic.
                             if (!isNil "ACME_circ_activePatients") then { ACME_circ_activePatients pushBackUnique _vTgt; };
                             ["USER", "Ventilation started"] call ACME_fnc_ventLogbookAdd;
                             ["Ventilation started.", 1.5] call ace_common_fnc_displayTextStructured;
@@ -224,7 +230,7 @@ switch (_action) do {
                         _vTgt setVariable ["ACME_vent_configured", false, true];
                         _vTgt setVariable ["ACME_vent_connected", false, true];
                         _vTgt setVariable ["ACME_vent_driving", false, true];
-                        ACE_player setVariable ["ACME_vent_booted", false, true];
+                        _viewer setVariable ["ACME_vent_booted", false, true];
                         ["weight"] call ACME_fnc_ventPanelShowScreen;  // restart the flow.
                     };
                     case 2: { uiNamespace setVariable ["ACME_vent_paramReturn", false]; ["params"] call ACME_fnc_ventPanelShowScreen; };  // VENT. PARAMS.
@@ -324,7 +330,7 @@ switch (_action) do {
         // made it a go-up-one-level key, which is what BACK is for. from any depth it lands on live in one press.
         uiNamespace setVariable ["ACME_vent_paramsPage", 0];
         uiNamespace setVariable ["ACME_vent_paramReturn", false];
-        if (ACE_player getVariable ["ACME_vent_configured", false]) then {
+        if (_viewer getVariable ["ACME_vent_configured", false]) then {
             ["live"] call ACME_fnc_ventPanelShowScreen;
         } else {
             // nothing is configured yet, so there is no live screen to show. the menu is the only sensible landing.

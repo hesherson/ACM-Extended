@@ -1,6 +1,7 @@
 /* NA4 patient fields: [name, clock-kind, clear-on-full-heal, persist=true].
    Supplier transaction ledgers and runtime handler ownership are not saved patient state. */
 [
+  ["ACME_recoveryPresentation", "", true, true],
   ["ACME_respawnResetComplete", "", false, false],
   ["ACME_resus_cpr", "", true, false],
   ["ACME_resus_bvm", "", true, false],
@@ -144,6 +145,7 @@
   ["ACME_laryngo_emesis", "", true],
   ["ACME_laryngo_pool", "", true],
   ["ACME_laryngo_bloodRemaining", "", true],
+  ["ACME_laryngo_vomitRemaining", "", true],
   ["ACME_airwayBloodRefillAt", "cba", true],
   ["ACME_airwaySecretionRefillAt", "cba", true],
   ["ACME_laryngo_secretions", "", true],

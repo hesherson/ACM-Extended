@@ -43,7 +43,9 @@ if (_phase == "cancel" || {!_state}) exitWith {
         _patient setVariable [QGVAR(RecoveryPosition_Pending), [], true];
         [_patient, _pendingToken] call ACME_fnc_patientAnimRelease;
         // Cancel only our provisional body pose. Never interrupt a successor, wake, vehicle or drag/carry.
-        if (_owns && {alive _patient} && {IS_UNCONSCIOUS(_patient)} && {isNull objectParent _patient}
+        if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+            && {_pending param [9, true]}
+            && {_owns} && {alive _patient} && {IS_UNCONSCIOUS(_patient)} && {isNull objectParent _patient}
             && {!([_patient] call ACEFUNC(common,isBeingDragged))} && {!([_patient] call ACEFUNC(common,isBeingCarried))}
             && {(toLowerANSI animationState _patient) == "acm_recoveryposition"}) then {
             _patient switchMove ["ACM_LyingState", 0, 0, false];
@@ -80,19 +82,22 @@ if (_phase == "commit") exitWith {
     };
 };
 if (_phase == "apply") exitWith {
-    // The local worker is the only path which proves that the blend actually entered and settled.
+    private _presentation = _pending param [9, true];
+    // Visible placement requires the observed blend. An ownership-only placement retains the same accepted
+    // patient lease, clinical success and settling interval, without waiting for an intentionally absent RTM.
     if (_token == "" || {_pendingToken != _token} || {!(_pending param [3, false])}
         || {!(_pending param [5, false])} || {(_pending param [4, -1]) < 0}
         || {serverTime < ((_pending select 4) + 0.5)}
         || {((_patient getVariable ["ACME_patientAnimLock", []]) param [0, ""]) != _token}
-        || {(toLowerANSI animationState _patient) != "acm_recoveryposition"}
+        || {_presentation && {(toLowerANSI animationState _patient) != "acm_recoveryposition"}}
         || {(_pending param [8, -1]) != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {};
-    private _moveBlend = _patient getUnitMovesInfo 3;
+    private _moveBlend = if (_presentation) then {_patient getUnitMovesInfo 3} else {1};
     if (!(_moveBlend isEqualType 0) || {!finite _moveBlend} || {_moveBlend < 0.99}) exitWith {};
     _patient setVariable [QGVAR(RecoveryPosition_Pending), [], true];
     _patient setVariable [QGVAR(RecoveryPosition_State), true, true];
     _patient setVariable [QGVAR(HeadTilt_State), true, true];
     _patient setVariable [QGVAR(RecoveryPosition_Episode), _token, true];
+    _patient setVariable ["ACME_recoveryPresentation", _presentation, true];
     if (_patient getVariable [QGVAR(AirwayObstructionVomit_State), 0] == 1) then {
         _patient setVariable [QGVAR(AirwayObstructionVomit_State), 0, true];
     };
@@ -114,5 +119,6 @@ private _providerEpoch = _expectedProviderEpoch;
 if (_providerEpoch < 0 && {!isNull _medic}) then {_providerEpoch = _medic getVariable ["ACME_treatmentPoseEpoch", -1];};
 private _clinicalEpoch = [_patient] call ACME_fnc_clinicalEpoch;
 if (_expectedClinicalEpoch >= 0 && {_expectedClinicalEpoch != _clinicalEpoch}) exitWith {};
-_patient setVariable [QGVAR(RecoveryPosition_Pending), [_token, _medic, serverTime + 5, _phase == "", -1, false, _noLog, _providerEpoch, _clinicalEpoch], true];
+_patient setVariable [QGVAR(RecoveryPosition_Pending), [_token, _medic, serverTime + 5, _phase == "", -1, false, _noLog, _providerEpoch, _clinicalEpoch,
+    missionNamespace getVariable ["ACME_interventionAnimations", true]], true];
 [_medic, _patient, _token] call FUNC(handleRecoveryPosition);

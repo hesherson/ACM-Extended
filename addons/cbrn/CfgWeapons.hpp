@@ -36,7 +36,7 @@ class CfgWeapons {
         descriptionShort = CSTRING(Autoinjector_ATNA_Desc);
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.8;
         };
     };
 

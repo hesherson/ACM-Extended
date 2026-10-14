@@ -26,6 +26,13 @@ private _motionOwnsCollision = _motionToken != "" && {(_motionLock param [0, ""]
     && {(_motionLock param [4, -1]) > serverTime};
 if (_m > 0 && {!_motionOwnsCollision}) then {[_patient, true] call ACME_fnc_headElevCollision;};
 
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    _patient setVariable ["ACME_headElev_noAnimation", true, true];
+    _patient setVariable ["ACME_headElev_visualActive", false, true];
+    true
+};
+_patient setVariable ["ACME_headElev_noAnimation", false, true];
+
 private _visualAccepted = true;
 if (_replayAnim && {isNull objectParent _patient}) then {
     // ACM can report ACM_LyingState for one frame while the grab enters. Give the animation guard a short grace.
@@ -54,6 +61,7 @@ if (_replayAnim && {isNull objectParent _patient}) then {
         [{
             params ["_patient", "_vestClass", "_poseToken"];
             if (isNull _patient || {!local _patient} || {!alive _patient}
+                || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
                 || {!(_patient getVariable ["ACME_headElevated", false])}
                 || {(_patient getVariable ["ACME_headElev_poseToken", ""]) != _poseToken}
                 || {!(_patient getVariable ["ACME_headElev_vestRemoved", false])}
@@ -93,6 +101,7 @@ if (_replayAnim && {isNull objectParent _patient}) then {
         };
 
         if (!alive _patient || {_replacementPlacement}
+            || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
             || {!(_patient getVariable ["ACME_headElevated", false])}
             || {_patient getVariable ["ACME_headElev_Suspended", false]}) exitWith {};
 

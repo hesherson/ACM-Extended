@@ -112,7 +112,9 @@ def native_provider_source():
     text = (ROOT / 'addons/core/functions/fnc_treatmentNative.sqf').read_text()
     # Execute the complete provider branch from selection through queued work/end animations;
     # item consumption, patient positioning and progressBar remain outside this presentation test.
-    text = text[text.index('    // Get treatment animation for the medic'):text.index('    // Play a random treatment sound globally')]
+    presentation_begin = text.index('private _animationsEnabled =')
+    presentation = text[presentation_begin:text.index(';', presentation_begin) + 1]
+    text = presentation + text[text.index('    // Get treatment animation for the medic'):text.index('    // Play a random treatment sound globally')]
     text = re.sub(r'TRACE_\d\([^;]+;', '', text)
     text = re.sub(r'WARNING_\d\([^;]+;', '', text)
     text = text.replace('animationState _medic', '_providerAnimation')

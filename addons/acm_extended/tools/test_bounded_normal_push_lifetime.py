@@ -36,6 +36,7 @@ def setup():
         // These push fixtures enter an already-injected draw display.
         uiNamespace setVariable ["ACME_SK_CloseEpoch",1];
         _drawDisplay setVariable ["ACME_SK_CloseEpoch",1];
+        _drawDisplay setVariable ["ACME_SK_Provider",_medic];
         private _durationText=""; private _ghost=false;
         private _enables=[]; private _writes=[]; private _commits=[]; private _sounds=[];
         private _delivered=[]; private _hcStarts=0; private _hasAccess=true;

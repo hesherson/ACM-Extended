@@ -15,13 +15,16 @@ def native_open_setup():
     """Execute minigameOpen; record only native createDialog/createDisplay."""
     source = read("minigameOpen")
     source = source.replace("findDisplay 46", "missionNamespace")
-    source = re.sub(r"\bcreateDialog (_\w+);",
-                    r'_created pushBack ["nativeDialog",\1];', source)
-    source = source.replace('_p createDisplay _cls;',
-                            '_created pushBack ["nativeDisplay",_cls]; '
-                            'uiNamespace setVariable ["ACME_CS_DLG",missionNamespace];')
+    source = re.sub(r"\bcreateDialog (_\w+)\b", r'[\1] call _nativeDialog', source)
+    source = source.replace('!isNull (_p createDisplay _cls)',
+                            '(([_cls] call _nativeDisplay) isNotEqualTo objNull)')
     return entry_setup() + r'''
         private _created=[]; private _nextFrames=[];
+        private _nativeDialog={_created pushBack ["nativeDialog",_this select 0];true};
+        private _nativeDisplay={
+            _created pushBack ["nativeDisplay",_this select 0];
+            uiNamespace setVariable ["ACME_CS_DLG",missionNamespace];missionNamespace
+        };
         CBA_fnc_execNextFrame={_nextFrames pushBack [_this select 0,_this select 1];};
     ''' + 'ACME_fnc_minigameOpen={' + adapt(source) + '};\n'
 

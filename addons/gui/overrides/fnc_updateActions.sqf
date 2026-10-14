@@ -108,7 +108,7 @@ _menuActions = _menuActions select {
 // Do not retain a cached positioning row after the casualty stands up.
 _menuActions = _menuActions select {
     (toLower (_x param [8, ''])) != 'acme_elevatehead'
-        || {[_target, ACE_player] call ACME_fnc_headElevateCanStart}
+        || {[_target, (call ACME_fnc_controlledProvider)] call ACME_fnc_headElevateCanStart}
 };
 
 // Dog tags always remain the last standalone examination, even if another addon
@@ -368,7 +368,7 @@ private _actionIndex = 0;
             _ctrl ctrlAddEventHandler ['ButtonClick', {
                 // Chest-access preflight closes the medical menu on the accepted click and owns cancellation/reopen.
                 // Do not let ACE's generic post-click handler reopen it over the carrier/Semi-Fowler animation.
-                if !(ACE_player getVariable ["ACME_chestAccessPreflightActive", false]) then {
+                if !((call ACME_fnc_controlledProvider) getVariable ["ACME_chestAccessPreflightActive", false]) then {
                     ace_medical_gui_pendingReopen = true;
                 };
             }];

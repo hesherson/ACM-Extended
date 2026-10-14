@@ -245,7 +245,10 @@ def test_b276_compatibility_warning_requires_attached_source_without_drawing_gas
 def test_ui_only_fio2_mutations_are_requests_and_reuses_existing_panel_tick():
     knob=read("ventPanelKnob")
     assert not re.search(r'_\w+ setVariable \["ACME_vent_fio2"', knob)
-    assert knob.count('"fio2", ACE_player, _v] call ACME_fnc_ventOxygenRequest')==2
+    from source_scan import lex
+    tokens=[token.value for token in lex(knob)]
+    request=[token.value for token in lex('"fio2", _viewer, _v] call ACME_fnc_ventOxygenRequest')]
+    assert sum(tokens[index:index+len(request)]==request for index in range(len(tokens)-len(request)+1))==2
     router=read("ventPanelShowScreen")
     assert 'ctrlCreate ["ACME_VentActionG", -1]' in router
     assert 'ACME_vent_o2SourceCtrl' in router and 'ACME_vent_o2SupplyCtrl' in router
@@ -254,3 +257,14 @@ def test_ui_only_fio2_mutations_are_requests_and_reuses_existing_panel_tick():
     block=tick[tick.index("// A supply replica change"):tick.index("// slow measured BPM")]
     assert 'call ACME_fnc_ventPanelOxygenRefresh' in block
     assert 'addPerFrameHandler' not in block and 'ventPanelShowScreen' not in block
+
+
+def test_fio2_request_contract_rejects_retired_global_provider(monkeypatch):
+    real=read
+    current=real('ventPanelKnob')
+    old='"fio2", _viewer, _v] call ACME_fnc_ventOxygenRequest'
+    assert current.count(old)==2
+    broken=current.replace(old, '"fio2", ACE_player, _v] call ACME_fnc_ventOxygenRequest')
+    monkeypatch.setitem(globals(), 'read', lambda name: broken if name=='ventPanelKnob' else real(name))
+    with pytest.raises(AssertionError):
+        test_ui_only_fio2_mutations_are_requests_and_reuses_existing_panel_tick()

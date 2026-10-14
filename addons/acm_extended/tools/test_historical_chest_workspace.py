@@ -20,6 +20,9 @@ def source(name):
 
 def code(name, server_clock='CBA_missionTime'):
     text=source(name)
+    # Virtual Flip now retires local seal-placement presentation too. Provider locality is an engine boundary,
+    # independently selectable from the casualty owner used by the physical custody tests below.
+    text=text.replace('local _provider', '_providerLocal')
     for unit in ('_patient','_p'):
         for old,new in [('local '+unit,'_patientLocal'),('alive '+unit,'_patientAlive'),
                         ('objectParent '+unit,'_parent'),('animationState '+unit,'_animation'),
@@ -61,7 +64,7 @@ def function(name):
 
 def setup():
     return r'''
-        private _patientLocal=true; private _parent=objNull;
+        private _patientLocal=true; private _providerLocal=true; private _parent=objNull;
         private _animation="amovppnemstpsraswrfldnon"; private _actualSide="back";
         private _lifeState="HEALTHY";
         private _vest=""; private _loadout=[[],[],[],[],[],[],"","",[],[]];

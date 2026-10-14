@@ -146,3 +146,12 @@ tools/test_fork_phase167_chest_minigame_animation_contract.py
 tools/test_fork_phase168_supine_patient_invariant.py
 addons/acm_extended/tools/test_bounded_head_weapon_contract.py
 addons/acm_extended/tools/test_na8_5_batch4.py
+
+# B283: complete non-Medmash PR integration
+addons/acm_extended/tools/test_b283_additive_airway_fluid.py
+addons/acm_extended/tools/test_b283_animation_integration.py
+addons/acm_extended/tools/test_pr6_controlled_provider.py
+addons/acm_extended/tools/test_pr6_iv_launch_lifecycle.py
+tools/test_b283_optional_animation_posture.py
+tools/test_b283_pr_weight_integration.py
+addons/acm_extended/tools/test_pr6_structural_animation_release.py

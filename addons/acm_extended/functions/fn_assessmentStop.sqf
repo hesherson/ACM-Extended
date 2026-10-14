@@ -13,7 +13,8 @@ if (_pfh >= 0) then {[_pfh] call CBA_fnc_removePerFrameHandler;};
 {[_x, "keydown"] call CBA_fnc_removeKeyHandler;} forEach _keys;
 [false, _medic, _patient, _token] call ACME_fnc_chestAccessPreparing;
 [_medic, "", _ownedEpoch, _reopen] call ACME_fnc_treatmentPoseStop;
-if (_reopen && {local _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])}
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {_reopen} && {local _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])}
     && {isNull objectParent _medic} && {stance _medic != "PRONE"}
     && {(_medic getVariable ["ACME_treatmentPoseEpoch", -1]) == _ownedEpoch}
     && {!([_medic] call ACME_fnc_providerStanceOwned)}) then {

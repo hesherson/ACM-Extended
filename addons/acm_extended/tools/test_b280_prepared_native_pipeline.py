@@ -27,9 +27,15 @@ def native_code(text):
 
 
 def setup(sync=False):
-    masses=','.join(f'["ACME_PreparedIVSet_M{x}",{x/10}]' for x in WEIGHTS)
+    config=(ROOT/'addons/acm_extended/config.cpp').read_text()
+    declared=re.findall(r'class (ACME_Prepared(?:IVSet_M\w+|Syringe_\d+)): ACME_Prepared\w+ \{ mass = ([\d.]+); \};',config)
+    masses=','.join(f'["{name}",{value}]' for name,value in declared)
     selector=read('inventoryLedgerClass')
     selector=re.sub(r'getNumber \(configFile >> "CfgWeapons" >> (_\w+) >> "ItemInfo" >> "mass"\)',r'([\1] call _sourceMass)',selector)
+    selector=selector.replace('isClass (configFile >> "CfgMagazines" >> _class)','(_class in _carrierMass)')
+    selector=selector.replace('configFile >> "CfgMagazines" >> _class','_class')
+    selector=selector.replace('isClass _cfg','(_cfg in _carrierMass)')
+    selector=selector.replace('getNumber (_cfg >> "mass")','(_carrierMass get _cfg)')
     reply=read('inventoryLedgerReply')
     reply=re.sub(r'_owner canAdd \[([^]]+)\]',r'([_owner,\1] call _canAddNative)',reply)
     reply=reply.replace('_owner addMagazine [_class,_token]','[_owner,_class,_token] call _addNative')
@@ -48,10 +54,10 @@ def setup(sync=False):
       _medic setVariable ["containerMax",50];_medic setVariable ["soldierMax",40];
       private _carrierMass=createHashMapFromArray [["ACME_PreparedIVSet",18],["ACME_PreparedSyringe",1],{masses}];
       private _sourceMasses=createHashMapFromArray [["ACME_IVLine",0.1],["ACME_YTubing",0.2],
-        ["ACM_SalineBag_500",5],["ACM_BloodBag_ON_500",5],["ACM_Vial_Propofol",1],
-        ["ACME_HTSBag",3],["ACM_EsmololBag",8],["HeavyKit",44.9],["UnknownBag",6.75]];
+        ["ACM_SalineBag_500",5],["ACM_BloodBag_ON_500",12.9],["ACM_Vial_Propofol",1.65],
+        ["ACME_HTSBag",6.2],["ACM_EsmololBag",6.2],["HeavyKit",44.9],["UnknownBag",6.75]];
       private _sourceMass={{params ["_class"];if (_class in _sourceMasses) then {{_sourceMasses get _class}} else {{0}}}};
-      private _kindConfig={{params ["_class"];if (_class=="ACME_PreparedSyringe") exitWith {{"syringe"}};if (_class in _carrierMass) then {{"prepared"}} else {{""}}}};
+      private _kindConfig={{params ["_class"];if ((_class find "ACME_PreparedSyringe")==0) exitWith {{"syringe"}};if (_class in _carrierMass) then {{"prepared"}} else {{""}}}};
       private _cargoDestination={{params ["_unit"];if (_unit getVariable ["isUnit",false]) then {{_unit getVariable "uniform"}} else {{_unit}}}};
       private _canAddNative={{
         params ["_unit","_class","_count",["_ignoreSoldierMax",false]];
@@ -177,9 +183,9 @@ def test_failed_holder_creation_waiting_notice_is_once_and_terminal_refund_waits
 def test_source_mass_selection_fallback_and_raw_invalid_ammo_are_conservative():
     execute(setup()+r'''
       private _single=["s",["s","ACME_HTSBag","HTSIV_250","","","","",false,"premixed"],[]];
-      [["prepared",_single] call ACME_fnc_inventoryLedgerClass=="ACME_PreparedIVSet_M31","HTS source mass not preserved"] call _check;
+      [["prepared",_single] call ACME_fnc_inventoryLedgerClass=="ACME_PreparedIVSet_M63","HTS source mass not preserved"] call _check;
       (_single select 1) set [1,"ACM_EsmololBag"];
-      [["prepared",_single] call ACME_fnc_inventoryLedgerClass=="ACME_PreparedIVSet_M81","esmolol source mass not preserved"] call _check;
+      [["prepared",_single] call ACME_fnc_inventoryLedgerClass=="ACME_PreparedIVSet_M63","esmolol source mass not preserved"] call _check;
       (_single select 1) set [1,"UnknownBag"];
       [["prepared",_single] call ACME_fnc_inventoryLedgerClass=="ACME_PreparedIVSet","unknown third-party mass was arbitrarily lowered"] call _check;
       _uniform setVariable ["cargo",[["ACME_PreparedIVSet_M51",0],["ACME_PreparedIVSet_M51",65535],["unrelated",1]]];
@@ -194,3 +200,37 @@ def test_carrier_config_subtypes_inherit_kind_and_disable_ace_repacking():
     for weight in WEIGHTS:
         assert f'class ACME_PreparedIVSet_M{weight}: ACME_PreparedIVSet {{ mass = {weight/10:g}; }};' in config
     assert 'ACME_inventoryKind = "syringe";' in config
+
+
+@pytest.mark.parametrize('source,secondary,kind,expected',[
+    ('ACM_BloodBag_ON_500','','blood','ACME_PreparedIVSet_M130'),
+    ('ACM_BloodBag_ON_500','ACM_SalineBag_500','yset','ACME_PreparedIVSet_M181'),
+    ('ACM_Vial_Propofol','','premixed','ACME_PreparedIVSet_M1_75'),
+])
+def test_contributed_bag_weights_execute_through_exact_class_selection(source,secondary,kind,expected):
+    execute(setup()+f'''
+      private _set=["new-mass","{source}","source-action","{secondary}","secondary-action","","",false,"{kind}"];
+      private _class=["prepared",["new-mass",_set,[]]] call ACME_fnc_inventoryLedgerClass;
+      [_class=="{expected}","current bag/tubing mass selected wrong physical carrier"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('size',[1,3,5,10])
+def test_syringe_size_carrier_issue_transfer_reserve_and_return_preserve_identity(size):
+    execute(setup()+f'''
+      private _sid="syringe-size-{size}";
+      private _row=["Epinephrine",{size},{size},0,0,0,"compoundB13",0,0,0,0,_sid,"","inventoryB279"];
+      [_medic,"syringe",[[_sid,_row]]] call ACME_fnc_inventoryLedgerCommit;call _flush;
+      private _tuple=(_uniform getVariable "cargo") select 0;
+      [(_tuple select 0)=="ACME_PreparedSyringe_{size}","prepared syringe changed empty syringe encumbrance"] call _check;
+      [_tuple select 0] call _kindConfig;
+      _receiver setVariable ["cargo",[_tuple]];_uniform setVariable ["cargo",[]];
+      [_medic,_receiver,_tuple select 0] call (_classEvents get "Put");
+      [_receiver,_uniform,_tuple select 0] call (_classEvents get "Take");call _flush;
+      [[_receiver,"syringe",_sid] call ACME_fnc_inventoryLedgerPossessed,"size variant did not retain syringe custody"] call _check;
+      private _receipt=[_receiver,"syringe",_sid,"return-size"] call ACME_fnc_inventoryLedgerReserve;
+      [count _receipt==2 && {{(_receiver getVariable "cargo") isEqualTo []}},"size variant did not reserve exact native carrier"] call _check;
+      [_receiver,"return-size",{{}},[]] call ACME_fnc_inventoryLedgerClaim;call _flush;
+      [_receiver,"return-size",false] call ACME_fnc_inventoryLedgerSettle;call _flush;
+      [(_receiver getVariable "cargo") isEqualTo [_tuple],"return changed syringe carrier class or token"] call _check;
+    ''')

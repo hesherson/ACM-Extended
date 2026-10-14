@@ -12,6 +12,16 @@ if (!local _medic || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious"
     || {(_pose param [0, -1]) != _epoch}) exitWith {
     [_medic, _epoch] call ACME_fnc_assessmentStop;
 };
+// Presentation-disabled assessments retain their native clinical progress interval and all admission/contact
+// checks. There is no RTM to observe or advance, and phase 3 would incorrectly shorten the progress bar.
+if (_pose param [21, false]) exitWith {
+    if (!((_record select 1) call ace_medical_treatment_fnc_canTreatCached)
+        || {!([_medic, _patient, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ace_common_fnc_canInteractWith)}
+        || {([_medic, _patient] call ACME_fnc_patientInteractionDistance) > ace_medical_gui_maxDistance}) exitWith {
+        [_medic, _epoch] call ACME_fnc_assessmentStop;
+    };
+    _record set [2, 1];
+};
 if (_phase == 0) exitWith {
     if (CBA_missionTime - (_record select 4) > 5
         || {!((_record select 1) call ace_medical_treatment_fnc_canTreatCached)}

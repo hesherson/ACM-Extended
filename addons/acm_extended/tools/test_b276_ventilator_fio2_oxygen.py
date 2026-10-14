@@ -231,9 +231,26 @@ def test_dialog_closes_to_parent_and_has_exact_message_without_patient_writes():
 
 
 def test_every_existing_fio2_writer_has_gate_at_its_branch_boundary():
+    from test_b241_current_ui_expectations import has
     source = read("ventPanelKnob")
     param = source[source.index('case 0: {  // o2 ENRICHMENT'):source.index('case 1: {  // the i:e ratio ladder.')]
     legacy = source[source.index('if ((_screen == "o2") &&'):source.index('// O2 has one value')]
-    for branch in (param, legacy):
-        assert branch.index('call ACME_fnc_ventOxygenState') < branch.index('"fio2", ACE_player, _v] call ACME_fnc_ventOxygenRequest')
+    for branch, target in ((param, '_tP'), (legacy, '_vTgt')):
+        assert has(branch, f'if !(([{target}] call ACME_fnc_ventOxygenState) select 1) exitWith {{')
+        assert has(branch, f'[{target}, "fio2", _viewer, _v] call ACME_fnc_ventOxygenRequest;')
+        assert branch.index('call ACME_fnc_ventOxygenState') < branch.index('"fio2", _viewer, _v] call ACME_fnc_ventOxygenRequest')
         assert not re.search(r'_\w+ setVariable \["ACME_vent_fio2"', branch)
+
+
+@pytest.mark.parametrize('target', ['_tP', '_vTgt'])
+@pytest.mark.parametrize('fault', ['oxygen_gate', 'provider'])
+def test_fio2_branch_contract_rejects_missing_gate_or_wrong_provider(monkeypatch, target, fault):
+    current = read('ventPanelKnob')
+    old = f'if !(([{target}] call ACME_fnc_ventOxygenState) select 1) exitWith' if fault == 'oxygen_gate' else f'[{target}, "fio2", _viewer, _v]'
+    new = 'if (false) exitWith' if fault == 'oxygen_gate' else f'[{target}, "fio2", ACE_player, _v]'
+    assert old in current
+    broken = current.replace(old, new)
+    real = read
+    monkeypatch.setitem(globals(), 'read', lambda name: broken if name == 'ventPanelKnob' else real(name))
+    with pytest.raises(AssertionError):
+        test_every_existing_fio2_writer_has_gate_at_its_branch_boundary()

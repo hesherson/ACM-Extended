@@ -106,6 +106,7 @@ _patient setVariable ["ACME_CS_facing","front",true];
 // Supported Lower Head starts provider and patient motion on the same frame. Provider theatre does not gate
 // patient state or the lay-flat animation. Automatic suspension and manual-held Semi-Fowler keep their own paths.
 if (!_providerReady && {!_quiet} && {!_wasSuspended} && {!_wasManualUnsupported}
+    && {missionNamespace getVariable ["ACME_interventionAnimations", true]}
     && {!isNull _medic} && {!([_medic] call ACME_fnc_animBlocked)}
     && {!([_patient] call ACME_fnc_animBlocked)}) then {
     [_medic, "lower"] call ACME_fnc_headElevMedicSeq;
@@ -130,6 +131,7 @@ _patient setVariable ["ACME_headElev_manualUnsupported", false, true];
 _patient setVariable ["ACME_headElev_Suspended", false, true];
 _patient setVariable ["ACME_headElev_ResumePending", false, true];
 _patient setVariable ["ACME_headElev_visualActive", false, true];
+_patient setVariable ["ACME_headElev_noAnimation", false, true];
 _patient setVariable ["ACME_headElev_suspendVestLoadout", [], false];
 _patient setVariable ["ACME_headElev_suspendReadyAt", -1, false];
 _patient setVariable ["ACME_headElev_suspendKeepVestOut", false, true];
@@ -158,7 +160,8 @@ if (_mass > 0 && {!_motionOwnsCollision}) then {[_patient, true] call ACME_fnc_h
 // If the casualty was already physically flat from a temporary suspension, permanent cancellation only retires
 // the logical Semi-Fowler episode. Replaying the release animation here is what caused CPR/BVM handoffs to keep
 // "setting them down" over and over.
-private _visibleLower = !_quiet && {!_wasSuspended} && {isNull objectParent _patient}
+private _visibleLower = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_quiet} && {!_wasSuspended} && {isNull objectParent _patient}
     && {_wasVisual};
 if (_visibleLower) then {
     // Patient and provider start together. The carrier stays as the physical bolster until the authored release has

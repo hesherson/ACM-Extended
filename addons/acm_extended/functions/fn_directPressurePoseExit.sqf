@@ -2,6 +2,7 @@
  * It owns only presentation. The pressure claim survives movement; Stop releases the claim before entering here.
  * A successor treatment wins without a neutral pose, speed reset, delayed retry or old held worker fighting it.
  */
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {false};
 params ["_medic", ["_prone", false]];
 if (isNull _medic || {!local _medic} || {_medic getVariable ["ACE_isUnconscious", false]} || {!([_medic] call ace_common_fnc_isAwake)} || {!alive _medic} || {[_medic] call ACME_fnc_animBlocked}
     || {[_medic, _medic getVariable ["ACME_DP_Patient", objNull]] call ACME_fnc_directPressurePoseBusy}) exitWith {false};
@@ -45,7 +46,7 @@ _medic setVariable ["ACME_DP_ExitEpisode", _episode + [true], true];
     private _successor = (_m getVariable ["ACME_DP_PoseToken", 0]) != _token
         || {(_m getVariable ["ACME_treatmentPoseEpoch", 0]) != _poseEpoch}
         || {[_m, _m getVariable ["ACME_DP_Patient", objNull]] call ACME_fnc_directPressurePoseBusy};
-    private _unavailable = !alive _m || {_m getVariable ["ACE_isUnconscious", false]} || {!([_m] call ace_common_fnc_isAwake)} || {!isNull objectParent _m};
+    private _unavailable = !(missionNamespace getVariable ["ACME_interventionAnimations", true]) || {!alive _m} || {_m getVariable ["ACE_isUnconscious", false]} || {!([_m] call ace_common_fnc_isAwake)} || {!isNull objectParent _m};
     private _current = toLowerANSI animationState _m;
     private _inExit = _current == toLowerANSI _anim;
     if (_seen < 0 && {_inExit}) then {_seen = CBA_missionTime; _state set [5, _seen];};

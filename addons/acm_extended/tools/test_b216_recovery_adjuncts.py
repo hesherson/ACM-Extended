@@ -214,7 +214,9 @@ def insertion_patient_start(classname):
             flags[key] = value
     assert len(flags) == 3, "adjunct positioning policy must be explicit or inherited"
     source = (ROOT / "addons/core/functions/fnc_treatmentNative.sqf").read_text()
-    source = source[source.index("private _rollToBack = false;"):source.index("if (_medic isNotEqualTo player")]
+    presentation_begin = source.index("private _animationsEnabled =")
+    presentation = source[presentation_begin:source.index(";", presentation_begin) + 1]
+    source = presentation + source[source.index("private _rollToBack = false;"):source.index("if (_medic isNotEqualTo player")]
     for key, value in flags.items():
         source = source.replace(f'isNumber (_config >> "{key}")', "true")
         source = source.replace(f'getNumber (_config >> "{key}")', value)

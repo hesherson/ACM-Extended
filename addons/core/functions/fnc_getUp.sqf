@@ -137,12 +137,17 @@ if (_obtunded) then {
 
 // IMPORTANT: priority 2 is required here. ACM_LyingState has ConnectTo[] = {} and InterpolateTo[] = {}, so
 // priority-1 playMoveNow can never leave it. ACE priority 2 tries playMoveNow and then switchMove only if necessary.
+if !([_patient] call ACME_fnc_animBlocked) then {
 if (_wakeExit) then {
     // Only an accepted Get Up may exit the wake graph toward locomotion. A partial
     // blend preserves the early-interrupt transition without exposing an automatic
     // prone/get-up edge to AI during ordinary clip completion.
     _patient switchMove [_roll,0,0.25,false];
-} else {[_patient, _roll, 2] call ACME_fnc_doAnim;};
+} else {
+    // Structural escape from ACM's isolated lying graph must work even when optional treatment theatre is off.
+    [_patient, _roll, 2] call ace_common_fnc_doAnimation;
+};
+};
 
 // First repair backstop: if a different unconscious/dead-state controller won the same frame, clear the engine lock
 // and re-run the exact stock ACM release. This is intentionally short so the action never appears to vanish silently.
@@ -160,7 +165,7 @@ if (_wakeExit) then {
     if (!_stuck) exitWith {};
     _p setUnconscious false;
     _p setUnitPos "AUTO";
-    [_p, _roll, 2] call ACME_fnc_doAnim;
+    [_p, _roll, 2] call ace_common_fnc_doAnimation;
 }, [_patient, _roll], 0.15] call CBA_fnc_waitAndExecute;
 
 // Final engine-state repair mirrors ACE's own wake-up safeguard. If the casualty is medically awake but an
@@ -180,5 +185,5 @@ if (_wakeExit) then {
     if (!_stuck) exitWith {};
     _p setUnconscious false;
     _p setUnitPos "AUTO";
-    [_p, "AmovPpneMstpSnonWnonDnon", 2] call ACME_fnc_doAnim;
+    [_p, "AmovPpneMstpSnonWnonDnon", 2] call ace_common_fnc_doAnimation;
 }, [_patient], 0.65] call CBA_fnc_waitAndExecute;

@@ -66,8 +66,9 @@ private _expires = _now + _leaseSeconds;
 
 // Moving casualty choreography shares the provider rate. The speed belongs to the accepted lease,
 // never to a rejected request; a subsequent static hold restores normal speed immediately.
-private _moving = _animation in ["ACME_HeadElevPatientGrab", "ACME_HeadElevPatientRelease",
-    "AinjPpneMstpSnonWrflDnon_rolltofront", "AinjPpneMstpSnonWrflDnon_rolltoback"];
+private _moving = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {_animation in ["ACME_HeadElevPatientGrab", "ACME_HeadElevPatientRelease",
+        "AinjPpneMstpSnonWrflDnon_rolltofront", "AinjPpneMstpSnonWrflDnon_rolltoback"]};
 private _rate = if (_moving) then {call ACME_fnc_choreographyRate} else {1};
 // Every moving casualty animation owns collision relaxation, including generic treatment roll-to-back. This closes
 // the gap where a full-mass casualty could be moved through terrain by a CPR or other treatment posture change.

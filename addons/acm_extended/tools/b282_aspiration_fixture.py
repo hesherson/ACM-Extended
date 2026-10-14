@@ -3,6 +3,7 @@ import re
 from test_menu_death_lifecycle import read, adapt
 from test_historical_medication_rows import iteration_scopes
 from source_scan import lex, matching
+from test_menu_death_lifecycle import ROOT
 
 
 def boundary(source, component="core"):
@@ -26,3 +27,12 @@ def definitions(names=("aspirationState","aspirationEventKey","aspirationRestore
     ACME_fixture_fnc_linear={params ["_a","_b","_x","_c","_d",["_clip",false]];private _p=(_x-_a)/(_b-_a);if (_clip) then {_p=(_p max 0) min 1};_c+(_d-_c)*_p};'''
     out += 'if (isNil "ACME_fnc_clinicalEpoch") then {ACME_fnc_clinicalEpoch={'+boundary(read("clinicalEpoch"))+'};};'
     return out+"".join("ACME_fnc_"+name+"={"+boundary(read(name))+"};" for name in names)
+
+
+def airway_fluid_definitions():
+    """Actual owner airway setter/read/debit; namespace/public flags are engine boundaries."""
+    source=(ROOT/'addons/airway/functions/fnc_setAirwayState.sqf').read_text()
+    drain=read('laryngoFluidDrainLocal').replace('(_x select 1) == _medic','(_x select 1) isEqualTo _medic')
+    return 'ACME_fnc_laryngoFluidState={'+boundary(read('laryngoFluidState'))+'};'+\
+        'ACME_fnc_laryngoFluidDrainLocal={'+boundary(drain)+'};'+\
+        'ACM_airway_fnc_setAirwayState={'+boundary(source,'airway')+'};'

@@ -173,7 +173,11 @@ def test_unsupported_semifowler_is_provider_held_active_maneuver():
     assert '&& {!_suppressProviderAnim}) then {' in cont
 
     assert 'private _wasSuspended = _patient getVariable ["ACME_headElev_Suspended", false];' in stop
-    assert 'private _visibleLower = !_quiet && {!_wasSuspended}' in stop
+    # Lowering an already suspended episode must not replay patient release. The optional-animation gate
+    # now precedes those same historical conditions, so validate the complete predicate rather than its old prefix.
+    visible_lower = stop.split('private _visibleLower =', 1)[1].split(';', 1)[0]
+    assert 'missionNamespace getVariable ["ACME_interventionAnimations", true]' in visible_lower
+    assert '!_quiet' in visible_lower and '!_wasSuspended' in visible_lower and '_wasVisual' in visible_lower
 
 
 def test_manual_semifowler_never_auto_resumes_after_provider_yields():

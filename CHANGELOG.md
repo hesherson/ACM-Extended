@@ -1,5 +1,12 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B283 (community PR integration)
+
+- Integrates the non-Medmash community PR work on top of B282: Spanish localization, reviewed medical-item masses, controlled medic identity, optional intervention animation controls, and remaining IV/airway lifecycle fixes.
+- Corrects erroneous classification/mass edits and reconciles filled, empty and prepared inventory weights. Newer B282 ownership, audio, chest pathology and compatibility behavior takes precedence over obsolete branches.
+- Retains the NRB EFAK source fallback already included in B282. Medmash remains on `dev` and is excluded from this stable candidate.
+- Public version remains **1.2.4.1**, build **B283**, network protocol **1**. Native dedicated-server acceptance remains separate from automated validation.
+
 ## 1.2.4.1 — B272 (vented thoracostomy seals / PTX resolution)
 
 - Chest seals over completed finger thoracostomies now retain a bounded vented outlet and can be applied while the internal leak is still healing. They protect the selected surgical tract without declaring unrelated penetrating wounds covered.

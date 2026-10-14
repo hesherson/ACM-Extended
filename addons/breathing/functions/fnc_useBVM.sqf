@@ -116,7 +116,7 @@ if (_dpSamePatient) then {
     GVAR(BVMCancel_MouseID) = [0xF0, [false, false, false], _cancelCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
 
     private _toggleCode = compile format [
-        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (isNull _t) exitWith {false}; if (isMultiplayer) exitWith {private _m=ACE_player; private _s=_m getVariable ['ACME_resusToken_bvm',[]]; if (count _s==6) then {[_t,'resus',['toggle','bvm',_m,_s select 1,_s select 2,_s select 3,_s select 4,_s select 5,serverTime,[]]] call ACME_fnc_ownerDispatch;}; false}; if ((_t getVariable ['ACM_breathing_BVM_provider', objNull]) isEqualTo objNull) then {_t setVariable ['ACM_breathing_BVM_provider', ACE_player, true];} else {_t setVariable ['ACM_breathing_BVM_provider', objNull, true];}; false",
+        "if ((missionNamespace getVariable ['ACM_core_ContinuousAction_Epoch', -2]) != %1) exitWith {false}; private _t = missionNamespace getVariable ['ACM_breathing_BVMTarget', objNull]; if (isNull _t) exitWith {false}; if (isMultiplayer) exitWith {private _m=(call ACME_fnc_controlledProvider); private _s=_m getVariable ['ACME_resusToken_bvm',[]]; if (count _s==6) then {[_t,'resus',['toggle','bvm',_m,_s select 1,_s select 2,_s select 3,_s select 4,_s select 5,serverTime,[]]] call ACME_fnc_ownerDispatch;}; false}; if ((_t getVariable ['ACM_breathing_BVM_provider', objNull]) isEqualTo objNull) then {_t setVariable ['ACM_breathing_BVM_provider', (call ACME_fnc_controlledProvider), true];} else {_t setVariable ['ACM_breathing_BVM_provider', objNull, true];}; false",
         _epoch
     ];
     GVAR(BVMToggle_MouseID) = [0xF1, [false, false, false], _toggleCode, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
@@ -183,7 +183,7 @@ if (_dpSamePatient) then {
     // Preserve the open-chest lease across the deliberate 0.1 s BVM -> CPR handoff. The bounded token lets the
     // existing lease watchdog restore the carrier if CPR fails to take ownership.
     if (_swapToCPR && {!isNull _medic} && {!isNull _patient} && {local _medic} && {alive _medic}
-        && {_medic isEqualTo ACE_player} && {[_medic] call ACEFUNC(common,isAwake)}
+        && {_medic isEqualTo (call ACME_fnc_controlledProvider)} && {[_medic] call ACEFUNC(common,isAwake)}
         && {(missionNamespace getVariable [QGVAR(BVM_LocalSession), []]) isEqualTo [_medic, _patient, _epoch]}) then {
         // A supported Semi-Fowler BVM -> CPR swap has to lower the casualty once before compressions begin.
         // Keep the existing chest-access lease alive through that authored 1.4 s release so the carrier is not
@@ -196,7 +196,7 @@ if (_dpSamePatient) then {
     if !([_medic, _patient, _epoch, _extraArgs param [3,[]]] call FUNC(bvmCleanupLocal)) exitWith {};
     // Death/respawn/locality loss releases ownership without reopening menus on the replacement player.
     if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
-        || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {};
+        || {!(_medic isEqualTo (call ACME_fnc_controlledProvider))} || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {};
 
     [_patient, "activity", LLSTRING(BVM_ActionLog_Stop), [[_medic, false, true] call ACEFUNC(common,getName), GVAR(BVM_BreathCount)]] call ACEFUNC(medical_treatment,addToLog);
 
@@ -217,7 +217,7 @@ if (_dpSamePatient) then {
                 || {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}
                 || {missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false]}
                 || {isNull _medic} || {isNull _patient} || {!local _medic} || {!alive _medic}
-                || {!(_medic isEqualTo ACE_player)} || {!([_medic] call ACEFUNC(common,isAwake))}
+                || {!(_medic isEqualTo (call ACME_fnc_controlledProvider))} || {!([_medic] call ACEFUNC(common,isAwake))}
                 || {!([_medic,_patient] call ACME_fnc_patientInteractionContact)}) exitWith {};
             [LLSTRING(BVM_SwappedToCPR), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
             if (vest _patient != "" && {isNull objectParent _patient}) then {

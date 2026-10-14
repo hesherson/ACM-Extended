@@ -1,7 +1,8 @@
 // tear down hang bag locally. it is safe to call repeatedly.
 // on cancel we play the lower-the-bag exit animation and keep the bag and iv line in hand until it finishes, then
 // delete them and restore the weapon, so the bag visibly comes down instead of popping out of existence.
-params [["_silent", false], ["_medic", ACE_player], ["_kitReset", false, [false]]];
+params [["_silent", false], ["_medic", objNull], ["_kitReset", false, [false]]];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
 if (isNull _medic) exitWith {};
 if !(_medic getVariable ["ACME_hang_Active", false]) exitWith {};
 
@@ -57,7 +58,7 @@ private _bag       = _medic getVariable ["ACME_hang_Bag", objNull];
 
 private _outAnim = [_medic, missionNamespace getVariable ["ACME_hang_outAnim", "ACME_Acts_JetsCrewaidFCrouchThumbup_out"], _prone] call ACME_fnc_providerAnimation;
 private _playedOut = false;
-if (!_kitReset && {local _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic} && {(toLower animationState _medic) find "jetscrewaidfcrouchthumbup" >= 0}) then {
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {!_kitReset} && {local _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic} && {(toLower animationState _medic) find "jetscrewaidfcrouchthumbup" >= 0}) then {
     // The loop now exposes an explicit interpolateTo edge to this state, and the out state has a ConnectTo edge
     // back to normal crouch. Do not delete props or restore the loadout until this authored lower-bag move has
     // actually entered and completed, because setUnitLoadout/idle restoration can cancel it mid-frame.
@@ -102,7 +103,25 @@ private _teardown = {
         };
     };
 
-    if (_providerCanRestore && {local _medic} && {alive _medic} && {_medic isEqualTo ACE_player}
+    // Turning presentation off must still release a skeleton which an earlier
+    // visible Hang Bag owns. The isolated static hold has no move-graph exit;
+    // this structural teardown deliberately bypasses the disabled animation
+    // presenter, and only while the exact ended episode still owns that family.
+    if (!(missionNamespace getVariable ["ACME_interventionAnimations", true])
+        && {_providerCanRestore} && {local _medic} && {alive _medic}
+        && {(_medic getVariable ["ACME_hang_Start", -2]) == _episodeStart}
+        && {!(_medic getVariable ["ACME_hang_Active", false])}
+        && {(_medic getVariable ["ACME_equipmentKitEpoch", 0]) == _kitEpoch}
+        && {isNull objectParent _medic}
+        && {!([_medic] call ACME_fnc_providerStanceOwned)}
+        && {(toLowerANSI animationState _medic) find "jetscrewaidfcrouchthumbup" >= 0}) then {
+        _medic enableAI "ANIM";
+        _medic setUnitPos "AUTO";
+        private _neutral = [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation;
+        ["ace_common_switchMove", [_medic, _neutral]] call CBA_fnc_globalEvent;
+    };
+
+    if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {_providerCanRestore} && {local _medic} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}
         && {!([_medic] call ACME_fnc_providerStanceOwned)}) then {
         _medic enableAI "ANIM";
         // Normal path: the authored out move has already connected itself to crouch. Fallback path: if the move
@@ -135,7 +154,7 @@ private _teardown = {
         _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
     };
 
-    if (!_silent && {!isNull _patient} && {_providerCanRestore} && {alive _medic} && {_medic isEqualTo ACE_player}) then {
+    if (!_silent && {!isNull _patient} && {_providerCanRestore} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
         [{
             params ["_medic", "_patient", "_bp", "_episodeStart", "_kitEpoch"];
             if (isNull _medic || {isNull _patient}) exitWith {};

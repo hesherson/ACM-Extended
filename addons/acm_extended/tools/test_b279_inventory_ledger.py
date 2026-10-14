@@ -50,7 +50,7 @@ def setup():
     CBA_fnc_targetEvent={_replies pushBack (_this select 1)};
     CBA_fnc_waitAndExecute={_waits pushBack _this};
     ACME_fnc_inventoryLedgerNative={params ["_o",["_k",""]]; (_o getVariable ["native",[]]) select {_k=="" || {(_x select 1)==_k}}};
-    private _addNative={params ["_o","_class","_token"]; private _n=+(_o getVariable ["native",[]]); _n pushBack [_token,["prepared","syringe"] select (_class=="ACME_PreparedSyringe")]; _o setVariable ["native",_n];};
+    private _addNative={params ["_o","_class","_token"]; private _n=+(_o getVariable ["native",[]]); _n pushBack [_token,["prepared","syringe"] select ((_class find "ACME_PreparedSyringe")==0)]; _o setVariable ["native",_n];};
     ace_common_fnc_removeSpecificMagazine={params ["_o","_class","_token"]; private _n=+(_o getVariable ["native",[]]); private _i=_n findIf {(_x select 0)==_token}; if (_i<0) exitWith {false}; _n deleteAt _i; _o setVariable ["native",_n];true};
     ACME_fnc_skInventoryReconcile={};
     private _broker={while {count _queue>0} do {(_queue deleteAt 0) call ACME_fnc_inventoryLedgerBroker}};

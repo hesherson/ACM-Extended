@@ -7,6 +7,9 @@ private _record = _medic getVariable ["ACME_assessment", []];
 if (_record isEqualTo [] || {(_args param [7, -1]) != (_record select 0)}) exitWith {-1};
 private _pose = _medic getVariable ["ACME_treatmentPoseState", []];
 if ((_pose param [0, -1]) != (_record select 0)) exitWith {-1};
+// The adapter calls this only after the full native clinical deadline. Ownership-only assessments need no
+// engine-state observation; missing/stale episodes still fail through the same epoch checks above.
+if (_pose param [21, false]) exitWith {_deadline};
 // Prone has a supported continuous fallback rather than a finite kneeling RTM. It still
 // requires actual observed work and the full configured clinical interval.
 if ((_pose param [20, false]) && {(_record select 2) >= 1}) exitWith {_deadline};

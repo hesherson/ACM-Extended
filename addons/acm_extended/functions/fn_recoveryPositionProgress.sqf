@@ -20,9 +20,11 @@ private _pose = _medic getVariable ["ACME_treatmentPoseState", []];
 private _completed = (_medic getVariable ["ACME_rollProviderCompletedEpoch", -1]) == _epoch;
 if (!_completed && {(_medic getVariable ["ACME_rollProviderToken", ""]) != _rollToken}) exitWith {false};
 private _work = toLowerANSI (_pose param [2, ""]);
+private _presentationReady = (_pose param [21, false])
+    || {(toLowerANSI animationState _medic) == _work
+        && {_work == "ainvpknlmstpsnonwnondnon_medic4" || {(_pose param [20, false]) && {_work == "acm_pronecontinuous"}}}};
 private _atWork = (_pose param [0, -1]) == _epoch && {(_pose param [1, ""]) == "roll"}
-    && {(_pose param [3, -1]) >= 1} && {(toLowerANSI animationState _medic) == _work}
-    && {_work == "ainvpknlmstpsnonwnondnon_medic4" || {(_pose param [20, false]) && {_work == "acm_pronecontinuous"}}};
+    && {(_pose param [3, -1]) >= 1} && {_presentationReady};
 if (!_dispatched && {_elapsed >= ((_total - 3.5) max 0)} && {_atWork || {_completed}}) then {
     _record set [4, true];
     [_medic, _patient, true, false, "begin", _token, _epoch, _record param [5, -1]] call ACM_airway_fnc_setRecoveryPosition;

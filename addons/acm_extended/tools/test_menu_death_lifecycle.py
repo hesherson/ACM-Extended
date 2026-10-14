@@ -77,6 +77,7 @@ def adapt(s, component='core'):
         'alive _medic': '_alive', 'alive _m': '_alive',
         'alive _patient': '_patientAlive', 'alive _target': '_patientAlive', 'alive _custodyTarget': '_patientAlive', 'alive _provider': '_alive', 'alive _p': '_patientAlive',
         'local _medic': 'true', 'local _m': 'true', 'local _patient': 'true', 'local _p': 'true',
+        'local _viewer': 'true',
         'owner _medic': '_ownerNum',
         'vest _patient': '""', 'objectParent _medic': 'objNull', 'objectParent _patient': 'objNull', 'objectParent _p': 'objNull',
         '_patient distance2D _medic': '_distance', '_medic distance _patient': '_distance',
@@ -141,6 +142,7 @@ private _track = {};
 private _nowTime = 10;
 CBA_missionTime = 10;
 ACE_player = _medic;
+ACME_fnc_controlledProvider = {ACE_player};
 ace_medical_gui_maxDistance = 3;
 ACM_core_ContinuousAction_Active = false;
 private _check = {if !(_this select 0) then {_ok = false; diag_log ("MENU_FIX_FAIL " + (_this select 1));};};

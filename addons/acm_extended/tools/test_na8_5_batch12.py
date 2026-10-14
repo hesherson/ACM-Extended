@@ -6,6 +6,7 @@ from pathlib import Path
 import math
 import re
 import unittest
+import pytest
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -163,7 +164,14 @@ class EpinephrineSource(unittest.TestCase):
         self.assertIn('call ACME_fnc_medicationTakeSources',t)
         self.assertLess(t.index('call ACME_fnc_medicationTakeSources'),t.index('if (!_funded) exitWith {false};'))
         self.assertLess(t.index('if (!_funded) exitWith {false};'),t.index('call ACME_fnc_narcStoreCommit'))
-    def test_real_inventory_signature(self):self.assertIn('[ACE_player, _class, "", round (_ml * 100)]',src('epinephrineDrawCardiac'))
+    def test_real_inventory_signature(self):
+        from test_b241_current_ui_expectations import has
+        text=src('epinephrineDrawCardiac')
+        self.assertTrue(has(text, 'private _medic = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medic", objNull];'))
+        self.assertTrue(has(text, 'if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};'))
+        self.assertTrue(has(text, 'if (isNull _medic || {!local _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};'))
+        self.assertTrue(has(text, '[_medic, _class, "", round (_ml * 100)] call ace_common_fnc_addToInventory;'))
+        self.assertLess(text.index('call ACME_fnc_medicationTakeSources'), text.index('call ace_common_fnc_addToInventory'))
     def test_default_compound_flow_can_draw_plain_cardiac(self):
         t=src('skCompoundDraw');self.assertNotIn('if (_med == "EpinephrineCardiac") exitWith',t)
         self.assertIn('_components pushBack [_med, _drugMl]',t)
@@ -198,6 +206,21 @@ class EpinephrineSource(unittest.TestCase):
     def test_strings_valid_xml(self):ET.fromstring(read('stringtable.xml'))
     def test_no_pde_from_concentrated_source_compat_action(self):
         t=src('salineFlush');self.assertIn('call ACME_fnc_epinephrinePrepare',t)
+
+@pytest.mark.parametrize('old,new', [
+    ('[_medic, _class, "", round (_ml * 100)]', '[ACE_player, _class, "", round (_ml * 100)]'),
+    ('[_medic, _class, "", round (_ml * 100)]', '[_medic, _class, "", round (_ml * 1000)]'),
+    ('_medic isNotEqualTo (call ACME_fnc_controlledProvider)', 'false'),
+])
+def test_inventory_signature_contract_rejects_wrong_actor_or_volume(monkeypatch, old, new):
+    real=src
+    current=real('epinephrineDrawCardiac')
+    assert old in current
+    broken=current.replace(old,new)
+    monkeypatch.setitem(globals(), 'src', lambda name: broken if name=='epinephrineDrawCardiac' else real(name))
+    with pytest.raises(AssertionError):
+        EpinephrineSource().test_real_inventory_signature()
+
 
 class ReferenceModels(unittest.TestCase):
     def test_all_16_anatomy_combinations_have_success_state(self):

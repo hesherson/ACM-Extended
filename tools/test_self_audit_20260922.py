@@ -86,6 +86,9 @@ REVIEWED_CURRENT_COVERAGE = {
     'addons/acm_extended/functions/fn_registerTransfusionUiRuntime.sqf': ['addons/acm_extended/tools/test_b226_transfusion_presentation.py'],
     'addons/acm_extended/functions/fn_rollProviderStart.sqf': ['tools/test_fork_phase150_flip_cancel.py'],
     'addons/acm_extended/functions/fn_stethoscopeClose.sqf': ['tools/test_fork_phase150_flip_cancel.py'],
+    # B283 retains the observed medic4/prone gate by default and accepts a captured ownership-only pose when
+    # presentation was disabled. Both timed opening and re-enable-during-entry execute in the new VM cases.
+    'addons/acm_extended/functions/fn_stethoscopeEntryFlipTick.sqf': ['addons/acm_extended/tools/test_b283_animation_integration.py'],
     'addons/acm_extended/functions/fn_stethoscopeFlipTick.sqf': ['tools/test_fork_phase150_flip_cancel.py'],
     'addons/acm_extended/functions/fn_thoraOpen.sqf': ['addons/acm_extended/tools/test_b205_thora_network_execution.py'],
     'addons/acm_extended/functions/fn_transientStateReconcile.sqf': ['addons/acm_extended/tools/test_b219_world_lifecycle.py'],

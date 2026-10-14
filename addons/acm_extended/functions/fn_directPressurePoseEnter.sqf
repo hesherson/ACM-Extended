@@ -2,6 +2,7 @@
  * Disabling weapons in a move does not holster the selected weapon. Without this preflight the engine redraws
  * that weapon every time movement releases the hold. Never remember or restore the previous weapon.
  */
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {false};
 params ["_medic", "_patient"];
 if (isNull _medic || {!local _medic} || {_medic getVariable ["ACE_isUnconscious", false]} || {!([_medic] call ace_common_fnc_isAwake)} || {!(_medic getVariable ["ACME_DP_Active", false])}
     || {[_medic] call ACME_fnc_animBlocked} || {[_medic, _patient] call ACME_fnc_directPressurePoseBusy}) exitWith {false};

@@ -64,7 +64,7 @@ def test_old_display_unload_cannot_remove_new_renderer_generation():
 def test_narc_box_returns_through_same_menu_open_event():
     close = text(NARC_CLOSE)
     reopen = text(NARC_REOPEN)
-    assert '[_patient, "medication"] call ACME_fnc_reopenMedicalMenu;' in close
+    assert '[_patient, "medication", -1, [], _provider] call ACME_fnc_reopenMedicalMenu;' in close
     assert '[_patient] call ace_medical_gui_fnc_openMenu;' in reopen
 
 

@@ -103,6 +103,10 @@ private _armReadyProbe = {
     if (_token == "") exitWith {};
 
     _m setVariable ["ACME_chestAccessProviderReady", [_token, -1], true];
+    // The ownership-only pose is immediately ready. No exact engine animation will be emitted in this mode.
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+        _m setVariable ["ACME_chestAccessProviderReady", [_token, serverTime], true];
+    };
     private _requiredStage = [1, 3] select (((_m getVariable ["ACME_chestAccess_treatment", []]) param [1, ""]) == "checkbreathing");
 
     [{

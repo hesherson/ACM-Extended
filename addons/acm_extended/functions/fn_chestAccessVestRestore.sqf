@@ -196,7 +196,8 @@ private _busy = _patient getVariable [_busyVar, ""];
 if (_busy != "") exitWith {(_busy find "restore:") == 0};
 
 // Animate only a stable, legitimately controllable casualty. Front/supine was guaranteed above.
-private _canAnimate = !_force
+private _canAnimate = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_force}
     && {alive _patient}
     && {isNull objectParent _patient}
     && {!([_patient] call ACME_fnc_animBlocked)}
@@ -305,7 +306,8 @@ private _beginRestore = {
         if ((_lock param [0, ""]) in ["", _token]
             && {alive _p} && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
-            if ((toLowerANSI animationState _p) != (toLowerANSI _faceUp)) then {
+            if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+                && {(toLowerANSI animationState _p) != (toLowerANSI _faceUp)}) then {
                 ["ace_common_switchMove",[_p,_faceUp]] call CBA_fnc_globalEvent;
             };
             _p setVariable ["ACME_CS_facing","front",true];

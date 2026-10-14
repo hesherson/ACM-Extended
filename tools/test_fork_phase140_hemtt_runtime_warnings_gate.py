@@ -39,8 +39,16 @@ def test_current_phase140_hemtt_runtime_warnings_gate():
     assert '_state set ["distalDrugEffectActive", _distalDrugEffectActive];' in circ
 
     vent = text("addons/acm_extended/functions/fn_ventPanelTick.sqf")
-    assert 'private _tgtM = uiNamespace getVariable ["ACME_vent_target", ACE_player];' in vent
-    assert vent.count('private _tgtM = uiNamespace getVariable ["ACME_vent_target", ACE_player];') == 1
+    assert _has(vent, 'private _provider = _dlg getVariable ["ACME_vent_viewer", objNull];')
+    assert _has(vent, '''if (isNull _provider || {!alive _provider} || {_provider isNotEqualTo (call ACME_fnc_controlledProvider)}
+        || {_provider getVariable ["ACE_isUnconscious", false]}
+        || {isNull (uiNamespace getVariable ["ACME_vent_target", objNull])}) exitWith {_dlg closeDisplay 2;};''')
+    assert _has(vent, 'if !([_provider, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith { [87700] call ACME_fnc_minigameClose; };')
+    assert _has(vent, 'private _tgtM = uiNamespace getVariable ["ACME_vent_target", _provider];')
+    from source_scan import lex
+    tokens = [token.value for token in lex(vent)]
+    assert sum(tokens[index:index+3] == ['private', '_tgtM', '='] for index in range(len(tokens)-2)) == 1
+    assert vent.index('private _provider =') < vent.index('if (isNull _provider ||') < vent.index('private _tgtM =')
 
     det = text("addons/cbrn/functions/fnc_spawnChemicalDetonationEffect.sqf")
     assert 'createVehicleLocal getPos _object' in det

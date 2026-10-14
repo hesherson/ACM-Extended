@@ -261,6 +261,13 @@ private _commitRemoval = {
 
     private _cargo = [_p, _savedVar] call ACME_fnc_carrierInventoryCreate;
     if (isNull _cargo) exitWith {false};
+    // Optional ACRE PTT release must happen before the active radio can disappear with its vest container.
+    // Use ACRE's own key-up handler; no radio API is called when ACRE is absent or the patient is remote.
+    if (hasInterface && {_p isEqualTo player}
+        && {!isNil "acre_sys_core_fnc_handleMultiPttKeyPressUp"}
+        && {missionNamespace getVariable ["acre_sys_core_pttKeyDown", false]}) then {
+        [] call acre_sys_core_fnc_handleMultiPttKeyPressUp;
+    };
     removeVest _p;
     if ((vest _p) != "") exitWith {
         _p setVariable ["ACME_carrierCargo", objNull, true];
@@ -368,7 +375,8 @@ private _commitRemoval = {
 
 // Animation is allowed only for casualties whose body ACME may legitimately control.
 // Otherwise gear correctness wins and the action proceeds after the Semi-Fowler lowering delay, if any.
-private _canAnimate = !_preserveHeadElevation
+private _canAnimate = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_preserveHeadElevation}
     && {alive _patient}
     && {isNull objectParent _patient}
     && {!([_patient] call ACME_fnc_animBlocked)}
@@ -521,7 +529,8 @@ private _beginPatient = {
         if ((_lock param [0, ""]) in ["", _token]
             && {alive _p} && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {
             private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp", "ACM_LyingState"];
-            if ((toLowerANSI animationState _p) != (toLowerANSI _faceUp)) then {
+            if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+                && {(toLowerANSI animationState _p) != (toLowerANSI _faceUp)}) then {
                 ["ace_common_switchMove", [_p, _faceUp]] call CBA_fnc_globalEvent;
             };
             _p setVariable ["ACME_CS_facing", "front", true];

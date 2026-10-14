@@ -42,9 +42,14 @@ if (local _medic && {(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEq
 };
 if (_pfh >= 0) then {[_pfh] call CBA_fnc_removePerFrameHandler;};
 
+// An ownership-only episode never acquired animation speed, stance or a JIP hold. Its release must not alter a
+// concurrently owned native movement coefficient or append a decorative exit after presentation was disabled.
+if (_state param [21, false]) exitWith {};
+
 // Every phase, including accelerated preparation, is retired through the same ordered receiver.
 // A handoff releases immediately; a normal exit blends at the shared rate and has a bounded speed reset.
-private _canExit = !_handoff && {local _medic} && {alive _medic}
+private _canExit = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_handoff} && {local _medic} && {alive _medic}
     && {!(_medic getVariable ["ACE_isUnconscious", false])} && {!([_medic] call ACME_fnc_animBlocked)};
 private _operation = ["release", "exit"] select _canExit;
 private _rate = if (_canExit) then {call ACME_fnc_choreographyRate} else {1};
@@ -56,6 +61,15 @@ if (local _medic) then {["ACME_treatmentPoseSync", _packet] call CBA_fnc_globalE
 if (!isNil "ace_advanced_fatigue_setAnimExclusions" && {_exclusion != ""}) then {
     private _index = ace_advanced_fatigue_setAnimExclusions find _exclusion;
     if (_index >= 0) then {ace_advanced_fatigue_setAnimExclusions deleteAt _index;};
+};
+
+// Disabling presentation during a previously visible episode suppresses its decorative exit, but must still
+// release the stance that episode acquired. A newer provider controller owns its own stance and wins here.
+// Stage -1 has not entered the provider crouch yet; ownership-only episodes already returned above.
+if (!(missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {_stage != -1} && {local _medic}
+    && {!([_medic] call ACME_fnc_providerStanceOwned)}) then {
+    _medic setUnitPos "AUTO";
 };
 
 // Cancel pending queue/reassert ownership so an old entry cannot restart after a cancellation.
@@ -82,7 +96,8 @@ private _ownsEntry = _stage <= 1 && {
 
 // Use playMoveNow through the move graph, never switchMove, so the work state blends back into the normal
 // unarmed crouch. Weapon selection is not touched here; the start preflight already cleared it exactly once.
-if (!_handoff
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_handoff}
     && {!_ambulatoryAlreadySettled}
     && {local _medic}
     && {alive _medic}

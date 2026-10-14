@@ -19,7 +19,13 @@ assert '[_medic] call ACME_fnc_directPressurePoseRetire;' in pose
 assert pose.index('call ACME_fnc_directPressurePoseBusy') < pose.index('call ACME_fnc_directPressurePoseEnter')
 assert 'ACME_treatmentPreflightActive' in busy and 'ace_medical_treatment_endInAnim' in busy
 assert 'ACM_core_ContinuousAction_Active' in busy
-assert 'params [["_silent", false, [false]], ["_medic", ACE_player' in stop
+from current_source_contracts import _has
+# Explicit delayed cleanup retains its provider; only an omitted actor resolves
+# the currently controlled unit. Never silently replace an explicit old actor.
+assert _has(stop, 'params [["_silent", false, [false]], ["_medic", objNull, [objNull]]];')
+assert _has(stop, 'if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};')
+assert _has(stop, 'if (isNull _medic || {!local _medic}) exitWith {};')
+assert stop.index('call ACME_fnc_controlledProvider;') < stop.index('if (isNull _medic || {!local _medic})') < stop.index('private _wasActive')
 assert 'if !(_medic getVariable ["ACME_DP_Active", false]) exitWith' not in stop
 for token in ['ACME_DP_Patient','ACME_DP_Part','ACME_DP_PFH','ACME_DP_KeyIDs',
               'ACME_DP_ClaimPending','ACME_DP_ClaimToken','ACME_DP_ClaimEpoch']:

@@ -48,6 +48,8 @@ def lifecycle():
         ace_weaponselect_fnc_putWeaponAway={_putAway pushBack _this;};
         ACM_core_fnc_handleKnockOut={_knockedOut pushBack _this;};
         ACME_fnc_doAnim={_moves pushBack _this;};
+        ace_common_fnc_doAnimation={_moves pushBack _this;};
+        ACME_fnc_animBlocked={params ["_unit"];!((_unit getVariable ["TEST_vehicle",objNull]) isEqualTo objNull)};
         CBA_fnc_execNextFrame={_nextFrames pushBack _this;};
     '''
     for name in ('setLyingState', 'onUnconscious', 'getUp'):

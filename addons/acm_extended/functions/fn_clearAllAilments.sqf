@@ -371,7 +371,8 @@ if (alive _patient && {!(_patient getVariable ["ACE_isUnconscious", false])}
     private _forced = ((_asHeal find "ainj") >= 0) || {(_asHeal find "unconscious") >= 0} || {(_asHeal find "lying") >= 0}
         || {(_asHeal find "acts_") == 0} || {_asHeal == "acm_lyingstate"};
     if (_forced && {(_asHeal find "unconsciousoutprone") < 0}) then {
-        [_patient, "UnconsciousOutProne", 2] call ACME_fnc_doAnim;
+        // This is a grounded full-heal engine-state release, not optional intervention presentation.
+        [_patient, "UnconsciousOutProne", 2] call ace_common_fnc_doAnimation;
     };
 };
 

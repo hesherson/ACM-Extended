@@ -39,9 +39,10 @@ def test_current_phase142_getup_acre_babel_gate():
     assert '[QGVAR(getUpRequest)' in post
 
     # Priority 2 is intentional here: priority 1 cannot exit ACM_LyingState.
-    assert '[_patient, _roll, 2] call ACME_fnc_doAnim;' in getup
-    assert '[_p, _roll, 2] call ACME_fnc_doAnim;' in getup
-    assert '[_p, "AmovPpneMstpSnonWnonDnon", 2] call ACME_fnc_doAnim;' in getup
+    assert '[_patient, _roll, 2] call ace_common_fnc_doAnimation;' in getup
+    assert '[_p, _roll, 2] call ace_common_fnc_doAnimation;' in getup
+    assert '[_p, "AmovPpneMstpSnonWnonDnon", 2] call ace_common_fnc_doAnimation;' in getup
+    assert 'if !([_patient] call ACME_fnc_animBlocked) then {' in getup
     assert "ACME_fnc_animQueue" not in getup_code, "Get Up must not route through the priority-1 animation queue"
 
     # Release the stale engine/ACME animation controller before consuming the action.
@@ -66,7 +67,7 @@ def test_current_phase142_getup_acre_babel_gate():
     assert '&& {_patient getVariable ["ACME_obtunded", false]}' in getup
 
     # Full-heal/Zeus cleanup must be capable of escaping the same isolated state.
-    assert '[_patient, "UnconsciousOutProne", 2] call ACME_fnc_doAnim;' in clear
+    assert '[_patient, "UnconsciousOutProne", 2] call ace_common_fnc_doAnimation;' in clear
 
     # Reviewed removal commit 7407794e: obtundation no longer changes any ACRE Babel registry or language.
     from current_source_contracts import _has

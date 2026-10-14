@@ -16,7 +16,7 @@ if (!_accepted || {_leaseUntil <= serverTime} || {!alive _medic} || {_medic getV
     || {_patient getVariable ["ACME_clinicalRestoring", false]}
     || {!isNull objectParent _medic}
     || {_medic distance _patient > (missionNamespace getVariable ["ACME_hang_leash", 3])}
-    || {(_medic getVariable ["ACME_hang_PlayerBound", false]) && {!(_medic isEqualTo ACE_player)}}
+    || {(_medic getVariable ["ACME_hang_PlayerBound", false]) && {!(_medic isEqualTo (call ACME_fnc_controlledProvider))}}
     || {!(missionNamespace getVariable ["ACME_sys_hang", true])}) exitWith {
     [true, _medic] call ACME_fnc_hangBagStop;
 };

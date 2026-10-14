@@ -1,3 +1,9 @@
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // activate whatever the unified selection index, selidx, currently points at, on a list or menu screen. if the
 // index is within the row range it activates that row, through ventPanelListClick, and if it is in the strip
 // range it activates that strip button, through ventPanelStripClick. this is what middle-click calls, as the
@@ -85,7 +91,7 @@ if (_screen in ["weight","mode","interface","connect","menu","params","advset","
 };
 
 if (_screen == "o2") exitWith {
-    if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+    if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
     // The source action stays available in Simple delivery. Oxygen supply is
     // independent of rate, volume, pressure, trigger and mode controls.
     playSound "ACME_VentClick";
@@ -105,7 +111,7 @@ if (_screen == "o2") exitWith {
             [] call ACME_fnc_ventPanelOxygenRefresh;
         };
         case 1: {
-            [_target, (if (_supply select 0) then {"detach"} else {"attach"}), ACE_player] call ACME_fnc_ventOxygenRequest;
+            [_target, (if (_supply select 0) then {"detach"} else {"attach"}), _viewer] call ACME_fnc_ventOxygenRequest;
             [] call ACME_fnc_ventPanelOxygenRefresh;
         };
         default { ["back"] call ACME_fnc_ventPanelNavClick; };

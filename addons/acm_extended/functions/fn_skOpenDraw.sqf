@@ -4,6 +4,9 @@
 // wrapper is what the size list calls back into.
 // Args: size, patient, body part, optional flush item. A null patient opens a self draw.
 params [["_size", 10], ["_patient", objNull], ["_bodyPart", ""], ["_flushClass", "", [""]]];
+private _medic = call ACME_fnc_controlledProvider;
+if (isNull _medic || {!local _medic}) exitWith {};
+ACE_player = _medic;
 // A prefilled flush carries its own syringe and never requires an empty 10 mL item.
 if (_flushClass != "") then {_size = 10;};
 if (isNil "ACM_circulation_fnc_Syringe_Draw") exitWith {

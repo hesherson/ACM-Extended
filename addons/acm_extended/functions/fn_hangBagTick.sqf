@@ -45,7 +45,7 @@ if (_stop) exitWith {
 // The owner reply, not replicated holder writes from another client, determines acceptance.
 if ((_medic getVariable ["ACME_hang_ClaimOwner", -1]) != clientOwner
     || {(_medic getVariable ["ACME_hang_ClaimEpoch", -1]) != ([_patient] call ACME_fnc_clinicalEpoch)}
-    || {(_medic getVariable ["ACME_hang_PlayerBound", false]) && {!(_medic isEqualTo ACE_player)}}) exitWith {
+    || {(_medic getVariable ["ACME_hang_PlayerBound", false]) && {!(_medic isEqualTo (call ACME_fnc_controlledProvider))}}) exitWith {
     [true, _medic] call ACME_fnc_hangBagStop;
 };
 if !(_medic getVariable ["ACME_hang_Claimed", false]) exitWith {
@@ -113,7 +113,7 @@ if (hasInterface
 // produce the engine jump/footstep sound loop. If another system genuinely knocks the hold pose out after the
 // entry grace period, lower the bag cleanly and return control instead of wrestling the animation graph.
 private _graceUntil = _medic getVariable ["ACME_hang_PoseRetryAt", 0];
-if (CBA_missionTime >= _graceUntil) then {
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {CBA_missionTime >= _graceUntil}) then {
     private _animNow = toLower animationState _medic;
     if (_animNow != toLower (_medic getVariable ["ACME_hang_Pose", "ACME_Acts_JetsCrewaidFCrouchThumbup_loop"])) exitWith {
         [true, _medic] call ACME_fnc_hangBagStop;

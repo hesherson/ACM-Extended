@@ -146,11 +146,12 @@ switch (_operation) do {
 
                 private _poseNow = _m getVariable ["ACME_treatmentPoseState",[]];
                 private _work = toLowerANSI (_poseNow param [2,""]);
+                private _presentationReady = (_poseNow param [21, false])
+                    || {_work == "ainvpknlmstpsnonwnondnon_medic4" && {(toLowerANSI animationState _m) == _work}};
                 private _atWork = (_poseNow param [0,-2]) == _epoch
                     && {(_poseNow param [1,""]) == "roll"}
                     && {(_poseNow param [3,-2]) >= 1}
-                    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
-                    && {(toLowerANSI animationState _m) == _work};
+                    && {_presentationReady};
 
                 if (_atWork || {_completed} || {diag_tickTime >= _deadline}) then {
                     [_handle] call CBA_fnc_removePerFrameHandler;

@@ -4,6 +4,7 @@
  * Native ACM/ACE remains authoritative for treatment timing, inventory, callbacks, cancellation and patient state.
  */
 params ["_medic", "_patient", "_bodyPart", "_classname"];
+private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];
 // B263 legacy-action compatibility: some large modpacks re-expose ACM's
 // original action names or call them from a cached menu. Always route those
 // *launcher* clicks through ACME's current clinical/permission checks and
@@ -601,7 +602,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
 
         // Presentation begins now but never delays native progress. ACME-owned poses stop the menu pose and issue
         // the one holster request immediately; their pose controller waits for visual readiness independently.
-        if (_ownsProviderAnim) then {
+        if (_animationsEnabled && {_ownsProviderAnim}) then {
             [_medic, true] call ACME_fnc_menuPoseStop;
             if (currentWeapon _medic != "") then {[_medic] call ACME_fnc_medicAnimationPrep;};
         };
@@ -643,7 +644,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
         // Ordinary ACE work has no treatmentPose controller of its own. Its existing completion events
         // retire this animation-only rate without changing native treatment/progress-bar duration.
     private _nativeRateRecord = [];
-    if (_mode == "" && {!_headOwned} && {!_aajtOwned} && {local _medic} && {isNull objectParent _medic}) then {
+    if (_animationsEnabled && {_mode == ""} && {!_headOwned} && {!_aajtOwned} && {local _medic} && {isNull objectParent _medic}) then {
             [_medic, "", -1, true] call ACME_fnc_treatmentPoseStop;
             [_medic, true] call ACME_fnc_menuPoseStop;
             private _serial = (_medic getVariable ["ACME_nativeTreatmentRateSerial", 0]) + 1;
@@ -676,7 +677,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
         ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
     };
 
-    if (_started && {!_torsoDressing} && {local _medic} && {!isNull _medic} && {isNull objectParent _medic}) then {
+    if (_animationsEnabled && {_started} && {!_torsoDressing} && {local _medic} && {!isNull _medic} && {isNull objectParent _medic}) then {
         if (_mode != "") then {
             [{
                 params ["_m", "_mode", "_window", "_patient"];

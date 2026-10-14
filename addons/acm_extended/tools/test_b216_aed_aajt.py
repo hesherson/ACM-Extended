@@ -269,6 +269,22 @@ def test_aajt_bridge_bypasses_bounded_torso_gesture_and_native_rate_lease():
         execute(f'private _classname="{classname}"; private _category="bandage"; private _bodyPart="{part}"; private _part=toLower _bodyPart;'+adapt(block)+'''
             [_aajtOwned && {_mode==""} && {_exactAnim==""},"AAJT got a second bounded gesture owner"] call _check;
         ''')
-    assert 'if (_mode == "" && {!_headOwned} && {!_aajtOwned}' in source
+    assert_native_rate_lease_guards(source)
     loop=cfg_class((ROOT/'addons/acm_extended/config.cpp').read_text(),'ACME_JunctionalWork')
     assert ': AinvPknlMstpSnonWnonDnon_medic4' in loop and 'looped = 1;' in loop
+
+
+def assert_native_rate_lease_guards(source):
+    from test_b241_current_ui_expectations import has
+    assert has(source, 'if (_animationsEnabled && {_mode == ""} && {!_headOwned} && {!_aajtOwned} && {local _medic} && {isNull objectParent _medic}) then {')
+
+
+@pytest.mark.parametrize('old,new', [
+    ('_animationsEnabled && {_mode == ""} && {!_headOwned} && {!_aajtOwned}', 'true && {_mode == ""} && {!_headOwned} && {!_aajtOwned}'),
+    ('_animationsEnabled && {_mode == ""} && {!_headOwned} && {!_aajtOwned}', '_animationsEnabled && {_mode == ""} && {!_headOwned} && {true}'),
+])
+def test_native_rate_contract_rejects_ignored_animation_setting_or_aajt_owner(old, new):
+    source = (ROOT/'addons/core/overrides/fnc_treatment.sqf').read_text()
+    assert old in source
+    with pytest.raises(AssertionError):
+        assert_native_rate_lease_guards(source.replace(old, new))

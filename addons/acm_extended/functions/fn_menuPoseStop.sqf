@@ -22,7 +22,9 @@ if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]} || {[_med
 // First-contact menus never acquired empty hands or an animation-speed override.
 // Releasing that menu must leave its current weapon stance alone.
 if ((_medic getVariable ["ACME_menuPoseGenericEpoch", -1]) != _currentEpoch) exitWith {};
-private _rate = [] call ACME_fnc_choreographyRate;
+private _rate = if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+    [] call ACME_fnc_choreographyRate
+} else {1};
 _medic setAnimSpeedCoef _rate;
 ["ace_common_setAnimSpeedCoef", [_medic, _rate]] call CBA_fnc_globalEvent;
 [_medic, [_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation, 1] call ACME_fnc_doAnim;

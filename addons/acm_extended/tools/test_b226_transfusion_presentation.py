@@ -238,9 +238,10 @@ def test_empty_inventory_is_cleared_before_no_bags_return_and_extras_follow_sele
 
 def switch_ui_setup():
     s=(ROOT/'addons/circulation/functions/fnc_TransfusionMenu_SwitchTargetInventory.sqf').read_text()
-    s=s.replace('objectParent ACE_player','_vehicleNow').replace('getItemCargo _vehicle','_vehicleCargo')
+    s=s.replace('objectParent ACE_player','_vehicleNow').replace('objectParent _medic','_vehicleNow').replace('getItemCargo _vehicle','_vehicleCargo')
     # Engine object equality, represented by namespace identities in this fixture.
     s=s.replace('ACE_player == GVAR(TransfusionMenu_Target)','ACE_player isEqualTo GVAR(TransfusionMenu_Target)')
+    s=s.replace('_medic == GVAR(TransfusionMenu_Target)','_medic isEqualTo GVAR(TransfusionMenu_Target)')
     s=s.replace('C_LLSTRING(FreshBloodBag_Short)','"fresh %1"')
     s=s.replace('lbClear _ctrlInventoryPanel;','_rows=[];')
     s=s.replace('_ctrlInventoryPanel lbSetCurSel -1;','_sel=-1;')
@@ -250,6 +251,10 @@ def switch_ui_setup():
     s=re.sub(r'_ctrlInventoryPanel lbSetPicture \[[^;]+;', '', s)
     s=s.replace('getNumber (_config >> "uniqueBag")','0').replace('getNumber (_cfg >> "uniqueBag")','0')
     s=re.sub(r'getText \(_config >> "(?:shortName|displayName)"\)','_entry',s)
+    # These fixtures contain ordinary bags only; their config metadata is
+    # supplied above rather than read from the VM's empty native config tree.
+    s=s.replace('(configFile >> "CfgWeapons" >> _entry)','configNull')
+    s=s.replace('configFile >> "CfgWeapons" >> _x','configNull')
     return '''
       private _display=missionNamespace;private _vehicleNow=objNull;
       private _rows=["old bag"];private _rowData=[];private _rowTips=[];private _sel=0;

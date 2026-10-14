@@ -9,6 +9,9 @@
 params [["_patient", objNull, [objNull]], ["_enabled", true, [true]]];
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {[_patient, "headElevCollision", [_patient, _enabled]] call ACME_fnc_ownerDispatch;};
+// Restore is always allowed to release collision custody acquired before a setting change. A disabled
+// presentation request must not invalidate an already queued restore by advancing its collision epoch.
+if (!_enabled && {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}) exitWith {};
 
 private _epoch = 1 + (_patient getVariable ["ACME_headElev_collisionEpoch", 0]);
 _patient setVariable ["ACME_headElev_collisionEpoch", _epoch, false];

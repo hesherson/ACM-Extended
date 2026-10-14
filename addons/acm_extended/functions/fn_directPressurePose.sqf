@@ -5,6 +5,9 @@
 // animation reapplies only after two quiet seconds facing the patient; the pressure session remains active.
 params ["_medic", "_patient"];
 if (isNull _medic || {!local _medic}) exitWith {};
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    [_medic] call ACME_fnc_directPressurePoseRetire;
+};
 private _exit = _medic getVariable ["ACME_DP_Exit", []];
 if (_exit isNotEqualTo [] && {(_exit param [2, -1]) != (_medic getVariable ["ACME_providerLocalityEpoch", 0])
     || {(CBA_missionTime - (_exit param [4, -99])) > ((_exit param [6, 0]) + 2)}}) then {

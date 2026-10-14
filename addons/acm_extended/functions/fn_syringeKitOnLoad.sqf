@@ -8,6 +8,9 @@ if (isNull _display) exitWith {};
 if ((uiNamespace getVariable ["ACME_SK_InitDisplay", displayNull]) isEqualTo _display) exitWith {};
 uiNamespace setVariable ["ACME_SK_InitDisplay", _display];
 uiNamespace setVariable ["ACME_SK_DLG", _display];
+private _medic = uiNamespace getVariable ["ACME_SK_BenchMedic", objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+_display setVariable ["ACME_SK_Provider", _medic];
 
 // the shared ambient-light and flashlight system, the same one every other procedure screen uses. the syringe
 // kit is a hands-on procedure and it was the only one of them left lit in the dark.
@@ -142,7 +145,7 @@ _sizes lbSetCurSel 3;  // "10 mL".
 private _autoLoaded = false;
 if (uiNamespace getVariable ["ACME_SK_AutoSaline", false]) then {
     uiNamespace setVariable ["ACME_SK_AutoSaline", false];
-    if (([ACE_player, "ACM_SalineFlush_10"] call ACME_fnc_itemCount) >= 1) then {
+    if (([_medic, "ACM_SalineFlush_10"] call ACME_fnc_itemCount) >= 1) then {
         // the full saline-flush state, set explicitly. it mirrors the saline case of fn_syringekitsource.
         uiNamespace setVariable ["ACME_SK_Size", 10];
         uiNamespace setVariable ["ACME_SK_Source", "Saline"];

@@ -8,7 +8,7 @@ private _recorded = _controller isEqualType [] && {count _controller == 6}
     && {(_controller select 3) isEqualType {}}
     && {(_controller select 4) isEqualType []};
 private _provider = if (_recorded) then {_controller select 0} else {
-    if (hasInterface && {!isNil "ACE_player"}) then {ACE_player} else {objNull}
+    call ACME_fnc_controlledProvider
 };
 // B253: B252 continuous workers carry their provider-locality generation as the
 // final worker argument. A callback may stop ticking during an away/back transfer;
@@ -105,9 +105,9 @@ if (_active) then {
 };
 
 // Input preflight and Direct Pressure pending requests below belong to the controlled interface actor only.
-if (!hasInterface || {isNil "ACE_player"} || {isNull ACE_player}) exitWith {_repairs};
-private _medic = ACE_player;
-if (!local _medic) exitWith {_repairs};
+if (!hasInterface) exitWith {_repairs};
+private _medic = call ACME_fnc_controlledProvider;
+if (isNull _medic || {!local _medic}) exitWith {_repairs};
 
 if (_medic getVariable ["ACME_treatmentPreflightActive", false]) then {
     private _token = _medic getVariable ["ACME_treatmentPreflightToken", ""];

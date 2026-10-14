@@ -7,14 +7,18 @@ params ["_display"];
 // Retained on the owning display so an obsolete unload cannot close a newer session.
 _display setVariable ["ACME_IV_Session", +(uiNamespace getVariable ["ACME_IV_Session", []])];
 _display setVariable ["ACME_IV_ReturnMenu", +(uiNamespace getVariable ["ACME_IV_ReturnMenu", []])];
+_display setVariable ["ACME_IV_Medic", uiNamespace getVariable ["ACME_IV_Medic", objNull]];
+_display setVariable ["ACME_IV_ECGKey", uiNamespace getVariable ["ACME_IV_ECGKey", "ui:iv:" + str clientOwner]];
+_display setVariable ["ACME_IV_Closed", false];
 uiNamespace setVariable ["ACME_IV_DLG", _display];
+uiNamespace setVariable ["ACME_IV_PendingLaunch", []];
 uiNamespace setVariable ["ACME_minigame_open", true];
 
 private _bodyPart = uiNamespace getVariable ["ACME_IV_BodyPart", "leftarm"];
 private _site     = uiNamespace getVariable ["ACME_IV_Site", "lower"];
 private _patient  = uiNamespace getVariable ["ACME_IV_Patient", objNull];
 if (!isNull _patient) then {[_patient,"ivMarks",["finishmigrate",[],[_patient] call ACME_fnc_clinicalEpoch]] call ACME_fnc_ownerDispatch;};
-if (!isNull _patient) then {[_patient, "ui:iv:" + str clientOwner, true] call ACME_fnc_ecgJostleRequest;};
+if (!isNull _patient) then {[_patient, _display getVariable ["ACME_IV_ECGKey", "ui:iv:" + str clientOwner], true] call ACME_fnc_ecgJostleRequest;};
 
 // load all three sites for this limb, so the band can snap between upper, middle and lower. each site can use a
 // different view, because the basilic and popliteal are rear, and we render one view at a time. we pick the

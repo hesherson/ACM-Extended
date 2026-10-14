@@ -21,7 +21,7 @@ def reviewed(name):
 
 
 MUTATIONS = [
-    ("phase8_getup", "addons/core/functions/fnc_getUp.sqf", "[_patient, _roll, 2] call ACME_fnc_doAnim;", "[_patient, _roll, 1] call ACME_fnc_doAnim;"),
+    ("phase8_getup", "addons/core/functions/fnc_getUp.sqf", "[_patient, _roll, 2] call ace_common_fnc_doAnimation;", "[_patient, _roll, 1] call ace_common_fnc_doAnimation;"),
     ("phase8_getup", "addons/core/functions/fnc_getUp.sqf", "if (_carryOwned) exitWith", "if (false) exitWith"),
     ("phase125_chest_firstpass_flip", F+"fn_chestSealRoll.sqf", 'if ((_lock param [0, ""]) != _tok) exitWith {};', 'if (false) exitWith {};'),
     ("phase125_chest_firstpass_flip", F+"fn_chestSealRoll.sqf", 'private _stillRollable = [_p] call ACME_fnc_chestSealCanPhysicalRoll;', 'private _stillRollable = true;'),
@@ -35,6 +35,11 @@ MUTATIONS = [
     ("phase142_getup_acre_babel_gate", F+"fn_obtundedVoice.sqf", None, '\ncall acre_api_fnc_babelSetSpokenLanguages;'),
     ("phase112_ace_override_target_contract", "addons/core/overrides/fnc_hasItem.sqf", 'call ACME_fnc_carrierInventoryGet', 'call ACME_fnc_wrongInventory'),
     ("phase112_ace_override_target_contract", "addons/core/overrides/fnc_useItem.sqf", 'call ACME_fnc_carrierSupplyTake', 'call ACME_fnc_wrongConsumption'),
+    # Append controls so all historical mutation case IDs remain stable.
+    ("phase140_hemtt_runtime_warnings_gate", F+"fn_ventPanelTick.sqf", 'private _provider = _dlg getVariable ["ACME_vent_viewer", objNull];', 'private _provider = ACE_player;'),
+    ("phase140_hemtt_runtime_warnings_gate", F+"fn_ventPanelTick.sqf", '_provider isNotEqualTo (call ACME_fnc_controlledProvider)', 'false'),
+    ("phase140_hemtt_runtime_warnings_gate", F+"fn_ventPanelTick.sqf", 'private _tgtM = uiNamespace getVariable ["ACME_vent_target", _provider];', 'private _tgtM = uiNamespace getVariable ["ACME_vent_target", ACE_player];'),
+    ("phase140_hemtt_runtime_warnings_gate", F+"fn_ventPanelTick.sqf", '[_provider, "ventilator", true] call ACME_fnc_procedureAllowed', '[ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed'),
 ]
 
 

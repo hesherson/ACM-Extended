@@ -32,12 +32,13 @@ if (!_auto && {!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}
 // start/stop cycle that returns poseToken to its original empty value. Owner loss is checked before every retry.
 private _startEpoch = (_patient getVariable ["ACME_headElev_startEpoch", 0]) + 1;
 _patient setVariable ["ACME_headElev_startEpoch", _startEpoch, false];
+private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];
 
 // Normalize front/supine before ANY Semi-Fowler animation. The retry flag prevents a second roll request after
 // the authored patient roll finishes. Already-supine casualties take no detour.
 private _actualBeforeElevate = [_patient, _patient getVariable ["ACME_CS_facing","front"]]
     call ACME_fnc_chestSealActualSide;
-private _needFrontFirst = !_afterProneRoll && {_actualBeforeElevate != "front"};
+private _needFrontFirst = _animationsEnabled && {!_afterProneRoll} && {_actualBeforeElevate != "front"};
 
 if (_needFrontFirst) exitWith {
     // This pre-roll belongs to the still-unstarted placement generation. Use the roll's real ownership token rather
@@ -158,6 +159,9 @@ _patient setVariable ["ACME_headElev_poseToken", _poseToken, true];
 _patient setVariable ["ACME_headElev_treatments", createHashMap, true];
 _patient setVariable ["ACME_headElevated", true, true];
 _patient setVariable ["ACME_headElev_visualActive", false, true];
+// Clinical support and equipment custody are unchanged when presentation is disabled. The animation guard must
+// not interpret the untouched lying animation as a reason to suspend this accepted logical placement.
+_patient setVariable ["ACME_headElev_noAnimation", !_animationsEnabled, true];
 // Unsupported/manual Semi-Fowler is an active maneuver, not a passive posture. Keep this origin flag even if a
 // competing intervention clears the provider hold first; that episode may never auto-resume without a new action.
 _patient setVariable ["ACME_headElev_manualUnsupported", _manual, true];
@@ -173,6 +177,13 @@ if (!_manual && {!_hasBag} && {!_manualCarrierSupport} && {!([_patient] call ACM
         _patient setVariable ["ACME_headElev_vestRemoved", true, true];
         _patient setVariable ["ACME_headElev_propVest", _vestClass, true];
         _patient setVariable ["ACME_headElev_propVestItems", vestItems _patient, true];
+        // ACRE owns the PTT transition. Release an active local transmission
+        // before its radio's worn container is removed; ACRE remains optional.
+        if (hasInterface && {_patient isEqualTo (call ACME_fnc_controlledProvider)}
+            && {!isNil "acre_sys_core_fnc_handleMultiPttKeyPressUp"}
+            && {missionNamespace getVariable ["acre_sys_core_pttKeyDown", false]}) then {
+            [] call acre_sys_core_fnc_handleMultiPttKeyPressUp;
+        };
         removeVest _patient;
         if (vest _patient != "") then {
             // Removal failed: the original worn inventory remains authoritative.

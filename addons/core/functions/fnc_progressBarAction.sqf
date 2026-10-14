@@ -25,7 +25,7 @@ _args params ["_medic", "_patient"];
 
 private _inVehicle = !(isNull objectParent _medic);
 
-if (!_inVehicle && stance _medic in ["STAND","CROUCH"]) then {
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {!_inVehicle} && {stance _medic in ["STAND","CROUCH"]}) then {
     _medic call ACEFUNC(common,goKneeling);
 };
 

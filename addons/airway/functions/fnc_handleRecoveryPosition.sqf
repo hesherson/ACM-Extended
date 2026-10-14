@@ -45,7 +45,8 @@ if (_token == "") exitWith {};
     if (_isActive) exitWith {
         // Passive fallback for direct pose changes or missed animation events.
         // Never force recovery back onto a patient another action has repositioned.
-        if ((toLowerANSI animationState _patient) != "acm_recoveryposition") then {
+        if ((_patient getVariable ["ACME_recoveryPresentation", true])
+            && {(toLowerANSI animationState _patient) != "acm_recoveryposition"}) then {
             [_medic, _patient, false, true, "interrupt"] call FUNC(setRecoveryPosition);
             [_handle] call CBA_fnc_removePerFrameHandler;
         };
@@ -77,12 +78,15 @@ if (_token == "") exitWith {};
         } else {
             // Arma 2.18 array syntax blends from the current pose (factor 0) and queues the move itself.
             // This owner-only one-shot deliberately bypasses ACE's string-only animation wrapper.
-            _patient switchMove ["ACM_RecoveryPosition", 0, 0, false];
+            if (_pending param [9, true]) then {
+                _patient switchMove ["ACM_RecoveryPosition", 0, 0, false];
+            };
             _pending set [5, true];
             _patient setVariable [QGVAR(RecoveryPosition_Pending), _pending, true];
         };
     };
-    if ((toLowerANSI animationState _patient) != "acm_recoveryposition") exitWith {
+    private _presentation = _pending param [9, true];
+    if (_presentation && {(toLowerANSI animationState _patient) != "acm_recoveryposition"}) exitWith {
         // After entering the requested pose, any unrelated move is a successor, never a reason to force it back.
         if ((_pending param [4, -1]) >= 0) then {
             [_medic, _patient, false, true, "cancel", _token] call FUNC(setRecoveryPosition);
@@ -93,7 +97,7 @@ if (_token == "") exitWith {};
         _pending set [4, serverTime];
         _patient setVariable [QGVAR(RecoveryPosition_Pending), _pending, true];
     };
-    private _moveBlend = _patient getUnitMovesInfo 3;
+    private _moveBlend = if (_presentation) then {_patient getUnitMovesInfo 3} else {1};
     private _settled = _moveBlend isEqualType 0 && {finite _moveBlend} && {_moveBlend >= 0.99};
     if ((_pending param [3, false]) && {_settled} && {serverTime >= ((_pending select 4) + 2)}) then {
         [_medic, _patient, true, _pending param [6, false], "apply", _token] call FUNC(setRecoveryPosition);

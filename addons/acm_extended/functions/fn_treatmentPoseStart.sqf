@@ -97,6 +97,32 @@ if (_ambulatoryContact) then {
 private _epoch = (_medic getVariable ["ACME_treatmentPoseEpoch", 0]) + 1;
 _medic setVariable ["ACME_treatmentPoseEpoch", _epoch, true];
 _medic setVariable ["ACME_treatmentPoseEpisode", [_epoch, true], true];
+
+// Keep the same ownership generation and held/readiness stage without requesting an RTM, stowing weapons,
+// changing stance or changing animation speed. The clinical action retains its ordinary progress timer.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    private _now = CBA_missionTime;
+    private _state = [_epoch, _mode, "", 3, _now, -1, clientOwner, "", _now, _window,
+        _now, -1, -1, _now, _now, -1, false, 1, _forceImmediate, false, _enteredProne, true];
+    _medic setVariable ["ACME_treatmentPoseState", _state];
+    // Publish a release for this new generation as well. The atomic episode variable can overtake the old
+    // pose-stop packet; this release then retires a peer's older frozen coefficient without seeking any RTM.
+    private _release = [_medic, _epoch, "release"];
+    _release call ACME_fnc_treatmentPoseSync;
+    ["ACME_treatmentPoseSync", _release] call CBA_fnc_globalEvent;
+    if (_window > 0) then {
+        [{
+            params ["_unit", "_mode", "_epoch", "_localityEpoch"];
+            if (isNull _unit || {!local _unit}
+                || {(_unit getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}) exitWith {};
+            private _state = _unit getVariable ["ACME_treatmentPoseState", []];
+            if ((_state param [0, -1]) != _epoch || {(_state param [1, ""]) != _mode}) exitWith {};
+            if (_mode == "roll") then {_unit setVariable ["ACME_rollProviderCompletedEpoch", _epoch, false];};
+            [_unit, _mode, _epoch, true] call ACME_fnc_treatmentPoseStop;
+        }, [_medic, _mode, _epoch, _medic getVariable ["ACME_providerLocalityEpoch", 0]], _window] call CBA_fnc_waitAndExecute;
+    };
+    _epoch
+};
 private _exclusion = format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch];
 private _actionStarted = CBA_missionTime;
 private _rate = call ACME_fnc_choreographyRate;
@@ -138,7 +164,8 @@ private _prepUntil = _actionStarted + (_prepDelay max 0);
 //  8 waitUntil, 9 finiteWindow (informational), 10 actionStarted, 11 holdAt, 12 holdPhase,
 //  13 lastHoldAssert, 14 holdStarted, 15 stopAfterHold, 16 upright-target medicUp state in use, 17 moving animation rate,
 //  18 forceImmediate (skip redundant weapon/crouch prep; hard priority-2 overwrite is roll/Flip only),
-//  19 ambulatoryContact, 20 provider entered prone (preserved throughout entry, hold and cleanup)
+//  19 ambulatoryContact, 20 provider entered prone (preserved throughout entry, hold and cleanup),
+//  21 presentation disabled (optional; ownership/readiness only, with no speed or stance owner)
 // Stages: -1 waiting for the one weapon stow, -2 playing the BI stance transition into the crouch,
 //          0 legacy immediate start, 1 requested state entering, 2 running, 3 frozen hold.
 private _state = [_epoch, _mode, _main, -1, _actionStarted, -1, clientOwner, _exclusion,
@@ -239,13 +266,56 @@ private _pfh = [{
     };
 
     private _state = _medic getVariable ["ACME_treatmentPoseState", []];
-    if (_state isEqualTo [] || {(_state select 0) != _epoch}) exitWith {
+    if (_state isEqualTo [] || {(_state select 0) != _epoch} || {_state param [21, false]}) exitWith {
         [_pfh] call CBA_fnc_removePerFrameHandler;
     };
 
     if (!local _medic || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
         || {[_medic] call ACME_fnc_animBlocked}) exitWith {
         [_medic, "", _epoch] call ACME_fnc_treatmentPoseStop;
+    };
+
+    // A live setting change retires presentation, not the clinical episode. Keep its exact epoch/mode so
+    // assessment, recovery and modal callbacks remain valid, but remove every owned animation writer.
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+        [_pfh] call CBA_fnc_removePerFrameHandler;
+        [_exclusion] call CBA_fnc_removeGlobalEventJIP;
+        if (!isNil "ace_advanced_fatigue_setAnimExclusions") then {
+            private _index = ace_advanced_fatigue_setAnimExclusions find _exclusion;
+            if (_index >= 0) then {ace_advanced_fatigue_setAnimExclusions deleteAt _index;};
+        };
+        // The still-current pose is the controller which acquired this stance. Clinical successors retire the
+        // pose before acquiring their own presentation, and therefore fail the epoch/state checks above.
+        if ((_state param [3, -1]) != -1) then {_medic setUnitPos "AUTO";};
+        _medic setAnimSpeedCoef 1;
+        private _release = [_medic, _epoch, "release"];
+        _release call ACME_fnc_treatmentPoseSync;
+        ["ACME_treatmentPoseSync", _release] call CBA_fnc_globalEvent;
+        _state set [2, ""];
+        _state set [3, 3];
+        _state set [5, -1];
+        _state set [7, ""];
+        _state set [11, -1];
+        _state set [12, -1];
+        if ((_state param [14, -1]) < 0) then {_state set [14, CBA_missionTime];};
+        _state set [15, -1];
+        _state set [17, 1];
+        _state set [21, true];
+        _medic setVariable ["ACME_treatmentPoseState", _state];
+        private _window = _state param [9, -1];
+        if (_window > 0) then {
+            private _remaining = (_window - (CBA_missionTime - (_state param [10, CBA_missionTime]))) max 0.001;
+            [{
+                params ["_unit", "_epoch", "_mode", "_localityEpoch"];
+                if (isNull _unit || {!local _unit}
+                    || {(_unit getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}) exitWith {};
+                private _state = _unit getVariable ["ACME_treatmentPoseState", []];
+                if ((_state param [0, -1]) != _epoch || {(_state param [1, ""]) != _mode}) exitWith {};
+                if (_mode == "roll") then {_unit setVariable ["ACME_rollProviderCompletedEpoch", _epoch, false];};
+                [_unit, _mode, _epoch, true] call ACME_fnc_treatmentPoseStop;
+            }, [_medic, _epoch, _state param [1, ""], _medic getVariable ["ACME_providerLocalityEpoch", 0]], _remaining]
+                call CBA_fnc_waitAndExecute;
+        };
     };
 
     private _mode = _state param [1, "inspect"];

@@ -45,7 +45,8 @@ if ([_medic] call ACME_fnc_providerStanceOwned) exitWith {};
 ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
 
 // Retire the cancelled controller above, but leave an unconscious provider's pose to ACE.
-if (alive _medic && {isNull objectParent _medic}
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {alive _medic} && {isNull objectParent _medic}
     && {!(_medic getVariable ["ACE_isUnconscious", false])}) then {
     _medic selectWeapon "";
     private _prone = _medic getVariable ["ACME_headElev_providerProne", false];
@@ -55,6 +56,7 @@ if (alive _medic && {isNull objectParent _medic}
     [{
         params ["_m", "_cancelToken"];
         if (isNull _m || {!local _m} || {!alive _m} || {!isNull objectParent _m}
+            || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
             || {_m getVariable ["ACE_isUnconscious", false]}) exitWith {};
         if ((_m getVariable ["ACME_headElev_medicAnimToken", -1]) != _cancelToken) exitWith {};
         if (_m getVariable ["ACME_headElev_seqActive", false]) exitWith {};

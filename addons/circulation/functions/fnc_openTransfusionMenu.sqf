@@ -50,6 +50,7 @@ private _closeID = -1;
 GVAR(TransfusionMenu_CloseID) = _closeID;
 
 GVAR(TransfusionMenu_Target) = _patient;
+GVAR(TransfusionMenu_Medic) = _medic;
 
 GVAR(TransfusionMenu_Selection_IVBags_LastUpdate) = CBA_missionTime;
 GVAR(TransfusionMenu_Selection_IVBags) = [];
@@ -310,7 +311,8 @@ private _pfh = [{
 
     private _dialogCondition = isNull _display;
     private _patientCondition = isNull _patient;
-    private _medicCondition = isNull _medic || {!alive _medic} || {IS_UNCONSCIOUS(_medic)};
+    private _medicCondition = isNull _medic || {!alive _medic} || {IS_UNCONSCIOUS(_medic)}
+        || {hasInterface && {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}};
     private _vehicleCondition = false;
     private _distanceCondition = false;
     if (!_patientCondition && {!_medicCondition}) then {

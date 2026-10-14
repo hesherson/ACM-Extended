@@ -7,6 +7,8 @@ settings after the server switches Simple mode on.
 from pathlib import Path
 import re
 import unittest
+import pytest
+from test_b241_current_ui_expectations import has
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -22,7 +24,11 @@ class SimpleVentUIContracts(unittest.TestCase):
                      "ventPanelNavClick", "ventPanelListClick"):
             with self.subTest(entry=name):
                 text = source(name)
-                gate = text.index('[ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed')
+                self.assertTrue(has(text, 'private _viewer = call ACME_fnc_controlledProvider;'))
+                self.assertTrue(has(text, 'if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};'))
+                if name != 'ventPanelOpen':
+                    self.assertTrue(has(text, 'if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};'))
+                gate = text.index('[_viewer, "ventilator", true] call ACME_fnc_procedureAllowed')
                 writes = list(re.finditer(r'_[A-Za-z0-9]+ setVariable \[', text))
                 self.assertTrue(writes)
                 self.assertLess(gate, writes[0].start())
@@ -76,10 +82,12 @@ class SimpleVentUIContracts(unittest.TestCase):
         connect = nav[nav.index('case "connect":'):nav.index('case "menu":')]
         restart = nav[nav.index('// START VENT.'):nav.index('case 1: {  // NEW PATIENT.')]
         for text in (connect, restart):
-            self.assertIn('[ACE_player, "ventilator"] call ACME_fnc_procedureAllowed', text)
-            self.assertIn('(objectParent ACE_player) isNotEqualTo (objectParent _vTgt)', text)
-            self.assertIn('(ACE_player distance _vTgt) > _leash', text)
+            self.assertTrue(has(text, 'if !([_viewer, "ventilator"] call ACME_fnc_procedureAllowed) exitWith {};'))
+            self.assertTrue(has(text, '(objectParent _viewer) isNotEqualTo (objectParent _vTgt)'))
+            self.assertTrue(has(text, '(_viewer distance _vTgt) > _leash'))
             self.assertLess(text.index('ACME_fnc_procedureAllowed'),
+                            text.index('setVariable ["ACME_vent_connected", true'))
+            self.assertLess(text.index('(_viewer distance _vTgt)'),
                             text.index('setVariable ["ACME_vent_connected", true'))
         self.assertIn('setVariable ["ACME_vent_connected", false', nav)
 
@@ -108,6 +116,33 @@ class SimpleVentUIContracts(unittest.TestCase):
         self.assertIn('_peepC = _effectiveFrame select 5', tick)
         self.assertIn('_ieR = _effectiveFrame select 9', tick)
         self.assertIn('[] call ACME_fnc_ventManualBreath', source("ventPanelStripClick"))
+
+
+@pytest.mark.parametrize('name', ['ventPanelOpen', 'ventPanelKnob', 'ventPanelLiveEdit', 'ventPanelNavClick', 'ventPanelListClick'])
+def test_writer_contract_rejects_retired_global_provider_permission(monkeypatch, name):
+    real = source
+    current = real(name)
+    old = '[_viewer, "ventilator", true] call ACME_fnc_procedureAllowed'
+    assert old in current
+    broken = current.replace(old, '[ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed')
+    monkeypatch.setitem(globals(), 'source', lambda entry: broken if entry == name else real(entry))
+    with pytest.raises(AssertionError):
+        SimpleVentUIContracts().test_all_patient_setting_writers_recheck_procedure_tier()
+
+
+@pytest.mark.parametrize('old,new', [
+    ('[_viewer, "ventilator"] call ACME_fnc_procedureAllowed', '[ACE_player, "ventilator"] call ACME_fnc_procedureAllowed'),
+    ('(objectParent _viewer) isNotEqualTo (objectParent _vTgt)', 'false'),
+    ('(_viewer distance _vTgt) > _leash', 'false'),
+])
+def test_connect_contract_rejects_wrong_provider_or_missing_reach(monkeypatch, old, new):
+    real = source
+    current = real('ventPanelNavClick')
+    assert old in current
+    broken = current.replace(old, new)
+    monkeypatch.setitem(globals(), 'source', lambda entry: broken if entry == 'ventPanelNavClick' else real(entry))
+    with pytest.raises(AssertionError):
+        SimpleVentUIContracts().test_connect_and_restart_honor_enable_gate_and_physical_reach()
 
 
 if __name__ == "__main__":

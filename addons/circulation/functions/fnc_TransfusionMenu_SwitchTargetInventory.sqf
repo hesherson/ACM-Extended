@@ -18,17 +18,20 @@
 
 // Native button callbacks and a bare call inherit their caller's _this. Only an
 // explicit Boolean changes this policy; provider/control payloads mean advance.
+private _medic = missionNamespace getVariable [QGVAR(TransfusionMenu_Medic), objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic || {!local _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
 private _advance = if (!isNil "_this" && {_this isEqualType []}) then {_this param [0,true]} else {true};
 if !(_advance isEqualType true) then {_advance = true;};
 private _targetInventory = GVAR(TransfusionMenu_Selected_Inventory);
 
 if (_advance) then {_targetInventory = _targetInventory + 1;};
 
-private _vehicle = objectParent ACE_player;
+private _vehicle = objectParent _medic;
 
 switch (_targetInventory) do {
     case 1: {
-        if (ACE_player == GVAR(TransfusionMenu_Target)) then {
+        if (_medic == GVAR(TransfusionMenu_Target)) then {
             if !(isNull _vehicle) then {
                 _targetInventory = 2;
             } else {
@@ -56,7 +59,7 @@ private _ctrlInventorySelectText = _display displayCtrl IDC_TRANSFUSIONMENU_SELE
 
 private _text = [LLSTRING(Common_Self), LLSTRING(Common_Patient), LLSTRING(Common_Vehicle)] select GVAR(TransfusionMenu_Selected_Inventory);
 
-private _target = [ACE_player, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
+private _target = [_medic, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
 
 _ctrlInventorySelectText ctrlSetText (format [LLSTRING(Common_InventoryTarget), _text]);
 

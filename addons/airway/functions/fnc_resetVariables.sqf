@@ -34,6 +34,7 @@ if (_recoveryToken != "") then {[objNull, _patient, false, true, "cancel", _reco
 _patient setVariable [QGVAR(RecoveryPosition_Pending), [], true];
 _patient setVariable [QGVAR(RecoveryPosition_Episode), "", true];
 _patient setVariable [QGVAR(RecoveryPosition_State), false, true];
+_patient setVariable ["ACME_recoveryPresentation", nil, true];
 _patient setVariable [QGVAR(HeadTilt_State), false, true];
 
 _patient setVariable [QGVAR(AirwayItem_Oral), "", true];

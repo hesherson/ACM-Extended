@@ -83,7 +83,7 @@ private _PFH = [{
         _patient setVariable ["ACM_airway_AirwayObstructionVomit_Count", ((_vomitCount - 1) max 0), true];
 
         if !(_inRecovery) then { // TODO check for pose
-            _patient setVariable ["ACM_airway_AirwayObstructionVomit_State", (_obstructionState + 1), true];
+            [_patient, [["vomit", _obstructionState + 1]], true] call ACM_airway_fnc_setAirwayState;
         };
 
         // Every real emesis receives an episode receipt, including protected recovery-position emesis.

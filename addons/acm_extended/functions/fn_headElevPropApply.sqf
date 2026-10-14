@@ -8,6 +8,7 @@
 // simulated, so it never falls or drifts.
 // _this is [_patient].
 params [["_patient", objNull]];
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
 if (isNull _patient) then { _patient = missionNamespace getVariable ["ACME_headElev_TunePatient", objNull]; };
 if (isNull _patient) exitWith {};
 private _prop = _patient getVariable ["ACME_headElev_propObj", objNull];
