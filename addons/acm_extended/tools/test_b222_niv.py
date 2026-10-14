@@ -267,11 +267,18 @@ def test_physical_mask_is_registered_patient_state_not_carried_device_settings()
 
 
 def nav_setup():
-    """Real navigation logic, mocked sound/UI route and engine distance only."""
+    """Real navigation; native sound, display, distance and vehicle reads are fixtures."""
     nav=production('ventPanelNavClick').replace('playSound "ACME_VentClick";', '')
-    nav=nav.replace('(ACE_player distance _vTgt)','0').replace('objectParent ACE_player','objNull').replace('objectParent _vTgt','objNull')
+    # Native engine reads follow the captured panel clinician. Keep reach and
+    # vehicle state independent so both setup and START enforce the real guard.
+    nav=nav.replace('(_viewer distance _vTgt)','_navDistance')
+    nav=nav.replace('objectParent _viewer','_navViewerVehicle').replace('objectParent _vTgt','_navPatientVehicle')
     return drive_setup()+'''
         private _screens=[]; private _hints=[]; private _allowed=true;
+        private _navDistance=0;private _navViewerVehicle=objNull;private _navPatientVehicle=objNull;
+        private _navPanel=parsingNamespace;
+        _navPanel setVariable ["ACME_vent_viewer",_medic];
+        uiNamespace setVariable ["ACME_vent_dlg",_navPanel];
         ACME_fnc_procedureAllowed={_allowed};
         ACME_fnc_ventPanelShowScreen={_screens pushBack (_this select 0);};
         ace_common_fnc_displayTextStructured={_hints pushBack _this;};
@@ -316,6 +323,29 @@ def test_real_mask_start_rechecks_patient_after_setup(blocker):
         ["confirm"] call ACME_fnc_ventPanelNavClick;
         [!(_patient getVariable ["ACME_vent_connected",true]),"ineligible patient blocked STOP"] call _check;
     ''')
+
+
+@pytest.mark.parametrize('simple',[False,True])
+@pytest.mark.parametrize('screen',['connect','menu'])
+@pytest.mark.parametrize('boundary',['provider','range','vehicle'])
+def test_real_mask_navigation_rejects_lost_clinician_or_circuit_reach(simple,screen,boundary):
+    changed={
+        'provider':'ACE_player=_patient;',
+        'range':'_navDistance=10;',
+        'vehicle':'_navViewerVehicle=missionNamespace;',
+    }[boundary]
+    execute(nav_setup()+f'''
+        missionNamespace setVariable ["ACME_vent_simpleMode",{str(simple).lower()}];
+        uiNamespace setVariable ["ACME_vent_screen","{screen}"];
+    '''+changed+'''
+        ["confirm"] call ACME_fnc_ventPanelNavClick;
+        [!(_patient getVariable ["ACME_vent_connected",true]),"invalid clinician/circuit started mask ventilation"] call _check;
+        [(_patient getVariable ["ACME_vent_operator",objNull]) isEqualTo objNull,"rejected navigation rebound circuit operator"] call _check;
+    '''+('''
+        [_screens isEqualTo [] && {_hints isEqualTo []},"stale panel interacted after clinician control changed"] call _check;
+    ''' if boundary=='provider' else '''
+        [count _hints==1,"circuit reach rejection gave no feedback"] call _check;
+    '''))
 
 
 def test_deterioration_before_inventory_ack_keeps_device_stopped_and_recoverable():
