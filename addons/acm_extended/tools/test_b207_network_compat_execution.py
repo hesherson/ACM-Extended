@@ -10,7 +10,7 @@ from source_scan import lex, matching
 from test_menu_death_lifecycle import adapt, execute, read
 
 
-def adapted(source):
+def adapted(source, protocol=1):
     source = re.sub(r'\bfinite (_\w+)', r'(\1 isEqualType 0)', source)
     for old, new in (("isServer", "_server"), ("hasInterface", "_interface"),
                      ("clientOwner", "_clientId"), ("diag_tickTime", "_clock"),
@@ -20,7 +20,8 @@ def adapted(source):
     source = source.replace('private _cfg = configFile >> "CfgPatches" >> _x;', 'private _cfg = _x;')
     source = source.replace('isClass _cfg', '!(_cfg in _missingComponents)')
     source = source.replace('getText (_cfg >> "acmeBuildBatch")', '["build", _cfg] call _configRead')
-    source = source.replace('getNumber (_cfg >> "acmeNetworkProtocol")', '1')
+    source = source.replace('getNumber (_cfg >> "acmeNetworkProtocol")', '["protocol", _cfg] call _configRead')
+    source = source.replace('getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acmeNetworkProtocol")', str(protocol))
     source = source.replace('getText (_cfg >> "acmeComponent")', '["identity", _cfg] call _configRead')
     source = re.sub(r'(_\w+) getOrDefault \[(_\w+), (\[\]|"")\]', r'[\1, \2, \3] call _getDefault', source)
     # Mission EH registration is an engine boundary; callbacks themselves remain real code.
@@ -34,19 +35,20 @@ def adapted(source):
     return adapt(source)
 
 
-def setup(server=False, interface=True, client=11, initialize=True):
-    code = f'private _server={str(server).lower()}; private _interface={str(interface).lower()}; private _clientId={client};\n'
+def setup(server=False, interface=True, client=11, initialize=True, protocol=1, batch="B207", publish_protocol=True):
+    code = f'private _server={str(server).lower()}; private _interface={str(interface).lower()}; private _clientId={client}; private _compiledProtocol={protocol}; private _buildStamp="{batch}";\n'
     code += r'''
         private _clock = 10; private _jobs = []; private _messages = [];
         private _visibleNotices = []; private _registered = []; private _missionHandlers = [];
-        private _playerObjects = []; private _missingComponents = []; private _staleComponents = [];
+        private _playerObjects = []; private _missingComponents = []; private _staleComponents = []; private _staleProtocolComponents = [];
         private _getDefault = {params ["_map", "_key", "_default"]; if (_key in _map) then {_map get _key} else {_default}};
         private _configRead = {
             params ["_field", "_component"];
             if (_field == "identity") exitWith {toLower (_component select [4, 100])};
-            if (_component in _staleComponents) then {"B206"} else {"B207"}
+            if (_field == "protocol") exitWith {if (_component in _staleProtocolComponents) then {1} else {_compiledProtocol}};
+            if (_component in _staleComponents) then {"B206"} else {_buildStamp}
         };
-        ACME_infusion_version = "1.2.4.1"; ACME_buildBatch = "B207"; ACME_networkProtocol = 1;
+        ACME_infusion_version = "1.2.4.1"; ACME_buildBatch = _buildStamp; ACME_networkProtocol = _compiledProtocol;
         CBA_fnc_waitAndExecute = {_jobs pushBack _this;};
         CBA_fnc_serverEvent = {_messages pushBack ["server", _this];};
         CBA_fnc_ownerEvent = {_messages pushBack ["owner", _this];};
@@ -64,8 +66,12 @@ def setup(server=False, interface=True, client=11, initialize=True):
             [_steps < 30, "unbounded callback/retry chain"] call _check;
         };
     '''
+    if not publish_protocol:
+        # Absence is modeled before any assignment. SQF-VM retains an explicit
+        # nil namespace entry where Arma removes it through setVariable nil.
+        code = code.replace(' ACME_networkProtocol = _compiledProtocol;', '')
     for name in ("networkCompatManifest", "networkCompatCompare", "networkCompatNotice", "networkCompatRetry", "networkCompatPeer", "networkCompatReceive", "networkCompatInit"):
-        code += 'ACME_fnc_' + name + '={' + adapted(read(name)) + '};\n'
+        code += 'ACME_fnc_' + name + '={' + adapted(read(name), protocol=protocol) + '};\n'
     code += r'''
         private _savedServer = _server; private _savedInterface = _interface;
         _server = true;

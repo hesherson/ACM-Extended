@@ -4,7 +4,7 @@ disableSerialization;
 // B259: normal-mode timed vascular pushes (>3 seconds) reuse the exact same
 // incremental escrow/controller as Hardcore. The legacy short push and IM
 // injection retain their existing immediate-completion choreography.
-params [["_standardTimed",false,[false]],["_inventoryRequest","",[""]]];
+params [["_standardTimed",false,[false]],["_inventoryRequest","",[""]],["_journalReady",false,[false]],["_journalBinding",[]]];
 if (isNull ACE_player || {!local ACE_player}) exitWith {false};
 private _d = findDisplay 84000;
 if (isNull _d || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) exitWith {false};
@@ -31,6 +31,7 @@ if (isNull _patient) then {_patient = _d getVariable ["ACME_SK_ReturnPatient",ob
 if (isNull _patient) exitWith {false};
 private _identity = [_patient,_body,_site] call ACME_fnc_medicationLineIdentity;
 if (_identity isEqualTo []) exitWith {false};
+if (_journalReady && {_journalBinding isNotEqualTo [_identity,[_patient] call ACME_fnc_clinicalEpoch]}) exitWith {false};
 if ([_patient,_body,_site] call ACME_fnc_medicationLineBloodBusy) exitWith {
     ["Blood is present in that line. Finish or remove the blood bag before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
     false
@@ -156,9 +157,10 @@ if (_inventoryBacked && {_inventoryRequest == ""}) exitWith {
         if (_valid) then {_valid = [_standardTimed,_request] call ACME_fnc_hardcorePushStart;};
         if (!_valid) then {
             private _payload = if (_at >= 0) then {[_stable,+(_rows select _at)]} else {[]};
-            [_medic,_request,false,_payload] call ACME_fnc_inventoryLedgerSettle;
+            if (_accepted) then {["recover",_medic,_request,[]] call ACME_fnc_syringeDeliveryRequest;}
+            else {[_medic,_request,false,_payload] call ACME_fnc_inventoryLedgerSettle;};
         };
-    },[ACE_player,_standardTimed,_request,_stable,_d,_patient,+_pending]] call ACME_fnc_inventoryLedgerClaim;
+    },[ACE_player,_standardTimed,_request,_stable,_d,_patient,+_pending],true] call ACME_fnc_inventoryLedgerClaim;
     true
 };
 if (_inventoryBacked) then {
@@ -166,6 +168,25 @@ if (_inventoryBacked) then {
     if (count _escrow < 6 || {!(_escrow select 5)} || {((_escrow select 1) param [0,""]) != _stable}) then {_inventoryRequest = "";};
 };
 if (_inventoryBacked && {_inventoryRequest == ""}) exitWith {false};
+// BEGIN is acknowledged by the server before the first private plunger debit.
+// A lost UI continuation leaves the server's funded initial row recoverable.
+if (_inventoryBacked && {!_journalReady}) exitWith {
+    private _epoch = ACE_player getVariable ["ACME_providerLocalityEpoch",0];
+    private _binding = [+_identity,[_patient] call ACME_fnc_clinicalEpoch];
+    ["begin",ACE_player,_inventoryRequest,[_inventoryRequest,"push",_patient,toLowerANSI _body,_site,_identity,_binding select 1],{
+        params ["_accepted","_args"];
+        _args params ["_medic","_standardTimed","_request","_display","_patient","_pending","_epoch","_binding"];
+        private _valid = _accepted && {local _medic} && {ACE_player isEqualTo _medic}
+            && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) == _epoch}
+            && {!isNull _display} && {_display isEqualTo findDisplay 84000}
+            && {(uiNamespace getVariable ["ACME_SK_Patient",objNull]) isEqualTo _patient}
+            && {(uiNamespace getVariable ["ACME_SK_PendingInjection",[]]) isEqualTo _pending};
+        if (_valid) then {_valid = [_standardTimed,_request,true,_binding] call ACME_fnc_hardcorePushStart;};
+        if (!_valid) then {["stop",_medic,_request,[_request,"begin-continuation-retired"]] call ACME_fnc_syringeDeliveryRequest;};
+        _valid
+    },[ACE_player,_standardTimed,_inventoryRequest,_d,_patient,+_pending,_epoch,_binding]] call ACME_fnc_syringeDeliveryRequest;
+    true
+};
 private _magClass = ""; private _magContainer = objNull;
 if (!_virtual && {!_inventoryBacked}) then {
     _magClass = format ["ACM_Syringe_%1_%2",_size,_med];
@@ -179,13 +200,13 @@ if (!_virtual && {!_inventoryBacked}) then {
 if (!_virtual && {!_inventoryBacked} && {isNull _magContainer}) exitWith {false};
 private _serial = (missionNamespace getVariable ["ACME_HCMedPushSerial",0]) + 1;
 missionNamespace setVariable ["ACME_HCMedPushSerial",_serial];
-private _session = format ["hcpush:%1:%2:%3",clientOwner,floor(diag_tickTime*1000),_serial];
+private _session = if (_inventoryBacked) then {_inventoryRequest} else {format ["hcpush:%1:%2:%3",clientOwner,floor(diag_tickTime*1000),_serial]};
 private _job = createHashMapFromArray [
     ["medic",ACE_player],["patient",_patient],["bodyPart",toLowerANSI _body],["site",_site],["route","vascular"],
     ["providerLocalityEpoch",ACE_player getVariable ["ACME_providerLocalityEpoch",0]],
     ["kitEpoch",ACE_player getVariable ["ACME_equipmentKitEpoch",0]],["providerOwner",clientOwner],
-    ["identity",_identity],["stableId",_stable],["size",_size],["med",_med],["kind",_kind],["virtual",_virtual],
-    ["inventoryBacked",_inventoryBacked],["inventoryRequest",_inventoryRequest],
+    ["identity",_identity],["clinicalEpoch",if (_inventoryBacked) then {_journalBinding select 1} else {[_patient] call ACME_fnc_clinicalEpoch}],["stableId",_stable],["size",_size],["med",_med],["kind",_kind],["virtual",_virtual],
+    ["inventoryBacked",_inventoryBacked],["inventoryRequest",_inventoryRequest],["syringeDelivery",_inventoryBacked],["journalBatchSerial",0],
     ["label",_row param [3,"",[""]]],["pushLabel",_pushLabel],["barrelMarker",_row param [12,"",[""]]],
     ["overlayAspect",_overlayAspect],["overlayTravelNorm",_overlayTravelNorm],["magClass",_magClass],["magContainer",_magContainer],
     ["duration",_dur],["standardTimed",_standardTimed],["targetMl",_target],["rateMlSec",_target/(_dur max 0.01)],["pushedMl",0],["carryMl",0],

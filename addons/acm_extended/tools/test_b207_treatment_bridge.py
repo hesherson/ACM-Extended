@@ -1,4 +1,5 @@
 """Execute the immediate Direct Pressure bridge without assuming an immediate ACK."""
+import json
 import pytest
 from historical_source import assert_release_identity as _assert_current_build
 from test_menu_death_lifecycle import ROOT, adapt, execute
@@ -50,4 +51,5 @@ def test_every_release_component_carries_its_own_build_stamp():
         assert 'script_build.hpp"' in source
     header = (ROOT / "addons/main/script_build.hpp").read_text()
     _assert_current_build()
-    assert 'acmeNetworkProtocol = 1' in header
+    expected = json.loads((ROOT / "tools/current_build_contract.json").read_text())
+    assert f'acmeNetworkProtocol = {expected["network_protocol"]}' in header

@@ -3354,6 +3354,18 @@ class CfgFunctions {
             class preparedInventoryRecover {};
             class inventoryLedgerReconcile {};
             class inventoryLedgerInit {};
+            class syringeDeliveryClaim {};
+            class syringeDeliveryBroker {};
+            class syringeDeliveryServerTick {};
+            class syringeDeliveryDelta {};
+            class syringeDeliveryDoseValid {};
+            class syringeDeliveryCopy {};
+            class syringeDeliveryMachine {};
+            class syringeDeliveryPatientQuery {};
+            class syringeDeliveryRequest {};
+            class syringeDeliveryReply {};
+            class syringeDeliveryRecover {};
+            class syringeDeliveryTick {};
             class skInventoryEditable {};
             class skInventoryCommit {};
             class skInventoryReconcile {};

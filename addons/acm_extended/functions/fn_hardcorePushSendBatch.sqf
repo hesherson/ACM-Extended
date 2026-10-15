@@ -21,7 +21,7 @@ if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
 // B123: keep the provider-facing one-handed plunger transaction usable on a corpse, but once the casualty is
 // engine-dead there is no physiology to update. Consume the already-moved syringe volume locally and discard the
 // physiology delta instead of generating medication requests, receipts, sedation/rate queues and ACK traffic.
-if (!alive _patient) exitWith {
+if (!alive _patient && {!(_job getOrDefault ["syringeDelivery",false])}) exitWith {
     _job set ["unsentDelta", [0,0,[]]];
     _job set ["batchElapsed", 0];
     _job set ["lastSend", diag_tickTime];
@@ -62,6 +62,18 @@ _job set ["batchElapsed",0];
 _job set ["lastSend",diag_tickTime];
 _job set ["pendingAcks",(_job getOrDefault ["pendingAcks",0]) + 1];
 missionNamespace setVariable ["ACME_HCMedPushJob",_job];
+// The broker records the immutable aliquot before dispatching it to the patient.
+// These batches have no provider-local medication escrow or refund authority.
+if (_job getOrDefault ["syringeDelivery",false]) exitWith {
+    private _serial = (_job getOrDefault ["journalBatchSerial",0]) + 1;
+    _job set ["journalBatchSerial",_serial];
+    missionNamespace setVariable ["ACME_HCMedPushJob",_job];
+    private _request = _job getOrDefault ["inventoryRequest",""];
+    private _session = _job getOrDefault ["session",""];
+    private _batch = format ["%1:batch:%2",_session,_serial];
+    private _wire = [_patient,_medic,_job getOrDefault ["clinicalEpoch",[_patient] call ACME_fnc_clinicalEpoch],_batch,"administer",_body,_doses,_site,_job getOrDefault ["identity",[]],_meta];
+    ["batch",_medic,_request,[_session,_batch,_wire,_delta]] call ACME_fnc_syringeDeliveryRequest
+};
 private _ok = [_medic,_patient,_body,_doses,"administer",_site,[],_meta] call ACME_fnc_medicationRequest;
 // medicationRequest's local failure path feeds the same ACK helper, so do not restore here.
 _ok

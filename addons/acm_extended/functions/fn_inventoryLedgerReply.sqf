@@ -88,6 +88,13 @@ if (_mode == "claim") exitWith {
         if (!_ok || {!(_latest isEqualTo [])} || {_request in (_owner getVariable ["ACME_inventoryAdoptions",createHashMap])}) then {[_owner,_request,false,if (_ok) then {_latest} else {[]}] call ACME_fnc_inventoryLedgerSettle;};
     };
     _callbacks deleteAt _request; missionNamespace setVariable ["ACME_inventoryCallbacks",_callbacks];
+    if ((_callback param [3,_owner getVariable ["ACME_providerLocalityEpoch",0]]) != (_owner getVariable ["ACME_providerLocalityEpoch",0])) exitWith {
+        // Even rapid away/back transfers retire the originating input session.
+        // Its journal can return the source, but its old UI must never restart.
+        if (((_held param [6,[]]) param [0,""]) == "syringeDeliveryB285") then {
+            [_owner,true] call ACME_fnc_syringeDeliveryRecover;
+        } else {[_owner,_request,false] call ACME_fnc_inventoryLedgerSettle;};
+    };
     [_ok,_callback select 2] call (_callback select 1);
 };
 if (_mode in ["return","consume"] && {_ok}) then {

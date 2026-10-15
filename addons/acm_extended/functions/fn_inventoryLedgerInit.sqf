@@ -2,6 +2,22 @@ if (missionNamespace getVariable ["ACME_inventoryLedgerInitialized",false]) exit
 missionNamespace setVariable ["ACME_inventoryLedgerInitialized",true];
 ["ACME_inventoryBroker",{_this call ACME_fnc_inventoryLedgerBroker;}] call CBA_fnc_addEventHandler;
 ["ACME_inventoryReply",{_this call ACME_fnc_inventoryLedgerReply;}] call CBA_fnc_addEventHandler;
+["ACME_syringeDelivery",{if (isServer) then {isNil {_this call ACME_fnc_syringeDeliveryBroker;};};}] call CBA_fnc_addEventHandler;
+["ACME_syringeDeliveryReply",{isNil {_this call ACME_fnc_syringeDeliveryReply;};}] call CBA_fnc_addEventHandler;
+["ACME_syringeDeliveryMachine",{_this call ACME_fnc_syringeDeliveryMachine;}] call CBA_fnc_addEventHandler;
+["ACME_syringeDeliveryPatientQuery",{isNil {_this call ACME_fnc_syringeDeliveryPatientQuery;};}] call CBA_fnc_addEventHandler;
+private _machineNonce = format ["syringe-machine:%1:%2:%3",clientOwner,diag_tickTime,random 1e9];
+missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",_machineNonce];
+["ACME_syringeDeliveryMachine",[clientOwner,_machineNonce]] call CBA_fnc_serverEvent;
+[{
+    private _nonce = missionNamespace getVariable ["ACME_syringeDeliveryMachineNonce",""];
+    private _machines = missionNamespace getVariable ["ACME_syringeDeliveryMachines",createHashMap];
+    if ((_machines getOrDefault [str clientOwner,""]) != _nonce) then {
+        ["ACME_syringeDeliveryMachine",[clientOwner,_nonce]] call CBA_fnc_serverEvent;
+    };
+    call ACME_fnc_syringeDeliveryServerTick;
+    call ACME_fnc_syringeDeliveryTick;
+},1] call CBA_fnc_addPerFrameHandler;
 // Native cargo reads deliberately bypass ACE's item-count cache during Take/Put.
 ["CAManBase","Take",{
     params ["_unit","_container","_class"];
@@ -17,6 +33,7 @@ missionNamespace setVariable ["ACME_inventoryLedgerInitialized",true];
 ["CAManBase","Local",{
     params ["_unit","_local"];
     if (!_local || {isNull _unit}) exitWith {};
+    [_unit] call ACME_fnc_syringeDeliveryRecover;
     private _participates = count (_unit getVariable ["ACME_inventoryPending",createHashMap]) > 0
         || {count (_unit getVariable ["ACME_inventoryEscrow",createHashMap]) > 0}
         || {count (_unit getVariable ["ACME_inventoryMutations",createHashMap]) > 0}

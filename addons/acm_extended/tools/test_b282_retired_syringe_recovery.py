@@ -134,7 +134,31 @@ def start_fixture():
     start = start.replace('localize _key', '_key')
     start = start.replace('safeZoneW', '1').replace('safeZoneH', '1')
     start = start.replace('["_inventoryRequest","",[""]]', '["_inventoryRequest",""]')
-    return r'''
+    from test_b285_syringe_migration import adapted as journal_adapter
+    from test_menu_death_lifecycle import read
+    names = ('syringeDeliveryCopy','syringeDeliveryDelta','syringeDeliveryClaim',
+             'syringeDeliveryBroker','syringeDeliveryRequest','syringeDeliveryReply','syringeDeliveryRecover')
+    journal = ''.join('ACME_fnc_'+name+'={'+journal_adapter(read(name))+'};' for name in names)
+    return journal + r'''
+    private _machineSpace=missionNamespace;
+    private _machineOwner=7; private _providerOwner=7; private _patientOwner=9;
+    missionNamespace setVariable ["ACME_syringeDeliveryMachines",createHashMapFromArray [["7","machine7"],["9","machine9"]]];
+    missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","machine7"];
+    private _providerLocal=true; private _patientLocal=false;
+    private _onServer=true; private _hasInterface=true; private _serverTime=10;
+    ACME_fnc_clinicalEpoch={0};
+    CBA_fnc_serverEvent={_queue pushBack _this;};
+    CBA_fnc_targetEvent={_replies pushBack _this;};
+    _broker={while {count _queue>0} do {
+        private _event=_queue deleteAt 0;
+        if ((_event select 0)=="ACME_inventoryBroker") then {(_event select 1) call ACME_fnc_inventoryLedgerBroker;}
+        else {(_event select 1) call ACME_fnc_syringeDeliveryBroker;};
+    }};
+    _reply={while {count _replies>0} do {
+        private _event=_replies deleteAt 0;
+        if ((_event select 0)=="ACME_inventoryReply") then {(_event select 1) call ACME_fnc_inventoryLedgerReply;}
+        else {(_event select 1) call ACME_fnc_syringeDeliveryReply;};
+    }};
     private _sounds=[];
     private _selected=1;
     _drawDisplay=missionNamespace;

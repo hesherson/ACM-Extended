@@ -37,6 +37,9 @@ def test_identity_drift_is_rejected(tmp_path,path,old,new):
     expected = json.loads((ROOT / "tools/current_build_contract.json").read_text())
     old = old.replace("B238", expected["batch"])
     new = new.replace("B238", expected["batch"])
+    if old == 'acmeNetworkProtocol = 1':
+        old = f'acmeNetworkProtocol = {expected["network_protocol"]}'
+        new = f'acmeNetworkProtocol = {expected["network_protocol"] + 1}'
     root=fixture(tmp_path);p=root/path;text=p.read_text();assert old in text;p.write_text(text.replace(old,new))
     with pytest.raises(AssertionError):assert_current_build(root)
 

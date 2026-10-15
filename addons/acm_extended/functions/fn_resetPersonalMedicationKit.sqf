@@ -45,6 +45,8 @@ if (_marked) then {[_unit,_escrow] call ACME_fnc_medicationEscrowCommit;};
 
 [_unit, []] call ACME_fnc_narcStoreCommit;
 [_unit, createHashMap] call ACME_fnc_openVialStoreCommit;
+// Old journals keep immutable patient decisions, but cannot fund this replacement kit.
+if (!isNil "ACME_fnc_syringeDeliveryRecover") then {[_unit,true] call ACME_fnc_syringeDeliveryRecover;};
 _unit setVariable ["ACME_narcStoreSerial", 0, false];
 // A deliberate fresh-kit replacement invalidates retired syringe inventory from that provider's previous kit.
 private _retired = missionNamespace getVariable ["ACME_HCMedPushRetiredJobs",[]];

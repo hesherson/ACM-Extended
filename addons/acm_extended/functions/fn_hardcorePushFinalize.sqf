@@ -14,10 +14,11 @@ private _completed = (_job getOrDefault ["stopReason",""]) == "complete";
 private _pushLabel = _job getOrDefault ["pushLabel",_job getOrDefault ["med","Medication"]];
 if (_pushLabel == "") then {_pushLabel = "Medication";};
 if (isNull _medic || {!local _medic}) exitWith {false};
+private _journal = _job getOrDefault ["syringeDelivery",false];
 private _store = +(_medic getVariable ["ACME_narcStore",[]]);
 private _idx = _store findIf {(_x param [11,"",[""]]) == _stable};
 private _keepRow = _idx >= 0;
-if (_keepRow) then {
+if (!_journal && {_keepRow}) then {
     private _row = +(_store select _idx);
     private _total = ((_row param [2,0,[0]]) + (_row param [4,0,[0]])) max 0;
     if (_total <= 0.0005) then {_store deleteAt _idx; _keepRow = false;} else {
@@ -37,8 +38,8 @@ if (_keepRow) then {
         } else {_store set [_idx,_row];};
     };
 };
-[_medic,_store] call ACME_fnc_narcStoreCommit;
-if (_job getOrDefault ["inventoryBacked",false]) then {
+if (!_journal) then {[_medic,_store] call ACME_fnc_narcStoreCommit;};
+if (!_journal && {_job getOrDefault ["inventoryBacked",false]}) then {
     [_medic,_job getOrDefault ["inventoryRequest",""],_stable] call ACME_fnc_skInventorySettle;
 };
 // A stopped, captured archive settles inventory only. It cannot clear another
@@ -62,5 +63,10 @@ if (!isNull (findDisplay 84000)) then {
     [0] call ACME_fnc_skCarouselRender;
     call ACME_fnc_skBuildHotspots;
     call ACME_fnc_skBodyActionRender;
+};
+// All local controller/UI teardown precedes a potentially synchronous ready
+// reply. Only that server row can release the prepared carrier.
+if (_journal) then {
+    ["stop",_medic,_job getOrDefault ["inventoryRequest",""],[_job getOrDefault ["session",""],_job getOrDefault ["stopReason","stopped"]]] call ACME_fnc_syringeDeliveryRequest;
 };
 true

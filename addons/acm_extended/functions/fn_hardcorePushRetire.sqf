@@ -10,6 +10,28 @@ if !(_job isEqualType createHashMap && {count _job > 0}
 
 private _medic = _job getOrDefault ["medic",objNull];
 private _stable = _job getOrDefault ["stableId",""];
+private _journal = _job getOrDefault ["syringeDelivery",false];
+if (_journal) exitWith {
+    // Teardown precedes STOP: hosted/SP replies can settle synchronously and
+    // must not recursively retire this same still-installed controller.
+    _job set ["flowing",false]; _job set ["stopRequested",true];
+    _job set ["stopReason",_reason];
+    if (_expectedPFH >= 0) then {[_expectedPFH] call CBA_fnc_removePerFrameHandler;};
+    missionNamespace setVariable ["ACME_HCMedPushPFH",-1];
+    missionNamespace setVariable ["ACME_HCMedPushJob",createHashMap];
+    uiNamespace setVariable ["ACME_SK_InjectionBusy",false];
+    uiNamespace setVariable ["ACME_SK_CarouselBusy",false];
+    ["clear"] call ACME_fnc_hardcorePushOverlay;
+    if (!isNull (findDisplay 84000)) then {
+        private _d = findDisplay 84000;
+        {private _c=_d displayCtrl _x; if (!isNull _c) then {_c ctrlEnable true;};} forEach [84150,84151,84154,84470,84831];
+        call ACME_fnc_skRefreshDrawn; [0] call ACME_fnc_skCarouselRender; call ACME_fnc_skBodyActionRender;
+    };
+    if (_reason != "server-settled" && {!isNull _medic} && {local _medic}) then {
+        ["stop",_medic,_job getOrDefault ["inventoryRequest",""],[_session,_reason]] call ACME_fnc_syringeDeliveryRequest;
+    };
+    true
+};
 private _row = [];
 private _escrow = createHashMap;
 if (!isNull _medic) then {

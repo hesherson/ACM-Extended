@@ -17,6 +17,7 @@ _patient setVariable ["ACME_ownerRegisterSeen", owner _patient, false];
 // delayed registrations also adopt outstanding provider transactions.
 [_patient] call ACME_fnc_piggybackRecover;
 [_patient] call ACME_fnc_lineWarmerRecover;
+if (!isNil "ACME_fnc_syringeDeliveryRecover") then {[_patient] call ACME_fnc_syringeDeliveryRecover;};
 ["recover", _patient] call ACME_fnc_ventBatteryRequest;
 if (count (_patient getVariable ["ACME_lineWarmerReturns",createHashMap]) > 0) then {
     private _pending = missionNamespace getVariable ["ACME_lineWarmerReturnPatients",[]];

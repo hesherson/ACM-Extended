@@ -11,5 +11,5 @@ private _components = [];
 ];
 [1, missionNamespace getVariable ["ACME_infusion_version", "?"],
     missionNamespace getVariable ["ACME_buildBatch", "?"],
-    missionNamespace getVariable ["ACME_networkProtocol", 1],
+    missionNamespace getVariable ["ACME_networkProtocol", getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acmeNetworkProtocol")],
     if (isServer) then {"server"} else {if (hasInterface) then {"client"} else {"HC"}}, _components]

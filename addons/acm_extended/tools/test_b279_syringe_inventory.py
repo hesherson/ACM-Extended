@@ -40,7 +40,7 @@ def setup():
     return '''
         ACE_player=_medic;
         private _nativeRows=[]; private _removedMags=[]; private _returnedMags=[];
-        private _ledgerCalls=[]; private _publications=[]; private _settlements=[]; private _deliveries=[];
+        private _ledgerCalls=[]; private _publications=[]; private _settlements=[]; private _deliveries=[]; private _journalCalls=[];
         private _mapDefault={params ["_map","_args"]; _args params ["_key","_default"]; if (_key in _map) then {_map get _key} else {_default}};
         private _row=["Ketamine",10,2,"exact label",1,[["Ketamine",2]],"dilutionB13","blue_opioid","line A","line B","line C","id-owned","flush","inventoryB279"];
         ACME_fnc_inventoryLedgerCommit={_ledgerCalls pushBack _this;true};
@@ -49,6 +49,17 @@ def setup():
         ace_common_fnc_addToInventory={_returnedMags pushBack _this;};
         ACME_fnc_skStoreEnsureIds={(_this select 0) getVariable ["ACME_narcStore",[]]};
         ACME_fnc_medicationRequest={_deliveries pushBack _this;true};
+        ACME_fnc_medicationLineIdentity={[0,1,1]};
+        ACME_fnc_medicationLineBloodBusy={false};
+        ACME_fnc_clinicalEpoch={0};
+        // Explicit broker boundary: the real ordinary continuation can debit
+        // only after BEGIN is acknowledged; B285 exercises the durable broker.
+        ACME_fnc_syringeDeliveryRequest={
+            _journalCalls pushBack _this;
+            if ((_this select 0)=="begin") then {[true,_this select 5] call (_this select 4);};
+            if ((_this select 0)=="batch") then {_deliveries pushBack ((_this select 3) select 2);};
+            true
+        };
     ''' + ''.join(function(n) for n in ('skInventoryCommit','narcStoreCommit','skInventoryReconcile','skInventorySettle','skInventoryInjectClaim','medicationRefund'))
 
 
@@ -133,7 +144,7 @@ def test_claim_success_dispatches_capture_and_hides_only_full_reserved_syringe()
         _medic setVariable ["ACME_narcStore",[_row]];
         [true,[_medic,_patient,"leftarm",[["Ketamine_IV",100,true,"dose"]],0,_row,[],_row,"request"]] call ACME_fnc_skInventoryInjectClaim;
         [count _deliveries==1 && {(_medic getVariable "ACME_narcStore") isEqualTo []},"certified syringe did not debit exactly once"] call _check;
-        [((_deliveries select 0) select 7) isEqualTo ["syringeB279","request","id-owned"],"patient request lost exact custody receipt"] call _check;
+        [((_deliveries select 0) select 9) isEqualTo ["syringeB279","request","id-owned"],"patient request lost exact custody receipt"] call _check;
         [_medic,[],[["id-owned",_row]],[]] call ACME_fnc_skInventoryReconcile;
         [(_medic getVariable "ACME_narcStore") isEqualTo [],"pending patient ACK recreated full syringe"] call _check;
         [_medic,"request","id-owned"] call ACME_fnc_skInventorySettle;
@@ -318,7 +329,31 @@ def test_tangible_epinephrine_consumer_claim_receipt_preserves_identity_and_rema
     consumers = re.sub(r'\bfinite (_\w+)', r'(\1 call _finite)', consumers)
     consumers = consumers.replace('finite (_x select 1)','((_x select 1) call _finite)')
     consumers = consumers.replace('netId _medic','"medic"')
-    execute(ledger_setup()+consumers+r'''
+    from test_b285_syringe_migration import adapted as journal_adapter
+    journal_names = ('syringeDeliveryCopy','syringeDeliveryDelta','syringeDeliveryDoseValid',
+                     'syringeDeliveryClaim','syringeDeliveryBroker','syringeDeliveryRequest',
+                     'syringeDeliveryReply','syringeDeliveryRecover')
+    journal = ''.join('ACME_fnc_'+name+'={'+journal_adapter(read(name))+'};' for name in journal_names)
+    consumers = consumers.replace('owner _patient','7').replace('canSuspend','false')
+    execute(ledger_setup()+consumers+journal+r'''
+        private _machineSpace=missionNamespace;
+        private _machineOwner=7; private _providerOwner=7; private _patientOwner=7;
+        missionNamespace setVariable ["ACME_syringeDeliveryMachines",createHashMapFromArray [["7","machine7"]]];
+        missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","machine7"];
+        private _providerLocal=true; private _patientLocal=true;
+        private _onServer=true; private _hasInterface=true; private _serverTime=10;
+        private _configNumber={0.1};
+        _broker={while {count _queue>0} do {
+            private _event=_queue deleteAt 0;
+            if ((_event select 0)=="ACME_inventoryBroker") then {(_event select 1) call ACME_fnc_inventoryLedgerBroker;}
+            else {(_event select 1) call ACME_fnc_syringeDeliveryBroker;};
+        }};
+        _reply={while {count _replies>0} do {
+            private _event=_replies deleteAt 0;
+            if ((_event select 0)=="ACME_inventoryReply") then {(_event select 1) call ACME_fnc_inventoryLedgerReply;}
+            else {(_event select 1) call ACME_fnc_syringeDeliveryReply;};
+        }};
+        CBA_fnc_serverEvent={_queue pushBack _this;};
         private _nativeRows=[]; // no stock ACM dose magazines; token possession uses real ledger/native() below.
         private _removedMags=[]; private _returnedMags=[]; private _publications=[];
         private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
@@ -340,17 +375,17 @@ def test_tangible_epinephrine_consumer_claim_receipt_preserves_identity_and_rema
             [_operation=="medicationLine","unexpected patient transport operation"] call _check;
             _patientRequests pushBack _args;
             _dispatchStores pushBack (+(_medic getVariable ["ACME_narcStore",[]]));
-            private _meta=_args select 9;
+            private _meta=(_args select 9) select 4;
             _dispatchProofs pushBack ([_medic,"syringe",_meta select 2,_meta select 1] call ACME_fnc_inventoryLedgerCertificate);
         };
         CBA_fnc_targetEvent={
             params ["_event","_args"];
-            if (_event=="ACME_inventoryReply") then {_replies pushBack _args;} else {
+            if (_event in ["ACME_inventoryReply","ACME_syringeDeliveryReply"]) then {_replies pushBack [_event,_args];} else {
                 [_event=="ACME_medicationAck","unexpected provider transport event"] call _check;
                 _patientAcks pushBack _args;
             };
         };
-        private _settlePatient={while {count _patientAcks>0} do {(_patientAcks deleteAt 0) call ACME_fnc_medicationAck;};call _flush;};
+        private _settlePatient={call _flush;};
         private _initial=["EpinephrineCardiac",10,1,"Push-dose epinephrine 10 mcg/mL",9,[],"epiMixB12",
             "violet_vasopressor","correct epi label","10 mcg/mL","owner tag","epi-physical","flush","inventoryB279"];
         [_medic,[_initial]] call ACME_fnc_narcStoreCommit;call _flush;
