@@ -51,7 +51,9 @@ if (_mode == "receipt") exitWith {
         || {!(_accepted isEqualType true)}) exitWith {false};
     // A delayed owner decision can be proven by the replicated exact receipt.
     // A sender from the captured dispatch owner is also valid after migration.
-    private _proof = (_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]) getOrDefault [_id,[]];
+    private _proof = if (isNull _patient) then {[]} else {
+        (_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]) getOrDefault [_id,[]]
+    };
     if (_sender != (_batch select 6) && {count _proof < 2 || {(_proof select 0) isNotEqualTo _accepted}}) exitWith {false};
     private _restored = [];
     if ((_batch select 3) == "pending" && {!_accepted}) then {

@@ -22,15 +22,23 @@ private _kept = [];
         if ((_b select 3) != "pending") then {continue;};
         private _args = _b select 0;
         private _patient = _args select 0;
-        if (isNull _patient) then {continue;};
+        private _gone = isNull _patient;
         private _id = _args select 3;
-        private _receipt = (_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]) getOrDefault [_id,[]];
+        private _receipt = if (_gone) then {[]} else {
+            (_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]) getOrDefault [_id,[]]
+        };
         if (count _receipt >= 2) then {
             ["receipt",_medic,_request,owner _patient,[_j get "session",_batchId,_id,_patient,_receipt select 0,_receipt select 1]] call ACME_fnc_syringeDeliveryBroker;
             continue;
         };
         if (CBA_missionTime < (_b select 5)) then {continue;};
         private _nonce = _b param [8,""];
+        if (_gone && {_nonce == ""}) then {
+            // An empty persisted nonce proves this server never dispatched the
+            // request. The deleted target cannot execute it in the future.
+            ["receipt",_medic,_request,_b select 6,[_j get "session",_batchId,_id,_patient,false,"patient removed before dispatch"]] call ACME_fnc_syringeDeliveryBroker;
+            continue;
+        };
         if (_nonce == "") then {
             private _machines = missionNamespace getVariable ["ACME_syringeDeliveryMachines",createHashMap];
             _nonce = _machines getOrDefault [str (_b select 6),""];
@@ -40,7 +48,7 @@ private _kept = [];
             _args = +_args; _args set [9,_meta]; _b set [0,_args];
         };
         _b set [5,CBA_missionTime+5]; _batches set [_batchId,_b];
-        if (owner _patient != (_b select 6)) then {
+        if (_gone || {owner _patient != (_b select 6)}) then {
             // The original machine either proves its exact decision or installs
             // a permanent rejection tombstone. An unmatched incarnation cannot
             // deny the old machine's dose; disconnected unknowns remain held.

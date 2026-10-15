@@ -27,12 +27,14 @@ Patient delivery is fenced to the captured machine incarnation. A known patient 
 
 Each machine announces a private incarnation nonce. The server waits for that identity before dispatching a dose. An ownership query records a permanent decision before replying; an unseen request receives a rejection tombstone, so a late packet after an away-and-back transfer cannot administer medication whose source was returned. Accepted private decisions are recorded before physiological callbacks and remain available if a replicated receipt is lost. Reused numeric owner IDs cannot stand in for the original machine.
 
+Deleting a patient does not prevent the captured machine from returning its private decision. Recovery queries that exact incarnation without reading the deleted object's state or replaying physiology; an unrecorded request receives the same permanent rejection tombstone. A request with no recorded incarnation was never dispatched, so the server can reject it after target deletion. A dispatched request without its original decision or incarnation remains held.
+
 If the captured machine disconnects and neither a terminal receipt nor a valid non-delivery proof exists, the uncertain aliquot remains held. A timeout cannot safely decide between duplicating an already applied medication dose and refunding its source. This unresolved case requires evidence or administrative reconciliation.
 
 ## Validation and release boundary
 
 The regression suites execute production journal admission, source arithmetic, ordinary injection, timed push, patient receipts, canonical recovery and native token settlement against explicit engine boundaries. Tests cover lost continuations, private unsent travel, reordered and duplicate delivery, STOP manifests, equipment replacement and independent old-owner/new-owner/server projections. Historical tests retain their dose, duration, source conservation and identity assertions; their transport fixtures follow protocol 2.
 
-The new focused coverage contains 129 source/dose cases, 42 delivery/migration cases and seven protocol bootstrap/compatibility cases. The migration cases include eight executed semantic mutations of the identity, custody and decision guards. The protocol is loaded from compiled component metadata both during startup and when a manifest precedes startup publication.
+The new focused coverage contains 129 source/dose cases, 45 delivery/migration cases and seven protocol bootstrap/compatibility cases. The migration cases include eight executed semantic mutations of the identity, custody and decision guards. The protocol is loaded from compiled component metadata both during startup and when a manifest precedes startup publication.
 
 Automated checks do not certify native Arma event transport, Gear placement, dedicated-server ownership timing or heavily modded low-FPS gameplay. PR #31 remains a candidate pending that acceptance. Server, players and headless clients must use the same complete protocol-2 build. Medmash remains on `dev`.

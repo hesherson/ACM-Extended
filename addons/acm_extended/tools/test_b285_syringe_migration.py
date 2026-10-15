@@ -30,6 +30,7 @@ def adapted(text):
         "clientOwner": "_machineOwner",
         "serverTime": "_serverTime",
         "findDisplay 84000": "objNull",
+        "isNull _patient": "(_patientDeleted || {_patient isEqualTo objNull})",
         "local _owner": "_providerLocal",
         "local _medic": "_providerLocal",
         "local _patient": "_patientLocal",
@@ -47,6 +48,10 @@ def adapted(text):
     text = text.replace('values (_j get "batches")', '((_j get "batches") call _values)')
     text = text.replace('isNull (_data select 2)', '((_data select 2) isEqualTo objNull)')
     text = text.replace('owner (_args select 0)', '_patientOwner')
+    text = text.replace('_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]',
+                        '([_patient,createHashMap] call _readPatientReceipts)')
+    text = re.sub(r'_patient setVariable \["ACME_medicationReceiptsB14",\s*_receipts,\s*(true|false)\];',
+                  '[_patient,_receipts] call _writePatientReceipts;', text)
     text = text.replace('getNumber (configFile >> "ACM_Medication" >> "Concentration" >> _source >> "concentration")',
                         '([_source,"concentration"] call _configNumber)')
     text = vm_primitives(text).replace("call _localityMapDefault", "call _mapDefault")
@@ -87,6 +92,15 @@ def setup():
     private _targetEvents=[];
     private _patientEvents=[];
     private _ownerEvents=[];
+    private _patientDeleted=false;
+    private _deletedReceiptReads=0;
+    private _deletedReceiptWrites=0;
+    private _readPatientReceipts={params ["_object","_default"];
+        if (_patientDeleted) then {_deletedReceiptReads=_deletedReceiptReads+1;};
+        _object getVariable ["ACME_medicationReceiptsB14",_default]};
+    private _writePatientReceipts={params ["_object","_receipts"];
+        if (_patientDeleted) then {_deletedReceiptWrites=_deletedReceiptWrites+1;};
+        _object setVariable ["ACME_medicationReceiptsB14",_receipts];};
     private _deliveredMg=0;
     private _mapDefault={params ["_map","_args"]; _args params ["_key","_default"];
         if (_key in _map) then {_map get _key} else {_default}};
@@ -835,13 +849,70 @@ def test_reused_engine_owner_id_with_new_nonce_cannot_deny_old_unknown_delivery(
     ''')
 
 
+@pytest.mark.parametrize("executed", [False, True])
+def test_deleted_patient_recovers_from_captured_machine_private_proof_without_object_access_or_replay(executed):
+    execute(setup() + r'''
+    call _claim; call _begin;
+    ["slice-a"] call _batch;
+    private _args=[(_patientEvents select 0 select 2)] call _copy;
+    ["patientA"] call _switch;
+    ''' + ('_args call ACME_fnc_medicationLineLocal;' if executed else '') + r'''
+    _serverEvents=[]; // The acceptance packet is lost if execution happened.
+    _patient setVariable ["ACME_medicationReceiptsB14",createHashMap];
+    // The namespace preserves one logical engine object reference in every
+    // saved wire/fingerprint; the native null boundary now reports its deletion.
+    _patientDeleted=true;
+    _providerOwner=8; CBA_missionTime=100;
+    ["server"] call _switch;
+    call ACME_fnc_syringeDeliveryServerTick;
+    [count _ownerEvents==1 && {(_ownerEvents select 0 select 2)==9},"deleted patient skipped available captured-machine proof"] call _check;
+    if (count _ownerEvents==1) then {
+        private _query=(_ownerEvents select 0) select 1;
+        ["patientA"] call _switch;
+        _query call ACME_fnc_syringeDeliveryPatientQuery;
+        call _drainServer;
+    };
+    ''' + f'private _expectedRemaining={1.75 if executed else 2}; private _expectedMg={12.5 if executed else 0};' + r'''
+    [abs (call _remaining-_expectedRemaining)<0.000001 && {((call _journal) get "state")=="ready"},"deleted patient private proof failed exact terminal source accounting"] call _check;
+    [count _patientEvents==1 && {_deliveredMg==_expectedMg},"deleted patient proof replayed physiology"] call _check;
+    ["patientA"] call _switch;
+    _args call ACME_fnc_medicationLineLocal;
+    [_deletedReceiptReads==0 && {_deletedReceiptWrites==0} && {_deliveredMg==_expectedMg},"deleted patient proof accessed removed object state or replayed dose"] call _check;
+    ''')
+
+
+def test_deleted_patient_without_registered_machine_is_proven_undispatched_and_refunds_once():
+    execute(setup() + r'''
+    call _claim; call _begin;
+    private _machines=_serverSpace getVariable "ACME_syringeDeliveryMachines";
+    _machines deleteAt "9";
+    private _args=["slice-a"] call _batch;
+    [count _patientEvents==0 && {abs (call _remaining-1.75)<0.000001},"unknown machine unexpectedly received packet before deletion"] call _check;
+    _patientDeleted=true; _providerOwner=8; CBA_missionTime=100;
+    ["server"] call _switch;
+    call ACME_fnc_syringeDeliveryServerTick;
+    [call _remaining==2 && {((call _journal) get "state")=="ready"}
+        && {(((call _journal) get "batches") get "slice-a" select 3)=="rejected"},"provably undispatched deleted-patient batch retained or lost source"] call _check;
+    [count _ownerEvents==0 && {count _patientEvents==0} && {_deliveredMg==0}
+        && {_deletedReceiptReads==0} && {_deletedReceiptWrites==0},"undispatched deletion queried fabricated authority, accessed removed patient or delivered medication"] call _check;
+    // A later hello cannot turn a terminal never-dispatched request into a dose.
+    [9,"machine9"] call ACME_fnc_syringeDeliveryMachine;
+    CBA_missionTime=110;
+    call ACME_fnc_syringeDeliveryServerTick;
+    call ACME_fnc_syringeDeliveryServerTick;
+    ["batch",[_session,"slice-a",_args,_delta],8] call _send;
+    [call _remaining==2 && {count _ownerEvents==0} && {count _patientEvents==0}
+        && {_deliveredMg==0} && {_deletedReceiptReads==0},"late machine hello or duplicate request replayed/refunded terminal deleted-patient batch"] call _check;
+    ''')
+
+
 @pytest.mark.parametrize("mutation", ["provider_owner", "patient_owner", "retry_owner", "stop_manifest", "private_tombstone", "accepted_commit", "query_nonce", "apply_nonce"])
 def test_critical_protocol_mutations_are_rejected_by_executed_scenarios(monkeypatch, mutation):
     original = source
     replacements = {
         "provider_owner": ("syringeDeliveryBroker", "\nif (_sender != owner _medic) exitWith {false};", "\nif (false) exitWith {false};"),
         "patient_owner": ("medicationLineLocal", 'if (_journal && {(_meta param [5,-1]) != clientOwner', 'if (false && {(_meta param [5,-1]) != clientOwner'),
-        "retry_owner": ("syringeDeliveryServerTick", 'if (owner _patient != (_b select 6)) then {', 'if (false) then {'),
+        "retry_owner": ("syringeDeliveryServerTick", 'if (_gone || {owner _patient != (_b select 6)}) then {', 'if (false) then {'),
         "stop_manifest": ("syringeDeliveryBroker", '} forEach (_data param [2,[],[[]]]);', '} forEach [];'),
         "private_tombstone": ("syringeDeliveryPatientQuery", '_decisions set [_id,_decision];', ''),
         "accepted_commit": ("medicationLineLocal", 'if (_journal) then {[true,"accepted"] call _remember;};', ''),
