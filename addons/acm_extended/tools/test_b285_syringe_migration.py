@@ -20,7 +20,7 @@ def source(name):
     return (F / f"fn_{name}.sqf").read_text()
 
 
-def adapted(text):
+def adapted(text, *, deletion_fixture=False):
     # Substitute dynamic engine boundaries before the historical generic adapter
     # can turn locality, server identity or client identity into constants.
     for old, new in {
@@ -30,7 +30,6 @@ def adapted(text):
         "clientOwner": "_machineOwner",
         "serverTime": "_serverTime",
         "findDisplay 84000": "objNull",
-        "isNull _patient": "(_patientDeleted || {_patient isEqualTo objNull})",
         "local _owner": "_providerLocal",
         "local _medic": "_providerLocal",
         "local _patient": "_patientLocal",
@@ -48,10 +47,14 @@ def adapted(text):
     text = text.replace('values (_j get "batches")', '((_j get "batches") call _values)')
     text = text.replace('isNull (_data select 2)', '((_data select 2) isEqualTo objNull)')
     text = text.replace('owner (_args select 0)', '_patientOwner')
-    text = text.replace('_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]',
-                        '([_patient,createHashMap] call _readPatientReceipts)')
-    text = re.sub(r'_patient setVariable \["ACME_medicationReceiptsB14",\s*_receipts,\s*(true|false)\];',
-                  '[_patient,_receipts] call _writePatientReceipts;', text)
+    if deletion_fixture:
+        # Historical fixtures also reuse this adapter. The explicit deletion
+        # boundary and its counters belong only to this multi-machine fixture.
+        text = text.replace('isNull _patient', '(_patientDeleted || {_patient isEqualTo objNull})')
+        text = text.replace('_patient getVariable ["ACME_medicationReceiptsB14",createHashMap]',
+                            '([_patient,createHashMap] call _readPatientReceipts)')
+        text = re.sub(r'_patient setVariable \["ACME_medicationReceiptsB14",\s*_receipts,\s*(true|false)\];',
+                      '[_patient,_receipts] call _writePatientReceipts;', text)
     text = text.replace('getNumber (configFile >> "ACM_Medication" >> "Concentration" >> _source >> "concentration")',
                         '([_source,"concentration"] call _configNumber)')
     text = vm_primitives(text).replace("call _localityMapDefault", "call _mapDefault")
@@ -60,7 +63,7 @@ def adapted(text):
 
 
 def function(name):
-    return f"ACME_fnc_{name}={{" + adapted(source(name)) + "};\n"
+    return f"ACME_fnc_{name}={{" + adapted(source(name), deletion_fixture=True) + "};\n"
 
 
 def setup():
