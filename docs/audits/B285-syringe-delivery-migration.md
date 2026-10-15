@@ -37,4 +37,6 @@ The regression suites execute production journal admission, source arithmetic, o
 
 The new focused coverage contains 129 source/dose cases, 45 delivery/migration cases and seven protocol bootstrap/compatibility cases. The migration cases include eight executed semantic mutations of the identity, custody and decision guards. The protocol is loaded from compiled component metadata both during startup and when a manifest precedes startup publication.
 
+Each full-regression phase has a bounded 900-second runtime budget. A 600-second run expired near 90% without an assertion failure, so the workflow allows runner variance while retaining all allocated modules, strict result checks and missing-report failures. The shard job budget covers both baseline and candidate phases plus setup.
+
 Automated checks do not certify native Arma event transport, Gear placement, dedicated-server ownership timing or heavily modded low-FPS gameplay. PR #31 remains a candidate pending that acceptance. Server, players and headless clients must use the same complete protocol-2 build. Medmash remains on `dev`.
