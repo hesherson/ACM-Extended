@@ -20,6 +20,8 @@ if !(_job isEqualType createHashMap && {count _job > 0}) exitWith {
 };
 private _medic = _job getOrDefault ["medic",objNull];
 private _patient = _job getOrDefault ["patient",objNull];
+private _session = _job getOrDefault ["session",""];
+private _handler = missionNamespace getVariable ["ACME_HCMedPushPFH",-1];
 private _localityEpoch = _job getOrDefault ["providerLocalityEpoch",-1];
 // Retire before Stop can settle the unsent tail. The old machine no longer owns inventory on locality loss;
 // switching the controlled provider also must not leave a hidden 20 Hz worker driving the previous unit.
@@ -128,7 +130,14 @@ if (!isNull _open) then {
 };
 
 [false] call ACME_fnc_hardcorePushSendBatch;
-_job = missionNamespace getVariable ["ACME_HCMedPushJob",_job];
+// A local patient ACK can finalize/retire this job synchronously. Do not
+// recreate an empty job or advance a replacement controller after it returns.
+private _current = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
+if !(_current isEqualType createHashMap && {count _current > 0}
+    && {(_current getOrDefault ["session",""]) == _session}
+    && {(missionNamespace getVariable ["ACME_HCMedPushPFH",-1]) == _handler}) exitWith {};
+_job = _current;
+if !(_job getOrDefault ["flowing",false]) exitWith {};
 if ((_job getOrDefault ["pushedMl",0]) >= (_job getOrDefault ["targetMl",0]) - 0.0005) exitWith {
     _job set ["finishRequested",true]; missionNamespace setVariable ["ACME_HCMedPushJob",_job];
     ["complete"] call ACME_fnc_hardcorePushStop;

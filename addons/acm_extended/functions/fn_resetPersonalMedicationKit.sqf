@@ -25,6 +25,24 @@ if (_job isEqualType createHashMap && {count _job > 0}
     };
 };
 
+// A deliberately replaced kit discards its old plunger accounting, while an
+// already-dispatched patient request must still receive its immutable terminal
+// decision. Copy settlement metadata only: field 1 remains the original wire
+// arguments, including their hcPush metadata, for safe patient retries.
+private _escrow = _unit getVariable ["ACME_medicationEscrow",createHashMap];
+private _marked = false;
+{
+    private _row = _escrow get _x;
+    private _meta = _row param [5,[]];
+    if (_meta isEqualType [] && {(_meta param [0,""]) == "hcPush"}) then {
+        private _copy = +_row;
+        private _retiredMeta = +_meta; _retiredMeta set [0,"hcPushKitReset"];
+        _copy set [5,_retiredMeta]; _escrow set [_x,_copy];
+        _marked = true;
+    };
+} forEach (keys _escrow);
+if (_marked) then {[_unit,_escrow] call ACME_fnc_medicationEscrowCommit;};
+
 [_unit, []] call ACME_fnc_narcStoreCommit;
 [_unit, createHashMap] call ACME_fnc_openVialStoreCommit;
 _unit setVariable ["ACME_narcStoreSerial", 0, false];

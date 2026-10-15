@@ -200,7 +200,7 @@ def test_partial_push_settles_once_and_preserves_exact_resume_contents(reason,ac
     execute(setup()+functions+'''
         private _requests=[];
         ACME_fnc_medicationRequest={_requests pushBack _this; true};
-        ACME_fnc_narcStoreCommit={params ["_p","_rows"]; _p setVariable ["ACME_narcStore",_rows];};
+        ACME_fnc_narcStoreCommit={params ["_p","_rows"]; _p setVariable ["ACME_narcStore",_rows];true};
         ACME_fnc_hardcorePushOverlay={};
         ACME_fnc_medicationRouteAllowed={true};
         ACME_fnc_medicationLineIdentity={[0,1,1]};

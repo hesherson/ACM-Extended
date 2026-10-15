@@ -36,27 +36,65 @@ private _kept = [];
     if (count _ownedIds != (_job getOrDefault ["pendingAcks",0])) then {_kept pushBack _entry; continue;};
     if (_requestId != "" && {!(_requestId in _ownedIds)
         || {((_receipts get _requestId) param [5,[]]) isNotEqualTo _meta}}) then {_kept pushBack _entry; continue;};
-    private _tail = +(_job getOrDefault ["unsentDelta",[0,0,[]]]);
-    private _tailMl = (_tail param [0,0]) + (_tail param [1,0]);
+    private _tail = _job getOrDefault ["unsentDelta",[0,0,[]]];
+    private _rejected = [0,0,[]];
+    if (_requestId != "") then {
+        if (!_accepted) then {_rejected = _meta param [3,[]];};
+    };
+    private _combined = [0,0,[]];
+    private _valid = true;
+    private _hasParts = _at >= 0 && {count ((_store select _at) param [5,[]]) > 0};
+    {
+        private _slice = _x;
+        if !(_slice isEqualType [] && {count _slice == 3}) exitWith {_valid = false;};
+        private _sliceDrug = _slice select 0;
+        private _sliceNs = _slice select 1;
+        if !(_sliceDrug isEqualType 0 && {finite _sliceDrug} && {_sliceDrug >= 0}
+            && {_sliceNs isEqualType 0} && {finite _sliceNs} && {_sliceNs >= 0}
+            && {(_slice select 2) isEqualType []}) exitWith {_valid = false;};
+        private _seen = []; private _componentMl = 0;
+        private _parts = _combined select 2;
+        {
+            if !(_x isEqualType [] && {count _x == 3}) exitWith {_valid = false;};
+            _x params ["_ci","_source","_ml"];
+            if !(_ci isEqualType 0 && {finite _ci} && {_ci >= 0}
+                && {_ci == floor _ci} && {!(_ci in _seen)}
+                && {_source isEqualType ""} && {_source != ""}
+                && {_ml isEqualType 0} && {finite _ml} && {_ml >= 0}) exitWith {_valid = false;};
+            _seen pushBack _ci; _componentMl = _componentMl + _ml;
+            private _partAt = _parts findIf {(_x select 0) == _ci};
+            if (_partAt < 0) then {_parts pushBack +_x;} else {
+                private _part = +(_parts select _partAt);
+                if ((_part select 1) != _source) then {_valid = false;} else {
+                    _part set [2,(_part select 2) + _ml]; _parts set [_partAt,_part];
+                };
+            };
+        } forEach (_slice select 2);
+        if ((_hasParts || {count (_slice select 2) > 0}) && {abs (_componentMl - (_slice select 0)) > 0.001}) then {_valid = false;};
+        _combined set [0,(_combined select 0) + (_slice select 0)];
+        _combined set [1,(_combined select 1) + (_slice select 1)];
+        _combined set [2,_parts];
+    } forEach [_tail,_rejected];
+    if (!_valid) then {_kept pushBack _entry; continue;};
+    private _tailMl = (_tail select 0) + (_tail select 1);
+    private _refundMl = (_combined select 0) + (_combined select 1);
+    // A failed exact-row refund keeps both the captured receipt and pending count.
+    // Combine rejected volume and the known unsent tail before the single store write.
+    if (_refundMl > 0.000001 && {!([_medic,_sid,_combined] call ACME_fnc_hardcorePushRestoreDelta)}) then {
+        _kept pushBack _entry; continue;
+    };
     if (_tailMl > 0.000001) then {
-        if !([_medic,_sid,_tail] call ACME_fnc_hardcorePushRestoreDelta) then {_kept pushBack _entry; continue;};
         _job set ["unsentDelta",[0,0,[]]];
         _job set ["batchElapsed",0];
-        _job set ["pushedMl",((_job getOrDefault ["pushedMl",0]) - _tailMl) max 0];
         _progress = true;
     };
     if (_requestId != "") then {
-        // Consume the captured receipt before any store writer can re-enter.
+        // Restoration is proven before this immutable receipt is consumed.
         _receipts deleteAt _requestId;
         _job set ["pendingAcks",((_job getOrDefault ["pendingAcks",1]) - 1) max 0];
-        if (!_accepted) then {
-            private _delta = _meta param [3,[0,0,[]],[[]]];
-            [_medic,_sid,_delta] call ACME_fnc_hardcorePushRestoreDelta;
-            private _ml = (_delta param [0,0]) + (_delta param [1,0]);
-            _job set ["pushedMl",((_job getOrDefault ["pushedMl",0]) - _ml) max 0];
-        };
         _progress = true;
     };
+    _job set ["pushedMl",((_job getOrDefault ["pushedMl",0]) - _refundMl) max 0];
     _store = _medic getVariable ["ACME_narcStore",[]];
     _at = _store findIf {(_x param [11,"",[""]]) == _sid};
     if (_at >= 0) then {_entry set [3,+(_store select _at)];};
