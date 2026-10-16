@@ -85,7 +85,12 @@ class PtxLifecycle(unittest.TestCase):
                       "ACM_breathing_ChestInjury_State", "ACME_ptx_state"):
             self.assertIn(field, chest)
         needs = register[register.index("private _needs"):register.index("private _registry")]
-        self.assertIn("|| {_hasPtx}", needs)
+        self.assertIn("call ACME_fnc_clinicalNeedsTick", needs)
+        indication = source("clinicalNeedsTick")
+        for field in ("ACM_breathing_Pneumothorax_State",
+                      "ACM_breathing_TensionPneumothorax_State",
+                      "ACM_breathing_ChestInjury_State", "ACME_ptx_state"):
+            self.assertIn(field, indication)
         self.assertIn("if (_needs) then {_registry pushBackUnique _patient;}", register)
         circ = source("circHandle")
         self.assertIn('missionNamespace getVariable ["ACME_clinical_activePatients", []]', circ)

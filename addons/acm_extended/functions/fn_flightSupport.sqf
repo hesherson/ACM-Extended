@@ -1,3 +1,5 @@
+// Deliberate higher-scope local supplied only by the paired 1 Hz callback.
+#pragma hemtt ignore_variables ["_acmeFlightSupportSamples"]
 /* Actual nearby aircraft support, independent of aircraft classname or altitude.
  * ROADWAY (supported since Arma 2.08), GEOM and PHYSX are queried separately:
  * an available GEOM LOD does not imply that its walkable floor was tested.
@@ -15,8 +17,31 @@ private _bestDistance = 1;
 private _up = if (isNull _expectedAir) then {[0,0,1]} else {vectorUp _expectedAir};
 private _start = _foot vectorAdd (_up vectorMultiply 0.20);
 private _end = _foot vectorDiff (_up vectorMultiply 0.30);
+
+// Only the paired, unscheduled discovery/preoxygenation callback supplies this
+// local context. Reuse raw rays during that invocation, never across callbacks
+// or rendered frames: a new aircraft/blocker may enter a previously empty ray.
+// Classification, model transforms and the motion guard below remain live.
+private _shareSamples = !isNil "_acmeFlightSupportSamples"
+    && {_acmeFlightSupportSamples isEqualType createHashMap}
+    && {isNil {_acmeFlightSupportSamples get "invalidated"}};
+private _rayKey = [_start, _end];
+private _raySamples = [];
+if (_shareSamples) then {
+    private _sample = _acmeFlightSupportSamples get _patient;
+    if (!isNil "_sample" && {(_sample select 0) isEqualTo _rayKey}) then {
+        _raySamples = _sample select 1;
+    };
+};
+if (_raySamples isEqualTo []) then {
+    {
+        private _hits = lineIntersectsSurfaces [_start,_end,_patient,objNull,true,1,_x,"NONE"];
+        _raySamples pushBack _hits;
+    } forEach ["ROADWAY","GEOM","PHYSX"];
+    if (_shareSamples) then {_acmeFlightSupportSamples set [_patient, [_rayKey, _raySamples]];};
+};
 {
-    private _hits = lineIntersectsSurfaces [_start,_end,_patient,objNull,true,1,_x,"NONE"];
+    private _hits = _x;
     if !(_hits isEqualTo []) then {
         private _hit = _hits select 0;
         private _air = _hit param [2,objNull];
@@ -43,7 +68,7 @@ private _end = _foot vectorDiff (_up vectorMultiply 0.30);
             };
         };
     };
-} forEach ["ROADWAY","GEOM","PHYSX"];
+} forEach _raySamples;
 if (_best isEqualTo []) exitWith {[]};
 if (_checkMotion) then {
     private _air = _best select 0;

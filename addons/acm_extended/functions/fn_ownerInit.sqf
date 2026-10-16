@@ -309,7 +309,11 @@ ACME_NA2_ownerInstalled = true;
 ["CAManBase", "init", {
     [{ _this call ACME_fnc_ownerRegister; }, [_this select 0]] call CBA_fnc_execNextFrame;
 }, true, [], true] call CBA_fnc_addClassEventHandler;
+// B286 shared owner callback: one inclusive timing around the existing lifecycle pass.
 [{
+    private _acmePerf = missionNamespace getVariable ["ACME_performance_enabled", false];
+    private _acmePerfGeneration = if (_acmePerf) then {(missionNamespace getVariable ["ACME_performance_state", createHashMap]) get "generation"} else {-1};
+    private _acmePerfStart = if (_acmePerf) then {diag_tickTime} else {0};
     [] call ACME_fnc_aiProtectionTick;
     // Equipment receipts outlive fluid delivery and also settle on dead patients.
     private _returns = (missionNamespace getVariable ["ACME_lineWarmerReturnPatients",[]]) select {
@@ -346,6 +350,7 @@ ACME_NA2_ownerInstalled = true;
     {
         missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) select {!isNull _x && {local _x} && {alive _x}}];
     } forEach ["ACME_flight_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_autoBP_patients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_coag_activePatients", "ACME_preox_activePatients", "ACME_aspiration_activePatients", "ACME_shock_activePatients", "ACME_rhythmThreshold_activePatients", "ACME_rhythm_activePatients"];
+    if (_acmePerf) then {["ownerLifecycle", (diag_tickTime - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;};
 }, 1, []] call CBA_fnc_addPerFrameHandler;
 if (isServer) then {
     ACME_nrb_soundRegistry = createHashMap;

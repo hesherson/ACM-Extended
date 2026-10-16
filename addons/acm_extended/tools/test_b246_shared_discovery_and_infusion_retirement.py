@@ -30,7 +30,17 @@ def test_one_owner_scan_feeds_all_idle_and_maintenance_registries():
         'ACME_infusion_activePatients = _infusion;',
     ):
         assert assignment in discovery
-    assert '[{ call ACME_fnc_idlePhysDiscovery; }, 1, []] call CBA_fnc_addPerFrameHandler;' in runtime
+    # The adjacent readers now share one invocation-scoped support-ray sample.
+    # Keep their original 1 Hz cadence and discovery-before-preoxygenation order.
+    from source_scan import lex, matching
+    tokens = lex(runtime); pairs = matching(tokens)
+    discovery = next(i for i, token in enumerate(tokens) if token.value == 'ACME_fnc_idlePhysDiscovery')
+    enclosing = [(start, end) for start, end in pairs.items()
+                 if tokens[start].value == '{' and start < discovery < end]
+    start, end = min(enclosing, key=lambda pair: pair[1] - pair[0])
+    body = [token.value for token in tokens[start:end]]
+    assert body.index('ACME_fnc_idlePhysDiscovery') < body.index('ACME_fnc_preoxygenationTick')
+    assert [token.value for token in tokens[end:end + 5]] == ['}', ',', '1', ',', '[']
 
 
 def test_hot_circulation_coagulation_and_infusion_workers_never_scan_owner_registry():

@@ -65,6 +65,9 @@ def namespace_public_arguments(source):
 
 def adapt(s, component='core'):
     s = re.sub(r'^#include.*$', '', s, flags=re.M)
+    # HEMTT consumes this static-analysis annotation before Arma compilation;
+    # SQF-VM otherwise warns about the tool-specific pragma. No runtime code changes.
+    s = re.sub(r'^#pragma hemtt ignore_variables[^\n]*$', '', s, flags=re.M)
     for macro, prefix, quote in [('QACEGVAR', 'ace', True), ('QEGVAR', 'ACM', True), ('EGVAR', 'ACM', False), ('ACEGVAR', 'ace', False)]:
         s = re.sub(r'\b' + macro + r'\((\w+),\s*(\w+)\)', lambda m: ('"' if quote else '') + f'{prefix}_{m[1]}_{m[2]}' + ('"' if quote else ''), s)
     for macro, suffix, quote in [('QGVAR', '', True), ('GVAR', '', False), ('FUNC', 'fnc_', False)]:

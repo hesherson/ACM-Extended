@@ -75,10 +75,36 @@ private _getMedEffect = {
     _v
 };
 
+// Observe actual worker membership rather than relying on every treatment
+// producer to call ownerRegister. A stopped infusion can retire between passes.
+private _previous = missionNamespace getVariable ["ACME_clinicalMaintenancePatients", []];
+private _completed = [];
 {
     private _patient = _x;
     if (isNull _patient || {!alive _patient} || {!local _patient}) then {continue};
 
+    if ((_patient getVariable ["ACME_clinicalMaintenanceDormant", false])
+        || {!(_patient in _previous) && {!isNil {_patient getVariable "ACME_clock_clinicalMaintenance"}}}) then {
+        // No dormant interval belongs to a newly admitted dose or reattached
+        // device. First re-entry has zero elapsed time; ordinary active passes
+        // retain their original bounded clocks and active registration is inert.
+        {
+            _patient setVariable ["ACME_clock_" + _x, CBA_missionTime, false];
+            _patient setVariable ["ACME_clock_" + _x + "_owner", clientOwner, false];
+        } forEach ["clinicalMaintenance", "rocuronium", "ventDrive", "blastLung", "hcCirc", "hcVent", "sealOcclusion", "ptx", "ettMainstem", "ncdLeak"];
+        _patient setVariable ["ACME_clock_ncdLeakPending", 0, false];
+        if (!isNil {_patient getVariable "ACME_vent_battLastT"}
+            || {_patient getVariable ["ACME_vent_connected", false]}) then {
+            _patient setVariable ["ACME_vent_battLastT", CBA_missionTime, false];
+        };
+        private _resumeState = _patient getVariable ["ACME_circ_State", createHashMap];
+        if (_resumeState isEqualType createHashMap && {count _resumeState > 0}) then {
+            _resumeState set ["acidLastTick", CBA_missionTime];
+            _patient setVariable ["ACME_circ_State", _resumeState, false];
+        };
+        _patient setVariable ["ACME_clinicalMaintenanceDormant", false, false];
+    };
+    _completed pushBack _patient;
     private _dt = [_patient, "clinicalMaintenance", 0.25, 5] call ACME_fnc_clinicalTickDelta;
     // Consume only newly admitted mass even when custom circulation is disabled: never replay old doses.
     private _deliveredRates = [_patient,_dt] call ACME_fnc_medicationDriveTick;
@@ -1424,4 +1450,27 @@ private _getMedEffect = {
     // debt since, so this ran every tick on every casualty and read a variable that is never written.
 
 
+    // Retire only after every medication/device/airway cleanup above has run.
+    // A late replicated indication is re-enrolled by the bounded owner audit.
+    private _clinical = missionNamespace getVariable ["ACME_clinical_activePatients", []];
+    if ([_patient] call ACME_fnc_clinicalNeedsTick) then {
+        // Direct circulation/treatment producers can enter without ownerRegister.
+        // Preserve their remaining broad work when the narrow circ registry retires.
+        if !(_patient in _clinical) then {
+            _clinical pushBackUnique _patient;
+            missionNamespace setVariable ["ACME_clinical_activePatients", _clinical];
+        };
+    } else {
+        if (_patient in _clinical) then {
+            missionNamespace setVariable ["ACME_clinical_activePatients", _clinical - [_patient]];
+        };
+    };
+    if (!(_patient in ACME_circ_activePatients)
+        && {!(_patient in ACME_tbi_activePatients)}
+        && {!(_patient in ACME_infusion_activePatients)}
+        && {!(_patient in (missionNamespace getVariable ["ACME_clinical_activePatients", []]))}) then {
+        _patient setVariable ["ACME_clinicalMaintenanceDormant", true, false];
+    };
+
 } forEach _patients;
+missionNamespace setVariable ["ACME_clinicalMaintenancePatients", _completed select {!isNull _x && {local _x} && {alive _x}}];

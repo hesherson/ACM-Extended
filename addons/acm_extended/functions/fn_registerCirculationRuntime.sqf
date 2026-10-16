@@ -7,8 +7,20 @@
  */
 private _registrations = [
     ["ACME_PFH_salineAcidosisTrack", {call ACME_fnc_salineAcidosisTrack}, 0.25],
-    ["ACME_PFH_flightTick", {call ACME_fnc_flightTick}, 0.25],
-    ["ACME_PFH_circHandle", {call ACME_fnc_circHandle}, 0.25],
+    ["ACME_PFH_flightTick", {
+        private _acmePerf = missionNamespace getVariable ["ACME_performance_enabled", false];
+        private _acmePerfGeneration = if (_acmePerf) then {(missionNamespace getVariable ["ACME_performance_state", createHashMap]) get "generation"} else {-1};
+        private _acmePerfStart = if (_acmePerf) then {diag_tickTime} else {0};
+        call ACME_fnc_flightTick;
+        if (_acmePerf) then {["flightTick", (diag_tickTime - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;};
+    }, 0.25],
+    ["ACME_PFH_circHandle", {
+        private _acmePerf = missionNamespace getVariable ["ACME_performance_enabled", false];
+        private _acmePerfGeneration = if (_acmePerf) then {(missionNamespace getVariable ["ACME_performance_state", createHashMap]) get "generation"} else {-1};
+        private _acmePerfStart = if (_acmePerf) then {diag_tickTime} else {0};
+        call ACME_fnc_circHandle;
+        if (_acmePerf) then {["circHandle", (diag_tickTime - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;};
+    }, 0.25],
     ["ACME_PFH_autoBPTick", {call ACME_fnc_autoBPTick}, 1]
 ];
 

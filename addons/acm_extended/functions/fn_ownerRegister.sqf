@@ -104,40 +104,8 @@ private _hasPtx = (_patient getVariable ["ACM_breathing_Pneumothorax_State", 0])
     || {count (_patient getVariable ["ACME_ptx_state", []]) > 0};
 if (_hasPtx) then {[_patient] call ACME_fnc_ptxEnsure;};
 
-// NA3 one enrollment registry supplies independent medical maintenance.
-// B203: a non-empty circulation HashMap is historical state, not proof that physiology still needs a 4 Hz worker.
-// Once created, that map retains neutral bookkeeping fields for the rest of the casualty's life.
-private _circState = _patient getVariable ["ACME_circ_State", createHashMap];
-private _circNeeds = (_circState getOrDefault ["shockActive", false])
-    || {abs (_circState getOrDefault ["shockDrop", 0]) > 0.01}
-    || {abs (_circState getOrDefault ["pressorSupport", 0]) > 0.01}
-    || {abs (_circState getOrDefault ["pushDoseSupport", 0]) > 0.01}
-    || {(_circState getOrDefault ["ichRisk", 0]) > 0.001}
-    || {(_circState getOrDefault ["ionizedCa", 1.15]) < 0.999}
-    || {(_circState getOrDefault ["temp", 37]) < 35.99}
-    || {(_circState getOrDefault ["salineAcidosis", 0]) > 0.001}
-    || {(_patient getVariable ["ACME_circ_salineGivenMl", 0]) > 0}
-    || {(_circState getOrDefault ["totalAcidosis", 0]) > 0.001}
-    || {(_circState getOrDefault ["paCO2", 40]) > 40.1}
-    || {(_circState getOrDefault ["respiratoryAcidosisDeficit", 0]) > 0.001}
-    || {(_circState getOrDefault ["hyperSpike", 0]) > 0.001};
-
-private _needs = (_patient getVariable ["ace_medical_inCardiacArrest", false])
-    || {_hasPtx}
-    || {_patient getVariable ["ACE_isUnconscious", false]}
-    || {_patient getVariable ["ACME_vent_connected", false]}
-    || {_patient getVariable ["ACME_ETT_Inserted", false]}
-    || {_patient getVariable ["ACME_nrb_on", false]}
-    || {_patient getVariable ["ACME_tbi_HasTBI", false]}
-    || {(_patient getVariable ["ACME_blastLung_State", 0]) > 0}
-    || {_circNeeds}
-    || {count (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) > 0}
-    || {count (_patient getVariable ["ace_medical_medications", []]) > 0}
-    || {count (_patient getVariable ["ACME_yFlushJobs", createHashMap]) > 0}
-    || {count (_patient getVariable ["ACME_suctionSessions", []]) > 0}
-    || {(_patient getVariable ["ACME_suctionExposure", 0]) > 0}
-    || {(_patient getVariable ["ACME_o2Drain_suction", 0]) > 0}
-    || {(_patient getVariable ["ACME_laryngo_irritationUntil", 0]) > CBA_missionTime};
+// One live indication governs enrollment and completed-pass retirement.
+private _needs = [_patient] call ACME_fnc_clinicalNeedsTick;
 private _registry = missionNamespace getVariable ["ACME_clinical_activePatients", []];
 if (_needs) then {_registry pushBackUnique _patient;} else {_registry = _registry - [_patient];};
 missionNamespace setVariable ["ACME_clinical_activePatients", _registry];

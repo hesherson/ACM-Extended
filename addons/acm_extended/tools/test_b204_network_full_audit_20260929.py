@@ -124,7 +124,8 @@ def test_recovered_casualty_is_not_pinned_in_hot_circulation_registries():
 
     assert 'count (_patient getVariable ["ACME_circ_State", createHashMap]) > 0' not in owner
     assert "{count _circState > 0}" not in circ
-    assert "private _circNeeds =" in owner
+    assert 'private _needs = [_patient] call ACME_fnc_clinicalNeedsTick;' in owner
+    assert 'private _circNeeds =' in function("clinicalNeedsTick")
     assert "private _circStateNeedsTick = {" in circ
     assert 'ACME_circ_activePatients = ACME_circ_activePatients - [_patient];' in circ
 

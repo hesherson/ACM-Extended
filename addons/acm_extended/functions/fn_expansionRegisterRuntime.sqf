@@ -2,10 +2,29 @@
 if (missionNamespace getVariable ["ACME_expansion_batch3_registered", false]) exitWith {};
 missionNamespace setVariable ["ACME_expansion_batch3_registered", true];
 
-[{ call ACME_fnc_idlePhysDiscovery; }, 1, []] call CBA_fnc_addPerFrameHandler;
-[{ call ACME_fnc_preoxygenationTick; }, 1, []] call CBA_fnc_addPerFrameHandler;
+[{
+    // Invocation-scoped raw support rays only. Discovery and preoxygenation must stay adjacent;
+    // do not insert geometry-changing gameplay work between these reads.
+    private _acmeFlightSupportSamples = createHashMap;
+    private _acmePerf = missionNamespace getVariable ["ACME_performance_enabled", false];
+    private _acmePerfGeneration = if (_acmePerf) then {(missionNamespace getVariable ["ACME_performance_state", createHashMap]) get "generation"} else {-1};
+    private _acmePerfStart = if (_acmePerf) then {diag_tickTime} else {0};
+    call ACME_fnc_idlePhysDiscovery;
+    if (_acmePerf) then {
+        ["idlePhysDiscovery", (diag_tickTime - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;
+        _acmePerfStart = diag_tickTime;
+    };
+    call ACME_fnc_preoxygenationTick;
+    if (_acmePerf) then {["preoxygenationTick", (diag_tickTime - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;};
+}, 1, []] call CBA_fnc_addPerFrameHandler;
 [{ call ACME_fnc_shockPhenotypeTick; }, 0.5, []] call CBA_fnc_addPerFrameHandler;
-[{ call ACME_fnc_coagulationTick; }, 0.20, []] call CBA_fnc_addPerFrameHandler;
+[{
+    private _acmePerf = missionNamespace getVariable ["ACME_performance_enabled", false];
+    private _acmePerfGeneration = if (_acmePerf) then {(missionNamespace getVariable ["ACME_performance_state", createHashMap]) get "generation"} else {-1};
+    private _acmePerfStart = if (_acmePerf) then {diag_tickTime} else {0};
+    call ACME_fnc_coagulationTick;
+    if (_acmePerf) then {["coagulationTick", (diag_tickTime - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;};
+}, 0.20, []] call CBA_fnc_addPerFrameHandler;
 [{ call ACME_fnc_aspirationTick; }, 0.5, []] call CBA_fnc_addPerFrameHandler;
 [{ call ACME_fnc_megacodeAARTick; }, 1, []] call CBA_fnc_addPerFrameHandler;
 

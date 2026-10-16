@@ -2246,6 +2246,7 @@ class CfgFunctions {
             class shockLocal {};
             class shockROSC {};
             class clinicalTickDelta {};
+            class clinicalNeedsTick {};
             class bpCompute {};
             class clinicalBindings {};
             class clinicalInspect {};
@@ -2436,6 +2437,8 @@ class CfgFunctions {
             class ivPalpModel {};
             class netReport {};
             class networkDiagnostics {};
+            class performanceDiagnostics {};
+            class performanceRecord {};
             class ivSiteDifficulty {};
             class ivStickBlows {};
             class ivVeinDist {};

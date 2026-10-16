@@ -26,7 +26,8 @@ def test_nonempty_historical_circ_map_no_longer_pins_patient_active():
 
     assert 'count (_patient getVariable ["ACME_circ_State", createHashMap]) > 0' not in owner
     assert '{count _circState > 0}' not in circ
-    assert 'private _circNeeds =' in owner
+    assert 'private _needs = [_patient] call ACME_fnc_clinicalNeedsTick;' in owner
+    assert 'private _circNeeds =' in read("addons/acm_extended/functions/fn_clinicalNeedsTick.sqf")
     assert 'private _circStateNeedsTick = {' in circ
 
 

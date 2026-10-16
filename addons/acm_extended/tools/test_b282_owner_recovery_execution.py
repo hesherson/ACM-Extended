@@ -26,7 +26,7 @@ def recovery_body():
     text = source("ownerInit")
     tokens = lex(text)
     pairs = matching(tokens)
-    start = text.index('[{\n    [] call ACME_fnc_aiProtectionTick;') + 1
+    start = text.index('[{', text.index('// B286 shared owner callback:')) + 1
     opening = next(i for i, token in enumerate(tokens) if token.offset == start)
     # Execute the entire shared PFH, including missing-owner audit, new late
     # state recovery, provider reconciliation and registry pruning.
@@ -41,9 +41,12 @@ def engine(text):
     text = re.sub(r'\bisNull (\([^()\n]*\))', r'(\1 isEqualTo objNull)', text)
     text = re.sub(r'\bfinite (\([^()\n]*\))', r'(\1 call _finite)', text)
     text = text.replace('serverTime', '_serverNow')
-    return (adapt(text).replace("owner _patient", "7")
-            .replace("owner _x", "7").replace("allUnits", "[_patient]")
-            .replace("hasInterface", "false"))
+    adapted = (adapt(text).replace("owner _patient", "7")
+               .replace("owner _x", "7").replace("allUnits", "[_patient]")
+               .replace("hasInterface", "false"))
+    # alive objNull is false in Arma; a null VM namespace cannot getVariable.
+    return re.sub(r'\((_[A-Za-z0-9_]+) getVariable \["fixtureAlive",true\]\)',
+                  r'(!(\1 isEqualTo objNull) && {\1 getVariable ["fixtureAlive",true]})', adapted)
 
 
 def setup():
@@ -89,6 +92,8 @@ def setup():
     ):
         result += f"ACM_{component}_fnc_{name}={{" + native(component, name) + "};\n"
     result += "ACME_fnc_aspirationState={" + engine(source("aspirationState")) + "};\n"
+    result += "ACME_fnc_ptxContext={" + engine(source("ptxContext")) + "};\n"
+    result += "ACME_fnc_clinicalNeedsTick={" + engine(source("clinicalNeedsTick")) + "};\n"
     result += "ACME_fnc_ownerRegisterNeedsRecovery={" + engine(source("ownerRegisterNeedsRecovery")) + "};\n"
     result += "ACME_fnc_ventBatteryRequest={" + engine(source("ventBatteryRequest")) + "};\n"
     result += "private _ownerRegister={" + engine(source("ownerRegister")) + "};\n"

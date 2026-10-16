@@ -141,7 +141,7 @@ def setup(begin=True):
     result += "".join(function(name) for name in (
         "ventBatteryItems", "ventBatteryCharge",
         "treatmentSupplyOrder", "treatmentSupplyTake", "treatmentSupplyRefund",
-        "ventBatteryExchange", "ventBatteryRequest", "ventBatteryAck", "ownerRegisterNeedsRecovery",
+        "ventBatteryExchange", "ventBatteryRequest", "ventBatteryAck", "clinicalNeedsTick", "ownerRegisterNeedsRecovery",
     ))
     result += "private _ownerDispatch={" + engine(source("ownerDispatch")) + "};\n"
     result += "private _ackHandler={" + engine(ack) + "};\n"
