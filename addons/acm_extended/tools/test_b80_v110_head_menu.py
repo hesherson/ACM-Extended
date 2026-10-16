@@ -2,6 +2,7 @@ from historical_source import read_source
 from pathlib import Path
 import pytest
 from historical_source import assert_release_identity
+from test_bounded_head_pose_contracts import contains
 ROOT=Path(__file__).resolve().parents[1]
 def txt(p): return read_source(ROOT/p, encoding='utf-8',errors='ignore')
 checks=[]
@@ -17,7 +18,11 @@ check('retired provider DraggerBase wrapper absent', 'class ACME_HeadElevProvide
 check('patient grab wrapper exact RTM inheritance', 'class ACME_HeadElevPatientGrab: AinjPpneMrunSnonWnonDb_grab' in cfg)
 check('patient release wrapper exact RTM inheritance', 'class ACME_HeadElevPatientRelease: AinjPpneMrunSnonWnonDb_release' in cfg)
 check('provider sequence uses shared Putdown controller',
-      'private _first = "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown";' in seq
+      contains(seq, 'private _first = [_medic, "AmovPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_Putdown", _prone] call ACME_fnc_providerAnimation;')
+      and contains(seq, 'private _second = if (_prone) then {_rest} else {"AinvPknlMstpSnonWnonDnon_Putdown_AmovPknlMstpSnonWnonDnon"};')
+      and contains(seq, '[_u, _first, 2] call ACME_fnc_doAnim;')
+      and contains(seq, 'private _firstLC = toLowerANSI _first;')
+      and contains(seq, 'if (_prone && {_now - _stageAt >= _proneWorkTime}) then {_finished = true;};')
       and 'DraggerBasenon' not in seq)
 check('provider waits for one preflight',
       seq.count('ACME_fnc_medicAnimationPrep') == 1

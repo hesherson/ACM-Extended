@@ -58,11 +58,15 @@ private _sound = playSound3D [QPATHTO_R(sound\aed_pressurecuff.wav), _patient, f
     _patient setVariable [QGVAR(AED_PressureCuffBusy), false, true];
 }, [_medic, _patient, _sound], 10,
 {
-    params ["", "_patient"];
+    params ["_medic", "_patient"];
 
     _patient setVariable [QGVAR(AED_PressureCuffBusy), false, true];
 
     private _measuredBP = _patient getVariable [QGVAR(AED_PressureCuff_Measure), [0,0]];
     _patient setVariable [QGVAR(AED_NIBP_Display), [(_measuredBP select 0), (_measuredBP select 1)], true];
+    private _reading = if ((_measuredBP select 0) > 0 && {(_measuredBP select 1) > 0}) then {
+        format ["%1/%2 mmHg", round (_measuredBP select 0), round (_measuredBP select 1)]
+    } else {"No reliable reading"};
+    [_patient, "quick_view", "%1 measured NIBP: %2", [[_medic, false, true] call ACEFUNC(common,getName), _reading]] call ACEFUNC(medical_treatment,addToLog);
     _patient setVariable [QGVAR(AED_PressureCuff_Measure), [0,0], true];
 }] call CBA_fnc_waitUntilAndExecute;

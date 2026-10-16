@@ -26,9 +26,9 @@ private _claims = _patient getVariable ["ACME_yRefillClaims",createHashMap];
     private _entry = _claims get _x;
     private _owner = _entry param [0,objNull,[objNull]];
     private _at = _entry param [3,-100,[0]];
-    if (isNull _owner || {!alive _owner} || {CBA_missionTime - _at > 15}) then {_claims deleteAt _x;};
+    if (isNull _owner || {!alive _owner} || {serverTime - _at > 15}) then {_claims deleteAt _x;};
 } forEach +(keys _claims);
-_patient setVariable ["ACME_yRefillClaims",_claims,false];
+[_patient,"ACME_yRefillClaims",_claims] call ACME_fnc_setVarNet;
 
 private _send = {
     params ["_stage","_accepted",["_reason","",[""]]];
@@ -60,9 +60,13 @@ switch (_operation) do {
         private _lines = (_patient getVariable ["ACME_YLines",[]]) apply {toLowerANSI _x};
         if !(_key in _lines) exitWith {["claim",false,"That access no longer has Y tubing."] call _send};
 
+        if ((_patient getVariable ["ACME_yFlushJobs",createHashMap]) getOrDefault [_key,[]] isNotEqualTo []) exitWith {
+            ["claim",false,"Finish priming/flushing before replacing a bag on this line."] call _send
+        };
         private _existing = _claims getOrDefault [_key,[]];
-        if !(count _existing isEqualTo 0) then {
-            if (count _existing >= 2 && {(_existing select 0) isEqualTo _medic} && {(_existing select 1) == _requestId}) exitWith {
+        if !(count _existing isEqualTo 0) exitWith {
+            if (count _existing >= 5 && {(_existing select 0) isEqualTo _medic} && {(_existing select 1) == _requestId}
+                && {(_existing select 2) == _mode} && {(_existing select 4) == _epoch}) exitWith {
                 ["claim",true,""] call _send
             };
             ["claim",false,"Another provider is already replacing a bag on this Y line."] call _send
@@ -70,6 +74,7 @@ switch (_operation) do {
 
         private _map = _patient getVariable ["ACM_circulation_IV_Bags",createHashMap];
         private _arr = _map getOrDefault [_part,[]];
+        private _blocked = "";
         if (_mode == "blood") then {
             private _hasBlood = (_arr findIf {
                 ((_x param [0,""]) in ["Blood","FreshBlood"])
@@ -77,9 +82,9 @@ switch (_operation) do {
                     && {(_x param [3,-1]) == _site}
                     && {(_x param [4,true]) isEqualTo _iv}
             }) >= 0;
-            if (_hasBlood) exitWith {["claim",false,"A unit is still running on this Y line."] call _send};
+            if (_hasBlood) then {_blocked = "A unit is still running on this Y line.";};
             private _dirty = (_patient getVariable ["ACME_YLineDirty",createHashMap]) getOrDefault [_key,false];
-            if (_dirty) exitWith {["claim",false,"Flush the line before hanging the next unit."] call _send};
+            if (_dirty) then {_blocked = "Flush the line before hanging the next unit.";};
         } else {
             private _hasReserve = (_arr findIf {
                 ((_x param [0,""]) in ["ACME_SalineY","Saline"])
@@ -87,18 +92,19 @@ switch (_operation) do {
                     && {(_x param [3,-1]) == _site}
                     && {(_x param [4,true]) isEqualTo _iv}
             }) >= 0;
-            if (_hasReserve) exitWith {["claim",false,"This Y line already has a live saline reserve."] call _send};
+            if (_hasReserve) then {_blocked = "This Y line already has a live saline reserve.";};
         };
 
-        _claims set [_key,[_medic,_requestId,_mode,CBA_missionTime,_epoch]];
-        _patient setVariable ["ACME_yRefillClaims",_claims,false];
+        if (_blocked != "") exitWith {["claim",false,_blocked] call _send};
+        _claims set [_key,[_medic,_requestId,_mode,serverTime,_epoch]];
+        [_patient,"ACME_yRefillClaims",_claims] call ACME_fnc_setVarNet;
         ["claim",true,""] call _send
     };
 
     case "cancel": {
         if (call _claimMatches) then {
             _claims deleteAt _key;
-            _patient setVariable ["ACME_yRefillClaims",_claims,false];
+            [_patient,"ACME_yRefillClaims",_claims] call ACME_fnc_setVarNet;
         };
         ["cancel",true,""] call _send
     };
@@ -139,8 +145,12 @@ switch (_operation) do {
 
             private _release = {
                 _claims deleteAt _key;
-                _patient setVariable ["ACME_yRefillClaims",_claims,false];
+                [_patient,"ACME_yRefillClaims",_claims] call ACME_fnc_setVarNet;
             };
+            if ((_entry param [4,-1]) != _epoch || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}
+                || {isNull _medic} || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)}
+                || {([_medic,_patient] call ACME_fnc_patientInteractionDistance) > 5}
+                || {!([_patient,_part,_iv,_site] call ACME_fnc_transfusionAccessValid)}) exitWith {call _release;};
             private _lines = (_patient getVariable ["ACME_YLines",[]]) apply {toLowerANSI _x};
             if !(_key in _lines) exitWith {
                 call _release;
@@ -204,11 +214,12 @@ switch (_operation) do {
             [_patient,_part,_iv,_site] call ACME_fnc_resumeSiteFlow;
 
             if (_mode == "blood") then {
+                _warmer = [_patient, _part, _iv, _site, _warmer, _medic] call ACME_fnc_lineWarmer;
                 if (_warmer) then {
-                    [_patient,true,false,objNull,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
+                    [_patient,true,false,objNull,serverTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
                 } else {
                     if (_fromCooler) then {
-                        [_patient,false,true,CBA_missionTime,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
+                        [_patient,false,true,serverTime,serverTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
                     };
                 };
                 if (!isNil "ace_medical_treatment_fnc_addToLog") then {
@@ -231,7 +242,7 @@ switch (_operation) do {
             private _entry = _claims getOrDefault [_key,[]];
             if (count _entry >= 2 && {(_entry select 0) isEqualTo _medic} && {(_entry select 1) == _requestId}) then {
                 _claims deleteAt _key;
-                _patient setVariable ["ACME_yRefillClaims",_claims,false];
+                [_patient,"ACME_yRefillClaims",_claims] call ACME_fnc_setVarNet;
             };
             if (!isNull _medic) then {
                 ["ACME_yRefillResult",[_patient,_requestId,"done",false,"Y refill finalized late. The bag remains hung, but the Y-specific retag was not applied."],_medic] call CBA_fnc_targetEvent;

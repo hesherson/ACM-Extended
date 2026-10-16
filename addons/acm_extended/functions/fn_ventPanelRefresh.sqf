@@ -38,7 +38,7 @@ private _measStr = [_measInt] call _toStr; if (_measStr isEqualTo "") then { _me
 private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player];
 private _driving = !isNull _vTgt && {_vTgt getVariable ["ACME_vent_driving", false]};
 private _mode = if (isNull _vTgt) then {"SIMV VC PS"} else {_vTgt getVariable ["ACME_vent_mode", "SIMV VC PS"]};
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
 if (_simple) then {
     private _effective = [_vTgt] call ACME_fnc_ventEffectiveSettings;
     _mode = _effective select 1;

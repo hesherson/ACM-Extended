@@ -31,8 +31,13 @@ if (typeName _position == "STRING") then {
 if ((typeName _position != "ARRAY") || {count _position != 3}) then {
     _position = [0,0,0];
 } else {
+    _position = +_position;
     {
-        _position set [_forEachIndex, (parseNumber _x)];
+        // Eden may already supply a numeric array. parseNumber accepts strings/bools, not numbers.
+        private _component = _x;
+        if (_component isEqualType "") then {_component = parseNumber _component;};
+        if !(_component isEqualType 0 && {finite _component}) then {_component = 0;};
+        _position set [_forEachIndex, _component];
     } forEach _position;
 };
 

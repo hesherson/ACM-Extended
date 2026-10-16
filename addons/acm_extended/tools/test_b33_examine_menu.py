@@ -76,7 +76,7 @@ class ExaminePresentation(unittest.TestCase):
     def test_chest_move_does_not_capture_bvm_descendants(self):
         from test_historical_menu_execution import test_current_routes_do_not_capture_foreign_descendants_or_restore_basic_dropdowns as verify
         verify('UseBVM','airway','UseStethoscope',['airway','ventilation',False])
-        verify('UseStethoscope','examine','CheckBreathing',['airway','chest',False])
+        verify('UseStethoscope','examine','CheckBreathing',['airway','ventilation',False])
         verify('SlapAwake','advanced','CheckResponse',['examine','',False])
 
     def test_runtime_shares_one_membership_and_order_table(self):

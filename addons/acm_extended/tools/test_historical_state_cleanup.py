@@ -1,6 +1,6 @@
 """Actual HPMK, reset and obtunded cleanup with explicit engine stand-ins.
 
-A single casualty stands in for allUnits. Renderer, sound and animation primitives
+A single casualty is enrolled in the active HPMK registry. Renderer, sound and animation primitives
 are recorded, not executed. Existing visual/timing/clinical rules are not retuned.
 """
 import re
@@ -23,6 +23,7 @@ def one_patient(text):
 def blanket_setup():
     text=(F/'fn_hpmkBlanketTick.sqf').read_text()
     text=text.replace('isServer','_server')
+    text=text.replace('allPlayers','[_medic]').replace('alive _x','_alive').replace('_x distance _p','_distance')
     text=text.replace('getPosATL _p','[10,20,0]').replace('getDir _p','90')
     text=text.replace('deleteVehicle _b;','_deleted pushBack _b;')
     text=text.replace('_drop setPosATL ([10,20,0]);','_positions pushBack [_drop,[10,20,0]];')
@@ -36,6 +37,10 @@ def blanket_setup():
         ACME_fnc_hpmkSpawnBlanket={_spawns pushBack _this;missionNamespace};
         missionNamespace setVariable ["ACME_sys_hpmk",true];
         missionNamespace setVariable ["ACME_hpmk_blanketClass","mock-blanket"];
+        missionNamespace setVariable ["ACME_hpmk_serverPatients",[_patient]];
+        CBA_fnc_targetEvent={
+            if ((_this select 0)=="ACME_worldSfx") then {_sounds pushBack (_this select 1);} else {_events pushBack _this;};
+        };
     '''+'ACME_fnc_hpmkStateCommit={'+adapt(state)+'}; private _tickBlanket={'+adapt(one_patient(text))+'};'
 
 
@@ -104,7 +109,12 @@ def test_only_dropped_anchor_visuals_are_registered_and_pickup_remains_scoped():
     assert 'getPosWorldVisual _anchor' in text
     assert '"ACME_hpmk_isBlanket", false' in text
     assert '"ACME_hpmk_dropped", false' in text
-    assert '_patient' not in identifiers and 'allUnits' not in identifiers
+    # The one-time server seed and tracking event legitimately name patients.
+    # The visual worker must still use dropped anchors only, with no patient scan.
+    visual=text[text.index('ACME_hpmk_visuals = createHashMap;'):]
+    visual_identifiers={t.value for t in lex(visual) if t.kind=='ident'}
+    assert '_patient' not in visual_identifiers and 'allUnits' not in visual_identifiers
+    assert not any(t.value=='allUnits' for t in lex((F/'fn_hpmkBlanketTick.sqf').read_text()))
     assert 'attachTo' not in identifiers and 'createVehicle' not in identifiers
     # No patient-follow loop is reinstated merely to meet B28's old expectation.
     assert 'ACME_hpmk_wrappedVisuals = createHashMap;' in text

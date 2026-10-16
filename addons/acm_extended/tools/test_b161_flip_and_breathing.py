@@ -44,11 +44,25 @@ def test_permanent_animation_denial_cannot_spin_in_one_cba_frame(name,closure):
     start=text.index('private '+closure+' = {')
     opening=text.index('{',start)
     definition=text[start:opening]+block_at(text,opening)+';'
+    guard=''
+    if name.endswith('Acquire'):
+        # The extracted closure now carries the acceptance/owner authority
+        # captured by its enclosing production function. Execute that actual
+        # guard, with one explicitly accepted live ACCESS lease.
+        guard_start=text.index('private _guard = +_authority;')
+        guard_end=text.index('if !([_patient, _context, _guard]',guard_start)
+        guard=r'''
+            _patient setVariable ["ACME_chestAccess_requestToken","accepted"];
+            _patient setVariable ["ACME_chestAccess_leases",createHashMapFromArray [
+                ["lease",[objNull,CBA_missionTime,"checkbreathing"]]]];
+            private _authority=[_patient getVariable ["ACME_equipmentKitEpoch",0],
+                _patient getVariable ["ACME_providerLocalityEpoch",0],"accepted",""];
+        '''+text[guard_start:guard_end]
     args = ('[_patient,objNull,"access","saved","prop","pfh","busy","ready","retired",'
-            '{},0.8,0.04,0.9,1.5,1.74,_beginPatient,true]') if name.endswith('Acquire') else (
+            '{},0.8,0.04,0.9,1.5,1.74,_beginPatient,true,_guard]') if name.endswith('Acquire') else (
             '[_patient,objNull,"access",["Vest_A",[]],"saved","prop","busy","ready","pfh","retired",'
             '0.8,0.02,0.9,1.5,1.72,{},_beginRestore]')
-    execute(patient_setup()+function('patientAnimRequest')+live_queue()+definition+r'''
+    execute(patient_setup()+function('patientAnimRequest')+live_queue()+guard+definition+r'''
         _patient setVariable ["busy","retired"];
         _patient setVariable ["ACME_patientAnimLock",[]];
         _patient setVariable ["ACME_patientAnimRetired",["retired"]];
@@ -75,15 +89,23 @@ def test_permanent_animation_denial_cannot_spin_in_one_cba_frame(name,closure):
     '_patient setVariable ["ACE_isUnconscious",false]; _animation="amovpercmstpsnonwnondnon";',
 ])
 def test_delayed_breathing_lift_rechecks_patient_before_requesting_animation(change):
+    seated=change=='_parent=missionNamespace;'
     execute(patient_setup()+function('chestAccessVestAcquire')+r'''
         _vest="Vest_A"; _loadout set [4,["Vest_A",[]]];
         [_patient,objNull,"access",true,"checkbreathing"] call ACME_fnc_chestAccessVestAcquire;
         private _start=call _take;
+        private _carrierToken=_patient getVariable ["ACME_chestAccess_vestBusy",""];
     '''+change+r'''
         _leaseAllowed=false;
         [_start] call _deliver;
         [count _animRequests==0 && {count _pins==0},"ineligible patient still received delayed lift"] call _check;
-        [count _waits==0 && {count _commits==1},"nonanimated gear completion rearmed a denied lift"] call _check;
+    '''+f'''
+        [count _waits==0 && {{count _commits=={0 if seated else 1}}},"ineligible gear completion stripped a seat or rearmed a denied lift"] call _check;
+    '''+(r'''
+        [_vest=="Vest_A","vehicle fallback removed worn gear"] call _check;
+        [(_patient getVariable ["ACME_chestAccess_readyServer",0])==1000,"valid vehicle care lost readiness"] call _check;
+        [(_releases findIf {(_x param [1,""])==_carrierToken})>=0,"vehicle fallback did not retire its exact carrier episode"] call _check;
+    ''' if seated else '')+r'''
         [(_patient getVariable ["ACME_chestAccess_vestBusy","bad"])=="","ineligible lift left busy marker"] call _check;
     ''')
 
@@ -189,7 +211,46 @@ def test_flip_cannot_reuse_old_or_incomplete_provider_completion(name,case):
         'running':'_nowTime=12;',
         'cancelled_early':'[_medic,"roll",_ep] call ACME_fnc_treatmentPoseStop; _nowTime=12;',
     }[case]
-    execute(source+change+r'''
+    # Chest Flip releases its UI once patient motion is finished and its provider pose has retired.
+    # Cancellation is a bounded teardown, not a completed medic4 signal. Auscultation retains its authored-hold
+    # completion requirement. The old shared assertion incorrectly kept an already-cancelled chest Flip locked.
+    unlocks = int(name == 'chestSealFlipTick' and case == 'cancelled_early')
+    execute(source+change+f'''
         [_flipArgs,99] call _flipTick;
-        [_unlocks==0,"incomplete/old roll unlocked current flip"] call _check;
+        [_unlocks=={unlocks},"incorrect completion/cancellation unlock"] call _check;
+        [count _rolls==0,"completion/cancellation dispatched a second patient roll"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('side',['front','back'])
+def test_cancelled_chest_flip_stays_locked_until_patient_interval_then_retires_once(side):
+    execute(flip_setup('chestSealFlipTick',side)+r'''
+        [_medic,"roll",_ep] call ACME_fnc_treatmentPoseStop;
+        [(_medic getVariable ["ACME_rollProviderCompletedEpoch",-1])!=_ep,"cancellation incorrectly claimed authored completion"] call _check;
+        _nowTime=10.5;
+        [_flipArgs,99] call _flipTick;
+        [_unlocks==0 && {_holds==0} && {!(99 in _removed)},"cancel unlocked while patient was still rolling"] call _check;
+        _nowTime=11.24;
+        [_flipArgs,99] call _flipTick;
+        [_unlocks==1 && {_holds==1} && {99 in _removed},"cancelled completed patient interval left UI stranded"] call _check;
+        [(uiNamespace getVariable ["ACME_CS_FlipPendingToken","bad"])=="","cancel retained pending click"] call _check;
+        [count _rolls==0,"cancel replayed the patient roll"] call _check;
+        [_flipArgs,99] call _flipTick;
+        [_unlocks==1 && {_holds==1},"late duplicate repeated UI/provider recovery"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('replacement_roll',[False,True])
+def test_cancelled_chest_flip_does_not_release_or_replace_a_newer_provider_pose(replacement_roll):
+    execute(flip_setup('chestSealFlipTick','back')+r'''
+        [_medic,"roll",_ep] call ACME_fnc_treatmentPoseStop;
+        private _newEpoch=[_medic,"stethoscope",-1,_patient] call ACME_fnc_treatmentPoseStart;
+        [_newEpoch>_ep,"new provider episode was not acquired"] call _check;
+    '''+('_medic setVariable ["ACME_rollProviderToken","replacement-roll"];' if replacement_roll else '')+f'''
+        _nowTime=12;
+        [_flipArgs,99] call _flipTick;
+        [_unlocks==1 && {{_holds==0}},"old flip seized newer provider pose"] call _check;
+        [((_medic getVariable ["ACME_treatmentPoseState",[]]) param [0,-1])==_newEpoch,"old flip stopped newer provider episode"] call _check;
+        [(_medic getVariable ["ACME_rollProviderToken","bad"])=="{'replacement-roll' if replacement_roll else ''}","old flip changed another roll token"] call _check;
+        [count _rolls==0,"old flip dispatched another patient roll"] call _check;
     ''')

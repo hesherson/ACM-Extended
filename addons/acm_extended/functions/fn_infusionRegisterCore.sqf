@@ -1,4 +1,4 @@
-params ["_context", "_medication", "_doseMg", "_durationSeconds", "_dropSet", "_dropsPerMinute", "_clampPosition", "_uid", "_bagUid", "_epoch", ["_solutionMl", 0]];
+params ["_context", "_medication", "_doseMg", "_durationSeconds", "_dropSet", "_dropsPerMinute", "_clampPosition", "_uid", "_bagUid", "_epoch", ["_solutionMl", 0], ["_deferPublish", false]];
 _context params ["_patient", "_bodyPart", "_bagIndex", "_type", "_accessType", "_bagAccessSite", "_bagIV", "_bloodType", "_volume", "_freshBloodID", "_remainingVolume"];
 
 if (!local _patient || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {""};
@@ -28,6 +28,12 @@ if (_solutionMl < 0 || {!finite _solutionMl}) exitWith {""};
 if (_doseMg <= 0 || {!finite _doseMg} || {_remainingVolume <= 0}) exitWith {""};
 private _actualContext = [_patient, _bodyPart, _bagIndex, _foundBag param [0, _type], _foundBag param [2, _accessType], _bagAccessSite, _bagIV, _bloodType, _volume, _freshBloodID, _remainingVolume];
 if !([_actualContext] call ACME_fnc_canMedicateBagContext) exitWith {""};
+private _isPropofolBottle = (_foundBag param [0, ""]) == "ACME_Propofol";
+// No newly prepared saline/other carrier can receive propofol. A bottle cannot
+// receive a second medication or syringe solution. Existing running legacy
+// infusions retain their delivered history and continue through fluidCommit.
+if (((_medication == "Propofol") isNotEqualTo _isPropofolBottle)
+    || {_isPropofolBottle && {_solutionMl > 0 || {!(_existing isEqualTo [])}}}) exitWith {""};
 private _classIV = (missionNamespace getVariable ["ACME_infusion_deliveryClassOverride", createHashMap]) getOrDefault [_medication, format ["%1_IV", _medication]];
 
 if (_durationSeconds <= 0) then {
@@ -46,6 +52,8 @@ _clampPosition = (_clampPosition max 0) min 1;
 _dropsPerMinute = [_clampPosition] call ACME_fnc_clampPositionToDrops;
 
 private _entries = _patient getVariable ["ACME_infusion_BagMedications", []];
+// Legacy bags acquire nominal capacity before their first added medication volume.
+_foundBag set [9,_foundBag param [9,_foundBag param [6,_remainingVolume]]];
 private _newVolume = _remainingVolume + _solutionMl;
 private _original = (_foundBag param [6, _remainingVolume]) + _solutionMl;
 // All components share the one physical valve. A later injection must not reset it.
@@ -84,16 +92,18 @@ if (_solutionMl > 0) then {
     private _bags = _map getOrDefault [_bodyPart, []];
     _foundBag set [1, _newVolume]; _foundBag set [6, _original];
     _bags set [_bagIndex, _foundBag]; _map set [_bodyPart, _bags];
-    [_patient, _map] call ACME_fnc_ivBagsCommit;
+    [_patient, _map, !_deferPublish] call ACME_fnc_ivBagsCommit;
 };
-[_patient, _entries] call ACME_fnc_infusionMedicationStateCommit;
-[_patient, _entries select (if (_same >= 0) then {_same} else {(count _entries) - 1})] call ACME_fnc_infusionFlow;
-ACME_infusion_activePatients pushBackUnique _patient;
+[_patient, _entries, !_deferPublish] call ACME_fnc_infusionMedicationStateCommit;
+if (!_deferPublish) then {
+    [_patient, _entries select (if (_same >= 0) then {_same} else {(count _entries) - 1})] call ACME_fnc_infusionFlow;
+    ACME_infusion_activePatients pushBackUnique _patient;
+};
 
 // a distal epinephrine drip gives a catecholamine-driven atrial tachyarrhythmia.
 // there is no instant rhythm flip on a bag hang. the circ handler waits for the drip to actually run long enough for
 // an epinephrine effect envelope to develop, then applies a per-minute hazard while the distal drip is active.
-if (_medication == "Epinephrine"
+if (!_deferPublish && {_medication == "Epinephrine"}
     && {_bagIV}
     && {_bagAccessSite >= 1}
     && {_bodyPart in ["leftarm", "rightarm", "leftleg", "rightleg"]}

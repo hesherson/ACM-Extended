@@ -46,3 +46,9 @@ if !(_state) then {
         _patient setVariable [QGVAR(WasWounded), true, true];
     };
 };
+
+// B224 presentation runs only after the actual wake edge and existing awake-state bookkeeping.
+if (!isNil "ACME_fnc_wakeAnimationEvent") then {[_patient,_state] call ACME_fnc_wakeAnimationEvent;};
+
+// Compose ACME medical lying protection with ACE's unconscious reason.
+if (!isNil "ACME_fnc_aiProtectionSync") then {[_patient] call ACME_fnc_aiProtectionSync;};

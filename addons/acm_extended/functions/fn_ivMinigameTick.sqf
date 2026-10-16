@@ -15,6 +15,9 @@ _acmeNVArgs call {
 private _display = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
 if (isNull _display) exitWith {};
 if !([] call ACME_fnc_ivUiValid) exitWith {_display closeDisplay 2;};
+private _medic = _display getVariable ["ACME_IV_Medic", objNull];
+if (isNull _medic || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)} || {!local _medic} || {!alive _medic}
+    || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {_display closeDisplay 2;};
 
 // Update band presence before any held-tool or insertion early return.
 [] call ACME_fnc_ivMinigameSyncBand;
@@ -66,6 +69,9 @@ if (count _ivBase >= 4) then {
     // ride along with the limb they belong to. only your mouse stays still, and that is what makes it hard.
     uiNamespace setVariable ["ACME_IV_BodyRect", [_ibx + _ivdx, _iby + _ivdy, _ibw, _ibh]];
 };
+
+[] call ACME_fnc_ivFinishTick;
+[] call ACME_fnc_ivFieldProgress;
 
 // the darkness is drawn first, before any branch can bail out.
 // this used to be the last line of this function, below thirteen exitwith branches for the held item, dragging,
@@ -316,6 +322,14 @@ if (_insStage in ["advance", "thread", "retract"]) exitWith {
 
 // holding the tubing: the floating line sits on the cursor by its connector, which is the end that plugs into
 // the hub. it uses the orientation of the catheter it is going onto.
+if (_display getVariable ["ACME_IV_FinishBusy",false]) exitWith {
+    if (!isNull _heldC) then {_heldC ctrlShow false;};
+    if (!isNull _dot) then {_dot ctrlShow false;};
+};
+if (_held in ["extension","flush","dressing","line","lock"]) exitWith {
+    [_heldC,_held,[] call ACME_fnc_ivMinigameCursor] call ACME_fnc_ivFinishPreview;
+    if (!isNull _dot) then {_dot ctrlShow false;};
+};
 if (_held == "line") exitWith {
     if (!isNull _dot) then { _dot ctrlShow false; };
     if (isNull _heldC) exitWith {};
@@ -462,6 +476,7 @@ if (_held == "pad") exitWith {
 // needle held: the full-size catheter on the cursor, tip at the cursor, with no feel dot, so it is a blind
 // stick.
 if (_held == "needle") exitWith {
+    if ([_heldC,[] call ACME_fnc_ivMinigameCursor] call ACME_fnc_ivFieldPreview) exitWith {};
     if (!isNull _dot) then { _dot ctrlShow false; };
     if (isNull _heldC) exitWith {};
     // Anatomical side selects one authored 15-degree family for the entire approach.

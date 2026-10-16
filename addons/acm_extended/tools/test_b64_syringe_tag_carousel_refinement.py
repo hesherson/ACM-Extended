@@ -34,7 +34,10 @@ def test_main_draw_always_has_select_syringe_tag_left_of_native_syringe():
     flush_save = txt('functions/fn_skFlushSave.sqf')
     # Current selector is centered under the native tag face, not forced to the syringe's left edge.
     assert 'private _tagCenterX = _x + _w*0.36;' in pending
-    assert '[10, _patient, _bodyPart, _flushClass]' in pick_flush
+    from test_b241_current_ui_expectations import flush_selection_contract
+    # Selection resizes in place and starts the staged waste workflow. It does
+    # not administer fluid or close/recreate the Narc Box.
+    flush_selection_contract(pick_flush)
     # Medicated-flush tag metadata is committed at Save, not at each Draw.
     assert 'ACME_fnc_skApplyPendingTag' in flush_save
 

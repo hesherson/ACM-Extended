@@ -1,6 +1,7 @@
 """Source integration checks. Arma physics and gestures still require an in-game test."""
 from pathlib import Path
 import re
+import pytest
 
 ADDON = Path(__file__).resolve().parents[1]
 ADDONS = ADDON.parent
@@ -78,7 +79,20 @@ def test_semifowler_is_revalidated_before_side_effects_and_menu_grouping():
     assert guard < start.index('setVariable ["ACME_headElevated", true')
     renderer = source("gui/overrides/fnc_updateActions.sqf")
     assert "!= 'acme_elevatehead'" in renderer
-    assert '[_target, ACE_player] call ACME_fnc_headElevateCanStart' in renderer
+    from test_b241_current_ui_expectations import has
+    assert has(renderer, '[_target, (call ACME_fnc_controlledProvider)] call ACME_fnc_headElevateCanStart')
+
+
+def test_semifowler_renderer_contract_rejects_retired_global_provider(monkeypatch):
+    real=source
+    relative='gui/overrides/fnc_updateActions.sqf'
+    current=real(relative)
+    old='[_target, (call ACME_fnc_controlledProvider)] call ACME_fnc_headElevateCanStart'
+    assert old in current
+    broken=current.replace(old, '[_target, ACE_player] call ACME_fnc_headElevateCanStart')
+    monkeypatch.setitem(globals(), 'source', lambda path: broken if path==relative else real(path))
+    with pytest.raises(AssertionError):
+        test_semifowler_is_revalidated_before_side_effects_and_menu_grouping()
 
 def test_ketamine_water_amplitude_reduced_at_every_tier():
     tick = fn("visualFxTick")

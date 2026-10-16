@@ -36,7 +36,13 @@ if (_op == "take") exitWith {
         private _fields = [] call ACME_fnc_ventDeviceFields;
         {_patient setVariable [_x, nil, true];} forEach _fields;
         {if ((_x select 0) in _fields) then {_patient setVariable [_x select 0, _x select 1, true];};} forEach _settings;
-        _patient setVariable ["ACME_vent_iface", "INVASIVE", true];
+        private _mask = (_r getOrDefault ["interface", "INVASIVE"]) == "MASK";
+        _patient setVariable ["ACME_vent_nivMask", _mask, true];
+        _patient setVariable ["ACME_vent_iface", ["INVASIVE", "NON INVASIVE"] select _mask, true];
+        if (_mask) then {
+            _patient setVariable ["ACME_vent_mode", "CPAP PS HF", true];
+            _patient setVariable ["ACME_vent_psup", 0, true];
+        };
         _patient setVariable ["ACME_vent_circuit", true, true];
         _patient setVariable ["ACME_vent_configured", false, true];
         _patient setVariable ["ACME_vent_connected", false, true];

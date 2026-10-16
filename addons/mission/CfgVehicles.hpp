@@ -9,6 +9,14 @@ class CfgVehicles {
         linkedItems[] = {"V_PlateCarrier1_rgr"};
         respawnLinkedItems[] = {"V_PlateCarrier1_rgr"};
     };
+    class C_man_1;
+    class GVAR(TrainingCivilian): C_man_1 {
+        scope = 1;
+        scopeCurator = 0;
+        scopeArsenal = 0;
+        linkedItems[] = {};
+        respawnLinkedItems[] = {};
+    };
 
     class Logic;
     class Module_F: Logic {

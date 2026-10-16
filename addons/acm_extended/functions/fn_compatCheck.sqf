@@ -13,7 +13,7 @@
 // a casualty on the table. that is worth a great deal on a heavily modded server, where the load order is not
 // something anyone fully controls.
 
-if (!isServer && {!hasInterface}) exitWith {};
+// Headless clients own casualty physiology too, so verify the same runtime bindings there.
 if (missionNamespace getVariable ["ACME_compatChecked", false]) exitWith {};
 missionNamespace setVariable ["ACME_compatChecked", true];
 
@@ -52,6 +52,9 @@ private _hasMarker = {
     _x params ["_name", "_marker"];
     if !([_name, _marker] call _hasMarker) then { _missing pushBack format ["STALE/OVERRIDDEN %1", _name]; };
 } forEach [
+    // Fail visibly if another mod wins the ACE treatment override after load:
+    // canonical modal routing would otherwise silently fall back to its old path.
+    ["ace_medical_treatment_fnc_treatment", "ACME-B263-modal-route"],
     ["ACM_circulation_fnc_getBloodVolumeChange", "B106:volumeCanonical"],
     ["ace_medical_vitals_fnc_handleUnitVitals", "B106:vasoconstrictionPersist"],
     ["ACM_circulation_fnc_setIV", "B106:setIVReconciled"],

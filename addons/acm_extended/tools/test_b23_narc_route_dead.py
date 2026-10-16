@@ -21,7 +21,11 @@ class B23MedicationListContracts(unittest.TestCase):
         self.assertIn('ACME_fnc_medicationSourceRows', sync)
         self.assertIn('ACM_circulation_MedicationVialList', source)
         self.assertIn('ACME_fnc_vialItemCount', source)
-        self.assertIn('ace_common_fnc_getCountOfItem', read('functions/fn_vialItemCount.sqf'))
+        vial_count = read('functions/fn_vialItemCount.sqf')
+        item_count = read('functions/fn_itemCount.sqf')
+        self.assertIn('ACME_fnc_itemCount', vial_count)
+        self.assertIn('ace_common_fnc_getCountOfItem', item_count)
+        self.assertIn('efak_medical_fnc_countItem', item_count)
         self.assertIn('ACME_infusion_openVials', source)
         self.assertIn('ACME_medicationVialRegistryFull', source)
         self.assertNotIn('ace_common_fnc_uniqueItems', source)
@@ -99,9 +103,12 @@ class B23RouteSelector(unittest.TestCase):
 class B23DeadBagAccess(unittest.TestCase):
     def test_dead_target_can_open_transfusion_menu_if_access_exists(self):
         s = read('overrides/fn_canTreatCached.sqf')
-        self.assertIn('_className == "OpenTransfusionMenu"', s)
-        self.assertIn('ACM_circulation_fnc_hasIV', s)
-        self.assertIn('ACM_circulation_fnc_hasIO', s)
+        self.assertIn('toLowerANSI _bodyPart, _className] call ace_medical_treatment_fnc_canTreat', s)
+        native = (ROOT.parent / "core/ACE_Medical_Treatment_Actions.hpp").read_text()
+        block = native.split("class OpenTransfusionMenu",1)[1].split("class ",1)[0]
+        self.assertIn("hasIV", block)
+        self.assertIn("hasIO", block)
+        self.assertNotIn("alive _patient", block)
 
     def test_hang_bag_does_not_drop_only_because_patient_is_dead(self):
         start = read('functions/fn_hangBagStart.sqf')

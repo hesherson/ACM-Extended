@@ -10,7 +10,7 @@ import shutil
 import subprocess
 
 import pytest
-from test_menu_death_lifecycle import namespace_public_arguments
+from test_menu_death_lifecycle import namespace_public_arguments, adapt, read
 
 ROOT = Path(__file__).resolve().parents[3]
 F = ROOT / 'addons/circulation/functions'
@@ -19,6 +19,7 @@ F = ROOT / 'addons/circulation/functions'
 def source(name):
     s = (F / f'fnc_{name}.sqf').read_text()
     s = re.sub(r'^#include.*$', '', s, flags=re.M)
+    s = s.replace("isMultiplayer", "false")  # Explicit single-player engine boundary.
     for macro, prefix, quote in [('QACEGVAR', 'ace', True), ('QEGVAR', 'ACM', True), ('EGVAR', 'ACM', False), ('ACEGVAR', 'ace', False)]:
         s = re.sub(r'\b' + macro + r'\((\w+),\s*(\w+)\)', lambda m: ('"' if quote else '') + f'{prefix}_{m[1]}_{m[2]}' + ('"' if quote else ''), s)
     for macro, prefix, quote in [('QGVAR', 'ACM_circulation_', True), ('GVAR', 'ACM_circulation_', False), ('FUNC', 'ACM_circulation_fnc_', False)]:
@@ -37,6 +38,7 @@ def source(name):
         'alive _patient': '_patientAlive',
         'local _medic': '_local',
         'owner _medic': '_testOwner',
+        'clientOwner': '_testOwner',
         'currentWeapon _medic': '""',
         '_medic setUnitPos "AUTO";': '_stanceFreed = true;',
         'animationState _medic': '"amovpknlmstpsnonwnondnon"',
@@ -45,6 +47,7 @@ def source(name):
         'isServer': '_isServer',
         # All configured delay fixtures are finite; the VM lacks this command.
         'finite _lowerDelay': '(_lowerDelay isEqualType 0)',
+        'serverTime': 'CBA_missionTime',
         'addMissionEventHandler ["HandleDisconnect",': '_disconnectHandler = (["HandleDisconnect",',
     }.items():
         s = s.replace(a, b)
@@ -64,6 +67,15 @@ def source(name):
         # Server watchdog age must use the dedicated server's receive clock, not the provider's client clock.
         s = s.replace('CBA_missionTime', '_serverClock')
     return s
+
+
+def contact_source():
+    from test_menu_death_lifecycle import adapt
+    text=(ROOT/'addons/acm_extended/functions/fn_patientInteractionContact.sqf').read_text()
+    text=text.replace('objectParent _medic','_medicVehicle').replace('objectParent _patient','_patientVehicle')
+    text=text.replace('_medic distance _patient','_distance')
+    text=re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',text)
+    return 'ACME_fnc_patientInteractionDistance={_distance};ACME_fnc_flightAirframe={objNull};ACME_fnc_patientInteractionContact={'+adapt(text)+'};'
 
 
 def execute(scenario, runtime=False):
@@ -110,11 +122,17 @@ def execute(scenario, runtime=False):
         CBA_missionTime = 20;
         private _serverClock = 1000;
         ACE_player = _medic;
+        ACME_fnc_controlledProvider = {ACE_player};
         ace_medical_gui_maxDistance = 3;
         ACM_breathing_SwapToCPR = false;
         ACM_core_ContinuousAction_Active = false;
         ace_common_fnc_isAwake = {_awake};
-        ACME_fnc_ownerDispatch = {_dispatches pushBack _this;};
+        ACME_fnc_ownerDispatch = {
+            _dispatches pushBack _this;
+            if ((_this select 1) == "headElevStop" && {!(_patient getVariable ["ACME_headElevated", false])}) then {
+                _patient setVariable ["ACME_cprLowerReady", [_medic, (_this select 2) select 6, CBA_missionTime]];
+            };
+        };
         ace_common_fnc_uniqueItems = {if (_hasBVM) then {["ACM_BVM"]} else {[]}};
         ace_common_fnc_displayTextStructured = {_texts pushBack (_this select 0);};
         ace_common_fnc_getName = {"Provider"};
@@ -183,6 +201,9 @@ def execute(scenario, runtime=False):
             [ACM_circulation_CPR_LocalSession isEqualTo [] && {ACM_circulation_CPR_ControllerPFH == -1}, "controller retained"] call _check;
         };
     '''
+    code += contact_source()
+    # Load the actual inventory adapter added after this fixture was authored.
+    code += 'ACME_fnc_itemList = {' + adapt(read('itemList')).replace('objNull, [objNull]', 'objNull, [profileNamespace]') + '};\n'
     for name in ('cprSessionValid', 'cprRelease', 'cprCleanupLocal', 'registerCPRRuntime', 'beginCPR'):
         code += f'ACM_circulation_fnc_{name} = {{' + source(name) + '};\n'
     if runtime:

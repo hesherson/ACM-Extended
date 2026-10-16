@@ -1,9 +1,15 @@
+// A late Unload from an older window may NOT retire a replacement workspace.
+disableSerialization;
+params [["_closing", displayNull]];
+if (_this isNotEqualTo [] && {_closing isNotEqualTo (uiNamespace getVariable ["ACME_Thora_DLG", displayNull])}) exitWith {};
 // Close thoracostomy workspace and release the one patient-side chest-access lease.
 // Stable thoracostomy entry is providerless; the provider cleanup below exists only to recover stale state from
 // an older/hot-loaded build and is not part of the normal lifecycle.
 private _patient = uiNamespace getVariable ["ACME_Thora_Patient", objNull];
 private _medic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
 private _lease = uiNamespace getVariable ["ACME_Thora_ChestAccessLease", ""];
+// Antiseptic already painted on the casualty persists when the window closes mid-stroke.
+[] call ACME_fnc_thoraPrepFlush;
 
 private _entryKeys = uiNamespace getVariable ["ACME_Thora_EntryKeys", []];
 {
@@ -71,6 +77,8 @@ uiNamespace setVariable ["ACME_Thora_Palpating", false];
 uiNamespace setVariable ["ACME_Thora_Cutting", false];
 uiNamespace setVariable ["ACME_Thora_Prepping", false];
 uiNamespace setVariable ["ACME_Thora_PrepLocal", createHashMap];
+uiNamespace setVariable ["ACME_Thora_PrepEpoch", -1];
+uiNamespace setVariable ["ACME_Thora_RibPending", createHashMap];
 uiNamespace setVariable ["ACME_Thora_PrepLast", []];
 uiNamespace setVariable ["ACME_Thora_TubeSnap", false];
 uiNamespace setVariable ["ACME_Thora_KellyArmed", false];

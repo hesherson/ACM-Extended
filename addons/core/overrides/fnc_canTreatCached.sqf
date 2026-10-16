@@ -3,9 +3,9 @@
 // response, the airway adjuncts, the BVM and BVM with o2, the non-rebreather and managing head injuries are all
 // head-selection, plus "Unwrap HPMK" and the responsiveness check. everything on the body and limbs is gated off,
 // so the menu grays or hides it. once unwrapped, the gate clears and everything returns.
-// the implementation gates first, giving an instant false for the blocked case, and otherwise passes straight
-// through to the real cantreat. so the behavior is byte-identical to stock whenever the patient is not wrapped.
-// the caching is skipped, because the medical menu only re-collects on refresh rather than per frame.
+// Menu visibility, immediate clicks and delayed treatment starts share this live policy. Living patients use
+// native canTreat after the HPMK/procedure gates; corpses retain the same config and native access checks.
+// The historical ACE function name is retained, but this implementation never caches.
 params [["_caller", objNull], ["_target", objNull], ["_bodyPart", ""], ["_className", ""]];
 if !([_caller, _className] call ACME_fnc_procedureActionAllowed) exitWith {false};
 
@@ -17,9 +17,18 @@ private _hpmkIsLying = if (_hpmkLyingState isEqualType true) then {_hpmkLyingSta
 if (
     !isNull _target
     && {_className in ["ACME_PrepHPMK", "ACME_WrapHPMK"]}
+    && {alive _target}
     && {!(_target getVariable ["ACE_isUnconscious", false])}
     && {!_hpmkIsLying}
 ) exitWith {false};
+
+// A live CPR lease (even while compressions are paused) owns the exposed
+// chest. No new HPMK prep/wrap can cover that workspace, including if the
+// menu was opened before CPR began.
+if (!isNull _target && {_target isEqualType objNull}
+    && {_className in ["ACME_PrepHPMK", "ACME_WrapHPMK"]}
+    && {!isNull (_target getVariable ["ACM_circulation_CPR_Medic", objNull])
+        || {!isNull (_target getVariable ["ace_medical_CPR_provider", objNull])}}) exitWith {false};
 
 private _state = _target getVariable ["ACME_hpmk_state", ""];
 private _part = toLower _bodyPart;
@@ -28,8 +37,9 @@ private _hpmkActions = ["CheckResponse", "ACME_UnwrapHPMK", "ACME_ExposeChestHPM
 // B190: partially exposed HPMK is genuine chest access. CPR is a Body action even if the exposed overlay/menu
 // leaves a stale selection context behind. Re-evaluate the exact ACE CPR treatment against the canonical Body
 // selection. Fully wrapped HPMK never enters this branch and remains blocked below.
-if (!isNull _target && {_state == "exposed"} && {(toLowerANSI _className) == "cpr"}) exitWith {
-    [_caller, _target, "Body", _className] call ace_medical_treatment_fnc_canTreat
+if (!isNull _target && {_state == "exposed"} && {(toLowerANSI _className) == "cpr"}) then {
+    _bodyPart = "body";
+    _part = "body";
 };
 
 // fully wrapped: only head-part care, plus the HPMK actions, stays available.
@@ -39,114 +49,6 @@ if (
     && {_part != "head"}
     && {!(_className in _hpmkActions)}
 ) exitWith { false };
-
-// the dead-casualty override for the ACME thoracic training procedures.
-// ACE's stock cantreat path hides most treatment actions once the unit is truly dead. these procedures are
-// intentionally allowed to remain visible for training and aar continuity.
-// A corpse can still have a patent IV/IO line and a bag can still be attached to that line for training,
-// equipment accounting and post-event reconstruction. Do not force the medic to infer death merely because the
-// transfusion menu disappeared. Physiology still does not resume on a dead unit.
-if (
-    !isNull _caller
-    && {!isNull _target}
-    && {!alive _target}
-    && {_target isKindOf "CAManBase"}
-    && {_className == "OpenTransfusionMenu"}
-) exitWith {
-    ([_target, _bodyPart, 0, -1] call ACM_circulation_fnc_hasIV)
-        || {[_target, _bodyPart, 0] call ACM_circulation_fnc_hasIO}
-};
-
-private _deadEvidenceActions = [
-    "CheckAirway", "CheckBreathing", "UseStethoscope", "ACME_InspectChest",
-    "RemoveOPA", "RemoveNPA", "RemoveIGel", "ACME_Extubate", "ACME_OpenAirwayView"
-];
-if (!isNull _caller && {!isNull _target} && {!alive _target} && {_target isKindOf "CAManBase"} && {_className in _deadEvidenceActions}) exitWith {
-    switch (_className) do {
-        case "RemoveOPA": {(_target getVariable ["ACM_airway_AirwayItem_Oral", ""]) == "OPA"};
-        case "RemoveNPA": {(_target getVariable ["ACM_airway_AirwayItem_Nasal", ""]) == "NPA"};
-        case "RemoveIGel": {(_target getVariable ["ACM_airway_AirwayItem_Oral", ""]) == "SGA"};
-        case "ACME_Extubate";
-        case "ACME_OpenAirwayView": {(_target getVariable ["ACME_ETT_Inserted", false]) && {[_caller, _className] call ACME_fnc_procedureActionAllowed}};
-        default {true};
-    };
-};
-
-// Persisted equipment must remain manageable after death.  These actions do not restart physiology; they only
-// inspect, maintain, expose or recover equipment that is already physically on the casualty.  Keeping the same
-// state-driven buttons on a corpse also prevents the medical menu from becoming an unintended death detector.
-private _deadEquipmentActions = [
-    "ACME_VentOpenPatient", "ACME_DisconnectETVent", "ACME_SwapVentBattery",
-    "ACME_RemoveNRB",
-    "ACME_UnwrapHPMK", "ACME_ExposeChestHPMK", "ACME_CoverChestHPMK", "ACME_RemoveHPMK"
-];
-if (
-    !isNull _caller
-    && {!isNull _target}
-    && {!alive _target}
-    && {_target isKindOf "CAManBase"}
-    && {_className in _deadEquipmentActions}
-) exitWith {
-    private _hpmkState = _target getVariable ["ACME_hpmk_state", ""];
-    switch (_className) do {
-        case "ACME_VentOpenPatient": {
-            (_target getVariable ["ACME_vent_onPatient", false])
-                && {!(_target getVariable ["ACME_vent_recovering", false])}
-                && {(_target getVariable ["ACME_vent_circuit", false]) || {_target getVariable ["ACME_vent_configured", false]}}
-        };
-        case "ACME_DisconnectETVent": {
-            (_target getVariable ["ACME_vent_onPatient", false])
-                && {!(_target getVariable ["ACME_vent_recovering", false])}
-        };
-        case "ACME_SwapVentBattery": {
-            [_target] call ACME_fnc_canSwapVentBattery
-                && {([_caller, "ACME_VentBattery"] call ACME_fnc_itemCount) > 0}
-        };
-        case "ACME_RemoveNRB": {_target getVariable ["ACME_nrb_on", false]};
-        case "ACME_UnwrapHPMK": {_caller isNotEqualTo _target && {_hpmkState in ["wrapped", "exposed"]}};
-        case "ACME_ExposeChestHPMK": {_caller isNotEqualTo _target && {_hpmkState == "wrapped"}};
-        case "ACME_CoverChestHPMK": {_caller isNotEqualTo _target && {_hpmkState == "exposed"}};
-        case "ACME_RemoveHPMK": {_caller isNotEqualTo _target && {_hpmkState == "prepped"}};
-        default {false};
-    };
-};
-
-private _deadThoracicActions = [
-    "ACME_ApplyChestSeal",
-    "ACME_PerformNARSPEAR",
-    "ACME_PerformThoracostomy",
-    "ACME_AdjustThoracostomy",
-    "ACME_InsertChestTube",
-    "ACME_DrainFluid_ACCUVAC",
-    "ACME_DrainFluid_SuctionBag",
-    "ACME_ResealChestTube",
-    "ACME_CloseIncision"
-];
-if (
-    !isNull _caller
-    && {!isNull _target}
-    && {!alive _target}
-    && {_target isKindOf "CAManBase"}
-    && {(toLower _bodyPart) == "body"}
-    && {_className in _deadThoracicActions}
-) exitWith {
-    private _has = {
-        params ["_item"];
-        (([_caller, _item] call ACME_fnc_itemCount) > 0) || {([_caller, _target, [_item]] call ace_medical_treatment_fnc_hasItem)}
-    };
-    switch (_className) do {
-        case "ACME_ApplyChestSeal": { ["ACM_ChestSeal"] call _has };
-        case "ACME_PerformNARSPEAR": { ["ACME_NARSPEAR"] call _has };
-        case "ACME_PerformThoracostomy": { (_target getVariable ["ACM_breathing_Thoracostomy_State", 0]) < 1 && {([_caller, _target] call ACME_fnc_thoraKitItem) != ""} };
-        case "ACME_AdjustThoracostomy": {[_caller, _target, true] call ACME_fnc_thoraCanOpen};
-        case "ACME_InsertChestTube": { ((_target getVariable ["ACM_breathing_Thoracostomy_State", 0]) == 1) && {["ACM_ChestTubeKit"] call _has} };
-        case "ACME_DrainFluid_ACCUVAC": { ((_target getVariable ["ACM_breathing_Thoracostomy_State", 0]) in [2,3]) && {["ACM_ACCUVAC"] call _has} };
-        case "ACME_DrainFluid_SuctionBag": { ((_target getVariable ["ACM_breathing_Thoracostomy_State", 0]) in [2,3]) && {["ACM_SuctionBag"] call _has} };
-        case "ACME_ResealChestTube": { ((_target getVariable ["ACM_breathing_Thoracostomy_State", 0]) == 3) };
-        case "ACME_CloseIncision": { ((_target getVariable ["ACM_breathing_Thoracostomy_State", 0]) > 0) && {(["ACE_surgicalKit"] call _has) || {_target getVariable ["ACM_breathing_Thoracostomy_UsedKit", false]}} };
-        default {false};
-    };
-};
 
 // partially exposed: the head, the chest, meaning body, and the left arm are open, plus the HPMK actions. the right
 // arm and both legs stay locked, because they are still wrapped. the ACE selection names are head, body, leftarm,
@@ -158,4 +60,19 @@ if (
     && {!(_className in _hpmkActions)}
 ) exitWith { false };
 
-_this call ace_medical_treatment_fnc_canTreat
+// A corpse is a valid treatment target. Keep provider/context checks here, then use ACE's actual config
+// conditions and generic skill, item, location, self-treatment and underwater rules for both life states.
+// Historical corpse exception tables duplicated those rules and could show actions their callbacks refused.
+if (!isNull _target && {!alive _target}) then {
+    private _sameVehicle = !isNull objectParent _caller && {objectParent _caller isEqualTo objectParent _target};
+    private _exceptions = [["isNotInside", "isNotSwimming", "isNotInZeus"], ["isNotSwimming", "isNotInZeus"]] select _sameVehicle;
+    private _zeus = _caller isEqualTo player && {!isNull findDisplay 312};
+    private _allowed = !isNull _caller && {alive _caller}
+        && {!(_caller getVariable ["ACE_isUnconscious", false])}
+        && {[_caller, _target, _exceptions] call ace_common_fnc_canInteractWith}
+        && {_zeus || {_sameVehicle || {([_caller, _target] call ACME_fnc_patientInteractionDistance) <= ace_medical_gui_maxDistance}}};
+    if (!_allowed) then {_className = "";};
+};
+if (_className == "") exitWith {false};
+
+[_caller, _target, toLowerANSI _bodyPart, _className] call ace_medical_treatment_fnc_canTreat

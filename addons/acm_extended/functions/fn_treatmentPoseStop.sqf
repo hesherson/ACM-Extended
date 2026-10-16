@@ -1,5 +1,5 @@
 // Release only the matching episode; stale callbacks cannot end a newer action.
-// Every ACME-owned treatment pose exits to a movable, unarmed crouch. Weapons are never automatically reselected.
+// Exit in the provider's supported posture. Weapons are never automatically reselected.
 params [["_medic", objNull, [objNull]], ["_mode", "", [""]], ["_epoch", -1, [0]], ["_handoff", false, [false]]];
 if (isNull _medic) exitWith {};
 private _state = _medic getVariable ["ACME_treatmentPoseState", []];
@@ -23,11 +23,18 @@ private _stage = _state param [3, 0];
 private _pfh = _state param [5, -1];
 private _exclusion = _state param [7, ""];
 private _upright = _state param [16, false];
+private _enteredProne = (_state param [20, false]) || {stance _medic == "PRONE"} || {
+    private _animation = toLowerANSI animationState _medic;
+    (_animation find "pknl") < 0 && {(_animation find "ppne") >= 0 || {(_animation find "prone") >= 0}}
+};
 // B175 medicUp is an AinvPknl family: the casualty is upright, the provider is not. Always return these provider
 // poses to the normal unarmed crouch. Retain the old standing exit only for a hot-loaded legacy AinvPerc state.
 private _exitUpright = _upright && {((toLowerANSI _main) find "ainvperc") == 0};
 if (_mode != "" && {_mode != _currentMode}) exitWith {};
 if (_epoch >= 0 && {_epoch != _currentEpoch}) exitWith {};
+// B251: a treatment-pose epoch alone cannot distinguish an away/back locality
+// round trip. Delayed exit and handoff callbacks must also match this owner generation.
+private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
 
 _medic setVariable ["ACME_treatmentPoseState", []];
 if (local _medic && {(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [_currentEpoch, true]}) then {
@@ -35,9 +42,14 @@ if (local _medic && {(_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEq
 };
 if (_pfh >= 0) then {[_pfh] call CBA_fnc_removePerFrameHandler;};
 
+// An ownership-only episode never acquired animation speed, stance or a JIP hold. Its release must not alter a
+// concurrently owned native movement coefficient or append a decorative exit after presentation was disabled.
+if (_state param [21, false]) exitWith {};
+
 // Every phase, including accelerated preparation, is retired through the same ordered receiver.
 // A handoff releases immediately; a normal exit blends at the shared rate and has a bounded speed reset.
-private _canExit = !_handoff && {local _medic} && {alive _medic}
+private _canExit = (missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_handoff} && {local _medic} && {alive _medic}
     && {!(_medic getVariable ["ACE_isUnconscious", false])} && {!([_medic] call ACME_fnc_animBlocked)};
 private _operation = ["release", "exit"] select _canExit;
 private _rate = if (_canExit) then {call ACME_fnc_choreographyRate} else {1};
@@ -49,6 +61,15 @@ if (local _medic) then {["ACME_treatmentPoseSync", _packet] call CBA_fnc_globalE
 if (!isNil "ace_advanced_fatigue_setAnimExclusions" && {_exclusion != ""}) then {
     private _index = ace_advanced_fatigue_setAnimExclusions find _exclusion;
     if (_index >= 0) then {ace_advanced_fatigue_setAnimExclusions deleteAt _index;};
+};
+
+// Disabling presentation during a previously visible episode suppresses its decorative exit, but must still
+// release the stance that episode acquired. A newer provider controller owns its own stance and wins here.
+// Stage -1 has not entered the provider crouch yet; ownership-only episodes already returned above.
+if (!(missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {_stage != -1} && {local _medic}
+    && {!([_medic] call ACME_fnc_providerStanceOwned)}) then {
+    _medic setUnitPos "AUTO";
 };
 
 // Cancel pending queue/reassert ownership so an old entry cannot restart after a cancellation.
@@ -75,7 +96,8 @@ private _ownsEntry = _stage <= 1 && {
 
 // Use playMoveNow through the move graph, never switchMove, so the work state blends back into the normal
 // unarmed crouch. Weapon selection is not touched here; the start preflight already cleared it exactly once.
-if (!_handoff
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!_handoff}
     && {!_ambulatoryAlreadySettled}
     && {local _medic}
     && {alive _medic}
@@ -84,16 +106,18 @@ if (!_handoff
     && {_current == toLower _main || {_ownsEntry} || {_stage >= 2} || {_currentMode in ["stethoscope","pulse"]}}) then {
     // B175: current medicUp states are kneeling-provider motions and therefore exit to unarmed crouch.
     // _exitUpright is only a compatibility path for an already-running legacy AinvPerc episode.
-    _medic setUnitPos (["MIDDLE", "UP"] select _exitUpright);
-    [_medic, ["AmovPknlMstpSnonWnonDnon", "AmovPercMstpSnonWnonDnon"] select _exitUpright, 1] call ACME_fnc_doAnim;
+    _medic setUnitPos (if (_enteredProne) then {"AUTO"} else {["MIDDLE", "UP"] select _exitUpright});
+    private _exitAnim = [_medic, ["AmovPknlMstpSnonWnonDnon", "AmovPercMstpSnonWnonDnon"] select _exitUpright, _enteredProne] call ACME_fnc_providerAnimation;
+    [_medic, _exitAnim, 1] call ACME_fnc_doAnim;
 
-    if (!_exitUpright) then {
+    if (!_exitUpright && {!_enteredProne}) then {
         // ACE/ACM can apply its treatment-end move after callbackSuccess. Check once after that handoff; only if
         // the engine actually put us back on our feet do we request the normal stand-to-crouch transition. This is
         // a one-shot correction, not an animation watchdog/restart loop.
         [{
-            params ["_unit", "_endedEpoch"];
+            params ["_unit", "_endedEpoch", "_localityEpoch"];
             if (isNull _unit || {!local _unit} || {!alive _unit} || {_unit getVariable ["ACE_isUnconscious", false]}) exitWith {};
+            if ((_unit getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch) exitWith {};
             if ((_unit getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []) exitWith {};
             if ((_unit getVariable ["ACME_treatmentPoseEpoch", 0]) != _endedEpoch) exitWith {};
             if (!isNull objectParent _unit) exitWith {};
@@ -106,16 +130,17 @@ if (!_handoff
             // MIDDLE is only an animation-entry guard. Release it after the one-shot crouch handoff so the provider
             // remains visually crouched but is never stance-locked once the treatment theatre is finished.
             [{
-                params ["_u", "_ep"];
+                params ["_u", "_ep", "_localityEpoch"];
                 if (isNull _u || {!local _u} || {!alive _u} || {!isNull objectParent _u}) exitWith {};
+                if ((_u getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch) exitWith {};
                 if ((_u getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []) exitWith {};
                 if ((_u getVariable ["ACME_treatmentPoseEpoch", 0]) != _ep) exitWith {};
                 // A different controller may have acquired the provider after this treatment ended without touching
                 // treatmentPoseEpoch. Never let the old delayed stance release break that newer pose.
                 if ([_u] call ACME_fnc_providerStanceOwned) exitWith {};
                 _u setUnitPos "AUTO";
-            }, [_unit, _endedEpoch], 0.85 / (call ACME_fnc_choreographyRate)] call CBA_fnc_waitAndExecute;
-        }, [_medic, _currentEpoch], 0.12] call CBA_fnc_waitAndExecute;
+            }, [_unit, _endedEpoch, _localityEpoch], 0.85 / (call ACME_fnc_choreographyRate)] call CBA_fnc_waitAndExecute;
+        }, [_medic, _currentEpoch, _localityEpoch], 0.12] call CBA_fnc_waitAndExecute;
     };
 };
 
@@ -125,18 +150,19 @@ if (!_handoff
 // handoff from breaking a newer pose.
 if (_handoff && {local _medic} && {alive _medic}) then {
     private _releaseIfFree = {
-        params ["_u","_endedEpoch"];
+        params ["_u","_endedEpoch","_localityEpoch"];
         if (isNull _u || {!local _u} || {!alive _u} || {!isNull objectParent _u}) exitWith {};
+        if ((_u getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch) exitWith {};
         if ((_u getVariable ["ACME_treatmentPoseEpoch",0]) != _endedEpoch) exitWith {};
         if ([_u] call ACME_fnc_providerStanceOwned) exitWith {};
         _u setUnitPos "AUTO";
     };
     [{
-        params ["_u","_endedEpoch","_fn"];
-        [_u,_endedEpoch] call _fn;
-    }, [_medic,_currentEpoch,_releaseIfFree], 0.35] call CBA_fnc_waitAndExecute;
+        params ["_u","_endedEpoch","_localityEpoch","_fn"];
+        [_u,_endedEpoch,_localityEpoch] call _fn;
+    }, [_medic,_currentEpoch,_localityEpoch,_releaseIfFree], 0.35] call CBA_fnc_waitAndExecute;
     [{
-        params ["_u","_endedEpoch","_fn"];
-        [_u,_endedEpoch] call _fn;
-    }, [_medic,_currentEpoch,_releaseIfFree], 4.25] call CBA_fnc_waitAndExecute;
+        params ["_u","_endedEpoch","_localityEpoch","_fn"];
+        [_u,_endedEpoch,_localityEpoch] call _fn;
+    }, [_medic,_currentEpoch,_localityEpoch,_releaseIfFree], 4.25] call CBA_fnc_waitAndExecute;
 };

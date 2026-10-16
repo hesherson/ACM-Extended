@@ -10,7 +10,7 @@ def read(rel):
 def test_head_tilt_launcher_bypasses_generic_async_preflight():
     s = read("addons/core/overrides/fnc_treatment.sqf")
     direct = s.index('_nativeContinuousClass == "beginheadtiltchinlift"')
-    generic = s.index('private _bypass = _medic getVariable ["ACME_treatmentPreflightBypass"')
+    generic = s.index("// Resolve ACME's provider-theatre policy BEFORE native treatment starts.")
     assert direct < generic
     assert '_this call ACM_core_fnc_treatmentNative' in s[direct:s.index('if (_nativeContinuousClass in ["usebvm"', direct)]
 
@@ -71,7 +71,8 @@ def test_debug_and_tbi_still_share_authoritative_seizure_driver():
 def test_cric_and_rc19_steth_lifetimes_are_unchanged():
     steth = read("addons/acm_extended/functions/fn_beginStethoscopeAction.sqf")
     cric = read("addons/airway/functions/fnc_establishSurgicalAirway.sqf")
-    assert 'ACM_core_ContinuousAction_Session", [_patient, _epoch]' in steth
+    assert '["session", [_patient, _epoch]]' in steth
+    assert 'call ACM_core_fnc_setContinuousActionState' in steth
     assert "SurgicalAirway_InProgress_Session" not in cric
 
 if __name__ == "__main__":

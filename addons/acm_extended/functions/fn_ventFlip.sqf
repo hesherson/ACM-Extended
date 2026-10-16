@@ -1,3 +1,9 @@
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // the reverse of the device: everything you cannot do from the front, which is the power and the battery hatch.
 // ["toggle"] call ACME_fnc_ventFlip turns the machine round.
 // ["apply"] call ACME_fnc_ventFlip re-applies the current side, after a screen rebuild.
@@ -10,7 +16,7 @@
 // like an act rather than a menu item.
 // on the per-battery charge: two charges exist and they swap places rather than resetting.
 // the fitted one is ACME_vent_battery on the casualty, or on the medic when nothing is connected.
-// the spare is ACME_vent_spareBattery on the medic, at 100 for a fresh item.
+// each spare carries its own charge in its physical item class; the fresh base item is 100.
 // pressing the hatch exchanges them, so a half-flat battery you pulled earlier goes back in half flat. a swap
 // that always produced 100 percent would make the whole endurance model free.
 
@@ -118,7 +124,7 @@ if (_mode isEqualTo "power") exitWith {
     // it is written through to the machine as well as the ui, or the state would evaporate the moment the panel
     // closed.
     private _pwrH = uiNamespace getVariable ["ACME_vent_powerHolder", objNull];
-    if (isNull _pwrH) then { _pwrH = if (isNull _tgt) then { ACE_player } else { _tgt }; };
+    if (isNull _pwrH) then { _pwrH = if (isNull _tgt) then { _viewer } else { _tgt }; };
     if (_on) then {
         // off. the machine stops driving immediately, because a ventilator that is off is not ventilating, and the
         // casualty is on whatever the medic does next.
@@ -136,9 +142,9 @@ if (_mode isEqualTo "power") exitWith {
             _pwrH setVariable ["ACME_vent_hasBooted", true, true];  // this press is the boot.
         } else {
             private _custody = _pwrH getVariable ["ACME_vent_custodyId", ""];
-            [_pwrH, "ventPowerState", [ACE_player, true, true, _custody]] call ACME_fnc_ownerDispatch;
+            [_pwrH, "ventPowerState", [_viewer, true, true, _custody]] call ACME_fnc_ownerDispatch;
         };
-        ACE_player setVariable ["ACME_vent_booted", true];
+        _viewer setVariable ["ACME_vent_booted", true];
         // the real boot chain, not just a flag. acme_vent_boott was being set here and nothing reads it, because the
         // tick times boot from ACME_vent_bootT0, which only fn_ventpanelinit was ever setting. that is why pressing
         // power dropped straight onto the settings screen with no blackout, splash or jingle.
@@ -174,15 +180,31 @@ if (_mode isEqualTo "swap") exitWith {
 
     // Hold the selected physical spare during the hatch animation. Another viewer cannot
     // swap the same patient's spare, and closing before completion returns that exact donor.
-    if ((uiNamespace getVariable ["ACME_vent_batterySwapRequest", ""]) != ""
+    if (["blocked", _viewer] call ACME_fnc_ventBatteryRequest
         || {!((uiNamespace getVariable ["ACME_vent_batterySupply", []]) isEqualTo [])}) exitWith {};
-    private _supply = [ACE_player, _tgt, ["ACME_VentBattery"]] call ACME_fnc_treatmentSupplyTake;
+    private _supply = [_viewer, _tgt, call ACME_fnc_ventBatteryItems] call ACME_fnc_treatmentSupplyTake;
     if (_supply isEqualTo []) exitWith {
         (_dlg displayCtrl 88001) ctrlSetText "NO SPARE BATTERY";
         (_dlg displayCtrl 88001) ctrlShow true;
         uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2];
     };
     uiNamespace setVariable ["ACME_vent_batterySupply", _supply];
+    private _holder = if (isNull _tgt) then {_viewer} else {_tgt};
+    private _source = if (isNull (_supply select 2)) then {_supply select 0} else {_supply select 2};
+    private _incoming = [_supply select 1] call ACME_fnc_ventBatteryCharge;
+    private _period = if (local _holder) then {[clientOwner, _holder getVariable ["ACME_providerLocalityEpoch", 0]]}
+        else {_holder getVariable ["ACME_vent_batterySwapOwnerPeriod", []]};
+    if (!(_period isEqualType []) || {count _period != 2}) exitWith {
+        [_supply] call ACME_fnc_treatmentSupplyRefund;
+        uiNamespace setVariable ["ACME_vent_batterySupply", []];
+        (_dlg displayCtrl 88001) ctrlSetText "SYNCHRONIZING DEVICE";
+        (_dlg displayCtrl 88001) ctrlShow true;
+    };
+    // The hatch captures its actual provider, device and physical donor once.
+    // A control switch or a rebuilt panel cannot retarget this reservation.
+    uiNamespace setVariable ["ACME_vent_batteryIntent", [_viewer,
+        [_holder, _supply, _incoming, [_holder] call ACME_fnc_clinicalEpoch,
+            _holder getVariable ["ACME_vent_custodyId", ""], _source, serverTime, +_period]]];
     playSound "ACME_VentBattSwap";
     uiNamespace setVariable ["ACME_vent_swapUntil", diag_tickTime + SWAP_SECS];
 
@@ -213,25 +235,17 @@ if (_mode isEqualTo "tick") exitWith {
 
         // An exchange, not a reset. If the device is on another casualty, the casualty owner atomically swaps the
         // fitted charge and returns the old charge to this provider. This also serializes simultaneous viewers.
-        private _holder = if (isNull _tgt) then { ACE_player } else { _tgt };
         private _supply = uiNamespace getVariable ["ACME_vent_batterySupply", []];
+        private _intent = uiNamespace getVariable ["ACME_vent_batteryIntent", []];
         uiNamespace setVariable ["ACME_vent_batterySupply", []];
+        uiNamespace setVariable ["ACME_vent_batteryIntent", []];
         if (_supply isEqualTo []) exitWith {};
-        private _source = if (isNull (_supply select 2)) then {_supply select 0} else {_supply select 2};
-        private _spare = _source getVariable ["ACME_vent_spareBattery", 100];
-        if (local _holder) then {
-            private _fitted = _holder getVariable ["ACME_vent_battery", 100];
-            _holder setVariable ["ACME_vent_battery", _spare, true];
-            _holder setVariable ["ACME_vent_battWarned", 0, true];
-            _source setVariable ["ACME_vent_spareBattery", _fitted, true];
+        private _submitted = count _intent == 2 && {((_intent select 1) select 1) isEqualTo _supply}
+            && {["start", _intent select 0, _intent select 1] call ACME_fnc_ventBatteryRequest};
+        if (!_submitted) then {
+            // No command was sent. Only an unfinished/unsubmitted reservation
+            // is safe to refund directly; submitted requests survive the panel.
             [_supply] call ACME_fnc_treatmentSupplyRefund;
-        } else {
-            private _seq = 1 + (uiNamespace getVariable ["ACME_vent_batterySwapSeq", 0]);
-            uiNamespace setVariable ["ACME_vent_batterySwapSeq", _seq];
-            private _requestId = format ["%1:%2:%3", clientOwner, _seq, diag_frameNo];
-            uiNamespace setVariable ["ACME_vent_batterySwapRequest", _requestId];
-            uiNamespace setVariable ["ACME_vent_batterySwapSupply", _supply];
-            [_holder, "ventBatteryExchange", [ACE_player, _requestId, _spare, serverTime]] call ACME_fnc_ownerDispatch;
         };
 
         // the fresh battery does not start the machine. the machine died when the old one came out, at the hatch
@@ -245,11 +259,12 @@ if (_mode isEqualTo "tick") exitWith {
         // OFF reports the new state, because the fresh battery no longer starts the machine.
         // the banner is a fixed sizeex control on a fixed box, and the tick never resizes its font, so the string is
         // held to 16 characters. NO SPARE BATTERY above is 16 and is known to fit.
-        if (local _holder) then {
-            _ban ctrlSetText format ["BATTERY %1%2 OFF", round _spare, "%"];
-            _ban ctrlShow true;
-            uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 2.5];
-        } else {
+        private _waiting = _submitted && {
+            private _rows = (_intent select 0) getVariable ["ACME_vent_batterySwapEscrow", createHashMap];
+            private _id = "vent-battery:" + (_supply select 3);
+            ((_rows getOrDefault [_id, [[], 0, []]]) select 1) == 0
+        };
+        if (_waiting) then {
             _ban ctrlSetText "VERIFYING SWAP";
             _ban ctrlShow true;
             uiNamespace setVariable ["ACME_vent_swapMsgUntil", diag_tickTime + 6];

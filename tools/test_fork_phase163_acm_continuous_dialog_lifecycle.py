@@ -9,8 +9,9 @@ def read(rel):
 
 def test_stethoscope_owns_a_real_continuous_session():
     s = read("addons/acm_extended/functions/fn_beginStethoscopeAction.sqf")
-    assert 'ACM_core_ContinuousAction_Session", [_patient, _epoch]' in s
-    assert 'ACM_core_ContinuousAction_LastSeen", CBA_missionTime' in s
+    assert '["session", [_patient, _epoch]]' in s
+    assert '["lastSeen", CBA_missionTime]' in s
+    assert 'call ACM_core_fnc_setContinuousActionState' in s
     assert "_medic isNotEqualTo ACE_player" not in s
     assert s.index("_args call _onStart;") < s.index('call ACME_fnc_treatmentPoseStart;')
     assert 'isNull _scopeDisplay' in s
@@ -26,7 +27,7 @@ def test_auscultation_ui_exists_before_presentation_work():
 def test_auscultation_bypasses_generic_provider_preflight():
     s = read("addons/core/overrides/fnc_treatment.sqf")
     direct = s.index('_nativeContinuousClass == "usestethoscope"')
-    preflight = s.index('private _bypass = _medic getVariable ["ACME_treatmentPreflightBypass"')
+    preflight = s.index("// Resolve ACME's provider-theatre policy BEFORE native treatment starts.")
     assert direct < preflight
     assert '_this call ACM_core_fnc_treatmentNative' in s[direct:direct + 400]
 
@@ -45,7 +46,8 @@ def test_stethoscope_unload_only_aborts_an_active_flip_and_clears_its_session():
     s = read("addons/acm_extended/functions/fn_stethoscopeClose.sqf")
     assert 'private _flipWasActive = _display getVariable ["ACME_stethFlipActive", false];' in s
     assert "if (_flipWasActive) then" in s
-    assert 'ACM_core_ContinuousAction_Session", []' in s
+    assert '["session", []]' in s
+    assert 'call ACM_core_fnc_setContinuousActionState' in s
 
 def test_transient_reconcile_does_not_own_cric_dialog_lifetime():
     s = read("addons/acm_extended/functions/fn_transientStateReconcile.sqf")

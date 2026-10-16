@@ -6,6 +6,12 @@ if (isNull _owner) exitWith {[]};
 
 private _store = +(_owner getVariable ["ACME_narcStore", []]);
 private _changed = false;
+if (local _owner && {!isNil "ACME_fnc_inventoryLedgerCommit"}) then {
+    private _imported = [_owner,_store] call ACME_fnc_skInventoryImportNative;
+    _changed = !(_imported isEqualTo _store);
+    _store = _imported;
+    if ((_store findIf {count _x >= 3 && {(_x param [13,"",[""]]) != "inventoryB279"}}) >= 0) then {_changed = true;};
+};
 private _seen = [];
 private _serial = _owner getVariable ["ACME_narcStoreSerial", 0];
 

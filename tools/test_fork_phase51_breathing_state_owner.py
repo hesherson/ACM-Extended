@@ -7,7 +7,7 @@ owner=(BREATH/'functions/fnc_setRuntimeState.sqf').read_text()
 assert 'PREP(setRuntimeState);' in prep
 for token in [
     'RespirationRate','BVM_provider','BVM_ConnectedOxygen','BVM_lastBreath','BVM_lastBreathOxygen',
-    'Thoracostomy_UsedKit','Hemothorax_Fluid','ChestSeal_State','Pneumothorax_PFH','Stethoscope_LungState',
+    'Thoracostomy_UsedKit','Thoracostomy_State','Hemothorax_Fluid','ChestSeal_State','Pneumothorax_PFH','Stethoscope_LungState',
     'Pneumothorax_State','TensionPneumothorax_State','TensionPneumothorax_Time','Hardcore_Pneumothorax','Hemothorax_State']:
     assert token in owner,token
 # No Extended function may publish ACM breathing state directly or through ACME's generic network writer.
@@ -27,10 +27,18 @@ callers=[p.name for p in EXT.glob('*.sqf') if 'ACM_breathing_fnc_setRuntimeState
 for required in [
     'fn_clinicalReset.sqf','fn_megacodeSetAirway.sqf','fn_megacodeScenarioTick.sqf','fn_megacodeSetVital.sqf',
     'fn_ventManualBreathCommit.sqf','fn_ventHardStopCommit.sqf','fn_ventSimpleManualBreath.sqf','fn_ventPatientClear.sqf','fn_ventDriveTick.sqf',
-    'fn_thoraMouseDown.sqf','fn_thoraPassiveDrain.sqf','fn_chestSealEffectLocal.sqf','fn_ptxEnsure.sqf','fn_ptxPublish.sqf',
+    'fn_thoraAftercareLocal.sqf','fn_thoraDrainBloodLocal.sqf','fn_thoraPassiveDrain.sqf','fn_chestSealEffectLocal.sqf','fn_ptxEnsure.sqf','fn_ptxPublish.sqf',
     'fn_toggleOverResus.sqf','fn_megacodeChestInjury.sqf']:
     assert required in callers,(required,callers)
 print('fork phase 51 breathing state ownership checks: PASS')
+
+# Finger widening is a provider request; only the owner may register the tract or drain fluid.
+thora_ui=(EXT/'fn_thoraMouseDown.sqf').read_text()
+thora_request=(EXT/'fn_thoraAftercareRequest.sqf').read_text()
+assert 'ACME_fnc_thoraAftercareRequest' in thora_ui and 'ACME_fnc_ownerDispatch' in thora_request
+assert 'ACM_breathing_fnc_setRuntimeState' not in thora_ui
+for name in ('fn_thoraAftercareLocal.sqf','fn_thoraDrainBloodLocal.sqf'):
+    assert '!local _patient' in (EXT/name).read_text(),name
 
 # Advanced manual breath UI is request-only; the casualty-owner commit owns native breathing mutation.
 manual=(EXT/'fn_ventManualBreath.sqf').read_text()

@@ -76,7 +76,7 @@ private _siteName = ["upper", "middle", "lower"] param [_accessSite, "lower"];
     };
 
     private _frame = if (_bp in ["leftarm", "leftleg"]) then {"_15_left"} else {"_15_right"};
-    _marks pushBack [_bp, _viewTex, _veinU, _veinV, "hub", "", _frame, _gauge, -1, 1, _siteName, 0, 1, 0];
-    _patient setVariable ["ACME_IV_Marks", _marks, true];
-    _patient setVariable ["ACME_IV_MarkVer", (_patient getVariable ["ACME_IV_MarkVer", 0]) + 1, true];
+    private _mark = [_bp, _viewTex, _veinU, _veinV, "hub", "", _frame, _gauge, -1, 1, _siteName, 0, 1, 0];
+    // The common owner mutation assigns the same stable finishing UID as manual/Zeus placements.
+    [_patient, "add", [_mark], _epoch] call ACME_fnc_ivMarkCommit;
 }, [_patient, _bp, _siteName, _type, [_patient] call ACME_fnc_clinicalEpoch], (missionNamespace getVariable ["ACME_iv_seedHubDelay", 0.6])] call CBA_fnc_waitAndExecute;

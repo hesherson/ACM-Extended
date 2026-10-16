@@ -45,9 +45,11 @@ def selector_contract(ensure=None, inject=None, opener=None, render=None, tick=N
     require(render,'_button ctrlSetText "Select Syringe Tag";')
     require(render,'_button ctrlSetTooltip format ["Select or change this syringe tag. Current: %1. None removes the tag.", _short];')
     require(render,'private _showSetup = (_view == "syringe");')
-    require(render,'_button ctrlShow _showSetup;')
-    require(render,'_button ctrlEnable _showSetup;')
+    require(render,'_button ctrlShow true;')
+    require(render,'_button ctrlEnable true;')
     require(render,'if (!_showSetup) exitWith')
+    # Body Map owns focus before any Draw-page controls may be constructed.
+    assert tokens(render).index(tokens('if (!_showSetup) exitWith')) < tokens(render).index(tokens('call ACME_fnc_skPendingTagEnsure;'))
     require(tick,'if (_now >= (_d getVariable ["ACME_SK_NextPendingTag",0])) then')
     require(tick,'_d setVariable ["ACME_SK_NextPendingTag", _now + 0.10];')
     require(tick,'call ACME_fnc_skPendingTagRender;')
@@ -141,7 +143,7 @@ def test_actual_render_prefix_controls_visibility_without_inferring_pixels(view,
         call _renderPrefix;
     '''+f'''
         [([84610,"ctrlShow",{str(view=='syringe').lower()}] in _writes),"wrong selector visibility"] call _check;
-        [([84610,"ctrlEnable",{str(view=='syringe').lower()}] in _writes),"wrong selector availability"] call _check;
+        [([84610,"ctrlEnable",true] in _writes) isEqualTo {str(view=='syringe').lower()},"hidden selector was enabled"] call _check;
     '''+('''
         {[[_x,"ctrlShow",false] in _writes,"pending artwork not hidden"] call _check;} forEach [84600,84601,84602,84603,84611];
         [[84611,"lbSetCurSel",-1] in _writes,"hidden list selection not reset"] call _check;

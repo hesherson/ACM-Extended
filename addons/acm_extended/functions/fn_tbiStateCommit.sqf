@@ -26,6 +26,7 @@ _interval = _interval max 0.25;
 
 private _pupils = _state getOrDefault ["pupils", []];
 private _sig = [
+    count _state > 0,
     round (20 * (_state getOrDefault ["severity", 0])),
     round (_state getOrDefault ["icp", 0]),
     round ((_state getOrDefault ["cpp", 0]) / 2),
@@ -38,7 +39,9 @@ private _sig = [
 
 private _lastAt = _patient getVariable ["ACME_tbi_stateNetAt", -1];
 private _lastSig = _patient getVariable ["ACME_tbi_stateNetSig", []];
+private _ownerStamp = [owner _patient, local _patient];
 private _publish = (_lastAt < 0)
+    || {(_patient getVariable ["ACME_tbi_stateNetOwner", []]) isNotEqualTo _ownerStamp}
     || {_sig isNotEqualTo _lastSig}
     || {(_now - _lastAt) >= _interval};
 
@@ -54,6 +57,7 @@ if (!_publish) exitWith {
 
 _patient setVariable ["ACME_tbi_stateNetAt", _now, false];
 _patient setVariable ["ACME_tbi_stateNetSig", _sig, false];
+_patient setVariable ["ACME_tbi_stateNetOwner", _ownerStamp, false];
 _patient setVariable ["ACME_tbi_State", _state, true];
 
 if (_counting) then {

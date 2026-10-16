@@ -22,7 +22,15 @@ missionNamespace setVariable ["ACME_vent_custodyInitialized", true];
 ["ACME_ventPatientClear", {_this call ACME_fnc_ventPatientClear;}] call CBA_fnc_addEventHandler;
 ["ACME_ventPatientEnroll", {
     params ["_patient"];
-    if (!isNull _patient && {local _patient} && {!isNil "ACME_circ_activePatients"}) then {ACME_circ_activePatients pushBackUnique _patient;};
+    if (isNull _patient || {!local _patient}) exitWith {};
+    // Device protocol metadata is needed even when corpse physiology is frozen.
+    // Duplicate enrollments preserve the current episode; custody also fences old-device commands.
+    private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+    private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [!_simple, 0]];
+    if !((_episode select 0) isEqualTo _simple) then {
+        [_patient, "ACME_vent_simpleEpisode", [_simple, (_episode select 1) + 1]] call ACME_fnc_setVarNet;
+    };
+    if (alive _patient && {!isNil "ACME_circ_activePatients"}) then {ACME_circ_activePatients pushBackUnique _patient;};
 }] call CBA_fnc_addEventHandler;
 ["ACME_ventCustodyNotice", {
     params ["_medic", "_patient", "_ok"];

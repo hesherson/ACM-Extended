@@ -1,3 +1,4 @@
+#include "../main/script_build.hpp"
 // extended event handlers, matching the ACM and ACE convention. these are inlined from the former
 // cfgeventhandlers.hpp, so the build has no #include to drop in.
 // preinit registers the CBA settings. postinit starts the runtime of the addon.
@@ -27,7 +28,7 @@ class ACME_MainMenuHelperDumpDebug: RscDisplayEmpty {
 // states, so ACME gets the faster convulsion cadence without changing hit reactions or gestures used by other mods.
 class CfgMovesBasic {
     class ManActions {
-        ACME_SeizureSpasm3[] = {"ACME_SeizureSpasm3", "Gesture"};
+        ACME_SeizureSpasm0[] = {"ACME_SeizureSpasm0", "Gesture"};
         ACME_SeizureSpasm4[] = {"ACME_SeizureSpasm4", "Gesture"};
         ACME_SeizureSpasm5[] = {"ACME_SeizureSpasm5", "Gesture"};
         ACME_SeizureSpasm6[] = {"ACME_SeizureSpasm6", "Gesture"};
@@ -72,6 +73,10 @@ class CfgMovesMaleSdr: CfgMovesBasic {
         // medic3 is reserved exclusively for the moment a chest seal is actually applied. The CPR stop pose is
         // already a stable hands-planted-on-chest state, so the panel can remain open without replaying a treatment.
         class ACM_CPR_Stop;
+        // B214: retain BI's complete native state and its normal empty-hands exit graph.
+        // Reopening this without its native parent removes inherited move properties (connectFrom, etc.).
+        // The provider controller observes the completed exit before requesting the carrier reach.
+        class AinvPknlMstpSnonWnonDnon_medicEnd;
         class ACME_ChestSealWorkspace: ACM_CPR_Stop {
             looped = 1;
             disableWeapons = 1;
@@ -87,7 +92,8 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             };
             connectTo[] = {
                 "AmovPknlMstpSnonWnonDnon", 0.12,
-                "AinvPknlMstpSnonWnonDnon_medic4", 0.08
+                "AinvPknlMstpSnonWnonDnon_medic4", 0.08,
+                "AinvPknlMstpSnonWnonDnon_medicEnd", 0.08
             };
             interpolateFrom[] = {
                 "AmovPknlMstpSnonWnonDnon", 0.12,
@@ -96,8 +102,153 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             interpolateTo[] = {
                 "AmovPknlMstpSnonWnonDnon", 0.12,
                 "AinvPknlMstpSnonWnonDnon_medic4", 0.08,
+                "AinvPknlMstpSnonWnonDnon_medicEnd", 0.08,
                 "Unconscious", 0.02
             };
+        };
+
+        // B225: one-shot wake RTMs inherit native speed, but have only a medical lying completion.
+        // No ordinary-prone/Get Up graph edge: autonomous AI must not select a locomotion exit.
+        // Real re-unconsciousness is still handled by the engine/native unconscious controller.
+        class UnconsciousReviveDefault_A;
+        class ACME_WakeDefaultA: UnconsciousReviveDefault_A {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveDefault_B;
+        class ACME_WakeDefaultB: UnconsciousReviveDefault_B {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveBody_A;
+        class ACME_WakeBodyA: UnconsciousReviveBody_A {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveBody_B;
+        class ACME_WakeBodyB: UnconsciousReviveBody_B {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveArms_A;
+        class ACME_WakeArmsA: UnconsciousReviveArms_A {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveArms_B;
+        class ACME_WakeArmsB: UnconsciousReviveArms_B {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveArms_C;
+        class ACME_WakeArmsC: UnconsciousReviveArms_C {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveHead_A;
+        class ACME_WakeHeadA: UnconsciousReviveHead_A {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveHead_B;
+        class ACME_WakeHeadB: UnconsciousReviveHead_B {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
+        };
+        class UnconsciousReviveHead_C;
+        class ACME_WakeHeadC: UnconsciousReviveHead_C {
+            looped = 0;
+            minPlayTime = 0;
+            terminal = 0;
+            // Script-only entry: reverse links here would modify shared native graphs.
+            // The owner uses one partial-blend switchMove, never a locomotion path.
+            connectAs = "";
+            connectFrom[] = {};
+            interpolateFrom[] = {};
+            interpolateWith[] = {};
+            connectTo[] = {"ACM_LyingState",0.2};
+            interpolateTo[] = {"ACM_LyingState",0.2};
         };
 
         // Semi-Fowler states.
@@ -124,18 +275,30 @@ class CfgMovesMaleSdr: CfgMovesBasic {
         };
         class AinjPpneMrunSnonWnonDb_grab;
         class ACME_HeadElevPatientGrab: AinjPpneMrunSnonWnonDb_grab {
+            disableWeapons = 1;
+            disableWeaponsLong = 1;
+            disableWeaponsShort = 1;
+            canPullTrigger = 0;
             looped = 0;
             ConnectTo[] = {"ACME_HeadElevPatientHold", 0.05};
             InterpolateTo[] = {"ACME_HeadElevPatientHold", 0.05};
         };
         class AinjPpneMrunSnonWnonDb_release;
         class ACME_HeadElevPatientHold: AinjPpneMrunSnonWnonDb_release {
+            disableWeapons = 1;
+            disableWeaponsLong = 1;
+            disableWeaponsShort = 1;
+            canPullTrigger = 0;
             looped = 1;
             speed = 0;
             ConnectTo[] = {};
             InterpolateTo[] = {};
         };
         class ACME_HeadElevPatientRelease: AinjPpneMrunSnonWnonDb_release {
+            disableWeapons = 1;
+            disableWeaponsLong = 1;
+            disableWeaponsShort = 1;
+            canPullTrigger = 0;
             looped = 0;
             // Lay-flat and chest-access release must finish supine, never in BI's injured-prone idle.
             ConnectTo[] = {"ACM_LyingState", 0.1};
@@ -178,10 +341,13 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             looped = 1;
             disableWeapons = 1;
             disableWeaponsLong = 1;
+            disableWeaponsShort = 1;
+            disableReload = 1;
             canPullTrigger = 0;
-            connectTo[] = {};
-            interpolateFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.2};
-            interpolateTo[] = {"AmovPknlMstpSnonWnonDnon", 0.2, "Unconscious", 0.02};
+            connectFrom[] = {"ACM_GenericContinuous", 0.15, "ACME_DirectPressureHold", 0.15, "ACME_ChestSealWorkspace", 0.15};
+            connectTo[] = {"AinvPknlMstpSnonWnonDnon_medic3", 0.15};
+            interpolateFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.2, "ACM_GenericContinuous", 0.15, "ACME_DirectPressureHold", 0.15, "ACME_ChestSealWorkspace", 0.15};
+            interpolateTo[] = {"AinvPknlMstpSnonWnonDnon_medic3", 0.15, "AmovPknlMstpSnonWnonDnon", 0.2, "Unconscious", 0.02};
         };
         // B40 animation audit: direct pressure gets its own held state instead of hard switchMove into
         // ACM_CPR_Stop. The RTM is inherited from ACM, but the graph is connected to the normal unarmed
@@ -195,9 +361,9 @@ class CfgMovesMaleSdr: CfgMovesBasic {
             connectFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.15};
             // B128: chest-seal Flip can take ownership directly from the pressure hold instead of waiting for a
             // neutral crouch round-trip. This is the literal medic4 Flip/Inspect-Chest motion requested by ACME.
-            connectTo[] = {"AmovPknlMstpSnonWnonDnon", 0.15, "AinvPknlMstpSnonWnonDnon_medic4", 0.08};
+            connectTo[] = {"AmovPknlMstpSnonWnonDnon", 0.15, "AinvPknlMstpSnonWnonDnon_medic4", 0.08, "AinvPknlMstpSnonWnonDnon_medicEnd", 0.08, "AinvPknlMstpSnonWnonDr_medic4", 0.08, "ACME_StethoscopeWork", 0.08};
             interpolateFrom[] = {"AmovPknlMstpSnonWnonDnon", 0.15, "AinvPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_medic", 0.10};
-            interpolateTo[] = {"AmovPknlMstpSnonWnonDnon", 0.15, "AinvPknlMstpSnonWnonDnon_medic4", 0.08, "Unconscious", 0.02};
+            interpolateTo[] = {"AmovPknlMstpSnonWnonDnon", 0.15, "AinvPknlMstpSnonWnonDnon_medic4", 0.08, "AinvPknlMstpSnonWnonDnon_medicEnd", 0.08, "AinvPknlMstpSnonWnonDr_medic4", 0.08, "ACME_StethoscopeWork", 0.08, "Unconscious", 0.02};
         };
         class UnconsciousReviveMedic_B;
         class ACME_StethoscopeWork: UnconsciousReviveMedic_B {
@@ -336,6 +502,7 @@ class CfgMovesMaleSdr: CfgMovesBasic {
 
 class CfgPatches {
     class ACM_Extended {
+        ACME_BUILD_CONFIG("extended");
         name = "ACM Extended";
         units[] = {"ACME_ModuleMegacodeKelly", "ACME_ModuleBloodFridge", "ACME_BloodFridge_Closed", "ACME_BloodFridge_Open",
             // zeus enumerates units[]. a module that is not in this list does not exist as far as the curator is
@@ -351,6 +518,26 @@ class CfgPatches {
             "ACM_IV_18g", "ACM_IV_20g", "ACM_SalineFlush_10", "ACME_Vial_EpinephrineCardiac",
             "ACM_Thermometer", "ACM_NRBMask", "ACM_HPMK", "ACM_EMMA", "ACM_CombatGauze", "ACME_NARSPEAR", "ACME_XStat", "ACME_Ventilator", "ACME_VentBattery", "ACME_Laryngoscope", "ACME_ETTube",
             "ACME_HTSBullet", "ACME_MannitolVial",
+            "ACME_VentBattery_0", "ACME_VentBattery_1", "ACME_VentBattery_2", "ACME_VentBattery_3", "ACME_VentBattery_4",
+            "ACME_VentBattery_5", "ACME_VentBattery_6", "ACME_VentBattery_7", "ACME_VentBattery_8", "ACME_VentBattery_9",
+            "ACME_VentBattery_10", "ACME_VentBattery_11", "ACME_VentBattery_12", "ACME_VentBattery_13", "ACME_VentBattery_14",
+            "ACME_VentBattery_15", "ACME_VentBattery_16", "ACME_VentBattery_17", "ACME_VentBattery_18", "ACME_VentBattery_19",
+            "ACME_VentBattery_20", "ACME_VentBattery_21", "ACME_VentBattery_22", "ACME_VentBattery_23", "ACME_VentBattery_24",
+            "ACME_VentBattery_25", "ACME_VentBattery_26", "ACME_VentBattery_27", "ACME_VentBattery_28", "ACME_VentBattery_29",
+            "ACME_VentBattery_30", "ACME_VentBattery_31", "ACME_VentBattery_32", "ACME_VentBattery_33", "ACME_VentBattery_34",
+            "ACME_VentBattery_35", "ACME_VentBattery_36", "ACME_VentBattery_37", "ACME_VentBattery_38", "ACME_VentBattery_39",
+            "ACME_VentBattery_40", "ACME_VentBattery_41", "ACME_VentBattery_42", "ACME_VentBattery_43", "ACME_VentBattery_44",
+            "ACME_VentBattery_45", "ACME_VentBattery_46", "ACME_VentBattery_47", "ACME_VentBattery_48", "ACME_VentBattery_49",
+            "ACME_VentBattery_50", "ACME_VentBattery_51", "ACME_VentBattery_52", "ACME_VentBattery_53", "ACME_VentBattery_54",
+            "ACME_VentBattery_55", "ACME_VentBattery_56", "ACME_VentBattery_57", "ACME_VentBattery_58", "ACME_VentBattery_59",
+            "ACME_VentBattery_60", "ACME_VentBattery_61", "ACME_VentBattery_62", "ACME_VentBattery_63", "ACME_VentBattery_64",
+            "ACME_VentBattery_65", "ACME_VentBattery_66", "ACME_VentBattery_67", "ACME_VentBattery_68", "ACME_VentBattery_69",
+            "ACME_VentBattery_70", "ACME_VentBattery_71", "ACME_VentBattery_72", "ACME_VentBattery_73", "ACME_VentBattery_74",
+            "ACME_VentBattery_75", "ACME_VentBattery_76", "ACME_VentBattery_77", "ACME_VentBattery_78", "ACME_VentBattery_79",
+            "ACME_VentBattery_80", "ACME_VentBattery_81", "ACME_VentBattery_82", "ACME_VentBattery_83", "ACME_VentBattery_84",
+            "ACME_VentBattery_85", "ACME_VentBattery_86", "ACME_VentBattery_87", "ACME_VentBattery_88", "ACME_VentBattery_89",
+            "ACME_VentBattery_90", "ACME_VentBattery_91", "ACME_VentBattery_92", "ACME_VentBattery_93", "ACME_VentBattery_94",
+            "ACME_VentBattery_95", "ACME_VentBattery_96", "ACME_VentBattery_97", "ACME_VentBattery_98", "ACME_VentBattery_99",
             "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100",
             "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_Spray_Esketamine",
             "ACM_Vial_Phentolamine", "ACM_Vial_Hyaluronidase", "ACM_Vial_CalciumGluconate", "ACM_Vial_Propofol", "ACM_Vial_Midazolam", "ACM_Vial_Fentanyl",
@@ -361,6 +548,7 @@ class CfgPatches {
         requiredAddons[] = {
             "A3_Data_F",
             "A3_Anims_F",
+            "A3_Weapons_F_Ammoboxes",
             "cba_main",
             "ace_main",
             "ace_fastroping",
@@ -425,6 +613,72 @@ class CfgMods {
 // complete chain.
 class CfgMagazines {
     class CA_Magazine;
+    // Native magazine ammo carries an opaque non-recycled identity, never medication volume.
+    // Hidden from Arsenal: default ammo is deliberately outside the valid token range.
+    class ACME_PreparedIVSet: CA_Magazine {
+        scope = 1; author = "mavis"; displayName = "Prepared IV Set";
+        picture = "\acm_extended\ui\items\iv_line_qtts_ca.paa";
+        descriptionShort = "Prepared fluid bag and administration line. Contents are retained when moved through Gear.";
+        ACE_isMedicalItem = 1; ACE_asItem = 1; ace_disableRepacking = 1; count = 65535; mass = 18;
+        ACME_inventoryKind = "prepared";
+    };
+    // Exact shipped bag(s) + IV line/Y tubing masses; identity remains the ammo token.
+    class ACME_PreparedIVSet_M11: ACME_PreparedIVSet { mass = 1.1; };
+    class ACME_PreparedIVSet_M21: ACME_PreparedIVSet { mass = 2.1; };
+    class ACME_PreparedIVSet_M26: ACME_PreparedIVSet { mass = 2.6; };
+    class ACME_PreparedIVSet_M31: ACME_PreparedIVSet { mass = 3.1; };
+    class ACME_PreparedIVSet_M37: ACME_PreparedIVSet { mass = 3.7; };
+    class ACME_PreparedIVSet_M47: ACME_PreparedIVSet { mass = 4.7; };
+    class ACME_PreparedIVSet_M51: ACME_PreparedIVSet { mass = 5.1; };
+    class ACME_PreparedIVSet_M52: ACME_PreparedIVSet { mass = 5.2; };
+    class ACME_PreparedIVSet_M62: ACME_PreparedIVSet { mass = 6.2; };
+    class ACME_PreparedIVSet_M72: ACME_PreparedIVSet { mass = 7.2; };
+    class ACME_PreparedIVSet_M77: ACME_PreparedIVSet { mass = 7.7; };
+    class ACME_PreparedIVSet_M81: ACME_PreparedIVSet { mass = 8.1; };
+    class ACME_PreparedIVSet_M101: ACME_PreparedIVSet { mass = 10.1; };
+    class ACME_PreparedIVSet_M102: ACME_PreparedIVSet { mass = 10.2; };
+    class ACME_PreparedIVSet_M112: ACME_PreparedIVSet { mass = 11.2; };
+    class ACME_PreparedIVSet_M122: ACME_PreparedIVSet { mass = 12.2; };
+    class ACME_PreparedIVSet_M127: ACME_PreparedIVSet { mass = 12.7; };
+    class ACME_PreparedIVSet_M152: ACME_PreparedIVSet { mass = 15.2; };
+    class ACME_PreparedIVSet_M202: ACME_PreparedIVSet { mass = 20.2; };
+    // Current PR bag weights; historical variants above remain valid for saved gear.
+    class ACME_PreparedIVSet_M16: ACME_PreparedIVSet { mass = 1.6; };
+    class ACME_PreparedIVSet_M29: ACME_PreparedIVSet { mass = 2.9; };
+    class ACME_PreparedIVSet_M63: ACME_PreparedIVSet { mass = 6.3; };
+    class ACME_PreparedIVSet_M64: ACME_PreparedIVSet { mass = 6.4; };
+    class ACME_PreparedIVSet_M68: ACME_PreparedIVSet { mass = 6.8; };
+    class ACME_PreparedIVSet_M84: ACME_PreparedIVSet { mass = 8.4; };
+    class ACME_PreparedIVSet_M94: ACME_PreparedIVSet { mass = 9.4; };
+    class ACME_PreparedIVSet_M97: ACME_PreparedIVSet { mass = 9.7; };
+    class ACME_PreparedIVSet_M119: ACME_PreparedIVSet { mass = 11.9; };
+    class ACME_PreparedIVSet_M121: ACME_PreparedIVSet { mass = 12.1; };
+    class ACME_PreparedIVSet_M130: ACME_PreparedIVSet { mass = 13; };
+    class ACME_PreparedIVSet_M146: ACME_PreparedIVSet { mass = 14.6; };
+    class ACME_PreparedIVSet_M156: ACME_PreparedIVSet { mass = 15.6; };
+    class ACME_PreparedIVSet_M159: ACME_PreparedIVSet { mass = 15.9; };
+    class ACME_PreparedIVSet_M169: ACME_PreparedIVSet { mass = 16.9; };
+    class ACME_PreparedIVSet_M181: ACME_PreparedIVSet { mass = 18.1; };
+    class ACME_PreparedIVSet_M231: ACME_PreparedIVSet { mass = 23.1; };
+    class ACME_PreparedIVSet_M235: ACME_PreparedIVSet { mass = 23.5; };
+    class ACME_PreparedIVSet_M251: ACME_PreparedIVSet { mass = 25.1; };
+    class ACME_PreparedIVSet_M267: ACME_PreparedIVSet { mass = 26.7; };
+    class ACME_PreparedIVSet_M277: ACME_PreparedIVSet { mass = 27.7; };
+    class ACME_PreparedIVSet_M280: ACME_PreparedIVSet { mass = 28; };
+    class ACME_PreparedIVSet_M302: ACME_PreparedIVSet { mass = 30.2; };
+    class ACME_PreparedIVSet_M352: ACME_PreparedIVSet { mass = 35.2; };
+    class ACME_PreparedIVSet_M1_75: ACME_PreparedIVSet { mass = 1.75; }; // 50 mL propofol bottle + line.
+    class ACME_PreparedSyringe: ACME_PreparedIVSet {
+        displayName = "Prepared Syringe";
+        ACME_inventoryKind = "syringe";
+        picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
+        descriptionShort = "Prepared medication syringe. Exact contents follow it through Gear.";
+        mass = 1;
+    };
+    class ACME_PreparedSyringe_1: ACME_PreparedSyringe { mass = 1; };
+    class ACME_PreparedSyringe_3: ACME_PreparedSyringe { mass = 1.2; };
+    class ACME_PreparedSyringe_5: ACME_PreparedSyringe { mass = 1.7; };
+    class ACME_PreparedSyringe_10: ACME_PreparedSyringe { mass = 2.6; };
     class ACM_Paracetamol: CA_Magazine {
         scope = 2;
         author = "Blue";
@@ -469,7 +723,7 @@ class CfgMagazines {
         displayName = "Syringe (10 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -478,7 +732,7 @@ class CfgMagazines {
         displayName = "Syringe (5 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -487,7 +741,7 @@ class CfgMagazines {
         displayName = "Syringe (3 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -496,7 +750,7 @@ class CfgMagazines {
         displayName = "Syringe (1 mL) [Epinephrine 1:10,000]";
         descriptionShort = "Cardiac epinephrine 0.1 mg/mL. Actual dose equals filled volume times concentration. IV/IO only.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Norepinephrine: ACM_Syringe_10_Epinephrine {
@@ -506,7 +760,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Norepinephrine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -515,7 +769,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Norepinephrine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -524,7 +778,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Norepinephrine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -533,7 +787,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Norepinephrine]";
         descriptionShort = "Prepared syringe of Norepinephrine.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // phentolamine, an alpha-blocker. it is the reversal agent for catecholamine vasopressor extravasation, from
@@ -547,7 +801,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Phentolamine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -556,7 +810,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Phentolamine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -565,7 +819,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Phentolamine: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -574,7 +828,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Phentolamine]";
         descriptionShort = "Prepared syringe of Phentolamine. Reverses vasopressor extravasation.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // hyaluronidase, an enzyme that breaks down hyaluronic acid in connective tissue and lets an extravasated drug
@@ -588,7 +842,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Hyaluronidase: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -597,7 +851,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Hyaluronidase: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -606,7 +860,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Hyaluronidase: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -615,7 +869,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Hyaluronidase]";
         descriptionShort = "Prepared syringe of Hyaluronidase. Disperses extravasated hyperosmolar/irritant drugs.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Midazolam: ACM_Syringe_10_Epinephrine {
@@ -625,7 +879,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Midazolam: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -634,7 +888,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Midazolam: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -643,7 +897,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Midazolam: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -652,7 +906,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Midazolam]";
         descriptionShort = "Prepared syringe of Midazolam.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Rocuronium: ACM_Syringe_10_Epinephrine {
@@ -662,7 +916,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Rocuronium: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -671,7 +925,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Rocuronium: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -680,7 +934,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Rocuronium: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -689,7 +943,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Rocuronium]";
         descriptionShort = "Prepared syringe of Rocuronium (paralytic).";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // sugammadex syringes. the narc box and draw system instantiate ACM_Syringe_<size>_<drug> directly, so every
@@ -703,7 +957,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Sugammadex: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -712,7 +966,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Sugammadex: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -721,7 +975,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Sugammadex: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -730,7 +984,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Sugammadex]";
         descriptionShort = "Prepared syringe of Sugammadex (rocuronium reversal).";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_CalciumGluconate: ACM_Syringe_10_Epinephrine {
@@ -740,7 +994,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_CalciumGluconate: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -749,7 +1003,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_CalciumGluconate: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -758,7 +1012,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_CalciumGluconate: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -767,7 +1021,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [CalciumGluconate]";
         descriptionShort = "Prepared syringe of CalciumGluconate.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     // propofol syringes. it is a sedative-hypnotic at 500 mg in 50 ml, or 10 mg/ml. it draws and pushes, and the
@@ -779,7 +1033,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Propofol: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -788,7 +1042,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Propofol: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -797,7 +1051,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Propofol: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -806,7 +1060,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Propofol]";
         descriptionShort = "Prepared syringe of Propofol.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
     class ACM_Syringe_10_Ceftriaxone: ACM_Syringe_10_Epinephrine {
@@ -816,7 +1070,7 @@ class CfgMagazines {
         displayName = "Syringe (10ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 1000;
-        mass = 0.9;
+        mass = 2.6;
     };
     class ACM_Syringe_5_Ceftriaxone: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -825,7 +1079,7 @@ class CfgMagazines {
         displayName = "Syringe (5ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 500;
-        mass = 0.7;
+        mass = 1.7;
     };
     class ACM_Syringe_3_Ceftriaxone: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -834,7 +1088,7 @@ class CfgMagazines {
         displayName = "Syringe (3ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 300;
-        mass = 0.6;
+        mass = 1.2;
     };
     class ACM_Syringe_1_Ceftriaxone: ACM_Syringe_10_Epinephrine {
         author = "mavis";
@@ -843,7 +1097,7 @@ class CfgMagazines {
         displayName = "Syringe (1ml) [Ceftriaxone]";
         descriptionShort = "Prepared syringe of Ceftriaxone.";
         count = 100;
-        mass = 0.5;
+        mass = 1;
     };
 
 };
@@ -863,7 +1117,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
         descriptionShort = "Premixed 3% hypertonic saline. Osmotherapy for raised ICP.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 6.2; };
     };
     // the herniation rescue. 23.4 percent hypertonic saline in a 30 ml bullet, which is the concentrated push that
     // buys minutes of ICP reduction when a pupil has blown, as opposed to the 3 percent bag above which is a drip.
@@ -877,7 +1131,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
         descriptionShort = "Concentrated osmotherapy bolus for herniation. Central access preferred. Buys minutes, does not fix the lesion.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1.2; };
     };
     // mannitol as a push rather than a bag. it draws water out of the brain and it also makes the casualty pass it,
     // so it drops the circulating volume, which is why it is the wrong choice in someone who is already dry.
@@ -912,9 +1166,11 @@ class CfgWeapons {
         displayName = "Ventway Sparrow Battery";
         descriptionShort = "Spare lithium battery pack for the Ventway Sparrow. Replaces a depleted battery in the field.";
         picture = "\acm_extended\ui\vent\ventway_sparrow_robust_battery_ca.paa";
+        ACME_batteryCharge = 100;
         // 0.52 lb, or 235 g. it was 28, which made a spare cell heavier than the machine it goes in.
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 5; };
     };
+    #include "vent_battery_items.hpp"
     class ACME_Laryngoscope: ACE_ItemCore {
         author = "mavis";
         dlc = "ACM_Extended";
@@ -923,7 +1179,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\vent\laryngoscope_ca.paa";
         descriptionShort = "Rigid laryngoscope for direct-vision orotracheal intubation. Needed with an ET tube to intubate.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 4; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 7.7; };
     };
     class ACME_ETTube: ACE_ItemCore {
         author = "mavis";
@@ -933,7 +1189,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\vent\et_tube_ca.paa";
         descriptionShort = "Cuffed endotracheal tube. Passed under direct laryngoscopy to secure a definitive airway.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.5; };
     };
     class ACME_MagnesiumBag: ACE_ItemCore {
         author = "mavis";
@@ -971,30 +1227,29 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\plasmalyte-a_ca.paa";
         descriptionShort = "Balanced crystalloid, 1000 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable; no cells/protein/clotting factors (not plasma).";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 10; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 23.4; };
     };
-    // smaller plasma-lyte a volumes, at 100, 250 and 500 ml. it is the same balanced crystalloid, and the mass
-    // scales at about 1 per 100 ml.
+    // Smaller plasma-lyte volumes include the fluid and bag packaging mass.
     class ACME_PlasmaLyteBag_500: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (500mL)";
         descriptionShort = "Balanced crystalloid, 500 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 5; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 12; };
     };
     class ACME_PlasmaLyteBag_250: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (250mL)";
         descriptionShort = "Balanced crystalloid, 250 mL. Volume resuscitation + buffers metabolic acidosis. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 6.3; };
     };
     class ACME_PlasmaLyteBag_100: ACME_PlasmaLyteBag {
         author = "mavis";
         dlc = "ACM_Extended";
         displayName = "Plasma-Lyte A (100mL)";
         descriptionShort = "Balanced crystalloid, 100 mL. Small volume / carrier. Shelf-stable.";
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2.8; };
     };
     // small-volume saline bags, at 50 and 100 ml. these are flush and keep-open reserves. they are ideal as the
     // y-line saline reserve, because each flush line bleeds 50 ml, so a 50 ml bag is one flush and a 100 ml bag is
@@ -1007,7 +1262,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineiv_50ml_ca.paa";
         descriptionShort = "0.9% sodium chloride, 50 mL. Small flush / keep-vein-open volume. As a Y-line reserve this is one line flush.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1.5; };
     };
     class ACME_SalineBag_100: ACE_ItemCore {
         author = "mavis";
@@ -1017,7 +1272,7 @@ class CfgWeapons {
         picture = "\acm_extended\ui\items\salineiv_100ml_ca.paa";
         descriptionShort = "0.9% sodium chloride, 100 mL. Small flush / keep-vein-open volume. As a Y-line reserve this is two line flushes.";
         ACE_isMedicalItem = 1;
-        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2; };
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 2.8; };
     };
 
     // intranasal esketamine atomizer. it gives battlefield analgesia with no iv access, and a medic administers it
@@ -1074,7 +1329,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -1091,7 +1346,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.11;
         };
     };
 
@@ -1109,7 +1364,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.11;
         };
     };
 
@@ -1129,7 +1384,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1148,7 +1403,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -1166,7 +1421,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1183,7 +1438,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.65;
         };
     };
 
@@ -1200,7 +1455,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 1.65;
         };
     };
 
@@ -1216,7 +1471,7 @@ class CfgWeapons {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 class ACM_Vial_Fentanyl: ACE_ItemCore {
@@ -1229,7 +1484,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACE_isMedicalItem = 1;
         ACM_isVial = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1277,7 +1532,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\quantum_bloodwarmer_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 0.3;
+            mass = 13.75;
         };
     };
 
@@ -1311,7 +1566,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\nar_boa_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 0.2;
+            mass = 0.7;
         };
     };
 
@@ -1338,7 +1593,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACE_isMedicalItem = 1;
         ACME_premixedBag = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 6.2;
         };
     };
 
@@ -1431,7 +1686,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\salineFlush_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.6;
         };
     };
 
@@ -1446,7 +1701,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\suretemp690_thermometer_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 7.9;
         };
     };
 
@@ -1473,7 +1728,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         nameSound = "";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 8;
+            mass = 35;
         };
     };
     // EMMA mainstream capnograph. it attaches inline on a BVM, and the HUD reads out while a medic ventilates.
@@ -1486,7 +1741,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\emma\emma_etco2_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 1.3;
         };
     };
     // combat gauze, hemostatic packing for junctional hemorrhage.
@@ -1503,7 +1758,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\combat_gauze_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.5;
         };
     };
 
@@ -1559,7 +1814,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         picture = "\acm_extended\ui\items\xstat_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;  // about 71 g. it has barely any footprint.
+            mass = 1.56;  // about 71 g. it has barely any footprint.
         };
     };
 
@@ -1585,8 +1840,8 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // capacity, and any blood once the coolant lapses, is left out in the warm and spoils. see postinit for the
     // loose-blood timer. the real cold-chain figures of 48, 24 and 72 h are compressed hard for operations of
     // about 4 h. tune them in postinit or here.
-    // mass is bulk, because arma has a single stat. the 4u is huge on purpose, so it only fits vehicle cargo or a
-    // very large pack. it cannot go in a uniform, a vest or a normal ruck.
+    // Mass values follow the contributed carrier weights; native inventory capacity
+    // decides which uniform, vest, pack or vehicle can contain a given carrier.
 
     // pelican golden hour one-v. it holds 1 unit, a single 500 ml bag, weighs about 2 lb and is the smallest. it
     // has the longest validated cold chain.
@@ -1601,7 +1856,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 500;
         ACME_coolerColdChainTime = 7200;  // 2 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 50;
+            mass = 20;
         };
     };
 
@@ -1612,19 +1867,18 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         scope = 2;
         author = "mavis";
         displayName = "Golden Minute CSWB-2U";
-        descriptionShort = "Two-unit blood cold-chain carrier. 2000 mL total capacity.";
+        descriptionShort = "Two-unit blood cold-chain carrier. 1000 mL total capacity.";
         picture = "\acm_extended\ui\items\goldenminute_cswb2u_ca.paa";
         ACE_isMedicalItem = 1;
         ACME_coolerCapacityMl = 1000;
         ACME_coolerColdChainTime = 5400;  // 1.5 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 100;
+            mass = 42;
         };
     };
 
-    // golden hour CSWB-4u soft container. it holds 4 units, 2000 ml in any bag combination, and weighs about 7.5
-    // lb. it is dimensionally massive, so it fits vehicle cargo and very large packs only. it has the longest
-    // coolant life.
+    // Golden Hour CSWB-4U soft container holds 2000 ml in any bag combination,
+    // weighs about 7.5 lb and has the longest coolant life.
     class ACME_BloodCooler_CSWB4U: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
@@ -1636,7 +1890,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         ACME_coolerCapacityMl = 2000;
         ACME_coolerColdChainTime = 10800;  // 3 h.
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 330;  // huge on purpose, so it fits vehicle cargo or a very large pack only.
+            mass = 75;
         };
     };
 };
@@ -1650,6 +1904,9 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
 class ace_medical_treatment {
     class IV {
         class SalineIV;
+        // A directly spiked 50 mL emulsion bottle. The native drainer consumes its
+        // carrier volume but never credits it as saline or a resuscitation fluid.
+        class ACME_PropofolIV_50: SalineIV { type = "ACME_Propofol"; volume = 50; };
         class EsmololIV_250: SalineIV { type = "Esmolol";   volume = 250; };
         class HTSIV_250:     SalineIV { type = "HTS";       volume = 250; };
         class MagnesiumIV_50: SalineIV { type = "Magnesium"; volume = 50; };
@@ -1715,7 +1972,7 @@ class CfgGesturesMale {
     class Default;
     class States {
         class GestureFreezeStand;  // vanilla upper-body arm gesture base. it inherits the movement-friendly mask.
-        class GestureSpasm3;
+        class GestureSpasm0;
         class GestureSpasm4;
         class GestureSpasm5;
         class GestureSpasm6;
@@ -1729,11 +1986,11 @@ class CfgGesturesMale {
             enableOptics = 0;
         };
 
-        // BI's four best whole-body-looking spasm gestures, isolated under ACME action names and played at 1.05x.
+        // B217: random, non-repeating pool of BI Spasm0/4/5/6; Spasm0 retains its native timing.
         // They retain the original RTMs, masks and interpolation data. Only playback speed changes.
         // Positive speed is clip cycles/second, not a playback multiplier.
-        // BI Spasm3-6: 0.238, 0.2325, 0.2069, 0.1287, each multiplied by 1.05.
-        class ACME_SeizureSpasm3: GestureSpasm3 { speed = 0.2499; };
+        // BI Spasm4-6: 0.2325, 0.2069, 0.1287, each multiplied by 1.05.
+        class ACME_SeizureSpasm0: GestureSpasm0 {};
         class ACME_SeizureSpasm4: GestureSpasm4 { speed = 0.244125; };
         class ACME_SeizureSpasm5: GestureSpasm5 { speed = 0.217245; };
         class ACME_SeizureSpasm6: GestureSpasm6 { speed = 0.135135; };
@@ -1821,13 +2078,26 @@ class CfgFunctions {
             class registerChestAccessVestRuntime {};
             class chestAccessManeuverActive {};
             class chestAccessVestEvent {};
+            class chestAccessLeaseRetire {};
             class chestAccessVestAcquire {};
             class chestAccessVestPark {};
             class chestAccessVestRestore {};
             class chestAccessVestProvider {};
             class chestAccessPreparing {};
+            class carrierCargoSnapshot {};
+            class carrierCargoEqual {};
+            class carrierCargoPopulate {};
+            class carrierInventoryGet {};
+            class carrierInventoryCapacity {};
+            class carrierInventoryCreate {};
+            class carrierInventoryRestore {};
+            class carrierInventoryOpen {};
+            class carrierInventoryWorld {};
+            class carrierSupplyTake {};
             class manualPlateCarrierCanToggle {};
             class manualPlateCarrierCommit {};
+            class manualPlateCarrierCompleteRemoval {};
+            class manualPlateCarrierAbortRemoval {};
             class manualPlateCarrierAutoReturn {};
             class manualPlateCarrierHeadElevSupport {};
             class registerManualPlateCarrierRuntime {};
@@ -1842,6 +2112,7 @@ class CfgFunctions {
             class initForkStartupRuntime {};
 
             // Cumulative physiology / Megacode systems introduced after Batch 1.
+            class idlePhysDiscovery {};
             class preoxygenationTick {};
             class shockPhenotypeTick {};
             class shockSetPhenotype {};
@@ -1906,6 +2177,7 @@ class CfgFunctions {
             class ecgJostleLocal {};
             class ecgJostleRequest {};
             class ecgArtifactStrength {};
+            class ecgMotionStrength {};
             class ecgArtifactApply {};
             class sedationThreshold {};
             class sedationPhysiology {};
@@ -1915,6 +2187,23 @@ class CfgFunctions {
             class suctionPublish {};
             class suctionObservers {};
             class ownerDispatch {};
+            class controlledProvider {};
+            class ownerRegisterNeedsRecovery {};
+            class respawnClinicalReset {};
+            class resusRequest {};
+            class resusCommit {};
+            class resusAck {};
+            class hardcorePushRecover {};
+            class ventBatteryExchange {};
+            class ventBatteryRequest {};
+            class ventBatteryAck {};
+            class ventBatteryItems {};
+            class ventBatteryCharge {};
+            class flightDeliveredFiO2 {};
+            class patientInteractionContact {};
+            class aspirationEventKey {};
+            class aspirationState {};
+            class aspirationRestore {};
             class patientInteractionDistance {};
             class headElevEffective {};
             class canCheckPatientDogtags {};
@@ -1931,6 +2220,9 @@ class CfgFunctions {
             class clinicalBagRecover {};
             class preparedAttachRequest {};
             class preparedAttachLocal {};
+            class preparedAttachBlockReason {};
+            class preparedAttachMessage {};
+            class preparedCarrierResolve {};
             class preparedAttachAck {};
             class preparedHangCommit {};
             class preparedHangResult {};
@@ -1954,6 +2246,7 @@ class CfgFunctions {
             class shockLocal {};
             class shockROSC {};
             class clinicalTickDelta {};
+            class clinicalNeedsTick {};
             class bpCompute {};
             class clinicalBindings {};
             class clinicalInspect {};
@@ -1961,6 +2254,7 @@ class CfgFunctions {
             class clinicalRestore {};
             class clinicalReset {};
             class deathFreeze {};
+            class recoveryDeathSlump {};
             class deadPhysiologyFreeze {};
             class fluidCommit {};
             class infusionDeliver {};
@@ -1971,6 +2265,10 @@ class CfgFunctions {
             class netNotice {};
             class ownerRegister {};
             class ownerInit {};
+            class aiProtectionWanted {};
+            class aiProtectionSync {};
+            class aiProtectionTick {};
+            class aiProtectionInit {};
             class transientStateReconcile {};
             class providerStateReconcile {};
             class nrbStateLocal {};
@@ -2004,6 +2302,7 @@ class CfgFunctions {
             class openDrawMenu {};
             class patchDrawDialog {};
             class injectIntoBag {};
+            class infusionDrawResolve {};
             class infusionDone {};
             class infusionRefreshTally {};
             class transfusionSpikeOrAdd {};
@@ -2030,6 +2329,8 @@ class CfgFunctions {
             class bloodFridgeSetup {};
             class bloodFridgeTakeMenu {};
             class bloodFridgeTake {};
+            class bloodFridgeTakeOwner {};
+            class bloodFridgeReceive {};
             class bloodFridgeTick {};
             class bloodFridgeMenuPoll {};
             class coolerInvHook {};
@@ -2042,6 +2343,24 @@ class CfgFunctions {
             class debugCheyneStokes {};
             class installRmbCancelGuard {};
             class airwayMedicPose {};
+            class assessmentTime {};
+            class assessmentReopen {};
+            class assessmentStart {};
+            class assessmentTick {};
+            class assessmentStop {};
+            class assessmentFinish {};
+            class assessmentProgress {};
+            class assessmentCompletion {};
+            class assessmentAdvance {};
+            class assessmentProgressBar {};
+            class respirationStart {};
+            class capillaryStart {};
+            class capillaryStop {};
+            class cprAfterChestPrep {};
+            class respirationStep {};
+            class respirationTick {};
+            class respirationStop {};
+            class respirationRate {};
             class airwayInjuryRelabel {};
             class animQueue {};
             class headElevMedicSeq {};
@@ -2053,6 +2372,7 @@ class CfgFunctions {
             class ptxTreat {};
             class ptxAmbientChange {};
             class ptxContext {};
+            class ptxCanClose {};
 
             class ivCathSetFrame {};
             class ivMinigamePullTick {};
@@ -2097,8 +2417,12 @@ class CfgFunctions {
             class ivHeldRaise {};
             class ivSeedHub {};
             class doAnim {};
+            class providerAnimation {};
             class medicAnimationPrep {};
             class rollProviderStart {};
+            class recoveryPositionStart {};
+            class recoveryPositionProgress {};
+            class recoveryPositionFinish {};
             class obtundedMasterChanged {};
             class obtundedWeaponIntent {};
             class ivSiteAtPoint {};
@@ -2112,6 +2436,9 @@ class CfgFunctions {
             class ivVeinNearest {};
             class ivPalpModel {};
             class netReport {};
+            class networkDiagnostics {};
+            class performanceDiagnostics {};
+            class performanceRecord {};
             class ivSiteDifficulty {};
             class ivStickBlows {};
             class ivVeinDist {};
@@ -2128,6 +2455,63 @@ class CfgFunctions {
             class visualBruiseState {};
             class ivMinigameAddMark {};
             class ivMarkCommit {};
+            class ivSupplyBind {};
+            class ivSupplyScopeCheck {};
+            class ivSupplyRelease {};
+            class ivFinishPlan {};
+            class ivFieldTransition {};
+            class ivFieldPoint {};
+            class ivFieldSecondaryRow {};
+            class ivFieldPort {};
+            class ivFieldAccessoryRow {};
+            class ivFieldPose {};
+            class ivFieldPreview {};
+            class ivFieldInsertStart {};
+            class ivFieldInsertEnd {};
+            class ivFieldClear {};
+            class ivFieldProgress {};
+            class ivFieldRender {};
+            class ivFieldPullLayers {};
+
+            class ivFinishFrame {};
+            class ivFinishPatency {};
+            class ivFinishPose {};
+            class ivFinishGeometry {};
+            class ivMagnetGeometry {};
+            class ivFinishSyringeHit {};
+            class ivCatheterPull {};
+            class transfusionUiSet {};
+            class layoutTransfusionMenu {};
+            class transfusionRoundedFrame {};
+            class transfusionCardIdentity {};
+            class transfusionCardResolve {};
+            class transfusionCardWindow {};
+            class transfusionCardSelect {};
+            class transfusionCardData {};
+            class transfusionGraduations {};
+            class updateTransfusionCards {};
+            class transfusionYRows {};
+            class paintTransfusionYBracket {};
+            class transfusionLineDetails {};
+            class updateTransfusionLineDetails {};
+            class spikePropofolBottle {};
+            class transfusionFilterInventory {};
+            class ivAccessoryUnplug {};
+            class fbtkHang {};
+            class fbtkHangCommit {};
+            class fbtkHangReply {};
+            class fbtkHangRetry {};
+            class ivFinishPoint {};
+            class ivFinishTarget {};
+            class ivFinishPreview {};
+            class ivFinishCommit {};
+            class ivFinishStart {};
+            class ivFinishReply {};
+            class ivFinishAbort {};
+            class ivFinishGrab {};
+            class ivFinishTick {};
+            class ivFinishTray {};
+            class ivFinishRetry {};
             class ivMinigameClick {};
             class ivMinigameRefreshBandSlot {};
             class ivTrayHover {};
@@ -2304,6 +2688,7 @@ class CfgFunctions {
             class hardcorePushSendBatch {};
             class hardcorePushStop {};
             class hardcorePushFinalize {};
+            class hardcorePushRetire {};
             class hardcorePushAck {};
             class hardcorePushRestoreDelta {};
             class hardcorePushOverlay {};
@@ -2314,9 +2699,12 @@ class CfgFunctions {
             class skDiscardSelected {};
             class skFlushSite {};
             class skToggleRoute {};
+            class actionClaimValidate {};
+            class actionClaimLedger {};
             class directPressureStart {};
             class directPressureClaimLocal {};
             class directPressureClaimAck {};
+            class directPressureRetire {};
             class directPressureHasFracture {};
             class directPressureFracturePain {};
             class directPressureSelf {};
@@ -2341,6 +2729,7 @@ class CfgFunctions {
             class aajtPainTick {};
             class junctionalWrapDone {};
             class junctionalRollSpawn {};
+            class priorityJunctionalCandidate {};
             class junctionalStartBleed {};
             class junctionalWrapSfxStart {};
             class junctionalWrapSfxStop {};
@@ -2350,6 +2739,12 @@ class CfgFunctions {
             class wrapSfxServer {};
             class markImportantSfx {};
             class directPressurePose {};
+            class directPressurePoseEnter {};
+            class directPressurePoseRetire {};
+            class directPressurePoseExit {};
+            class directPressureExitSpeedRelease {};
+            class directPressurePoseExitSync {};
+            class directPressurePoseBusy {};
             class patientAnimRequest {};
             class patientAnimRelease {};
             class treatmentPatientSettle {};
@@ -2362,6 +2757,8 @@ class CfgFunctions {
             class seizureControl {};
             class forceRagdoll {};
             class aajtApply {};
+            class aajtTreatmentStart {};
+            class aajtTreatmentFinish {};
             class aajtRemove {};
             class aajtStateCommit {};
             class aajtSetLegTQ {};
@@ -2369,6 +2766,12 @@ class CfgFunctions {
             class aajtTqHideInjury {};
             class cyanosisHideInjury {};
             class xstatApply {};
+            class nativeAnimationTime {};
+            class wakeAnimationChoice {};
+            class wakeAnimationEvent {};
+            class wakeAnimationTick {};
+            class wakeAnimationStop {};
+            class bvmOxygenSourceAllowed {};
             class junctionalFullHeal {};
             class bloodColdChainTick {};
             class bloodColdChainNudge {};
@@ -2396,6 +2799,7 @@ class CfgFunctions {
             class chestSealMouseDown {};
             class chestSealMouseUp {};
             class chestSealScroll {};
+            class chestSealScrollStep {};
             class chestSealSealAt {};
             class chestSealSnd {};
             class chestSealFlip {};
@@ -2410,11 +2814,17 @@ class CfgFunctions {
             class thoraBumpVer {};
             class thoraMouseDown {};
             class thoraAftercareLocal {};
+            class thoraAftercareRequest {};
+            class thoraAftercareRetry {};
+            class thoraAftercareAck {};
+            class thoraDrainBloodLocal {};
             class thoraCanSweep {};
             class thoraSealAt {};
             class thoraSealScroll {};
+            class thoraHasTube {};
             class thoraSideStateCommit {};
             class thoraMouseUp {};
+            class thoraPrepFlush {};
             class thoraSelectTool {};
             class thoraClosureMode {};
             class thoraClosureArt {};
@@ -2513,6 +2923,56 @@ class CfgFunctions {
             class hpmkPickUp {};
             class remoteSay3D {};
             class worldSfxNearby {};
+            class yBagReplaceEmpty {};
+            class transfusionTakeSelected {};
+            class fluidLabelVolume {};
+            class infusionName {};
+            class infusionTitle {};
+            class assessmentReadout {};
+            class transfusionTagRect {};
+            class lineWarmer {};
+            class lineWarmerRate {};
+            class lineWarmerCommit {};
+            class lineWarmerRequest {};
+            class lineWarmerAck {};
+            class lineWarmerDetach {};
+            class lineWarmerMove {};
+            class lineWarmerActionState {};
+            class lineWarmerReturn {};
+            class lineWarmerReturnsTick {};
+            class transfusionBagPresentation {};
+            class lineWarmerRecover {};
+            class lineWarmerRestore {};
+            class transfusionAccessLabel {};
+            class knownBloodType {};
+            class rememberDogtagBloodType {};
+            class transfusionTagLeader {};
+            class transfusionFluidShorthand {};
+            class piggybackEligible {};
+            class piggybackRole {};
+            class piggybackLine {};
+            class piggybackLinesCommit {};
+            class piggybackFlow {};
+            class piggybackWorkflow {};
+            class piggybackAttachRequest {};
+            class piggybackAttachLocal {};
+            class piggybackAttachAck {};
+            class piggybackRetry {};
+            class piggybackRecover {};
+            class setTransfusionLineFlow {};
+            class yServicePlan {};
+            class yServiceState {};
+            class pressureLevel {};
+            class pressureInfuserPaint {};
+            class transfusionServicePaint {};
+            class transfusionInputOwned {};
+            class yServiceJobValid {};
+            class yEnsureSlots {};
+
+            class manualSuctionSound {};
+            class isTorsoBandage {};
+            class torsoBandageStart {};
+            class torsoBandageFinish {};
             class remoteDeleteVehicle {};
             class forceWalkLocal {};
             class updateHpmkImage {};
@@ -2573,6 +3033,7 @@ class CfgFunctions {
             class syncPremixedBags {};
             class debugMenu {};
             class debugMenuClinical {};
+            class debugMedicationColumns {};
             class debugMenuNetwork {};
             class ejTexturePath {};
             class debugDumpToClipboard {};
@@ -2588,6 +3049,9 @@ class CfgFunctions {
             class lidoEffectiveness {};
             class lidoToxTick {};
             class debugInduceSeizure {};
+            class seizureMotorMode {};
+            class seizureJerkTiming {};
+            class seizureArrestTrack {};
             class seizureMotion {};
             class seizureGestureAdvance {};
             class seizureGestureSync {};
@@ -2602,6 +3066,10 @@ class CfgFunctions {
             // skin pallor and the "Feel Skin" action.
             class skinSigns {};
             class feelSkin {};
+            class feelSkinStart {};
+            class feelSkinTick {};
+            class feelSkinStop {};
+            class carrierParkTarget {};
             class skinInjuryEntry {};
             // TBI blast, or overpressure, trigger.
             class tbiBlast {};
@@ -2647,8 +3115,13 @@ class CfgFunctions {
             class stethoscopeFlip {};
             class stethoscopeFlipTick {};
             class stethoscopeTick {};
+            class stethoscopeAudioOwned {};
+            class stethoscopeAudioStop {};
+            class stethoscopeAudioUpdate {};
+            class stethoscopeBreathGain {};
             class stethoscopeWeights {};
             class stethoscopeClose {};
+            class stethoscopePressureRelease {};
             class rollProviderCancel {};
             class patientRollCancel {};
             class ivLineCreate {};
@@ -2693,6 +3166,12 @@ class CfgFunctions {
             class ventFaceGate {};
             class ventPanelShowDyn {};
             class ventPanelHideScreen {};
+            class ventNivEligible {};
+            class ventMaskSelected {};
+            class ventSyncMask {};
+            class ventSetMaskCPAP {};
+            class ventMaskApplyStart {};
+            class ventMaskApplyReply {};
             class ventConnectPatient {};
             class ventDisconnectPatient {};
             class ventAirwayLoss {};
@@ -2705,6 +3184,18 @@ class CfgFunctions {
             class ventCustodyAck {};
             class ventCustodyTick {};
             class ventItemGate {};
+            class ventOxygenGate {};
+            class ventOxygenReserve {};
+            class ventOxygenSource {};
+            class ventOxygenState {};
+            class ventOxygenFiO2 {};
+            class ventOxygenClear {};
+            class ventOxygenRequest {};
+            class ventOxygenCommit {};
+            class ventOxygenTick {};
+            class ventOxygenDraw {};
+            class ventOxygenAck {};
+            class ventOxygenUse {};
             class ventMinuteVolume {};
             class ventMVLimits {};
             class ventTechPrompt {};
@@ -2719,6 +3210,7 @@ class CfgFunctions {
             class ventPanelInit {};
             class ventPanelTick {};
             class ventPanelRefresh {};
+            class ventPanelOxygenRefresh {};
             class ventPanelFieldClick {};
             class ventPanelKnob {};
             class ventPanelStripClick {};
@@ -2741,6 +3233,7 @@ class CfgFunctions {
             class ventEffectiveSettings {};
             class ventSimpleManualBreath {};
             class ventManualBreath {};
+            class ventManualClaim {};
             class ventManualBreathCommit {};
             class ventAlarmTick {};
             class ventHoldClear {};
@@ -2766,12 +3259,33 @@ class CfgFunctions {
             class debugForceShake {};
             class initVisualEffectsConfig {};
             class visualFxTick {};
+            class registerVisualEffectsRuntime {};
             class visualFxDebugCycle {};
             class visualFxDebugClear {};
             class compatCheck {};
+            class networkCompatInit {};
+            class networkCompatManifest {};
+            class networkCompatCompare {};
+            class networkCompatReceive {};
+            class networkCompatRetry {};
+            class networkCompatPeer {};
+            class networkCompatNotice {};
             class altitudeTick {};
             class altitudeDatum {};
             class altitudeTrue {};
+            class pressureAtAltitude {};
+            class oxygenSupply {};
+            class flightExposure {};
+            class altitudeOxygenCeiling {};
+            class flightNeedsTick {};
+            class flightTick {};
+            class flightSupport {};
+            class flightAirframe {};
+            class flightEnclosed {};
+            class flightContainmentBegin {};
+            class flightContainmentTick {};
+            class flightContainmentStop {};
+            class registerFlightContainmentRuntime {};
             class vomitDislodgeOPA {};
             class flightChill {};
             class vehicleOpenness {};
@@ -2826,6 +3340,43 @@ class CfgFunctions {
             class sedationOnBoard {};
             class sedationActive {};
             class preparedComponents {};
+            class inventoryLedgerMarkIncoming {};
+            class inventoryLedgerAdopt {};
+            class inventoryLedgerCertificate {};
+            class inventoryLedgerNative {};
+            class inventoryLedgerClass {};
+            class inventoryLedgerRows {};
+            class inventoryLedgerPossessed {};
+            class inventoryLedgerCommit {};
+            class inventoryLedgerReserve {};
+            class inventoryLedgerClaim {};
+            class inventoryLedgerSettle {};
+            class inventoryLedgerBroker {};
+            class inventoryLedgerReply {};
+            class preparedInventoryCommit {};
+            class preparedInventoryRecover {};
+            class inventoryLedgerReconcile {};
+            class inventoryLedgerInit {};
+            class syringeDeliveryClaim {};
+            class syringeDeliveryBroker {};
+            class syringeDeliveryServerTick {};
+            class syringeDeliveryDelta {};
+            class syringeDeliveryDoseValid {};
+            class syringeDeliveryCopy {};
+            class syringeDeliveryMachine {};
+            class syringeDeliveryPatientQuery {};
+            class syringeDeliveryRequest {};
+            class syringeDeliveryReply {};
+            class syringeDeliveryRecover {};
+            class syringeDeliveryTick {};
+            class skInventoryEditable {};
+            class skInventoryCommit {};
+            class skInventoryReconcile {};
+            class skInventoryImportNative {};
+            class skInventoryReserve {};
+            class skInventorySettle {};
+            class skInventoryDiscard {};
+            class skInventoryInjectClaim {};
             class vialHolder {};
             class vialClass {};
             class vialMedication {};
@@ -2950,6 +3501,8 @@ class CfgFontFamilies {
 };
 
 class RscText;
+class RscStructuredText;
+class RscControlsGroupNoHScrollbars;
 class RscButton;
 class RscPicture;
 class RscPictureKeepAspect;
@@ -2957,11 +3510,11 @@ class RscListBox;
 class RscXSliderH;
 class RscEdit;
 
+#include "TransfusionMenu_Styles.hpp"
+
 // add chest-tube markers to ACE's medical-menu body image. they inherit the torso chest-seal position, use our
 // textures and airway blue, and are hidden by default. the ace_medical_gui_updateBodyImage event toggles them
 // per side. see postinit.
-class RscControlsGroupNoScrollbars;
-class RscControlsGroupNoHScrollbars;
 class ace_medical_gui_BodyImage: RscControlsGroupNoScrollbars {
     class Controls {
         class Torso_ChestSeal;
@@ -3375,7 +3928,6 @@ class ACME_SK_HotspotButton: ACME_SK_StyledButton {
 // chest seal. while held, the seal follows the cursor and a body click places it. the NAR SPEAR tray beneath
 // it uses the same pickup and return behavior, and guides the needle to the patient-side fifth intercostal
 // space. a flip checks the opposite side without a close of the procedure. the logic is in acme_fnc_chestseal*.
-class RscStructuredText;
 class ACME_ChestSeal_Dialog {
     idd = 86400;
     movingEnable = 0;
@@ -3660,7 +4212,7 @@ class ACME_Thoracostomy_Dialog {
     idd = 86600;
     movingEnable = 0;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_thoraInit";
-    onUnload = "[] call ACME_fnc_thoraClose";
+    onUnload = "_this call ACME_fnc_thoraClose";
     class ControlsBackground {
         class Thora_Dim: RscText {
             idc = -1;
@@ -3721,6 +4273,13 @@ class ACME_Thoracostomy_Dialog {
 // mouse-catching surface that reports the cursor in true ui coords and is ultrawide-safe, and a feel dot that
 // tracks the fingertip. fn_ivminigameinit positions all the controls at runtime, and the limb and band
 // textures swap per selected site.
+class ACME_IV_ToolLabel: RscText {style=2; font="RobotoCondensed"; colorText[]={0.90,0.95,1,1}; colorBackground[]={0,0,0,0};};
+class ACME_IV_ToolButton: RscButton {
+    colorText[] = {0,0,0,0}; colorBackground[] = {0,0,0,0};
+    colorBackgroundActive[] = {0.3,0.5,0.7,0.30}; colorFocused[] = {0,0,0,0};
+    colorBackgroundDisabled[] = {0,0,0,0}; colorShadow[] = {0,0,0,0}; borderSize=0;
+    offsetX=0; offsetY=0; offsetPressedX=0; offsetPressedY=0;
+};
 class ACME_IVMinigame_Dialog {
     idd = 86500;
     movingEnable = 0;
@@ -4264,6 +4823,9 @@ class ACME_SyringeKit_Dialog {
 };
 
 class ACM_circulation_TransfusionMenu_Dialog {
+    class ControlsBackground {
+        #include "TransfusionMenu_Chrome.hpp"
+    };
     class Controls {
         // forward-declare the button base chain of ACM, so our AddBagButton reopen inherits ACM's full property set.
         // that means style at st_center, plus the colors, font, sizeex, x, y, w and h. without this, a bare class
@@ -4276,7 +4838,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class AddBagButton: StopTransfusionButton {
             idc = 86140;
             text = "Spike Bag";
-            action = "call ACME_fnc_transfusionSpikeOrAdd";
+            action = "[] call ACME_fnc_transfusionSpikeOrAdd";
             tooltip = "Spike the selected bag (consumes one IV line), then press again to hang it.";
         };
         // a new pull bag button, for our exact-volume, y-preserving pull. it inherits the forward-declared
@@ -4285,6 +4847,8 @@ class ACM_circulation_TransfusionMenu_Dialog {
         // patch, severs its inherited geometry and collapses the layout. that caused two earlier regressions.
         // at runtime fn_updatetransfusioncontrols hides ACM's native remove button and drops this one into its slot.
         class ACME_PullBagButton: StopTransfusionButton {
+            colorDisabled[] = {1,1,1,0.25};
+            colorBackgroundDisabled[] = {0,0,0,0};
             idc = 86146;
             text = "Pull Bag";
             x = "safeZoneX - 1";  // parked off-screen until the runtime drops it into the native remove slot.
@@ -4297,10 +4861,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
             text = "Discard Y Tubing";
             colorText[] = {1,1,1,1};
             colorDisabled[] = {1,1,1,0.25};
-            colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0.35};
-            colorBackgroundActive[] = {0,0,0,1};
-            colorFocused[] = {0,0,0,1};
+            colorBackground[] = {0,0,0,0};
+            colorBackgroundDisabled[] = {0,0,0,0};
+            colorBackgroundActive[] = {0,0,0,0};
+            colorFocused[] = {0,0,0,0};
             colorBorder[] = {0,0,0,0};
             idc = 86120;
             style = 2;
@@ -4328,10 +4892,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_PrepMedicationBagButton: ACME_InjectMedicationBagButton {
             text = "Prep Infusion";
             idc = 86121;
-            x = "safeZoneX + (safeZoneW / 2) + (safeZoneW / 6.8)";
-            y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 6)";
-            w = "safeZoneW / 12";
-            h = "safeZoneH / 40";
+            x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.278";
+            y = "safeZoneY + safeZoneH * 0.526";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.097";
+            h = "safeZoneH * 0.034";
             sizeEx = "safeZoneH / 50";
             action = "call ACME_fnc_openPrepFromInventoryMenu";
             tooltip = "Inject medication into a saline bag before starting the transfusion";
@@ -4339,7 +4903,9 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_GivePreparedBagButton: ACME_PrepMedicationBagButton {
             text = "Give Infusion";
             idc = 86122;
-            y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 6) + (safeZoneH / 20)";
+            x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.173";
+            y = "safeZoneY + safeZoneH * 0.810";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.202";
             action = "call ACME_fnc_givePreparedBag";
             tooltip = "Start the selected prepared medication saline bag";
         };
@@ -4395,10 +4961,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_SpikeBagButton: ACME_GivePreparedBagButton {
             text = "Spike Bag";
             idc = 86141;
-            x = "safeZoneX + (safeZoneW / 2) + (safeZoneW / 7.75)";
-            y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 12)";
-            w = "safeZoneW / 8.5";
-            action = "call ACME_fnc_transfusionSpikeOrAdd";
+            x = "safeZoneX + safeZoneW / 2 + (safeZoneW min (safeZoneH * 1.7777778)) * 0.173";
+            y = "safeZoneY + safeZoneH * 0.526";
+            w = "(safeZoneW min (safeZoneH * 1.7777778)) * 0.202";
+            action = "[] call ACME_fnc_transfusionSpikeOrAdd";
             tooltip = "Spike the selected bag (consumes one IV line), then press again to hang it.";
         };
         // y-tubing button. it appears next to spike bag when a medic selects a blood bag. it builds a y set, which
@@ -4407,14 +4973,14 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_YTubingButton: ACME_SpikeBagButton {
             text = "Spike Y tubing";
             idc = 86142;
-            action = "call ACME_fnc_transfusionYTubing";
+            action = "[] call ACME_fnc_transfusionYTubing";
             tooltip = "Build a Y-type blood line: consumes a Y tubing set and pairs a saline bag to the blood unit.";
         };
         // flush line button. it appears above infuse when the selected blood line needs a flush between units.
         class ACME_FlushLineButton: ACME_SpikeBagButton {
             text = "Flush Line";
             idc = 86143;
-            action = "call ACME_fnc_transfusionFlushLine";
+            action = "['auto'] call ACME_fnc_transfusionFlushLine";
             tooltip = "Flush the blood line with its paired saline so the next unit is ready to hang.";
         };
         // the prepared iv sets button. it toggles the right-hand fluid list between the normal loose and cooler bags
@@ -4425,7 +4991,10 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_PreparedSetsButton: ACME_SpikeBagButton {
             text = "Prepared IV sets";
             idc = 86144;
-            action = "call ACME_fnc_togglePreparedSets";
+            action = "[true] call ACME_fnc_togglePreparedSets";
+            colorBackground[] = {0,0,0,0};
+            colorBackgroundActive[] = {0,0,0,0};
+            colorFocused[] = {0,0,0,0};
             tooltip = "Show your prepared IV sets. Build one with Spike Y tubing, Select Flush Saline, then Build Y Tubing.";
         };
         // overlay listbox for the prepared iv sets. it shows in place of the native bag list, 86005, while the prepared
@@ -4446,7 +5015,7 @@ class ACM_circulation_TransfusionMenu_Dialog {
             w = "safeZoneW / 8.5";
             h = "safeZoneH / 45";
             colorText[] = {1,1,1,1};
-            colorBackground[] = {0,0,0,0.55};
+            colorBackground[] = {0,0,0,0};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 58";
             style = 2;
@@ -4460,11 +5029,11 @@ class ACM_circulation_TransfusionMenu_Dialog {
             h = "safeZoneH / 10";
             rowHeight = "safeZoneH / 25";
             colorText[] = {1,1,1,1};
-            colorSelect[] = {0,0,0,1};
-            colorSelect2[] = {0,0,0,1};
+            colorSelect[] = {0.94,0.91,0.82,1};
+            colorSelect2[] = {0.94,0.91,0.82,1};
             colorBackground[] = {0,0,0,0.25};
-            colorSelectBackground[] = {0.7,0.7,0.7,1};
-            colorSelectBackground2[] = {0.7,0.7,0.7,1};
+            colorSelectBackground[] = {0.188,0.255,0.353,1};
+            colorSelectBackground2[] = {0.188,0.255,0.353,1};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 50";
             onLBSelChanged = "params ['_ctrl','_index']; if (_index >= 0) then {missionNamespace setVariable ['ACME_infusion_SelectedPreparedIndex', _ctrl lbValue _index];};";
@@ -4486,13 +5055,13 @@ class ACM_circulation_TransfusionMenu_Dialog {
         };
         class ACME_RateReadout: RscText {
             idc = 86126;
-            text = "Select medicated saline bag";
+            text = "Select an infusion";
             x = "safeZoneX + (safeZoneW / 2) - (safeZoneW / 4.35)";
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 4.75)";
             w = "safeZoneW / 3.1";
             h = "safeZoneH / 32";
             colorText[] = {1,1,1,1};
-            colorBackground[] = {0,0,0,0.55};
+            colorBackground[] = {0,0,0,0};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH / 55";
             style = 2;
@@ -4541,8 +5110,8 @@ class ACM_circulation_TransfusionMenu_Dialog {
         class ACME_AdjustInfusionButton: ACME_DropSetButton {
             text = "Adjust Infusion";
             idc = 86131;
-            colorText[] = {1, 0.85, 0.16, 1};
-            colorDisabled[] = {1, 0.85, 0.16, 0.25};
+            colorText[] = {0.94,0.94,0.95,1};
+            colorDisabled[] = {0.76,0.76,0.76,0.35};
             x = "safeZoneX + (safeZoneW / 2) - (safeZoneW / 4.05)";
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 14) - (safeZoneH / 38)";
             w = "safeZoneW / 8.5";
@@ -5121,6 +5690,39 @@ class ACME_VentValG {
     text = "";
     colorText[] = {0.92,0.92,0.92,1};
     colorBackground[] = {0,0,0,0};
+};
+
+// Global class: dynamic oxygen actions must resolve outside the dialog's nested controls.
+class ACME_VentActionG {
+    type = 1;
+    idc = -1;
+    style = 2;
+    shadow = 0;
+    x = 0; y = 0; w = 0.1; h = 0.05;
+    font = "PuristaMedium";
+    sizeEx = 0.03;
+    text = "";
+    action = "";
+    colorText[] = {0.92,0.92,0.92,1};
+    colorDisabled[] = {0.55,0.55,0.55,1};
+    colorBackground[] = {0.06,0.08,0.10,1};
+    colorBackgroundDisabled[] = {0,0,0,0};
+    colorBackgroundActive[] = {0.04,0.14,0.25,1};
+    colorFocused[] = {0.04,0.14,0.25,1};
+    colorShadow[] = {0,0,0,0};
+    colorBorder[] = {0,0,0,0};
+    borderSize = 0;
+    offsetX = 0;
+    offsetY = 0;
+    offsetPressedX = 0;
+    offsetPressedY = 0;
+    soundEnter[] = {"",0,1};
+    soundPush[] = {"",0,1};
+    soundClick[] = {"",0,1};
+    soundEscape[] = {"",0,1};
+    tooltipColorText[] = {1,1,1,1};
+    tooltipColorBox[] = {1,1,1,1};
+    tooltipColorShade[] = {0,0,0,0.85};
 };
 
 class ACME_VentPicFill: RscPicture {
@@ -6408,7 +7010,7 @@ class CfgSounds {
     // manual suction bag: one squeeze of the bulb. it is a mono ogg, as every sound in this addon is.
     class ACME_ManualSuction {
         name = "ACME_ManualSuction";
-        sound[] = {"\acm_extended\sound\manual_suction_sfx.ogg", 1.0, 1};
+        sound[] = {"\acm_extended\sound\manual_suction_sfx.ogg", 1.3, 1, 25};
         titles[] = {};
     };
     class ACME_BloodFridgeDoorOpen {
@@ -6436,17 +7038,17 @@ class CfgSounds {
     };
     class ACM_Stethoscope_Breath_Normal_Crackles {
         name = "ACM_Stethoscope_Breath_Normal_Crackles";
-        sound[] = {"acm_extended\sound\breathing_normal_crackles.ogg", "db+10", 1};
+        sound[] = {"acm_extended\sound\breathing_normal_crackles.ogg", "db+16", 1};
         titles[] = {};
     };
     class ACM_Stethoscope_Breath_Fast_Crackles {
         name = "ACM_Stethoscope_Breath_Fast_Crackles";
-        sound[] = {"acm_extended\sound\breathing_fast_crackles.ogg", "db+10", 1};
+        sound[] = {"acm_extended\sound\breathing_fast_crackles.ogg", "db+16", 1};
         titles[] = {};
     };
     class ACM_Stethoscope_Breath_Slow_Crackles {
         name = "ACM_Stethoscope_Breath_Slow_Crackles";
-        sound[] = {"acm_extended\sound\breathing_slow_crackles.ogg", "db+10", 1};
+        sound[] = {"acm_extended\sound\breathing_slow_crackles.ogg", "db+16", 1};
         titles[] = {};
     };
     // HPMK deploy, one-shot. it is the foil and shell rustle when a medic wraps the blanket.
@@ -6670,6 +7272,28 @@ class CfgFactionClasses {
 };
 
 class CfgVehicles {
+    class ReammoBox_F;
+    // A native ground container, paired with the exact removed vest mesh. There is no wearable duplicate
+    // to take; its live supplies use vanilla Gear, including world access and multiplayer inventory.
+    class GroundWeaponHolder_Scripted;
+    class ACME_RemovedCarrierCargo: GroundWeaponHolder_Scripted {
+        scope = 1;
+        scopeCurator = 0;
+        displayName = "Plate carrier";
+        model = "\A3\Weapons_F\DummyWeapon.p3d";
+        simulation = "WeaponHolder";
+        showWeaponCargo = 0;
+        // The separately parked original vest mesh is the visual representation.
+        // Cargo contains supplies only: a manually removed carrier cannot be stolen as a wearable.
+        forceSupply = 0;
+        transportMaxWeapons = 10000;
+        transportMaxMagazines = 10000;
+        transportMaxBackpacks = 10000;
+        maximumLoad = 0; // server sets the captured carrier's actual capacity before additions
+        ace_dragging_canDrag = 0;
+        ace_dragging_canCarry = 0;
+        ace_cargo_canLoad = 0;
+    };
     // iv line, bag and anchor classes, moved here from the former second CfgVehicles block.
     class Rope;
     // thin, pale-blue PhysX iv line. it is ACE's fuelhose shape, shrunk to about 5 mm and recolored, and it needs
@@ -7243,15 +7867,11 @@ class CfgVehicles {
     };
 
     // blood fridge.
-    // this is a stocked blood refrigerator. the module spawns a closed-model fridge plus a co-located open-model
-    // twin, and the server hides and shows whichever matches the live state. the fridge auto-opens, with the model
-    // and the door sfx, while any player has the ACE interaction menu pointed at it, and shuts when the last one
-    // looks away. ACE "Take" hands out 500 ml units by type, and if the player carries a cooler the cold-chain
-    // ledger covers the unit by volume automatically. stock is preserved indefinitely while inside, and it can
-    // restock to its configured load each in-game day.
-    // two object classes share one ACE_Actions body through the FRIDGE_ACTIONS macro, so take works on whichever
-    // model is currently shown. the closed object is always the state anchor, and the open object stores
-    // ACME_bf_anchor pointing at it.
+    // The stocked refrigerator uses the native Door_1_noSound_source on one persistent model, with our
+    // DoorOpen/DoorClose sounds. ACE interaction and taking a unit hold the door open while in use.
+    // Taking a unit uses the existing head-positioning provider sequence; door motion is independent of
+    // whether cold-chain physiology is enabled. The stock owner grants each requested unit once.
+    // Both legacy vehicle classes retain the same ACE actions for existing missions.
     #define FRIDGE_ACTIONS \
         class ACE_Actions { \
             class ACE_MainActions { \
@@ -7495,6 +8115,8 @@ class ACM_MedicalMenu_ActionButton_ACM_IV_14G {
     textureNoShortcut = "\acm_extended\ui\items\iv_14g_ca.paa";
 };
 
+class ACM_MedicalMenu_ActionButton_ACE_salineIV_500;
+
 #define ACME_LBTN(name) \
     class ACM_MedicalMenu_ActionButton_L_##name: ACM_MedicalMenu_ActionButton_##name { \
         style = 0; \
@@ -7507,6 +8129,7 @@ class ACM_MedicalMenu_ActionButton_ACM_IV_14G {
         }; \
     }
 ACME_LBTN(None);
+ACME_LBTN(ACE_salineIV_500);
 ACME_LBTN(ACE_tourniquet);
 ACME_LBTN(ACE_surgicalKit);
 ACME_LBTN(ACE_personalAidKit);
@@ -7573,6 +8196,11 @@ ACME_LBTN(ACME_Ventilator);
 #undef ACME_LBTN
 
 class ace_medical_treatment_actions {
+    class OpenTransfusionMenu {
+        icon = "\z\ace\addons\medical_treatment\ui\salineIV_ca.paa";
+        ACM_menuIcon = "ACE_salineIV_500";
+    };
+
     // PARALLEL PROVIDER RULE:
     // Active BVM, CPR and other continuous roles reserve only that same role. They do not globally
     // disable unrelated treatment actions for another provider. The provider actually performing a
@@ -7609,31 +8237,45 @@ class ace_medical_treatment_actions {
     // a lot more than these. quietly giving every descendant an animation is how you end up with a medic doing a
     // gear check while they cannulate.
     class CheckAirway {
-        // B47: one pose owner cleanly enters the requested medic4_old examination from empty-handed crouch,
-        // keeps it inside the treatment window, then blends back to the same crouch.  The exact-class guard in
-        // ACME_fnc_airwayMedicPose prevents CheckAirway descendants from inheriting this theatre accidentally.
+        // B218: initial 1.75 s inspection, then the complete medic4 RTM at its natural speed.
+        // Provider preparation is inside this duration; inherited descendants do not acquire this sequence.
+        treatmentTime = "['CheckAirway', _medic] call ACME_fnc_assessmentTime";
         animationMedic = "";
         animationMedicProne = "";
         animationMedicSelf = "";
         animationMedicSelfProne = "";
-        // Dead engine corpses retain intervention/inspection access where explicitly supported, but a live airway
-        // assessment is not one of those actions. Keep this gate local to Check Airway rather than globally hiding
-        // dead-patient medical actions.
-        condition = "alive _patient && {ACM_airway_enable} && {!(_patient call ace_common_fnc_isAwake)}";
-        callbackStart = "_this call ACME_fnc_airwayMedicPose";
-        callbackSuccess = "_this call ACM_airway_fnc_checkAirway; [_medic, 'airway'] call ACME_fnc_treatmentPoseStop";
-        callbackFailure = "[_medic, 'airway'] call ACME_fnc_treatmentPoseStop";
+        condition = "ACM_airway_enable && {!(_patient call ace_common_fnc_isAwake)}";
+        callbackStart = "";
+        callbackProgress = "_this call ACME_fnc_assessmentProgress";
+        callbackSuccess = "_this call ACM_airway_fnc_checkAirway; [_this] call ACME_fnc_assessmentFinish";
+        callbackFailure = "[_this] call ACME_fnc_assessmentFinish";
     };
     class RecoveryPosition: CheckAirway {
         displayName = "$STR_ACM_Airway_EstablishRecoveryPosition";
         displayNameProgress = "$STR_ACM_Airway_EstablishRecoveryPosition_Progress";
         icon = "";
         medicRequired = 0;
-        treatmentTime = 3;
-        allowedSelections[] = {"Body"};
-        condition = "alive _patient && {ACM_airway_enable} && {!(_patient call ace_common_fnc_isAwake)} && {(_patient getVariable ['ACM_airway_AirwayItem_Oral','']) != 'SGA'} && {!(_patient getVariable ['ACME_ETT_Inserted',false])} && {!(_patient getVariable ['ACME_vent_driving',false])} && {!(_patient getVariable ['ACM_airway_RecoveryPosition_State',false])} && {isNull objectParent _patient}";
-        callbackSuccess = "[_medic,_patient,true] call ACM_airway_fnc_setRecoveryPosition";
+        treatmentTime = 5;
+        allowedSelections[] = {"Head", "Body"};
+        condition = "alive _patient && {ACM_airway_enable} && {!(_patient call ace_common_fnc_isAwake)} && {!(_patient getVariable ['ACME_vent_driving',false])} && {!([_patient] call ACM_core_fnc_cprActive)} && {!alive (_patient getVariable ['ACM_breathing_BVM_Medic',objNull])} && {!(_patient getVariable ['ACM_airway_RecoveryPosition_State',false])} && {isNull objectParent _patient}";
+        // Explicit callbacks prevent CheckAirway's assessment controller being inherited here.
+        callbackStart = "_this call ACME_fnc_recoveryPositionStart";
+        callbackProgress = "_this call ACME_fnc_recoveryPositionProgress";
+        callbackSuccess = "[_this, true] call ACME_fnc_recoveryPositionFinish";
+        callbackFailure = "[_this, false] call ACME_fnc_recoveryPositionFinish";
         ACM_rollToBack = 0;
+        ACME_neverRollToBack = 1;
+    };
+
+    class CancelRecoveryPosition: RecoveryPosition {
+        // This native cancellation action must retain its roll-to-back and avoid the entry transaction.
+        ACME_neverRollToBack = 0;
+        ACM_rollToBack = 1;
+        ACM_cancelRecovery = 1;
+        callbackSuccess = "[_medic, _patient, false] call ACM_airway_fnc_setRecoveryPosition";
+        callbackStart = "";
+        callbackProgress = "";
+        callbackFailure = "";
     };
 
     class CheckResponse: CheckPulse {
@@ -7672,9 +8314,16 @@ class ace_medical_treatment_actions {
         ACM_ignoreAnimCoef = 1;
     };
     class CheckBreathing {
-        animationMedic = "AmovPknlMstpSrasWpstDnon_AmovPknlMstpSrasWpstDnon_gear";
-        animationMedicProne = "AmovPknlMstpSrasWpstDnon_AmovPknlMstpSrasWpstDnon_gear";
-        condition = "alive _patient";
+        treatmentTime = "['CheckBreathing', _medic] call ACME_fnc_assessmentTime";
+        animationMedic = "";
+        animationMedicProne = "";
+        animationMedicSelf = "";
+        animationMedicSelfProne = "";
+        callbackStart = "";
+        callbackProgress = "_this call ACME_fnc_assessmentProgress";
+        callbackSuccess = "_this call ACM_breathing_fnc_checkBreathing; [_this] call ACME_fnc_assessmentFinish";
+        callbackFailure = "[_this] call ACME_fnc_assessmentFinish";
+        condition = "true";
     };
     class UseStethoscope {
         // Auscultation owns a clean supine chest-access pose. Do not inherit CheckBreathing's generic roll-to-back:
@@ -7698,8 +8347,14 @@ class ace_medical_treatment_actions {
     // feel pulse therefore still has none. fixing that properly means either blanking the animation on about
     // thirty descendants or giving feel pulse its own class, and that is a decision rather than a detail.
     class CheckCapillaryRefill {
-        animationMedic = "AmovPknlMstpSrasWpstDnon_AmovPknlMstpSrasWpstDnon_gear";
-        animationMedicProne = "AmovPknlMstpSrasWpstDnon_AmovPknlMstpSrasWpstDnon_gear";
+        ACME_suppressNativeTreatmentAnim = 1;
+        animationMedic = "";
+        animationMedicProne = "";
+        animationMedicSelf = "";
+        animationMedicSelfProne = "";
+        callbackStart = "_this call ACME_fnc_capillaryStart";
+        callbackSuccess = "[_this, true] call ACME_fnc_capillaryStop";
+        callbackFailure = "[_this, false] call ACME_fnc_capillaryStop";
     };
 
 // one advanced airway at a time.
@@ -7733,7 +8388,10 @@ class ace_medical_treatment_actions {
         consumeItem = 1;
         condition = "ACM_airway_enable && !(_patient call ace_common_fnc_isAwake) && (_patient getVariable ['ACM_airway_AirwayItem_Oral','']) == '' && !(_patient getVariable ['ACME_ETT_Inserted', false]) && !(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false])";
         callbackSuccess = "[_medic, _patient, 'OPA'] call ACM_airway_fnc_insertAirwayItem";
-        ACM_cancelRecovery = 1;
+        // Basic adjuncts complement lateral drainage in either treatment order.
+        ACM_cancelRecovery = 0;
+        ACM_rollToBack = 0;
+        ACME_neverRollToBack = 1;
         ACM_menuIcon = "ACM_OPA";
     };
     class InsertNPA: InsertOPA {
@@ -7756,6 +8414,10 @@ class ace_medical_treatment_actions {
         items[] = {"ACM_IGel"};
         condition = "ACM_airway_enable && !(_patient call ace_common_fnc_isAwake) && (_patient getVariable ['ACM_airway_AirwayItem_Oral','']) == '' && !(_patient getVariable ['ACME_ETT_Inserted', false]) && !(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false]) && !(_patient getVariable ['ACME_nrb_on', false])";
         callbackSuccess = "[_medic, _patient, 'SGA'] call ACM_airway_fnc_insertAirwayItem";
+        // Fitted i-gels permit recovery; inserting one still uses its existing supine access.
+        ACM_cancelRecovery = 1;
+        ACM_rollToBack = 1;
+        ACME_neverRollToBack = 0;
         ACM_menuIcon = "ACM_IGel";
     };
     // CPR remains entirely native ACM. ACME does not restate its condition, callback or continuous-action behavior.
@@ -7879,8 +8541,10 @@ class ace_medical_treatment_actions {
 
     // intranasal esketamine. it gives battlefield analgesia with no iv access, and a medic administers it exactly
     // like the ACM naloxone spray. it inherits the head-targeted spray flow of naloxone. we point it at the
-    // esketamine atomizer and raise ACM's medicationlocal with the classname 'esketamine', so it applies the
-    // esketamine effect config: analgesia, shock-tolerant and gag-preserving. it is indicated for a
+    // esketamine atomizer. Use the native medication wrapper so the actual product is recorded in the activity
+    // log and triage card before its owner-targeted effect event. The effect class is Esketamine, with one
+    // 50mg product unit (not 50 effect units). The effect config provides shock-tolerant, gag-preserving analgesia.
+    // It is indicated for a
     // non-mission-capable casualty in moderate to severe pain, at an ace pain of 0.35 or more, when no BVM is
     // running and they are not in arrest.
     class ACME_Esketamine_IN: Naloxone {
@@ -7890,7 +8554,7 @@ class ace_medical_treatment_actions {
         treatmentTime = 4;
         medicRequired = 0;
         condition = "true";
-        callbackSuccess = "['ace_medical_treatment_medicationLocal', [_patient, _bodyPart, 'Esketamine', 1, false], _patient] call CBA_fnc_targetEvent";
+        callbackSuccess = "[_medic, _patient, _bodyPart, 'Esketamine', _itemUser, _usedItem, _createLitter, 1, false] call ace_medical_treatment_fnc_medication";
         ACM_rollToBack = "false";  // a conscious pain patient. do not force them supine.
         sounds[] = {};
         ACM_menuIcon = "ACME_Spray_Esketamine";
@@ -7925,7 +8589,16 @@ class ace_medical_treatment_actions {
     class ACME_ManualReplacePlateCarrier: ACME_ManualRemovePlateCarrier {
         displayName = "Replace Plate Carrier";
         condition = "[_medic, _patient, true] call ACME_fnc_manualPlateCarrierCanToggle";
-        callbackSuccess = "[_patient, 'manualPlateCarrier', [_medic, _patient, true]] call ACME_fnc_ownerDispatch";
+        callbackSuccess = "[_patient, 'manualPlateCarrier', [_medic, _patient, true, [_medic getVariable ['ACME_treatmentPoseEpoch', 0], _medic getVariable ['ACME_providerLocalityEpoch', 0], serverTime + 3, _medic getVariable ['ACME_providerTreatmentEpoch',0], _medic getVariable ['ACME_headElev_medicAnimToken',0]]]] call ACME_fnc_ownerDispatch";
+    };
+
+    class ACME_OpenPlateCarrierInventory: ACME_ManualRemovePlateCarrier {
+        displayName = "Open Plate Carrier Inventory";
+        category = "examine";
+        allowedSelections[] = {};
+        condition = "false";
+        callbackSuccess = "[_medic, _patient] call ACME_fnc_carrierInventoryOpen";
+        ACME_neverRollToBack = 1;
     };
 
     // Keep the existing assessment action; B31 gives its medic one pose owner.
@@ -8044,7 +8717,7 @@ class ace_medical_treatment_actions {
     class ACME_AdjustThoracostomy: ACME_PerformThoracostomy {
         displayName = "Adjust Thoracostomy";
         displayNameProgress = "Opening thoracostomy...";
-        condition = "([_medic, 'ACME_AdjustThoracostomy'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) > 0} && {[_medic, _patient, true] call ACME_fnc_thoraCanOpen}}";
+        condition = "([_medic, 'ACME_AdjustThoracostomy'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {[_medic, _patient, true] call ACME_fnc_thoraCanOpen}}";
             medicRequired = 0;
     };
 
@@ -8229,6 +8902,29 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         ACM_menuIcon = "CPR";
         items[] = {};
+    };
+    class ACME_MeasureRespirations: CheckPulse {
+        displayName = "Measure Respirations";
+        displayNameProgress = "";
+        category = "airway";
+        allowedSelections[] = {"Head", "Body"};
+        treatmentLocations[] = {"All"};
+        medicRequired = 0;
+        allowSelfTreatment = 0;
+        treatmentTime = 0.001;
+        condition = "true";
+        items[] = {};
+        consumeItem = 0;
+        callbackStart = "";
+        callbackProgress = "true";
+        callbackSuccess = "ACME_fnc_respirationStart";
+        callbackFailure = "";
+        animationMedic = "";
+        animationMedicProne = "";
+        animationMedicSelf = "";
+        animationMedicSelfProne = "";
+        ACM_rollToBack = 0;
+        ACME_neverRollToBack = 1;
     };
     class ACME_AssessPupils: CheckPulse {
         displayName = "Assess Pupils";
@@ -8579,6 +9275,20 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
     };
 
+    // B222: the carried ventilator includes the mask interface; no secured airway is required.
+    class ACME_ConnectNIVVent: ACME_ConnectETVent {
+        displayName = "Connect Ventilator";
+        condition = "([_medic, 'ACME_ConnectNIVVent'] call ACME_fnc_procedureActionAllowed) && {[_patient] call ACME_fnc_ventNivEligible} && {!(_patient getVariable ['ACME_vent_circuit', false])} && {!(_patient getVariable ['ACME_vent_onPatient', false])} && {!(_patient getVariable ['ACME_vent_recovering', false])} && {(_patient getVariable ['ACME_vent_custodyId', '']) == ''} && {([_medic, _patient, 'ACME_Ventilator'] call ACME_fnc_treatmentSupplyCount) > 0}";
+        callbackSuccess = "[_medic, _patient, 'MASK'] call ACME_fnc_ventConnectPatient";
+    };
+
+    // B223: no extra device or mask item and no reconnect transaction required.
+    class ACME_VentMaskCPAP: ACME_ConnectETVent {
+        displayName = "Use NIV / CPAP Mask";
+        condition = "([_medic, 'ACME_VentMaskCPAP'] call ACME_fnc_procedureActionAllowed) && {_patient getVariable ['ACME_vent_onPatient', false]} && {_patient getVariable ['ACME_vent_circuit', false]} && {!(_patient getVariable ['ACME_vent_recovering', false])}";
+        callbackSuccess = "[_medic, _patient] call ACME_fnc_ventMaskApplyStart";
+    };
+
     // disconnect ventilator. there was no explicit way to take the machine off a casualty. the only route was to
     // walk away and let the leash break it, which is now deliberately impossible, because the machine travels with
     // the patient. taking a ventilator off someone is a decision a medic makes, so it needs to be an action they
@@ -8630,7 +9340,7 @@ class ace_medical_treatment_actions {
         // unreachable the moment it was hooked up. carrying a spare still works for a patient who has been configured
         // and not yet connected. Pre-attachment presets belong to the medic's carried device;
         // use Connect ET > Ventilator to acquire patient/vehicle equipment before editing it.
-        condition = "([_medic, 'ACME_VentOpenPatient'] call ACME_fnc_procedureActionAllowed) && {((_patient getVariable ['ACME_vent_circuit', false]) || {_patient getVariable ['ACME_vent_configured', false]}) && {(_patient getVariable ['ACME_vent_onPatient', false]) || {([_medic, 'ACME_Ventilator'] call ace_common_fnc_getCountOfItem) > 0}}}";
+        condition = "([_medic, 'ACME_VentOpenPatient'] call ACME_fnc_procedureActionAllowed) && {!(_patient getVariable ['ACME_vent_recovering', false])} && {alive _patient || {_patient getVariable ['ACME_vent_onPatient', false]}} && {((_patient getVariable ['ACME_vent_circuit', false]) || {_patient getVariable ['ACME_vent_configured', false]}) && {(_patient getVariable ['ACME_vent_onPatient', false]) || {([_medic, 'ACME_Ventilator'] call ace_common_fnc_getCountOfItem) > 0}}}";
         callbackSuccess = "[_patient, true] call ACME_fnc_ventPanelOpen";
         ACM_menuIcon = "ACME_Ventilator";
         callbackFailure = "";
@@ -8692,10 +9402,11 @@ class ace_medical_treatment_actions {
         treatmentTime = 20;
         allowedSelections[] = {"LeftLeg","RightLeg"};
         condition = "!(_patient getVariable ['ACME_AAJT_inguinal', false])";
-        callbackStart = "[_this select 1, 'aajtApplying', [toLowerANSI (_this select 2), true]] call ACME_fnc_ownerDispatch";
-        callbackSuccess = "_this call ACME_fnc_aajtApply";
-        callbackFailure = "[_this select 1, 'aajtApplying', ['', false]] call ACME_fnc_ownerDispatch";
+        callbackStart = "_this call ACME_fnc_aajtTreatmentStart";
+        callbackSuccess = "if ([_this, true] call ACME_fnc_aajtTreatmentFinish) then {_this call ACME_fnc_aajtApply}";
+        callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";
         callbackProgress = "";
+        ACME_suppressNativeTreatmentAnim = 1;
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {"ACME_AAJT_S"};
         consumeItem = 1;
@@ -8711,9 +9422,11 @@ class ace_medical_treatment_actions {
         treatmentTime = 4;
         allowedSelections[] = {"LeftLeg","RightLeg"};
         condition = "(_patient getVariable ['ACME_AAJT_inguinal', false]) && {(_patient getVariable ['ACME_AAJT_inguinalSide', '']) == toLowerANSI _bodyPart}";
-        callbackSuccess = "_this call ACME_fnc_aajtRemove";
-        callbackFailure = "";
+        callbackStart = "_this call ACME_fnc_aajtTreatmentStart";
+        callbackSuccess = "if ([_this, true] call ACME_fnc_aajtTreatmentFinish) then {_this call ACME_fnc_aajtRemove}";
+        callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";
         callbackProgress = "";
+        ACME_suppressNativeTreatmentAnim = 1;
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {};
         icon = "\acm_extended\ui\items\aajt-s_ca.paa";
@@ -8728,10 +9441,11 @@ class ace_medical_treatment_actions {
         treatmentTime = 20;
         allowedSelections[] = {"LeftArm","RightArm"};
         condition = "((toLowerANSI _bodyPart) == 'leftarm' && {!(_patient getVariable ['ACME_AAJT_axillaleft', false])}) || {(toLowerANSI _bodyPart) == 'rightarm' && {!(_patient getVariable ['ACME_AAJT_axillaright', false])}}";
-        callbackStart = "[_this select 1, 'aajtApplying', [toLowerANSI (_this select 2), true]] call ACME_fnc_ownerDispatch";
-        callbackSuccess = "_this call ACME_fnc_aajtApply";
-        callbackFailure = "[_this select 1, 'aajtApplying', ['', false]] call ACME_fnc_ownerDispatch";
+        callbackStart = "_this call ACME_fnc_aajtTreatmentStart";
+        callbackSuccess = "if ([_this, true] call ACME_fnc_aajtTreatmentFinish) then {_this call ACME_fnc_aajtApply}";
+        callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";
         callbackProgress = "";
+        ACME_suppressNativeTreatmentAnim = 1;
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {"ACME_AAJT_S"};
         consumeItem = 1;
@@ -8747,9 +9461,11 @@ class ace_medical_treatment_actions {
         treatmentTime = 4;
         allowedSelections[] = {"LeftArm","RightArm"};
         condition = "((toLowerANSI _bodyPart) == 'leftarm' && {_patient getVariable ['ACME_AAJT_axillaleft', false]}) || {(toLowerANSI _bodyPart) == 'rightarm' && {_patient getVariable ['ACME_AAJT_axillaright', false]}}";
-        callbackSuccess = "_this call ACME_fnc_aajtRemove";
-        callbackFailure = "";
+        callbackStart = "_this call ACME_fnc_aajtTreatmentStart";
+        callbackSuccess = "if ([_this, true] call ACME_fnc_aajtTreatmentFinish) then {_this call ACME_fnc_aajtRemove}";
+        callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";
         callbackProgress = "";
+        ACME_suppressNativeTreatmentAnim = 1;
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {};
         icon = "\acm_extended\ui\items\aajt-s_ca.paa";
@@ -8764,10 +9480,11 @@ class ace_medical_treatment_actions {
         treatmentTime = 20;
         allowedSelections[] = {"Body"};
         condition = "!(_patient getVariable ['ACME_AAJT_zone3', false])";
-        callbackStart = "[_this select 1, 'aajtApplying', ['body', true]] call ACME_fnc_ownerDispatch";
-        callbackSuccess = "_this call ACME_fnc_aajtApply";
-        callbackFailure = "[_this select 1, 'aajtApplying', ['', false]] call ACME_fnc_ownerDispatch";
+        callbackStart = "_this call ACME_fnc_aajtTreatmentStart";
+        callbackSuccess = "if ([_this, true] call ACME_fnc_aajtTreatmentFinish) then {_this call ACME_fnc_aajtApply}";
+        callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";
         callbackProgress = "";
+        ACME_suppressNativeTreatmentAnim = 1;
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {"ACME_AAJT_S"};
         consumeItem = 1;
@@ -8783,9 +9500,11 @@ class ace_medical_treatment_actions {
         treatmentTime = 4;
         allowedSelections[] = {"Body"};
         condition = "_patient getVariable ['ACME_AAJT_zone3', false]";
-        callbackSuccess = "_this call ACME_fnc_aajtRemove";
-        callbackFailure = "";
+        callbackStart = "_this call ACME_fnc_aajtTreatmentStart";
+        callbackSuccess = "if ([_this, true] call ACME_fnc_aajtTreatmentFinish) then {_this call ACME_fnc_aajtRemove}";
+        callbackFailure = "[_this, false] call ACME_fnc_aajtTreatmentFinish";
         callbackProgress = "";
+        ACME_suppressNativeTreatmentAnim = 1;
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {};
         icon = "\acm_extended\ui\items\aajt-s_zone3_reboa_ca.paa";
@@ -8810,15 +9529,16 @@ class ace_medical_treatment_actions {
     // it is an extreme-case, one-way device. it is offered only on a fresh open inguinal, or leg, junctional wound,
     // with no inguinal AAJT in place and the item carried. it therefore cannot be stacked on any other treatment,
     // cannot be used on arms, and cannot be reapplied, because once seated the state is xstat rather than open.
-    // there is no remove action. it is permanent until surgery or a full heal. the insert takes about 3 s and
-    // fn_xstatapply does the rest.
+    // There is no remove action. It remains until surgery/full heal. The insertion follows the native
+    // medic1 duration, rounded to a whole second; fn_xstatApply commits the clinical state.
     class ACME_ApplyXStat: CheckPulse {
         displayName = "Insert XStat 30";
         displayNameProgress = "Inserting XStat...";
         category = "bandage";
         treatmentLocations[] = {"All"};
         medicRequired = 0;
-        treatmentTime = 3;
+        treatmentTime = "round (['AinvPknlMstpSnonWnonDnon_medic1'] call ACME_fnc_nativeAnimationTime)";
+        ACME_normalSpeedAnimation = 1;
         // arms are included. an axillary wound is junctional and is exactly the kind of bleed XStat is for, because it
         // is one you cannot tourniquet and cannot reliably pack by hand. the wound state already lives on LeftArm and
         // RightArm, as ACME_Junc_leftarm and _rightarm, so the condition below already resolved correctly for them.
@@ -8832,7 +9552,7 @@ class ace_medical_treatment_actions {
         callbackSuccess = "_this call ACME_fnc_xstatApply";
         callbackFailure = "";
         callbackProgress = "";
-        animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
+        animationMedic = "AinvPknlMstpSnonWnonDnon_medic1";
         // keep the real item in items[], so ACM and ACE inventory gating, the tooltip count and medical-menu filtering
         // all recognize the treatment as XStat-backed. consumeitem=0 below stops ACE deleting the carried applicator
         // after insertion, so the same pack can still gate additional sites.
@@ -9007,7 +9727,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         allowSelfTreatment = 1;
         treatmentTime = 0.5;
-        allowedSelections[] = {"Head","Body","LeftArm","RightArm","LeftLeg","RightLeg"};
+        allowedSelections[] = {"Head"};
         condition = "!(_medic getVariable ['ACME_emma_bvmAttached', false]) && {([_medic, _patient, 'ACM_EMMA'] call ACME_fnc_treatmentSupplyCount) > 0}";
         callbackStart = "params ['_medic']; if (!isNull _medic) then {[_medic, 'ACME_EMMA_Attach'] call ACME_fnc_worldSfxNearby}";
         callbackSuccess = "_this call ACME_fnc_emmaAttach";
@@ -9048,6 +9768,7 @@ class ace_medical_treatment_actions {
         condition = "(_patient isNotEqualTo _medic) && {_patient getVariable ['ACME_ETT_Inserted', false]} && {[_medic, _patient] call ACME_fnc_emmaCanRemoveIGel}";
         callbackStart = "params ['_medic']; if (!isNull _medic) then {[_medic, 'ACME_EMMA_Detach'] call ACME_fnc_worldSfxNearby}";
         callbackSuccess = "_this call ACME_fnc_emmaRemoveIGel";
+        allowedSelections[] = {"Head"};
     };
     class ACME_AttachEMMAIGel: CheckPulse {
         displayName = "Attach EMMA to their i-gel";
@@ -9093,7 +9814,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         allowSelfTreatment = 1;
         treatmentTime = 0.5;
-        allowedSelections[] = {"Head","Body","LeftArm","RightArm","LeftLeg","RightLeg"};
+        allowedSelections[] = {"Head"};
         condition = "_medic getVariable ['ACME_emma_bvmAttached', false]";
         callbackStart = "params ['_medic']; if (!isNull _medic) then {[_medic, 'ACME_EMMA_Detach'] call ACME_fnc_worldSfxNearby}";
         callbackSuccess = "_this call ACME_fnc_emmaRemove";
@@ -9237,14 +9958,17 @@ class ace_medical_treatment_actions {
         category = "examine";
         treatmentLocations[] = {"All"};
         medicRequired = 0;
-        treatmentTime = 2;
+        treatmentTime = 0; // B217: immediate launcher, no progress dialog.
         allowedSelections[] = {"Head","Body","LeftArm","RightArm","LeftLeg","RightLeg"};
         condition = "true";
         callbackSuccess = "_this call ACME_fnc_feelSkin";
         callbackFailure = "";
         callbackProgress = "";
         items[] = {};
-        animationMedic = "AmovPknlMstpSrasWpstDnon_AmovPknlMstpSrasWpstDnon_gear";
+        animationMedic = "";
+        animationMedicProne = "";
+        animationMedicSelf = "";
+        animationMedicSelfProne = "";
     };
     // it requires a prepared push-dose syringe, made from a flush. see the self actions.
     class ACME_PushDoseEpi: CheckPulse {
@@ -9501,10 +10225,11 @@ class ace_medical_treatment_actions {
         displayNameProgress = "Flushing IV/IO site...";
         category = "medication";
         treatmentTime = 3;
-        condition = "(([_medic, _patient, 'ACM_SalineFlush_10'] call ACME_fnc_treatmentSupplyCount) > 0) && {([_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIV) || {[_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO}}";
+        condition = "false";
         callbackStart = "playSound 'ACME_SyringeDraw'";
         callbackSuccess = "[_this select 0, _this select 1, _this select 2, ['flushLine']] call ACME_fnc_salineFlush";
         items[] = {};
+        allowedSelections[] = {};
     };
     // osmotherapy, pushed rather than hung.
     // fn_tbiosmobolus has existed and been complete since it was written, and nothing ever called it. its own
@@ -10049,6 +10774,7 @@ class ACM_Medication {
 // and updates it. fn_emmabuilddisplay builds every control at runtime, in onload, so their geometry can be
 // computed from the safezone and tuned live through the acme_emma_* globals.
 class RscTitles {
+    #include "Respirations.hpp"
     class ACME_EMMA_Display {
         idd = 71500;
         movingEnable = 0;

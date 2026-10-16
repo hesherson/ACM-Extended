@@ -27,7 +27,8 @@ private _idx = -1;
 if (!isNull _ctrlActive) then {
     private _sel = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags", []];
     private _row = lbCurSel _ctrlActive;
-    if (_row >= 0 && {_row < count _sel}) then {_idx = (_sel select _row) param [8,-1];};
+    private _value = if (_row >= 0) then {_ctrlActive lbValue _row} else {-1};
+    if (_value >= 0 && {_value < count _sel}) then {_idx = (_sel select _value) param [8,-1];};
 };
 if (_idx < 0 || {_idx >= count _arr}) exitWith {["Select a hung bag to pull.",2,ACE_player,13] call ace_common_fnc_displayTextStructured;};
 private _bag = +(_arr select _idx);
@@ -36,4 +37,7 @@ if (_type == "FBTK") exitWith {call ACM_circulation_fnc_TransfusionMenu_RemoveBa
 private _uid = _bag param [8,"",[""]];
 private _sig = +(_bag select [0,8]);
 private _requestId = format ["txpull:%1:%2:%3",clientOwner,diag_frameNo,floor(diag_tickTime*1000)];
-[_target,"transfusionPull",[_target,ACE_player,_part,_uid,_idx,_sig,[_target] call ACME_fnc_clinicalEpoch,_requestId]] call ACME_fnc_ownerDispatch;
+private _pending=uiNamespace getVariable ["ACME_txPullPending",createHashMap];
+_pending set [_requestId,[ACE_player,_target]];
+uiNamespace setVariable ["ACME_txPullPending",_pending];
+[_target,"transfusionPull",[_target,ACE_player,_part,_uid,_idx,_sig,[_target] call ACME_fnc_clinicalEpoch,_requestId,serverTime]] call ACME_fnc_ownerDispatch;

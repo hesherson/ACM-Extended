@@ -9,13 +9,13 @@ private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
 // Simple delivery has no weight/mode/interface setup. Keep the saved advanced
 // choices intact and go to the physical circuit connection instead.
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {(!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false]) && {!([uiNamespace getVariable ["ACME_vent_target", objNull]] call ACME_fnc_ventMaskSelected)})});
 if (_simple && {_screen in ["weight", "mode", "interface"]}) then {
     private _target = uiNamespace getVariable ["ACME_vent_target", objNull];
     _screen = if (!isNull _target && {_target getVariable ["ACME_vent_configured", false]}) then {"params"} else {"connect"};
     uiNamespace setVariable ["ACME_vent_paramReturn", false];
 };
-if (_simple && {_screen in ["o2", "ie", "peep"]}) then { _screen = "params"; };
+if (_simple && {_screen in ["ie", "peep"]}) then { _screen = "params"; };
 uiNamespace setVariable ["ACME_vent_simpleShown", _simple];
 uiNamespace setVariable ["ACME_vent_screen", _screen];
 // remember it on the device, so reopening the panel, from the patient button or the self-interaction, which are
@@ -37,6 +37,9 @@ private _navPairs = [[87790,87791],[87792,87793],[87794,87795],[87796,87797]];  
 // destroy any dynamic waveform bars from a previous graph view.
 { ctrlDelete _x } forEach (uiNamespace getVariable ["ACME_vent_graphBars", []]);
 uiNamespace setVariable ["ACME_vent_graphBars", []];
+uiNamespace setVariable ["ACME_vent_o2ValCtrl", controlNull];
+uiNamespace setVariable ["ACME_vent_o2SourceCtrl", controlNull];
+uiNamespace setVariable ["ACME_vent_o2SupplyCtrl", controlNull];
 // value fields are standalone ACME_VentBtn controls created by fn_ventpanelvaluefields, not graphbars riders, so
 // they must be deleted here rather than only forgotten. clearing the registry alone would orphan the live
 // controls: the next screen could not find them to tear them down, and they would hang over it forever. delete
@@ -120,7 +123,8 @@ private _def = switch (_screen) do {
         // edit, dial to change it between 21 and 100 percent, then middle-click again to commit. room air, at 21
         // percent, is the default.
         private _tgtO = uiNamespace getVariable ["ACME_vent_target", ACE_player];
-        private _f = if (isNull _tgtO) then { uiNamespace getVariable ["ACME_vent_fio2", 21] } else { _tgtO getVariable ["ACME_vent_fio2", (uiNamespace getVariable ["ACME_vent_fio2", 21])] };
+        private _usable = ([_tgtO] call ACME_fnc_ventOxygenState) select 1;
+        private _f = if (_usable) then { _tgtO getVariable ["ACME_vent_fio2", 21] } else {21};
         // clamp on entry. a value saved before the 95 percent ceiling existed would otherwise display as unreachable,
         // with the dial only able to bring it down and never back.
         _f = (_f max 21) min 95;
@@ -482,32 +486,53 @@ if (_screen == "logbook") exitWith {
 };
 
 if (_screen == "o2") exitWith {
-    // o2 enrichment, laid out like the device: an instruction line, then "OXYGEN: NN%" with the number in a
-    // highlight box you dial. middle-click toggles edit, through ACME_vent_editingFio2, the dial changes it from 21
-    // to 100 while editing, and the back chevron steps out. the title bar shows "O2 ENRICHMENT".
+    // Keep the native oxygen page, value block and dial model. Supply controls
+    // live on this page so they never displace another ventilator parameter.
     private _sr = uiNamespace getVariable ["ACME_vent_scrRect", [0,0,0.2,0.18]];
     _sr params ["_sx","_sy","_sw","_sh"];
     private _dyn = [];
 
     private _tgtO2 = uiNamespace getVariable ["ACME_vent_target", ACE_player];
-    private _f = if (isNull _tgtO2) then { uiNamespace getVariable ["ACME_vent_fio2", 21] } else { _tgtO2 getVariable ["ACME_vent_fio2", (uiNamespace getVariable ["ACME_vent_fio2", 21])] };
+    private _usable = ([_tgtO2] call ACME_fnc_ventOxygenState) select 1;
+    private _f = if (_usable) then { _tgtO2 getVariable ["ACME_vent_fio2", 21] } else {21};
     uiNamespace setVariable ["ACME_vent_fio2", _f];
 
     // the title on the bar.
     (_dlg displayCtrl 87712) ctrlSetText "O2 ENRICHMENT";
 
-    // instruction text, left aligned in the upper area. it is three short lines, like the reference.
+    // The supply button and a small reserve readout replace the redundant
+    // two-line instruction. Both remain available when enrichment is locked.
     {
         private _il = _dlg ctrlCreate ["RscText", -1];
-        _il ctrlSetPosition [_sx + _sw*0.06, _sy + _sh*(0.17 + _forEachIndex*0.115), _sw*0.90, _sh*0.11];
+        _il ctrlSetPosition [_sx + _sw*0.06, _sy + _sh*0.19, _sw*0.90, _sh*0.13];
         _il ctrlSetText _x;
-        _il ctrlSetFontHeight (_sh * 0.078);
+        _il ctrlSetFontHeight (_sh * 0.073);
         _il ctrlSetFont "PuristaMedium";
         _il ctrlSetTextColor ([[0.92,0.92,0.92,1]] call ACME_fnc_ventColor);
         _il ctrlSetBackgroundColor ([[0,0,0,0]] call ACME_fnc_ventColor);
         _il ctrlCommit 0; _il ctrlShow true;
         _dyn pushBack _il;
-    } forEach ["ADJUST TO EXTERNAL", "OXYGEN SUPPLY"];
+        uiNamespace setVariable ["ACME_vent_o2SupplyCtrl", _il];
+    } forEach [""];
+
+    private _sourceButton = _dlg ctrlCreate ["ACME_VentActionG", -1];
+    _sourceButton ctrlSetPosition [_sx + _sw*0.06, _sy + _sh*0.365, _sw*0.87, _sh*0.15];
+    _sourceButton ctrlSetFontHeight (_sh * 0.083);
+    _sourceButton ctrlCommit 0; _sourceButton ctrlShow true;
+    _sourceButton ctrlAddEventHandler ["ButtonClick", {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        uiNamespace setVariable ["ACME_vent_selIdx", 1];
+        [] call ACME_fnc_ventPanelActivateSel;
+    }];
+    _dyn pushBack _sourceButton;
+    uiNamespace setVariable ["ACME_vent_o2SourceCtrl", _sourceButton];
+    private _sourceIcon = _dlg ctrlCreate ["ACME_VentPic", -1];
+    _sourceIcon ctrlSetPosition [_sx + _sw*0.075, _sy + _sh*0.38, _sw*0.105, _sh*0.12];
+    _sourceIcon ctrlSetText "\x\ACM\addons\breathing\ui\icon_oxygentank_ca.paa";
+    _sourceIcon ctrlSetTextColor ([[0.72,0.76,0.80,1]] call ACME_fnc_ventColor);
+    _sourceIcon ctrlEnable false;
+    _sourceIcon ctrlCommit 0; _sourceIcon ctrlShow true;
+    _dyn pushBack _sourceIcon;
 
     // the "OXYGEN:" label and the value in a highlight box, in the lower area.
     private _lblO = _dlg ctrlCreate ["RscText", -1];
@@ -520,22 +545,16 @@ if (_screen == "o2") exitWith {
     _lblO ctrlCommit 0; _lblO ctrlShow true;
     _dyn pushBack _lblO;
 
-    private _editing = uiNamespace getVariable ["ACME_vent_editingFio2", false];
-    private _valBox = _dlg ctrlCreate ["ACME_VentTextC", -1];
+    private _valBox = _dlg ctrlCreate ["ACME_VentActionG", -1];
     _valBox ctrlSetPosition [_sx + _sw*0.44, _sy + _sh*0.615, _sw*0.28, _sh*0.13];
     _valBox ctrlSetText format ["%1%2", _f, "%"];
     _valBox ctrlSetFontHeight (_sh * 0.095);
     _valBox ctrlSetFont "PuristaBold";
-    // the highlight when editing is a dark box with light text, and idle is a light box with dark text, like the
-    // reference.
-    if (_editing) then {
-        _valBox ctrlSetTextColor ([[1,1,1,1]] call ACME_fnc_ventColor);
-        _valBox ctrlSetBackgroundColor ([[0, 0, 0.996,1]] call ACME_fnc_ventColor);
-    } else {
-        _valBox ctrlSetTextColor ([[1,1,1,1]] call ACME_fnc_ventColor);
-        _valBox ctrlSetBackgroundColor ([[0, 0, 0.996,1]] call ACME_fnc_ventColor);
-    };
     _valBox ctrlCommit 0; _valBox ctrlShow true;
+    _valBox ctrlAddEventHandler ["ButtonClick", {
+        uiNamespace setVariable ["ACME_vent_selIdx", 0];
+        [] call ACME_fnc_ventPanelActivateSel;
+    }];
     _dyn pushBack _valBox;
     uiNamespace setVariable ["ACME_vent_o2ValCtrl", _valBox];  // the knob updates this.
 
@@ -557,6 +576,8 @@ if (_screen == "o2") exitWith {
     (_dlg displayCtrl 87756) ctrlSetPosition [_backCx - _icoW/2 - _hlPad, _icoYabs - _icoH*0.15, _icoW + 2*_hlPad, _icoH*1.3];
     (_dlg displayCtrl 87756) ctrlSetBackgroundColor ([[0,0,0,0]] call ACME_fnc_ventColor);
     (_dlg displayCtrl 87756) ctrlCommit 0; (_dlg displayCtrl 87756) ctrlShow true;
+    uiNamespace setVariable ["ACME_vent_selIdx", if (_usable) then {0} else {1}];
+    [] call ACME_fnc_ventPanelOxygenRefresh;
 };
 
 if (_screen == "graph") exitWith {

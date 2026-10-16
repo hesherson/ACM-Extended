@@ -2,6 +2,7 @@
 params [["_patient", objNull, [objNull]], ["_id", "", [""]], ["_final", false, [true]]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if ((_patient getVariable ["ACME_vent_custodyId", ""]) != _id) exitWith {};
+[_patient] call ACME_fnc_ventOxygenClear;
 // Setup flags precede driving, so fn_ventDriveTick.sqf cannot restart the circuit.
 {[_patient, _x, false] call ACME_fnc_setVarNet;} forEach ["ACME_vent_circuit", "ACME_vent_configured", "ACME_vent_connected", "ACME_vent_cpapTherapy"];
 {[_patient, _x, 0] call ACME_fnc_setVarNet;} forEach ["ACME_vent_measRR", "ACME_vent_breathAcc", "ACME_vent_mvAdequacy", "ACME_vent_effectiveRR", "ACME_vent_alarmPrio", "ACME_vent_alarmSilencedUntil"];
@@ -24,6 +25,7 @@ if (_final) then {
     [_patient, "ACME_vent_powerOn", false] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_hasBooted", false] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_onPatient", false] call ACME_fnc_setVarNet;
+    [_patient, "ACME_vent_nivMask", false] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_operator", objNull] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_mountVeh", objNull] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_recovering", false] call ACME_fnc_setVarNet;

@@ -8,4 +8,4 @@ private _oral = toUpperANSI (_patient getVariable ["ACM_airway_AirwayItem_Oral",
 private _ett = _patient getVariable ["ACME_ETT_Inserted", false];
 private _surgical = _patient getVariable ["ACM_airway_SurgicalAirway_TubeInserted", false];
 
-(_oral in ["", "OPA"]) && {!_ett} && {!_surgical}
+(_oral in ["", "OPA"]) && {!_ett} && {!_surgical} && {!(_patient getVariable ["ACME_vent_nivMask", false])}

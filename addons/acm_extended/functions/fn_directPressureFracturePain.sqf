@@ -22,13 +22,8 @@ if (!isNil "ace_medical_fnc_adjustPainLevel") then {
 _patient setVariable ["ACME_DP_FracturePainLast", _now, true];
 _patient setVariable ["ACME_DP_FracturePainPart", _bodyPart, true];
 
-if (!isNil "ace_medical_treatment_fnc_addToLog") then {
-    private _name = if (isNull _medic) then {"A medic"} else {[_medic, false, true] call ace_common_fnc_getName};
-    [_patient, "activity",
- "%1 applied direct pressure over a fractured %2, causing severe pain",
- "Direct pressure over fracture, %2, severe pain, %1",
- [_name, [_bodyPart, "short"] call ACME_fnc_bodyPartName]] call ACME_fnc_medLog;
-};
+// The accepted pressure start already logs the maneuver. Pain remains a clinical effect,
+// without a second activity entry for the same application.
 
 // waking is decided exactly as ammonia salts and a slap decide it, and by the same two tests ACM uses. if the
 // casualty cannot be roused by salts, pressing on a broken bone will not rouse them either.

@@ -15,7 +15,7 @@ if !(_receipt isEqualTo []) exitWith {
 private _ok = false;
 private _device = +_settings;
 if (_operation == "take") then {
-    if (alive _medic && {!isNull _patient} && {alive _patient}
+    if (alive _medic && {!(_medic getVariable ["ACE_isUnconscious", false])} && {!isNull _patient}
         && {[_medic, "ventilator"] call ACME_fnc_procedureAllowed}
         && {[_medic, _patient] call ACME_fnc_ventRecoveryNear}) then {
         private _supply = [_medic, _patient, ["ACME_Ventilator"]] call ACME_fnc_treatmentSupplyTake;

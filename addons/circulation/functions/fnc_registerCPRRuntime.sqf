@@ -2,20 +2,25 @@
 if (isServer) then {
     GVAR(CPR_Sessions) = [];
     [QGVAR(cprTrack), {
-        params ["_medic", "_patient", "_epoch"];
+        params ["_medic", "_patient", "_epoch", ["_grant",[]]];
         if (isNull _medic || {isNull _patient}) exitWith {};
         // One server watchdog record per provider. A replacement episode makes every older record obsolete.
-        GVAR(CPR_Sessions) = GVAR(CPR_Sessions) select {!((_x select 0) isEqualTo _medic)};
+        private _grantIndex = 7;
+        private _duplicate = GVAR(CPR_Sessions) findIf {(_x select 0) isEqualTo _medic && {(_x select 2) == _epoch}
+            && {(_x param [_grantIndex,[]]) isEqualTo _grant}};
+        if (_duplicate >= 0) exitWith {};
+        // Keep an immutable newer grant while a late old Track is in flight. Each obsolete row prunes itself.
+        if (_grant isEqualTo []) then {GVAR(CPR_Sessions) = GVAR(CPR_Sessions) select {!((_x select 0) isEqualTo _medic && {(_x param [7,[]]) isEqualTo []})};};
         GVAR(CPR_Sessions) pushBack [
-            _medic, _patient, _epoch, owner _medic, CBA_missionTime,
-            _medic getVariable [QGVAR(CPR_lastSeen), -100], CBA_missionTime
+            _medic, _patient, _epoch, if (count _grant == 6) then {_grant select 3} else {owner _medic}, CBA_missionTime,
+            _medic getVariable [QGVAR(CPR_lastSeen), -100], CBA_missionTime, _grant
         ];
     }] call CBA_fnc_addEventHandler;
     [{
         private _keep = [];
         {
-            _x params ["_medic", "_patient", "_epoch", "_owner", "_received", "_lastBeat", "_seenAt"];
-            if (isNull _patient) then {[_medic, _patient, _epoch] call FUNC(cprRelease);};
+            _x params ["_medic", "_patient", "_epoch", "_owner", "_received", "_lastBeat", "_seenAt", ["_grant",[]]];
+            if (isNull _patient) then {[_medic, _patient, _epoch,_grant] call FUNC(cprRelease);};
             private _session = _patient getVariable [QGVAR(CPR_session), []];
             // Object variables and the tracking event can arrive in either order.
             if !(_session isEqualTo [_medic, _epoch]) then {
@@ -34,7 +39,7 @@ if (isServer) then {
                 if (isNull _medic || {!alive _medic} || {owner _medic != _owner}
                     || {_heartbeatExpired}
                     || {!_valid && {CBA_missionTime - _received >= 3}}) then {
-                    [_medic, _patient, _epoch] call FUNC(cprRelease);
+                    [_medic, _patient, _epoch,_grant] call FUNC(cprRelease);
                 } else {_keep pushBack _x;};
             };
         } forEach GVAR(CPR_Sessions);
@@ -43,8 +48,8 @@ if (isServer) then {
     addMissionEventHandler ["HandleDisconnect", {
         params ["_unit"];
         {
-            _x params ["_medic", "_patient", "_epoch"];
-            if (_medic isEqualTo _unit) then {[_medic, _patient, _epoch] call FUNC(cprRelease);};
+            _x params ["_medic", "_patient", "_epoch", "", "", "", "", ["_grant",[]]];
+            if (_medic isEqualTo _unit) then {[_medic, _patient, _epoch,_grant] call FUNC(cprRelease);};
         } forEach GVAR(CPR_Sessions);
         false
     }];

@@ -43,11 +43,19 @@ _d setVariable ["ACME_MC_scenName","",true];
 [_d,[["instantDeathImmune",true,true]]] call ACM_core_fnc_setAceMedicalState;
 [_d,[["deathBlocked",true,true]]] call ACM_core_fnc_setAceMedicalState;
 
+// Retain the episode receipt while clearing injury: this dummy reset does not advance clinicalEpoch,
+// so a delayed pre-reset emesis packet must not recreate lung injury.
+private _aspiration = [_d] call ACME_fnc_aspirationState;
+if (_aspiration isEqualTo []) then {_aspiration = [[_d] call ACME_fnc_clinicalEpoch,"",0,0,0];};
+_aspiration set [2,0];
+_aspiration set [3,0];
 // Batch-3 expansion states also return to a neutral baseline when those functions are present.
 {
     _x params ["_key","_value","_public"];
     _d setVariable [_key,_value,_public];
 } forEach [
+    ["ACME_aspiration_State",_aspiration,true],
+    ["ACME_laryngo_emesis",[],true],
     ["ACME_aspiration_load",0,true],
     ["ACME_aspiration_injury",0,true],
     ["ACME_aspiration_edema",0,true],

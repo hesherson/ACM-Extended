@@ -12,6 +12,11 @@ if !([_patient,_bodyPart,_selectedIV,_accessSite] call ACME_fnc_transfusionAcces
     ["Establish and select an IV/IO access site first.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
+if ((missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []) exitWith {["add",_requestedId] call ACME_fnc_piggybackWorkflow;};
+
+private _blocked = [_patient, _bodyPart, _selectedIV, _accessSite] call ACME_fnc_preparedAttachBlockReason;
+if (_blocked != "") exitWith {[ACE_player, [_blocked] call ACME_fnc_preparedAttachMessage] call ACME_fnc_clinicalNotice;};
+
 private _selectedPrepared = call ACME_fnc_getSelectedPreparedInfusion;
 _selectedPrepared params ["_preparedIndex", "_prepared"];
 if (_requestedId != "") then {
@@ -75,7 +80,7 @@ private _stagedId = _prepared param [15, ""];
 private _isStaged = _stagedId != "";
 if (_isStaged) then {_available = if (((ACE_player getVariable ["ACME_preparedIVSets", []]) findIf {(_x select 0) == _stagedId}) >= 0) then {1} else {0};};
 if (_available < 1) exitWith {
-    ["The prepared saline bag item is no longer available.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    ["The prepared infusion is no longer available.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
 private _label = [_prepared] call ACME_fnc_formatPreparedLabel;
@@ -88,21 +93,5 @@ if ([_patient, _bodyPart, _selectedIV, _accessSite] call ACME_fnc_isYLineAccess)
     ["Do not hang medication infusions through a blood Y-tubing line.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
-if (!_isStaged) then {
-    if (_inventoryMode == 2) then {_vehicle addItemCargoGlobal [_itemClass, -1];} else {[_target, _itemClass] call ACME_fnc_itemTake;};
-};
-
-[[_medic, _patient, _target, _itemClass, _actionClass, _vehicle, _bodyPart, _selectedIV, _accessSite, _volume, _prepared, _preparedIndex, _label], {
-    [_this] call ACME_fnc_preparedAttachRequest;
-}, {
-    params ["_medic", "_patient", "_target", "_itemClass", "_actionClass", "_vehicle", "", "", "", "", "_prepared"];
-    if ((_prepared param [15, ""]) == "") then {
-    if ((_prepared param [11, 0]) == 2) then {
-        _vehicle addItemCargoGlobal [_itemClass, 1];
-    } else {
-        [_target, _itemClass] call ace_common_fnc_addToInventory;
-    };
-    };
-    closeDialog 0;
-    [_medic, _patient, missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""]] call ACM_circulation_fnc_openTransfusionMenu;
-}, format ["Starting %1", _label], 5] call ACM_core_fnc_progressBarAction;
+// No artificial connection timer. Request owns duplicate checks, source debit and ACK.
+[[_medic, _patient, _target, _itemClass, _actionClass, _vehicle, _bodyPart, _selectedIV, _accessSite, _volume, _prepared, _preparedIndex, _label]] call ACME_fnc_preparedAttachRequest;

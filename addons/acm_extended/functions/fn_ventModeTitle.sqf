@@ -9,7 +9,7 @@
 // call it as ["SIMV VC PS"] call ACME_fnc_ventModeTitle, which returns "SIMV   VC   PS".
 
 params [["_mode", "SIMV VC PS"]];
-if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) exitWith { "SIMPLE" };
+if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])})) exitWith { "SIMPLE" };
 if !(_mode isEqualType "") exitWith { "" };
 
 private _gap = missionNamespace getVariable ["ACME_vent_modeTitleGap", 3];

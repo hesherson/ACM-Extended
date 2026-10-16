@@ -26,6 +26,18 @@ private _active = _mounted
     || {_patient getVariable ["ACME_vent_configured", false]};
 if (!_active) exitWith {false};
 
+// B223: after an explicit switch to mask NIV, removing the former tube must not
+// return the ventilator to inventory. Re-evaluate support now; an unsuitable mask
+// patient still loses effective ventilation through the normal drive/alarm gates.
+if (_mounted && {_custody != ""}
+    && {_patient getVariable ["ACME_vent_circuit", false]}
+    && {!(_patient getVariable ["ACME_vent_recovering", false])}
+    && {[_patient] call ACME_fnc_ventMaskSelected}) exitWith {
+    [_patient] call ACME_fnc_ventSyncMask;
+    [_patient] call ACME_fnc_ventDriveTick;
+    true
+};
+
 // Stop clinical ventilation immediately on the casualty owner so no breath or BVM sentinel survives the
 // airway-removal frame. Final custody cleanup is completed by the server return transaction below.
 [_patient, _custody, false] call ACME_fnc_ventPatientClear;

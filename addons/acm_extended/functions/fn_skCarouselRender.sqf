@@ -123,6 +123,10 @@ if (_flush != "") exitWith {
 private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
 private _n = count _store;
 if (_n < 1) exitWith {
+    _d setVariable ["ACME_SK_TagEditSyringeId",""];
+    _d setVariable ["ACME_SK_TagEditSignature",[]];
+    _d setVariable ["ACME_SK_TagEditRetired",true];
+    uiNamespace setVariable ["ACME_SK_TagEditMode",false];
     for "_slot" from 0 to 4 do {{(_d displayCtrl (84400 + _slot*10 + _x)) ctrlShow false;} forEach [0,1,2,3,4,5,6,8];};
     {(_d displayCtrl _x) ctrlShow false;} forEach [84460,84461,84462,84470,84471,84472,84480,84700,84701,84702,84703,84810,84819,84820];
     (_d displayCtrl 84001) ctrlSetText "";
@@ -131,6 +135,17 @@ if (_n < 1) exitWith {
 };
 private _idx = [_store] call ACME_fnc_skSelectedIndex;
 if (_idx < 0) exitWith {};
+if (_editMode && {(_d getVariable ["ACME_SK_TagEditRetired",false])
+    || {(_d getVariable ["ACME_SK_TagEditSyringeId",""]) != ""
+        && {(_d getVariable ["ACME_SK_TagEditSyringeId",""]) != ((_store select _idx) param [11,"",[""]])}}}) then {
+    // Native Gear transfer can remove the editor's syringe. End that editor
+    // before carousel fallback can paint another syringe under its controls.
+    _editMode = false;
+    uiNamespace setVariable ["ACME_SK_TagEditMode",false];
+    _d setVariable ["ACME_SK_TagEditSyringeId",""];
+    _d setVariable ["ACME_SK_TagEditSignature",[]];
+    _d setVariable ["ACME_SK_TagEditRetired",true];
+};
 
 private _centerX = _rx + _rw/2;
 private _centerY = _ry + _rh/2;

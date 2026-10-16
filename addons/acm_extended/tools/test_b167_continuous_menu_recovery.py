@@ -27,7 +27,7 @@ def test_shared_continuous_controller_has_explicit_reopen_policy_and_bool_result
     assert 'exitWith {false};' in source
     assert source.rstrip().endswith("true")
     # Startup grace must preserve, not erase, the action's opt-in.
-    grace = source[source.index("private _dialogCondition = false;"):source.index("if (_patientCondition", source.index("private _dialogCondition = false;"))]
+    grace = source[source.index("private _dialogCondition = false;"):source.index("if (!_startupComplete || _patientCondition", source.index("private _dialogCondition = false;"))]
     assert 'GVAR(ContinuousAction_ShouldReopen) = _reopenOnEnd;' in grace
     assert 'GVAR(ContinuousAction_ShouldReopen) = false;' not in grace
 
@@ -63,7 +63,8 @@ def test_medical_menu_open_immediately_yields_only_exact_head_hands_on_session()
     assert 'ACME_headElev_holding' in source
     assert '_headTiltSession isEqualTo [_medic, _epoch]' in source
     assert 'if (_ownsHeadTilt || {_ownsManualSemiFowler}) then {' in source
-    assert 'missionNamespace setVariable ["ACM_core_ContinuousAction_Active", false];' in source
+    assert 'call ACM_core_fnc_setContinuousActionState;' in source
+    assert '["active", false]' in source
     assert 'if (!_cancelledHandsOn) then {' in source
 
 

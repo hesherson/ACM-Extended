@@ -22,12 +22,21 @@ private _rows = [];
     };
     if (_name == "ACME_piCuffs" && {_v isEqualType createHashMap}) then {
         {private _entry = (_x select 1) select 1;
-            _entry set [0, [(_v get (_x select 0)) select 0, true, "cba"] call ACME_fnc_clinicalCodec];
+            private _raw = _v get (_x select 0);
+            private _at = _raw select 0;
+            if ((_raw param [2, "cba"]) == "server") then {
+                _at = CBA_missionTime - ((serverTime - _at) max 0);
+                _entry set [2, ["cba", true] call ACME_fnc_clinicalCodec];
+            };
+            _entry set [0, [_at, true, "cba"] call ACME_fnc_clinicalCodec];
         } forEach (_data select 1);
     };
     if (_name in ["ACME_yFlushJobs", "ACME_bagMoves"] && {_v isEqualType createHashMap}) then {
         {private _encoded = (_x select 1) select 1; private _i = if (_name == "ACME_yFlushJobs") then {6} else {3};
-            _encoded set [_i, [(_v get (_x select 0)) select _i, true, "cba"] call ACME_fnc_clinicalCodec];
+            private _raw = _v get (_x select 0);
+            private _at = _raw select _i;
+            if (_name == "ACME_yFlushJobs" && {count _raw >= 13}) then {_at = CBA_missionTime - ((serverTime - _at) max 0);};
+            _encoded set [_i, [_at, true, "cba"] call ACME_fnc_clinicalCodec];
         } forEach (_data select 1);
     };
     _rows pushBack [_name, _data];

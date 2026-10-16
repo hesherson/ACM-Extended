@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stable B188 build: manual carrier runtime cannot reproduce the B185 RPT spam/stuck-provider failures."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 import re
 
@@ -29,10 +30,11 @@ def test_manual_remove_wait_condition_unpacks_patient_provider_and_lease():
 
 def test_manual_carrier_medical_log_messages_are_strings_not_arrays():
     commit = read("addons/acm_extended/functions/fn_manualPlateCarrierCommit.sqf")
+    complete = read("addons/acm_extended/functions/fn_manualPlateCarrierCompleteRemoval.sqf")
     auto = read("addons/acm_extended/functions/fn_manualPlateCarrierAutoReturn.sqf")
 
     assert '[_p, "activity", "Plate carrier replaced", []] call ace_medical_treatment_fnc_addToLog;' in commit
-    assert '[_p, "activity", "Plate carrier manually removed", []] call ace_medical_treatment_fnc_addToLog;' in commit
+    assert '[_p, "activity", "Plate carrier manually removed", []] call ace_medical_treatment_fnc_addToLog;' in complete
     assert '[_patient, "activity", format ["Plate carrier automatically returned (%1)", _reason], []]' in auto
 
     # These array-wrapped messages poisoned ACE medical logs and caused updateLogList/isLocalized errors every refresh.
@@ -44,6 +46,7 @@ def test_manual_carrier_medical_log_messages_are_strings_not_arrays():
 def test_every_manual_carrier_addtolog_call_has_four_arguments_and_string_message_expression():
     for rel in (
         "addons/acm_extended/functions/fn_manualPlateCarrierCommit.sqf",
+        "addons/acm_extended/functions/fn_manualPlateCarrierCompleteRemoval.sqf",
         "addons/acm_extended/functions/fn_manualPlateCarrierAutoReturn.sqf",
     ):
         s = read(rel)
@@ -56,7 +59,9 @@ def test_every_manual_carrier_addtolog_call_has_four_arguments_and_string_messag
 
 
 def test_manual_remove_success_still_retires_provider_episode():
-    s = read("addons/acm_extended/functions/fn_manualPlateCarrierCommit.sqf")
+    # B264 moves the single authoritative success/medical log into a helper
+    # callable from either the original owner or the new patient owner.
+    s = read("addons/acm_extended/functions/fn_manualPlateCarrierCompleteRemoval.sqf")
     success = s.split('_p setVariable ["ACME_manualPlateCarrierState", "off", true];', 1)[1]
     success = success.split('["ACME_manualPlateCarrierAck"', 1)[0]
 
@@ -77,8 +82,8 @@ def test_manual_remove_still_uses_patient_grab_hold_release_choreography():
 def test_b186_stable_identity():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4";' in cfg
-    assert 'ACME_buildBatch = "B190";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 

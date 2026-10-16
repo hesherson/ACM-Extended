@@ -45,9 +45,11 @@ def test_hover_is_visual_only():
     i=txt('functions/fn_skInject.sqf')
     assert 'ACME_SK_CarouselExpanded",true' not in h
     assert 'skDynamicLayout' not in h
-    assert 'skCarouselRender' in h
-    assert 'ACME_SK_CarouselHoverOffset' in i and 'ACME_SK_CarouselHoverOffset' in r
-    assert 'if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};' in r
+    assert 'skCarouselRender' not in h
+    assert 'ACME_SK_CarouselHover' in h
+    assert 'ACME_SK_CarouselHoverOffset' not in r
+    assert '_hoverOffset' not in r
+    assert 'then {_alpha = 1;}' not in r
     assert '_hit ctrlSetTooltip "";' in r
     assert '_activeHit ctrlSetTooltip _activeTip;' in r
 

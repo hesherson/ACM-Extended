@@ -14,8 +14,11 @@ SETUP = '''
     _patient setVariable ["ACME_headElevated", true];
     ACME_fnc_ownerDispatch = {
         if ((_this select 1) == "headElevStop") then {
-            _lowers = _lowers + 1;
+            if (_patient getVariable ["ACME_headElevated", false]) then {_lowers = _lowers + 1;};
             _patient setVariable ["ACME_headElevated", false];
+            private _epoch = ((_this select 2) select 6);
+            _patient setVariable ["ACME_cprLowerReady", [_medic, _epoch,
+                CBA_missionTime + (missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4]) + 0.05]];
         };
         if ((_this select 1) == "chestAccessManeuverHandoff") then {
             _handoffs = _handoffs + 1;
@@ -76,7 +79,8 @@ def test_patient_stays_reserved_through_lower_and_rejects_duplicate_start():
         call _start;
         private _epoch = ACM_circulation_CPR_Epoch;
         [[_medic, _patient] call ACM_circulation_fnc_cprSessionValid, "lower left patient unreserved"] call _check;
-        [[_patient] call ACM_core_fnc_cprActive, "lower lost chest custody after handoff"] call _check;
+        // Chest custody follows the reserved session; active CPR must wait until the owner finishes lowering.
+        [!([_patient] call ACM_core_fnc_cprActive), "compressions active during lower"] call _check;
         call _start;
         [_lowers == 1 && {ACM_circulation_CPR_Epoch == _epoch}, "duplicate start replaced lower session"] call _check;
         call _cancel; call _freed;

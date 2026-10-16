@@ -5,7 +5,9 @@
 disableSerialization;
 private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
-_dlg setVariable ["ACME_vent_viewer", ACE_player];
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+_dlg setVariable ["ACME_vent_viewer", _viewer];
 private _oldPFH = uiNamespace getVariable ["ACME_vent_pfh", -1];
 if (_oldPFH >= 0) then {[_oldPFH] call CBA_fnc_removePerFrameHandler;};
 uiNamespace setVariable ["ACME_vent_pfh", -1];
@@ -371,8 +373,8 @@ _blC ctrlCommit 0;
 // seed the panel state.
 // the functional settings persist on the target, which is the patient being ventilated, or the medic in preset
 // mode, so a running vent drives the ventilation of that patient. read the current values or the defaults.
-private _target = uiNamespace getVariable ["ACME_vent_target", ACE_player];
-if (isNull _target) then { _target = ACE_player; };
+private _target = uiNamespace getVariable ["ACME_vent_target", _viewer];
+if (isNull _target) then { _target = _viewer; };
 private _bpm  = _target getVariable ["ACME_vent_bpm", 12];
 private _vt   = _target getVariable ["ACME_vent_vt", 500];
 private _peepSeed = _target getVariable ["ACME_vent_peep", 5];
@@ -503,12 +505,15 @@ if (_doBoot) then {
     // the power-on jingle, a beat into the lit splash. it is distinct from ventilator_startup_sfx, which is the
     // mechanical spin-up on the self-test screen, and from the running loop.
     [{
-        params ["_bT0"];
+        params ["_bT0", "_viewer", "_dialog"];
         if ((uiNamespace getVariable ["ACME_vent_bootT0", -1]) isEqualTo _bT0
             && {!isNull (uiNamespace getVariable ["ACME_vent_dlg", displayNull])}) then {
-            playSound3D ["acm_extended\sound\vent_jingle_sfx.ogg", ACE_player, false, getPosASL ACE_player, 3, 1, 30];
+            if (!isNull _dialog && {_dialog isEqualTo (uiNamespace getVariable ["ACME_vent_dlg", displayNull])}
+                && {_viewer isEqualTo (call ACME_fnc_controlledProvider)}) then {
+                playSound3D ["acm_extended\sound\vent_jingle_sfx.ogg", _viewer, false, getPosASL _viewer, 3, 1, 30];
+            };
         };
-    }, [_bT0], (_blackout + _jingleDelay)] call CBA_fnc_waitAndExecute;
+    }, [_bT0, _viewer, _dlg], (_blackout + _jingleDelay)] call CBA_fnc_waitAndExecute;
 } else {
     // no boot on this open, so route straight to the correct screen now.
     (_dlg displayCtrl 87760) ctrlShow false;

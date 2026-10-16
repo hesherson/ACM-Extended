@@ -28,6 +28,7 @@ _patient setVariable ["ACME_CS_facing","front",true];
 
 private _parkSupport = {
     params ["_p"];
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
     private _prop = _p getVariable ["ACME_headElev_propObj", objNull];
     if (isNull _prop) exitWith {};
 
@@ -92,7 +93,9 @@ private _interventionOwnsPatient = (_lockUntil isEqualType 0) && {_lockUntil > s
     && {_lockPriority >= 2}
     && {!(_lockSource in ["head-elev-lower","head-elev-flat"])};
 
-if (isNull objectParent _patient && {!_interventionOwnsPatient}) then {
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+    && {!(_patient getVariable ["ACME_headElev_noAnimation", false])}
+    && {isNull objectParent _patient} && {!_interventionOwnsPatient}) then {
     [_patient, false] call ACME_fnc_headElevCollision;
     // Semi-Fowler yields to any already-owned intervention animation. Priority 1 lets chest/airway/treatment
     // patient choreography win instead of a late suspension request canceling the intervention.

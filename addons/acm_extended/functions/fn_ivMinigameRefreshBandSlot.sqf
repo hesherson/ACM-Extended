@@ -44,10 +44,17 @@ private _setLbl = {
     [_dlg displayCtrl _idc, _held == "needle" && {_gauge == _g}, _stock] call ACME_fnc_traySlotState;
 } forEach [[86541, 14, _n14], [86545, 16, _n16], [86549, 18, _n18], [86557, 20, _n20]];
 [_dlg displayCtrl 86553, _held == "line", 1,
-    missionNamespace getVariable ["ACME_iv_lineSlot", false]] call ACME_fnc_traySlotState;
+    false] call ACME_fnc_traySlotState;
 
 // the ej uses no band. keep the whole band slot hidden regardless of bandon, because this refresh runs from many
 // call sites and would otherwise re-show the band icon when bandon flips.
 if (uiNamespace getVariable ["ACME_IV_EJMode", false]) then {
     { (_dlg displayCtrl _x) ctrlShow false; } forEach [86530, 86531, 86532, 86533];
 };
+
+{
+    _x params ["_tool","_pic","_label","_button"];
+    private _stock=if (_tool=="flush") then {["ACM_SalineFlush_10"] call _count} else {1};
+    [_pic,_held==_tool,_stock] call ACME_fnc_traySlotState;
+    if (_tool=="flush") then {_label ctrlSetText format ["10 mL FLUSH x%1",_stock];};
+} forEach (_dlg getVariable ["ACME_IV_FinishTray",[]]);

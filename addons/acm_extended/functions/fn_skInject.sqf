@@ -7,6 +7,10 @@ _acmeCanvas params ["_uiX", "_uiY", "_uiW", "_uiH"];
 // reopen.
 private _display = findDisplay 84000;
 if (isNull _display) exitWith {};
+private _medic = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Medic", objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
+_display setVariable ["ACME_SK_Provider", _medic];
 if (!isNull (_display displayCtrl 84130)) exitWith {};  // already injected on this instance.
 
 // A fresh injected workspace replaces any display-bound normal push before it takes

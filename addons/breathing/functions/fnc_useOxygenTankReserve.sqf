@@ -33,11 +33,13 @@ private _containerString = ["uniform", "vest", "backpack"];
     {
         _x params ["_magClassname", "_magCount"];
 
-        if (_magClassname == "ACM_OxygenTank_425") then {
+        if (_magClassname == "ACM_OxygenTank_425" && {_magCount > 0}) then {
             _targetMags pushBack _magCount;
         };
     } forEach _mags;
 
+    // A zero-charge loose cylinder must not shadow another usable cylinder or
+    // suppress the EFAK kit fallback below.
     if (count _targetMags > 0) exitWith {
         _found = true;
         _targetMags sort true;

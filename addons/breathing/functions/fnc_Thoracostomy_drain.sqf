@@ -20,6 +20,11 @@
  */
 
 params ["_medic", "_patient", ["_type", 1]];
+// The menu selection may have been started before the tube was removed.
+// A stale native aggregate alone never admits suction on an Extended patient.
+if (!([_patient] call ACME_fnc_thoraHasTube)) exitWith {
+    ["A chest tube must be in place to drain pleural fluid.", 2, _medic] call ACEFUNC(common,displayTextStructured);
+};
 
 private _item = [LELSTRING(airway,SuctionBag_Short), LELSTRING(airway,ACCUVAC)] select _type;
 

@@ -1,0 +1,417 @@
+{
+  "build": "B212",
+  "public_version": "1.2.4.1",
+  "base_commit": "3a190071bf37a84da12628d97c4a689c6c39d5bf",
+  "focused_gate_reports": {
+    "ownership": 75,
+    "network": 1260,
+    "behavior": 689
+  },
+  "additional_repaired_breathing_cases": 17,
+  "distinct_required_cases_passed": 2041,
+  "new_b212_feature_cases": 269,
+  "new_observer_prone_cases": 2,
+  "feature_case_counts": {
+    "assessments": 45,
+    "native_prone": 58,
+    "pleural_drainage": 47,
+    "provider_prone": 30,
+    "shared_prone_menu": 68,
+    "shallow_breath_audio": 21
+  },
+  "full_regression_comparison": {
+    "passed": true,
+    "counts": {
+      "baseline": {
+        "error": 45,
+        "failed": 332,
+        "passed": 6262,
+        "skipped": 29
+      },
+      "current": {
+        "error": 44,
+        "passed": 6583,
+        "failed": 301,
+        "skipped": 27
+      }
+    },
+    "unresolved_regressions": [],
+    "improved_existing_cases": 33,
+    "new_passing_case_identities": 288,
+    "resolved_collection_errors": [
+      "addons.acm_extended.tools.test_b157_check_breathing: collection error resolved; 17 passing tests executed"
+    ],
+    "known_baseline_failures_errors_retained": 345
+  },
+  "full_validation_method": {
+    "method": "Retain raw full-run cases for untouched modules; replace all cases for the six changed test modules with their final executed rerun. Reject missing prior case identities/occurrences. Production source unchanged.",
+    "original_full_report": "b212-full.xml",
+    "original_sha256": "24eee0436529aab302fc4fe2b8551dc2d411b609a19653d3d1e79382fbfdcbb1",
+    "final_rerun_report": "b212-final-affected.xml",
+    "rerun_sha256": "6fcfa5ca3d9382025627be933e36fa1ca815b70d1be532b6073a6d1f24cb9bca",
+    "replaced_modules": [
+      "addons.acm_extended.tools.test_123_cpr_bvm_chest_access",
+      "addons.acm_extended.tools.test_b80_v110_head_menu",
+      "addons.acm_extended.tools.test_treatment_pose_sync",
+      "tools.test_fork_phase164_chest_access_animation_flow",
+      "tools.test_self_audit_20260922",
+      "tools.test_stable_ambulatory_treatment_animations_20260926"
+    ],
+    "original_cases_replaced": 150,
+    "rerun_cases": 152,
+    "new_receiver_cases": 2
+  },
+  "historical_suite_is_green": false,
+  "strict_native_state_owner_audit_violations": 0,
+  "hemtt_check": true,
+  "linux_release_no_bin_no_archive": true,
+  "package": {
+    "pbos": 14,
+    "signatures": 14,
+    "keys": 1,
+    "verified_configs_and_signatures": [
+      {
+        "pbo": "ACM_acm_extended.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "extended"
+      },
+      {
+        "pbo": "ACM_airway.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "airway"
+      },
+      {
+        "pbo": "ACM_breathing.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "breathing"
+      },
+      {
+        "pbo": "ACM_cbrn.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "cbrn"
+      },
+      {
+        "pbo": "ACM_circulation.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "circulation"
+      },
+      {
+        "pbo": "ACM_core.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "core"
+      },
+      {
+        "pbo": "ACM_damage.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "damage"
+      },
+      {
+        "pbo": "ACM_disability.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "disability"
+      },
+      {
+        "pbo": "ACM_evacuation.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "evacuation"
+      },
+      {
+        "pbo": "ACM_gui.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "gui"
+      },
+      {
+        "pbo": "ACM_itemtext.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "itemtext"
+      },
+      {
+        "pbo": "ACM_main.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "main"
+      },
+      {
+        "pbo": "ACM_mission.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "mission"
+      },
+      {
+        "pbo": "ACM_zeus.pbo",
+        "signature_verified": true,
+        "config_build": "B212",
+        "protocol": 1,
+        "component": "zeus"
+      }
+    ]
+  },
+  "packaged_changed_sqf_matches_source": [
+    {
+      "path": "addons/acm_extended/XEH_preInit.sqf",
+      "sha256": "b0dd7affb4e122f657be8fac5c1fefd95b841f5218c2ee8fce7153e82fc656eb"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_airwayMedicPose.sqf",
+      "sha256": "7a1a2f8d871ebe51e49c153bdcd523b845e9f5e852ef40916e34e4cd7d536fab"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentAdvance.sqf",
+      "sha256": "61915eeddecb2a905415a5449cec7faf00042f5a772276ff3100a2e1533d9da6"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentCompletion.sqf",
+      "sha256": "e5d40a5503038da0fc375f2409a3b62fb67c0c531e2bb7da1e848e102ac9d56a"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentFinish.sqf",
+      "sha256": "790f53e944c36be060e1e89151ea5a8fb596c88df9f1f1562bb7b9bd26c76641"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentProgress.sqf",
+      "sha256": "8aafb5a9368dc5ccc4560d2539fcc71782becf31613952452ac905a49c7503fd"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentProgressBar.sqf",
+      "sha256": "43096e9ece61d21b83d26363d9c2f335c3953f50bee32bf0d048ef466451e024"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentStart.sqf",
+      "sha256": "87e9c178fccd7378c3e189da122b90981eefdbe0510644cf69dccfd1023a8041"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentStop.sqf",
+      "sha256": "a1ae42637561232ec6b09948beb26436e6ca7aae8dfcddf31afe3f819da10fca"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentTick.sqf",
+      "sha256": "7ced34a476396909ad626f4ebd7becb76f876f9574e5edeb2b8b9da65fee1590"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_assessmentTime.sqf",
+      "sha256": "887cb689d734b3fdb958c54be98c0271e657654b8e7253f4c40816423d53a94c"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_chestAccessVestProvider.sqf",
+      "sha256": "2ca151bd8b2adbefea8cc27dec7c8dda09f1c64daeac377808aeae2484b8a328"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_chestSealAck.sqf",
+      "sha256": "ee711158d5351d75f63554a87ec90b8078683876040c07429df4481158afda3d"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_chestSealBurp.sqf",
+      "sha256": "a135bf1bd9124ebacda5a14904e36b459e1122b1fc39ecdc73300e97c1924bff"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_chestSealEffectLocal.sqf",
+      "sha256": "d9b45ed5c79781809d1683382fabf3abd989e1c3555db06590fd719c9eb383ef"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_chestSealFlipTick.sqf",
+      "sha256": "b5f82dc5a65b15d4e4b7e0d127f38478b199094a476369b76f20b8133a0a39ee"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_directPressureLimb.sqf",
+      "sha256": "990324413cedaf58acf0a4011e970edc33cb1ab375debb0f454efdd9fff4b20e"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_directPressurePose.sqf",
+      "sha256": "4b3809066bc9541f13fe4a737c593f530343b36205e89bf4825913b8e8c70a6f"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_directPressureStop.sqf",
+      "sha256": "b7d678321f780ed822282f77d0d043b03857655aedbb934c9822dcc7e6c6b886"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_directPressureTorso.sqf",
+      "sha256": "b51397436f974033e474ebfb56f03152df364e135a59750a6bdc1e3729fac027"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_doAnimHeld.sqf",
+      "sha256": "3ffa0d61e6e356d8e6da6c29bd39e0c4e8ca4cf53ceaa972161b2186e3218112"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_hangBagActivate.sqf",
+      "sha256": "7f307c128a58b6eba897939fb35e3008cd5343fe59668d40cc2d0d0bf7eed02a"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_hangBagPrep.sqf",
+      "sha256": "cfbca641205f00b0bbb053ee826308f089ce5711153350c7b6075fcf1ee6ee67"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_hangBagPrepStop.sqf",
+      "sha256": "3515f0f75d3b934ffed4ab1e5ccff6cbeffddd46d039fa8fa4b9da6b04dbf6de"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_hangBagStop.sqf",
+      "sha256": "2ad93431a44913b3ec23c41428c9b660dd873f1f608b208cb983f147802f2492"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_hangBagTick.sqf",
+      "sha256": "8aec7b5da6148e1d23840ff7b3c4e9cc4e97b950ca23af9aea14239f9b05032f"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_headElevCancelSeq.sqf",
+      "sha256": "84923015d81166593b2f360e239e63cf248d774c47a9c29f03cf62c7c525e5b0"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_headElevHoldStart.sqf",
+      "sha256": "d7323a59bbe5e75d85d019a5837b86feca4c83c1a636a4cb37334cd30b6ab7ff"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_headElevMedicSeq.sqf",
+      "sha256": "e915237fe2dabba0ca20da0b6666158830966325d9e76a2aab20e4464eebc7ad"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_headElevateCancelSeq.sqf",
+      "sha256": "7c028355d885e59bc94ed79013990e6d139d5f6039dfecfa6610f021b830a681"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_initChestSealProcedureRuntime.sqf",
+      "sha256": "9ec79506f67ee09d63a527781b6ad3afb104f7887116856c8f9b1e0f31e42936"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_initForkStartupRuntime.sqf",
+      "sha256": "2b2ba7c31f5ac0e1feabe3b1ee4849320e1bf5e51bffdb9ec1dc3c33579d6703"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_initThoracostomyConfig.sqf",
+      "sha256": "c94c2dcacb108b2ad723edc73d38ff6430b91e113f718eee08519e0f8931a4d4"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_menuPoseStart.sqf",
+      "sha256": "09e65b3d803d55b41429203f21655da203c1ceb1f7ebecbef51142644ec8c9b4"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_menuPoseStop.sqf",
+      "sha256": "ecab0a9254914d37c40cb02d60e73f634d58dcb74b7a087da9506b7b9e816c14"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_ownerDispatch.sqf",
+      "sha256": "74cd4b57401fa6b09a2d0e9bc0b423c48413fe74025a396fac50e08c5d04dd03"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_providerAnimation.sqf",
+      "sha256": "eb5f8fed1e53f4bf1a2b7d8a8eab206979f645ce52bf4e2919b7ebd90b253eab"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_rollProviderCancel.sqf",
+      "sha256": "22574924a6a7b6f106303c0254629272ac72ac8fd657812502c5795aa668a198"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_stethoscopeBreathGain.sqf",
+      "sha256": "74daecb3209d12d0c902f94a5d1914fa3b7af7121806f19bc6f6c992db803463"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_stethoscopeEntryFlipTick.sqf",
+      "sha256": "870cae13caadc0bc947b6c8093d7b4e9a5492c1203f1cbf0c0696030408063d3"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_stethoscopeFlipTick.sqf",
+      "sha256": "411f120486d64feab057f0637cbd0707b14330a6e500cb331ef8232f7b605ede"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_stethoscopeTick.sqf",
+      "sha256": "482f27f2df10d4b020f2f87d7d24c3b15be00b02f607717d4cfc8e5c9cbf8df3"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_thoraAftercareAck.sqf",
+      "sha256": "3e61ab26e81878b1886aa102ffb4f4f8d2d0863036d6afa03afb5295efcca24a"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_thoraAftercareLocal.sqf",
+      "sha256": "49324153b5abe782fda2566edb9b637af4ea24d7e49b34ae3b26201869185f8f"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_thoraAftercareRequest.sqf",
+      "sha256": "b224bd805a84348deb065c8a5db06b7e33a5bd511c188d0a151916387f0dd1f3"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_thoraDrainBloodLocal.sqf",
+      "sha256": "4021254953cc934f6e5d23aa14371b5655e1ab86015fb656a90d1cb3bb956431"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_thoraMouseDown.sqf",
+      "sha256": "725f3b639fc210551d07b7a12b00a8e17ed258035aa73f14c2a9beaf5ed5a9a2"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_thoraSealScroll.sqf",
+      "sha256": "71ca801c0f25bd0f1137cd1930fccef01c5de25cc17eb8453195030ae881eded"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_treatmentPoseStart.sqf",
+      "sha256": "34388c3c274b0c7a28f35751158783ac66143eb91ecb8f95741b115d9698cf10"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_treatmentPoseStop.sqf",
+      "sha256": "ffe63d1e480f617053d934d355f4acc47d94181f07e82a314e7a6050b0d95f0d"
+    },
+    {
+      "path": "addons/acm_extended/functions/fn_treatmentPoseSync.sqf",
+      "sha256": "494f971ae8e486fe4c6c7d7ddda392f1be9d85ef2e126b63b7824894135a1409"
+    },
+    {
+      "path": "addons/breathing/functions/fnc_Thoracostomy_startLocal.sqf",
+      "sha256": "1ce0b51f5528597fa45ad8d0915261643b87f43864a5e4a7166ae2955d098f8b"
+    },
+    {
+      "path": "addons/breathing/functions/fnc_setRuntimeState.sqf",
+      "sha256": "8e4db6bf9014620be8ebb394c9e565c491ea2f685559fe1e833f1abbc26822e5"
+    },
+    {
+      "path": "addons/breathing/functions/fnc_useBVM.sqf",
+      "sha256": "f2436c73d4d544d01fe29a5b7d052db354d97a63e36172e17a1d39d6a386a885"
+    },
+    {
+      "path": "addons/core/functions/fnc_beginContinuousAction.sqf",
+      "sha256": "bec1b0dc2caf0146f295ff8ba68fe64d95fa863de54b7e34e254a11bb9377eaf"
+    },
+    {
+      "path": "addons/core/functions/fnc_treatmentNative.sqf",
+      "sha256": "c62ebfa60881e539ceee034b03d38fb9e8046eaa585bc007a256ee9a8e63e4ca"
+    },
+    {
+      "path": "addons/core/overrides/fnc_playTreatmentAnim.sqf",
+      "sha256": "3759145a35c6d8982c1408985d1139f4ff7d33b0451880414210e4997e3f2a73"
+    },
+    {
+      "path": "addons/core/overrides/fnc_treatment.sqf",
+      "sha256": "57bec683a16a63cd4b0c616f3ebaf445e0383ea40529eecbbafec896c739248e"
+    }
+  ],
+  "archived_test_reports": {
+    "path": "2026-09-30-b212-test-reports.zip",
+    "sha256": "bf239846a669033890c45d7392261175c03e7f3b5d1aadc6ba37fe1bc8c96b0c"
+  },
+  "limitations": [
+    "Arma rendered animation transitions, exact visual freeze and live multiplayer behavior were not executed here.",
+    "Windows asset binarization is performed by the deployment helper on the user machine.",
+    "The hemothorax fluid reservoir is casualty-wide, not separately simulated per side.",
+    "The full historical suite retains baseline failures, errors and skips; non-regression is established using the raw full execution and recorded final affected-module reruns."
+  ]
+}

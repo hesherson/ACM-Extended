@@ -11,5 +11,7 @@ if (isNull _patient) exitWith {};
 // record the perfusion check in the ACE activity log, so the aar and scorecards capture that the skin was
 // assessed.
 if (!isNil "ace_medical_treatment_fnc_addToLog") then {
-    [_patient, "activity", "%1 felt skin: %2", [[_medic, false, true] call ace_common_fnc_getName, _desc]] call ace_medical_treatment_fnc_addToLog;
+    private _args = [[_medic, false, true] call ace_common_fnc_getName, _desc];
+    [_patient, "activity", "%1 felt skin: %2", _args] call ace_medical_treatment_fnc_addToLog;
+    [_patient, "quick_view", "%1 felt skin: %2", _args] call ace_medical_treatment_fnc_addToLog;
 };

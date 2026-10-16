@@ -129,4 +129,5 @@ PREP(setLocalUiState);
 PREP(cprSessionValid);
 PREP(cprRelease);
 PREP(cprCleanupLocal);
+PREP(cprRetireAnimLocal);
 PREP(registerCPRRuntime);

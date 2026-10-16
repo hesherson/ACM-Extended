@@ -1,3 +1,9 @@
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // knob emulation through the mouse wheel. the selection is a single continuous loop across the list rows of the
 // screen and then the bottom strip buttons, left to right, wrapping back to the first row. it is the same model
 // on every screen, because this is the one dial that drives everything.
@@ -8,7 +14,7 @@
 // these are deliberately opposite signs, because advancing a list index moves downward on screen, so the
 // selection must negate the wheel to feel correct.
 params ["_dir"];
-if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
 
 // the dial is on the front of the device. turning it while looking at the back would be reaching around the
 // machine to move a selection you cannot see, so the wheel does nothing here. the two things the back does
@@ -18,7 +24,7 @@ if !([ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {
 if (uiNamespace getVariable ["ACME_vent_flipped", false]) exitWith {};
 // a dead machine has no selection to move either.
 if !(uiNamespace getVariable ["ACME_vent_powered", false]) exitWith {};
-private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player]; if (isNull _vTgt) then { _vTgt = ACE_player; };
+private _vTgt = uiNamespace getVariable ["ACME_vent_target", _viewer]; if (isNull _vTgt) then { _vTgt = _viewer; };
 
 // the scroll rate cap. the mouse wheel can fire many steps in a fraction of a second, which blows through menus
 // and machine-guns the dial sound. any scroll step that arrives sooner than a minimum interval after the last
@@ -100,14 +106,13 @@ if (uiNamespace getVariable ["ACME_vent_lvlWinOpen", false]) exitWith {
 playSound "ACME_VentDial";
 private _selDir = -_dir;  // the selection index moves opposite the wheel, so up is an earlier item.
 private _screen = uiNamespace getVariable ["ACME_vent_screen", "live"];
-private _simple = missionNamespace getVariable ["ACME_vent_simpleMode", false];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
 // Clear stale edits before any dial branch can write a stored advanced setting.
 // Alarm thresholds stay editable; the automatic delivery pressure limit does not.
 if (_simple) then {
     uiNamespace setVariable ["ACME_vent_editingParam", -1];
     uiNamespace setVariable ["ACME_vent_editingPeep", false];
     uiNamespace setVariable ["ACME_vent_editingIE", false];
-    uiNamespace setVariable ["ACME_vent_editingFio2", false];
     if (_screen == "alerts" && {(uiNamespace getVariable ["ACME_vent_editingAlert", -1]) == 2}) then {
         uiNamespace setVariable ["ACME_vent_editingAlert", -1];
     };
@@ -129,14 +134,14 @@ if (uiNamespace getVariable ["ACME_vent_alarmWinOpen", false]) exitWith {
 };
 
 // o2 enrichment edit mode, on its own screen, takes precedence, because the dial changes the value from 21 to
-// 100 percent. room air is 21 percent and 100 percent is pure oxygen. it is the same interaction model as the
+// 95 percent, the Sparrow's enrichment range. it is the same interaction model as the
 // BPM field.
 // PARAMS edits in place. rows 0 for o2, 1 for i:e and 2 for PEEP change on the PARAMS page itself, with no
 // sub-screen. it is the same dial-turns-the-value model as ALERTS, and ventPanelSetValue writes the field text
 // while the painter keeps it lit.
 if ((_screen == "params") && {(uiNamespace getVariable ["ACME_vent_editingParam", -1]) >= 0}) exitWith {
     private _row = uiNamespace getVariable ["ACME_vent_editingParam", -1];
-    private _tP = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _tP = uiNamespace getVariable ["ACME_vent_target", _viewer];
     // page 1 holds every in-place editable row, so the row index alone now says which parameter is being turned and
     // the old page-2 offset is gone. page 2 is MODE, INTERFACE and WEIGHT, all of which open a sub-screen and none
     // of which the dial edits here, so this branch cannot be reached from it.
@@ -158,10 +163,15 @@ if ((_screen == "params") && {(uiNamespace getVariable ["ACME_vent_editingParam"
             if (!isNull _tP) then { _tP setVariable ["ACME_vent_trigSensCmH2O", _v, true]; };
             [4, (if (_v == 0) then {"OFF"} else {str _v})] call ACME_fnc_ventPanelSetValue;  // the number only, row 4.
         };
-        case 0: {  // o2 ENRICHMENT, 21 to 100 percent.
+        case 0: {  // o2 ENRICHMENT, 21 to 95 percent.
+            if !(([_tP] call ACME_fnc_ventOxygenState) select 1) exitWith {
+                uiNamespace setVariable ["ACME_vent_editingParam", -1];
+                uiNamespace setVariable ["ACME_vent_editingFio2", false];
+                [0, "21"] call ACME_fnc_ventPanelSetValue;
+            };
             private _v = ((if (isNull _tP) then {uiNamespace getVariable ["ACME_vent_fio2", 21]} else {_tP getVariable ["ACME_vent_fio2", 21]}) + _dir) max 21 min 95;  // the sparrow spec is an FiO2 of 21 to 95 percent. a turbine on ambient air with o2 enrichment cannot reach 100 percent.
             uiNamespace setVariable ["ACME_vent_fio2", _v];
-            if (!isNull _tP) then { _tP setVariable ["ACME_vent_fio2", _v, true]; };
+            [_tP, "fio2", _viewer, _v] call ACME_fnc_ventOxygenRequest;
             [0, str _v] call ACME_fnc_ventPanelSetValue;  // the number only, because the percent sign is its own piece.
         };
         case 1: {  // the i:e ratio ladder.
@@ -187,7 +197,7 @@ if ((_screen == "params") && {(uiNamespace getVariable ["ACME_vent_editingParam"
 if ((_screen == "peep") && {uiNamespace getVariable ["ACME_vent_editingPeep", false]}) exitWith {
     disableSerialization;
     private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
-    private _tP = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _tP = uiNamespace getVariable ["ACME_vent_target", _viewer];
     private _v = ((_tP getVariable ["ACME_vent_peep", 5]) + _dir) max 0 min 20;
     _tP setVariable ["ACME_vent_peep", _v, true];
     if (!isNull _dlg) then { (_dlg displayCtrl 87781) ctrlSetText format ["PEEP   %1 cmH2O", _v]; };
@@ -196,7 +206,7 @@ if ((_screen == "peep") && {uiNamespace getVariable ["ACME_vent_editingPeep", fa
 if ((_screen == "ie") && {uiNamespace getVariable ["ACME_vent_editingIE", false]}) exitWith {
     disableSerialization;
     private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
-    private _tI3 = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _tI3 = uiNamespace getVariable ["ACME_vent_target", _viewer];
     // the ladder, longest expiratory time first. the last two are inverse and are only offered when INV i:e is
     // on.
     private _ladder = [4.0, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5, 0.33];
@@ -215,7 +225,7 @@ if ((_screen == "alerts") && {(uiNamespace getVariable ["ACME_vent_editingAlert"
     disableSerialization;
     private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
     private _row = uiNamespace getVariable ["ACME_vent_editingAlert", -1];
-    private _tA = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _tA = uiNamespace getVariable ["ACME_vent_target", _viewer];
     // the bounds are clinical rather than arbitrary. an rr floor below 2 or a ceiling above 60 is not a rate any
     // patient has, and a pressure alert below 20 would fire on every normal breath while one above 60 would never
     // fire at all.
@@ -248,7 +258,7 @@ if ((_screen == "alerts") && {(uiNamespace getVariable ["ACME_vent_editingAlert"
 if ((_screen == "alerts2") && {(uiNamespace getVariable ["ACME_vent_editingAlert", -1]) >= 0}) exitWith {
     disableSerialization;
     private _row = uiNamespace getVariable ["ACME_vent_editingAlert", -1];
-    private _tA = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+    private _tA = uiNamespace getVariable ["ACME_vent_target", _viewer];
     switch (_row) do {
         case 0: {
             private _v = ((_tA getVariable ["ACME_vent_alertLowTVe", 85]) + _dir) max 50 min 95;
@@ -287,31 +297,30 @@ if ((_screen == "alerts2") && {(uiNamespace getVariable ["ACME_vent_editingAlert
 
 
 if ((_screen == "o2") && {uiNamespace getVariable ["ACME_vent_editingFio2", false]}) exitWith {
+    if !(([_vTgt] call ACME_fnc_ventOxygenState) select 1) exitWith {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        if ((uiNamespace getVariable ["ACME_vent_editingParam", -1]) == 0) then {
+            uiNamespace setVariable ["ACME_vent_editingParam", -1];
+        };
+        [] call ACME_fnc_ventPanelOxygenRefresh;
+    };
     disableSerialization;
     private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
     private _v = (uiNamespace getVariable ["ACME_vent_fio2", 21]) + _dir;
     _v = _v max 21 min 95;  // the sparrow spec is an FiO2 of 21 to 95 percent, the same ceiling as the params-page path above.
     uiNamespace setVariable ["ACME_vent_fio2", _v];
-    _vTgt setVariable ["ACME_vent_fio2", _v, true];
+    [_vTgt, "fio2", _viewer, _v] call ACME_fnc_ventOxygenRequest;
     private _vc = uiNamespace getVariable ["ACME_vent_o2ValCtrl", controlNull];
     if (!isNull _vc) then { _vc ctrlSetText format ["%1%2", _v, "%"]; };
 };
 
-// the o2 screen when not editing. the dial cycles 0 for the value and 1 for BACK, painting the back highlight on
-// 1.
+// O2 has one value, one physical supply action and BACK. A missing or empty
+// source blocks only the value; the source and navigation remain usable.
 if (_screen == "o2") exitWith {
     private _sel = (uiNamespace getVariable ["ACME_vent_selIdx", 0]) + _selDir;
-    _sel = ((_sel mod 2) + 2) mod 2;
+    _sel = ((_sel mod 3) + 3) mod 3;
     uiNamespace setVariable ["ACME_vent_selIdx", _sel];
-    disableSerialization;
-    private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
-    if (!isNull _dlg) then {
-        (_dlg displayCtrl 87756) ctrlSetBackgroundColor (if (_sel == 1) then {[0, 0.988, 0.992,1]} else {[0,0,0,0]});
-        // the value box. brighten its border-ish highlight when selected, because it already has the blue fill, so nudge
-        // the alpha.
-        private _vc = uiNamespace getVariable ["ACME_vent_o2ValCtrl", controlNull];
-        if (!isNull _vc) then { _vc ctrlSetBackgroundColor (if (_sel == 0) then {[0, 0, 0.996,1]} else {[0, 0, 0.62,1]}); };
-    };
+    [] call ACME_fnc_ventPanelOxygenRefresh;
 };
 
 // the logbook screen. the dial cycles the visible bottom chevrons. with more than one page, 0 is next, which is

@@ -22,6 +22,8 @@ if ((_patient getVariable [QGVAR(Thoracostomy_State), -1]) == 0) exitWith {
     [LLSTRING(ThoracostomyClose_Already), 2, _medic] call ACEFUNC(common,displayTextStructured);
 };
 
-[_patient, "activity", LLSTRING(ThoracostomyClose_ActionLog), [[_medic, false, true] call ACEFUNC(common,getName)]] call ACEFUNC(medical_treatment,addToLog);
+if !([_patient] call ACME_fnc_ptxCanClose) exitWith {
+    ["Maintain chest drainage until PTX is stable, and seal all chest wounds before closing the incision.", 3, _medic] call ACEFUNC(common,displayTextStructured);
+};
 
-[QGVAR(Thoracostomy_closeLocal), [_medic, _patient], _patient] call CBA_fnc_targetEvent;
+[QGVAR(Thoracostomy_closeLocal), [_medic, _patient, true], _patient] call CBA_fnc_targetEvent;

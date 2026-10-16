@@ -6,6 +6,10 @@ if (isNull _medic) exitWith {};
 // Dedicated servers do not render remote player theatre. The owner/client observers do; server-local AI still runs.
 if (!hasInterface && {!local _medic}) exitWith {};
 if !(_operation in ["run", "hold", "exit", "release"]) exitWith {};
+// A late JIP/freeze packet must not introduce theatre while presentation is disabled. Release packets still
+// retire any earlier visible episode through the normal ordered path below.
+if (_operation in ["run", "hold", "exit"]
+    && {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}) exitWith {};
 private _record = _medic getVariable ["ACME_treatmentPoseRemote", [-1, "", -1]];
 if ((_record select 0) > _epoch) exitWith {};
 if ((_record select 0) == _epoch && {(_record select 1) == "release"}) exitWith {};
@@ -92,6 +96,7 @@ private _pfh = [{
     private _episodeActive = (_medic getVariable ["ACME_treatmentPoseEpisode", []]) isEqualTo [_epoch, true];
     private _ownerChanged = if (isServer) then {owner _medic != _owner} else {local _medic && {clientOwner != _owner}};
     private _hardRelease = !alive _medic
+        || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
         || {_medic getVariable ["ACE_isUnconscious", false]}
         || {!isNull objectParent _medic}
         || {_ownerChanged}
@@ -111,7 +116,8 @@ private _pfh = [{
             [format ["ACME_treatmentPose_%1_%2", netId _medic, _epoch]] call CBA_fnc_removeGlobalEventJIP;
             if (local _medic && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])}
                 && {isNull objectParent _medic} && {toLower animationState _medic == toLower _main}) then {
-                [_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;
+                private _prone = ((toLowerANSI _main) find "prone") >= 0 || {((toLowerANSI _main) find "ppne") >= 0};
+                [_medic, [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation, 1] call ACME_fnc_doAnim;
             };
         };
     };

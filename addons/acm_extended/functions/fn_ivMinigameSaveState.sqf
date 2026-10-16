@@ -16,6 +16,7 @@ private _key = format ["%1|%2", _bp, _view];
 // run and restoring it half way through would be a state nothing can leave.
 private _stage = uiNamespace getVariable ["ACME_IV_InsStage", ""];
 private _frame = uiNamespace getVariable ["ACME_IV_InsFrame", 0];
+if ((uiNamespace getVariable ["ACME_IV_DLG",displayNull]) getVariable ["ACME_IV_FieldInserting",false]) then {_stage="";_frame=0;};
 if (_stage == "retract") then { _stage = "thread"; _frame = 11; };
 // the tubing is not a state worth saving on its own. fn_ivminigameinit hands it back whenever a bare hub is
 // present, so a line left in hand comes back by itself.

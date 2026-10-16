@@ -35,11 +35,12 @@ def test_acme_ui_no_longer_fights_live_drag_loop():
 
 def test_forced_amount_correction_keeps_numeric_hitbox_and_art_together():
     src = acme("fn_syringeDrawSetAmount.sqf")
-    assert 'ACM_circulation_SyringeDraw_DrawnAmount' in src
+    assert '"syringeDrawDrawnAmount", _amount' in src
+    assert 'ACM_circulation_fnc_setLocalUiState' in src
     assert '_display displayCtrl 84009' in src
     assert 'ACM_circulation_SyringeDraw_Ctrl_PlungerVisual' in src
     assert '_y - _adjust' in src
-    assert 'ACM_circulation_SyringeDraw_Moving' in src
+    assert '"syringeDrawMoving", false' in src
     assert 'class syringeDrawSetAmount {};' in (ROOT / "config.cpp").read_text(encoding="utf-8")
 
 
@@ -56,7 +57,8 @@ def test_infusion_uses_native_single_med_mover_and_rechecks_real_stock():
     assert 'if (missionNamespace getVariable ["ACM_circulation_SyringeDraw_Moving", false]) exitWith {};' in inject
     assert 'ACME_fnc_infusionVialVolume' in inject
     assert '_sessionMax min _stockMax min _size' in inject
-    assert 'Confirm the dose and inject again.' in inject
+    assert 'ACME_fnc_infusionDrawResolve' in inject
+    assert 'Vial contents changed. Check the dose and inject again.' in inject
 
 
 def test_successful_bag_injection_resets_plunger_and_native_selection_atomically():

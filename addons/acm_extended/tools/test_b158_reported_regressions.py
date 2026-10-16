@@ -84,7 +84,8 @@ def test_patient_owner_refuses_carrier_return_while_maneuver_is_paused(role):
 @pytest.mark.parametrize('mode',['elevate','lower'])
 def test_patient_move_is_sent_once_only_after_provider_reach_is_observed(mode):
     execute(provider_setup()+f'''
-        [_medic,"{mode}",_patient,"pose-1"] call ACME_fnc_headElevMedicSeq;
+        // B166+ provider motion is independent; no patient handshake may gate placement.
+        [_medic,"{mode}"] call ACME_fnc_headElevMedicSeq;
         private _job=_jobs select 0;_events=[];
         [_job] call _tick;
         [count _events==0,"patient moved during weapon preparation"] call _check;
@@ -93,8 +94,8 @@ def test_patient_move_is_sent_once_only_after_provider_reach_is_observed(mode):
         [count _events==0,"patient moved when reach was only queued"] call _check;
         _anim=toLower "{FIRST}";
         for "_i" from 0 to 3 do {{[_job] call _tick;}};
-        [count _events==1,"patient move missing/repeated"] call _check;
-        [(_events select 0) isEqualTo [_patient,"headElevMedicReady",[_medic,_patient,"{mode}","pose-1"]],"wrong placement notified"] call _check;
+        [count _events==0,"provider emitted obsolete patient handshake"] call _check;
+        [count _moves==2,"provider entry/reach was skipped/repeated"] call _check;
     ''')
 
 
@@ -117,8 +118,8 @@ def test_explicit_lower_waits_for_reach_then_starts_release_without_restarting_p
         ACME_fnc_headElevMedicSeq={_provider pushBack _this;};
     '''+'ACME_fnc_headElevMedicReady={'+patient_code('headElevMedicReady')+'};'+r'''
         [_medic,_patient] call ACME_fnc_headElevateStop;
-        [count _provider==1 && {count _moves==0} && {count _restores==0},"patient lowered before provider reached"] call _check;
-        [_patient getVariable ["ACME_headElevated",false],"placement retired before provider reached"] call _check;
+        [count _provider==1 && {count _moves==1},"independent lowering did not start both participants once"] call _check;
+        [!(_patient getVariable ["ACME_headElevated",true]),"lowering retained logical placement"] call _check;
         [_medic,_patient,"lower","placement:one"] call ACME_fnc_headElevMedicReady;
         [count _provider==1 && {count _moves==1},"lower replayed provider or skipped patient release"] call _check;
         [!(_patient getVariable ["ACME_headElevated",true]),"lower did not finish logical placement"] call _check;
@@ -140,7 +141,7 @@ def test_initial_supported_lift_waits_for_provider_ready_and_ignores_duplicate_p
         ACME_fnc_headElevMedicStart={_starts pushBack _this;};
     '''+'ACME_fnc_headElevMedicReady={'+patient_code('headElevMedicReady')+'};'+r'''
         [_medic,_patient,"Head"] call ACME_fnc_headElevateStart;
-        [count _starts==1 && {count _tilts==0},"patient lifted before provider reach"] call _check;
+        [count _starts==1 && {count _tilts==1},"supported lift waited for retired provider handshake"] call _check;
         private _token=_patient getVariable ["ACME_headElev_poseToken",""];
         [_medic,_patient,"elevate",_token] call ACME_fnc_headElevMedicReady;
         [_medic,_patient,"elevate",_token] call ACME_fnc_headElevMedicReady;

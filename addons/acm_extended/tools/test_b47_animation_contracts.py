@@ -34,12 +34,19 @@ def test_check_response_five_seconds_custom_pose():
         assert k in b
 
 def test_check_airway_medic4_old_custom_pose():
+    # Identity retained; B212 intentionally replaces the old single 2.5-second medic4_old work with
+    # exact Dr_medic5 -> Dr_medic4 choreography. Execute the changed contract instead of old source strings.
+    from test_b212_assessment_sequence import (
+        test_airway_freezes_exact_source_sample_then_interpolates_once,
+        test_airway_time_uses_runtime_full_medic4_duration_and_ceil,
+    )
     c = txt('config.cpp'); b = block(c,'CheckAirway')
-    assert 'ACME_fnc_airwayMedicPose' in b
+    assert 'ACME_fnc_assessmentTime' in b and 'ACME_fnc_assessmentFinish' in b
     assert 'ACM_airway_fnc_checkAirway' in b
-    assert "'airway'] call ACME_fnc_treatmentPoseStop" in b
-    f = txt('functions/fn_airwayMedicPose.sqf')
-    assert 'checkairway' in f.lower() and '"airway", 2.5' in f
+    for elapsed in (1.374,1.375,1.49):
+        test_airway_freezes_exact_source_sample_then_interpolates_once(elapsed)
+    test_airway_time_uses_runtime_full_medic4_duration_and_ceil(-4,5.75)
+
 
 def test_inspect_chest_six_seconds():
     b = block(txt('config.cpp'),'ACME_InspectChest')

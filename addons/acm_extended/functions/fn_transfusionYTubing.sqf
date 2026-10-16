@@ -80,6 +80,7 @@ private _pendingSaline = missionNamespace getVariable ["ACME_yPendingSaline", ""
 if (_pending != "" && {(missionNamespace getVariable ["ACME_yPendingPatient", _target]) isNotEqualTo _target}) exitWith {
     missionNamespace setVariable ["ACME_yPending", ""];
     missionNamespace setVariable ["ACME_yPendingSaline", ""];
+    call ACME_fnc_transfusionFilterInventory;
     ["Patient changed. Select the Y-set components again.", 3, ACE_player] call ace_common_fnc_displayTextStructured;
 };
 
@@ -100,6 +101,8 @@ if (_pending isEqualTo "") exitWith {
     missionNamespace setVariable ["ACME_yPendingData", _data];  // the full "item|action" for the blood.
     missionNamespace setVariable ["ACME_yPendingBloodVol", missionNamespace getVariable ["ACME_ySelExactVol", 0]];
     missionNamespace setVariable ["ACME_yPendingBloodUsedId", missionNamespace getVariable ["ACME_ySelUsedId", ""]];
+    call ACME_fnc_transfusionFilterInventory;
+    call ACME_fnc_updateTransfusionControls;
     ["Y set: select the saline to pair, then press Select Flush Saline.", 3.5, ACE_player] call ace_common_fnc_displayTextStructured;
 };
 
@@ -110,6 +113,8 @@ if (_pendingSaline isEqualTo "") exitWith {
     missionNamespace setVariable ["ACME_yPendingSalineData", _data];
     missionNamespace setVariable ["ACME_yPendingSalineVol", missionNamespace getVariable ["ACME_ySelExactVol", 0]];
     missionNamespace setVariable ["ACME_yPendingSalineUsedId", missionNamespace getVariable ["ACME_ySelUsedId", ""]];
+    call ACME_fnc_transfusionFilterInventory;
+    call ACME_fnc_updateTransfusionControls;
     ["Saline paired. Press Build Y Tubing to assemble the set.", 3.5, ACE_player] call ace_common_fnc_displayTextStructured;
 };
 
@@ -132,6 +137,7 @@ private _fnc_clearPending = {
     missionNamespace setVariable ["ACME_yPendingSalineData", ""];
     missionNamespace setVariable ["ACME_yPendingBloodUsedId", ""];
     missionNamespace setVariable ["ACME_yPendingSalineUsedId", ""];
+    call ACME_fnc_transfusionFilterInventory;
 };
 
 if (([ACE_player, _target, "ACME_YTubing"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
@@ -281,6 +287,7 @@ call ACME_fnc_updateTransfusionControls;
         missionNamespace setVariable ["ACME_yPendingSalineData", ""];
         missionNamespace setVariable ["ACME_yPendingBloodUsedId", ""];
         missionNamespace setVariable ["ACME_yPendingSalineUsedId", ""];
+        call ACME_fnc_transfusionFilterInventory;
     };
     if (isNull _medic || {!local _medic} || {!alive _medic}
         || {!isNull _target && {_medic distance _target > 5}}) exitWith {call _fnc_clearPending;};
@@ -336,21 +343,21 @@ private _label = format ["%1 + Saline %2mL%3", _bName, _sVolShown, _coldTag];
 // remove-to-list feature, later, ties a set to the casualty it came off. bloodaction and salineaction are the
 // live hang-action strings, and hang set re-derives them from the fluid tables at hang time and uses these as
 // the fallback.
-private _id = format ["yset_%1_%2", floor (diag_tickTime * 1000), floor (random 100000)];
+private _serial = (missionNamespace getVariable ["ACME_preparedItemSerial",0])+1;
+missionNamespace setVariable ["ACME_preparedItemSerial",_serial];
+private _id = format ["yset:%1:%2:%3",clientOwner,netId _medic,_serial];
 private _rec = [_id, _blood, _bloodAction, _saline, _salineAction, "", _label, _bloodFromCooler, "yset", _bloodExactVol, _salineExactVol];
 private _sets = _medic getVariable ["ACME_preparedIVSets", []];
 _sets pushBack _rec;
 _medic setVariable ["ACME_preparedIVSets", _sets, true];
+    ["Y set built. Preparing the IV set.", 2, _medic] call ace_common_fnc_displayTextStructured;
+    [_medic] call ACME_fnc_preparedInventoryCommit;
 
     call _fnc_clearPending;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 
-    // refresh the available-bag list, so the consumed blood and saline drop off it immediately. the dialog stays
-    // open, so the medic can build more sets. it resolves its own display, so it is safe to call from here.
-    if (!isNil "ACM_circulation_fnc_TransfusionMenu_UpdateBagList") then {
-        [false] call ACM_circulation_fnc_TransfusionMenu_UpdateBagList;
-    };
-
-
-    ["Y set built. Open Prepared IV sets to hang it.", 4, _medic] call ace_common_fnc_displayTextStructured;
+    // All components remain in the carried set until Hang Set succeeds. Do not
+    // rebuild the active Fluids pane while simply preparing a Y set.
+    if (!isNull (findDisplay 86000)) then {[false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;};
+    [true] call ACME_fnc_togglePreparedSets;
 }, [_blood, _bloodAction, _saline, _salineAction, _bloodFromCooler, _bloodExactVol, _salineExactVol, ACE_player, _target, (_bloodFromCooler || {_bloodUsedId != ""}), (_salineUsedId != "")], 2.5] call CBA_fnc_waitAndExecute;

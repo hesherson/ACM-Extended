@@ -10,7 +10,7 @@ class CfgWeapons {
         descriptionShort = CSTRING(OPA_Desc);
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1;
+            mass = 0.3;
         };
     };
 
@@ -28,7 +28,7 @@ class CfgWeapons {
         displayName = CSTRING(NPA);
         descriptionShort = CSTRING(NPA_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 1.4;
+            mass = 0.3125;
         };
     };
 
@@ -37,7 +37,7 @@ class CfgWeapons {
         displayName = CSTRING(SuctionBag);
         descriptionShort = CSTRING(SuctionBag_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2;
+            mass = 4.5;
         };
     };
 
@@ -46,7 +46,7 @@ class CfgWeapons {
         displayName = CSTRING(ACCUVAC);
         descriptionShort = CSTRING(ACCUVAC_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 20;
+            mass = 94.8;
         };
     };
 
@@ -55,7 +55,7 @@ class CfgWeapons {
         displayName = CSTRING(CricKit);
         descriptionShort = CSTRING(CricKit_Desc);
         class ItemInfo: CBA_MiscItem_ItemInfo {
-            mass = 2.5;
+            mass = 2.3125;
         };
     };
 };

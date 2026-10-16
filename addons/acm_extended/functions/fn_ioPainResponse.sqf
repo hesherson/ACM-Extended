@@ -83,11 +83,15 @@ private _delay = (missionNamespace getVariable ["ACME_ioFluidSyncopeDelay", 3]) 
 private _transient = (missionNamespace getVariable ["ACME_ioFluidSyncopeSeconds", 3]) max 0.5;
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 private _owner = owner _patient;
+// B237: the shared Local-event epoch changes on both sides of an ownership transfer.
+// Matching owner ID alone cannot distinguish a departed and returning ownership period.
+private _ownerEpoch = _patient getVariable ["ACME_providerLocalityEpoch", 0];
 
 [{
-    params ["_patient", "_bodyPart", "_lineGeneration", "_epoch", "_owner", "_transient"];
+    params ["_patient", "_bodyPart", "_lineGeneration", "_epoch", "_owner", "_transient", "_ownerEpoch"];
     if (isNull _patient || {!local _patient} || {!alive _patient}
         || {owner _patient != _owner}
+        || {(_patient getVariable ["ACME_providerLocalityEpoch", 0]) != _ownerEpoch}
         || {([_patient] call ACME_fnc_clinicalEpoch) != _epoch}
         || {_patient getVariable ["ACME_clinicalRestoring", false]}) exitWith {};
 
@@ -102,4 +106,4 @@ private _owner = owner _patient;
         // One short IO syncope. ACE only forces the wake at the minimum time when vitals are actually stable.
         [_patient, true, _transient, true] call ace_medical_fnc_setUnconscious;
     };
-}, [_patient, _bodyPart, _lineGeneration, _epoch, _owner, _transient], _delay] call CBA_fnc_waitAndExecute;
+}, [_patient, _bodyPart, _lineGeneration, _epoch, _owner, _transient, _ownerEpoch], _delay] call CBA_fnc_waitAndExecute;

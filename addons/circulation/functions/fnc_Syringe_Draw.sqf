@@ -20,6 +20,8 @@
  */
 
 params ["_medic", "_patient", "_bodyPart", ["_size", 10]];
+if (isNull _medic || {!local _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
+ACE_player = _medic;
 
 private _inject = true;
 
@@ -28,6 +30,7 @@ if (isNull _patient) then {
     _patient = _medic;
 };
 
+GVAR(SyringeDraw_Medic) = _medic;
 GVAR(SyringeDraw_MedicationList) = [];
 GVAR(SyringeDraw_InventorySelection) = 0;
 

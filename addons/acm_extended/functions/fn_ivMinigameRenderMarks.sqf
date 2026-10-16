@@ -3,6 +3,14 @@
 // on init and on flip, so the sites stay put when you re-open or flip the limb.
 private _dlg = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
 if (isNull _dlg) exitWith {};
+if ((uiNamespace getVariable ["ACME_IV_PullIdx",-1])>=0) then {
+    uiNamespace setVariable ["ACME_IV_PullIdx",-1];
+    uiNamespace setVariable ["ACME_IV_PullLayers",[]];
+    uiNamespace setVariable ["ACME_IV_PullLayerBases",[]];
+    private _extra=uiNamespace getVariable ["ACME_IV_PullExtra",controlNull];
+    if (!isNull _extra) then {ctrlDelete _extra;};
+    uiNamespace setVariable ["ACME_IV_PullExtra",controlNull];
+};
 private _rect = uiNamespace getVariable ["ACME_IV_BodyRect", []];
 if (_rect isEqualTo []) exitWith {};
 _rect params ["_bx", "_by", "_bw", "_bh"];
@@ -18,6 +26,7 @@ private _marks = if (isNull _patient) then { [] } else { _patient getVariable ["
 private _anchors = uiNamespace getVariable ["ACME_IV_FrameAnchors", createHashMap];
 private _fades = [];
 private _hubCtrls = [];
+private _finishCtrls = [];
 private _trackKeys = createHashMap;
 // First-seen timestamps survive repaint/rebuilds so a newly-created mark fades once instead of restarting every redraw.
 private _visualFadeStarts = uiNamespace getVariable ["ACME_IV_VisualFadeStarts", createHashMap];
@@ -137,6 +146,14 @@ if (!isNull _patient && {_bp in ["leftarm", "rightarm", "leftleg", "rightleg"]})
             };
         };
         if (_mkind == "hub") then {
+            private _uid=_x param [14,""];
+            private _lock=controlNull;private _accessory=controlNull;
+            if (_uid!="") then {
+                _lock=_dlg ctrlCreate ["ACME_IV_HubMark",-1];
+                _accessory=_dlg ctrlCreate ["ACME_IV_HubMark",-1];
+                {_x ctrlEnable false;_x ctrlShow false;} forEach [_lock,_accessory];
+                _ctrls append [_lock,_accessory];
+            };
             private _c = _dlg ctrlCreate ["ACME_IV_HubMark", -1];
             // every iv, the ej included, builds its hub path from the frame now. the _mtex branch only fires for any legacy
             // iv_ej marker still stored on a patient from an older build, whose anchor sits higher.
@@ -163,6 +180,14 @@ if (!isNull _patient && {_bp in ["leftarm", "rightarm", "leftleg", "rightleg"]})
             // view, so indexing it by mark number gives the wrong control. the pull needs the exact sprite for the
             // hub it took hold of, which is what this pairing provides.
             _hubCtrls pushBack [_forEachIndex, _c];
+            if (_uid!="") then {
+                private _baseFilm=_dlg ctrlCreate ["ACME_IV_HubMark",-1];
+                private _secondary=_dlg ctrlCreate ["ACME_IV_HubMark",-1];
+                private _film=_dlg ctrlCreate ["ACME_IV_HubMark",-1];
+                {_x ctrlEnable false;_x ctrlShow false;} forEach [_baseFilm,_secondary,_film];
+                _ctrls append [_baseFilm,_secondary,_film];
+                _finishCtrls pushBack [_uid,_accessory,_film,_lock,_secondary,_baseFilm];
+            };
         } else {
             // the miss-site bruise first, under the hole, gauge-correlated, scaled to fit and faded in.
             if (_mkind == "miss" && {_mgauge > 0}) then {
@@ -319,3 +344,5 @@ uiNamespace setVariable ["ACME_IV_VisualFadeStarts", _visualFadeStarts];
 uiNamespace setVariable ["ACME_IV_MarkCtrls", _ctrls];
 uiNamespace setVariable ["ACME_IV_HubCtrls", _hubCtrls];
 uiNamespace setVariable ["ACME_IV_BruiseFades", _fades];
+
+_dlg setVariable ["ACME_IV_FinishCtrls",_finishCtrls];

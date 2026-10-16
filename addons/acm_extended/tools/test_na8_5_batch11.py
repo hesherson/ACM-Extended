@@ -90,7 +90,11 @@ class ManualSupportTests(unittest.TestCase):
     def test_same_vehicle_allows_distant_seat(self):self.assertTrue(held_effect(distance=5,same_vehicle=True))
     def test_uses_native_continuous_action(self):self.assertIn('call ACM_core_fnc_beginContinuousAction',src('headElevHoldStart'))
     def test_does_not_reimplement_animation_lock(self):self.assertNotIn('switchMove',code(src('headElevHoldStart')))
-    def test_waits_for_old_dialog(self):self.assertIn('!dialog &&',src('headElevHoldStart'));self.assertIn('CBA_fnc_waitUntilAndExecute',src('headElevHoldStart'))
+    def test_waits_for_old_dialog(self):
+        t=src('headElevHoldStart')
+        self.assertIn('!dialog',t)
+        self.assertIn('CBA_fnc_waitUntilAndExecute',t)
+        self.assertLess(t.index('!dialog'),t.index('call CBA_fnc_waitUntilAndExecute'))
     def test_timeout_releases_reservation(self):self.assertIn('], 3, {',src('headElevHoldStart'));self.assertGreaterEqual(src('headElevHoldStart').count('headElevHoldRelease'),3)
     def test_player_disconnect_gate(self):self.assertIn('!isPlayer _medic',src('headElevWatch'));self.assertIn('isPlayer _medic',src('headElevEffective'))
     def test_provider_stop_exact_token(self):self.assertIn('isEqualTo [_patient, _token]',src('headElevHoldStop'))

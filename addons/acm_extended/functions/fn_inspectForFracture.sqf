@@ -26,7 +26,9 @@ private _aceFracture = ["ace_medical_fractures", 0] call _read;
 private _prepared = ["ACM_disability_Fracture_Prepared", false] call _read;
 
 // ACM main/script_macros.hpp:427-429 defines mild=1, severe=2 and complex=3.
-// Crepitus wording is a fixed presentation rule for these states; it adds no injury variable.
+// All three ACM grades are actual fractures. An ACE-positive fracture can also exist
+// without an ACM grade when severity is disabled; it still reports crepitus in this register.
+// Neither case invents a fracture from body-part damage alone.
 // ACE medical_treatment/functions/fnc_splintLocal.sqf:25-27 uses -1 for a treated fracture.
 private _key = switch (true) do {
     case (_splint > 0): {"STR_ACM_Disability_InspectForFracture_SplintApplied"};
@@ -34,7 +36,8 @@ private _key = switch (true) do {
     case (_fractureState == 3): {"STR_ACM_Disability_InspectForFracture_SignificantSwelling"};
     case (_fractureState == 2): {"STR_ACM_Disability_InspectForFracture_Swelling"};
     case (_fractureState == 1): {"STR_ACM_Disability_InspectForFracture_SevereBruising"};
-    case (!(_fractureState in [0, 1, 2, 3]) || {_aceFracture > 0}): {"STR_ACME_Disability_InspectForFracture_Indeterminate"};
+    case (_aceFracture > 0): {"STR_ACME_Disability_InspectForFracture_Confirmed"};
+    case (!(_fractureState in [0, 1, 2, 3])): {"STR_ACME_Disability_InspectForFracture_Indeterminate"};
     case (_bodyPartDamage > 1): {"STR_ACM_Disability_InspectForFracture_Bruised"};
     default {"STR_ACM_Disability_InspectForFracture_NoInjury"};
 };

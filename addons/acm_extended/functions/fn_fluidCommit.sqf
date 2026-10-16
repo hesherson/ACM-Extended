@@ -34,6 +34,9 @@ if (_acmeLeakMl > 0.001 && {_acmeLeakSite in [0,1,2]}
 private _type = _bag param [0, ""];
 if (_type == "Saline" || {_flush}) then {
     [_patient, "ACME_circ_salineGivenMl", (_patient getVariable ["ACME_circ_salineGivenMl", 0]) + _admitted, 5, 1] call ACME_fnc_setVarNetApprox;
+    // Saline burden now owns explicit circulation membership; the 0.25 s
+    // clearing worker never needs to discover healthy units by world/owner scan.
+    if (!isNil "ACME_circ_activePatients") then {ACME_circ_activePatients pushBackUnique _patient;};
     _patient setVariable ["ACME_circ_salineTrackLastMl", _admitted, false];
     _patient setVariable ["ACME_circ_salineTrackLastAt", CBA_missionTime, false];
     _patient setVariable ["ACME_circ_salineTrackLastSource", "NA3 admitted-flow ledger", false];

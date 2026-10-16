@@ -97,10 +97,27 @@ def test_standard_calcium_values_survive_toggle_removal():
 def test_aftercare_is_owner_routed_and_epoch_guarded():
     owner=read('functions/fn_ownerDispatch.sqf')
     aftercare=read('functions/fn_thoraAftercareLocal.sqf')
-    assert 'case "thoraAftercare": {_args call ACME_fnc_thoraAftercareLocal;};' in owner
+    from test_b205_thora_network_execution import block
+    route = block(owner, 'case "thoraAftercare":')
+    assert "_args call ACME_fnc_thoraAftercareLocal" in route
+    assert '"ACME_thoraAftercareAck"' in route
     for gate in ['!local _patient','!alive _medic','ACME_fnc_clinicalEpoch','["left", "right"]',
                  'ACME_fnc_procedureAllowed','ACME_thora_incision_%1','ACME_thora_tube_%1']:
         assert gate in aftercare
+    seal=block(aftercare, 'if (_operation == "seal") exitWith {')
+    assert '[_patient, _medic, "thoraSeal", [_side, _epoch]] call ACME_fnc_chestSealEffectLocal' in seal
+    assert 'exitWith {false}' in seal and 'ACME_fnc_thoraSideStateCommit' not in seal
+    effect=read('functions/fn_chestSealEffectLocal.sqf')
+    owner_seal=block(effect,'case "thoraSeal": {')
+    # B272: covering established access with a vented seal is available before
+    # the internal leak settles. Exact incision/tract guards still precede all
+    # owner commits; true surgical closure retains the separate PTX gate.
+    assert 'ACME_fnc_ptxCanClose' not in owner_seal
+    assert owner_seal.index('ACME_thora_incision_%1') < owner_seal.index('call ACME_fnc_thoraSideStateCommit')
+    assert owner_seal.index('exitWith {false};') < owner_seal.index('call ACME_fnc_thoraSideStateCommit')
+    assert '[_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit' in owner_seal
+    native_close = (ADDONS / 'breathing/functions/fnc_Thoracostomy_closeLocal.sqf').read_text()
+    assert 'ACME_fnc_ptxCanClose' in native_close
     # Availability must not reveal death; the physiology call alone is live-only.
     from test_historical_airway_execution import test_aftercare_remains_available_on_dead_patients_without_resuming_physiology
     for operation in ['peel','burp','sweep']:
@@ -109,7 +126,9 @@ def test_aftercare_is_owner_routed_and_epoch_guarded():
 
 def test_peel_reopens_only_the_selected_surgical_tract():
     source = read("functions/fn_thoraAftercareLocal.sqf")
-    writes = calls(source, "ACME_fnc_thoraSideStateCommit")
+    from test_b205_thora_network_execution import block
+    peel = block(source, 'if (_operation == "peel") then {')
+    writes = calls(peel, "ACME_fnc_thoraSideStateCommit")
     assert len(writes) == 3
     assert all(len(args) == 4 and args[1][0].value == "_side" for args in writes)
     assert [(args[2][0].value, args[3][0].value) for args in writes] == [
@@ -119,7 +138,7 @@ def test_peel_reopens_only_the_selected_surgical_tract():
     # Do not remove traumatic-wound seals or reset the opposite side's native tube state.
     for forbidden in ["ACME_CS_holeData", "Thoracostomy_State", "removeItem", "addItem",
                       "ACM_breathing_fnc_Thoracostomy_start"]:
-        assert forbidden not in source
+        assert forbidden not in peel
 
 
 def test_repeat_finger_sweep_precedes_disposable_kit_consumption():
@@ -130,7 +149,8 @@ def test_repeat_finger_sweep_precedes_disposable_kit_consumption():
     assert finger.index('if (_tract == "finger") exitWith {') < finger.index(
         "call ACME_fnc_treatmentSupplyTake"
     )
-    assert '"sweep"' in finger and "ACME_fnc_ownerDispatch" in finger
+    assert '"sweep"' in finger and "ACME_fnc_thoraAftercareRequest" in finger
+    assert "ACME_fnc_ownerDispatch" in read("functions/fn_thoraAftercareRequest.sqf")
     for path in ["functions/fn_thoraMouseDown.sqf", "functions/fn_thoraSelectTool.sqf"]:
         source = read(path)
         assert "ACME_fnc_thoraCanSweep" in source
@@ -154,9 +174,11 @@ def test_seal_hit_test_and_scroll_are_wired_to_visible_art():
     assert 'displayAddEventHandler ["MouseZChanged"' in init
     assert 'ctrlAddEventHandler ["MouseZChanged"' in init
     scroll = read("functions/fn_thoraSealScroll.sqf")
-    assert '_frame >= 5 && {!_fired}' in scroll
+    assert "ACME_fnc_chestSealScrollStep" in scroll
+    assert 'if (_complete) then' in scroll
     assert '"burp"' in scroll
-    assert "ACME_fnc_ownerDispatch" in scroll
+    assert "ACME_fnc_thoraAftercareRequest" in scroll
+    assert "ACME_fnc_ownerDispatch" in read("functions/fn_thoraAftercareRequest.sqf")
     assert "ACME_fnc_thoraRenderTube" in scroll
     assert "chest_seal_burp_%1_frame_0%2_ca.paa" in read("functions/fn_thoraRenderTube.sqf")
 

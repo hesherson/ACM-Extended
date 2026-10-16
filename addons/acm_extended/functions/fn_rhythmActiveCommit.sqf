@@ -17,4 +17,11 @@ if (_public && {_deduplicate}) then {
 } else {
     _unit setVariable ["ACME_rhythm_active", _code, _public];
 };
+// B245: custom-rhythm symptoms run only for explicitly active local patients.
+// The registry is machine-local and rebuilt by ownerRegister after locality transfer.
+if (local _unit) then {
+    private _active = missionNamespace getVariable ["ACME_rhythm_activePatients", []];
+    if (_code >= 100 && {alive _unit}) then {_active pushBackUnique _unit;} else {_active = _active - [_unit];};
+    missionNamespace setVariable ["ACME_rhythm_activePatients", _active];
+};
 _code

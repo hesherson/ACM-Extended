@@ -13,7 +13,10 @@ def read(path: Path) -> str:
 def test_seizure_gestures_are_isolated_and_105x():
     s = read(ADDON / "config.cpp")
     # Positive config speed is cycles/second. A shared 1.05 would crush every clip to 0.95 seconds.
-    native_speeds = {3: 0.238, 4: 0.2325, 5: 0.2069, 6: 0.1287}
+    assert 'class ACME_SeizureSpasm0: GestureSpasm0 {};' in s
+    assert 'ACME_SeizureSpasm0[] = {"ACME_SeizureSpasm0", "Gesture"};' in s
+    assert 'ACME_SeizureSpasm3' not in s
+    native_speeds = {4: 0.2325, 5: 0.2069, 6: 0.1287}
     for n, native in native_speeds.items():
         assert f'ACME_SeizureSpasm{n}[] = {{"ACME_SeizureSpasm{n}", "Gesture"}};' in s
         match = re.search(
@@ -41,9 +44,9 @@ def test_motion_uses_gesture_done_not_old_jitter_driver():
 
 def test_only_selected_spasm_variants_cycle_without_immediate_repeat():
     s = read(ADDON / "functions" / "fn_seizureGestureAdvance.sqf")
-    for n in range(3, 7):
+    for n in (0, 4, 5, 6):
         assert f'"ACME_SeizureSpasm{n}"' in s
-    assert '"ACME_SeizureSpasm0"' not in s
+    assert '"ACME_SeizureSpasm3"' not in s
     assert '"ACME_SeizureSpasm1"' not in s
     assert '"ACME_SeizureSpasm2"' not in s
     assert "private _pool = _gestures - [_last];" in s

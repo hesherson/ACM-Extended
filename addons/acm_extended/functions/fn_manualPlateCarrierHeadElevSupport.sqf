@@ -53,6 +53,8 @@ if (_vestClass == "") exitWith {false};
 _patient setVariable ["ACME_headElev_manualCarrierBorrowed", true, true];
 _patient setVariable ["ACME_headElev_vestRemoved", true, true];
 _patient setVariable ["ACME_headElev_vestLoadout", +_saved, true];
+_patient setVariable ["ACME_headElev_vestLoadoutKitEpoch",
+    _patient getVariable ["ACME_chestAccess_vestLoadoutKitEpoch", _patient getVariable ["ACME_equipmentKitEpoch", 0]], true];
 _patient setVariable ["ACME_headElev_propVest", _vestClass, true];
 _patient setVariable ["ACME_headElev_propVestItems", [], true];
 _patient setVariable ["ACME_headElev_propObj", _prop, true];

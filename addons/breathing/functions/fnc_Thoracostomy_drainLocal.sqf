@@ -20,6 +20,10 @@
  */
 
 params ["_medic", "_patient", "_type"];
+if (isNull _patient || {!local _patient}) exitWith {};
+// Final patient-owner check: an already-dispatched suction request cannot
+// drain newly collected hemothorax after the tube was pulled.
+if (!([_patient] call ACME_fnc_thoraHasTube)) exitWith {};
 
 private _hint = LSTRING(ThoracostomyDrain_Complete);
 private _fluid = _patient getVariable [QGVAR(Hemothorax_Fluid), 0];

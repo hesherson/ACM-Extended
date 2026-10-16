@@ -33,6 +33,7 @@ _interval = _interval max 0.25;
 // Coarse signature: publish important state-band transitions immediately without turning continuous physiology
 // into a packet-per-tick stream. Fine-grained values still refresh on the bounded interval below.
 private _sig = [
+    count _state > 0, // A clear must publish even when the previous map was physiologically neutral.
     _state getOrDefault ["shockActive", false],
     round (10 * (_state getOrDefault ["shockSeverity", 0])),
     round (10 * (_state getOrDefault ["totalAcidosis", 0])),
@@ -44,7 +45,9 @@ private _sig = [
 
 private _lastAt = _patient getVariable ["ACME_circ_stateNetAt", -1];
 private _lastSig = _patient getVariable ["ACME_circ_stateNetSig", []];
+private _ownerStamp = [owner _patient, local _patient];
 private _publish = (_lastAt < 0)
+    || {(_patient getVariable ["ACME_circ_stateNetOwner", []]) isNotEqualTo _ownerStamp}
     || {_sig isNotEqualTo _lastSig}
     || {(_now - _lastAt) >= _interval};
 
@@ -60,6 +63,7 @@ if (!_publish) exitWith {
 
 _patient setVariable ["ACME_circ_stateNetAt", _now, false];
 _patient setVariable ["ACME_circ_stateNetSig", _sig, false];
+_patient setVariable ["ACME_circ_stateNetOwner", _ownerStamp, false];
 _patient setVariable ["ACME_circ_State", _state, true];
 
 if (_counting) then {

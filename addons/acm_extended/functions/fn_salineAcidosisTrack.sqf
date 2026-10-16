@@ -12,4 +12,4 @@
         private _mod = [1,2] select (_fresh > 0.83);
         [_p, "ACME_circ_salineGivenMl", (_burden - (_rate * _mod * _dt)) max 0, 5, 1] call ACME_fnc_setVarNetApprox;
     };
-} forEach ((missionNamespace getVariable ["ACME_clinical_ownedUnits", []]) select {(_x getVariable ["ACME_circ_salineGivenMl", 0]) > 0});
+} forEach ((missionNamespace getVariable ["ACME_circ_activePatients", []]) select {(_x getVariable ["ACME_circ_salineGivenMl", 0]) > 0});

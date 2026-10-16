@@ -47,3 +47,16 @@ PREP(setCursorInteractionMode);
 
 PREP(continuousHoldRelease);
 PREP(registerContinuousRuntime);
+
+PREP(setCargoLoadCapability);
+PREP(registerDownedProtectionReason);
+PREP(suppressPhysicalBandageReopening);
+
+// Completed loadout replacement boundaries, including owner-local AI/HC.
+PREP(equipmentKitChanged);
+PREP(registerEquipmentKitRuntime);
+
+// Preserve retired patient carrier contents at explicit kit boundaries.
+PREP(carrierLegacySnapshot);
+PREP(carrierRetireToWorld);
+PREP(carrierKitChanged);

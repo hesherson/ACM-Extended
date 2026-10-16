@@ -1,0 +1,107 @@
+/* Settle a stopped push after a local controlled-unit switch. Never resume flow.
+ * The archive is evidence from this machine, not a provider ownership handoff.
+ * A missing ACK remains unresolved; only its exact receipt can restore a rejected
+ * aliquot. The unsent tail is known not to have reached medicationRequest.
+ */
+if (canSuspend) exitWith {private _result = false; isNil {_result = _this call ACME_fnc_hardcorePushRecover;}; _result};
+params ["_medic",["_session","",[""]],["_requestId","",[""]],["_meta",[],[[]]],["_accepted",false,[false]]];
+if (isNull _medic || {!local _medic}) exitWith {false};
+private _retired = missionNamespace getVariable ["ACME_HCMedPushRetiredJobs",[]];
+private _progress = false;
+private _kept = [];
+{
+    private _entry = +_x;
+    if (count _entry < 7 || {(_entry select 0) isNotEqualTo _medic}
+        || {_session != "" && {(_entry select 1) != _session}}) then {_kept pushBack _entry; continue;};
+    private _job = _entry select 2;
+    private _receipts = _entry select 4;
+    if !(_job isEqualType createHashMap && {_receipts isEqualType createHashMap}) then {_kept pushBack _entry; continue;};
+    private _sid = _job getOrDefault ["stableId",""];
+    private _epoch = _job getOrDefault ["providerLocalityEpoch",-1];
+    private _kit = _job getOrDefault ["kitEpoch",-1];
+    if (_sid == "" || {_epoch < 0} || {_kit < 0}
+        || {_epoch != (_medic getVariable ["ACME_providerLocalityEpoch",0])}
+        || {_kit != (_medic getVariable ["ACME_equipmentKitEpoch",0])}
+        || {(_job getOrDefault ["providerOwner",-1]) != clientOwner}
+        || {_job getOrDefault ["flowing",false]}) then {_kept pushBack _entry; continue;};
+    private _store = _medic getVariable ["ACME_narcStore",[]];
+    private _at = _store findIf {(_x param [11,"",[""]]) == _sid};
+    // A new kit or another editor must not receive medication from this archive.
+    if (_at < 0 || {(_store select _at) isNotEqualTo (_entry select 3)}) then {_kept pushBack _entry; continue;};
+    private _ownedIds = (keys _receipts) select {
+        private _receiptMeta = (_receipts get _x) param [5,[]];
+        (_receiptMeta param [0,""]) == "hcPush" && {(_receiptMeta param [1,""]) == (_entry select 1)}
+            && {(_receiptMeta param [2,""]) == _sid}
+    };
+    if (count _ownedIds != (_job getOrDefault ["pendingAcks",0])) then {_kept pushBack _entry; continue;};
+    if (_requestId != "" && {!(_requestId in _ownedIds)
+        || {((_receipts get _requestId) param [5,[]]) isNotEqualTo _meta}}) then {_kept pushBack _entry; continue;};
+    private _tail = _job getOrDefault ["unsentDelta",[0,0,[]]];
+    private _rejected = [0,0,[]];
+    if (_requestId != "") then {
+        if (!_accepted) then {_rejected = _meta param [3,[]];};
+    };
+    private _combined = [0,0,[]];
+    private _valid = true;
+    private _hasParts = _at >= 0 && {count ((_store select _at) param [5,[]]) > 0};
+    {
+        private _slice = _x;
+        if !(_slice isEqualType [] && {count _slice == 3}) exitWith {_valid = false;};
+        private _sliceDrug = _slice select 0;
+        private _sliceNs = _slice select 1;
+        if !(_sliceDrug isEqualType 0 && {finite _sliceDrug} && {_sliceDrug >= 0}
+            && {_sliceNs isEqualType 0} && {finite _sliceNs} && {_sliceNs >= 0}
+            && {(_slice select 2) isEqualType []}) exitWith {_valid = false;};
+        private _seen = []; private _componentMl = 0;
+        private _parts = _combined select 2;
+        {
+            if !(_x isEqualType [] && {count _x == 3}) exitWith {_valid = false;};
+            _x params ["_ci","_source","_ml"];
+            if !(_ci isEqualType 0 && {finite _ci} && {_ci >= 0}
+                && {_ci == floor _ci} && {!(_ci in _seen)}
+                && {_source isEqualType ""} && {_source != ""}
+                && {_ml isEqualType 0} && {finite _ml} && {_ml >= 0}) exitWith {_valid = false;};
+            _seen pushBack _ci; _componentMl = _componentMl + _ml;
+            private _partAt = _parts findIf {(_x select 0) == _ci};
+            if (_partAt < 0) then {_parts pushBack +_x;} else {
+                private _part = +(_parts select _partAt);
+                if ((_part select 1) != _source) then {_valid = false;} else {
+                    _part set [2,(_part select 2) + _ml]; _parts set [_partAt,_part];
+                };
+            };
+        } forEach (_slice select 2);
+        if ((_hasParts || {count (_slice select 2) > 0}) && {abs (_componentMl - (_slice select 0)) > 0.001}) then {_valid = false;};
+        _combined set [0,(_combined select 0) + (_slice select 0)];
+        _combined set [1,(_combined select 1) + (_slice select 1)];
+        _combined set [2,_parts];
+    } forEach [_tail,_rejected];
+    if (!_valid) then {_kept pushBack _entry; continue;};
+    private _tailMl = (_tail select 0) + (_tail select 1);
+    private _refundMl = (_combined select 0) + (_combined select 1);
+    // A failed exact-row refund keeps both the captured receipt and pending count.
+    // Combine rejected volume and the known unsent tail before the single store write.
+    if (_refundMl > 0.000001 && {!([_medic,_sid,_combined] call ACME_fnc_hardcorePushRestoreDelta)}) then {
+        _kept pushBack _entry; continue;
+    };
+    if (_tailMl > 0.000001) then {
+        _job set ["unsentDelta",[0,0,[]]];
+        _job set ["batchElapsed",0];
+        _progress = true;
+    };
+    if (_requestId != "") then {
+        // Restoration is proven before this immutable receipt is consumed.
+        _receipts deleteAt _requestId;
+        _job set ["pendingAcks",((_job getOrDefault ["pendingAcks",1]) - 1) max 0];
+        _progress = true;
+    };
+    _job set ["pushedMl",((_job getOrDefault ["pushedMl",0]) - _refundMl) max 0];
+    _store = _medic getVariable ["ACME_narcStore",[]];
+    _at = _store findIf {(_x param [11,"",[""]]) == _sid};
+    if (_at >= 0) then {_entry set [3,+(_store select _at)];};
+    _entry set [2,_job]; _entry set [4,_receipts];
+    if ((_job getOrDefault ["pendingAcks",0]) == 0 && {[_job] call ACME_fnc_hardcorePushFinalize}) then {
+        _progress = true;
+    } else {_kept pushBack _entry;};
+} forEach _retired;
+missionNamespace setVariable ["ACME_HCMedPushRetiredJobs",_kept];
+_progress

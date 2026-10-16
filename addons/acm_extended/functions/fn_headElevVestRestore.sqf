@@ -24,13 +24,7 @@ isNil {
     };
     if (_removed && {count _saved == 2} && {(_saved param [0, "", [""]]) != ""}) then {
         if (vest _patient == "") then {
-            private _current = getUnitLoadout _patient;
-            if (count _current >= 6) then {
-                _current set [4, +_saved];
-                // Merge this slot into the current loadout; do not refill magazines.
-                _patient setUnitLoadout [_current, false];
-                _restored = (vest _patient) == (_saved select 0);
-            };
+            _restored = [_patient, _saved, "ACME_headElev_vestLoadout"] call ACME_fnc_carrierInventoryRestore;
         };
         // A different worn carrier, or an engine refusal, keeps the custody record.
     } else {

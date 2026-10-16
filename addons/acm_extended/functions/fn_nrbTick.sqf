@@ -66,7 +66,7 @@ private _fnc_stopSfx = {
         _u setVariable ["ACME_nrb_session", "", true];
         _u setVariable ["ACME_nrb_drawPending", [], true];
         _u setVariable ["ACME_nrb_o2Pending", 0, true];
-        ["NRB removed: advanced airway now requires BVM or ventilator support.", 2.5, _maskMedic] call ACME_fnc_netNotice;
+        ["NRB removed: another airway device now occupies the mask interface.", 2.5, _maskMedic] call ACME_fnc_netNotice;
         continue;
     };
 
@@ -122,6 +122,11 @@ private _fnc_stopSfx = {
         };
         [_u, -1, -1, _flowing, true, true] call ACME_fnc_nrbStateCommit;
         if (!_flowing) then { continue; };
+        // Metered gas raises FiO2; it cannot make a passive mask overcome
+        // arbitrary ambient/cabin pressure. Use the same live ceiling as the
+        // native oxygen writer, without attenuating its target a second time.
+        private _exposure = [_u] call ACME_fnc_flightExposure;
+        private _effectiveFloor = _floor min ([_u, _exposure] call ACME_fnc_altitudeOxygenCeiling);
 
         // passive mask support: no spontaneous ventilation means no oxygen uptake.
         private _rr = _u getVariable ["ACME_resp_neuralRR", (_u getVariable ["ACM_breathing_RespirationRate", 0])];
@@ -135,13 +140,13 @@ private _fnc_stopSfx = {
             private _ventFrac = ((_airway min _breathing) max 0 min 1) * _rrFrac;
             private _spo2 = _u getVariable ["ace_medical_spo2", 97];
 
-            if (_spo2 < _floor) then {
+            if (_spo2 < _effectiveFloor) then {
                 // BVM-style easing: a bigger gap rises faster, capped by a slow passive maximum gain.
-                private _gapGain = ((_floor - _spo2) / 5) max 0;
+                private _gapGain = ((_effectiveFloor - _spo2) / 5) max 0;
                 private _maxGain = _ratePerSec * _ventFrac;
                 private _gain = (_gapGain min _maxGain) * _dt;
                 if (_gain > 0) then {
-                    [_u, [["spo2", ((_spo2 + _gain) min _floor), true, true]]] call ACM_core_fnc_setAceMedicalState;
+                    [_u, [["spo2", ((_spo2 + _gain) min _effectiveFloor), true, true]]] call ACM_core_fnc_setAceMedicalState;
                     [_u, "ACME_nrb_lastO2Uptake", CBA_missionTime, 1, 2] call ACME_fnc_setVarNetApprox;
                 };
             };

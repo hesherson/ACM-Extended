@@ -19,9 +19,9 @@ def execute(scenario):
     if not vm:
         pytest.skip("SQF-VM is required for supply execution checks")
     definitions = []
-    for name in ["treatmentSupplyOrder", "treatmentSupplyCount", "treatmentSupplyTake", "treatmentSupplyRefund", "treatmentSupplyTakeMany"]:
+    for name in ["itemCount", "treatmentSupplyOrder", "treatmentSupplyCount", "treatmentSupplyTake", "treatmentSupplyRefund", "treatmentSupplyTakeMany"]:
         source = (FUNCTIONS / f"fn_{name}.sqf").read_text()
-        for unit in ["_medic", "_patient", "_donor", "_vehicle", "_x"]:
+        for unit in ["_unit", "_medic", "_patient", "_donor", "_vehicle", "_carrier", "_x"]:
             source = source.replace(f"isNull {unit}", f'({unit} isEqualTo "")')
         source = source.replace("local _medic", "true")
         source = source.replace("_medic removeItem _x", "[_medic, _x] call _remove")
@@ -32,6 +32,9 @@ def execute(scenario):
         definitions.append(f"ACME_fnc_{name} = {{{source}}};")
     code = r'''
         private _ok = true;
+        // No removed-carrier fixture in this legacy string-object harness.
+        ACME_fnc_carrierInventoryGet = {""};
+        ACME_fnc_carrierSupplyTake = {["", "", false, ""]};
         private _parents = createHashMap;
         private _cargo = createHashMap;
         private _inventory = createHashMapFromArray [["medic", ["seal"]], ["patient", ["seal"]]];
@@ -158,6 +161,11 @@ def test_hpmk_owner_rejection_refunds_patient_and_acceptance_commits_once():
     source = (FUNCTIONS / "fn_hpmkPrep.sqf").read_text()
     for unit in ["_medic", "_patient"]:
         source = source.replace(f"isNull {unit}", f'({unit} isEqualTo "")')
+    # Actors are string inventory keys in this fixture; preserve its living/down patient at the engine boundary.
+    source = source.replace("alive _patient", "_patientAlive")
+    # This historical inventory test models actors as strings rather than
+    # Arma objects. The real CPR field guard is covered by B258's object tests.
+    source = source.replace("_patient isEqualType objNull", "false")
     source = source.replace("local _patient", "_patientLocal").replace("objNull", '""')
     source = source.replace('_patient getVariable ["ACM_core_Lying_State", false]', "true")
     source = source.replace('_patient getVariable ["ACE_isUnconscious", false]', "true")
@@ -166,6 +174,7 @@ def test_hpmk_owner_rejection_refunds_patient_and_acceptance_commits_once():
     source = source.replace('_patient setVariable ["ACME_hpmk_returnPending", false, true];', "")
     execute('''
         private _patientLocal = true;
+        private _patientAlive = true;
         private _hpmkState = "";
         private _hpmkProvider = "";
         private _queued = [];
@@ -222,26 +231,11 @@ def test_deleted_ai_vent_donor_falls_back_to_original_operator_at_last_position(
 
 @pytest.mark.parametrize("accepted", [True, False])
 def test_battery_exchange_ack_returns_item_and_charge_to_exact_donor_once(accepted):
-    source = (FUNCTIONS / "fn_ownerInit.sqf").read_text().split('["ACME_ventBatteryExchangeResult", {', 1)[1].split('}] call CBA_fnc_addEventHandler;', 1)[0]
-    source = source.replace("hasInterface", "true").replace("isNull ACE_player", '(ACE_player isEqualTo "")')
-    source = source.replace("isNull _source", '(_source isEqualTo "")').replace("isNull (_supply select 2)", '((_supply select 2) isEqualTo "")')
-    source = source.replace('_source setVariable ["ACME_vent_spareBattery", _returnedPct, true]', '_charges set [_source, _returnedPct]')
-    source = source.replace("objNull", '""').replace("displayNull", '""').replace("isNull _dlg", '(_dlg isEqualTo "")')
-    execute('''
-        ACE_player = "medic";
-        private _charges = createHashMapFromArray [["patient", 98], ["medic", 17]];
-        ace_medical_treatment_allowSharedEquipment = 0;
-        _inventory set ["patient", ["ACME_VentBattery"]]; _inventory set ["medic", []];
-        private _supply = ["medic", "patient", ["ACME_VentBattery"]] call ACME_fnc_treatmentSupplyTake;
-        uiNamespace setVariable ["ACME_vent_batterySwapRequest", "exchange:1"];
-        uiNamespace setVariable ["ACME_vent_batterySwapSupply", _supply];
-        private _ack = {''' + source + '''};
-    ''' + f'''
-        ["patient", "exchange:1", {str(accepted).lower()}, 42, 98] call _ack;
-        ["patient", "exchange:1", {str(accepted).lower()}, 42, 98] call _ack;
-        [(_charges get "patient") == {42 if accepted else 98} && {{(_charges get "medic") == 17}}, "charge moved to provider or changed on rejection"] call _check;
-        [count (_inventory get "patient") == 1 && {{count (_inventory get "medic") == 0}}, "battery donor changed/duplicated"] call _check;
-    ''')
+    # B282 retains this exact donor/charge/refund-once case while executing the
+    # immutable provider escrow, owner decision, original ACK event and actual
+    # supply-refund implementation. The UI-only five-field protocol is retired.
+    from test_b282_vent_battery import scenario_exact_donor_ack
+    scenario_exact_donor_ack(accepted)
 
 
 def test_battery_panel_close_refunds_only_unsubmitted_reservation():

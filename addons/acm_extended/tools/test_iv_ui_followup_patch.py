@@ -47,17 +47,17 @@ def test_tray_rotation_hover_splay_and_spear_sound():
     c=read('config.cpp')
     assert 'iv_tray_%1g_0_ca.paa' in i
     assert 'ACME_fnc_ivTrayHover' in i
-    assert "(_count min 5)" in h
-    assert "_count > 5" in h
-    assert "private _liveSlot = ctrlPosition _bg;" in h
-    assert 'ACME_iv_trayIconBias", 0.66' in i
+    assert "(_count min 5)" not in h
+    assert "_count > 5" not in h
+    assert 'ACME_IV_TrayFan_%1' in h
+    assert '_layer ctrlShow false;' in h
+    assert 'ACME_iv_trayIconScale", 2.45' in i
+    assert 'private _iconY = _ry + (_slotH / 2) - (_iconH / 2);' in i
     assert 'private _iconX = _colX + (_slotW / 2) - (_iconW / 2);' in i
     assert "ctrlSetAngle" not in h
-    assert "iv_tray_%1g_%2_ca.paa" in h
-    assert "_c ctrlSetPosition [_bx,_by - _rise,_bw,_bh];" in h
-    assert "private _px = _sx + _insetX;" in h
-    assert "private _py = _sy + _insetY;" in h
-    assert "_sx + _sw - _pw - _insetX" not in h
+    assert "iv_tray_%1g_%2_ca.paa" not in h
+    assert "_logo ctrlSetPosition _base;" in h
+    assert "private _rise =" not in h
     assert "['band','pad']" in h
     assert 'playSound "ACME_NARSPEAR_Open"' in g
     assert 'class ivTrayHover {};' in c
@@ -84,15 +84,11 @@ def test_tray_catheter_canvas_is_square_in_physical_pixels():
 def test_iv_tray_stock_fan_is_upward_only_and_plus_is_top_left():
     h=read('functions/fn_ivTrayHover.sqf')
 
-    # Baked textures raise only the handle. Runtime offsets also rise monotonically.
-    # Real PAA silhouettes and pixel-space tile containment are tested in test_iv_tray_geometry.py.
-    assert "private _rise = _sh * 0.02 * (_i + 1);" in h
-    assert "_c ctrlSetPosition [_bx,_by - _rise,_bw,_bh];" in h
+    # B233 retired runtime stock fans and the + marker. A single centered
+    # catheter remains in the tile at every stock count.
+    assert "private _rise =" not in h
     assert "ctrlSetAngle" not in h
-
-    # The >5 marker is inset from the live tray tile's top-left, never its right edge.
-    assert 'private _px = _sx + _insetX;' in h
-    assert 'private _py = _sy + _insetY;' in h
-    assert '_sx + _sw - _pw - _insetX' not in h
-    assert "ctrlCreate ['RscStructuredText',-1]" in h
-    assert "_c ctrlSetTextColor [1,1,1,_alphas select _i];" in h
+    assert 'ACME_IV_TrayFan_%1' in h
+    assert '_layer ctrlShow false;' in h
+    assert '_logo ctrlSetPosition _base;' in h
+    assert "ctrlCreate ['RscStructuredText',-1]" not in h

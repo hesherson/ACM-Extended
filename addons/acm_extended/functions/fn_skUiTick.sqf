@@ -9,6 +9,11 @@ _acmeCanvas params ["_uiX", "_uiY", "_uiW", "_uiH"];
 params ["_args", "_handle"];
 _args params ["_d"];
 if (isNull _d) exitWith {[_handle] call CBA_fnc_removePerFrameHandler;};
+private _provider = _d getVariable ["ACME_SK_Provider", objNull];
+if (!isNull _provider && {_provider isNotEqualTo (call ACME_fnc_controlledProvider) || {!local _provider}}) exitWith {
+    [_handle] call CBA_fnc_removePerFrameHandler;
+    _d closeDisplay 2;
+};
 private _now = diag_tickTime;
 private _view = uiNamespace getVariable ["ACME_SK_View", "syringe"];
 private _body = _view == "body";

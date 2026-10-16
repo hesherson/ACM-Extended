@@ -29,18 +29,17 @@ private _id = [{
     params ["_args", "_idPFH"];
     _args params ["_patient", ["_fromTXA", false]];
 
-    private _plateletCount = _patient getVariable [QEGVAR(circulation,Platelet_Count), 3];
-    private _clotStrength = (_patient getVariable ["ACME_coag_clotStrength", 1]) max 0.08 min 1.15;
-
     if (!(alive _patient) || ((_patient getVariable [QGVAR(Coagulation_LastClotTime), -1]) + 120 < CBA_missionTime)) exitWith {
         _patient setVariable [QGVAR(Coagulation_PFH), -1];
         _patient setVariable [QGVAR(Coagulation_Active), false, true];
         [_idPFH] call CBA_fnc_removePerFrameHandler;
     };
 
-    private _txaCount = ([_patient, "TXA_IV", false] call ACEFUNC(medical_status,getMedicationCount)) min 2;
-
     if ((_patient getVariable [QGVAR(Coagulation_NextAttempt), 0]) > CBA_missionTime) exitWith {};
+
+    private _plateletCount = _patient getVariable [QEGVAR(circulation,Platelet_Count), 3];
+    private _clotStrength = (_patient getVariable ["ACME_coag_clotStrength", 1]) max 0.08 min 1.15;
+    private _txaCount = ([_patient, "TXA_IV", false] call ACEFUNC(medical_status,getMedicationCount)) min 2;
 
     private _interval = ((12 - ((_txaCount * 3) + _plateletCount)) max 2) / (0.35 + (0.65 * _clotStrength));
     _patient setVariable [QGVAR(Coagulation_NextAttempt), CBA_missionTime + _interval];

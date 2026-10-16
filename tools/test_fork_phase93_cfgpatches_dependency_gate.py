@@ -21,6 +21,8 @@ def component_for(addon_dir: Path) -> str:
 def patch_name(addon_dir: Path) -> str:
     if addon_dir.name == "acm_extended":
         return "ACM_Extended"
+    if addon_dir.name == "itemtext":
+        return "ACM_itemtext"
     return f"ACM_{component_for(addon_dir)}"
 
 
@@ -33,7 +35,7 @@ def required_addons(config: Path) -> list[str]:
 
 def main() -> None:
     dirs = sorted(p.parent for p in ADDONS.glob("*/config.cpp"))
-    assert len(dirs) == 13, f"expected 13 addon configs, found {len(dirs)}"
+    assert len(dirs) == 14, f"expected 14 addon configs, found {len(dirs)}"
 
     patches: dict[str, tuple[Path, list[str]]] = {}
     for d in dirs:
@@ -77,7 +79,8 @@ def main() -> None:
 
     ext_deps = graph["ACM_Extended"]
     assert "ACM_core" in ext_deps and "ACM_gui" in ext_deps, "Extended must load after fork core/gui"
-    assert all("ACM_Extended" not in deps for n, deps in graph.items() if n != "ACM_Extended"), \
+    assert graph["ACM_itemtext"] == ["ACM_Extended"], "late itemtext patches must load after Extended"
+    assert all("ACM_Extended" not in deps for n, deps in graph.items() if n not in {"ACM_Extended", "ACM_itemtext"}), \
         "native fork addons must not depend back on ACM_Extended"
 
     edge_count = sum(len(v) for v in graph.values())
