@@ -100,7 +100,7 @@ private _completed = [];
         private _resumeState = _patient getVariable ["ACME_circ_State", createHashMap];
         if (_resumeState isEqualType createHashMap && {count _resumeState > 0}) then {
             _resumeState set ["acidLastTick", CBA_missionTime];
-            _patient setVariable ["ACME_circ_State", _resumeState, false];
+            [_patient, _resumeState, false] call ACME_fnc_circStateCommit;
         };
         _patient setVariable ["ACME_clinicalMaintenanceDormant", false, false];
     };
