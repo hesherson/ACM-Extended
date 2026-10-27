@@ -2,6 +2,9 @@ if (missionNamespace getVariable ["ACME_inventoryLedgerInitialized",false]) exit
 missionNamespace setVariable ["ACME_inventoryLedgerInitialized",true];
 ["ACME_inventoryBroker",{_this call ACME_fnc_inventoryLedgerBroker;}] call CBA_fnc_addEventHandler;
 ["ACME_inventoryReply",{_this call ACME_fnc_inventoryLedgerReply;}] call CBA_fnc_addEventHandler;
+["ACME_coolerBoxBroker",{_this call ACME_fnc_coolerBoxBroker;}] call CBA_fnc_addEventHandler;
+["ACME_coolerBoxReply",{_this call ACME_fnc_coolerBoxReply;}] call CBA_fnc_addEventHandler;
+["ACME_coolerBoxLock",{params ["_box","_locked"]; if (!isNull _box) then {_box lockInventory _locked;};}] call CBA_fnc_addEventHandler;
 ["ACME_syringeDelivery",{if (isServer) then {isNil {_this call ACME_fnc_syringeDeliveryBroker;};};}] call CBA_fnc_addEventHandler;
 ["ACME_syringeDeliveryReply",{isNil {_this call ACME_fnc_syringeDeliveryReply;};}] call CBA_fnc_addEventHandler;
 ["ACME_syringeDeliveryMachine",{_this call ACME_fnc_syringeDeliveryMachine;}] call CBA_fnc_addEventHandler;
@@ -22,18 +25,19 @@ missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",_machineNonce];
 ["CAManBase","Take",{
     params ["_unit","_container","_class"];
     private _kind = getText (configFile >> "CfgMagazines" >> _class >> "ACME_inventoryKind");
-    if (!(_kind in ["prepared","syringe"]) || {!local _unit}) exitWith {};
+    if (!(_kind in ["prepared","syringe","cooler"]) || {!local _unit}) exitWith {};
     private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _unit; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];
     private _internal = _container isEqualTo _unit || {_container in [uniformContainer _unit,vestContainer _unit,backpackContainer _unit]}
         || {!isNull _container && {objectParent _container isEqualTo _unit}};
     if (!_internal) then {[_unit,_kind] call ACME_fnc_inventoryLedgerMarkIncoming;};
     [{[_this select 0] call ACME_fnc_inventoryLedgerReconcile;},[_unit]] call CBA_fnc_execNextFrame;
 }] call CBA_fnc_addClassEventHandler;
-["CAManBase","Put",{params ["_unit","_container","_class"]; private _kind = getText (configFile >> "CfgMagazines" >> _class >> "ACME_inventoryKind"); if (_kind in ["prepared","syringe"] && {local _unit}) then {private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _unit; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];[{[_this select 0] call ACME_fnc_inventoryLedgerReconcile;},[_unit]] call CBA_fnc_execNextFrame;};}] call CBA_fnc_addClassEventHandler;
+["CAManBase","Put",{params ["_unit","_container","_class"]; private _kind = getText (configFile >> "CfgMagazines" >> _class >> "ACME_inventoryKind"); if (_kind in ["prepared","syringe","cooler"] && {local _unit}) then {private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _unit; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];[{[_this select 0] call ACME_fnc_inventoryLedgerReconcile;},[_unit]] call CBA_fnc_execNextFrame;};}] call CBA_fnc_addClassEventHandler;
 ["CAManBase","Local",{
     params ["_unit","_local"];
     if (!_local || {isNull _unit}) exitWith {};
     [_unit] call ACME_fnc_syringeDeliveryRecover;
+    [_unit] call ACME_fnc_coolerRecover;
     private _participates = count (_unit getVariable ["ACME_inventoryPending",createHashMap]) > 0
         || {count (_unit getVariable ["ACME_inventoryEscrow",createHashMap]) > 0}
         || {count (_unit getVariable ["ACME_inventoryMutations",createHashMap]) > 0}
@@ -75,6 +79,7 @@ missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",_machineNonce];
             if (_imported isNotEqualTo _rows) then {[_owner,_imported,true] call ACME_fnc_narcStoreCommit;};
         };
         [_owner] call ACME_fnc_inventoryLedgerReconcile;
+        [_owner] call ACME_fnc_coolerRecover;
         [_owner] call ACME_fnc_preparedInventoryRecover;
     } forEach _tracked;
 },1] call CBA_fnc_addPerFrameHandler;

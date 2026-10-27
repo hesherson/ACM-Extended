@@ -14,7 +14,8 @@ def test_current_phase56_no_extended_ace_writers():
     assert '"ace_dragging"' in cfg and '"ace_interact_menu"' in cfg
     assert 'ace_dragging_canDrag' in read('addons/core/functions/fnc_setDraggingCapability.sqf')
     assert 'ace_interact_menu_alwaysUseCursorSelfInteraction' in read('addons/core/functions/fnc_setCursorInteractionMode.sqf')
-    assert 'ACM_core_fnc_setDraggingCapability' in read('addons/acm_extended/functions/fn_coolerBoxDeploy.sqf')
+    assert 'ACME_fnc_coolerBoxRequest' in read('addons/acm_extended/functions/fn_coolerBoxDeploy.sqf')
+    assert 'ACM_core_fnc_setDraggingCapability' in read('addons/acm_extended/functions/fn_coolerBoxBroker.sqf')
     assert 'ACM_core_fnc_setCursorInteractionMode' in read('addons/acm_extended/functions/fn_installLightKey.sqf')
     assert 'ACM_core_fnc_setCursorInteractionMode' in read('addons/acm_extended/functions/fn_aceCursorRestore.sqf')
     viol=[]

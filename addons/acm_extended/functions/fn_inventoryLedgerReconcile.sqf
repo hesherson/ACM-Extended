@@ -49,3 +49,21 @@ if (!isNil "ACME_fnc_skInventoryReconcile") then {
     private _pendingS = (_pending select {(_x select 0) == "syringe"}) apply {+(_x select 2)};
     [_owner,[_owner,"syringe"] call ACME_fnc_inventoryLedgerRows,_reservedS,_pendingS] call ACME_fnc_skInventoryReconcile;
 };
+// Compatibility mirrors are keyed by unique SID. Preserve only legacy base
+// entries awaiting their one-time migration, never stale SID projections.
+if (!isNil "ACME_fnc_coolerRows") then {
+    private _oldStore=_owner getVariable ["ACME_coolerStore",createHashMap];
+    private _oldCoolant=_owner getVariable ["ACME_coolerCoolant",createHashMap];
+    private _store=createHashMap; private _coolant=createHashMap; private _classes=createHashMap;
+    {
+        if (_x in _oldStore) then {_store set [_x,_oldStore get _x];};
+        if (_x in _oldCoolant) then {_coolant set [_x,_oldCoolant get _x];};
+    } forEach ["ACME_BloodCooler_CSWB1U","ACME_BloodCooler_CSWB2U","ACME_BloodCooler_CSWB4U"];
+    {
+        _x params ["_sid","_state"];
+        _store set [_sid,_state select 2]; _coolant set [_sid,_state select 1]; _classes set [_sid,_state select 0];
+    } forEach ([_owner] call ACME_fnc_coolerRows);
+    [_owner,"store",_store,false] call ACME_fnc_coolerStateCommit;
+    [_owner,"coolant",_coolant,false] call ACME_fnc_coolerStateCommit;
+    _owner setVariable ["ACME_coolerClasses",_classes,false];
+};

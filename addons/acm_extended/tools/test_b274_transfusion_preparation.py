@@ -103,9 +103,9 @@ def test_native_inventory_only_shows_saline_while_pairing_and_restores_all_sourc
 @pytest.mark.parametrize("selecting", [False, True])
 def test_production_cooler_and_used_overlay_inputs_obey_the_temporary_saline_filter(own, selecting):
     controller = read("updateTransfusionControls")
-    cooler = controller[controller.index("private _store ="):controller.index("private _wantKeys = keys _want;")]
+    cooler = controller[controller.index("private _want = createHashMap;", controller.index("// cooler blood surfaced")):controller.index("private _wantKeys = keys _want;")]
     cooler = cooler.replace("((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player))", "_heldInventory")
-    cooler = re.sub(r'nearestObjects \[ACE_player, \[[^\n]+?\], 6\]', '_nearbyBoxes', cooler)
+    cooler = re.sub(r'nearestObjects \[ACE_player, \[[^\n]+?\], 4\.5\]', '_nearbyBoxes', cooler)
     cooler = cooler.replace("itemCargo _bx", '(_bx getVariable ["fixtureCargo",[]])')
     used = controller[controller.index("private _usedBags ="):controller.index("private _usedSig =")]
     execute(r'''
@@ -113,8 +113,10 @@ def test_production_cooler_and_used_overlay_inputs_obey_the_temporary_saline_fil
       private _heldInventory=["ACME_BloodCooler_CSWB1U"];
       private _nearbyBoxes=[missionNamespace];
       missionNamespace setVariable ["fixtureCargo",["ACM_BloodBag_ON_500"]];
-      private _coolerStock=createHashMapFromArray [["ACME_BloodCooler_CSWB1U",[["ACM_BloodBag_ON_500",500]]]];
-      ACE_player setVariable ["ACME_coolerStore",_coolerStock];
+      private _coolerStock=[["cooler-one",["ACME_BloodCooler_CSWB1U",0,[["ACM_BloodBag_ON_500",500]],0]]];
+      private _savedCooler=+_coolerStock;
+      ACME_fnc_coolerRows={+_coolerStock};
+      ACME_fnc_coolerAdvance={_this select 0};
       private _usedStock=[["blood","Blood",400],["saline","Saline",150],["y-saline","ACME_SalineY",75],["plasma","Plasma",100],["plasmalyte","PlasmaLyte",200]];
       ACE_player setVariable ["ACME_usedBags",_usedStock];
       private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
@@ -123,12 +125,13 @@ def test_production_cooler_and_used_overlay_inputs_obey_the_temporary_saline_fil
       [count _usedBags=={(2 if selecting else 5) if own else 0},"used overlay ignored source or saline filter"] call _check;
       if (_selectingSalineInventoryB274) then {{[(_usedBags findIf {{!((_x select 1) in ["Saline","ACME_SalineY"])}})<0,"used non-saline shown during picker"] call _check;}};
       [(ACE_player getVariable "ACME_usedBags") isEqualTo _usedStock,"temporary UI filter consumed used bag custody"] call _check;
-      [((ACE_player getVariable "ACME_coolerStore") get "ACME_BloodCooler_CSWB1U") isEqualTo [["ACM_BloodBag_ON_500",500]],"temporary UI filter consumed cooler stock"] call _check;
+      [_coolerStock isEqualTo _savedCooler,"temporary UI filter consumed cooler stock"] call _check;
     ''')
 
 
 def stage_setup():
     return supply_setup() + picker_setup() + r'''
+      ACME_fnc_clinicalEpoch={1};
       private _rightFixture=missionNamespace;
       private _rowData=[];private _selection=0;private _bagRefreshes=0;
       private _initialBags=createHashMapFromArray [["leftarm",[["Plasma",300,1,1,true,-1,500,-1,"existing-line"]]]];

@@ -230,7 +230,7 @@ def test_empty_inventory_is_cleared_before_no_bags_return_and_extras_follow_sele
     assert 'private _ownInventory' in ui
     # B275 keeps selected-source isolation and suppresses cooler blood while
     # either connected-line picker is selecting a compatible secondary.
-    assert 'if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {ACE_player getVariable ["ACME_coolerStore"' in ui
+    assert 'if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {[ACE_player] call ACME_fnc_coolerRows' in ui
     assert 'if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {nearestObjects' in ui
     assert 'if (_ownInventory) then {ACE_player getVariable ["ACME_usedBags"' in ui
     assert 'call ACME_fnc_transfusionTakeSelected' in read('transfusionSpikeOrAdd')

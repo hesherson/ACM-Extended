@@ -1,60 +1,36 @@
-// a server-side pass over deployed cooler boxes: the box equivalent of fn_coolercontentstick. while the coolant of
-// a box lasts, its blood is preserved with no aging. once the coolant expires, the insulated box still slows the
-// thaw, so the blood lasts far longer than a loose bag, and it does eventually spoil into spoiled blood inside the
-// box.
-// it runs on the server because box blood is real shared cargo rather than a per-player virtual store, and spoilage
-// rewrites that cargo with the *global cargo commands.
-// box blood is real cargo with no per-bag timer, so a box tracks one warm clock for all of its units: they are all
-// kept cold together while the coolant lasts and, once it is gone, all cross the shelf life together. the time
-// elapsed is read from ACME_boxCoolantStart, carried across the deploy and pick-up, so the math is stateless and
-// the tick interval does not affect when blood spoils.
-if !(missionNamespace getVariable ["ACME_sys_bloodChain", true]) exitWith {};  // the system toggle. fully off means this stops.
+/* B287: one server-side owner ages deployed cooler cargo. */
+if !(missionNamespace getVariable ["ACME_sys_bloodChain", true]) exitWith {};
 if (!isServer) exitWith {};
-if !(missionNamespace getVariable ["ACME_bloodSpoilEnabled", true]) exitWith {};
-
-private _spoilT = missionNamespace getVariable ["ACME_bloodLooseSpoilTime", 1200];
-private _thawIn = missionNamespace getVariable ["ACME_coolerThawRateInside", 0.2];  // the same slow inside-thaw the carried cooler uses.
-
+private _spoilEnabled = missionNamespace getVariable ["ACME_bloodSpoilEnabled", true];
+private _spoilT = missionNamespace getVariable ["ACME_bloodLooseSpoilTime", 1800];
+private _now = serverTime;
 private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
-              + (allMissionObjects "ACME_BloodCoolerBox_CSWB2U")
-              + (allMissionObjects "ACME_BloodCoolerBox_CSWB4U");
+    + (allMissionObjects "ACME_BloodCoolerBox_CSWB2U")
+    + (allMissionObjects "ACME_BloodCoolerBox_CSWB4U");
+// Release from every box before any box acquires newly observed cargo. This
+// makes box-to-box movement independent of enumeration order.
+{[_x, _now, "release"] call ACME_fnc_coolerBoxReconcile;} forEach _boxes;
 {
     private _box = _x;
-
-    // which cooler item does this box correspond to, for its cold-chain duration? prefer the stamp and fall back to the
-    // box class, so editor-placed boxes still age.
-    private _itemClass = _box getVariable ["ACME_boxCoolerClass", ""];
-    if (_itemClass == "") then {
-        _itemClass = switch (typeOf _box) do {
-            case "ACME_BloodCoolerBox_CSWB1U": { "ACME_BloodCooler_CSWB1U" };
-            case "ACME_BloodCoolerBox_CSWB2U": { "ACME_BloodCooler_CSWB2U" };
-            case "ACME_BloodCoolerBox_CSWB4U": { "ACME_BloodCooler_CSWB4U" };
-            default { "" };
-        };
-    };
-    if (_itemClass != "") then {
-        private _chain = getNumber (configFile >> "CfgWeapons" >> _itemClass >> "ACME_coolerColdChainTime");
-        if (_chain > 0) then {
-            private _start = _box getVariable ["ACME_boxCoolantStart", time];
-            // only past coolant expiry does anything age. while cold, blood is simply preserved.
-            if ((time - _start) >= _chain) then {
-                // the effective warm time since the coolant ran out, slowed by the insulated box, against 1.0 loose.
-                private _effWarm = (time - (_start + _chain)) * _thawIn;
-                if (_effWarm >= _spoilT) then {
-                    private _cargo = itemCargo _box;
-                    private _spoilCount = { (_x find "ACM_BloodBag_") == 0 } count _cargo;
-                    if (_spoilCount > 0) then {
-                        // replace every blood bag with the same number of spoiled blood, and leave any non-blood cargo.
-                        private _kept = _cargo select { (_x find "ACM_BloodBag_") != 0 };
-                        clearItemCargoGlobal _box;
-                        { _box addItemCargoGlobal [_x, 1]; } forEach _kept;
-                        _box addItemCargoGlobal ["ACME_SpoiledBlood", _spoilCount];
-                        // tell anyone standing near the box.
-                        {
-                            [format ["%1 blood unit(s) in a cooler lost the cold chain and spoiled.", _spoilCount], 3] remoteExec ["ace_common_fnc_displayTextStructured", _x];
-                        } forEach (allPlayers select { (_x distance _box) < 12 });
-                    };
-                };
+    if (!(_box getVariable ["ACME_coolerPacking", false]) && {!(_box getVariable ["ACME_coolerRetired", false])}) then {
+        private _state = [_box, _now] call ACME_fnc_coolerBoxReconcile;
+        if !(_state isEqualTo []) then {
+            private _kept = [];
+            private _spoiled = [];
+            {
+                if (_spoilEnabled && {(_x # 1) >= _spoilT}) then {_spoiled pushBack (_x # 0);}
+                else {_kept pushBack +_x;};
+            } forEach (_state # 2);
+            if !(_spoiled isEqualTo []) then {
+                // Remove only expired blood; preserve every other cargo entry.
+                {_box addItemCargoGlobal [_x, -1];} forEach _spoiled;
+                _box addItemCargoGlobal ["ACME_SpoiledBlood", count _spoiled];
+                _state set [2, _kept];
+                _box setVariable ["ACME_boxCoolerState", _state, true];
+                {
+                    [format ["%1 blood unit(s) in a cooler lost the cold chain and spoiled.", count _spoiled], 3]
+                        remoteExec ["ace_common_fnc_displayTextStructured", _x];
+                } forEach (allPlayers select {(_x distance _box) < 12});
             };
         };
     };

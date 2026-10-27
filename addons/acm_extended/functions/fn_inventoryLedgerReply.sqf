@@ -26,6 +26,10 @@ private _add = {
         if !([_destination] call _contains) then {_destination addMagazineAmmoCargo [_class,1,_token];};
         if ([_destination] call _contains) then {[_destination] call _done} else {objNull}
     };
+    if (_kind == "cooler" && {!(_owner isKindOf "CAManBase")}) exitWith {
+        _owner addMagazineAmmoCargo [_class,1,_token];
+        if ([_owner] call _contains) then {[_owner] call _done} else {objNull}
+    };
     // ACE ignores soldierMaxLoad while retaining each container's actual capacity.
     if (_owner canAdd [_class,1,true]) then {_owner addMagazine [_class,_token];};
     if ([_owner] call _contains) exitWith {[_owner] call _done};

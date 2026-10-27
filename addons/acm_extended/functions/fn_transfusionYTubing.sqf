@@ -10,10 +10,33 @@
 // press 3, with both pending, consumes the y tubing, blood and saline out of the kit and stores a ready prepared
 // iv set on the medic, in ACME_preparedIVSets. the cold state of the blood is recorded, so it still hangs
 // [cooled] when it goes up.
+params [["_coolerResume",[]]];
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 private _target = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
 private _right = _display displayCtrl 86005;
+private _coolerContext=[ACE_player,_target,
+    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],
+    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],
+    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1],
+    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0],
+    ACE_player getVariable ["ACME_equipmentKitEpoch",0],
+    ACE_player getVariable ["ACME_providerLocalityEpoch",0],
+    missionNamespace getVariable ["ACME_yPending",""],
+    missionNamespace getVariable ["ACME_yPendingSaline",""],
+    missionNamespace getVariable ["ACME_yPendingData",""],
+    missionNamespace getVariable ["ACME_yPendingSalineData",""],
+    missionNamespace getVariable ["ACME_yPendingBloodUsedId",""],
+    missionNamespace getVariable ["ACME_yPendingSalineUsedId",""],
+    if (isNull _target) then {-1} else {[_target] call ACME_fnc_clinicalEpoch}];
+if (_coolerResume isNotEqualTo [] && {_coolerResume isNotEqualTo _coolerContext}) exitWith {};
+private _drawing=missionNamespace getVariable ["ACME_yCoolerDrawPending",[]];
+if (_drawing isNotEqualTo [] && {(_drawing select 1) isNotEqualTo _coolerContext}) then {
+    missionNamespace setVariable ["ACME_yCoolerDrawPending",[]];
+    _drawing=[];
+};
+if (_drawing isNotEqualTo [] && {_coolerResume isEqualTo []}) exitWith {};
+
 // a build beat is already running, so ignore further presses until it commits.
 if (diag_tickTime < (missionNamespace getVariable ["ACME_yBuildingActive", -1])) exitWith {};
 private _idx = lbCurSel _right;
@@ -205,62 +228,16 @@ if (_liveAction != "") then {
     _bloodData = format ["%1|%2%3", _blood, _liveAction, ["", "|COOLER"] select _liveCooler];
 };
 
-// cooler auto-use. a [cooled] blood selection lives in the cooler, either carried or in a nearby box, rather
-// than in loose inventory, so pull one out to hand now and it can be consumed into the set. this is the same
-// recovery block as the direct y build and spike-into-add. the cold state is stored on the set record below, so
-// no ACME_ySetsCooled banking is needed here.
-private _bloodFromCooler = ((_bloodData splitString "|") param [2, ""]) == "COOLER";
-// a used-bag blood leg is a warm pulled unit already readied in hand. if the medic also has cooled blood of the
-// same class, the re-derive above matches the [cooled] row and would mislabel this set [cooled], and try the
-// cooler pull. force it off, because the used leg never comes from the cooler.
-if (_bloodUsedId isNotEqualTo "") then { _bloodFromCooler = false; };
-if (_bloodFromCooler && {([ACE_player, _blood] call ace_common_fnc_getCountOfItem) < 1}) then {
-    private _cstore = ACE_player getVariable ["ACME_coolerStore", createHashMap];
-    private _gotIt = false;
-    // 1. a cooler the medic is carrying, which is a virtual store keyed by cooler class.
-    {
-        if (_gotIt) exitWith {};
-        private _cc = _x;
-        private _contents = _cstore getOrDefault [_cc, []];
-        private _hit = _contents findIf { (_x param [0, ""]) isEqualTo _blood };
-        if (_hit >= 0) then {
-            _contents deleteAt _hit;
-            _cstore set [_cc, _contents];
-            [ACE_player, "store", _cstore, true] call ACME_fnc_coolerStateCommit;
-            _gotIt = true;
-        };
-    } forEach (keys _cstore);
-    // 2. a cooler box set down within reach, which is real cargo.
-    if (!_gotIt) then {
-        {
-            if (_gotIt) exitWith {};
-            private _bx = _x;
-            private _cargo = itemCargo _bx;
-            private _i = _cargo find _blood;
-            if (_i >= 0) then {
-                _cargo deleteAt _i;
-                clearItemCargoGlobal _bx;
-                { _bx addItemCargoGlobal [_x, 1]; } forEach _cargo;
-                _gotIt = true;
-            };
-        } forEach (nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]);
-    };
-    if (_gotIt) then {
-        missionNamespace setVariable ["ACME_coolerAutoStoreSuppressUntil", diag_tickTime + 5];
-        missionNamespace setVariable ["ACME_coolerAutoStoreBusy", true];
-        ACE_player addItem _blood;
-        // it is consumed into the set in this same action, so ignore the kit space. if additem did not take, because the
-        // kit is full by ACM's slot accounting, force it into the cargo of a worn container, so it always lands and is
-        // never lost.
-        if (([ACE_player, _blood] call ace_common_fnc_getCountOfItem) < 1) then {
-            private _cont = objNull;
-            { if (!isNull _x) exitWith { _cont = _x; }; } forEach [backpackContainer ACE_player, vestContainer ACE_player, uniformContainer ACE_player];
-            if (!isNull _cont) then { _cont addItemCargoGlobal [_blood, 1]; };
-        };
-        missionNamespace setVariable ["ACME_coolerAutoStoreBusy", false];
-        uiNamespace setVariable ["ACME_coolerRowSig", "__force__"];
-        if (!isNull (uiNamespace getVariable ["ACME_CLR_DLG", displayNull])) then { call ACME_fnc_coolerRefresh; };
-    };
+// The canonical carrier/box claim owns this debit. Compatibility mirrors are
+// read-only projections and can never fund a Y build.
+private _bloodFromCooler = _coolerResume isNotEqualTo [] || {((_bloodData splitString "|") param [2, ""]) == "COOLER"};
+if (_bloodUsedId isNotEqualTo "") then {_bloodFromCooler=false;};
+if (_bloodFromCooler && {_coolerResume isEqualTo []}) exitWith {
+    private _serial=(missionNamespace getVariable ["ACME_yCoolerDrawSerial",0])+1;
+    missionNamespace setVariable ["ACME_yCoolerDrawSerial",_serial];
+    missionNamespace setVariable ["ACME_yCoolerDrawPending",[_serial,_coolerContext]];
+    private _queued=[ACE_player,_blood,[ACME_fnc_coolerYDrawDone,[_serial,_coolerContext]]] call ACME_fnc_coolerDraw;
+    if (!_queued) then {[false,[_serial,_coolerContext]] call ACME_fnc_coolerYDrawDone;};
 };
 if (([ACE_player, _target, _blood] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
     call _fnc_clearPending;

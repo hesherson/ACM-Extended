@@ -679,6 +679,24 @@ class CfgMagazines {
     class ACME_PreparedSyringe_3: ACME_PreparedSyringe { mass = 1.2; };
     class ACME_PreparedSyringe_5: ACME_PreparedSyringe { mass = 1.7; };
     class ACME_PreparedSyringe_10: ACME_PreparedSyringe { mass = 2.6; };
+    // Each physical cooler carries its own nonrecycled inventory-ledger token.
+    class ACME_CoolerCarrier_CSWB1U: ACME_PreparedIVSet {
+        displayName = "Golden Hour CSWB-1U";
+        picture = "\acm_extended\ui\items\goldenhour_cswb1u_ca.paa";
+        descriptionShort = "Blood cooler. Contents and coolant follow this carrier through Gear.";
+        ACME_inventoryKind = "cooler";
+        mass = 20;
+    };
+    class ACME_CoolerCarrier_CSWB2U: ACME_CoolerCarrier_CSWB1U {
+        displayName = "Golden Minute CSWB-2U";
+        picture = "\acm_extended\ui\items\goldenminute_cswb2u_ca.paa";
+        mass = 42;
+    };
+    class ACME_CoolerCarrier_CSWB4U: ACME_CoolerCarrier_CSWB1U {
+        displayName = "Golden Hour CSWB-4U";
+        picture = "\acm_extended\ui\items\goldenhour_cswb4u_ca.paa";
+        mass = 75;
+    };
     class ACM_Paracetamol: CA_Magazine {
         scope = 2;
         author = "Blue";
@@ -2528,6 +2546,29 @@ class CfgFunctions {
             class ivMinigameDone {};
             class coolerLoad {};
             class coolerStateCommit {};
+            class coolerRows {};
+            class coolerIssue {};
+            class coolerMutate {};
+            class coolerBoxBroker {};
+            class coolerBoxRequest {};
+            class coolerBoxReply {};
+            class coolerRecover {};
+            class coolerAdvance {};
+            class coolerBagVolume {};
+            class coolerBoxReconcile {};
+            class bloodExposureBroker {};
+            class bloodExposureReply {};
+            class coolerLoadRequest {};
+            class coolerGiveBag {};
+            class coolerDraw {};
+            class coolerDrawDone {};
+            class coolerYDrawDone {};
+            class coolerFind4U {};
+            class coolerTake4UBroker {};
+            class coolerSnapshot {};
+            class coolerRestore {};
+            class coolerSnapshotValid {};
+            class coolerPersistenceInit {};
             class coolerUnload {};
             class coolerContentsTick {};
             class take4U {};
@@ -3507,6 +3548,7 @@ class RscButton;
 class RscPicture;
 class RscPictureKeepAspect;
 class RscListBox;
+class RscCombo;
 class RscXSliderH;
 class RscEdit;
 
@@ -6706,6 +6748,15 @@ class ACME_CoolerManager_Dialog {
         };
     };
     class Controls {
+        class ACME_CLR_Selector: RscCombo {
+            idc = 87422;
+            x = "safeZoneX + safeZoneW * 0.312";
+            y = "safeZoneY + safeZoneH * 0.205";
+            w = "safeZoneW * 0.376";
+            h = "safeZoneH * 0.028";
+            sizeEx = "safeZoneH * 0.021";
+            onLBSelChanged = "if (!((_this select 0) getVariable ['ACME_filling',false])) then {uiNamespace setVariable ['ACME_CLR_Id',(_this select 0) lbData (_this select 1)]; call ACME_fnc_coolerRefresh;};";
+        };
         // fn_coolerrefresh builds the slot bay grid at runtime into this group, with the count set to the cooler
         // capacity, so the panel always shows exactly as many bays as the cooler holds. 1u gives 1, 2u gives 2 and 4u
         // gives 4.
@@ -7397,7 +7448,7 @@ class CfgVehicles {
                 class ACME_PackUpCooler {
                     displayName = "Pick Up Cooler";
                     distance = 4;
-                    condition = "true";
+                    condition = "!(_target getVariable ['ACME_coolerRetired',false])";
                     statement = "[_target] call ACME_fnc_coolerBoxPackUp";
                 };
             };
@@ -7429,7 +7480,7 @@ class CfgVehicles {
                 class ACME_PackUpCooler {
                     displayName = "Pick Up Cooler";
                     distance = 4;
-                    condition = "true";
+                    condition = "!(_target getVariable ['ACME_coolerRetired',false])";
                     statement = "[_target] call ACME_fnc_coolerBoxPackUp";
                 };
             };
@@ -7461,7 +7512,7 @@ class CfgVehicles {
                 class ACME_PackUpCooler {
                     displayName = "Pick Up Cooler";
                     distance = 4;
-                    condition = "true";
+                    condition = "!(_target getVariable ['ACME_coolerRetired',false])";
                     statement = "[_target] call ACME_fnc_coolerBoxPackUp";
                 };
             };
@@ -7583,7 +7634,7 @@ class CfgVehicles {
                 class ACME_Take4U {
                     displayName = "Take Golden Hour 4U (overload)";
                     icon = "\acm_extended\ui\items\goldenhour_cswb4u_ca.paa";
-                    condition = "(((nearestObjects [_player, ['AllVehicles','ReammoBox_F','WeaponHolderSimulated','GroundWeaponHolder'], 6]) findIf {_x != _player && {'ACME_BloodCooler_CSWB4U' in (itemCargo _x)}}) >= 0)";
+                    condition = "!(([_player] call ACME_fnc_coolerFind4U) isEqualTo [])";
                     statement = "call ACME_fnc_take4U";
                     exceptions[] = {"isNotInside", "isNotSitting"};
                     showDisabled = 0;
@@ -7594,14 +7645,14 @@ class CfgVehicles {
                 class ACME_BloodCooler {
                     displayName = "Blood Cooler";
                     icon = "\acm_extended\ui\items\goldenhour_cswb1u_ca.paa";
-                    condition = "({_x in (items _player)} count ['ACME_BloodCooler_CSWB1U','ACME_BloodCooler_CSWB2U','ACME_BloodCooler_CSWB4U']) > 0";
+                    condition = "count ([_player] call ACME_fnc_coolerRows) > 0";
                     statement = "";
                     exceptions[] = {"isNotInside", "isNotSitting"};
                     showDisabled = 0;
                     class ACME_BloodCooler_Open {
                         displayName = "Open Blood Cooler";
                         icon = "\acm_extended\ui\items\goldenhour_cswb1u_ca.paa";
-                        condition = "({_x in (items _player)} count ['ACME_BloodCooler_CSWB1U','ACME_BloodCooler_CSWB2U','ACME_BloodCooler_CSWB4U']) > 0";
+                        condition = "count ([_player] call ACME_fnc_coolerRows) > 0";
                         statement = "call ACME_fnc_coolerOpenCarried";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 0;
@@ -7611,7 +7662,7 @@ class CfgVehicles {
                     class ACME_BloodCooler_SetDown {
                         displayName = "Set Down as Box";
                         icon = "\acm_extended\ui\items\goldenhour_cswb4u_ca.paa";
-                        condition = "({_x in (items _player)} count ['ACME_BloodCooler_CSWB1U','ACME_BloodCooler_CSWB2U','ACME_BloodCooler_CSWB4U']) > 0";
+                        condition = "count ([_player] call ACME_fnc_coolerRows) > 0";
                         statement = "call ACME_fnc_coolerBoxDeploy";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 0;

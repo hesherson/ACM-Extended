@@ -5,6 +5,20 @@
  * sequencing and CBA registration order are preserved.
  */
 
+["ACME_bloodExposureRequest", {_this call ACME_fnc_bloodExposureBroker;}] call CBA_fnc_addEventHandler;
+["ACME_bloodExposureReply", {_this call ACME_fnc_bloodExposureReply;}] call CBA_fnc_addEventHandler;
+["ACME_coolerTake4U", {_this call ACME_fnc_coolerTake4UBroker;}] call CBA_fnc_addEventHandler;
+["ACME_coolerTake4UDone", {
+    params ["_owner","_request","_ok",["_reason",""],["_terminal",true]];
+    if (isNull _owner || {!local _owner}) exitWith {};
+    private _pending=_owner getVariable ["ACME_coolerTake4UPending",[]];
+    if (count _pending<5 || {(_pending select 4)!=_request}) exitWith {};
+    if (_terminal) then {_owner setVariable ["ACME_coolerTake4UPending",[],true];};
+    if (_ok) then {[_owner,"cooler"] call ACME_fnc_inventoryLedgerMarkIncoming;[_owner] call ACME_fnc_inventoryLedgerReconcile;};
+    if (hasInterface && {_owner isEqualTo ACE_player} && {_reason!=""}) then {[_reason,3] call ace_common_fnc_displayTextStructured;};
+}] call CBA_fnc_addEventHandler;
+call ACME_fnc_coolerPersistenceInit;
+
 // blood fridge.
 // the server tick drives the auto open and close of every fridge, from the viewer pings, and the daily
 // restock.
@@ -125,11 +139,7 @@ if (isServer) then {
 // react the instant the kit of a player changes, on an arsenal close, a pickup or a hand-off. this nudges a
 // no-age server pass, so a new cooler fills and new blood is stamped promptly. it needs remoteexec of ACME
 // functions to be permitted.
-// when a wholesale loadout is applied, an arsenal load or a setUnitLoadout on the same unit rather than a
-// single item pickup, a cooler in that loadout is a fresh unit. so this clears the per-player coolant clock and
-// virtual store and lets the contents tick re-stock it with full coolant. respawn already makes a fresh unit
-// with no clock, so that path is fine on its own. it tells a full load from looting by counting how many
-// top-level loadout slots change at once. a single pickup touches one and a full load touches several.
+// Physical cooler tokens, rather than loadout-shape heuristics, own contents and clocks.
 ["loadout", {
     // Loadout can fire several times during one arsenal/loadout transaction. Coalesce the client->server cold-chain
     // nudge before it enters the network; the server already performs its own second-stage coalescing.
@@ -139,20 +149,9 @@ if (isServer) then {
         uiNamespace setVariable ["ACME_ccNudgeSentAt", _nudgeNow];
         remoteExecCall ["ACME_fnc_bloodColdChainNudge", 2];
     };
-    [] call ACME_fnc_coolerAutoStore;
+    [{call ACME_fnc_coolerContentsTick;call ACME_fnc_coolerAutoStore;},[]] call CBA_fnc_execNextFrame;
     private _p = ACE_player;
     if (!isNull _p) then {
-        private _new = getUnitLoadout _p;
-        private _old = _p getVariable ["ACME_lastLoadoutSig", []];
-        _p setVariable ["ACME_lastLoadoutSig", _new];
-        if (_old isNotEqualTo []) then {
-            private _diffs = 0;
-            { if !((_new param [_x, []]) isEqualTo (_old param [_x, []])) then { _diffs = _diffs + 1; }; } forEach [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            if (_diffs >= 3) then {
-                [_p, "coolant", createHashMap, true] call ACME_fnc_coolerStateCommit;
-                [_p, "store", createHashMap, true] call ACME_fnc_coolerStateCommit;
-            };
-        };
         // ventilator boot re-arm. if the ventilator was reloaded, transferred or moved, and any loadout change is
         // signal enough that the device left and re-entered the kit, this re-arms the startup sequence so the next open
         // plays boot again. a preset self-open would otherwise skip boot, and this is what makes it replay.

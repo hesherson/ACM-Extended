@@ -1,7 +1,7 @@
 /* Server serializes issue/claim/settlement. Tokens never recycle, including consumed or retired kits. */
 if (!isServer) exitWith {};
 params ["_mode","_owner","_kind","_sid","_payload","_request",["_purpose",[]]];
-if (isNull _owner || {!(_kind in ["prepared","syringe"])} || {_sid == ""}) exitWith {};
+if (isNull _owner || {!(_kind in ["prepared","syringe","cooler"])} || {_sid == ""}) exitWith {};
 private _index = missionNamespace getVariable ["ACME_inventoryLedgerIndex",createHashMap];
 private _key = _kind + ":" + _sid;
 private _token = _index getOrDefault [_key,0];

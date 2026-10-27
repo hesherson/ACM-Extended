@@ -1039,24 +1039,15 @@ if (!isNull _ctrlRightList
     // Carried/nearby cooler contents are not a frame-time signal. nearestObjects plus inventory scans were being
     // repeated by the UI refresher; cache that discovery cadence independently from button/list repaint cadence.
     _display setVariable ["ACME_txCoolerNextScan", diag_tickTime + 0.75];
-    private _store = if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {ACE_player getVariable ["ACME_coolerStore", createHashMap]} else {createHashMap};
-    // only blood inside a cooler the medic is carrying is usable here. a cooler that has been dropped or handed off
-    // keeps its blood in the store, preserved, and must not appear as spikeable until it is carried again.
-    private _heldNow = if (_selectingSalineInventoryB274 || {_selectingPiggyback}) then {[]} else {
-        ((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player)) select { (_x find "ACME_BloodCooler_") == 0 }
-    };
     private _want = createHashMap;
+    private _rows=if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {[ACE_player] call ACME_fnc_coolerRows} else {[]};
     {
-        if (_x in _heldNow) then {
-            private _contents = _store get _x;
-            if (_contents isEqualType []) then {
-                {
-                    private _bc = _x param [0, ""];
-                    if (_bc find "ACM_BloodBag_" == 0) then { _want set [_bc, (_want getOrDefault [_bc, 0]) + 1]; };
-                } forEach _contents;
-            };
-        };
-    } forEach (keys _store);
+        private _state=[_x select 1] call ACME_fnc_coolerAdvance;
+        {
+            _x params ["_bc","_warm"];
+            if (_bc find "ACM_BloodBag_"==0 && {!(missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]) || {_warm<(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])}}) then {_want set [_bc,(_want getOrDefault [_bc,0])+1];};
+        } forEach (_state select 2);
+    } forEach _rows;
 
     // also count blood inside any cooler box within reach, about 6 m. a box you are dragging rides just in front of
     // you, one set down by a casualty is a step away, and one in your vehicle is a couple of meters off. so a
@@ -1064,10 +1055,11 @@ if (!isNull _ctrlRightList
     // fn_transfusionspikeoradd.
     {
         private _bx = _x;
+        if (_bx getVariable ["ACME_coolerRetired",false]) then {continue;};
         {
             if ((_x find "ACM_BloodBag_") == 0) then { _want set [_x, (_want getOrDefault [_x, 0]) + 1]; };
         } forEach (itemCargo _bx);
-    } forEach (if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]} else {[]});
+    } forEach (if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 4.5]} else {[]});
 
     // a signature of class and count, so we rebuild on a cooler-content change. the row-count check catches an ACM
     // list rebuild that wiped our rows. fn_transfusionspikeoradd sets the sig to "__force__" after a pull to force

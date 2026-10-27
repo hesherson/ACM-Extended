@@ -9,20 +9,21 @@
 // by kind: "blood", "saline" or "premixed". it is later hung from the prepared list through hang set, in
 // fn_hangpreparedset, which enforces the one-line-per-access-site rule.
 // y blood sets are built on the separate spike y tubing button, in fn_transfusionytubing, as kind "yset".
+params [["_coolerResume",[]]];
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 
 // prepared iv sets mode. the button is relabeled "Hang Set" and the list shows the stored sets, in overlay
 // 86145. route the press to the set-hang path instead of the spike and stage logic below.
-if (uiNamespace getVariable ["ACME_preparedListMode", false]) exitWith { call ACME_fnc_hangPreparedSet; };
+if (_coolerResume isEqualTo [] && {uiNamespace getVariable ["ACME_preparedListMode", false]}) exitWith { call ACME_fnc_hangPreparedSet; };
 
 private _right = _display displayCtrl 86005;  // idc_transfusionmenu_rightlistpanel, the available bags.
 private _idx = lbCurSel _right;
-if (_idx < 0) exitWith {
+if (_idx < 0 && {_coolerResume isEqualTo []}) exitWith {
     ["Select a bag first.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
-private _class = ((_right lbData _idx) splitString "|") param [0, ""];
+private _class = if (_coolerResume isEqualTo []) then {((_right lbData _idx) splitString "|") param [0, ""]} else {_coolerResume select 0};
 if (_class isEqualTo "") exitWith {};
 
 private _piggybackIntent = missionNamespace getVariable ["ACME_piggybackPending", []];
@@ -49,12 +50,12 @@ if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;}
 // this function does, so the pick carries over.
 if ((_class find "FieldBloodTransfusionKit") >= 0) exitWith { call ACME_fnc_fbtkHang; };
 
-private _action = ((_right lbData _idx) splitString "|") param [1, ""];
+private _action = if (_coolerResume isEqualTo []) then {((_right lbData _idx) splitString "|") param [1, ""]} else {_coolerResume select 1};
 // is it a cooler-sourced row? the available-list rows we add for cooler blood carry a trailing |COOLER
 // marker.
-private _fromCooler = ((((_right lbData _idx) splitString "|") param [2, ""]) == "COOLER");
+private _fromCooler = !(_coolerResume isEqualTo []) || {((((_right lbData _idx) splitString "|") param [2, ""]) == "COOLER")};
 // is it a used-bag row? the rows we add for pulled partial bags carry a |USED marker and the store id.
-private _fromUsed = ((((_right lbData _idx) splitString "|") param [2, ""]) == "USED");
+private _fromUsed = _coolerResume isEqualTo [] && {((((_right lbData _idx) splitString "|") param [2, ""]) == "USED")};
 
 // re-hang a used bag. rebuild the pulled bag on the selected access with its exact remaining volume. the hung-bag
 // entry is pushed straight onto IV_Bags, because the flow is derived from IV_Bags, so it hangs and runs from
@@ -96,45 +97,10 @@ if (_isBlood && {(missionNamespace getVariable ["ACME_yPending", ""]) == _class}
     ["This blood is armed for a Y set. Finish or clear the Y build first.", 3.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
-// a cooler draw to hand. a |COOLER selection has no loose bag, so draw the unit out now, from a carried cooler or
-// a box within reach, and it becomes a normal loose unit for either the y refill or the spike and stage below.
-// _fromCooler tells us it is cold. it only fires when nothing of this class is already loose, because a loose bag
-// is always used first.
-if (_isBlood && _fromCooler && {([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1}) then {
-    private _cstore = ACE_player getVariable ["ACME_coolerStore", createHashMap];
-    private _heldNow = ((uniformItems ACE_player) + (vestItems ACE_player) + (backpackItems ACE_player)) select { (_x find "ACME_BloodCooler_") == 0 };
-    private _gotIt = false;
-    {
-        if (_gotIt) exitWith {};
-        private _cc = _x;
-        if (_cc in _heldNow) then {
-            private _contents = _cstore getOrDefault [_cc, []];
-            private _hit = _contents findIf { (_x param [0, ""]) isEqualTo _class };
-            if (_hit >= 0) then { _contents deleteAt _hit; _cstore set [_cc, _contents]; [ACE_player, "store", _cstore, true] call ACME_fnc_coolerStateCommit; _gotIt = true; };
-        };
-    } forEach (keys _cstore);
-    if (!_gotIt) then {
-        {
-            if (_gotIt) exitWith {};
-            private _bx = _x;
-            private _cargo = itemCargo _bx;
-            private _i = _cargo find _class;
-            if (_i >= 0) then { _cargo deleteAt _i; clearItemCargoGlobal _bx; { _bx addItemCargoGlobal [_x, 1]; } forEach _cargo; _gotIt = true; };
-        } forEach (nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 6]);
-    };
-    if (_gotIt) then {
-        missionNamespace setVariable ["ACME_coolerAutoStoreSuppressUntil", diag_tickTime + 5];
-        missionNamespace setVariable ["ACME_coolerAutoStoreBusy", true];
-        ACE_player addItem _class;
-        if (([ACE_player, _class] call ace_common_fnc_getCountOfItem) < 1) then {
-            private _cont = objNull;
-            { if (!isNull _x) exitWith { _cont = _x; }; } forEach [backpackContainer ACE_player, vestContainer ACE_player, uniformContainer ACE_player];
-            if (!isNull _cont) then { _cont addItemCargoGlobal [_class, 1]; };
-        };
-        missionNamespace setVariable ["ACME_coolerAutoStoreBusy", false];
-        uiNamespace setVariable ["ACME_coolerRowSig", "__force__"];
-        if (!isNull (uiNamespace getVariable ["ACME_CLR_DLG", displayNull])) then { call ACME_fnc_coolerRefresh; };
-    };
+// Draw once, then resume only if the original patient/access selection is live.
+if (_isBlood && {_fromCooler} && {_coolerResume isEqualTo []}) exitWith {
+    private _context=[_target,missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1],if (isNull _target) then {-1} else {[_target] call ACME_fnc_clinicalEpoch},missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0]];
+    [ACE_player,_class,[ACME_fnc_coolerDrawDone,[_class,_action,_context]]] call ACME_fnc_coolerDraw;
 };
 
 // the in-place Y refill, "Add Bag". The provider UI does only advisory checks; the casualty owner reserves the

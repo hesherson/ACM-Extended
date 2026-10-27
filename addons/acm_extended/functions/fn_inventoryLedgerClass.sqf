@@ -1,6 +1,13 @@
 /* Native weight matches the bag(s) and tubing actually committed. Unknown
  * third-party weights retain the legacy carrier instead of inventing a mass. */
 params ["_kind",["_payload",[]]];
+if (_kind == "cooler") exitWith {
+    private _base = (_payload param [1,[]]) param [0,""];
+    private _suffix = _base select [17];
+    private _class = "ACME_CoolerCarrier_" + _suffix;
+    if (_base in ["ACME_BloodCooler_CSWB1U","ACME_BloodCooler_CSWB2U","ACME_BloodCooler_CSWB4U"]
+        && {isClass (configFile >> "CfgMagazines" >> _class)}) then {_class} else {""}
+};
 if (_kind == "syringe") exitWith {
     private _row = _payload param [1,[]];
     private _size = _row param [1,0];

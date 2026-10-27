@@ -1,7 +1,7 @@
 /* Source-funded payloads only. Losing native custody never creates a replacement token. */
 if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_inventoryLedgerCommit;}; _ok};
 params ["_owner", "_kind", "_rows"];
-if (isNull _owner || {!local _owner} || {!(_kind in ["prepared","syringe"])}) exitWith {false};
+if (isNull _owner || {!local _owner} || {!(_kind in ["prepared","syringe","cooler"])}) exitWith {false};
 private _tracked = missionNamespace getVariable ["ACME_inventoryTracked",[]]; _tracked pushBackUnique _owner; missionNamespace setVariable ["ACME_inventoryTracked",_tracked];
 private _cache = _owner getVariable ["ACME_inventoryPayloadCache",createHashMap];
 private _pending = _owner getVariable ["ACME_inventoryPending",createHashMap];
