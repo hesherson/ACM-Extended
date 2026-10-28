@@ -112,7 +112,7 @@ UI_BOUNDARY = r'''
  private _createControl={_this select 1};private _registerEvent={_events pushBack _this;};
  uiNamespace setVariable["ACME_infusion_LayoutDisplay",objNull];
  {uiNamespace setVariable[_x,[.125,.228,.212,.21]];}forEach["ACME_infusion_BaseLeftListPos","ACME_infusion_BaseRightListPos","ACME_infusion_BaseMovePos","ACME_infusion_BaseRemovePos","ACME_infusion_BaseStopPos"];
- 
+
  ACME_fnc_updateTransfusionAccessHotspots={};ACME_fnc_getSelectedActiveBagContext={[]};ACME_fnc_transfusionAccessValid={false};ACME_fnc_bagInfusionEntry={[]};
  ACME_fnc_isYLineAccess={false};ACME_fnc_pressureInfuserCan={false};ACME_fnc_transfusionServicePaint={};
  ACME_fnc_transfusionRoundedFrame={};ACME_fnc_knownBloodType={"???"};ACME_fnc_lineWarmerActionState={[false,false,0,false,false]};
