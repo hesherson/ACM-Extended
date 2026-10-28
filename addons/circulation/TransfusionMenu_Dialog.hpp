@@ -4,6 +4,7 @@ class RscControlsGroupNoScrollbars;
 class GVAR(TransfusionMenu_Dialog) {
     idd = IDC_TRANSFUSIONMENU;
     movingEnable = 0;
+    enableSimulation = 1;
     onLoad = "";
     onUnload = QUOTE(uiNamespace setVariable [ARR_2(QQGVAR(TransfusionMenu_DLG),nil)]);
     onKeyDown = QUOTE([ARR_3('onKeyDown',_this,QQGVAR(display))] call FUNC(TransfusionMenu_onKeyDown));

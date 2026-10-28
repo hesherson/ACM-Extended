@@ -38,6 +38,16 @@ Adjust Infusion also used a medication entry's old physical-array index after a 
 
 Native acceptance for this follow-up must click Body Map, Narc Box, Pressure Infuse, Adjust Infusion and the remaining treatment buttons, confirm the normal feedback and one action per click, then repeat after bag deletion/reordering and a clamp close. A silent pointer-routing failure cannot be ruled out by the event-contract simulation.
 
+## Y-set build follow-up
+
+The reported build sequence is blood selection, saline pairing, Build Y Tubing, a visible build period, then one entry in Prepared IV Sets. Cancellation must restore the ordinary per-bag actions.
+
+The delayed builder could retire its timer on a context mismatch without clearing the captured pairing. That left Y mode armed for subsequent non-blood selections. Completion and cancellation now retire only their own recipe; an older callback cannot clear a successor. The completion callback is queued before presentation refreshes, so a failed refresh cannot prevent cleanup from being scheduled.
+
+The menu's build indication now follows its owned pending request until the actual callback resolves. The previous wall-clock deadline could expire while CBA's game-time callback was still pending. A cooler withdrawal has a separate disabled status before assembly starts. The final layout uses the controller's current Y visibility decision instead of recycling an earlier control's visible state. The transfusion dialog explicitly keeps simulation enabled so local game-time work can run while it is open.
+
+Regression coverage must execute the complete controller/layout, native picker and prepared-inventory path together, including delayed allocation, clock divergence, cancellation and a later non-blood selection. Native cargo/config/control primitives remain engine boundaries; this is not certification of actual Arma pointer routing or rendering.
+
 ## Recorded validation
 
 An initial frozen combined B285–B288 selection passed **951 cases across 36 modules**, with no failures, errors or skips. It included 483 B288 cases and retained networking, AI/performance, cooler and build/ownership checks. Further review added fridge handover, unknown-donor preservation, retired UI and owner-log regressions. The complete root-3 allocation passed **254 cases** after its older medication assertions were updated to require refusal before any medicated Pull mutation; no test cases were removed.

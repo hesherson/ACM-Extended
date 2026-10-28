@@ -19,7 +19,12 @@ BASELINE = "18d16a5732b8d878d6e6c2f9dfdc3381e6235050"
 
 
 def y_gate(source):
-    source = source[source.index('private _ctrlY ='):source.index('[_display,_flTarget')]
+    # The current gate reads the production lifecycle-owned request snapshot.
+    # Execute its real initializer too; the historical baseline predates it.
+    intent = ''
+    if 'private _yOwnsIntent =' in source:
+        intent = source[source.index('private _yOwnsIntent ='):source.index('private _selCls0 =')]
+    source = intent + source[source.index('private _ctrlY ='):source.index('[_display,_flTarget')]
     source = source.replace('_display displayCtrl 86142', 'profileNamespace')
     source = re.sub(r'_ctrlY ctrlSetText ([^;]+);', r'_buttonText=\1;', source)
     return primitives(adapt(source))

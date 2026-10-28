@@ -135,14 +135,15 @@ def test_mixed_used_and_native_legs_preserve_exact_partial_and_consume_only_real
 
 def test_late_old_build_callback_cannot_clear_or_commit_a_new_build():
     execute(setup() + r'''
-    call _presses;_nowTime=_nowTime+3;
+    call _presses;
+    private _pending=missionNamespace getVariable "ACME_yBuildPending";
+    _nowTime=_nowTime+3;
     [] call ACME_fnc_transfusionYTubing;
-    [count _waits==2,"new intent was not scheduled after elapsed beat"] call _check;
-    private _new=missionNamespace getVariable "ACME_yBuildPending";
+    [count _waits==1 && {(missionNamespace getVariable "ACME_yBuildPending") isEqualTo _pending},"wall-time expiry replaced a pending build"] call _check;
     call _finish;
-    [(missionNamespace getVariable "ACME_yBuildPending") isEqualTo _new && {count _debits==0},"old callback retired or funded newer intent"] call _check;
-    (_waits select 1 select 1) call (_waits select 1 select 0);
-    [count (_medic getVariable ["ACME_preparedIVSets",[]])==1 && {count _debits==1},"new current build not funded exactly once"] call _check;
+    [count (_medic getVariable ["ACME_preparedIVSets",[]])==1 && {count _debits==1},"original current build not funded exactly once"] call _check;
+    call _finish;
+    [count (_medic getVariable ["ACME_preparedIVSets",[]])==1 && {count _debits==1},"late replay funded another build"] call _check;
     ''')
 
 

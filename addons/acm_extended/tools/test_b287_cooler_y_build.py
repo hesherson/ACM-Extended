@@ -101,6 +101,9 @@ def test_terminal_failed_draw_unblocks_retry_without_creating_inventory():
         private _completion=(_draws select 0) select 2;
         [false,_completion select 1] call (_completion select 0);
         [(missionNamespace getVariable "ACME_yCoolerDrawPending") isEqualTo [],"failure left pending UI request"] call _check;
+        [(missionNamespace getVariable ["ACME_yPending",""])=="" && {(missionNamespace getVariable ["ACME_yPendingSaline",""])==""},"terminal rejection left the old recipe armed"] call _check;
+        _selection=0;[] call ACME_fnc_transfusionYTubing;
+        _selection=1;[] call ACME_fnc_transfusionYTubing;
         [] call ACME_fnc_transfusionYTubing;
         [count _draws==2 && {count _waits==0} && {count _debits==0},"terminal rejection did not permit a safe fresh request"] call _check;
     ''')

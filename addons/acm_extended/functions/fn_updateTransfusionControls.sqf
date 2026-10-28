@@ -337,12 +337,28 @@ if (!isNull _ctrlRightList) then { [_ctrlRightList,"show",(!_preparedMode)] call
 // and spike becomes the full-width "Hang Set". the labels and the enable state are set in the relabel section
 // below.
 private _selRow0 = if (!isNull _ctrlRightList) then { lbCurSel _ctrlRightList } else { -1 };
+// The lifecycle owns these requests until their completion/cancellation callback.
+// A wall-clock deadline can elapse while CBA's mission-clock callback is paused.
+private _yOwnsIntent = {
+    params ["_pending"];
+    if !(_pending isEqualType [] && {count _pending == 2}
+        && {(_pending select 0) isEqualType 0} && {(_pending select 0) >= 0}) exitWith {false};
+    private _context = _pending select 1;
+    _context isEqualType [] && {count _context == 15}
+        && {(_context select 0) isEqualTo ACE_player}
+        && {(_context select 6) isEqualTo (ACE_player getVariable ["ACME_equipmentKitEpoch",0])}
+        && {(_context select 7) isEqualTo (ACE_player getVariable ["ACME_providerLocalityEpoch",0])}
+};
+private _yBuildingUi = [missionNamespace getVariable ["ACME_yBuildPending",[]]] call _yOwnsIntent;
+private _yDrawingUi = [missionNamespace getVariable ["ACME_yCoolerDrawPending",[]]] call _yOwnsIntent;
+private _yBusyUi = _yBuildingUi || {_yDrawingUi};
 private _selCls0 = if (_selRow0 >= 0) then { ((_ctrlRightList lbData _selRow0) splitString "|") param [0, ""] } else { "" };
 // the classname of the FBTK contains "blood", from fieldbloodtransfusionkit, and it is not a blood product for
 // y-set building. it is a single collection bag handled natively. exclude it, so the "Spike Y tubing" button
 // never shows for it.
 private _selIsBlood0 = ((_selCls0 find "FieldBloodTransfusionKit") < 0) && {((toLowerANSI _selCls0) find "blood") >= 0};
-private _showY0 = (!_preparedMode) && {_selIsBlood0 || {(missionNamespace getVariable ["ACME_yPending", ""]) != ""}};
+private _showY0 = (!_preparedMode) && {_selIsBlood0 || {(missionNamespace getVariable ["ACME_yPending", ""]) != ""} || {_yBusyUi}};
+_display setVariable ["ACME_txShowY",_showY0];
 private _ctrlSpikeBtn = _display displayCtrl 86141;
 private _ctrlYBtn = _display displayCtrl 86142;
 if (!isNull _ctrlSpikeBtn) then {
@@ -960,25 +976,30 @@ private _yTubingCount = if (_selIsBlood || {_yPending != ""}) then {
     [ACE_player,_targetPatient,"ACME_YTubing"] call ACME_fnc_treatmentSupplyCount
 } else {0};
 if (!isNull _ctrlY) then {
-    if (diag_tickTime < (missionNamespace getVariable ["ACME_yBuildingActive", -1])) then {
+    if (_yBuildingUi) then {
         _ctrlY ctrlSetText "Building...";
         [_ctrlY,"enable",false] call ACME_fnc_transfusionUiSet;
     } else {
-    if (_yPending != "" && {_yPendingSaline != ""}) then {
-        _ctrlY ctrlSetText "Build Y Tubing";
-        [_ctrlY,"enable",true] call ACME_fnc_transfusionUiSet;
-    } else {
-        if (_yPending != "") then {
-            _ctrlY ctrlSetText "Select Flush Saline";
-            [_ctrlY,"enable",_selValidSaline] call ACME_fnc_transfusionUiSet;
+        if (_yDrawingUi) then {
+            _ctrlY ctrlSetText "Withdrawing blood...";
+            [_ctrlY,"enable",false] call ACME_fnc_transfusionUiSet;
         } else {
-            _ctrlY ctrlSetText "Spike Y tubing";
-            // Staging a new set is provider inventory work, independent of the selected
-            // patient access and any already-attached Y line or legacy class spike counter.
-            [_ctrlY,"enable",(_selIsBlood && {_yTubingCount > 0}
-                && {count _spikingActive == 0})] call ACME_fnc_transfusionUiSet;
+            if (_yPending != "" && {_yPendingSaline != ""}) then {
+                _ctrlY ctrlSetText "Build Y Tubing";
+                [_ctrlY,"enable",true] call ACME_fnc_transfusionUiSet;
+            } else {
+                if (_yPending != "") then {
+                    _ctrlY ctrlSetText "Select Flush Saline";
+                    [_ctrlY,"enable",_selValidSaline] call ACME_fnc_transfusionUiSet;
+                } else {
+                    _ctrlY ctrlSetText "Spike Y tubing";
+                    // Staging a new set is provider inventory work, independent of the selected
+                    // patient access and any already-attached Y line or legacy class spike counter.
+                    [_ctrlY,"enable",(_selIsBlood && {_yTubingCount > 0}
+                        && {count _spikingActive == 0})] call ACME_fnc_transfusionUiSet;
+                };
+            };
         };
-    };
     };
 };
 
@@ -1210,12 +1231,12 @@ if (_initialLayoutControls isNotEqualTo []) then {
 // B280 native-input observation: only relevant changed states, at most 16 lines
 // per opened display. Read after final layout so shown/enabled describe the face
 // Arma receives, without installing another input handler or treatment action.
-if (!isNull _ctrlY && {_selIsBlood || {_yPending != ""}}) then {
+if (!isNull _ctrlY && {_selIsBlood || {_yPending != ""} || {_yBusyUi}}) then {
     private _inputState = [
         missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0],
         _preparedMode,if (isNull _ctrlRightList) then {-1} else {lbCurSel _ctrlRightList},
         _selClass,_selAction,_selIsBlood,_yPending,_yPendingSaline,_yTubingCount,
-        count _spikingActive > 0,diag_tickTime < (missionNamespace getVariable ["ACME_yBuildingActive",-1]),
+        count _spikingActive > 0,_yBuildingUi,
         ctrlShown _ctrlY,ctrlEnabled _ctrlY,ctrlText _ctrlY
     ];
     private _traceCount = _display getVariable ["ACME_txInputTraceCount",0];

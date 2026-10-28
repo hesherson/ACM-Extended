@@ -60,10 +60,12 @@ def test_spike_bag_repaints_active_state_before_its_timer():
 def test_y_tubing_repaints_and_announces_before_its_timer():
     s = read("addons/acm_extended/functions/fn_transfusionYTubing.sqf")
     active = s.index('missionNamespace setVariable ["ACME_yBuildingActive", diag_tickTime + 2.5];')
-    repaint = s.index("call ACME_fnc_updateTransfusionControls;", active)
+    wait = s.index("2.5] call CBA_fnc_waitAndExecute;", active)
+    repaint = s.index("call ACME_fnc_updateTransfusionControls;", wait)
     message = s.index('"Building Y set..."', repaint)
-    wait = s.index("2.5] call CBA_fnc_waitAndExecute;", message)
-    assert active < repaint < message < wait
+    # Queueing is synchronous; both the repaint and notice still happen in this
+    # click, while a renderer failure cannot strand an unregistered build job.
+    assert active < wait < repaint < message
 
 
 def test_other_deferred_gui_flows_change_ui_or_start_native_action_first():

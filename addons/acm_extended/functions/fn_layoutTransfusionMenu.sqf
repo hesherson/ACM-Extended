@@ -217,8 +217,9 @@ private _place = {
     [86126,0.125,0.895,0.750,0.024]
 ];
 private _yButton = _display displayCtrl 86142;
-private _showY = !isNull _yButton && {ctrlShown _yButton};
 private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode", false];
+private _showY = !_preparedMode && {_display getVariable ["ACME_txShowY",false]};
+[_yButton,"show",_showY] call ACME_fnc_transfusionUiSet;
 {
     _x params ["_tab","_selected"];
     // The rounded frame owns the fill; an opaque native rectangle covers its corners.
