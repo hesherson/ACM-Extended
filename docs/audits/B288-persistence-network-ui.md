@@ -48,6 +48,16 @@ The menu's build indication now follows its owned pending request until the actu
 
 Regression coverage must execute the complete controller/layout, native picker and prepared-inventory path together, including delayed allocation, clock divergence, cancellation and a later non-blood selection. Native cargo/config/control primitives remain engine boundaries; this is not certification of actual Arma pointer routing or rendering.
 
+## Roller-clamp input follow-up
+
+The clamp UI accepted input on a dead patient, but the patient-owner handler rejected it. Releasing the wheel or scrolling therefore redrew the unchanged clamp position. The owner now permits retained-equipment adjustments after death while still checking the clinical generation and a unique, existing physical bag UID. This does not start clinical processing on a dead patient.
+
+A remote patient's older replicated state could also overwrite the latest local input before the owner processed it; closing could then resubmit that reset value. The dialog now retains its latest input until a matching owner receipt arrives, scoped to the originating display/provider, patient, clinical generation and physical bag. An explicit rejection retires only its matching request; invalid context and a new dialog discard the local edit. Repeated scrolls, drop-set changes and quick clamp toggles use the pending input without writing clinical state on the observing client. The rate strip distinguishes pending input with “Applying...”.
+
+The medication rows carry an optional numeric receipt ledger in field 28, with the latest session/sequence for each client owner. Owner validation rejects older or duplicate commands, including interleaved providers and copied state after locality changes. Same-value commands publish their receipt immediately. New additives retain the physical bag's receipt ledger, persistence validates it, and new UI sessions start above any restored ordinal. Observer redraws require nondecreasing receipt history before accepting a replica, rather than equating an old matching position with acceptance.
+
+Regression coverage executes the registered mouse-release callback, scroll input, selection, owner dispatch, clamp mutation, publication and redraw together. Native acceptance must repeat release, scrolling, drop-set cycling and opening/closing on both living and dead patients, locally and with a remote owner; check that the retained setting survives reopening.
+
 ## Recorded validation
 
 An initial frozen combined B285–B288 selection passed **951 cases across 36 modules**, with no failures, errors or skips. It included 483 B288 cases and retained networking, AI/performance, cooler and build/ownership checks. Further review added fridge handover, unknown-donor preservation, retired UI and owner-log regressions. The complete root-3 allocation passed **254 cases** after its older medication assertions were updated to require refusal before any medicated Pull mutation; no test cases were removed.

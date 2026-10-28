@@ -24,6 +24,35 @@ if !(_found isEqualTo []) then {
 // effect, and calcium gluconate becomes CalciumChloride_IV, for the calcium count. see
 // ACME_infusion_deliveryClassOverride.
 private _existing = (_patient getVariable ["ACME_infusion_BagMedications", []]) select {(_x param [23, ""]) == _bagUid};
+// A later medication inherits the valve's per-client request history. Merge
+// every component so older mixed/legacy rows cannot erase a newer receipt.
+private _clampReceipts = [];
+private _validClampReceipts = true;
+{
+    if (count _x > 28 && {isNil {_x select 28}}) exitWith {_validClampReceipts = false;};
+    private _receipts = _x param [28, []];
+    if !(_receipts isEqualType []) exitWith {_validClampReceipts = false;};
+    private _clients = [];
+    {
+        if !(_x isEqualType [] && {count _x == 3}
+            && {(_x findIf {!(_x isEqualType 0) || {!finite _x} || {_x < 0} || {_x != floor _x}}) < 0}
+            && {(_x select 1) > 0} && {(_x select 2) > 0}) exitWith {_validClampReceipts = false;};
+        private _client = _x select 0;
+        if (_client in _clients) exitWith {_validClampReceipts = false;};
+        _clients pushBack _client;
+        private _i = _clampReceipts findIf {(_x select 0) == _client};
+        if (_i < 0) then {_clampReceipts pushBack +_x;} else {
+            private _old = _clampReceipts select _i;
+            if ((_x select 1) > (_old select 1)
+                || {(_x select 1) == (_old select 1) && {(_x select 2) > (_old select 2)}}) then {_clampReceipts set [_i, +_x];};
+        };
+    } forEach _receipts;
+    if (!_validClampReceipts) exitWith {};
+} forEach _existing;
+if (!_validClampReceipts) exitWith {""};
+private _receiptClients = _clampReceipts apply {_x select 0};
+_receiptClients sort true;
+_clampReceipts = _receiptClients apply {private _client = _x; +(_clampReceipts select (_clampReceipts findIf {(_x select 0) == _client}))};
 if (_solutionMl < 0 || {!finite _solutionMl}) exitWith {""};
 if (_doseMg <= 0 || {!finite _doseMg} || {_remainingVolume <= 0}) exitWith {""};
 private _actualContext = [_patient, _bodyPart, _bagIndex, _foundBag param [0, _type], _foundBag param [2, _accessType], _bagAccessSite, _bagIV, _bloodType, _volume, _freshBloodID, _remainingVolume];
@@ -69,6 +98,8 @@ if !(_existing isEqualTo []) then {
         _x set [10, _newVolume];
         _x set [26, (_x select 14) / _newVolume];
         _x set [20, _dropSet]; _x set [21, _dropsPerMinute]; _x set [22, _clampPosition];
+        if (count _x <= 27 || {isNil {_x select 27}}) then {_x set [27, 1];};
+        _x set [28, _clampReceipts apply {+_x}];
     };
 } forEach _entries;
 private _same = _entries findIf {(_x param [23, ""]) == _bagUid && {(_x select 11) == _medication}};
@@ -85,7 +116,7 @@ if (_same >= 0) then {
         _bloodType, _original, _freshBloodID, _original, _newVolume, _medication,
         _classIV, _doseMg, _doseMg, 0, CBA_missionTime, 0, CBA_missionTime,
         _durationSeconds, _dropSet, _dropsPerMinute, _clampPosition, _bagUid,
-        0, 0, _doseMg / _newVolume, 1];
+        0, 0, _doseMg / _newVolume, 1, _clampReceipts apply {+_x}];
 };
 if (_solutionMl > 0) then {
     private _map = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];

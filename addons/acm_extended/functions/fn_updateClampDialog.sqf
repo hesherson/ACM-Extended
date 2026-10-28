@@ -17,6 +17,9 @@ private _doseRemaining = -1;
 private _lastVolume = -1;
 private _hasEntry = false;
 private _componentText = [];
+private _edit = uiNamespace getVariable ["ACME_RollerClamp_Edit", []];
+private _keepEdit = false;
+private _applying = false;
 
 private _result = call ACME_fnc_getSelectedInfusionEntryIndexes;
 if !(_result isEqualTo []) then {
@@ -44,6 +47,42 @@ if !(_result isEqualTo []) then {
             };
 
             private _bagId = _entry param [23, ""];
+            if (count _edit == 10 && {(_edit select 0) isEqualTo _display}
+                && {(_edit select 1) isEqualTo ACE_player} && {(_edit select 2) isEqualTo _patient}
+                && {_bagId != "" && {(_edit select 4) == _bagId}}
+                && {(_edit select 3) == ([_patient] call ACME_fnc_clinicalEpoch)}) then {
+                _keepEdit = true;
+                private _stamp = _edit select 5;
+                private _ledger = _entry param [28,[]];
+                private _receiptIndex = _ledger findIf {(_x param [0,-1]) == (_stamp select 0)};
+                private _confirmed = false;
+                if (_receiptIndex >= 0) then {
+                    private _receipt = _ledger select _receiptIndex;
+                    _confirmed = (_receipt select 1) > (_stamp select 1)
+                        || {(_receipt select 1) == (_stamp select 1) && {(_receipt select 2) >= (_stamp select 2)}};
+                };
+                // A replica must retain every receipt already observed. This
+                // also orders interleaved edits from different providers.
+                if (_confirmed) then {
+                    _confirmed = ((_edit select 9) findIf {
+                        private _known = _x;
+                        private _i = _ledger findIf {(_x select 0) == (_known select 0)};
+                        _i < 0 || {private _seen = _ledger select _i;
+                            (_seen select 1) < (_known select 1)
+                            || {(_seen select 1) == (_known select 1) && {(_seen select 2) < (_known select 2)}}}
+                    }) < 0;
+                };
+                if (_confirmed) then {
+                    _edit set [6,_entry param [22,_position]];
+                    _edit set [7,_dropSet]; _edit set [8,true]; _edit set [9,_ledger];
+                    uiNamespace setVariable ["ACME_RollerClamp_Edit",_edit];
+                } else {
+                    _dropSet = _edit select 7;
+                    if (!_dragging) then {_position = _edit select 6;};
+                };
+                _dropsPerMinute = [_position] call ACME_fnc_clampPositionToDrops;
+                _applying = !(_edit select 8);
+            };
             private _same = _entries select {(_x param [23, ""]) == _bagId};
             if (_same isEqualTo []) then {_same = [_entry];};
             _componentText = _same apply {
@@ -56,6 +95,9 @@ if !(_result isEqualTo []) then {
         };
     };
 };
+if (!_keepEdit && {!(_edit isEqualTo [])}) then {
+    uiNamespace setVariable ["ACME_RollerClamp_Edit", []];
+};
 
 private _rateText = if (_hasEntry) then {
     [_doseRemaining, _lastVolume, _dropSet, _dropsPerMinute, _position] call ACME_fnc_formatRate
@@ -64,6 +106,7 @@ private _rateText = if (_hasEntry) then {
     format ["%1 gtt/mL | %2 gtt/min | %3 mL/min | %4%5 open", round _dropSet, round _dropsPerMinute, _mlPerMinute toFixed 1, round (((_position max 0) min 1) * 100), "%"]
 };
 
+if (_applying) then {_rateText = _rateText + " | Applying...";};
 private _flash = uiNamespace getVariable ["ACME_RollerClamp_Flash", ["", -1]];
 _flash params ["_flashText", "_flashUntil"];
 if (_flashUntil > CBA_missionTime && {_flashText != ""}) then {

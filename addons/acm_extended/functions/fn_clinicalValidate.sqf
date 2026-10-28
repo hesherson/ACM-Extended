@@ -29,6 +29,21 @@ private _required = createHashMapFromArray [
     ["ACME_AAJT_axillaleft","BOOL"], ["ACME_AAJT_axillaright","BOOL"]
 ];
 private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _v}};
+private _clampReceiptsValid = {
+    params ["_receipts"];
+    if !(_receipts isEqualType []) exitWith {false};
+    private _clients = [];
+    private _valid = true;
+    {
+        if !(_x isEqualType [] && {count _x == 3}
+            && {(_x findIf {!([_x] call _number) || {_x < 0} || {_x != floor _x}}) < 0}
+            && {(_x select 1) > 0} && {(_x select 2) > 0}) exitWith {_valid = false;};
+        private _client = _x select 0;
+        if (_client in _clients) exitWith {_valid = false;};
+        _clients pushBack _client;
+    } forEach _receipts;
+    _valid
+};
 {
     if !(_x isEqualType [] && {count _x == 2} && {!isNil {_x select 0}} && {!isNil {_x select 1}} && {(_x select 0) isEqualType ""}) exitWith {_reason = "Malformed clinical field row";};
     _x params ["_name", "_encoded"];
@@ -137,18 +152,20 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
             }) >= 0;
         };
         case "ACME_infusion_BagMedications": {
-            _bad = (_v findIf {
-                if !(_x isEqualType [] && {count _x >= 26}) exitWith {true};
+            {
+                if !(_x isEqualType [] && {count _x >= 26}) exitWith {_bad = true;};
                 private _entry = _x;
-                if (([0,1,3,11,12,23] findIf {!((_entry select _x) isEqualType "")}) >= 0) exitWith {true};
-                if !((_entry select 5) isEqualType true) exitWith {true};
+                if (([0,1,3,11,12,23] findIf {!((_entry select _x) isEqualType "")}) >= 0) exitWith {_bad = true;};
+                if !((_entry select 5) isEqualType true) exitWith {_bad = true;};
                 if (([2,4,6,7,8,9,10,13,14,15,16,17,18,19,20,21,22,24,25]
-                    findIf {!([_entry select _x] call _number)}) >= 0) exitWith {true};
-                if (count _entry > 26 && {!([_entry select 26] call _number) || {(_entry select 26) < 0}}) exitWith {true};
-                if (count _entry > 27 && {!([_entry select 27] call _number) || {(_entry select 27) < 0}}) exitWith {true};
-                (_entry select 7) < 0 || {(_entry select 10) <= 0}
-                    || {([13,14,15,24,25] findIf {(_entry select _x) < 0}) >= 0}
-            }) >= 0;
+                    findIf {!([_entry select _x] call _number)}) >= 0) exitWith {_bad = true;};
+                if (count _entry > 26 && {!([_entry select 26] call _number) || {(_entry select 26) < 0}}) exitWith {_bad = true;};
+                if (count _entry > 27 && {!([_entry select 27] call _number) || {(_entry select 27) < 0}}) exitWith {_bad = true;};
+                if (count _entry > 28 && {isNil {_entry select 28}}) exitWith {_bad = true;};
+                if (count _entry > 28 && {!([_entry select 28] call _clampReceiptsValid)}) exitWith {_bad = true;};
+                if ((_entry select 7) < 0 || {(_entry select 10) <= 0}
+                    || {([13,14,15,24,25] findIf {(_entry select _x) < 0}) >= 0}) exitWith {_bad = true;};
+            } forEach _v;
         };
         case "ACME_yFlushJobs": {
             _bad = ((keys _v) findIf {

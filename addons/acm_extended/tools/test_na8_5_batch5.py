@@ -144,7 +144,10 @@ class SourceContracts(unittest.TestCase):
         self.assertIn('forEach _rows',src('infusionRefreshTally'))
     def test_flow_edits_only_owner_fields(self):
         for f in ('setClampPosition','cycleDropSet','adjustDripRate'):
-            self.assertIn('ACME_fnc_ownerDispatch',src(f))
+            endpoint = src(f)
+            if f != 'setClampPosition':
+                self.assertIn('call ACME_fnc_setClampPosition',endpoint)
+            self.assertIn('ACME_fnc_ownerDispatch',src('setClampPosition'))
             self.assertNotIn('setVariable ["ACME_infusion_BagMedications"',src(f))
     def test_same_bag_concentration_rebased(self):
         s=src('infusionRegisterCore');self.assertIn('(_x select 14) / _newVolume',s);self.assertIn('_remainingVolume + _solutionMl',s)

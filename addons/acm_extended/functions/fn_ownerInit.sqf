@@ -20,6 +20,7 @@ ACME_NA2_ownerInstalled = true;
 ["ACME_transfusionPullResult", {_this call ACME_fnc_transfusionPullResult;}] call CBA_fnc_addEventHandler;
 ["ACME_rehangUsedBagResult", {_this call ACME_fnc_rehangUsedBagResult;}] call CBA_fnc_addEventHandler;
 ["ACME_yRefillResult", {_this call ACME_fnc_yRefillResult;}] call CBA_fnc_addEventHandler;
+["ACME_clampResult", {_this call ACME_fnc_clampResult;}] call CBA_fnc_addEventHandler;
 ["ACME_piggybackAttachAck", {_this call ACME_fnc_piggybackAttachAck;}] call CBA_fnc_addEventHandler;
 ["ACME_lineWarmerAck", {_this call ACME_fnc_lineWarmerAck;}] call CBA_fnc_addEventHandler;
 ["ACME_lineWarmerReturn", {_this call ACME_fnc_lineWarmerReturn;}] call CBA_fnc_addEventHandler;

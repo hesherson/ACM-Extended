@@ -42,7 +42,8 @@ private _sig = _entries apply {
         _x param [20, 20], // drop set
         _x param [21, 60], // selected drops/min (actual delivered rate is field 17)
         _x param [22, -1], // roller clamp position
-        _x param [27, 1]   // dose-addition revision
+        _x param [27, 1],  // dose-addition revision
+        str (_x param [28, []]) // receipt value, detached from mutable row arrays
     ]
 };
 private _now = diag_tickTime;

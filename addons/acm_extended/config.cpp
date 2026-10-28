@@ -2662,6 +2662,7 @@ class CfgFunctions {
             class onClampLoad {};
             class updateClampDialog {};
             class setClampPosition {};
+            class clampResult {};
             class scrollClamp {};
             class placeClampWheel {};
             class playClampSfx {};
@@ -3757,7 +3758,7 @@ class ACME_RollerClamp_Dialog {
     enableSimulation = 1;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; call ACME_fnc_onClampLoad";
     onMouseZChanged = "_this call ACME_fnc_scrollClamp";
-    onUnload = "[uiNamespace getVariable ['ACME_RollerClamp_Position',1], true, false] call ACME_fnc_setClampPosition; uiNamespace setVariable ['ACME_RollerClamp_DLG', displayNull]; uiNamespace setVariable ['ACME_RollerClamp_InitDisplay', displayNull]; uiNamespace setVariable ['ACME_RollerClamp_Dragging', false]; uiNamespace setVariable ['ACME_RollerClamp_ReleaseOnUp', false]; uiNamespace setVariable ['ACME_RollerClamp_Track', []];";
+    onUnload = "if ((_this select 0) isEqualTo (uiNamespace getVariable ['ACME_RollerClamp_InitDisplay',displayNull])) then {[uiNamespace getVariable ['ACME_RollerClamp_Position',1],true,-1,true] call ACME_fnc_setClampPosition; uiNamespace setVariable ['ACME_RollerClamp_DLG',displayNull]; uiNamespace setVariable ['ACME_RollerClamp_InitDisplay',displayNull]; uiNamespace setVariable ['ACME_RollerClamp_Session',[]]; uiNamespace setVariable ['ACME_RollerClamp_Edit',[]]; uiNamespace setVariable ['ACME_RollerClamp_Dragging',false]; uiNamespace setVariable ['ACME_RollerClamp_ReleaseOnUp',false]; uiNamespace setVariable ['ACME_RollerClamp_Track',[]];};";
 
     class ControlsBackground {
         class ACME_Backdrop: RscText {

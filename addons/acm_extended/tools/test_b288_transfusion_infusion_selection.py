@@ -27,6 +27,9 @@ def fixture():
         uiNamespace setVariable ["ACME_RollerClamp_Context",[]];
         private _dose={params ["_id","_bagId",["_index",2]];
             private _entry=[_id,"leftarm",_index,"Saline",0,true,-1,100,-1];
+            // Include the real clamp fields: setters now compare the replica
+            // with pending input, rather than only forwarding selected IDs.
+            _entry set [20,20];_entry set [21,60];_entry set [22,0.5];
             _entry set [23,_bagId];_entry};
         private _entries=[["dose-a","calcium"] call _dose];
         private _publish={
