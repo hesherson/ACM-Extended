@@ -97,9 +97,13 @@ Save recreated object transforms and ordinary cargo through the mission's normal
 
 Check every result. Holder/crate imports require the corresponding saved native items first. New deployed objects must not carry copied live tokens or transaction bindings. Fridge state includes stock, defaults, restocking policy and remaining game-time delay; pending grants make an export busy.
 
+Fridge items use the same captured-machine delivery proof as other returned resources. Only delivered grants or proven non-debit failures are settled; applying, uncertain-stock and orphaned grants block checkpoints. A cosmetic Give callback cannot add a second item after ownership changes.
+
 Native donor bag classes encode a configured donor ID (`ACM_FreshBloodBag_500_17`, for example). Save the global donor registry once in the coordinated mission checkpoint. Restore it at startup, before saved native donor bags become usable or new donors are collected. The importer refuses to overwrite a populated live registry with different saved donors. The compatibility seed at ID zero is permitted. A per-unit native bag class/ID alone cannot prove which historical donor it meant, so unsupported aggregate saves are refused rather than silently assigned current donor facts.
 
 Hung fresh blood, prepared sets and used bags also carry immutable donor status/type and normalized collection age. A missing record is explicitly fenced. It cannot fall back to a newly reused donor ID, and an unresolved hung fresh bag does not drain or credit blood. Manufacturer capacity remains at IV bag index 9; portable donor facts use index 10.
+
+Unresolved used blood can be saved as exact-volume inert evidence with blood code `-1` and the explicit missing-donor marker. It remains unusable after restore. A usable fresh-blood product requires a valid native blood code and its donor facts; reloading cannot manufacture those facts.
 
 Offline aging defaults to paused. The mission may supply validated elapsed offline seconds for coolers/donor records, or elapsed offline game minutes for fridges. No importer guesses elapsed real time from a previous mission clock.
 

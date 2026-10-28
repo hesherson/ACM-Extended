@@ -534,3 +534,43 @@ def test_machine_private_return_outbox_remains_busy_after_both_actor_objects_del
     missionNamespace setVariable ["ACME_resourceReturnSources",createHashMapFromArray [["orphan",[[objNull,objNull,[],"nonce"],"admitted",[7,"nonce"]]]]];
     [!([_medic] call ACME_fnc_persistenceReady),"deleted actor references hid a nonterminal machine return"] call _check;
     ''')
+
+
+@pytest.mark.parametrize("state", ["applying", "pending", "stockUncertain", "unknownFutureState", ""])
+def test_fridge_native_bridge_refuses_every_nonterminal_stock_state(state):
+    execute(setup() + f'private _state="{state}";' + r'''
+    private _grant=[_medic,[7,1],"ACM_BloodBag_ON_500",_state,0,_medic,"fridge-bridge",[]];
+    _medic setVariable ["ACME_bf_grants",createHashMapFromArray [["grant",_grant]]];
+    missionNamespace setVariable ["ACME_bf_serverGrants",createHashMapFromArray [["grant",_grant]]];
+    [([_medic] call ACME_fnc_bloodFridgeSnapshot) isEqualTo [],"nonterminal stock snapshot accepted"] call _check;
+    [!([_medic,_savedFridge] call ACME_fnc_bloodFridgeRestore),"nonterminal stock overwritten"] call _check;
+    [!([_medic] call ACME_fnc_persistenceReady),"nonterminal bridge delivery omitted from checkpoint"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("state", ["delivered", "failed"])
+def test_fridge_native_bridge_terminal_stock_states_allow_settled_checkpoint(state):
+    execute(setup() + f'private _state="{state}";' + r'''
+    private _grant=[_medic,[7,1],"ACM_BloodBag_ON_500",_state,0,_medic,"fridge-bridge",[]];
+    _medic setVariable ["ACME_bf_grants",createHashMapFromArray [["grant",_grant]]];
+    missionNamespace setVariable ["ACME_bf_serverGrants",createHashMapFromArray [["grant",_grant]]];
+    [([_medic] call ACME_fnc_bloodFridgeSnapshot) isEqualTo _savedFridge,"terminal stock snapshot refused"] call _check;
+    [([_medic] call ACME_fnc_persistenceReady),"terminal bridge permanently blocked checkpoint"] call _check;
+    [([_medic,_savedFridge] call ACME_fnc_bloodFridgeRestore),"terminal bridge blocked explicit recreated-fridge restore"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("state", ["applying", "stockUncertain"])
+def test_deleted_fridge_keeps_nonterminal_native_bridge_in_authoritative_preflight(state):
+    execute(setup() + f'private _state="{state}";' + r'''
+    missionNamespace setVariable ["ACME_bf_serverGrants",createHashMapFromArray [["grant",[_medic,[7,1],"ACM_BloodBag_ON_500",_state,0,objNull,"fridge-bridge",[]]]]];
+    [!([_medic] call ACME_fnc_persistenceReady),"source deletion erased unresolved stock funding"] call _check;
+    ''')
+
+
+def test_anchor_mirror_keeps_unresolved_stock_bridge_busy_before_global_journal_arrives():
+    execute(setup() + r'''
+    _patient setVariable ["ACME_bf_grants",createHashMapFromArray [["grant",[_medic,[7,1],"ACM_BloodBag_ON_500","stockUncertain",0,_patient,"fridge-bridge",[]]]]];
+    missionNamespace setVariable ["ACME_bloodFridges",[_patient]];
+    [!([_medic] call ACME_fnc_persistenceReady),"anchor mirror was treated as settled while stock outcome uncertain"] call _check;
+    ''')

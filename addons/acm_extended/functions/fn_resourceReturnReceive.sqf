@@ -15,7 +15,15 @@ if (_decision isNotEqualTo [] && {(_decision select 0) isNotEqualTo _fingerprint
 private _ack = {
     ["ACME_resourceReturn",["ack",[_provider,_patient,_request,_products,clientOwner,_nonce,_attempt]]] call CBA_fnc_serverEvent;
 };
-if (_decision isNotEqualTo [] && {(_decision select 1) == "delivered"}) exitWith {call _ack;};
+private _fridgeNotice={
+    params ["_status"];
+    if ((_request find "fridge:")!=0 || {count _products!=1} || {((_products select 0) select 0)!="item"}) exitWith {};
+    private _parts=_request splitString ":";
+    if (count _parts<4) exitWith {};
+    private _token=[parseNumber (_parts select (count _parts-2)),parseNumber (_parts select (count _parts-1))];
+    [_patient,(_products select 0) select 1,_provider,_token,_status,_request] call ACME_fnc_bloodFridgeReceive;
+};
+if (_decision isNotEqualTo [] && {(_decision select 1) == "delivered"}) exitWith {call _ack;["delivered"] call _fridgeNotice;};
 if (_decision isNotEqualTo [] && {(_decision select 1) == "cancelled"}) exitWith {};
 private _allProgress = missionNamespace getVariable ["ACME_resourceReturnProgress",createHashMap];
 private _progress = _allProgress getOrDefault [_key,[]];
@@ -28,7 +36,7 @@ if (_prior isEqualTo [_products,"delivered"]) exitWith {
     // A complete public receipt may have arrived before this retry on the SAME
     // machine. A new attempt still requires the old incarnation's disposition.
     _decisions set [_key,[_fingerprint,"delivered"]];
-    missionNamespace setVariable ["ACME_resourceReturnDecisions",_decisions]; call _ack;
+    missionNamespace setVariable ["ACME_resourceReturnDecisions",_decisions]; call _ack;["delivered"] call _fridgeNotice;
 };
 _received set [_request,[_products,"uncertain"]];
 _provider setVariable ["ACME_resourceReturnReceived",_received,true];
@@ -97,4 +105,7 @@ missionNamespace setVariable ["ACME_resourceReturnDecisions",_decisions];
 if (_allDone) then {
     _received set [_request,[_products,"delivered"]];
     _provider setVariable ["ACME_resourceReturnReceived",_received,true]; call _ack;
+    ["delivered"] call _fridgeNotice;
+} else {
+    if (_status=="uncertain") then {["uncertain"] call _fridgeNotice;};
 };

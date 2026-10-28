@@ -7,18 +7,39 @@ if (!isServer) exitWith {};
 // The grant outlives its furniture object and cosmetic door lease. Continue
 // delivery even if Zeus removed the fridge after its stock was committed.
 private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+private _returns=missionNamespace getVariable ["ACME_resourceReturns",createHashMap];
 private _activeGrants=[];
 {
     private _grant=_serverGrants get _x;
-    if ((_grant select 3)=="pending" && {diag_tickTime>=(_grant select 4)}) then {
+    if ((_grant select 3)=="pending") then {
+        private _bridge=_grant param [6,""];
+        private _journal=_returns getOrDefault [_bridge,[]];
         private _unit=_grant select 0;
-        _grant set [4,diag_tickTime+2];_serverGrants set [_x,_grant];
-        if (!isNull _unit) then {
-            ["ACME_bfGive",[_grant select 5,_grant select 2,_unit,_grant select 1],_unit] call CBA_fnc_targetEvent;
+        if (count _journal>=11 && {(_journal select 4)=="delivered"}) then {
+            _grant set [3,"delivered"];_serverGrants set [_x,_grant];
+            private _anchor=_grant select 5;
+            if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
+            if (!isNull _unit) then {
+                private _pending=_unit getVariable ["ACME_bf_pendingGrants",createHashMap];_pending deleteAt _x;_unit setVariable ["ACME_bf_pendingGrants",_pending,true];
+                ["ACME_bfGive",[_anchor,_grant select 2,_unit,_grant select 1,"delivered",_bridge],_unit] call CBA_fnc_targetEvent;
+            };
+        } else {
+            // Dispatch, retries and ownership proof all belong to the generic
+            // journal. Never send another native Give while its outcome is held.
+            if (_journal isEqualTo [] && {_bridge!=""}) then {
+                ["fridgeStock",[_unit,_grant select 5,_bridge,[["item",_grant select 2]]]] call ACME_fnc_resourceReturnBroker;
+            };
+            if (count _journal>=11 && {(_journal select 4)=="orphaned"}) then {
+                // Retain canonical orphaned custody without a permanent idle
+                // poll. Mission recovery must explicitly resolve the journals.
+                _grant set [3,"orphaned"];_serverGrants set [_x,_grant];
+                private _anchor=_grant select 5;
+                if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
+            } else {_activeGrants pushBack _x;};
         };
     };
-    if ((_grant select 3)=="pending") then {_activeGrants pushBack _x;};
 } forEach (missionNamespace getVariable ["ACME_bf_activeGrants",[]]);
+missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
 missionNamespace setVariable ["ACME_bf_activeGrants",_activeGrants];
 private _fridges = missionNamespace getVariable ["ACME_bloodFridges", []];
 if (_fridges isEqualTo []) exitWith {};

@@ -71,10 +71,10 @@ if (((values _freshGrants) findIf {(_x param [5,""]) != "delivered" && {(_x para
 private _fundedFresh = _unit getVariable ["ACME_txRemoveFunded",createHashMap];
 if (((keys _fundedFresh) findIf {((_freshGrants getOrDefault [_x,[]]) param [5,""]) != "delivered"}) >= 0) exitWith {false};
 private _fridgeGrants = missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
-if (((values _fridgeGrants) findIf {(_x param [0,objNull]) isEqualTo _unit && {(_x param [3,""]) == "pending"}}) >= 0) exitWith {false};
+if (((values _fridgeGrants) findIf {(_x param [0,objNull]) isEqualTo _unit && {!((_x param [3,""]) in ["delivered","failed"])}}) >= 0) exitWith {false};
 {
     private _grants = _x getVariable ["ACME_bf_grants",createHashMap];
-    if (((values _grants) findIf {(_x param [0,objNull]) isEqualTo _unit && {(_x param [3,""]) == "pending"}}) >= 0) exitWith {_safe = false;};
+    if (((values _grants) findIf {(_x param [0,objNull]) isEqualTo _unit && {!((_x param [3,""]) in ["delivered","failed"])}}) >= 0) exitWith {_safe = false;};
 } forEach (missionNamespace getVariable ["ACME_bloodFridges",[]]);
 if (!_safe) exitWith {false};
 private _deliveries = missionNamespace getVariable ["ACME_syringeDeliveries",createHashMap];

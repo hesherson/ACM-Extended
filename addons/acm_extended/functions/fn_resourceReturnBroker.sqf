@@ -7,6 +7,20 @@ if !(_this isEqualType [] && {count _this in [2,3,4]} && {(_this select 0) isEqu
 params ["_mode",["_args",[]],["_fromWait",false],["_sourceCertified",false]];
 if !(_fromWait isEqualType true && {_sourceCertified isEqualType true}) exitWith {};
 private _all=missionNamespace getVariable ["ACME_resourceReturns",createHashMap];
+// Direct server-only bridge for a read-back virtual fridge stock debit. Public
+// event modes exclude this entry; its canonical server record is still checked.
+if (_mode=="fridgeStock") exitWith {
+    if (count _args!=4) exitWith {};
+    _args params ["_provider","_source","_request","_products"];
+    if !(_request isEqualType "" && {(_request find "fridge:")==0}
+        && {[_products] call ACME_fnc_resourceReturnProductsValid}) exitWith {};
+    private _key=_request select [7];
+    private _grant=(missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap]) getOrDefault [_key,[]];
+    if (count _grant<7 || {(_grant select 0) isNotEqualTo _provider} || {(_grant select 5) isNotEqualTo _source}
+        || {(_grant select 3)!="pending"} || {(_grant select 6)!=_request}
+        || {_products isNotEqualTo [["item",_grant select 2]]}) exitWith {};
+    ["request",[_provider,_source,_request,_products],false,true] call ACME_fnc_resourceReturnBroker;
+};
 if (_mode in ["ack","decision"]) exitWith {
     if !(count _args in [7,8]) exitWith {};
     if (([0,1,2,3,4,5,6] findIf {isNil {_args select _x}})>=0) exitWith {};
@@ -29,7 +43,7 @@ if (_mode in ["ack","decision"]) exitWith {
     };
     if (_decision!="delivered") exitWith {};
     _j set [4,"delivered"];_all set [_request,_j];missionNamespace setVariable ["ACME_resourceReturns",_all];
-    if (!isNull _patient) then {
+    if (!isNull _patient && {(_request find "fridge:")!=0}) then {
         private _resolved=_patient getVariable ["ACME_resourceReturnResolved",createHashMap];
         _resolved set [_request,true];_patient setVariable ["ACME_resourceReturnResolved",_resolved,true];
     };

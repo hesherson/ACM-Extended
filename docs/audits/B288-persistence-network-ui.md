@@ -19,6 +19,7 @@ The review covers production callbacks, owner dispatch, replay decisions, native
 
 - Delayed first cooler draw/deploy requests cannot execute in a later kit or provider locality period. Previously accepted receipts keep their original custody semantics.
 - Fridge and fresh-blood return grants retain funded products until delivery proof. Replay cannot debit twice or materialize another item. Native inventory-full spill behavior is verified instead of assuming a false ACE return means no item appeared.
+- Fridge items use the generic captured-machine delivery journal. A new owner with native cargo but missing public receipts cannot receive another copy. Fridge Give only presents the result; uncertain stock readback never funds an item, and orphaned products retain their metadata without polling forever.
 - Remove/Pull/Y-salvage returns use canonical products and a server delivery journal. The original source machine certifies the completed debit; the original recipient machine must prove or cancel a dispatched placement before another owner can deliver it. UI result callbacks only update presentation. Deleted recipients and unproved partial writes remain explicit held funding and block checkpoints; they never redirect silently into a replacement actor's kit.
 - A partial used bag enters Y preparation with its exact remaining volume. The final build consumes its immutable row and native supplies together; cancellation does not create a full-size replacement bag. Filled collection kits return an exact fresh used product without depending on another configured donor ID.
 - Temporary infusion-flow pauses are patient-owner operations tied to the exact bag, access, patient generation and provider session. Closing a stale dialog cannot restore a whole outdated flow array or override a later manual setting. Failed constructors clean up their own pause, and obsolete constructors cannot capture a newer dialog.
@@ -29,7 +30,7 @@ The review covers production callbacks, owner dispatch, replay decisions, native
 
 ## Recorded validation
 
-The frozen combined B285–B288 selection passed **951 cases across 36 modules**, with no failures, errors or skips. This includes all 483 new B288 cases and retained networking, AI/performance, cooler and build/ownership checks. The complete root-3 allocation passed **254 cases** after its older medication assertions were updated to require refusal before any medicated Pull mutation; no test cases were removed.
+An initial frozen combined B285–B288 selection passed **951 cases across 36 modules**, with no failures, errors or skips. It included 483 B288 cases and retained networking, AI/performance, cooler and build/ownership checks. Further review added fridge handover, unknown-donor preservation, retired UI and owner-log regressions. The complete root-3 allocation passed **254 cases** after its older medication assertions were updated to require refusal before any medicated Pull mutation; no test cases were removed.
 
 Strict HEMTT validation passed **2,045 SQF files and 12 stringtables**. The native-owner audit reported **zero violations**. Exact-commit full-suite and signed-package verification results are recorded in [draft PR #31](https://github.com/hesherson/ACM-Extended/pull/31); these checks are separate from native acceptance.
 

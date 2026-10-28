@@ -12,10 +12,45 @@ private _busy = false;
 if (hasInterface) then {
     if (_holder isEqualTo ACE_player && {(missionNamespace getVariable ["ACME_yBuildingActive",-1]) >= 0
         || {(missionNamespace getVariable ["ACME_spikingActive",[]]) isNotEqualTo []}}) then {_busy = true;};
+    // These three maps now own presentation only. Physical/virtual returns
+    // follow the server-certified resource journal even after this UI dies.
+    // Retire stale actor incarnations and completed deliveries; never age out
+    // the separate Used Rehang/Y-refill maps, which can still own source rows.
+    {
+        private _name = _x;
+        private _pending = uiNamespace getVariable [_name,createHashMap];
+        private _epochIndex = [2,3] select (_name == "ACME_txRemoveContexts");
+        private _sizes = [[2,3],[3,4]] select (_name == "ACME_txRemoveContexts");
+        private _changed = false;
+        {
+            private _request = _x;
+            private _context = _pending get _request;
+            private _retire = !(_context isEqualType [] && {count _context in _sizes});
+            private _provider = objNull;
+            if (!_retire) then {
+                _provider = _context select 0;
+                _retire = !(_provider isEqualType objNull) || {isNull _provider} || {!local _provider};
+            };
+            if (!_retire) then {
+                private _epoch = _provider getVariable ["ACME_providerLocalityEpoch",0];
+                private _receipt = (_provider getVariable ["ACME_resourceReturnReceived",createHashMap]) getOrDefault [_request,[]];
+                _retire = (_context param [_epochIndex,_epoch]) isNotEqualTo _epoch
+                    || {_receipt isEqualType [] && {count _receipt == 2} && {(_receipt select 0) isEqualType []} && {(_receipt select 1) isEqualTo "delivered"}};
+            };
+            if (_retire) then {
+                _pending deleteAt _request;
+                _changed = true;
+                if (_name == "ACME_txRemoveContexts" && {(uiNamespace getVariable ["ACME_txRemovePending",""]) isEqualTo _request}) then {uiNamespace setVariable ["ACME_txRemovePending",""];};
+            } else {
+                if (_provider isEqualTo _holder) then {_busy = true;};
+            };
+        } forEach keys _pending;
+        if (_changed) then {uiNamespace setVariable [_name,_pending];};
+    } forEach ["ACME_txPullPending","ACME_txRemoveContexts","ACME_yDiscardPending"];
     {
         private _pending = uiNamespace getVariable [_x,createHashMap];
         if (count _pending > 0) exitWith {_busy = true;};
-    } forEach ["ACME_txPullPending","ACME_txRemoveContexts","ACME_usedRehangPending","ACME_yDiscardPending","ACME_yRefillPending"];
+    } forEach ["ACME_usedRehangPending","ACME_yRefillPending"];
     private _draw = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
     if (_draw isNotEqualTo []) then {_busy = true;};
 };

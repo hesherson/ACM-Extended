@@ -28,8 +28,10 @@ _seen = createHashMap;
         && {_access isEqualType 0} && {finite _access} && {_access == floor _access} && {_access >= 0} && {_access <= 32} && {_blood isEqualType 0} && {finite _blood} && {_blood == floor _blood} && {_blood >= -1} && {_blood <= 16}
         && {_name isEqualType ""} && {count _name <= 256} && {_fresh isEqualType 0} && {finite _fresh} && {_fresh == floor _fresh} && {_fresh >= -1}) exitWith {_ok = false;};
     if (_type == "FreshBlood") then {
-        if !(_blood in [0,1,2,3,4,5,6,7]) exitWith {_ok = false;};
         private _meta = _row param [8,[]];
+        // Unknown donor evidence can be retained/discarded safely, but must
+        // never acquire usable donor facts from a reused registry ID.
+        if !(_blood in [0,1,2,3,4,5,6,7] || {_blood == -1 && {_meta isEqualTo ["freshMissingV1"]}}) exitWith {_ok = false;};
         if (_meta isNotEqualTo ["freshMissingV1"]) then {
         if !(_meta isEqualType [] && {count _meta == 4}) exitWith {_ok = false;};
         if (([0,1,2,3] findIf {isNil {_meta select _x}}) >= 0) exitWith {_ok = false;};

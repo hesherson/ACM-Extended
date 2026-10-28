@@ -4,7 +4,7 @@ from pathlib import Path
 import itertools
 import re
 import unittest
-from source_scan import lex
+from source_scan import lex, matching, split_args
 R = Path(__file__).resolve().parents[1]
 
 def read(name):
@@ -145,7 +145,23 @@ class FlushSource(unittest.TestCase):
     def test_flush_forces_size_before_native_closure_capture(self):
         s=sqf('skOpenDraw')
         self.assertLess(s.index('if (_flushClass != "") then {_size = 10;}'),s.index('call ACM_circulation_fnc_Syringe_Draw'))
-        self.assertIn('0, [0, _flushClass]',s)
+        self.assertIn('[ACE_player, if (_infusion) then {objNull} else {_patient}, _bodyPart, _size] call ACM_circulation_fnc_Syringe_Draw;',s)
+        # The injector now also captures its launch ownership and cleanup.
+        # Inspect the actual CBA arguments so extra lifecycle fields cannot
+        # weaken the original guarantee that the selected flush is captured.
+        ts=lex(s); pairs=matching(ts); reverse={end:start for start,end in pairs.items()}
+        calls=[i for i,t in enumerate(ts) if t.value=='CBA_fnc_addPerFrameHandler' and i>1 and ts[i-1].value=='call']
+        self.assertEqual(len(calls),1)
+        closing=calls[0]-2; opening=reverse[closing]
+        args=split_args(ts,opening+1,closing,pairs)
+        self.assertEqual(len(args),3)
+        self.assertEqual([t.value for t in args[1]],['0'])
+        capture=args[2]; capture_pairs=matching(capture)
+        fields=split_args(capture,1,len(capture)-1,capture_pairs)
+        self.assertEqual([[t.value for t in field] for field in fields],
+                         [['0'],['_flushClass'],['_launch'],['_abort'],['_beforeDisplay'],['diag_tickTime','+','5']])
+        self.assertLess(s.index('call ACM_circulation_fnc_Syringe_Draw'),ts[opening].offset)
+        self.assertIn('_args params ["_tries", "_flushClass", "_launch", "_abort", "_beforeDisplay", "_deadline"];',s)
     def test_every_previous_size_switches_to_ten(self):
         s=sqf('skPickFlush')
         target=int(re.search(r'\[(\d+), _flushClass\] call ACME_fnc_skApplySize',s).group(1))

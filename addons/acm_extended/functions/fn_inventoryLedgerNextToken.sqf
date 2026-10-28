@@ -19,7 +19,7 @@ private _sequence = missionNamespace getVariable ["ACME_inventoryTokenSequence",
 // Explicit imports can move between server profiles. Their source IDs must not
 // also be their replacement IDs, even when this profile has never issued an ID.
 while {_sequence < 65534 && {(_sequence + 1) in _avoid}} do {_sequence = _sequence + 1;};
-if (_sequence >= 60000 && {!(missionNamespace getVariable ["ACME_inventoryBudgetWarned",false])}) then {
+if (_sequence >= 60000 && {_sequence < 65534} && {!(missionNamespace getVariable ["ACME_inventoryBudgetWarned",false])}) then {
     missionNamespace setVariable ["ACME_inventoryBudgetWarned",true];
     diag_log format ["[ACME INVENTORY] Persistent ID budget %1/65534. Save fully settled native inventory plus ACME metadata and migrate before exhaustion; see B288-inventory-persistence.md.",_sequence];
 };

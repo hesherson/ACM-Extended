@@ -3,6 +3,7 @@ import re
 import pytest
 from test_menu_death_lifecycle import adapt, execute, read
 from test_historical_vial_execution import map_defaults
+from test_historical_medication_rows import iteration_scopes
 
 
 def source(name):
@@ -33,7 +34,18 @@ def source(name):
     raw = re.sub(r'_anchor animateSource ([^;]+);', r'_doors pushBack \1;', raw)
     raw = re.sub(r'(_anchor|_openObj) hideObjectGlobal ([^;]+);', r'_hidden pushBack [\1, \2];', raw)
     raw=re.sub(r'\bfinite (_\w+)',r'(\1 call _finite)',raw)
-    return adapt(map_defaults(raw))
+    return adapt(map_defaults(iteration_scopes(raw)))
+
+
+def resource_source(name):
+    from test_b288_resource_returns import source as generic_source
+    text = generic_source(name)
+    for old,new in {
+        '_ownerNum':'_requestOwnerSim','_medicLocal':'_playerLocal',
+        'nativeItems':'fixtureItems','_ground':'_groundHolder',
+    }.items():
+        text=text.replace(old,new)
+    return text
 
 
 def setup():
@@ -44,6 +56,10 @@ def setup():
         private _blocked=false; private _busy=false; private _canInteract=true;
         private _given=[]; private _reaches=[]; private _cancelled=0; private _doors=[]; private _hidden=[];
         private _groundHolder=parsingNamespace;private _giveWorks=true;private _giveGround=false;
+        private _machineOwner=7;
+        private _resourcePackets=[];private _resourceServerMessages=[];private _resourceQueries=[];
+        missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","client-A"];
+        missionNamespace setVariable ["ACME_syringeDeliveryMachines",createHashMapFromArray [["2","server"],["7","client-A"],["8","client-B"]]];
         private _finite={_this isEqualType 0};
         private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
         _player setVariable ["fixtureItems",[]];_groundHolder setVariable ["fixtureItems",[]];
@@ -54,12 +70,20 @@ def setup():
         _anchor setVariable ["ACME_bf_takers",createHashMap];
         missionNamespace setVariable ["ACME_bloodFridges",[_anchor]];
         missionNamespace setVariable ["ACME_sys_bloodChain",false];
-        CBA_fnc_serverEvent={_events pushBack _this;};
+        CBA_fnc_serverEvent={
+            _events pushBack _this;
+            if ((_this select 0)=="ACME_resourceReturn") then {_resourceServerMessages pushBack (_this select 1);};
+        };
+        CBA_fnc_targetEvent={
+            _events pushBack _this;
+            if ((_this select 0)=="ACME_resourceReturnDelivery") then {_resourcePackets pushBack (_this select 1);};
+        };
+        CBA_fnc_ownerEvent={_events pushBack _this;_resourceQueries pushBack _this;};
         ACME_fnc_animBlocked={_blocked}; ACME_fnc_providerStanceOwned={_busy};
         ace_common_fnc_canInteractWith={_canInteract};
         ace_common_fnc_addToInventory={
             _given pushBack _this;
-            private _destination=if (_giveGround) then {_groundHolder} else {_player};
+            private _destination=if (_giveGround) then {_groundHolder} else {_this select 0};
             if (_giveWorks) then {private _items=+(_destination getVariable ["fixtureItems",[]]);_items pushBack (_this select 1);_destination setVariable ["fixtureItems",_items];};
             [!_giveGround,_destination]
         };
@@ -75,13 +99,54 @@ def setup():
             _player setVariable ["ACME_headElev_medicAnimToken",1+(_player getVariable ["ACME_headElev_medicAnimToken",0])];
         };
         private _mapGet={params["_map","_key",["_default",[]]]; if (_key in keys _map) then {_map get _key} else {_default}};
-        private _run={private _h=_handlers select 0; if (_h select 2) then {[_h select 1,0] call (_h select 0);};};
+        private _run={
+            {private _h=_x;if (_h select 2 && {count (_h select 1)==5}) then {[_h select 1,_forEachIndex] call (_h select 0);};} forEach (+_handlers);
+        };
     '''
+    for name in ['syringeDeliveryCopy','resourceReturnProductsValid','resourceReturnBroker','resourceReturnReceive','resourceReturnQuery','resourceReturnSourceQuery']:
+        code += f'ACME_fnc_{name}={{' + resource_source(name) + '};'
     for name in ['bloodFridgeTick', 'bloodFridgeTake', 'bloodFridgeTakeOwner', 'bloodFridgeReceive']:
         code += f'ACME_fnc_{name}={{' + source(name) + '};'
     init = source('initBloodStorageRuntime')
     stop = init.split('["ACME_bfTakeStop", {', 1)[1].split('}] call CBA_fnc_addEventHandler;', 1)[0]
     code += 'private _stop={' + stop + '};'
+    code += r'''
+        private _flushResources={
+            private _limit=0;
+            while {(_resourceServerMessages isNotEqualTo [] || {_resourcePackets isNotEqualTo []} || {_resourceQueries isNotEqualTo []}) && {_limit<80}} do {
+                _limit=_limit+1;
+                while {_resourceServerMessages isNotEqualTo []} do {
+                    private _message=_resourceServerMessages deleteAt 0;
+                    _machineOwner=2;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","server"];
+                    _message call ACME_fnc_resourceReturnBroker;
+                };
+                while {_resourceQueries isNotEqualTo []} do {
+                    private _query=_resourceQueries deleteAt 0;
+                    private _event=_query select 0;private _payload=_query select 1;
+                    if (_event=="ACME_resourceReturnQuery") then {
+                        _machineOwner=_payload select 4;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",_payload select 5];
+                        _payload call ACME_fnc_resourceReturnQuery;
+                    };
+                    if (_event=="ACME_resourceReturnSourceQuery") then {
+                        private _cert=_payload select 4;_machineOwner=_cert select 0;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",_cert select 1];
+                        _payload call ACME_fnc_resourceReturnSourceQuery;
+                    };
+                };
+                private _deliver=+_resourcePackets;_resourcePackets=[];
+                {
+                    _machineOwner=_x select 4;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",_x select 5];
+                    _x call ACME_fnc_resourceReturnReceive;
+                } forEach _deliver;
+            };
+            [_limit<80,"resource transport did not quiesce"] call _check;
+            _machineOwner=7;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","client-A"];
+        };
+        private _resourceTick={
+            _machineOwner=2;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","server"];
+            ["tick",[]] call ACME_fnc_resourceReturnBroker;
+            _machineOwner=7;missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce","client-A"];
+        };
+    '''
     return code
 
 
@@ -90,7 +155,8 @@ def take():
         [_anchor,"ON",_player] call ACME_fnc_bloodFridgeTake;
         private _token=(_player getVariable "ACME_bf_take") select 0;
         [_anchor,"ON",_player,_token] call ACME_fnc_bloodFridgeTakeOwner;
-        [_anchor,"ON",_player,_token] call ACME_fnc_bloodFridgeReceive;
+        call _flushResources;call ACME_fnc_bloodFridgeTick;
+        [_anchor,"ON",_player,_token,"delivered","fridge:one:7:1"] call ACME_fnc_bloodFridgeReceive;
     '''
 
 
@@ -126,8 +192,11 @@ def test_two_takers_competing_for_last_unit_are_serialized_on_server():
         _player=_other; _playerId="two";
         [_anchor,"ON",_player,[7,1]] call ACME_fnc_bloodFridgeTakeOwner;
         private _acks=_events select {(_x select 0)=="ACME_bfGive"};
-        [count _acks==2 && {(_acks select 0 select 1 select 1)=="ON"}
-            && {(_acks select 1 select 1 select 1)==""},"last bag double issued"] call _check;
+        private _deliveries=_events select {(_x select 0)=="ACME_resourceReturnDelivery"};
+        [count _acks==1 && {(_acks select 0 select 1 select 1)==""}
+            && {count _deliveries==1} && {(_deliveries select 0 select 1 select 3) isEqualTo [["item","ON"]]},"last bag double issued"] call _check;
+        call _flushResources;
+        [count _given==1 && {(_given select 0 select 0) isEqualTo _medic},"winning funded item was lost or sent to competing taker"] call _check;
         [count (_anchor getVariable "ACME_bf_takers")==1,"out-of-stock take held door"] call _check;
     ''')
 
@@ -163,9 +232,11 @@ def test_late_ack_delivers_stock_without_overwriting_new_action():
     execute(setup()+'''
         [_anchor,"ON",_player] call ACME_fnc_bloodFridgeTake;
         private _old=(_player getVariable "ACME_bf_take") select 0;
+        [_anchor,"ON",_player,_old] call ACME_fnc_bloodFridgeTakeOwner;
         private _w=_waits select 0; (_w select 1) call (_w select 0);
         _player setVariable ["ACME_bf_take",[[7,2],_anchor]];
-        [_anchor,"ON",_player,_old] call ACME_fnc_bloodFridgeReceive;
+        call _flushResources;
+        [_anchor,"ON",_player,_old,"delivered","fridge:one:7:1"] call ACME_fnc_bloodFridgeReceive;
         [count _given==1 && {count _reaches==0},"late stock lost or stale animation started"] call _check;
         [(_player getVariable "ACME_bf_take") isEqualTo [[7,2],_anchor],"late ack erased successor"] call _check;
     ''')

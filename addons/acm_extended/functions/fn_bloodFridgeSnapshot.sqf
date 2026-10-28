@@ -4,7 +4,7 @@ if (canSuspend) exitWith {private _result = []; isNil {_result = _this call ACME
 params ["_fridge"];
 if (!isServer || {isNull _fridge} || {!(_fridge getVariable ["ACME_bloodFridge",false])}) exitWith {[]};
 if (count (_fridge getVariable ["ACME_bf_takers",createHashMap]) > 0) exitWith {[]};
-if (((values (_fridge getVariable ["ACME_bf_grants",createHashMap])) findIf {(_x param [3,""]) == "pending"}) >= 0) exitWith {[]};
+if (((values (_fridge getVariable ["ACME_bf_grants",createHashMap])) findIf {!((_x param [3,""]) in ["delivered","failed"])}) >= 0) exitWith {[]};
 private _interval = _fridge getVariable ["ACME_bf_regenMins",-1];
 if !(_interval isEqualType 0 && {finite _interval} && {_interval >= -1} && {_interval <= 1e9}) exitWith {[]};
 private _minutes = _interval;

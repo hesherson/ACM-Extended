@@ -10,11 +10,13 @@ import re
 import pytest
 from test_menu_death_lifecycle import execute, read, namespace_public_arguments
 from test_b218_carrier_inventory import setup, cargo_source
+from test_historical_vial_execution import map_defaults
 
 
 def source(name):
     s = read(name)
     s = s.replace('canSuspend', 'false').replace('local _holder', 'true').replace('local _container', 'true')
+    s = s.replace('local _provider', '_presentationLocal')
     s = s.replace('hasInterface', '_testInterface')
     # SQF-VM lacks finite; ordinary fixture scalars are finite. Type/range checks remain production code.
     s = re.sub(r'\bfinite (_\w+)', r'(\1 == \1)', s)
@@ -27,7 +29,7 @@ def source(name):
     s = s.replace('_registry getOrDefault [_x param [7,-1],[]]', '(if (str (_x param [7,-1]) in _registry) then {_registry get str (_x param [7,-1])} else {[]})')
     s = re.sub(r'\beveryContainer (_\w+)', r'(\1 getVariable ["children",[]])', s)
     s = s.replace('isClass (configFile >> "CfgWeapons" >> _vest)', '(_vest == "Vest_A")')
-    return f'ACME_fnc_{name}={{'+namespace_public_arguments(s)+'};\n'
+    return f'ACME_fnc_{name}={{'+namespace_public_arguments(map_defaults(s))+'};\n'
 
 
 def harness():
@@ -35,6 +37,8 @@ def harness():
         _wornVest=""; deleteVehicle _wornContainer; _wornContainer=objNull;
         private _deviceCount=1; private _rootUniform=objNull; private _rootBackpack=objNull;
         private _testInterface=false;
+        private _presentationLocal=true;
+        private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
         private _restoreRefused=false;
         private _restoreCalls=0;
         private _grantPending=false;
@@ -218,6 +222,84 @@ def test_inflight_materialization_or_uncertain_native_remove_prevents_checkpoint
     ''')
 
 
+@pytest.mark.parametrize('name,epoch_index', [('ACME_txPullPending',2),('ACME_yDiscardPending',2),('ACME_txRemoveContexts',3)])
+@pytest.mark.parametrize('stale', ['delivered','new_incarnation','nonlocal','deleted'])
+def test_resource_free_stale_ui_context_does_not_permanently_block_checkpoint(name,epoch_index,stale):
+    changes={
+        'delivered':'_patient setVariable ["ACME_resourceReturnReceived",createHashMapFromArray [["old",[[],"delivered"]]]];',
+        'new_incarnation':'_patient setVariable ["ACME_providerLocalityEpoch",2];',
+        'nonlocal':'_presentationLocal=false;',
+        'deleted':'_context set [0,objNull];',
+    }[stale]
+    execute(harness()+r'''
+        _testInterface=true;ACE_player=_patient;
+        private _context=[_patient,_medic];
+        '''+(' _context pushBack "body";' if epoch_index==3 else '')+r'''
+        _context pushBack 0;
+        '''+changes+f'uiNamespace setVariable ["{name}",createHashMapFromArray [["old",_context]]];'+r'''
+        uiNamespace setVariable ["ACME_txRemovePending","old"];
+        private _snapshot=[_patient] call ACME_fnc_equipmentSnapshot;
+        [[_snapshot] call ACME_fnc_equipmentSnapshotValid,"stale presentation context blocked checkpoint"] call _check;
+        '''+f'[count (uiNamespace getVariable "{name}")==0,"stale presentation context was never retired"] call _check;'+
+        ('[uiNamespace getVariable "ACME_txRemovePending"=="","stale Remove button marker remained active"] call _check;' if name=='ACME_txRemoveContexts' else '')+r'''
+    ''')
+
+
+@pytest.mark.parametrize('name', ['ACME_txPullPending','ACME_yDiscardPending','ACME_txRemoveContexts'])
+def test_current_undelivered_ui_request_stays_busy_and_does_not_change_funding(name):
+    execute(harness()+r'''
+        _testInterface=true;ACE_player=_patient;
+        private _context=[_patient,_medic];
+        '''+(' _context pushBack "body";' if name=='ACME_txRemoveContexts' else '')+r'''
+        _context pushBack 0;
+        '''+f'uiNamespace setVariable ["{name}",createHashMapFromArray [["live",_context]]];'+r'''
+        _patient setVariable ["ACME_resourceReturnReceived",createHashMapFromArray [["live",[[],"uncertain"]]]];
+        private _funding=createHashMapFromArray [["live",["source-certificate"]]];
+        _patient setVariable ["ACME_resourceReturnSourcePending",_funding];
+        [([_patient] call ACME_fnc_equipmentSnapshot) isEqualTo [],"current uncertain request stopped blocking"] call _check;
+        '''+f'[count (uiNamespace getVariable "{name}")==1,"current request was discarded"] call _check;'+r'''
+        [(_patient getVariable "ACME_resourceReturnSourcePending") isEqualTo _funding,"UI retirement altered source funding"] call _check;
+    ''')
+
+
+def test_other_local_actor_presentation_does_not_block_unrelated_holder_or_erase_receipt():
+    execute(harness()+r'''
+        _testInterface=true;ACE_player=_patient;
+        private _context=[_medic,_patient,0];
+        uiNamespace setVariable ["ACME_txPullPending",createHashMapFromArray [["other",_context]]];
+        [[[_patient] call ACME_fnc_equipmentSnapshot] call ACME_fnc_equipmentSnapshotValid,"another local actor's UI blocked this holder"] call _check;
+        [count (uiNamespace getVariable "ACME_txPullPending")==1,"unrelated live context was erased"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('name,context', [
+    ('ACME_txRemoveContexts','[_patient,_medic]'),
+    ('ACME_txPullPending','[_patient,_medic,0,"invalid-extra"]'),
+    ('ACME_yDiscardPending','[_patient,_medic,0,"invalid-extra"]'),
+])
+def test_ui_context_shape_that_no_result_can_settle_is_retired_without_touching_resources(name,context):
+    execute(harness()+r'''
+        _testInterface=true;ACE_player=_patient;
+        '''+f'uiNamespace setVariable ["{name}",createHashMapFromArray [["invalid",{context}]]];'+r'''
+        [[[_patient] call ACME_fnc_equipmentSnapshot] call ACME_fnc_equipmentSnapshotValid,"unsettleable presentation context blocked checkpoint"] call _check;
+        '''+f'[count (uiNamespace getVariable "{name}")==0,"unsettleable presentation context was retained"] call _check;'+r'''
+        [isNil {_patient getVariable "ACME_resourceReturnReceived"},"presentation cleanup invented a resource decision"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('name', ['ACME_usedRehangPending','ACME_yRefillPending'])
+def test_escrow_owning_ui_maps_are_never_retired_with_presentation_contexts(name):
+    execute(harness()+r'''
+        _testInterface=true;ACE_player=_patient;_presentationLocal=false;
+        uiNamespace setVariable ["ACME_txPullPending",createHashMapFromArray [["old",[objNull,_patient,0]]]];
+        private _escrow=createHashMapFromArray [["source",["used-row",183.25,"native-funding"]]];
+        '''+f'uiNamespace setVariable ["{name}",_escrow];'+r'''
+        [([_patient] call ACME_fnc_equipmentSnapshot) isEqualTo [],"resource escrow was treated as presentation"] call _check;
+        [count (uiNamespace getVariable "ACME_txPullPending")==0,"stale resource-free context was not retired"] call _check;
+        '''+f'[(uiNamespace getVariable "{name}") isEqualTo _escrow,"resource-bearing pending data was erased"] call _check;'+r'''
+    ''')
+
+
 def test_fresh_used_bag_snapshots_donor_facts_and_normalizes_clock_without_registry_id_reuse():
     execute(harness()+r'''
         CBA_missionTime=7200;
@@ -249,10 +331,53 @@ def test_missing_fresh_donor_facts_are_saved_as_unusable_evidence_without_stale_
 
 @pytest.mark.parametrize('blood', [-1,8,16])
 def test_fresh_used_bag_out_of_domain_blood_type_is_rejected_before_restore(blood):
-    execute(harness()+f'_equipment set [2,[["bad_fresh","FreshBlood",100,1,{blood},500,"Fresh blood",-1,["freshMissingV1"]]]];'+r'''
+    execute(harness()+f'_equipment set [2,[["bad_fresh","FreshBlood",100,1,{blood},500,"Fresh blood",-1,["freshAgeV1",true,0,{blood}]]]];'+r'''
         [!([_equipment] call ACME_fnc_equipmentSnapshotValid),"out-of-domain fresh blood type validated"] call _check;
         [!([_patient,_equipment] call ACME_fnc_equipmentRestore),"out-of-domain fresh blood restored"] call _check;
         [_restoreCalls==0 && {isNil {_patient getVariable "ACME_usedBags"}},"invalid fresh type mutated resources"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('mode', ['remove','pull','discard'])
+@pytest.mark.parametrize('source_blood', [-1,8])
+def test_unknown_fresh_canonical_return_can_be_saved_and_restored_only_as_unusable_evidence(mode,source_blood):
+    execute(harness()+f'private _mode="{mode}";private _sourceBlood={source_blood};'+r'''
+        CBA_fnc_serverEvent={_events pushBack _this;};
+        CBA_missionTime=7200;
+        private _provider=_patient;private _source=_medic;
+        private _bag=["FreshBlood",183.25,4,0,false,_sourceBlood,500,17,"unknown-fresh",500,["freshMissingV1"]];
+        private _canonical=[_mode,_source,"unknown-cleanup",[_bag]] call ACME_fnc_resourceReturnProducts;
+        [_canonical select 0,"unknown fresh cleanup was refused by canonical products"] call _check;
+        private _products=_canonical select 1;
+        private _args=[_provider,_source,"unknown-cleanup",_products];
+        [["stage",_args] call ACME_fnc_resourceReturnSource,"source stage rejected"] call _check;
+        [["funded",_args] call ACME_fnc_resourceReturnSource,"source funding rejected"] call _check;
+        [_provider,_source,"unknown-cleanup",_products,7,"machineA",1] call ACME_fnc_resourceReturnReceive;
+        [_provider,_source,"unknown-cleanup",_products,7,"machineA",1] call ACME_fnc_resourceReturnReceive;
+        [["delivered",["unknown-cleanup",[7,"machineA"]]] call ACME_fnc_resourceReturnSource,"delivered source did not settle"] call _check;
+        private _used=_provider getVariable "ACME_usedBags";
+        [count _used==1 && {(_used select 0 select 2)==183.25} && {(_used select 0 select 4)==-1}
+            && {(_used select 0 select 8) isEqualTo ["freshMissingV1"]},"canonical cleanup lost, cloned or refreshed unknown donor evidence"] call _check;
+        private _saved=[_provider] call ACME_fnc_equipmentSnapshot;
+        [[_saved] call ACME_fnc_equipmentSnapshotValid,"inert unknown fresh product permanently blocked checkpoint"] call _check;
+        _provider setVariable ["ACME_usedBags",[]];
+        CBA_missionTime=12;
+        missionNamespace setVariable ["ACM_circulation_FreshBloodList",createHashMapFromArray [[17,[_source,500,2,true,12]]]];
+        [[_provider,_saved] call ACME_fnc_equipmentRestore,"inert unknown fresh product could not be restored"] call _check;
+        private _restored=(_provider getVariable "ACME_usedBags") select 0;
+        [_restored isEqualTo (_used select 0),"unknown fresh evidence changed across restart"] call _check;
+        [([17,_restored select 8,_restored select 4] call ACME_fnc_freshBloodResolve) isEqualTo [],"restored unknown evidence bound reused donor ID"] call _check;
+        private _again=[_provider] call ACME_fnc_equipmentSnapshot;
+        [(_again select 2) isEqualTo (_saved select 2),"unknown donor fence changed on subsequent save"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('marker', ['[]','["freshMissingV1","extra"]','["freshAgeV1",true,0,-1]','["freshV1",true,0,-1]','["unknown"]'])
+def test_unknown_fresh_type_requires_the_exact_missing_donor_fence(marker):
+    execute(harness()+f'_equipment set [2,[["bad_fresh","FreshBlood",100,1,-1,500,"Fresh blood",-1,{marker}]]];'+r'''
+        [!([_equipment] call ACME_fnc_equipmentSnapshotValid),"malformed negative donor facts validated"] call _check;
+        [!([_patient,_equipment] call ACME_fnc_equipmentRestore),"malformed negative donor facts restored"] call _check;
+        [_restoreCalls==0 && {isNil {_patient getVariable "ACME_usedBags"}},"malformed negative donor facts mutated resources"] call _check;
     ''')
 
 
@@ -314,12 +439,13 @@ def test_rehang_preserves_inline_donor_facts_after_registry_disappears():
     ''')
 
 
-def test_rehang_missing_donor_fence_cannot_bind_reused_numeric_id():
+@pytest.mark.parametrize('blood', [-1,2])
+def test_rehang_missing_donor_fence_cannot_bind_reused_numeric_id(blood):
     from test_b228_line_service_network_audit import used_setup
     fixture = re.sub(r'\bfinite (\([^()]*\))', r'(\1 call _finite)', used_setup())
-    execute(fixture+r'''
+    execute(fixture+f'private _blood={blood};'+r'''
         missionNamespace setVariable ["ACM_circulation_FreshBloodList",createHashMapFromArray [[1,[_patient,500,2,true,0]]]];
-        _record=["used","FreshBlood",100,4,2,500,"Fresh blood",1,["freshMissingV1"]];
+        _record=["used","FreshBlood",100,4,_blood,500,"Fresh blood",1,["freshMissingV1"]];
         call _send;
         private _rows=(_patient getVariable "ACM_circulation_IV_Bags") get "body";
         [_rows isEqualTo [],"unknown donor fence fell through to new registry entry"] call _check;

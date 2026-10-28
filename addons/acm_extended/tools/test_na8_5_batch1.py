@@ -55,8 +55,13 @@ class QuietOutput(unittest.TestCase):
             'functions/fn_carrierInventoryRestore.sqf':2,
             'functions/fn_chestSealOpen.sqf':2,
             'functions/fn_hangBagRestoreWeapons.sqf':1,
-            # Mission-wide terminal token exhaustion only; replay guards execute below.
-            'functions/fn_inventoryLedgerBroker.sqf':1,
+            # Persistent allocator: invalid profile high-water mark at initialization,
+            # one near-budget warning, and one terminal exhaustion report. Runtime
+            # replay/ordinary-issue guards remain covered by inventory diagnostics.
+            'functions/fn_inventoryLedgerNextToken.sqf':3,
+            # An unverifiable native fridge placement is retained for recovery.
+            # Exact receipt replay must remain quiet; execute that guard below.
+            'functions/fn_bloodFridgeReceive.sqf':1,
             # Startup build identity plus capped changed-state native input observation.
             'functions/fn_initForkStartupRuntime.sqf':1,
             'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
@@ -89,6 +94,8 @@ class QuietOutput(unittest.TestCase):
         self.assertEqual(emitters,approved)
         from test_b279_inventory_diagnostics import assert_inventory_failure_diagnostics_bounded
         assert_inventory_failure_diagnostics_bounded()
+        from test_b288_network_admission import assert_fridge_failure_diagnostics_bounded
+        assert_fridge_failure_diagnostics_bounded()
         from test_b280_transfusion_native_input import assert_native_input_diagnostics_bounded, assert_startup_identity_log_is_outside_callbacks
         assert_native_input_diagnostics_bounded()
         assert_startup_identity_log_is_outside_callbacks()

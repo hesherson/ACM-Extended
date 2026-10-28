@@ -25,7 +25,4 @@ if (!_accepted || {count _bag < 7}) exitWith {
 };
 // Inventory/Used Bags are delivered by the server-certified resource-return
 // journal even if this provider has switched locality or closed every menu.
-if (!isNil "ace_medical_treatment_fnc_addToLog") then {
-    [_patient,"activity","%1 removed a fluid bag from %2",[[_provider,false,true] call ace_common_fnc_getName,([_part] call ACM_core_fnc_getBodyPartString)]] call ace_medical_treatment_fnc_addToLog;
-};
 if (_ownsUiRequest && {_viewingProvider} && {!isNull _patient} && {alive _provider}) then {[_provider,_patient,_part] call ACM_circulation_fnc_openTransfusionMenu;};

@@ -10,7 +10,7 @@ if (_receipt isEqualTo _key) exitWith {true};
 // A different save cannot overwrite an imported or currently used object.
 if (_receipt isNotEqualTo [] || {count (_fridge getVariable ["ACME_bf_takers",createHashMap]) > 0}
     || {count (_fridge getVariable ["ACME_bf_viewers",createHashMap]) > 0}
-    || {((values (_fridge getVariable ["ACME_bf_grants",createHashMap])) findIf {(_x param [3,""]) == "pending"}) >= 0}) exitWith {false};
+    || {((values (_fridge getVariable ["ACME_bf_grants",createHashMap])) findIf {!((_x param [3,""]) in ["delivered","failed"])}) >= 0}) exitWith {false};
 _snapshot params ["","_stock","_defaults","_restock","_interval","_remaining"];
 if !(_fridge getVariable ["ACME_bf_setup",false]) then {[_fridge,[],false] call ACME_fnc_bloodFridgeSetup;};
 private _minutes = _interval;

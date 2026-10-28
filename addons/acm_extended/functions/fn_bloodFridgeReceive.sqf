@@ -1,65 +1,38 @@
-/* Inventory delivery is independent of cosmetic reach. Its receipt is permanent
- * for this mission and acknowledged only after native placement readback. */
+/* Presentation/held diagnostics only. Generic resource-return receipts are
+ * the delivery authority; replay and migration here can never add an item. */
 if (canSuspend) exitWith {isNil {_this call ACME_fnc_bloodFridgeReceive;};};
-params ["_anchor", "_class", "_player", ["_token", [], [[]]]];
+params ["_anchor", "_class", "_player", ["_token", [], [[]]], ["_status","delivered"],["_bridge",""]];
 if (isNull _player || {!local _player} || {count _token != 2}) exitWith {};
-// Tokens sequence across all fridges for this provider. The key survives
-// deletion of the source furniture while an accepted grant is in transport.
+if (_bridge=="") then {_bridge=format ["fridge:%1:%2:%3",netId _player,_token select 0,_token select 1];};
 private _deliveryKey=format ["%1:%2",_token select 0,_token select 1];
 private _deliveries=_player getVariable ["ACME_bf_deliveryReceipts",createHashMap];
 private _previous=_deliveries getOrDefault [_deliveryKey,[]];
 private _ack={
-    ["ACME_bfDeliveryAck",[_anchor,_player,_token,_class,clientOwner]] call CBA_fnc_serverEvent;
-};
-if (_previous isNotEqualTo []) exitWith {
-    if (_previous isEqualTo [_anchor,_token,_class,"delivered"]) then {call _ack;};
+    if (_class!="") then {["ACME_bfDeliveryAck",[_anchor,_player,_token,_class,clientOwner]] call CBA_fnc_serverEvent;};
 };
 private _received = _player getVariable ["ACME_bf_receivedTokens", []];
-if (_token in _received) exitWith {
-    // An in-session upgrade can encounter a pre-journal delivery receipt.
-    _deliveries set [_deliveryKey,[_anchor,+_token,_class,"delivered"]];
-    _player setVariable ["ACME_bf_deliveryReceipts",_deliveries,true];call _ack;
+private _products=[["item",_class]];
+private _proof=(_player getVariable ["ACME_resourceReturnReceived",createHashMap]) getOrDefault [_bridge,[]];
+if (_status=="held") exitWith {
+    if (hasInterface && {_player isEqualTo ACE_player}) then {["Blood pickup is reserved for recovery.",3] call ace_common_fnc_displayTextStructured;};
 };
-private _placed=_class=="";
-if (_class != "") then {
-    private _before={_x==_class} count ((uniformItems _player)+(vestItems _player)+(backpackItems _player));
-    private _nearHolder=nearestObject [_player,"WeaponHolder"];
-    private _groundBefore=if (isNull _nearHolder) then {0} else {{_x==_class} count itemCargo _nearHolder};
-    private _placement=[_player,_class] call ace_common_fnc_addToInventory;
-    private _after={_x==_class} count ((uniformItems _player)+(vestItems _player)+(backpackItems _player));
-    _placed=_after==_before+1;
-    private _knownUnplaced=false;
-    if (!_placed && {!isNil "_placement"} && {_placement isEqualType []} && {count _placement==2}
-        && {(_placement select 0) isEqualType true} && {(_placement select 1) isEqualType objNull}) then {
-        private _holder=_placement select 1;
-        _knownUnplaced=_after==_before;
-        if (!isNull _holder && {_holder isNotEqualTo _player}) then {
-            private _expected=if (_holder isEqualTo _nearHolder) then {_groundBefore+1} else {1};
-            private _groundAfter={_x==_class} count itemCargo _holder;
-            _placed=_groundAfter==_expected;
-            _knownUnplaced=_knownUnplaced && {_groundAfter==_expected-1};
-        };
-    };
-    if (!_placed) exitWith {
-        // A conforming ACE result with unchanged native cargo proves no grant
-        // was materialized. Retry that same funded journal; never debit again.
-        if (!_knownUnplaced) then {
-            _deliveries set [_deliveryKey,[_anchor,+_token,_class,"uncertain"]];
-            _player setVariable ["ACME_bf_deliveryReceipts",_deliveries,true];
-            diag_log "[ACME BLOOD FRIDGE] Native delivery returned no verifiable placement; stock remains reserved for recovery.";
-        };
-    };
+if (_status=="uncertain") exitWith {
+    if (_proof isNotEqualTo [_products,"uncertain"] || {_previous isNotEqualTo []}) exitWith {};
+    _deliveries set [_deliveryKey,[_anchor,+_token,_class,"uncertain"]];
+    _player setVariable ["ACME_bf_deliveryReceipts",_deliveries,true];
+    diag_log "[ACME BLOOD FRIDGE] Native delivery returned no verifiable placement; stock remains reserved for recovery.";
 };
-// A failed inner placement exit must not fall through to a successful receipt.
-if (!_placed) exitWith {};
+if (_class!="" && {_proof isNotEqualTo [_products,"delivered"]}) exitWith {};
+if (_previous isEqualTo [_anchor,_token,_class,"delivered"]) exitWith {call _ack;};
 _deliveries set [_deliveryKey,[_anchor,+_token,_class,"delivered"]];
 _player setVariable ["ACME_bf_deliveryReceipts",_deliveries,true];
 call _ack;
 _received pushBack _token;
-// Keep the legacy presentation window bounded. The permanent exact delivery
-// receipts above remain the authority for transport retries after this window.
+// This bounded legacy window is presentation bookkeeping. Generic private
+// decisions and server journals retain all authority for physical delivery.
 if (count _received > 64) then {_received deleteAt 0;};
 _player setVariable ["ACME_bf_receivedTokens", _received, true];
+if (!hasInterface) exitWith {["ACME_bfTakeStop",[_anchor,_player,_token]] call CBA_fnc_serverEvent;};
 private _current = (_player getVariable ["ACME_bf_take", []]) isEqualTo [_token, _anchor];
 if (_class != "") then {
     if (_player isEqualTo ACE_player) then {

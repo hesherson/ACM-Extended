@@ -44,6 +44,20 @@ def assert_inventory_failure_diagnostics_bounded():
 def test_terminal_inventory_diagnostic_is_once_and_duplicate_failure_ack_is_inert():
     assert_inventory_failure_diagnostics_bounded()
 
+def test_budget_warning_is_once_before_exhaustion_and_terminal_report_remains_distinct():
+    execute(diagnostic_setup()+r'''
+        missionNamespace setVariable ["ACME_inventoryTokenSequence",60000];
+        private _first=call ACME_fnc_inventoryLedgerNextToken;
+        private _next=call ACME_fnc_inventoryLedgerNextToken;
+        [_first==60001 && {_next==60002} && {count _diagnostics==1}
+            && {((_diagnostics select 0) find "Persistent ID budget")>=0},"early budget warning repeated or prevented valid allocation"]call _check;
+        missionNamespace setVariable ["ACME_inventoryTokenSequence",65534];
+        private _exhausted=call ACME_fnc_inventoryLedgerNextToken;
+        private _replay=call ACME_fnc_inventoryLedgerNextToken;
+        [_exhausted==0 && {_replay==0} && {count _diagnostics==2}
+            && {((_diagnostics select 1) find "Persistent token space exhausted")>=0},"terminal exhaustion did not report once after the prior budget warning"]call _check;
+    ''')
+
 def test_normal_issue_full_inventory_spill_and_invalid_pending_are_quiet():
     execute(diagnostic_setup()+r'''
         _medic setVariable ["capacity",false];call _issue;

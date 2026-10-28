@@ -92,6 +92,44 @@ def test_ui_acknowledgement_is_presentation_only_and_cannot_duplicate_server_pro
     ''')
 
 
+@pytest.mark.parametrize('retire_context',[False,True])
+def test_accepted_owner_removal_logs_once_before_ui_ack_and_survives_context_retirement(retire_context):
+    execute(fixture()+r'''
+        private _activity=[];private _logProof=[];
+        ace_medical_treatment_fnc_addToLog={
+            params ["_target","_kind","_format","_arguments"];
+            _activity pushBack [_target,_kind,format ([_format]+_arguments)];
+            private _source=(missionNamespace getVariable "ACME_resourceReturnSources") get "remove";
+            _logProof=[count ((_patient getVariable "ACM_circulation_IV_Bags") get "body"),_source select 1,count _returns];
+        };
+        call _context;
+        [call _remove,"owner removal refused"] call _check;
+        [_activity isEqualTo [[_patient,"activity","Provider removed a fluid bag from body"]],"accepted owner removal lost its original activity wording/patient"] call _check;
+        [_logProof isEqualTo [0,"funded",0],"activity was logged before source debit/funding or depended on UI acknowledgement"] call _check;
+        private _facts=+(_bag select 10);
+    '''+('uiNamespace setVariable ["ACME_txRemoveContexts",createHashMap];' if retire_context else '')+r'''
+        // Cached owner requests and late/duplicate presentation replies cannot
+        // append another clinical activity after the one accepted source edit.
+        [_patient,_medic,"body","bag",0,[],1,"remove"] call ACME_fnc_transfusionRemoveBagCommit;
+        call _send;call _send;
+        call _context;call _send;call _send;
+        [count _activity==1,"cached request or late/duplicate UI reply duplicated activity"] call _check;
+        [(_bag select 10) isEqualTo _facts,"moving the log changed captured donor metadata"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('failure',['stage','source-write'])
+def test_rejected_or_unfunded_owner_removal_never_logs_accepted_activity(failure):
+    change='missionNamespace setVariable ["ACME_syringeDeliveryMachineNonce",""];' if failure=='stage' else '_commitAllowed=false;'
+    execute(fixture()+r'''
+        private _activity=[];ace_medical_treatment_fnc_addToLog={_activity pushBack _this;};
+    '''+change+r'''
+        [!call _remove,"failed admission/debit was accepted"] call _check;
+        [_activity isEqualTo [],"rejected/unfunded removal logged a successful activity"] call _check;
+        [count ((_patient getVariable "ACM_circulation_IV_Bags") get "body")==1,"failed logging path lost original attached bag"] call _check;
+    ''')
+
+
 def test_switched_controlled_player_does_not_receive_old_providers_return():
     execute(fixture()+r'''
         call _remove;call _context;ACE_player=missionNamespace;call _send;call _deliver;

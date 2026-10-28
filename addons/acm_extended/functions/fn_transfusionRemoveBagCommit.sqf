@@ -87,4 +87,7 @@ if (_pi >= 0) then {
     private _site = _bag param [3, -1, [0]];
     _patient setVariable [format ["ACME_clampRate_%1_%2_%3", _pi, _iv, _site], -1, false];
 };
+if (!isNil "ace_medical_treatment_fnc_addToLog") then {
+    [_patient,"activity","%1 removed a fluid bag from %2",[[_medic,false,true] call ace_common_fnc_getName,([_part] call ACM_core_fnc_getBodyPartString)]] call ace_medical_treatment_fnc_addToLog;
+};
 [true, _bag, ""] call _reply

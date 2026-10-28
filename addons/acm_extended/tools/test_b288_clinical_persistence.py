@@ -53,8 +53,8 @@ def test_same_mission_object_roundtrip_keeps_the_live_reference():
 def test_only_server_creates_and_publishes_one_mission_incarnation(server):
     text=(F/'fn_clinicalPersistenceInit.sqf').read_text()
     text=text.replace('isServer','_fixtureServer').replace('systemTimeUTC','[2026,10,28,0,0,0,0]')
-    text=text.replace('publicVariable "ACME_clinicalPersistenceSession";',
-                      '_sessionPublications pushBack ACME_clinicalPersistenceSession;')
+    text=text.replace('missionNamespace setVariable ["ACME_clinicalPersistenceSession", _session, true];',
+                      'missionNamespace setVariable ["ACME_clinicalPersistenceSession", _session];_sessionPublications pushBack _session;')
     execute(r'''
         missionNamespace setVariable ["ACME_clinicalPersistenceSession",nil];
         private _sessionPublications=[];

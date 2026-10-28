@@ -167,7 +167,10 @@ if (hasInterface || isServer) then {
 [QGVAR(freshBloodGrantQuery), {_this call FUNC(freshBloodGrantQuery);}] call CBA_fnc_addEventHandler;
 ["ACME_resourceReturn", {
     // Internal proof/admission flags belong to server recursion, never a wire.
-    if (_this isEqualType [] && {count _this==2}) then {[_this select 0,_this select 1] call ACME_fnc_resourceReturnBroker;};
+    if (_this isEqualType [] && {count _this==2}
+        && {(_this select 0) in ["request","ack","decision","sourceProof","recover"]}) then {
+        [_this select 0,_this select 1] call ACME_fnc_resourceReturnBroker;
+    };
 }] call CBA_fnc_addEventHandler;
 ["ACME_resourceReturnDelivery", {_this call ACME_fnc_resourceReturnReceive;}] call CBA_fnc_addEventHandler;
 ["ACME_resourceReturnQuery", {_this call ACME_fnc_resourceReturnQuery;}] call CBA_fnc_addEventHandler;

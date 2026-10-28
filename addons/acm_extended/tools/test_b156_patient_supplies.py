@@ -23,6 +23,14 @@ def execute(scenario):
         source = (FUNCTIONS / f"fn_{name}.sqf").read_text()
         for unit in ["_unit", "_medic", "_patient", "_donor", "_vehicle", "_carrier", "_x"]:
             source = source.replace(f"isNull {unit}", f'({unit} isEqualTo "")')
+        # Actors are string keys in this historical inventory fixture. Adapt
+        # object-variable reads through a real field map, retaining production
+        # branch behavior (including B288's per-actor persistence freeze).
+        for actor in ["_unit", "_medic", "_patient", "_donor", "_vehicle", "_carrier", "_x"]:
+            source = source.replace(
+                f'{actor} getVariable ["ACME_persistenceFrozen",false]',
+                f'([{actor}, ["ACME_persistenceFrozen",false]] call _actorGetVariable)',
+            )
         source = source.replace("local _medic", "true")
         source = source.replace("_medic removeItem _x", "[_medic, _x] call _remove")
         source = source.replace("objectParent _x", '(_parents getOrDefault [_x, ""])')
@@ -35,6 +43,14 @@ def execute(scenario):
         // No removed-carrier fixture in this legacy string-object harness.
         ACME_fnc_carrierInventoryGet = {""};
         ACME_fnc_carrierSupplyTake = {["", "", false, ""]};
+        private _actorVariables = createHashMap;
+        private _actorGetVariable = {
+            params ["_actor", "_field"];
+            _field params ["_name", "_default"];
+            private _value = _actorVariables get (str [_actor, _name]);
+            if (isNil "_value") exitWith {_default};
+            _value
+        };
         private _parents = createHashMap;
         private _cargo = createHashMap;
         private _inventory = createHashMapFromArray [["medic", ["seal"]], ["patient", ["seal"]]];
@@ -273,4 +289,20 @@ def test_nrb_cylinder_selection_follows_supply_order_and_actual_reserve():
         _bottles set ["medic:uniform", [["ACM_OxygenTank_425", 8]]];
         ace_medical_treatment_allowSharedEquipment = 3; _isMedic = true;
         [(["medic", "patient"] call ACME_fnc_nrbOxygenSource) == "medic", "medic conditional priority lost"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("actor", ["medic", "patient"])
+def test_string_actor_variable_boundary_preserves_freeze_and_exact_refund(actor):
+    execute(f'''
+        ace_medical_treatment_allowSharedEquipment = 0;
+        _actorVariables set [str ["{actor}", "ACME_persistenceFrozen"], true];
+        [(["medic", "patient", ["seal"]] call ACME_fnc_treatmentSupplyTake) isEqualTo [], "frozen actor admitted native debit"] call _check;
+        [_nativeCalls == 0 && {{(_inventory get "medic") isEqualTo ["seal"]}} && {{(_inventory get "patient") isEqualTo ["seal"]}}, "freeze changed source inventory"] call _check;
+        _actorVariables set [str ["{actor}", "ACME_persistenceFrozen"], false];
+        private _receipt = ["medic", "patient", ["seal"]] call ACME_fnc_treatmentSupplyTake;
+        [count _receipt == 4 && {{(_receipt select 0) == "patient"}}, "unfrozen actor lost native donor policy"] call _check;
+        _actorVariables set [str ["{actor}", "ACME_persistenceFrozen"], true];
+        [_receipt] call ACME_fnc_treatmentSupplyRefund;
+        [(_inventory get "patient") isEqualTo ["seal"] && {{(_inventory get "medic") isEqualTo ["seal"]}}, "freeze blocked exact existing refund"] call _check;
     ''')

@@ -67,3 +67,18 @@ def test_public_supply_binding_on_corpse_blocks_world_checkpoint():
     _patient setVariable ["ACME_IV_SupplyBindings",createHashMapFromArray [["r",[]]]];
     [!([] call ACME_fnc_persistenceJournalsReady),"corpse supply binding omitted from save preflight"] call _check;
     ''')
+
+
+@pytest.mark.parametrize('phase',['applying','pending','stockUncertain','unknown'])
+def test_fridge_nonterminal_funding_state_is_never_omitted(phase):
+    execute(setup()+f'''
+    missionNamespace setVariable ["ACME_bf_serverGrants",createHashMapFromArray [["r",[objNull,[7,1],"blood","{phase}"]]]];
+    [!([] call ACME_fnc_persistenceJournalsReady),"nonterminal fridge funding accepted"] call _check;
+    ''')
+
+
+def test_fridge_proven_non_debit_failure_is_settled():
+    execute(setup()+r'''
+    missionNamespace setVariable ["ACME_bf_serverGrants",createHashMapFromArray [["r",[objNull,[7,1],"blood","failed"]]]];
+    [[] call ACME_fnc_persistenceJournalsReady,"proved no-debit fridge failure blocked checkpoint"] call _check;
+    ''')

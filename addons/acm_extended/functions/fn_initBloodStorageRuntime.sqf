@@ -54,11 +54,12 @@ if (isServer) then {
     private _key=format ["%1:%2:%3",netId _player,_token select 0,_token select 1];
     private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
     private _grant=_serverGrants getOrDefault [_key,[]];
-    if (count _grant!=6 || {(_grant select 0) isNotEqualTo _player} || {(_grant select 1) isNotEqualTo _token}
+    if (count _grant<7 || {(_grant select 0) isNotEqualTo _player} || {(_grant select 1) isNotEqualTo _token}
         || {(_grant select 2)!=_class} || {(_grant select 5) isNotEqualTo _anchor}) exitWith {};
-    private _deliveryKey=format ["%1:%2",_token select 0,_token select 1];
-    private _proof=(_player getVariable ["ACME_bf_deliveryReceipts",createHashMap]) getOrDefault [_deliveryKey,[]];
-    if (_sender!=owner _player && {_proof isNotEqualTo [_anchor,_token,_class,"delivered"]}) exitWith {};
+    // Cosmetic/public fridge receipts never authorize delivery. Only the exact
+    // generic journal's terminal native-placement proof can retire this stock.
+    private _journal=(missionNamespace getVariable ["ACME_resourceReturns",createHashMap]) getOrDefault [_grant select 6,[]];
+    if (count _journal<11 || {(_journal select 4)!="delivered"}) exitWith {};
     _grant set [3,"delivered"];_serverGrants set [_key,_grant];missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
     if (!isNull _anchor) then {
         private _grants=_anchor getVariable ["ACME_bf_grants",createHashMap];_grants set [_key,_grant];_anchor setVariable ["ACME_bf_grants",_grants];

@@ -7,11 +7,11 @@ private _ok = true;
     _x params ["_name","_stateIndex","_terminal"];
     private _map = missionNamespace getVariable [_name,createHashMap];
     if !(_map isEqualType createHashMap) exitWith {_ok = false;};
-    if ((values _map findIf {!(_x isEqualType []) || {(_x param [_stateIndex,""]) != _terminal}}) >= 0) exitWith {_ok = false;};
+    if ((values _map findIf {!(_x isEqualType []) || {!((_x param [_stateIndex,""]) in _terminal)}}) >= 0) exitWith {_ok = false;};
 } forEach [
-    ["ACME_resourceReturns",4,"delivered"],
-    ["ACM_circulation_FreshBloodGrants",5,"delivered"],
-    ["ACME_bf_serverGrants",3,"delivered"]
+    ["ACME_resourceReturns",4,["delivered"]],
+    ["ACM_circulation_FreshBloodGrants",5,["delivered"]],
+    ["ACME_bf_serverGrants",3,["delivered","failed"]]
 ];
 if (!_ok) exitWith {false};
 private _deliveries = missionNamespace getVariable ["ACME_syringeDeliveries",createHashMap];
