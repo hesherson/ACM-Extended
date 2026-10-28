@@ -28,6 +28,16 @@ The review covers production callbacks, owner dispatch, replay decisions, native
 - Fresh-blood labels/logs use immutable bag facts; a configured base class without a donor suffix is formatted safely. Manufacturer capacity and donor metadata survive the canonical per-bag flow tick.
 - Treatment supply receipts, owner-private return decisions and public IV supply bindings fence checkpoints. Global journal checks also cover pending products whose original actors were deleted. Active grant indexes and bounded unproven requests keep terminal history out of recurring work.
 
+## Transfusion-button follow-up
+
+A native report identified silent, unresponsive transfusion buttons after the initial B288 review. The previous tests executed action functions and layout state but did not evaluate the return value of the auxiliary `ButtonClick` observers. The piggyback-cancellation observer returned its helper's `true`, overriding the default action of Pressure Infuse, Adjust Infusion, Stop and other native buttons. Cleanup and deferred popover dismissal now explicitly return `false`; they neither perform nor replay a treatment. Body Map and Narc Box each use one native button action, with the same passive cleanup contract and their existing bounded page handoff.
+
+The click-dispatch regression executes the actual registration loops and extracted button actions, including reverse event-handler order and native action payloads. It verifies exactly one action after cleanup. This models the documented engine boundary; it does not claim that an earlier scripted navigation handler was proved to be skipped, or certify native pointer routing and sounds. See Bohemia's [UI event-handler contract](https://community.bistudio.com/wiki/Arma_3%3A_Event_Handlers/User_Interface) and [control handler ordering](https://community.bistudio.com/wiki?title=ctrlAddEventHandler).
+
+Adjust Infusion also used a medication entry's old physical-array index after a bag was removed or reordered. The resolver now follows the selected physical bag UID and preserves its additives. A clamp session retains that UID and validates its patient generation and live bag before use, including the final position commit after both dialogs close. Legacy index-only contexts retain their prior compatibility behavior.
+
+Native acceptance for this follow-up must click Body Map, Narc Box, Pressure Infuse, Adjust Infusion and the remaining treatment buttons, confirm the normal feedback and one action per click, then repeat after bag deletion/reordering and a clamp close. A silent pointer-routing failure cannot be ruled out by the event-contract simulation.
+
 ## Recorded validation
 
 An initial frozen combined B285–B288 selection passed **951 cases across 36 modules**, with no failures, errors or skips. It included 483 B288 cases and retained networking, AI/performance, cooler and build/ownership checks. Further review added fridge handover, unknown-donor preservation, retired UI and owner-log regressions. The complete root-3 allocation passed **254 cases** after its older medication assertions were updated to require refusal before any medicated Pull mutation; no test cases were removed.

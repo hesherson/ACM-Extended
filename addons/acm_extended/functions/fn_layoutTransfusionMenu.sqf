@@ -112,7 +112,9 @@ if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
                         _parent setVariable ["ACME_txActionMenu", ""];
                         [_parent] call ACME_fnc_layoutTransfusionMenu;
                     };
+                    false
                 },[ctrlParent _ctrl]] call CBA_fnc_execNextFrame;
+                false
             }];
         };
     } forEach [86007,86146,86120,86147,86134,86148,86132,86133,86149];
@@ -131,6 +133,8 @@ if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
         if (!isNull _ctrl) then {_ctrl ctrlAddEventHandler ["ButtonClick",{
             uiNamespace setVariable ["ACME_lineWarmerConfirm",[]];
             ["cancel"] call ACME_fnc_piggybackWorkflow;
+            // This observer must not override the button's native/config action.
+            false
         }];};
     } forEach [86006,86007,86146,86120,86147,86134,86148,86132,86133,86149,86131,86142,86950,86951];
     // Returning from Inventory or the body map to a popover action restores its owning pane before

@@ -262,14 +262,14 @@ if (!isNull _display && {!isNil "ACME_fnc_skPageNavigate"}) then {
     _lb ctrlSetText "< Body Map";
     _lb ctrlSetTooltip "Previous page";
     _lb ctrlEnable true;
-    _lb ctrlAddEventHandler ["ButtonClick",{["left"] call ACME_fnc_skPageNavigate;}];
+    _lb buttonSetAction "['left'] call ACME_fnc_skPageNavigate";
     _lb ctrlCommit 0;
     private _rb = _display ctrlCreate ["ACME_TX_PageButton",86951];
     _rb ctrlSetPosition [_rx,_y,_w,_h];
     _rb ctrlSetText "Narc Box >";
     _rb ctrlSetTooltip "Next page";
     _rb ctrlEnable true;
-    _rb ctrlAddEventHandler ["ButtonClick",{["right"] call ACME_fnc_skPageNavigate;}];
+    _rb buttonSetAction "['right'] call ACME_fnc_skPageNavigate";
     _rb ctrlCommit 0;
 };
 
