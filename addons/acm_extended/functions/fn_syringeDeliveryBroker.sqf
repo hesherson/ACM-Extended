@@ -103,7 +103,9 @@ if (_mode == "begin") exitWith {
     private _episode = _data param [0,""];
     if (!_owns || {_episode == ""} || {count _data != 7}
         || {!((_data select 1) in ["push","inject"])}
-        || {!alive _medic} || {isNull (_data select 2)}) exitWith {["begin",false,["invalid or expired source"]] call _reply;false};
+        || {!alive _medic} || {isNull (_data select 2)}
+        || {_medic getVariable ["ACME_persistenceFrozen",false]}
+        || {(_data select 2) getVariable ["ACME_persistenceFrozen",false]}) exitWith {["begin",false,["invalid or expired source"]] call _reply;false};
     if ((_j get "state") == "awaitBegin") then {
         _j set ["session",_episode]; _j set ["binding",[_data] call ACME_fnc_syringeDeliveryCopy];
         _j set ["state","active"]; _j set ["lease",CBA_missionTime+20];
@@ -148,6 +150,8 @@ private _reject = {
     false
 };
 private _row = [_j get "row",_delta,false] call ACME_fnc_syringeDeliveryDelta;
+if (_medic getVariable ["ACME_persistenceFrozen",false]
+    || {(_args select 0) getVariable ["ACME_persistenceFrozen",false]}) exitWith {["checkpoint in progress"] call _reject};
 if (_row isEqualTo []) exitWith {["invalid source delta"] call _reject};
 if !([_j get "row",_delta,_args select 6] call ACME_fnc_syringeDeliveryDoseValid) exitWith {["dose does not match funded source"] call _reject};
 private _inner = [(_args select 9)] call ACME_fnc_syringeDeliveryCopy;

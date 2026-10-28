@@ -8,7 +8,7 @@ private _rows = [];
     private _data = [_v, true, _clock] call ACME_fnc_clinicalCodec;
     if (_name in ["ACME_tbi_State", "ACME_circ_State"] && {_v isEqualType createHashMap}) then {
         private _pairs = _data select 1;
-        {if ((_x select 0) in ["lastTick", "lastSpikeTime", "lastOsmoTime", "do2RecoveredAt", "createdAt", "startedAt", "onsetTime", "dbgLogAt"]) then {
+        {if ((_x select 0) in ["lastTick", "acidLastTick", "lastSpikeTime", "lastOsmoTime", "do2RecoveredAt", "createdAt", "startedAt", "onsetTime", "dbgLogAt"]) then {
             _x set [1, [_v get (_x select 0), true, "cba"] call ACME_fnc_clinicalCodec];
         };} forEach _pairs;
     };

@@ -4,6 +4,22 @@
 // menu poll pings while a player has the ACE menu on it. Takes retain a bounded door lease through the provider
 // reach, including after the ACE menu closes. Door movement is independent of the cold-chain simulation toggle.
 if (!isServer) exitWith {};
+// The grant outlives its furniture object and cosmetic door lease. Continue
+// delivery even if Zeus removed the fridge after its stock was committed.
+private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+private _activeGrants=[];
+{
+    private _grant=_serverGrants get _x;
+    if ((_grant select 3)=="pending" && {diag_tickTime>=(_grant select 4)}) then {
+        private _unit=_grant select 0;
+        _grant set [4,diag_tickTime+2];_serverGrants set [_x,_grant];
+        if (!isNull _unit) then {
+            ["ACME_bfGive",[_grant select 5,_grant select 2,_unit,_grant select 1],_unit] call CBA_fnc_targetEvent;
+        };
+    };
+    if ((_grant select 3)=="pending") then {_activeGrants pushBack _x;};
+} forEach (missionNamespace getVariable ["ACME_bf_activeGrants",[]]);
+missionNamespace setVariable ["ACME_bf_activeGrants",_activeGrants];
 private _fridges = missionNamespace getVariable ["ACME_bloodFridges", []];
 if (_fridges isEqualTo []) exitWith {};
 
@@ -26,7 +42,7 @@ private _nowGameHours = (dateToNumber date) * _yearHours;
                           + (missionNamespace getVariable ["ACME_bf_regenMinutes", 0]);
         };
         if (_intervalMins > 0) then {
-            private _intervalHours = _intervalMins / 60;
+            private _intervalHours = (_fridge getVariable ["ACME_bf_restoreRestockDelayMins",_intervalMins]) / 60;
             private _last = _fridge getVariable ["ACME_bf_lastRestockGH", -1];
             if (_last < 0) then {
                 // the first tick after placement: anchor the clock and do not restock yet.
@@ -39,6 +55,7 @@ private _nowGameHours = (dateToNumber date) * _yearHours;
                     if ((_nowGameHours - _last) >= _intervalHours) then {
                         [_fridge, "ACME_bf_stock", +(_fridge getVariable ["ACME_bf_default", []])] call ACME_fnc_setVarNet;
                         [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
+                        _fridge setVariable ["ACME_bf_restoreRestockDelayMins",nil,false];
                     };
                 };
             };

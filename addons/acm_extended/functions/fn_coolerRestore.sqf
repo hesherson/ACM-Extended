@@ -56,6 +56,11 @@ if (_scope == "box") exitWith {
     true
 };
 if (!local _holder) exitWith {false};
+// A restored source tuple must never be reused by this application's fresh
+// allocation, including a fresh profile whose durable allocator starts at 1.
+private _avoid = _holder getVariable ["ACME_inventoryImportAvoid",[]];
+{_avoid pushBackUnique (_x select 1);} forEach _records;
+_holder setVariable ["ACME_inventoryImportAvoid",_avoid,true];
 private _containers = if (_holder isKindOf "CAManBase") then {[uniformContainer _holder,vestContainer _holder,backpackContainer _holder]} else {[_holder]};
 private _native = [];
 {if (!isNull _x) then {_native append (magazinesAmmoCargo _x);};} forEach _containers;

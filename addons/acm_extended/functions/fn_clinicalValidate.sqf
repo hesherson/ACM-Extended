@@ -1,6 +1,6 @@
 /* [ok, reason]. Validates before any patient state is changed. This checks the
    container contracts used by restore, not every possible clinical range. */
-params ["_payload"];
+params ["_payload", ["_legacyObjectSession", ""]];
 if (isNil "_payload") exitWith {[false, "Missing clinical snapshot"]};
 if (_payload isEqualTo []) exitWith {[true, ""]};
 if !(_payload isEqualType [] && {count _payload == 2} && {!isNil {_payload select 0}} && {!isNil {_payload select 1}} && {(_payload select 0) isEqualTo 3}
@@ -37,7 +37,7 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
     _seen set [_lower, true];
     if !([_encoded, 0, _budget] call ACME_fnc_clinicalEncodedValid) exitWith {_reason = "Invalid encoded value: " + _name;};
     if !(_name in _fields) then {continue;}; // old runtime-only or unknown fields are never applied
-    private _v = [_encoded, false] call ACME_fnc_clinicalCodec;
+    private _v = [_encoded, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;
     if (isNil "_v") then {
         if (_name in _required || {(_fields get _name) != ""}) then {_reason = "Missing required encoded value: " + _name;};
     };
@@ -182,7 +182,7 @@ private _number = {params ["_v"]; !isNil "_v" && {_v isEqualType 0} && {finite _
             // These state maps are numeric physiology with a small number of
             // Boolean latches. Reject unexpected containers in the resume clocks.
             {if (_x in _v && {!([_v get _x] call _number)}) exitWith {_bad = true;};}
-                forEach ["lastTick","paCO2","icp","map","cpp"];
+                forEach ["lastTick","acidLastTick","paCO2","icp","map","cpp"];
         };
     };
     if (_bad) exitWith {_reason = "Malformed clinical collection: " + _name;};

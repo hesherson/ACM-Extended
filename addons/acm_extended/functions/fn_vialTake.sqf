@@ -6,6 +6,8 @@ if (isNull _holder || {_med == ""} || {_ml <= 0} || {!finite _ml}) exitWith {fal
 // Callers with a captured provider retain that provider across player switching/refund callbacks.
 // Legacy three-argument UI callers still use the currently controlled provider.
 if (isNull _provider && {hasInterface}) then {_provider = ACE_player;};
+if (_holder getVariable ["ACME_persistenceFrozen", false]
+    || {!isNull _provider && {_provider getVariable ["ACME_persistenceFrozen", false]}}) exitWith {false};
 private _leaseValid = true;
 if (hasInterface && {!isNull _provider} && {_holder isNotEqualTo _provider}) then {
     private _lease = missionNamespace getVariable ["ACME_vialLeaseAccepted", []];

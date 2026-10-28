@@ -1,9 +1,23 @@
-/* B216 server-authoritative stock transaction. Door lease and dispense are one unscheduled owner operation. */
+/* Stock debit and grant journal commit precede transport. A door lease can
+ * expire independently; it is never evidence that the inventory was delivered. */
+if (canSuspend) exitWith {isNil {_this call ACME_fnc_bloodFridgeTakeOwner;};};
 params ["_anchor", "_class", "_player", ["_token", [], [[]]]];
 if (!isServer || {isNull _anchor} || {isNull _player} || {count _token != 2}) exitWith {};
 _token params [["_requestOwner", -1, [0]], ["_sequence", 0, [0]]];
-if (_requestOwner != owner _player || {_sequence < 1}) exitWith {};
+if (_requestOwner != owner _player || {!finite _requestOwner} || {_requestOwner != floor _requestOwner}
+    || {!finite _sequence} || {_sequence < 1} || {_sequence != floor _sequence}) exitWith {};
 if !(_anchor getVariable ["ACME_bloodFridge", false]) exitWith {};
+private _grantKey=format ["%1:%2:%3",netId _player,_requestOwner,_sequence];
+private _grants=_anchor getVariable ["ACME_bf_grants",createHashMap];
+private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+private _grant=_serverGrants getOrDefault [_grantKey,[]];
+if (_grant isNotEqualTo []) exitWith {
+    if ((_grant select 0) isEqualTo _player && {(_grant select 1) isEqualTo _token} && {(_grant select 2)==_class}
+        && {(_grant select 5) isEqualTo _anchor}) then {
+        ["ACME_bfGive",[_anchor,_grant select 2,_player,_token],_player] call CBA_fnc_targetEvent;
+    };
+};
+if (_player getVariable ["ACME_persistenceFrozen",false] || {_anchor getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
 // Keep each connected owner's high-water mark across A -> B -> A locality changes. A single last-owner pair
 // would forget A's receipt and allow a delayed A request to debit stock again when control returned to A.
 private _history = _player getVariable ["ACME_bf_serverTakeTokens", createHashMap];
@@ -24,6 +38,15 @@ private _entry = +(_stock # _i);
 _entry set [1, (_entry # 1) - 1];
 _stock set [_i, _entry];
 _anchor setVariable ["ACME_bf_stock", _stock, true];
+private _newGrant=[_player,+_token,_class,"pending",diag_tickTime+2,_anchor];
+_grants set [_grantKey,_newGrant];
+_anchor setVariable ["ACME_bf_grants",_grants];
+_serverGrants set [_grantKey,_newGrant];missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
+private _active=missionNamespace getVariable ["ACME_bf_activeGrants",[]];_active pushBackUnique _grantKey;
+missionNamespace setVariable ["ACME_bf_activeGrants",_active];
+private _pending=_player getVariable ["ACME_bf_pendingGrants",createHashMap];
+_pending set [_grantKey,[_anchor,+_token,_class]];
+_player setVariable ["ACME_bf_pendingGrants",_pending,true];
 private _takers = _anchor getVariable ["ACME_bf_takers", createHashMap];
 _takers set [netId _player, [_player, _token, diag_tickTime + 8]];
 _anchor setVariable ["ACME_bf_takers", _takers];

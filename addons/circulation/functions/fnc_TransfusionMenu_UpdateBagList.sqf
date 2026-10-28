@@ -76,19 +76,17 @@ if !(_update) then {
         private _config = (configFile >> "CfgWeapons" >> _itemClassName);
         private _name = "";
 
-        if ((getNumber (_config >> "uniqueBag")) > 0) then {
-            ((configName _config) splitString "_") params ["","","_volume","_id"];
-
-            private _freshEntry = [(parseNumber _id)] call FUNC(getFreshBloodEntry);
-            if (_freshEntry isEqualType [] && {count _freshEntry >= 3}) then {
-                private _bloodType = _freshEntry param [2, -1];
-                private _bloodTypeString = [_bloodType, 1] call FUNC(convertBloodType);
-                _name = format [C_LLSTRING(FreshBloodBag_Short), (format ["%1 (%2ml) [%3]", _bloodTypeString, _volume, _id])];
-            } else {
-                private _shortName = getText (_config >> "shortName");
-                _name = if (_shortName != "") then {_shortName} else {getText (_config >> "displayName")};
-                if (_name == "") then {_name = _itemClassName;};
+        if (_type == "FreshBlood") then {
+            // A saved bag's inline donor metadata is authoritative; a numeric
+            // ID can name an unrelated donor after mission reconstruction.
+            private _freshEntry = [_id, _bag param [10, []], _bloodType] call ACME_fnc_freshBloodResolve;
+            private _details = format ["(%1ml) - donor information unavailable", _volume];
+            if (_freshEntry isNotEqualTo []) then {
+                private _bloodTypeString = [_freshEntry select 2, 1] call FUNC(convertBloodType);
+                _details = format ["%1 (%2ml)", _bloodTypeString, _volume];
+                if (_id >= 0) then {_details = _details + format [" [%1]", _id];};
             };
+            _name = format [C_LLSTRING(FreshBloodBag_Short), _details];
         } else {
             private _shortName = getText (_config >> "shortName");
             _name = if (_shortName != "") then {_shortName} else {getText (_config >> "displayName")};

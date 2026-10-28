@@ -8,6 +8,7 @@ params [
     ["_medic", objNull, [objNull]]
 ];
 if (isNull _patient || {!local _patient} || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {false};
+if (_patient getVariable ["ACME_persistenceFrozen",false] || {!isNull _medic && {_medic getVariable ["ACME_persistenceFrozen",false]}}) exitWith {false};
 _part = toLowerANSI _part;
 private _pi = ACME_infusion_bodyParts find _part;
 if (_pi < 0 || {_iv && {!(_site in [0,1,2])}}) exitWith {false};
@@ -16,6 +17,18 @@ if (!_hasAccess) exitWith {
     if (!isNull _medic) then {[_medic, "That access is no longer available."] call ACME_fnc_clinicalNotice;};
     false
 };
+// A deliberate clinician decision supersedes every temporary menu pause on
+// this access, including a later duplicate close/expiry from another medic.
+private _leases=_patient getVariable ["ACME_infusionMixFlowLeases",createHashMap];
+private _changed=false;
+{
+    private _lease=_leases get _x;
+    if ((_lease select 0)=="active" && {(_lease select 2)==_part} && {(_lease select 3) isEqualTo _iv}
+        && {(!_iv) || {(_lease select 4)==_site}}) then {
+        _lease set [0,"closed"];_leases set [_x,_lease];_changed=true;
+    };
+} forEach keys _leases;
+if (_changed) then {_patient setVariable ["ACME_infusionMixFlowLeases",_leases,true];};
 
 if (_iv) then {
     // A valid access can predate a replicated/legacy flow array. Its native default is open.

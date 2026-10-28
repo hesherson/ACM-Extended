@@ -52,6 +52,10 @@ _rec params [
     ["_bloodExactVol", 0], ["_salineExactVol", 0]
 ];
 private _isSingle = _kind != "yset";
+private _portableFresh = _rec param [11,[]];
+if (_portableFresh isNotEqualTo [] && {([0,_portableFresh] call ACME_fnc_freshBloodResolve) isEqualTo []}) exitWith {
+    [false,"Donor blood data is unavailable. Restore its saved metadata before hanging this set."] call _finish;
+};
 if (_tied != "" && {_tied != netId _patient}) exitWith {[false, "This set is tied to a different casualty."] call _finish;};
 
 // Re-resolve treatment actions on the owner so a stale UI row cannot force an obsolete action string.
@@ -119,7 +123,7 @@ private _attach = {
         if (_freshNet isEqualType [] && {count _freshNet >= 3}) then {_entry = +_freshNet;}
         else {if (_fid >= 0) then {_entry = [_fid] call ACM_circulation_fnc_getFreshBloodEntry;};};
     };
-    [_patient, _part, _action, _access, _iv, _site, _fresh, false, _entry] call ace_medical_treatment_fnc_ivBagLocal
+    [_patient, _part, _action, _access, _iv, _site, _fresh, false, _entry,if (_fresh) then {_portableFresh} else {[]}] call ace_medical_treatment_fnc_ivBagLocal
 };
 
 private _created = [];

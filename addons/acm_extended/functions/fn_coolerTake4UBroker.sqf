@@ -59,7 +59,8 @@ if (_receipt isEqualTo []) then {
     private _parent=if (isNull _source) then {objNull} else {objectParent _source};
     private _allowed=(_token==0 && {_class=="ACME_BloodCooler_CSWB4U"})
         || {_token>0 && {_token<65535} && {_token==floor _token} && {_class=="ACME_CoolerCarrier_CSWB4U"}};
-    if (!_allowed || {isNull _source} || {_source isEqualTo _destination} || {_source isKindOf "CAManBase"}
+    if (!_allowed || {_owner getVariable ["ACME_persistenceFrozen",false]} || {_source getVariable ["ACME_persistenceFrozen",false]}
+        || {isNull _source} || {_source isEqualTo _destination} || {_source isKindOf "CAManBase"}
         || {!isNull _parent && {_parent isKindOf "CAManBase"}} || {_owner distance _source>6} || {!(call _admitted)}) exitWith {
         _receipt=[_arguments,"failed",0,"The cooler pickup is no longer valid."];call _store;
     };

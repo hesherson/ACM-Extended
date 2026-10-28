@@ -10,6 +10,7 @@
 // fn_hangpreparedset, which enforces the one-line-per-access-site rule.
 // y blood sets are built on the separate spike y tubing button, in fn_transfusionytubing, as kind "yset".
 params [["_coolerResume",[]]];
+if (ACE_player getVariable ["ACME_persistenceFrozen",false]) exitWith {};
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 
@@ -69,6 +70,7 @@ if (_fromUsed) exitWith {
     private _iv2=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true];
     private _site2=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1];
     if (isNull _target2 || {_bp2==""} || {_site2<0}) exitWith {["Select an access site to hang the used bag on.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;};
+    if (_target2 getVariable ["ACME_persistenceFrozen",false]) exitWith {};
     private _used=ACE_player getVariable ["ACME_usedBags",[]]; private _ui=_used findIf {(_x param [0,""])==_usedId}; if (_ui<0) exitWith {};
     private _record=+(_used select _ui);
     // Reserve locally before the network round-trip. A rejected owner transaction restores this exact record.

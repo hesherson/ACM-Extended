@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // power the ventilator down. it is a held MMB for 4 seconds, exactly like the real device.
 // a ventilator does not have an off button. powering one down while a patient is on it
 // kills them, so every real machine makes it a held action: long enough that you cannot do it by accident, and

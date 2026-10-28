@@ -48,6 +48,24 @@ if (isServer) then {
 // Stock authority stays on the server even if engine ownership of a furniture object changes.
 ["ACME_bfTake", {_this call ACME_fnc_bloodFridgeTakeOwner;}] call CBA_fnc_addEventHandler;
 ["ACME_bfGive", {_this call ACME_fnc_bloodFridgeReceive;}] call CBA_fnc_addEventHandler;
+["ACME_bfDeliveryAck", {
+    params ["_anchor","_player","_token","_class","_sender"];
+    if (!isServer || {isNull _player} || {count _token!=2}) exitWith {};
+    private _key=format ["%1:%2:%3",netId _player,_token select 0,_token select 1];
+    private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+    private _grant=_serverGrants getOrDefault [_key,[]];
+    if (count _grant!=6 || {(_grant select 0) isNotEqualTo _player} || {(_grant select 1) isNotEqualTo _token}
+        || {(_grant select 2)!=_class} || {(_grant select 5) isNotEqualTo _anchor}) exitWith {};
+    private _deliveryKey=format ["%1:%2",_token select 0,_token select 1];
+    private _proof=(_player getVariable ["ACME_bf_deliveryReceipts",createHashMap]) getOrDefault [_deliveryKey,[]];
+    if (_sender!=owner _player && {_proof isNotEqualTo [_anchor,_token,_class,"delivered"]}) exitWith {};
+    _grant set [3,"delivered"];_serverGrants set [_key,_grant];missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
+    if (!isNull _anchor) then {
+        private _grants=_anchor getVariable ["ACME_bf_grants",createHashMap];_grants set [_key,_grant];_anchor setVariable ["ACME_bf_grants",_grants];
+    };
+    private _pending=_player getVariable ["ACME_bf_pendingGrants",createHashMap];
+    _pending deleteAt _key;_player setVariable ["ACME_bf_pendingGrants",_pending,true];
+}] call CBA_fnc_addEventHandler;
 ["ACME_bfTakeStop", {
     params ["_anchor", "_player", "_token"];
     if (!isServer || {isNull _anchor} || {isNull _player}) exitWith {};

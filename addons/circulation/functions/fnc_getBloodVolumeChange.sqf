@@ -251,6 +251,12 @@ if (_hasFluidBags) then {
             private _servicing = _serviceKey in (_unit getVariable ["ACME_yFlushJobs", createHashMap]);
             if (_bagUid == "") then {_bagUid = [_unit, _targetBodyPart, _acmeBagIndex] call ACME_fnc_bagIdentity;};
             private _acmeOriginalBag = +_x; _acmeOriginalBag set [8, _bagUid];
+            // Preserve manufacturer capacity and immutable donor metadata on every tick.
+            private _acmeBagTail = _x select [9];
+            private _acmeFreshEntry = if (_type == "FreshBlood") then {
+                [_freshBloodID,_x param [10,[]],_bloodType] call ACME_fnc_freshBloodResolve
+            } else {[]};
+            private _acmeFreshKnown = _type != "FreshBlood" || {_acmeFreshEntry isNotEqualTo []};
             private _piggyback = [_unit, _targetBodyPart, _iv, _accessSite, _bagUid] call ACME_fnc_piggybackFlow;
             _piggyback params ["_piggybackHeld", "_piggybackSecondary"];
             private _piggybackConnected = !(([_unit, _targetBodyPart, _iv, _accessSite] call ACME_fnc_piggybackLine) isEqualTo []);
@@ -270,12 +276,12 @@ if (_hasFluidBags) then {
                 _heldDetached = false;
                 [_unit, "ACME_detachedBags", _detached - [_bagUid]] call ACME_fnc_setVarNet;
             };
-            if (_heldDetached || {_piggybackHeld} || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
+            if (!_acmeFreshKnown || {_heldDetached} || {_piggybackHeld} || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
                 if (_isYSaline && {_type == "Saline"}) then {
                     // self-heal a missed or late menu retag. a plain saline on a y line is the reserve, so it is returned
                     // permanently re-typed as ACME_SalineY. from the next tick the type-based clamp holds it with no dependence on
                     // ylines sync or timing at all. this is what makes the reserve hold for good.
-                    ["ACME_SalineY", _bagVolumeRemaining, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
+                    ["ACME_SalineY", _bagVolumeRemaining, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid] + _acmeBagTail
                 } else { _x };
             } else {
 
@@ -299,7 +305,7 @@ if (_hasFluidBags) then {
                         _fluidFlowRate = 1.2;
                     };
                     case "FreshBlood": {
-                        _uniqueFreshBloodEntry = [_freshBloodID] call EFUNC(circulation,getFreshBloodEntry);
+                        _uniqueFreshBloodEntry = _acmeFreshEntry;
 
                         private _timeEffect = ((0.67 max (900 / ((CBA_missionTime - (_uniqueFreshBloodEntry param [4, CBA_missionTime])) max 0.001))) min 1);
 
@@ -560,19 +566,19 @@ if (_hasFluidBags) then {
                             _unit setVariable ["ACME_YLineDirty", _d, true];
                         };
                     };
-                    ["ACME_Empty", 0, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
+                    ["ACME_Empty", 0, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid] + _acmeBagTail
                 } else {
                     // Retain the empty secondary as the physical PiB branch and its role indicator.
                     // The next tick releases the primary; completed medication has already been retired.
                     if (_piggybackSecondary) then {
-                        [_type, 0, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
+                        [_type, 0, _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid] + _acmeBagTail
                     } else {
                         _updateCountBodyPartArray pushBack _targetBodyPart;
                         []
                     }
                 }
             } else {
-                [_type, (_bagVolumeRemaining min _originalVolume), _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid]
+                [_type, (_bagVolumeRemaining min _originalVolume), _accessType, _accessSite, _iv, _bloodType, _originalVolume, _freshBloodID, _bagUid] + _acmeBagTail
             }
             };
         };

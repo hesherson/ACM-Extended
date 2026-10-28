@@ -257,6 +257,10 @@ private _invalid = "";
     };
     if (!isNil "_default" && {!(_value isEqualType _default)}) exitWith {_invalid = _var;};
     if (_value isEqualType 0 && {!finite _value}) exitWith {_invalid = _var;};
+    if (_var == "ACM_circulation_IV_Bags") then {
+        _value = [_value, "restore"] call ACME_fnc_clinicalFreshBlood;
+        if !(_value isEqualType createHashMap) then {_invalid = _var;};
+    };
     _writes pushBack [_var, _value];
 } forEach _variableList;
 private _medications = _state getVariable [VAR_MEDICATIONS, []];

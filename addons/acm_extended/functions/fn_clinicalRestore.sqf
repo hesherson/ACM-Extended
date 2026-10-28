@@ -1,4 +1,4 @@
-params ["_patient", "_payload", ["_epoch", -1]];
+params ["_patient", "_payload", ["_epoch", -1], ["_legacyObjectSession", ""]];
 if (!local _patient) exitWith {[_patient, "restore", _this] call ACME_fnc_ownerDispatch;};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {};
 if (_payload isEqualTo []) exitWith {
@@ -7,13 +7,13 @@ if (_payload isEqualTo []) exitWith {
     };
     [_patient] call ACME_fnc_ownerRegister;
 };
-private _validation = [_payload] call ACME_fnc_clinicalValidate;
+private _validation = [_payload, _legacyObjectSession] call ACME_fnc_clinicalValidate;
 if !(_validation select 0) exitWith {};
 private _restoreWarmers = createHashMap;
 private _restoreWarmerCustody = createHashMap;
 {
-    if ((_x select 0) == "ACME_lineWarmers") then {_restoreWarmers = [_x select 1, false] call ACME_fnc_clinicalCodec;};
-    if ((_x select 0) == "ACME_lineWarmerCustody") then {_restoreWarmerCustody = [_x select 1, false] call ACME_fnc_clinicalCodec;};
+    if ((_x select 0) == "ACME_lineWarmers") then {_restoreWarmers = [_x select 1, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;};
+    if ((_x select 0) == "ACME_lineWarmerCustody") then {_restoreWarmerCustody = [_x select 1, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;};
 } forEach (_payload select 1);
 if (count (_patient getVariable ["ACME_lineWarmerRestorePlan", []]) != 2) then {
     [_patient, _restoreWarmers, _restoreWarmerCustody, _epoch, "prepare"] call ACME_fnc_lineWarmerRestore;
@@ -60,7 +60,7 @@ private _toxicityFiredRestore = createHashMap;
     // These physical identities were reconciled before native teardown. An old
     // snapshot must not overwrite retirement evidence or create a second device.
     if (_name in ["ACME_lineWarmers", "ACME_lineWarmerCustody"]) then {continue;};
-    private _value = [_encoded, false] call ACME_fnc_clinicalCodec;
+    private _value = [_encoded, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;
     if (isNil "_value") then {continue;};
     if (_name in ["ACME_nrb_on", "ACME_nrb_hasO2", "ACME_nrb_delivering"]) then {
         _nrbRestore set [_name, _value];
@@ -290,6 +290,11 @@ _patient setVariable ["ACME_bagMoves", _moves, true];
         if (_x isEqualTo "ACME_tbi_State") then {
             [_patient, _m] call ACME_fnc_tbiStateCommit;
         } else {
+            // The acid integrator is a maintenance clock, not accrued disease.
+            // Reset it even for older snapshots that stored the previous
+            // mission's absolute timestamp, and discard the old derived delta.
+            _m set ["acidLastTick", CBA_missionTime];
+            _m set ["acidTickDt", 0];
             [_patient, _m] call ACME_fnc_circStateCommit;
         };
     };

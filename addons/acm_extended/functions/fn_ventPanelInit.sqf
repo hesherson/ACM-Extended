@@ -8,6 +8,11 @@ if (isNull _dlg) exitWith {};
 private _viewer = call ACME_fnc_controlledProvider;
 if (isNull _viewer) exitWith {};
 _dlg setVariable ["ACME_vent_viewer", _viewer];
+private _contextTarget = uiNamespace getVariable ["ACME_vent_target", objNull];
+_dlg setVariable ["ACME_vent_context", [_viewer, _contextTarget,
+    [_contextTarget] call ACME_fnc_clinicalEpoch,
+    _contextTarget getVariable ["ACME_vent_custodyId", ""],
+    _viewer getVariable ["ACME_equipmentKitEpoch", 0]]];
 private _oldPFH = uiNamespace getVariable ["ACME_vent_pfh", -1];
 if (_oldPFH >= 0) then {[_oldPFH] call CBA_fnc_removePerFrameHandler;};
 uiNamespace setVariable ["ACME_vent_pfh", -1];

@@ -429,6 +429,8 @@ switch (_operation) do {
     case "infusionRemove": {_args call ACME_fnc_infusionRemoveLocal;};
     case "transfusionRemoveBag": {_args call ACME_fnc_transfusionRemoveBagCommit;};
     case "transfusionFlowToggle": {_args call ACME_fnc_transfusionFlowToggleCommit;};
+    case "transfusionMixFlow": {_args call ACME_fnc_transfusionMixFlowLocal;};
+    case "resourceReturnCleanup": {["cleanup",_args] call ACME_fnc_resourceReturnSource;};
     case "transfusionPull": {_args call ACME_fnc_transfusionPullCommit;};
     case "rehangUsedBag": {_args call ACME_fnc_rehangUsedBagCommit;};
     case "yRefill": {_args call ACME_fnc_yRefillCommit;};

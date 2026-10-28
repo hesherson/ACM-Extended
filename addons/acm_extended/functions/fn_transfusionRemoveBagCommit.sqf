@@ -1,6 +1,7 @@
 // Owner-authoritative removal for ACM's native transfusion Remove Bag action.
 // The provider sends identity plus a snapshot signature, never a replacement IV_Bags map. This prevents two
 // providers from deleting/refunding the same bag or a stale UI index from deleting a different bag after reordering.
+if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_transfusionRemoveBagCommit;}; _ok};
 params [
     ["_patient", objNull, [objNull]],
     ["_medic", objNull, [objNull]],
@@ -16,6 +17,11 @@ if (isNull _patient || {!local _patient} || {_requestId == ""}) exitWith {false}
 private _receipts = _patient getVariable ["ACME_txRemoveReceipts", createHashMap];
 private _prior = _receipts getOrDefault [_requestId, []];
 if !(_prior isEqualTo []) exitWith {
+    private _source = (missionNamespace getVariable ["ACME_resourceReturnSources",createHashMap]) getOrDefault [_requestId,[]];
+    if (count _source == 3 && {(_source select 1) == "funded"}) then {
+        private _fingerprint = _source select 0;
+        ["funded",[_fingerprint select 0,_fingerprint select 1,_requestId,_fingerprint select 2]] call ACME_fnc_resourceReturnSource;
+    };
     if (!isNull _medic) then {["ACME_transfusionRemoveResult", _prior, _medic] call CBA_fnc_targetEvent;};
     _prior param [2, false]
 };
@@ -32,11 +38,13 @@ private _reply = {
     _accepted
 };
 
+if (_patient getVariable ["ACME_persistenceFrozen",false] || {_medic getVariable ["ACME_persistenceFrozen",false]}) exitWith {[false, [], "Equipment is being saved. Try again shortly."] call _reply};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false, [], "Patient state changed. Reopen the transfusion menu."] call _reply};
 if (isNull _medic || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)}
     || {(_medic distance _patient) > ace_medical_gui_maxDistance}) exitWith {[false, [], "Provider can no longer remove that bag."] call _reply};
 
-private _map = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
+private _originalMap = [_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]] call ACME_fnc_syringeDeliveryCopy;
+private _map = [_originalMap] call ACME_fnc_syringeDeliveryCopy;
 private _arr = +(_map getOrDefault [_part, []]);
 private _idx = -1;
 if (_bagUid != "") then {
@@ -57,9 +65,20 @@ if ((_bag param [0, ""]) == "ACME_Propofol" || {_actualUid != "" && {((_patient 
     [false, [], "Use Remove Infusion for a medicated bag."] call _reply
 };
 
+if (count (_medic getVariable ["ACME_resourceReturnPending",createHashMap]) >= 128) exitWith {[false,[],"Finish pending equipment returns before removing another bag."] call _reply};
+private _prepared = ["remove",_patient,_requestId,[_bag]] call ACME_fnc_resourceReturnProducts;
+if !(_prepared select 0) exitWith {[false,[],"This bag's return data is invalid. It remains attached."] call _reply};
+private _returnArgs = [_medic,_patient,_requestId,_prepared select 1];
+if !(["stage",_returnArgs] call ACME_fnc_resourceReturnSource) exitWith {[false,[],"Return custody could not be staged. The bag remains attached."] call _reply};
 _arr deleteAt _idx;
 _map set [_part, _arr];
 [_patient, _map, true] call ACME_fnc_ivBagsCommit;
+private _actual = _patient getVariable ["ACM_circulation_IV_Bags",createHashMap];
+if (_actual isNotEqualTo _map) exitWith {
+    [if (_actual isEqualTo _originalMap) then {"cancel"} else {"uncertain"},_returnArgs] call ACME_fnc_resourceReturnSource;
+    [false,[],"Source custody could not be confirmed. No return was issued."] call _reply
+};
+["funded",_returnArgs] call ACME_fnc_resourceReturnSource;
 [_patient, _part] call ACM_circulation_fnc_updateActiveFluidBags;
 
 private _pi = ACME_infusion_bodyParts find (toLowerANSI _part);

@@ -46,10 +46,17 @@ if (_type == "FBTK") then {
 private _itemClass = if (_type == "FBTK" && {_returnVolume <= 0}) then {format ["ACM_FieldBloodTransfusionKit_%1", _volume]} else {[_type, _returnVolume, _bloodType] call FUNC(formatFluidBagName)};
 private _itemName = getText (configFile >> "CfgWeapons" >> _itemClass >> "displayName");
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
-private _requestId = format ["txrm:%1:%2:%3", clientOwner, diag_frameNo, floor (diag_tickTime * 1000)];
+private _serial = 1 + (missionNamespace getVariable ["ACME_resourceReturnRequestSerial",0]);
+missionNamespace setVariable ["ACME_resourceReturnRequestSerial",_serial];
+private _requestId = format ["txrm:%1:%2",missionNamespace getVariable ["ACME_syringeDeliveryMachineNonce",""],_serial];
 
 [[_medic, _patient, _part, _bagUid, _targetIndex, _expectedSig, _epoch, _requestId], {
     params ["_medic", "_patient", "_part", "_bagUid", "_targetIndex", "_expectedSig", "_epoch", "_requestId"];
+    if (!local _medic || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
+    if (_medic getVariable ["ACME_persistenceFrozen",false] || {_patient getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
+    private _contexts = uiNamespace getVariable ["ACME_txRemoveContexts",createHashMap];
+    _contexts set [_requestId,[_medic,_patient,_part,_medic getVariable ["ACME_providerLocalityEpoch",0]]];
+    uiNamespace setVariable ["ACME_txRemoveContexts",_contexts];
     uiNamespace setVariable ["ACME_txRemovePending", _requestId];
     [_patient, "transfusionRemoveBag", [_patient, _medic, _part, _bagUid, _targetIndex, _expectedSig, _epoch, _requestId]] call ACME_fnc_ownerDispatch;
     closeDialog 0;

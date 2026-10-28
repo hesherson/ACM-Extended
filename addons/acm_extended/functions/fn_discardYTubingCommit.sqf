@@ -1,11 +1,17 @@
 // Owner-authoritative teardown of one Y-line access. Salvage is returned to the requesting medic only after commit.
+if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_discardYTubingCommit;}; _ok};
 params [["_patient",objNull,[objNull]],["_medic",objNull,[objNull]],["_part","",[""]],["_iv",true,[true]],["_site",-1,[0]],["_epoch",-1,[0]],["_requestId","",[""]],["_issued",-1,[0]],["_identity",[],[[]]]];
 if (isNull _patient || {!local _patient} || {_requestId == ""}) exitWith {false};
 if (count _requestId > 128 || {!finite _issued} || {_issued < 0}
     || {serverTime - _issued > 10} || {_issued > serverTime + 2}) exitWith {false};
 private _receipts = _patient getVariable ["ACME_yDiscardReceipts", createHashMap];
 private _prior = _receipts getOrDefault [_requestId, []];
-if !(_prior isEqualTo []) exitWith {if (!isNull _medic) then {["ACME_discardYTubingResult",_prior,_medic] call CBA_fnc_targetEvent;}; _prior param [2,false]};
+if !(_prior isEqualTo []) exitWith {
+    private _source = (missionNamespace getVariable ["ACME_resourceReturnSources",createHashMap]) getOrDefault [_requestId,[]];
+    if (count _source == 3 && {(_source select 1) == "funded"}) then {
+        private _fingerprint = _source select 0;
+        ["funded",[_fingerprint select 0,_fingerprint select 1,_requestId,_fingerprint select 2]] call ACME_fnc_resourceReturnSource;
+    };if (!isNull _medic) then {["ACME_discardYTubingResult",_prior,_medic] call CBA_fnc_targetEvent;}; _prior param [2,false]};
 private _times=_patient getVariable ["ACME_yDiscardReceiptsTimes",createHashMap];
 {if (serverTime - (_times get _x) > 12) then {_receipts deleteAt _x;_times deleteAt _x;};} forEach keys _times;
 if (count _receipts >= 512) exitWith {false};
@@ -16,10 +22,13 @@ private _reply = {
     if (!isNull _medic) then {["ACME_discardYTubingResult",_payload,_medic] call CBA_fnc_targetEvent;};
     _ok
 };
+if (_patient getVariable ["ACME_persistenceFrozen",false] || {_medic getVariable ["ACME_persistenceFrozen",false]}) exitWith {[false,[],"Equipment is being saved. Try again shortly."] call _reply};
+if (count (_medic getVariable ["ACME_resourceReturnPending",createHashMap]) >= 128) exitWith {[false,[],"Equipment is being saved. Try again shortly."] call _reply};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false,[],"Patient state changed. Reopen the transfusion menu."] call _reply};
 if (isNull _medic || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)} || {(_medic distance _patient)>ace_medical_gui_maxDistance}) exitWith {[false,[],"Provider can no longer discard that Y tubing."] call _reply};
 if !([_patient,_part,_iv,_site] call ACME_fnc_isYLineAccess) exitWith {[false,[],"That access no longer has Y tubing."] call _reply};
-private _map=_patient getVariable ["ACM_circulation_IV_Bags",createHashMap];
+private _originalMap = [_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]] call ACME_fnc_syringeDeliveryCopy;
+private _map = [_originalMap] call ACME_fnc_syringeDeliveryCopy;
 private _arr=+(_map getOrDefault [_part,[]]);
 private _currentIdentity=[];
 {if ((_x param [3,-1]) == _site && {(_x param [4,true]) isEqualTo _iv}) then {_currentIdentity pushBack (_x param [8,""]);};} forEach _arr;
@@ -34,7 +43,17 @@ for "_i" from ((count _arr)-1) to 0 step -1 do {
         _arr deleteAt _i;
     };
 };
-_map set [_part,_arr]; [_patient,_map,true] call ACME_fnc_ivBagsCommit; [_patient,_part] call ACM_circulation_fnc_updateActiveFluidBags;
+private _prepared = ["discard",_patient,_requestId,_salvage] call ACME_fnc_resourceReturnProducts;
+if !(_prepared select 0) exitWith {[false,[],"This line's return data is invalid. It remains attached."] call _reply};
+private _returnArgs = [_medic,_patient,_requestId,_prepared select 1];
+if !(["stage",_returnArgs] call ACME_fnc_resourceReturnSource) exitWith {[false,[],"Return custody could not be staged. The line remains attached."] call _reply};
+_map set [_part,_arr]; [_patient,_map,true] call ACME_fnc_ivBagsCommit;
+private _actual = _patient getVariable ["ACM_circulation_IV_Bags",createHashMap];
+if (_actual isNotEqualTo _map) exitWith {
+    [if (_actual isEqualTo _originalMap) then {"cancel"} else {"uncertain"},_returnArgs] call ACME_fnc_resourceReturnSource;
+    [false,[],"Source custody could not be confirmed. No return was issued."] call _reply
+};
+["funded",_returnArgs] call ACME_fnc_resourceReturnSource; [_patient,_part] call ACM_circulation_fnc_updateActiveFluidBags;
 private _key=toLowerANSI format ["%1#%2#%3",_part,_iv,_site];
 private _yl=(_patient getVariable ["ACME_YLines",[]]) select {toLowerANSI _x != _key};
 [_patient,_yl] call ACME_fnc_yLinesCommit;

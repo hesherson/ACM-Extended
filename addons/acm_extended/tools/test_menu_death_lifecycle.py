@@ -78,7 +78,7 @@ def adapt(s, component='core'):
     for old, new in {
         'IS_UNCONSCIOUS(_medic)': '_unconscious',
         'alive _medic': '_alive', 'alive _m': '_alive',
-        'alive _patient': '_patientAlive', 'alive _target': '_patientAlive', 'alive _custodyTarget': '_patientAlive', 'alive _provider': '_alive', 'alive _p': '_patientAlive',
+        'alive _viewer': '_alive', 'alive _patient': '_patientAlive', 'alive _target': '_patientAlive', 'alive _custodyTarget': '_patientAlive', 'alive _provider': '_alive', 'alive _p': '_patientAlive',
         'local _medic': 'true', 'local _m': 'true', 'local _patient': 'true', 'local _p': 'true',
         'local _viewer': 'true',
         'owner _medic': '_ownerNum',
@@ -146,6 +146,10 @@ private _nowTime = 10;
 CBA_missionTime = 10;
 ACE_player = _medic;
 ACME_fnc_controlledProvider = {ACE_player};
+// Historical feature fixtures supply a valid native panel; B288 executes the
+// complete captured-device predicate and invalidation cases separately.
+ACME_fnc_ventPanelContext = {true};
+ACME_fnc_ivInteractionValid = {true};
 ace_medical_gui_maxDistance = 3;
 ACM_core_ContinuousAction_Active = false;
 private _check = {if !(_this select 0) then {_ok = false; diag_log ("MENU_FIX_FAIL " + (_this select 1));};};
@@ -189,6 +193,7 @@ PREAMBLE += "\nACME_fnc_chestAccessLeaseRetire={" + adapt(read('chestAccessLease
 # Shared new dependencies run as production SQF, not constant-return stubs.
 # ventMaskSelected is a read-only settings predicate with no engine operations.
 PREAMBLE += "\nACME_fnc_ventMaskSelected={" + adapt(read('ventMaskSelected')) + "};"
+PREAMBLE += "\nACME_fnc_ventRecoveryNear={" + adapt(read('ventRecoveryNear')) + "};"
 PREAMBLE += "\nACME_fnc_ventSyncMask={" + adapt(read('ventSyncMask')) + "};"
 
 
@@ -217,7 +222,11 @@ def execute(code):
     with tempfile.TemporaryDirectory(prefix="acme-sqf-test-") as directory:
         source_path = Path(directory) / "case.sqf"
         from b282_aspiration_fixture import definitions as aspiration_definitions
-        source_path.write_text(PREAMBLE + aspiration_definitions() + code + '\ndiag_log (if (_ok) then {"MENU_FIX_OK"} else {"MENU_FIX_FAIL"});', encoding="utf-8")
+        resource_dependencies = ""
+        if "ACME_fnc_resourceReturnProducts" in code or "ACME_fnc_resourceReturnSource" in code or "ACME_fnc_resourceReturnReceive" in code:
+            from b288_resource_return_fixture import definitions as resource_definitions
+            resource_dependencies = resource_definitions()
+        source_path.write_text(PREAMBLE + aspiration_definitions() + resource_dependencies + code + '\ndiag_log (if (_ok) then {"MENU_FIX_OK"} else {"MENU_FIX_FAIL"});', encoding="utf-8")
         result = subprocess.run([vm, '--automated', '--suppress-welcome', '--no-execute-print', '--no-work-print', '--input-sqf', str(source_path)], capture_output=True, text=True, timeout=15)
     output = result.stdout + result.stderr
     assert result.returncode == 0 and '[ERR]' not in output and '[FAT]' not in output, output

@@ -38,34 +38,18 @@ if (!_hasAllowedMedication) exitWith {
 };
 
 
-private _partIndex = ACME_infusion_bodyParts find toLowerANSI _bodyPart;
-private _oldFlow = -1;
-if (_partIndex >= 0) then {
-    if (_bagIV) then {
-        private _flowArray = +( _patient getVariable ["ACM_circulation_FluidBagsFlow_IV", [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]]] );
-        if (_partIndex < count _flowArray) then {
-            private _partFlow = +(_flowArray select _partIndex);
-            if (_bagAccessSite >= 0 && {_bagAccessSite < count _partFlow}) then {
-                _oldFlow = _partFlow select _bagAccessSite;
-                if (_oldFlow > 0) then {
-                    _partFlow set [_bagAccessSite, 0];
-                    _flowArray set [_partIndex, _partFlow];
-                    [_patient, [["fluidBagsFlowIV", _flowArray]], true] call ACM_circulation_fnc_setRuntimeState;
-                };
-            };
-        };
-    } else {
-        private _flowArray = +( _patient getVariable ["ACM_circulation_FluidBagsFlow_IO", [1,1,1,1,1,1]] );
-        if (_partIndex < count _flowArray) then {
-            _oldFlow = _flowArray select _partIndex;
-            if (_oldFlow > 0) then {
-                _flowArray set [_partIndex, 0];
-                [_patient, [["fluidBagsFlowIO", _flowArray]], true] call ACM_circulation_fnc_setRuntimeState;
-            };
-        };
-    };
-};
-ACME_infusion_pendingPausedFlow = [_patient, _partIndex, _bagIV, _bagAccessSite, _oldFlow];
+// The patient owner pauses only this exact bag/access episode. The menu opens
+// immediately; a close that overtakes pause leaves a tombstone at the owner.
+call ACME_fnc_restorePausedFlow;
+private _flowSequence=1+(missionNamespace getVariable ["ACME_infusionMixFlowSequence",0]);
+missionNamespace setVariable ["ACME_infusionMixFlowSequence",_flowSequence];
+private _flowRequest=format ["mix-flow:%1:%2:%3",clientOwner,serverTime,_flowSequence];
+private _flowArgs=["pause",_patient,ACE_player,_flowRequest,_bodyPart,_bagIV,_bagAccessSite,
+    [_patient] call ACME_fnc_clinicalEpoch,[_patient,_bodyPart,_trueIndex] call ACME_fnc_bagIdentity,
+    ACE_player getVariable ["ACME_equipmentKitEpoch",0],ACE_player getVariable ["ACME_providerLocalityEpoch",0]];
+ACME_infusion_pendingPausedFlow=+_flowArgs;
+ACE_player setVariable ["ACME_infusionMixFlowInput",[_flowRequest,_patient,_flowArgs select 7],true];
+[_patient,"transfusionMixFlow",_flowArgs] call ACME_fnc_ownerDispatch;
 
 ACME_infusion_pendingContext = [
     "active",

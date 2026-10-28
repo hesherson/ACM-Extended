@@ -40,7 +40,17 @@ if (_past isNotEqualTo []) exitWith {
         [true] call _reply;
     };
 };
+if (_mode in ["draw","deploy","pack"] && {_owner getVariable ["ACME_persistenceFrozen",false]}) exitWith {
+    [false,"Equipment is being saved. Retry after the checkpoint finishes."] call _reply;
+};
 if (_mode == "draw") exitWith {
+    // Input captured in a retired kit/locality period cannot start a new
+    // source debit. An already accepted request is handled by its immutable
+    // receipt above, so this fence does not discard blood in transit.
+    if ((_kit>=0 && {_kit != (_owner getVariable ["ACME_equipmentKitEpoch",0])})
+        || {_locality>=0 && {_locality != (_owner getVariable ["ACME_providerLocalityEpoch",0])}}) exitWith {
+        [false,"The blood draw was cancelled because control or equipment changed."] call _reply;
+    };
     if (isNull _box || {!alive _owner} || {_owner distance _box > 4.5}
         || {_box getVariable ["ACME_coolerPacking",false]} || {_box getVariable ["ACME_coolerRetired",false]}) exitWith {[false,"This cooler is unavailable."] call _reply;};
     private _bagClass=_sid;
@@ -67,6 +77,10 @@ if (_mode == "draw") exitWith {
     _token=0; [true,"",_entry] call _reply;
 };
 if (_mode == "deploy") exitWith {
+    if ((_kit>=0 && {_kit != (_owner getVariable ["ACME_equipmentKitEpoch",0])})
+        || {_locality>=0 && {_locality != (_owner getVariable ["ACME_providerLocalityEpoch",0])}}) exitWith {
+        [false,"The cooler deployment was cancelled because control or equipment changed."] call _reply;
+    };
     private _payload=[_owner,"cooler",_sid,_request] call ACME_fnc_inventoryLedgerCertificate;
     if (_payload isEqualTo [] || {!alive _owner}) exitWith {[false,"The cooler could not be set down."] call _reply;};
     private _state=[_payload select 1,serverTime] call ACME_fnc_coolerAdvance;
@@ -155,13 +169,13 @@ private _abort={
     private _originPlaced=!isNull _origin && {_request in (_origin getVariable ["ACME_coolerPackPlaced",createHashMap])};
     private _retiredKit=_originPlaced && {_admission isNotEqualTo []}
         && {(_admission select 0) != (_origin getVariable ["ACME_equipmentKitEpoch",0])};
-    private _sequence=missionNamespace getVariable ["ACME_inventoryTokenSequence",0];
-    if (!_hasToken && {_retiredKit} && {_sequence<65534}) exitWith {
+    private _replacementToken=if (!_hasToken && {_retiredKit}) then {[(_owner getVariable ["ACME_inventoryImportAvoid",[]])] call ACME_fnc_inventoryLedgerNextToken} else {0};
+    if (_replacementToken>0) exitWith {
         private _oldToken=_token;
         private _replacement=+_record;
         _record set [5,"spent"]; _record set [6,(_record select 6)+1]; _record set [10,"coolerKitRetirement"];
         missionNamespace setVariable [format ["ACME_inventoryToken_%1",_oldToken],_record,true];
-        _token=_sequence+1; missionNamespace setVariable ["ACME_inventoryTokenSequence",_token];
+        _token=_replacementToken;
         _replacement set [3,_box]; _replacement set [5,"deployed"]; _replacement set [6,0]; _replacement set [7,createHashMap];
         _record=_replacement;
         _index set ["cooler:"+_sid,_token]; missionNamespace setVariable ["ACME_inventoryLedgerIndex",_index,true];
@@ -209,9 +223,8 @@ if (_mode == "pack") exitWith {
         [false,"Some blood has spoiled. Remove it before picking up the cooler."] call _reply;
     };
     if (_token == 0) then {
-        private _sequence=missionNamespace getVariable ["ACME_inventoryTokenSequence",0];
-        if (_sequence < 65534) then {
-            _token=_sequence+1; missionNamespace setVariable ["ACME_inventoryTokenSequence",_token];
+        _token=[(_owner getVariable ["ACME_inventoryImportAvoid",[]])] call ACME_fnc_inventoryLedgerNextToken;
+        if (_token>0) then {
             _sid=format ["cooler:box:%1:%2",netId _box,_token];
             _index set ["cooler:"+_sid,_token]; missionNamespace setVariable ["ACME_inventoryLedgerIndex",_index,true];
             _record=["cooler",_sid,[_sid,_state],_box,"","deployed",0,createHashMap,["cooler",[_sid,_state]] call ACME_fnc_inventoryLedgerClass];

@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
 private _viewer = call ACME_fnc_controlledProvider;
 if (isNull _viewer) exitWith {};
@@ -13,7 +15,7 @@ params ["_row"];
 if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
 playSound "ACME_VentClick";
 private _n = uiNamespace getVariable ["ACME_vent_listCount", 0];
-if (_row >= _n) exitWith {};
+if (!(_row isEqualType 0) || {_row != floor _row} || {_row < 0} || {_row >= _n}) exitWith {};
 private _screen = uiNamespace getVariable ["ACME_vent_screen", ""];
 if (((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])}) && {
     _screen in ["weight", "mode", "interface", "ie", "peep"]

@@ -68,7 +68,7 @@ def fixture():
         private _byId=createHashMapFromArray [["box",_box],["holder",_holder]];
         private _class="ACME_BloodCooler_CSWB1U";
         private _bag="ACM_BloodBag_ON_500";
-        private _fresh="ACM_FreshBloodBag_A_250";
+        private _fresh="ACM_FreshBloodBag_250_7";
         private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
         private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];
             if (_key in keys _map) then {_map get _key} else {_default}};
@@ -154,7 +154,7 @@ def fixture():
 
 @pytest.mark.parametrize('bag,ml', [
     ('ACM_BloodBag_ON_1000', 1000), ('ACM_BloodBag_AB_500', 500),
-    ('ACM_FreshBloodBag_A_250', 250), ('ACME_SpoiledBlood', 0),
+    pytest.param('ACM_FreshBloodBag_250_7', 250, id='ACM_FreshBloodBag_A_250-250'), ('ACME_SpoiledBlood', 0),
     ('ACM_BloodBag_ON_500_bad', 0), ('SalineIV_1000', 0),
 ])
 def test_bag_volume_uses_supported_terminal_size(bag, ml):
@@ -398,4 +398,12 @@ def test_full_box_mixed_remove_and_admit_does_not_release_the_source_twice():
         private _float=missionNamespace getVariable "ACME_ccBagFloat";
         [(_float get _bag) isEqualTo [],"nested generic pass duplicated release age"] call _check;
         [(_box getVariable "ACME_boxCoolerState") isEqualTo _state,"nested reconciliation overwrote canonical state"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('volume', [250, 500])
+@pytest.mark.parametrize('donor', [1, 250, 500, 512])
+def test_native_fresh_blood_volume_does_not_read_donor_id_as_volume(volume, donor):
+    execute(fixture() + f'''
+    [(["ACM_FreshBloodBag_{volume}_{donor}"] call ACME_fnc_coolerBagVolume)=={volume},"fresh donorID was parsed as bag volume"] call _check;
     ''')

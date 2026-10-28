@@ -2,12 +2,14 @@
 import re
 import pytest
 from test_menu_death_lifecycle import adapt, execute, read
+from test_historical_vial_execution import map_defaults
 
 
 def source(name):
     raw = read(name)
     for old, new in {
         'isServer': '_server', 'local _player': '_playerLocal',
+        'canSuspend': 'false',
         'alive _player': '_alive', 'alive _unit': '_alive',
         '_player distance _anchor': '_distance', '_unit distance _anchor': '_distance',
         'objectParent _player': '_vehicle', 'netId _player': '_playerId',
@@ -18,11 +20,20 @@ def source(name):
         '_takers getOrDefault [_key, []]': '([_takers, _key] call _mapGet)',
         '_history getOrDefault [_key, 0]': '([_history, _key, 0] call _mapGet)',
         '(allPlayers apply {owner _x})': '[6,7,8]',
+        'netId _anchor': '"fridge"',
+        'uniformItems _player': '(_player getVariable ["fixtureItems",[]])',
+        'vestItems _player': '[]', 'backpackItems _player': '[]',
+        'nearestObject [_player,"WeaponHolder"]': '_groundHolder',
+        'itemCargo _nearHolder': '(_nearHolder getVariable ["fixtureItems",[]])',
+        'itemCargo _holder': '(_holder getVariable ["fixtureItems",[]])',
+        '(_placement select 1) isEqualType objNull': 'true',
+        'isNull (_placement select 1)': '((_placement select 1) isEqualTo objNull)',
     }.items():
         raw = raw.replace(old, new)
     raw = re.sub(r'_anchor animateSource ([^;]+);', r'_doors pushBack \1;', raw)
     raw = re.sub(r'(_anchor|_openObj) hideObjectGlobal ([^;]+);', r'_hidden pushBack [\1, \2];', raw)
-    return adapt(raw)
+    raw=re.sub(r'\bfinite (_\w+)',r'(\1 call _finite)',raw)
+    return adapt(map_defaults(raw))
 
 
 def setup():
@@ -32,6 +43,10 @@ def setup():
         private _playerId="one"; private _requestOwnerSim=7;
         private _blocked=false; private _busy=false; private _canInteract=true;
         private _given=[]; private _reaches=[]; private _cancelled=0; private _doors=[]; private _hidden=[];
+        private _groundHolder=parsingNamespace;private _giveWorks=true;private _giveGround=false;
+        private _finite={_this isEqualType 0};
+        private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
+        _player setVariable ["fixtureItems",[]];_groundHolder setVariable ["fixtureItems",[]];
         _anchor setVariable ["ACME_bloodFridge",true];
         _anchor setVariable ["ACME_bf_stock",[["ON",1],["A",2]]];
         _anchor setVariable ["ACME_bf_restock",false];
@@ -42,7 +57,12 @@ def setup():
         CBA_fnc_serverEvent={_events pushBack _this;};
         ACME_fnc_animBlocked={_blocked}; ACME_fnc_providerStanceOwned={_busy};
         ace_common_fnc_canInteractWith={_canInteract};
-        ace_common_fnc_addToInventory={_given pushBack _this;};
+        ace_common_fnc_addToInventory={
+            _given pushBack _this;
+            private _destination=if (_giveGround) then {_groundHolder} else {_player};
+            if (_giveWorks) then {private _items=+(_destination getVariable ["fixtureItems",[]]);_items pushBack (_this select 1);_destination setVariable ["fixtureItems",_items];};
+            [!_giveGround,_destination]
+        };
         ACME_fnc_setVarNet={(_this select 0) setVariable [_this select 1,_this select 2];};
         ACME_fnc_headElevMedicSeq={
             _reaches pushBack _this;

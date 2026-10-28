@@ -10,7 +10,7 @@ import pytest
 from test_menu_death_lifecycle import F, adapt, execute
 from test_historical_vial_execution import map_defaults
 
-FUNCTIONS = ['inventoryLedgerClass','inventoryLedgerMarkIncoming','inventoryLedgerAdopt','inventoryLedgerRows','inventoryLedgerPossessed','inventoryLedgerCommit',
+FUNCTIONS = ['inventoryLedgerNextToken','inventoryLedgerClass','inventoryLedgerMarkIncoming','inventoryLedgerAdopt','inventoryLedgerRows','inventoryLedgerPossessed','inventoryLedgerCommit',
              'inventoryLedgerReserve','inventoryLedgerClaim','inventoryLedgerSettle',
              'inventoryLedgerBroker','inventoryLedgerReply','inventoryLedgerCertificate',
              'inventoryLedgerReconcile','preparedInventoryCommit']
@@ -18,7 +18,8 @@ FUNCTIONS = ['inventoryLedgerClass','inventoryLedgerMarkIncoming','inventoryLedg
 
 def adapted(text):
     text = text.replace('canSuspend','false').replace('local _owner','true')
-    text = text.replace('isServer','true')
+    text = text.replace('isServer','true').replace('saveProfileNamespace;', 'if (!isNil "_profileWrites") then {_profileWrites=_profileWrites+1;};').replace('finite _highWater', 'true').replace('finite _x', 'true')
+    text = text.replace('_owner isKindOf "CAManBase"', 'true')
     text = text.replace('_owner canAdd [_class,1,true]', '(_owner getVariable ["capacity",true])')
     text = text.replace('_owner addMagazine [_class,_token]', '[_owner,_class,_token] call _addNative')
     text = text.replace('createVehicle ["GroundWeaponHolder",getPosATL _owner,[],0,"CAN_COLLIDE"]','_holder')
@@ -36,7 +37,9 @@ def setup():
     private _receiver=profileNamespace; private _holder=missionNamespace;
     private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
     private _values={private _m=_this; (keys _m) apply {_m get _x}};
-    private _queue=[]; private _replies=[];
+    private _queue=[]; private _replies=[]; private _profileWrites=0;
+    profileNamespace setVariable ["ACME_inventoryTokenHighWater_v1",0];
+    missionNamespace setVariable ["ACME_inventoryTokenReservedThrough",nil];
     missionNamespace setVariable ["ACME_inventoryLedgerIndex",createHashMap];
     missionNamespace setVariable ["ACME_inventoryTokenSequence",0];
     { _x setVariable ["native",[]]; _x setVariable ["ACME_preparedIVSets",[]]; _x setVariable ["ACME_infusion_PreparedBags",[]]; _x setVariable ["ACME_inventoryPending",createHashMap];
@@ -216,7 +219,8 @@ def test_runtime_uses_native_exact_ammo_and_tracked_owners_only():
     assert 'ace_common_fnc_removeSpecificMagazine' in reserve
     assert 'allUnits' not in init
     assert 'ACME_inventoryTracked' in init
-    assert 'ACME_inventoryTokenSequence' in (F/'fn_inventoryLedgerBroker.sqf').read_text()
+    assert 'ACME_fnc_inventoryLedgerNextToken' in (F/'fn_inventoryLedgerBroker.sqf').read_text()
+    assert 'ACME_inventoryTokenSequence' in (F/'fn_inventoryLedgerNextToken.sqf').read_text()
 
 
 def test_two_pending_metadata_changes_preserve_latest_between_intermediate_server_revisions():

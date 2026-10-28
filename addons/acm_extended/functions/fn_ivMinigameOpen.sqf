@@ -5,7 +5,8 @@
 params [["_medic", objNull, [objNull]], ["_patient", objNull, [objNull]], ["_bodyPart", "leftarm", [""]], ["_site", "lower", [""]]];
 if (!hasInterface) exitWith {};
 if (isNull _patient || {isNull _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}
-    || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
+    || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
+    || {([_medic, _patient] call ACME_fnc_patientInteractionDistance) > (missionNamespace getVariable ["ace_medical_gui_maxDistance", 3])}) exitWith {};
 
 private _data = [_bodyPart, _site] call ACME_fnc_ivSiteData;
 if (_data isEqualTo []) exitWith {
@@ -81,7 +82,7 @@ private _mayOpen = {
         && {!(uiNamespace getVariable ["ACME_minigame_open", false])}
         && {(uiNamespace getVariable ["ACME_minigame_reopen", ""]) == ""}
         && {!(missionNamespace getVariable ["ACME_flashlightMenuActive", false])};
-    if (!_ownsUI || {!([_session] call ACME_fnc_ivUiValid)} || {isNull _medic}
+    if (!_ownsUI || {!([_session] call ACME_fnc_ivUiValid)} || {!([] call ACME_fnc_ivInteractionValid)} || {isNull _medic}
         || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)} || {!local _medic} || {!alive _medic}
         || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {
         [displayNull, _launch, _ownsUI] call ACME_fnc_ivMinigameClose;

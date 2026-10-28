@@ -1,4 +1,8 @@
-/* Server serializes issue/claim/settlement. Tokens never recycle, including consumed or retired kits. */
+/* Server serializes issue/claim/settlement. Tokens never recycle, including server restarts.
+ * Profile-backed blocks are reserved BEFORE their first token is issued. A crash
+ * may abandon unused IDs; it cannot recycle a committed block. The finite native
+ * magazine domain deliberately fails closed at exhaustion. Keep this server profile
+ * with mission saves; a new/reset profile requires explicit metadata import. */
 if (!isServer) exitWith {};
 params ["_mode","_owner","_kind","_sid","_payload","_request",["_purpose",[]]];
 if (isNull _owner || {!(_kind in ["prepared","syringe","cooler"])} || {_sid == ""}) exitWith {};
@@ -8,22 +12,16 @@ private _token = _index getOrDefault [_key,0];
 private _record = missionNamespace getVariable [format ["ACME_inventoryToken_%1",_token],[]];
 private _reply = {params ["_ok"]; ["ACME_inventoryReply",[_mode,_owner,_kind,_sid,_token,_request,_ok,0,_record param [6,0]],_owner] call CBA_fnc_targetEvent;};
 if (_mode == "register") exitWith {
+    // Freeze defers NEW funded admissions rather than terminally rejecting them.
+    // Existing registration ACKs remain available to drain a settled checkpoint.
+    if (_token == 0 && {_owner getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
     private _pending = (_owner getVariable ["ACME_inventoryPending",createHashMap]) getOrDefault [_key,[]];
     if (count _pending < 4 || {(_pending select 3) != (_owner getVariable ["ACME_equipmentKitEpoch",0])}) exitWith {}; // event may precede object publication; durable allocation retries.
     // An older queued registration cannot replace a newer funded preparation.
     _payload = +(_pending select 2);
-    // Token exhaustion is permanent for this mission. Reject once at register scope;
-    // an inner exitWith would fall through and send a second failure ACK.
-    if (_token == 0 && {(missionNamespace getVariable ["ACME_inventoryTokenSequence",0]) >= 65534}) exitWith {
-        if (!(missionNamespace getVariable ["ACME_inventoryExhaustionReported",false])) then {
-            missionNamespace setVariable ["ACME_inventoryExhaustionReported",true];
-            diag_log "[ACME INVENTORY] Token space exhausted; funded preparation retained, no identity reused.";
-        };
-        [false] call _reply;
-    };
-    if (_token == 0) then {
-        _token = (missionNamespace getVariable ["ACME_inventoryTokenSequence",0]) + 1;
-        missionNamespace setVariable ["ACME_inventoryTokenSequence",_token];
+    if (_token == 0) then {_token = [(_pending param [7,[]])] call ACME_fnc_inventoryLedgerNextToken;};
+    if (_token == 0) exitWith {[false] call _reply;};
+    if (count _record < 7) then {
         _index set [_key,_token]; missionNamespace setVariable ["ACME_inventoryLedgerIndex",_index,true];
         _record = [_kind,_sid,+_payload,_owner,"","held",0,createHashMap,[_kind,_payload] call ACME_fnc_inventoryLedgerClass];
         missionNamespace setVariable [format ["ACME_inventoryToken_%1",_token],_record,true];
@@ -34,6 +32,13 @@ if (_mode == "register") exitWith {
     [count _record >= 7 && {(_record select 3) isEqualTo _owner} && {(_record select 5) == "held"}] call _reply;
 };
 if (count _record < 7) exitWith {[false] call _reply;};
+// A restored/copied raw tuple is not a transfer while the certified prior
+// holder still has its physical token. Reject every mutation mode before custody
+// or payload changes; never let a second same-class magazine steal a live dose.
+private _prior = _record select 3;
+private _contested = !isNull _prior && {_prior isNotEqualTo _owner}
+    && {(([_prior,_kind] call ACME_fnc_inventoryLedgerNative) findIf {(_x select 0) == _token}) >= 0};
+if (_contested) exitWith {[false] call _reply;};
 private _settled = _record param [7,createHashMap];
 private _past = _settled getOrDefault [_request,[]];
 private _escrow = (_owner getVariable ["ACME_inventoryEscrow",createHashMap]) getOrDefault [_request,[]];
@@ -69,6 +74,8 @@ if (_mode == "update") exitWith {
     };
 };
 if (_mode == "claim") exitWith {
+    if (_owner getVariable ["ACME_persistenceFrozen",false]
+        && {!((_record select 5) == "reserved" && {(_record select 4) == _request} && {(_record select 3) isEqualTo _owner})}) exitWith {};
     if (_escrow isEqualTo []) exitWith {}; // durable provider requests retry after publication/locality arrives.
     // The clinical intent travels in the immutable request as well as escrow.
     // An earlier six-field Reserve publication must not receive a success ACK

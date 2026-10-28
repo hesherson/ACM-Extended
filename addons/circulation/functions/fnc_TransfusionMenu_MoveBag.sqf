@@ -60,7 +60,8 @@ if (GVAR(TransfusionMenu_Move_Active)) then {
         [_patient, "bagMove", [_patient, _medic, _bagUid, "place", _bodypart, _iv, _site, _epoch, _token]] call ACME_fnc_ownerDispatch;
         GVAR(TransfusionMenu_Move_Active_Moving) = false;
         _contents params ["_type", "", "", "", "", "_bloodType", "_volume"];
-        private _fluidBagString = [([_type, _volume, _bloodType, true] call FUNC(formatFluidBagName))] call FUNC(getFluidBagString);
+        private _fluidBagString = [([_type, _volume, _bloodType, true] call FUNC(formatFluidBagName)),
+            _contents param [10, []], _bloodType, _contents param [7, -1]] call FUNC(getFluidBagString);
         [_patient, "activity", LLSTRING(GUI_MovedTransfusing), [[_medic, false, true] call ACEFUNC(common,getName), _fluidBagString, ([_bodypart] call EFUNC(core,getBodyPartString))]] call ACEFUNC(medical_treatment,addToLog);
         true
     };

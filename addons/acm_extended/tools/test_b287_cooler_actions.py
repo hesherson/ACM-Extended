@@ -203,7 +203,7 @@ def test_admission_revalidates_after_inventory_claim_waits(change):
 
 @pytest.mark.parametrize('bag,existing', [
     ('ACM_BloodBag_ON_1000', '[]'),
-    ('ACM_BloodBag_ON_500', '[["ACM_FreshBloodBag_A_250",70]]'),
+    pytest.param('ACM_BloodBag_ON_500', '[["ACM_FreshBloodBag_250_7",70]]', id='ACM_BloodBag_ON_500-[["ACM_FreshBloodBag_A_250",70]]'),
 ])
 def test_loading_enforces_total_millilitres_before_native_debit(bag, existing):
     execute(fixture() + f'_bag="{bag}";' + pending() + f'''

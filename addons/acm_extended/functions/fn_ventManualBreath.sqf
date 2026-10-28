@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // Request one operator-triggered ventilator breath. All durable/physiological mutation is casualty-owner-local.
 private _patient = uiNamespace getVariable ["ACME_vent_target", objNull];
 if (isNull _patient) exitWith {["No patient connected.", 1.5] call ace_common_fnc_displayTextStructured;};

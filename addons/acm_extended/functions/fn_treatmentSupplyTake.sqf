@@ -6,6 +6,10 @@
 params ["_medic", "_patient", "_items", ["_personalOnly", false]];
 if (isNull _medic || {!local _medic} || {!(_items isEqualType [])} || {_items isEqualTo []}) exitWith {[]};
 
+// Save admission pauses new debits, while exact refunds/owner ACKs remain
+// independently available to settle already reserved supplies.
+if (_medic getVariable ["ACME_persistenceFrozen",false]
+    || {!isNull _patient && {_patient getVariable ["ACME_persistenceFrozen",false]}}) exitWith {[]};
 private _receipt = [];
 isNil {
     private _sources = [];

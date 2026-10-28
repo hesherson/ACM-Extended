@@ -433,7 +433,10 @@ def test_native_transfusion_remove_and_flow_toggle_are_owner_serialized():
     assert 'case "transfusionRemoveBag"' in owner and 'case "transfusionFlowToggle"' in owner
     assert '!local _patient' in commit and 'ACME_txRemoveReceipts' in commit
     assert 'Use Remove Infusion for a medicated bag.' in commit
-    assert 'ACME_transfusionRemoveResult' in commit and 'addToInventory' in result
+    assert 'ACME_transfusionRemoveResult' in commit and 'resourceReturnSource' in commit
+    receiver = src('functions/fn_resourceReturnReceive.sqf')
+    assert 'addToInventory' in receiver and 'ACME_txRemoveContexts' in result
+    assert 'call ace_common_fnc_addToInventory' not in result
     assert '!local _patient' in flow and 'fluidBagsFlowIV' in flow and 'fluidBagsFlowIO' in flow
 
 
@@ -451,8 +454,10 @@ def test_pull_bag_and_y_discard_are_owner_serialized_before_salvage():
     assert '"discardYTubing"' in discard_runtime and 'ACME_fnc_ivBagsCommit' not in discard_runtime and 'ACME_usedBags' not in discard_runtime
     assert '!local _patient' in pc and 'ACME_txPullReceipts' in pc and 'ACME_transfusionPullResult' in pc
     assert '!local _patient' in dc and 'ACME_yDiscardReceipts' in dc and 'ACME_discardYTubingResult' in dc
-    assert 'ACME_usedBags' in pr and 'ACME_txPullSeen' in pr
-    assert 'ACME_usedBags' in dr and 'ACME_yDiscardSeen' in dr
+    assert 'ACME_txPullSeen' in pr and 'ACME_yDiscardSeen' in dr
+    receiver = src('functions/fn_resourceReturnReceive.sqf')
+    assert 'ACME_usedBags' in receiver and 'resourceReturnSource' in pc and 'resourceReturnSource' in dc
+    assert 'setVariable ["ACME_usedBags"' not in pr and 'setVariable ["ACME_usedBags"' not in dr
     assert 'case "transfusionPull"' in owner and 'case "discardYTubing"' in owner
 
 
@@ -469,7 +474,10 @@ def test_used_bag_rehang_is_owner_serialized_and_preserves_fresh_blood_id():
     assert '!local _patient' in commit and 'ACME_usedRehangReceipts' in commit
     assert '_freshBloodID' in commit and '_entry=[_type,_remVol,_accessType,_site,_iv,_bloodType,_origVol,_freshBloodID,_bagUid]' in commit
     assert 'ACME_usedRehangPending' in result and 'ACME_usedBags' in result
-    assert '_freshBloodID' in pull_result and '_freshBloodID' in discard_result
+    products = src('functions/fn_resourceReturnProducts.sqf')
+    assert 'ACME_fnc_freshBloodResolve' in products and '"FreshBlood"' in products
+    assert 'pushBack _fresh' in products
+    assert 'setVariable ["ACME_usedBags"' not in pull_result and 'setVariable ["ACME_usedBags"' not in discard_result
     assert 'case "rehangUsedBag"' in owner
 
 

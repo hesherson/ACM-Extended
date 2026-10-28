@@ -1,6 +1,13 @@
 /* Server allocation lock. Concurrent providers cannot remove or return the same device twice. */
 params [["_op", "", [""]], ["_medic", objNull, [objNull]], ["_patient", objNull, [objNull]], ["_interface", "INVASIVE", [""]]];
 if (!isServer || {isNull _patient} || {isNull _medic} || {!alive _medic}) exitWith {};
+if ((_op in ["attach","return"]) && {_patient getVariable ["ACME_persistenceFrozen",false]
+    || {_medic getVariable ["ACME_persistenceFrozen",false]}}) exitWith {};
+// A completed airway removal requires real device recovery. It invalidates an
+// overlapping checkpoint instead of abandoning custody on an unusable airway.
+if (_op=="airwayLoss") then {
+    {_x setVariable ["ACME_persistenceFrozen",false,true];} forEach [_patient,_medic];
+};
 if !([_medic, _patient] call ACME_fnc_ventRecoveryNear) exitWith {};
 private _records = missionNamespace getVariable ["ACME_vent_custody", createHashMap];
 private _id = _patient getVariable ["ACME_vent_custodyId", ""];

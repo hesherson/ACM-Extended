@@ -3,6 +3,9 @@ params ["_owner","_kind","_token",["_force",false]];
 if (isNull _owner || {!local _owner}) exitWith {false};
 private _record = missionNamespace getVariable [format ["ACME_inventoryToken_%1",_token],[]];
 if (count _record < 7 || {(_record select 5) != "held"} || {!_force && {(_record select 3) isEqualTo _owner}}) exitWith {false};
+private _prior = _record select 3;
+if (!isNull _prior && {_prior isNotEqualTo _owner}
+    && {(([_prior,_kind] call ACME_fnc_inventoryLedgerNative) findIf {(_x select 0) == _token}) >= 0}) exitWith {false};
 private _escrow = _owner getVariable ["ACME_inventoryEscrow",createHashMap];
 if ((values _escrow findIf {(_x param [0,0]) == _token}) >= 0) exitWith {false};
 private _cache = _owner getVariable ["ACME_inventoryPayloadCache",createHashMap];

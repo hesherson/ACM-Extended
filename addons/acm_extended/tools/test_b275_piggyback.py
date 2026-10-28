@@ -252,6 +252,8 @@ def native_bag_worker():
         ("GET_BLOODTYPE(_unit)", "0"),
     ):
         source = source.replace(macro, boundary)
+    # SQF-VM only implements select [start,length]; supply native tail length.
+    source = source.replace('_x select [9]', '_x select [9,count _x]')
     source = source.replace('private _acmeBagIndex = _forEachIndex;', '_fixtureBagIndex=_fixtureBagIndex+1;private _acmeBagIndex=_fixtureBagIndex;')
     source = primitives(adapt(iteration_scopes(source), "circulation"))
     return r'''

@@ -22,7 +22,8 @@
 params [["_target", objNull], ["_presetMode", false]];
 if (!hasInterface) exitWith {};
 private _viewer = call ACME_fnc_controlledProvider;
-if (isNull _viewer || {!local _viewer}) exitWith {};
+if (isNull _viewer || {!local _viewer} || {!alive _viewer}
+    || {_viewer getVariable ["ACE_isUnconscious", false]}) exitWith {};
 ACE_player = _viewer; // Native panel render helpers share the actor resolved at this UI boundary.
 if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
 if (!isNull (uiNamespace getVariable ["ACME_vent_dlg", displayNull])
@@ -33,6 +34,7 @@ if (!isNull _target && {_target getVariable ["ACME_vent_recovering", false]}) ex
     ["This ventilator is being recovered from the patient.", 3] call ace_common_fnc_displayTextStructured;
 };
 private _affixed = !isNull _target && {_target getVariable ["ACME_vent_onPatient", false]};
+if (_affixed && {!([_viewer, _target] call ACME_fnc_ventRecoveryNear)}) exitWith {};
 // An unattached panel presets the provider's own carried device. Shared equipment enters through Connect.
 if (!_affixed && {([_viewer, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem) < 1}) exitWith {
     ["No ventilator in your kit.", 2] call ace_common_fnc_displayTextStructured;
@@ -136,14 +138,21 @@ private _serial = 1 + (uiNamespace getVariable ["ACME_vent_openSerial", 0]);
 uiNamespace setVariable ["ACME_vent_openSerial", _serial];
 uiNamespace setVariable ["ACME_vent_openPending", true];
 [{
-    params ["_serial", "_medic", "_target", "_preset"];
+    params ["_serial", "_medic", "_target", "_preset", "_epoch", "_custody", "_kitEpoch"];
     if ((uiNamespace getVariable ["ACME_vent_openSerial", -1]) != _serial) exitWith {};
     uiNamespace setVariable ["ACME_vent_openPending", false];
     if (isNull _medic || {!alive _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}
         || {_medic getVariable ["ACE_isUnconscious", false]} || {isNull _target}) exitWith {};
+    if (([_target] call ACME_fnc_clinicalEpoch) != _epoch
+        || {(_target getVariable ["ACME_vent_custodyId", ""]) != _custody}) exitWith {};
+    if (_preset && {(_medic getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch
+        || {([_medic, "ACME_Ventilator"] call ace_common_fnc_getCountOfItem) < 1}}) exitWith {};
     if (!_preset && {!(_target getVariable ["ACME_vent_onPatient", false])
-        || {_target getVariable ["ACME_vent_recovering", false]}}) exitWith {};
+        || {_target getVariable ["ACME_vent_recovering", false]}
+        || {!([_medic, _target] call ACME_fnc_ventRecoveryNear)}}) exitWith {};
     if !([_medic, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
     if (!isNull (uiNamespace getVariable ["ACME_vent_dlg", displayNull])) exitWith {};
     createDialog "ACME_Ventilator_Dialog";
-}, [_serial, _viewer, _target, _presetMode], 0.1] call CBA_fnc_waitAndExecute;
+}, [_serial, _viewer, _target, _presetMode, [_target] call ACME_fnc_clinicalEpoch,
+    _target getVariable ["ACME_vent_custodyId", ""],
+    _viewer getVariable ["ACME_equipmentKitEpoch", 0]], 0.1] call CBA_fnc_waitAndExecute;

@@ -1,6 +1,7 @@
 /* Install named protocol handlers once. Binding results remain machine-local diagnostic data. */
 if (missionNamespace getVariable ["ACME_NA3_clinicalInstalled", false]) exitWith {};
 ACME_NA3_clinicalInstalled = true;
+call ACME_fnc_clinicalPersistenceInit;
 ACME_clinical_ownedUnits = allUnits select {local _x && {alive _x}};
 ACME_clinical_activePatients = [];
 ACME_rhythm_activePatients = [];

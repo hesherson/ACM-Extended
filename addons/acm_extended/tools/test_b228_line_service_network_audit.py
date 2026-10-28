@@ -457,8 +457,9 @@ def test_discard_is_bound_to_current_bags_and_salvages_exactly_once(bad):
       private _rows=(_patient getVariable "ACM_circulation_IV_Bags") get "body";
       [count _rows=={0 if bad=='none' else 2},"discard affected wrong/new bags"] call _check;
       if ({str(bad=='none').lower()}) then {{
-        [count _events==2 && {{(_events select 0 select 1 select 3) isEqualTo (_events select 1 select 1 select 3)}},"duplicate discard response changed salvage"] call _check;
-        [(_events select 0 select 1 select 3 select 0 select 1)==203,"wrong live salvage volume"] call _check;
+        private _replies=_events select {{(_x select 0)=="ACME_discardYTubingResult"}};
+        [count _replies==2 && {{(_replies select 0 select 1 select 3) isEqualTo (_replies select 1 select 1 select 3)}},"duplicate discard response changed salvage"] call _check;
+        [(_replies select 0 select 1 select 3 select 0 select 1)==203,"wrong live salvage volume"] call _check;
       }};
     ''')
 
@@ -468,7 +469,8 @@ def test_discard_does_not_launder_medicated_carrier_into_plain_saline():
       private _drug=[];_drug set [1,"body"];_drug set [4,0];_drug set [5,false];_drug set [23,"reserve"];
       _patient setVariable ["ACME_infusion_BagMedications",[_drug]];
       [_patient,_medic,"body",false,0,_liveEpoch,"discard",_serverTime,["blood","reserve"]] call ACME_fnc_discardYTubingCommit;
-      private _salvage=_events select 0 select 1 select 3;
+      private _reply=(_events select {(_x select 0)=="ACME_discardYTubingResult"}) select 0;
+      private _salvage=_reply select 1 select 3;
       [count _salvage==1 && {(_salvage select 0 select 0)=="Blood"},"drug carrier became plain used saline"] call _check;
       [count (_patient getVariable "ACME_infusion_BagMedications")==0,"discarded medication record remains"] call _check;
     ''')
@@ -486,7 +488,7 @@ def test_salvage_result_mints_only_once_and_only_for_pending_request(name,var,pe
       uiNamespace setVariable ["{var}",createHashMap];
       if ({str(pending).lower()}) then {{uiNamespace setVariable ["{var}",createHashMapFromArray [["one",[_medic,_patient]]]];}};
       {payload} call ACME_fnc_{name};{payload} call ACME_fnc_{name};
-      [count (_medic getVariable "ACME_usedBags")=={int(pending)},"unsolicited/replayed salvage duplicated stock"] call _check;
+      [count (_medic getVariable "ACME_usedBags")==0,"presentation acknowledgement minted a second source-funded product"] call _check;
     ''')
 
 
@@ -500,7 +502,10 @@ def test_pull_uses_current_owner_volume_and_stable_identity(case):
       private _row=(_patient getVariable "ACM_circulation_IV_Bags") get "body" select 0;
       [(_row select 1)=={0 if case=='normal' else 101},"pull changed wrong row"] call _check;
       if ({str(case=='normal').lower()}) then {{
-        [(_events select 0 select 1 select 3 select 1)==101,"pull returned stale/default bag volume"] call _check;
-        [(_events select 0 select 1) isEqualTo (_events select 1 select 1),"duplicate pull changed receipt"] call _check;
+        private _replies=_events select {{(_x select 0)=="ACME_transfusionPullResult"}};
+        [(_replies select 0 select 1 select 3 select 1)==101,"pull returned stale/default bag volume"] call _check;
+        [(_replies select 0 select 1) isEqualTo (_replies select 1 select 1),"duplicate pull changed receipt"] call _check;
+        private _canonical=(_patient getVariable "ACME_resourceReturnFunded") get "pull";
+        [(_canonical select 1 select 0 select 1 select 2)==101,"canonical return lost current source volume"] call _check;
       }};
     ''')

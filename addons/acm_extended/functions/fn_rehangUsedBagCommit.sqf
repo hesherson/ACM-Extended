@@ -13,6 +13,7 @@ if !(_prior isEqualTo []) exitWith {if (!isNull _medic) then {["ACME_rehangUsedB
 {if (serverTime - (_receiptTimes get _x) > 12) then {_receipts deleteAt _x; _receiptTimes deleteAt _x;};} forEach keys _receiptTimes;
 if (count _receipts >= 512) exitWith {false};
 private _reply={params ["_ok",["_reason","",[""]],["_bagUid","",[""]]]; private _payload=[_patient,_requestId,_ok,_usedId,_record,_part,_reason,_bagUid]; _receipts set [_requestId,_payload]; _receiptTimes set [_requestId,serverTime]; [_patient,"ACME_usedRehangReceipts",_receipts] call ACME_fnc_setVarNet; [_patient,"ACME_usedRehangReceiptTimes",_receiptTimes] call ACME_fnc_setVarNet; if (!isNull _medic) then {["ACME_rehangUsedBagResult",_payload,_medic] call CBA_fnc_targetEvent;}; _ok};
+if (_patient getVariable ["ACME_persistenceFrozen",false] || {_medic getVariable ["ACME_persistenceFrozen",false]}) exitWith {[false,"Equipment is being saved. Try again shortly."] call _reply};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false,"Patient state changed. Reopen the transfusion menu."] call _reply};
 if (isNull _medic || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)} || {(_medic distance _patient)>ace_medical_gui_maxDistance}) exitWith {[false,"Provider can no longer hang that used bag."] call _reply};
 if (count _record < 7 || {(_record param [0,""]) != _usedId} || {!(_site in (if (_iv) then {[0,1,2]} else {[0]}))}) exitWith {[false,"Used-bag record is invalid."] call _reply};
@@ -21,6 +22,20 @@ if (!_hasAccess) exitWith {[false,"That access is no longer available."] call _r
 
 _record params ["",["_type","",[""]],["_remVol",0,[0]],["_oldAccessType",0,[0]],["_bloodType",-1,[0]],["_origVol",1000,[0]],["_name","",[""]],["_freshBloodID",-1,[0]]];
 if (!finite _remVol || {!finite _origVol} || {_origVol <= 0} || {_remVol > _origVol} || {_remVol <= 0} || {_type in ["","ACME_Empty","ACME_EmptySaline"]}) exitWith {[false,"That used bag is empty."] call _reply};
+if (_type == "FreshBlood") then {
+    private _meta = _record param [8,[]];
+    private _freshReady = _meta isEqualType [] && {count _meta == 4} && {(_meta select 0) == "freshV1"}
+        && {(_meta select 1) isEqualType false} && {(_meta select 2) isEqualType 0} && {finite (_meta select 2)}
+        && {(_meta select 3) isEqualTo _bloodType};
+    if (!_freshReady && {_meta isEqualTo []}) then {
+        private _registry = missionNamespace getVariable ["ACM_circulation_FreshBloodList",createHashMap];
+        private _fresh = _registry getOrDefault [_freshBloodID,[]];
+        _freshReady = count _fresh >= 5 && {(_fresh select 3) isEqualType false}
+            && {(_fresh select 4) isEqualType 0} && {finite (_fresh select 4)} && {(_fresh select 2) isEqualTo _bloodType};
+    };
+    if (!_freshReady) exitWith {_type = "";};
+};
+if (_type == "") exitWith {[false,"Donor blood data is unavailable. Restore its saved metadata first."] call _reply};
 private _serviceKey=toLowerANSI format ["%1#%2#%3",_part,_iv,_site];
 if ((_patient getVariable ["ACME_yFlushJobs",createHashMap]) getOrDefault [_serviceKey,[]] isNotEqualTo []) exitWith {[false,"Finish priming/flushing this line first."] call _reply;};
 // A pulled/used bag must not bypass the same post-two-unit Y flush gate as a new blood bag.
@@ -53,6 +68,10 @@ private _accessType=[_patient,_iv,_pi,_site] call ACM_circulation_fnc_getAccessT
 private _seq=(_patient getVariable ["ACME_bagSequence",0])+1; _patient setVariable ["ACME_bagSequence",_seq,true];
 private _bagUid=format ["%1:%2:%3:%4",netId _patient,_epoch,clientOwner,_seq];
 private _entry=[_type,_remVol,_accessType,_site,_iv,_bloodType,_origVol,_freshBloodID,_bagUid];
+if (_type == "FreshBlood") then {
+    private _freshMeta = _record param [8,[]];
+    if (_freshMeta isEqualType [] && {count _freshMeta == 4} && {(_freshMeta select 0) == "freshV1"}) then {_entry set [9,_origVol]; _entry set [10,+_freshMeta];};
+};
 private _map=_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]; private _arr=+(_map getOrDefault [_part,[]]);
 private _wantMarker=["ACME_EmptySaline","ACME_Empty"] select (_type in ["Blood","FreshBlood","FBTK"]);
 private _slot=_arr findIf {(_x param [0,""])==_wantMarker && {(_x param [3,-1])==_site} && {(_x param [4,true])==_iv}};

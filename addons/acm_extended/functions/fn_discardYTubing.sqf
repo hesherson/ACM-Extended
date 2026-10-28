@@ -18,9 +18,11 @@ private _iv=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selec
 private _site=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1];
 if (isNull _target || {_part==""} || {_site<0}) exitWith {};
 if !([_target,_part,_iv,_site] call ACME_fnc_isYLineAccess) exitWith {["No Y tubing on this access.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;};
-private _requestId=format ["ydiscard:%1:%2:%3",clientOwner,diag_frameNo,floor(diag_tickTime*1000)];
+private _serial = 1 + (missionNamespace getVariable ["ACME_resourceReturnRequestSerial",0]);
+missionNamespace setVariable ["ACME_resourceReturnRequestSerial",_serial];
+private _requestId = format ["ydiscard:%1:%2",missionNamespace getVariable ["ACME_syringeDeliveryMachineNonce",""],_serial];
 private _pending=uiNamespace getVariable ["ACME_yDiscardPending",createHashMap];
-_pending set [_requestId,[ACE_player,_target]];
+_pending set [_requestId,[ACE_player,_target,ACE_player getVariable ["ACME_providerLocalityEpoch",0]]];
 uiNamespace setVariable ["ACME_yDiscardPending",_pending];
 private _identity=[];
 {if ((_x param [3,-1]) == _site && {(_x param [4,true]) isEqualTo _iv}) then {_identity pushBack (_x param [8,""]);};}

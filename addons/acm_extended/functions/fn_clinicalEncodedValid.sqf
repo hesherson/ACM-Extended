@@ -13,7 +13,14 @@ switch (_v select 0) do {
             _x isEqualType true || {_x isEqualType ""} || {_x isEqualType 0 && {finite _x}}
         }
     };
-    case "O": {_n == 2 && {!isNil {_v select 1}} && {(_v select 1) isEqualType ""} && {count (_v select 1) <= 128}};
+    case "O": {
+        _n in [2,4] && {!isNil {_v select 1}} && {(_v select 1) isEqualType ""} && {count (_v select 1) <= 128}
+            && {_n == 2 || {
+                !isNil {_v select 2} && {!isNil {_v select 3}}
+                    && {(_v select 2) isEqualType ""} && {count (_v select 2) <= 256}
+                    && {(_v select 3) isEqualType ""} && {count (_v select 3) <= 256}
+            }}
+    };
     case "T": {_n == 3 && {!isNil {_v select 1}} && {!isNil {_v select 2}} && {(_v select 1) in ["time","cba"]} && {(_v select 2) isEqualType 0} && {finite (_v select 2)}};
     case "A": {
         _n == 2 && {!isNil {_v select 1}} && {(_v select 1) isEqualType []} && {

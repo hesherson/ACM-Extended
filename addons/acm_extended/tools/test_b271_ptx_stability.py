@@ -666,7 +666,7 @@ def restore_setup():
           ["ACME_aspiration_SpO2Penalty",0],["ACME_aspiration_RRDrive",0],["ACME_aspiration_shunt",0],
           ["ACME_laryngo_emesis",[]]];'''
     return model_setup() + aspiration_seed + aspiration_definitions() + "".join(iteration_scopes(function(name)) for name in (
-        "clinicalFields", "clinicalEncodedValid", "clinicalCodec", "clinicalValidate", "lineWarmerRestore", "ventOxygenClear", "clinicalRestore",
+        "clinicalFields", "clinicalEncodedValid", "clinicalObjectRef", "clinicalCodec", "clinicalValidate", "lineWarmerRestore", "ventOxygenClear", "clinicalRestore",
     )) + r'''
         // These are unrelated engine/session rehydration boundaries. The full
         // production validator, codec, field whitelist and restore all execute.

@@ -37,6 +37,10 @@ if (_scope == "box") then {
         || {count _restore == 6 && {!(_restore select 3)}};
     if (_blocked) exitWith {};
     private _native = [_holder,"cooler"] call ACME_fnc_inventoryLedgerNative;
+    private _containers = if (_holder isKindOf "CAManBase") then {[uniformContainer _holder,vestContainer _holder,backpackContainer _holder]} else {[_holder]};
+    private _allCarriers = [];
+    {if (!isNull _x) then {_allCarriers append ((magazinesAmmoCargo _x) select {(_x select 0) in ["ACME_CoolerCarrier_CSWB1U","ACME_CoolerCarrier_CSWB2U","ACME_CoolerCarrier_CSWB4U"]});};} forEach _containers;
+    if (count _allCarriers != count _native) exitWith {};
     private _rows = [_holder] call ACME_fnc_coolerRows;
     // Unknown, not-yet-adopted, or duplicated native tokens cannot silently become empty metadata.
     if (count _native != count _rows) exitWith {};

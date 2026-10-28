@@ -5,9 +5,16 @@
 // it is keyed by body part and view, so each limb and each side of it keeps its own state.
 // [false] records the just-loaded view without publishing an observation.
 params [["_publish", true, [true]]];
-if !([] call ACME_fnc_ivUiValid) exitWith {};
+// Unload still records this display's unfinished work after its clinician
+// loses reach/control. It may never publish into a replacement clinical epoch.
+private _saveDisplay = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
+private _savedSession = [];
+if (!isNull _saveDisplay && {_saveDisplay getVariable ["ACME_IV_Closed", false]}) then {
+    _savedSession = _saveDisplay getVariable ["ACME_IV_Session", []];
+};
+if !([_savedSession] call ACME_fnc_ivUiValid) exitWith {};
 private _patient = uiNamespace getVariable ["ACME_IV_Patient", objNull];
-if (isNull _patient) exitWith {};
+if (isNull _patient || {_patient getVariable ["ACME_persistenceFrozen", false]}) exitWith {};
 private _bp = uiNamespace getVariable ["ACME_IV_BodyPart", "leftarm"];
 private _view = uiNamespace getVariable ["ACME_IV_View", ""];
 private _key = format ["%1|%2", _bp, _view];

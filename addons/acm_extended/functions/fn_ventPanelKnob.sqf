@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
 private _viewer = call ACME_fnc_controlledProvider;
 if (isNull _viewer) exitWith {};

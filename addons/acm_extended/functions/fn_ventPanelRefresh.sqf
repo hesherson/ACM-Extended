@@ -4,8 +4,15 @@ disableSerialization;
 private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
 
-private _bpm  = uiNamespace getVariable ["ACME_vent_bpm", 12];
-private _vt   = uiNamespace getVariable ["ACME_vent_vt", 500];
+// Another clinician or a restored device can change settings while this panel
+// stays open. The readout and next dial step use the current device replica.
+private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player];
+private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!(_vTgt getVariable ["ACME_vent_nivMask", false])});
+private _effective = if (_simple) then {[_vTgt] call ACME_fnc_ventEffectiveSettings} else {[]};
+private _bpm = if (_simple) then {_effective select 2} else {_vTgt getVariable ["ACME_vent_bpm", uiNamespace getVariable ["ACME_vent_bpm", 12]]};
+private _vt = if (_simple) then {_effective select 3} else {_vTgt getVariable ["ACME_vent_vt", uiNamespace getVariable ["ACME_vent_vt", 500]]};
+uiNamespace setVariable ["ACME_vent_bpm", _bpm];
+uiNamespace setVariable ["ACME_vent_vt", _vt];
 private _sel  = uiNamespace getVariable ["ACME_vent_sel", "none"];
 private _edit = uiNamespace getVariable ["ACME_vent_editing", false];
 
@@ -35,12 +42,9 @@ private _measStr = [_measInt] call _toStr; if (_measStr isEqualTo "") then { _me
 // the second live field is mode-dependent. SIMV VC/IMV VC show tidal volume; SIMV PC shows the actual
 // pressure-control setting, PInsp. B17 displayed a VT value even in PC and the engine derived pressure from it,
 // so the UI claimed PC while the control surface still behaved like volume control.
-private _vTgt = uiNamespace getVariable ["ACME_vent_target", ACE_player];
 private _driving = !isNull _vTgt && {_vTgt getVariable ["ACME_vent_driving", false]};
 private _mode = if (isNull _vTgt) then {"SIMV VC PS"} else {_vTgt getVariable ["ACME_vent_mode", "SIMV VC PS"]};
-private _simple = ((missionNamespace getVariable ["ACME_vent_simpleMode", false]) && {!((uiNamespace getVariable ["ACME_vent_target", objNull]) getVariable ["ACME_vent_nivMask", false])});
 if (_simple) then {
-    private _effective = [_vTgt] call ACME_fnc_ventEffectiveSettings;
     _mode = _effective select 1;
     _vt = _effective select 3;
 };

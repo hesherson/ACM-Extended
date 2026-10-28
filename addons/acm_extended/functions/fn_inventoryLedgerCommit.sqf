@@ -22,7 +22,9 @@ private _escrow = _owner getVariable ["ACME_inventoryEscrow",createHashMap];
         // An unchanged same-kit publication cannot repair a terminal allocation
         // rejection. Changed contents or a fresh kit may make one new attempt.
         if (!_sameBlocked) then {
-            _pending set [_key,[_kind,_sid,_payload,_owner getVariable ["ACME_equipmentKitEpoch",0],0,0,"pending"]];
+            // Import exclusions travel in the SAME funded publication as the
+            // payload. The register event may overtake separate object vars.
+            _pending set [_key,[_kind,_sid,_payload,_owner getVariable ["ACME_equipmentKitEpoch",0],0,0,"pending",+(_owner getVariable ["ACME_inventoryImportAvoid",[]])]];
             _owner setVariable ["ACME_inventoryPending",_pending,true];
             ["ACME_inventoryBroker",["register",_owner,_kind,_sid,_payload,""]] call CBA_fnc_serverEvent;
         };

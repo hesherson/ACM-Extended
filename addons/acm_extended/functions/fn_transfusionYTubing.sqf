@@ -11,9 +11,14 @@
 // iv set on the medic, in ACME_preparedIVSets. the cold state of the blood is recorded, so it still hangs
 // [cooled] when it goes up.
 params [["_coolerResume",[]]];
+private _medic = ACE_player;
+if (isNull _medic || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}
+    || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
+if (ACE_player getVariable ["ACME_persistenceFrozen",false]) exitWith {};
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 private _target = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
+if (!isNull _target && {_target getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
 private _right = _display displayCtrl 86005;
 private _coolerContext=[ACE_player,_target,
     missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],
@@ -48,8 +53,17 @@ private _data = if (_idx >= 0) then { _right lbData _idx } else { "" };
 // remember the bag, with its exact remaining volume and store id. nothing is added to the kit and nothing is
 // removed from the store until the build actually commits, at press 3. it is gated on having a y-tubing set, so
 // we do not bother when the build cannot proceed.
+private _usedSelection = (_data splitString "|");
+private _usedFresh = false;
+if ((_usedSelection param [2,""]) == "USED") then {
+    private _used = ACE_player getVariable ["ACME_usedBags",[]];
+    private _index = _used findIf {(_x param [0,""]) == (_usedSelection param [3,""])};
+    _usedFresh = _index >= 0 && {((_used select _index) param [1,""]) in ["FreshBlood","FBTK"]};
+};
+if (_usedFresh) exitWith {["Fresh donor blood must be hung directly; it cannot be converted into a stored Y set.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;};
 missionNamespace setVariable ["ACME_ySelExactVol", 0];
 missionNamespace setVariable ["ACME_ySelUsedId", ""];
+missionNamespace setVariable ["ACME_ySelUsedRow", []];
 if ((((_data splitString "|") param [2, ""]) == "USED") && {([ACE_player, _target, "ACME_YTubing"] call ACME_fnc_treatmentSupplyCount) >= 1}) then {
     private _uid = (_data splitString "|") param [3, ""];
     private _used = ACE_player getVariable ["ACME_usedBags", []];
@@ -82,6 +96,7 @@ if ((((_data splitString "|") param [2, ""]) == "USED") && {([ACE_player, _targe
             _data = format ["%1|", _itemClass];  // the real item class. the action is re-derived from the fluid tables downstream.
             missionNamespace setVariable ["ACME_ySelExactVol", _urem];
             missionNamespace setVariable ["ACME_ySelUsedId", _uid];
+            missionNamespace setVariable ["ACME_ySelUsedRow", +(_used select _ui)];
         } else {
             ["Could not ready the used bag for a Y build (no matching bag size).", 4.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
         };
@@ -124,6 +139,7 @@ if (_pending isEqualTo "") exitWith {
     missionNamespace setVariable ["ACME_yPendingData", _data];  // the full "item|action" for the blood.
     missionNamespace setVariable ["ACME_yPendingBloodVol", missionNamespace getVariable ["ACME_ySelExactVol", 0]];
     missionNamespace setVariable ["ACME_yPendingBloodUsedId", missionNamespace getVariable ["ACME_ySelUsedId", ""]];
+    missionNamespace setVariable ["ACME_yPendingBloodUsedRow", missionNamespace getVariable ["ACME_ySelUsedRow", []]];
     call ACME_fnc_transfusionFilterInventory;
     call ACME_fnc_updateTransfusionControls;
     ["Y set: select the saline to pair, then press Select Flush Saline.", 3.5, ACE_player] call ace_common_fnc_displayTextStructured;
@@ -136,6 +152,7 @@ if (_pendingSaline isEqualTo "") exitWith {
     missionNamespace setVariable ["ACME_yPendingSalineData", _data];
     missionNamespace setVariable ["ACME_yPendingSalineVol", missionNamespace getVariable ["ACME_ySelExactVol", 0]];
     missionNamespace setVariable ["ACME_yPendingSalineUsedId", missionNamespace getVariable ["ACME_ySelUsedId", ""]];
+    missionNamespace setVariable ["ACME_yPendingSalineUsedRow", missionNamespace getVariable ["ACME_ySelUsedRow", []]];
     call ACME_fnc_transfusionFilterInventory;
     call ACME_fnc_updateTransfusionControls;
     ["Saline paired. Press Build Y Tubing to assemble the set.", 3.5, ACE_player] call ace_common_fnc_displayTextStructured;
@@ -160,6 +177,8 @@ private _fnc_clearPending = {
     missionNamespace setVariable ["ACME_yPendingSalineData", ""];
     missionNamespace setVariable ["ACME_yPendingBloodUsedId", ""];
     missionNamespace setVariable ["ACME_yPendingSalineUsedId", ""];
+    missionNamespace setVariable ["ACME_yPendingBloodUsedRow", []];
+    missionNamespace setVariable ["ACME_yPendingSalineUsedRow", []];
     call ACME_fnc_transfusionFilterInventory;
 };
 
@@ -168,44 +187,28 @@ if (([ACE_player, _target, "ACME_YTubing"] call ACME_fnc_treatmentSupplyCount) <
     ["Y-type tubing unavailable. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
-// materialize at commit time. only now, when the build is actually committing, do we turn any used-bag leg into
-// a real item and remove it from the used-bag store. this is why arming a used bag and then switching menus
-// never consumes it. a leg materializes only if it is confirmed on hand, and if it is not, because the kit is
-// full, the build cancels and the bag is kept.
-private _fnc_matUsed = {
-    params ["_uid", "_cls"];
-    if (_uid isEqualTo "") exitWith { true };  // not a used leg.
-    if (([ACE_player, _cls] call ace_common_fnc_getCountOfItem) >= 1) exitWith { true };  // already on hand.
-    private _used = ACE_player getVariable ["ACME_usedBags", []];
-    private _ui = _used findIf { (_x param [0, ""]) isEqualTo _uid };
-    if (_ui < 0) exitWith { false };  // the bag is gone from the store.
-    // keep the cooler auto-store watcher off while the readied item sits loose in the kit, through the 2.5 s build
-    // beat until the set consumes it. without this the watcher sweeps a readied blood unit into the cooler
-    // mid-beat, the on-hand re-check of the build then cancels, and the used bags are lost. that was the reported
-    // bug.
-    missionNamespace setVariable ["ACME_coolerAutoStoreSuppressUntil", diag_tickTime + 8];
-    missionNamespace setVariable ["ACME_coolerAutoStoreBusy", true];
-    ACE_player addItem _cls;
-    if (([ACE_player, _cls] call ace_common_fnc_getCountOfItem) < 1) then {
-        private _cont = objNull;
-        { if (!isNull _x) exitWith { _cont = _x; }; } forEach [backpackContainer ACE_player, vestContainer ACE_player, uniformContainer ACE_player];
-        if (!isNull _cont) then { _cont addItemCargoGlobal [_cls, 1]; };
-    };
-    missionNamespace setVariable ["ACME_coolerAutoStoreBusy", false];
-    if (([ACE_player, _cls] call ace_common_fnc_getCountOfItem) >= 1) then {
-        _used deleteAt _ui;
-        ACE_player setVariable ["ACME_usedBags", _used, true];
-        uiNamespace setVariable ["ACME_usedRowSig", "__force__"];
-        true
-    } else { false }
+// Used legs stay in their virtual store through the whole build beat. A native
+// nominal-size item can never represent their exact remaining volume.
+private _usedRows = ACE_player getVariable ["ACME_usedBags",[]];
+private _usedValid = true;
+private _resolveUsed = {
+    params ["_uid","_kinds","_volume","_saved"];
+    if (_uid == "") exitWith {[]};
+    private _found = _usedRows select {(_x param [0,""]) == _uid};
+    if (count _found != 1) exitWith {_usedValid = false; []};
+    private _row = _found select 0;
+    if (count _row < 7 || {!((_row select 1) in _kinds)} || {!((_row select 2) isEqualType 0)}
+        || {!finite (_row select 2)} || {(_row select 2) <= 0} || {(_row select 2) != _volume}
+        || {!((_row select 5) isEqualType 0)} || {!finite (_row select 5)} || {(_row select 5) <= 0} || {(_row select 2) > (_row select 5)}
+        || {!((_row select 4) isEqualType 0)} || {!finite (_row select 4)}
+        || {_saved isNotEqualTo [] && {_row isNotEqualTo _saved}}) exitWith {_usedValid = false; []};
+    +_row
 };
-if (!([_bloodUsedId, _blood] call _fnc_matUsed)) exitWith {
+private _bloodUsedRow = [_bloodUsedId,["Blood"],_bloodExactVol,missionNamespace getVariable ["ACME_yPendingBloodUsedRow",[]]] call _resolveUsed;
+private _salineUsedRow = [_salineUsedId,["Saline","ACME_SalineY"],_salineExactVol,missionNamespace getVariable ["ACME_yPendingSalineUsedRow",[]]] call _resolveUsed;
+if (!_usedValid || {_bloodUsedId != "" && {_bloodUsedId == _salineUsedId}}) exitWith {
     call _fnc_clearPending;
-    ["Could not ready the used blood (kit full). Build canceled; the bag is kept.", 4.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
-};
-if (!([_salineUsedId, _saline] call _fnc_matUsed)) exitWith {
-    call _fnc_clearPending;
-    ["Could not ready the used saline (kit full). Build canceled; the bag is kept.", 4.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    ["A selected used bag changed or is no longer available. Build canceled; remaining bags are kept.",4,ACE_player] call ace_common_fnc_displayTextStructured;
 };
 
 // re-derive the live action of the blood from the current list by class, which mirrors the old direct-hang
@@ -239,11 +242,11 @@ if (_bloodFromCooler && {_coolerResume isEqualTo []}) exitWith {
     private _queued=[ACE_player,_blood,[ACME_fnc_coolerYDrawDone,[_serial,_coolerContext]]] call ACME_fnc_coolerDraw;
     if (!_queued) then {[false,[_serial,_coolerContext]] call ACME_fnc_coolerYDrawDone;};
 };
-if (([ACE_player, _target, _blood] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
+if (_bloodUsedId == "" && {([ACE_player, _target, _blood] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
     call _fnc_clearPending;
     ["Blood unit not on hand. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
-if (([ACE_player, _target, _saline] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
+if (_salineUsedId == "" && {([ACE_player, _target, _saline] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
     call _fnc_clearPending;
     ["Saline bag not on hand. Build canceled.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
@@ -251,12 +254,35 @@ if (([ACE_player, _target, _saline] call ACME_fnc_treatmentSupplyCount) < 1) exi
 // the build beat. assembling the set takes a moment. the y button shows "Building...", rendered by
 // fn_updatetransfusioncontrols while ACME_yBuildingActive is in the future, and then the commit below consumes
 // the items and stores the set. the pendings stay set during the beat, so the button state holds.
+private _buildSerial = 1 + (missionNamespace getVariable ["ACME_yBuildSerial",0]);
+missionNamespace setVariable ["ACME_yBuildSerial",_buildSerial];
+missionNamespace setVariable ["ACME_yBuildPending",[_buildSerial,_coolerContext]];
+ACE_player setVariable ["ACME_yBuildPending",[_buildSerial,_coolerContext select 6,_coolerContext select 7],true];
 missionNamespace setVariable ["ACME_yBuildingActive", diag_tickTime + 2.5];
 call ACME_fnc_updateTransfusionControls;
 ["Building Y set...", 2.5, ACE_player] call ace_common_fnc_displayTextStructured;
 [{
-    params ["_blood", "_bloodAction", "_saline", "_salineAction", "_bloodFromCooler", ["_bloodExactVol", 0], ["_salineExactVol", 0], ["_medic", objNull], ["_target", objNull], ["_bloodPersonal", false], ["_salinePersonal", false]];
+    params ["_blood", "_bloodAction", "_saline", "_salineAction", "_bloodFromCooler", ["_bloodExactVol", 0], ["_salineExactVol", 0], ["_medic", objNull], ["_target", objNull], ["_bloodPersonal", false], ["_salinePersonal", false], ["_bloodUsedRow",[]], ["_salineUsedRow",[]], ["_buildSerial",-1], ["_buildContext",[]]];
+    if ((missionNamespace getVariable ["ACME_yBuildPending",[]]) isNotEqualTo [_buildSerial,_buildContext]) exitWith {
+        if (!isNull _medic && {(_medic getVariable ["ACME_yBuildPending",[]]) isEqualTo [_buildSerial,_buildContext select 6,_buildContext select 7]}) then {_medic setVariable ["ACME_yBuildPending",[],true];};
+    };
+    missionNamespace setVariable ["ACME_yBuildPending",[]];
     missionNamespace setVariable ["ACME_yBuildingActive", -1];
+    isNil {
+    private _currentTarget = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
+    private _currentContext = [_medic,_currentTarget,
+        missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],
+        missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],
+        missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1],
+        missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0],
+        if (isNull _medic) then {-1} else {_medic getVariable ["ACME_equipmentKitEpoch",0]},
+        if (isNull _medic) then {-1} else {_medic getVariable ["ACME_providerLocalityEpoch",0]},
+        missionNamespace getVariable ["ACME_yPending",""],missionNamespace getVariable ["ACME_yPendingSaline",""],
+        missionNamespace getVariable ["ACME_yPendingData",""],missionNamespace getVariable ["ACME_yPendingSalineData",""],
+        missionNamespace getVariable ["ACME_yPendingBloodUsedId",""],missionNamespace getVariable ["ACME_yPendingSalineUsedId",""],
+        if (isNull _currentTarget) then {-1} else {[_currentTarget] call ACME_fnc_clinicalEpoch}];
+    if (_currentContext isNotEqualTo _buildContext || {isNull (findDisplay 86000)} || {_medic isNotEqualTo ACE_player}
+        || {uiNamespace getVariable ["ACME_preparedListMode",false]} || {(missionNamespace getVariable ["ACME_piggybackPending",[]]) isNotEqualTo []}) exitWith {};
     private _fnc_clearPending = {
         missionNamespace setVariable ["ACME_yPending", ""];
         missionNamespace setVariable ["ACME_yPendingData", ""];
@@ -264,31 +290,50 @@ call ACME_fnc_updateTransfusionControls;
         missionNamespace setVariable ["ACME_yPendingSalineData", ""];
         missionNamespace setVariable ["ACME_yPendingBloodUsedId", ""];
         missionNamespace setVariable ["ACME_yPendingSalineUsedId", ""];
+    missionNamespace setVariable ["ACME_yPendingBloodUsedRow", []];
+    missionNamespace setVariable ["ACME_yPendingSalineUsedRow", []];
         call ACME_fnc_transfusionFilterInventory;
     };
-    if (isNull _medic || {!local _medic} || {!alive _medic}
-        || {!isNull _target && {_medic distance _target > 5}}) exitWith {call _fnc_clearPending;};
+    if (isNull _medic || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}
+        || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}
+        || {!isNull _target && {([_medic,_target] call ACME_fnc_patientInteractionDistance) > 5}}) exitWith {call _fnc_clearPending;};
+    if (_medic getVariable ["ACME_persistenceFrozen",false] || {!isNull _target && {_target getVariable ["ACME_persistenceFrozen",false]}}) exitWith {call _fnc_clearPending;};
     // re-check that everything is still on hand, because any piece could have been dropped mid-build.
     if (([_medic, _target, "ACME_YTubing"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
         call _fnc_clearPending;
         ["Y-type tubing unavailable. Build canceled.", 3, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([_medic, _target, _blood] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
+    if (_bloodUsedRow isEqualTo [] && {([_medic, _target, _blood] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
         call _fnc_clearPending;
         ["Blood unit not on hand. Build canceled.", 3, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
-    if (([_medic, _target, _saline] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
+    if (_salineUsedRow isEqualTo [] && {([_medic, _target, _saline] call ACME_fnc_treatmentSupplyCount) < 1}) exitWith {
         call _fnc_clearPending;
         ["Saline bag not on hand. Build canceled.", 3, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
 
-    // consume all three physical items into the set.
-    private _receipts = [_medic, _target, ["ACME_YTubing", [_blood, _bloodPersonal], [_saline, _salinePersonal]]] call ACME_fnc_treatmentSupplyTakeMany;
+    // Revalidate both exact used rows before touching any physical component.
+    private _usedBefore = +(_medic getVariable ["ACME_usedBags",[]]);
+    private _usedAfter = +_usedBefore;
+    private _usedOK = true;
+    {
+        if (_x isNotEqualTo []) then {
+            private _source = _x;
+            private _matches = _usedAfter select {(_x param [0,""]) == (_source select 0)};
+            if (count _matches != 1 || {(_matches select 0) isNotEqualTo _source}) exitWith {_usedOK = false;};
+            private _i = _usedAfter findIf {(_x select 0) == (_source select 0)};
+            _usedAfter deleteAt _i;
+        };
+    } forEach [_bloodUsedRow,_salineUsedRow];
+    if (!_usedOK) exitWith {call _fnc_clearPending;};
+    private _requirements = ["ACME_YTubing"];
+    if (_bloodUsedRow isEqualTo []) then {_requirements pushBack [_blood,_bloodPersonal];};
+    if (_salineUsedRow isEqualTo []) then {_requirements pushBack [_saline,_salinePersonal];};
+    private _receipts = [_medic,_target,_requirements] call ACME_fnc_treatmentSupplyTakeMany;
     if (_receipts isEqualTo []) exitWith {
         call _fnc_clearPending;
-        ["A Y-set component is no longer available. Build canceled.", 3, _medic] call ace_common_fnc_displayTextStructured;
+        ["A Y-set component is no longer available. Build canceled; used bags are kept.",3,_medic] call ace_common_fnc_displayTextStructured;
     };
-    {[_x, false] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
 
 // the nominal full volume, parsed from the class suffix, such as ACM_BloodBag_..._500 or ACE_salineIV_500, where
 // a bare ace_salineiv is 1000. it is a label only, so an odd class name harmlessly defaults to 1000.
@@ -324,12 +369,21 @@ private _serial = (missionNamespace getVariable ["ACME_preparedItemSerial",0])+1
 missionNamespace setVariable ["ACME_preparedItemSerial",_serial];
 private _id = format ["yset:%1:%2:%3",clientOwner,netId _medic,_serial];
 private _rec = [_id, _blood, _bloodAction, _saline, _salineAction, "", _label, _bloodFromCooler, "yset", _bloodExactVol, _salineExactVol];
-private _sets = _medic getVariable ["ACME_preparedIVSets", []];
+private _setsBefore = +(_medic getVariable ["ACME_preparedIVSets", []]);
+private _sets = +_setsBefore;
 _sets pushBack _rec;
 _medic setVariable ["ACME_preparedIVSets", _sets, true];
+_medic setVariable ["ACME_usedBags",_usedAfter,true];
+    private _committed = [_medic] call ACME_fnc_preparedInventoryCommit;
+    if (!_committed) exitWith {
+        _medic setVariable ["ACME_preparedIVSets",_setsBefore,true];
+        _medic setVariable ["ACME_usedBags",_usedBefore,true];
+        {[_x] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
+        call _fnc_clearPending;
+    };
+    {[_x,false] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
+    uiNamespace setVariable ["ACME_usedRowSig","__force__"];
     ["Y set built. Preparing the IV set.", 2, _medic] call ace_common_fnc_displayTextStructured;
-    [_medic] call ACME_fnc_preparedInventoryCommit;
-
     call _fnc_clearPending;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 
@@ -337,4 +391,7 @@ _medic setVariable ["ACME_preparedIVSets", _sets, true];
     // rebuild the active Fluids pane while simply preparing a Y set.
     if (!isNull (findDisplay 86000)) then {[false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;};
     [true] call ACME_fnc_togglePreparedSets;
-}, [_blood, _bloodAction, _saline, _salineAction, _bloodFromCooler, _bloodExactVol, _salineExactVol, ACE_player, _target, (_bloodFromCooler || {_bloodUsedId != ""}), (_salineUsedId != "")], 2.5] call CBA_fnc_waitAndExecute;
+    true
+    };
+    if (!isNull _medic && {(_medic getVariable ["ACME_yBuildPending",[]]) isEqualTo [_buildSerial,_buildContext select 6,_buildContext select 7]}) then {_medic setVariable ["ACME_yBuildPending",[],true];};
+}, [_blood, _bloodAction, _saline, _salineAction, _bloodFromCooler, _bloodExactVol, _salineExactVol, ACE_player, _target, (_bloodFromCooler || {_bloodUsedId != ""}), (_salineUsedId != ""),_bloodUsedRow,_salineUsedRow,_buildSerial,_coolerContext], 2.5] call CBA_fnc_waitAndExecute;

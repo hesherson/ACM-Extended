@@ -39,6 +39,7 @@ PREP(formatFluidBagName);
 PREP(generateBloodType);
 PREP(generateBloodTypeList);
 PREP(generateFreshBloodEntry);
+PREP(restoreFreshBloodRegistry);
 PREP(getAccessType);
 PREP(getApplyPadsTime);
 PREP(getCapillaryDamageBleedingRate);
@@ -131,3 +132,7 @@ PREP(cprRelease);
 PREP(cprCleanupLocal);
 PREP(cprRetireAnimLocal);
 PREP(registerCPRRuntime);
+
+PREP(freshBloodGrant);
+PREP(receiveFreshBloodBag);
+PREP(freshBloodGrantQuery);

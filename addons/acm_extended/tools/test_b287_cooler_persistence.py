@@ -33,7 +33,7 @@ def setup():
     private _serverTime=10000;
     private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
     private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
-    private _bags=["ACM_BloodBag_ON_500","ACM_BloodBag_A_500","ACM_FreshBloodBag_ON_250","ACM_BloodBag_ON_1000"];
+    private _bags=["ACM_BloodBag_ON_500","ACM_BloodBag_A_500","ACM_FreshBloodBag_250_7","ACM_BloodBag_ON_1000"];
     private _chain={params ["_base"];[7200,5400,10800] select (["ACME_BloodCooler_CSWB1U","ACME_BloodCooler_CSWB2U","ACME_BloodCooler_CSWB4U"] find _base)};
     private _addItem={params ["_o","_class"];private _a=+(_o getVariable ["cargo",[]]);_a pushBack _class;_o setVariable ["cargo",_a];};
     _medic setVariable ["native",[["ACME_CoolerCarrier_CSWB1U",37]]];
@@ -46,7 +46,7 @@ def setup():
     private _issueCount=0;private _issued=[];private _issueAllowed=true;
     private _removeAllowed=true;private _lyingRemove=false;
     ACME_fnc_coolerRows={params ["_o"];_o getVariable ["rows",[]]};
-    ACME_fnc_inventoryLedgerNative={params ["_o"];(_o getVariable ["native",[]]) apply {[_x select 1,"cooler"]}};
+    ACME_fnc_inventoryLedgerNative={params ["_o"];((_o getVariable ["native",[]]) select {(_x select 1)>0 && {(_x select 1)<65535}}) apply {[_x select 1,"cooler"]}};
     ACME_fnc_coolerIssue={params ["_o","_base","_state","_consume"];
         if (!_issueAllowed) exitWith {""};
         _issueCount=_issueCount+1;private _sid=format ["new%1",_issueCount];
@@ -61,7 +61,7 @@ def setup():
     ACME_fnc_coolerBoxReconcile={params ["_o","_now"];[_o getVariable ["ACME_boxCoolerState",[]],_now] call ACME_fnc_coolerAdvance};
     private _saved=[1,"holder",[["save1",37,"ACME_BloodCooler_CSWB1U",8000,[["ACM_BloodBag_ON_500",33]]]]];
     ''' + '\n'.join('ACME_fnc_' + n + '={' + code(n) + '};' for n in [
-        'coolerAdvance', 'coolerSnapshotValid', 'coolerSnapshot', 'coolerRestore', 'coolerPersistenceInit'])
+        'coolerBagVolume', 'coolerAdvance', 'coolerSnapshotValid', 'coolerSnapshot', 'coolerRestore', 'coolerPersistenceInit'])
 
 
 def test_snapshot_advances_exposure_without_mutating_live_rows_and_has_no_absolute_clock():
@@ -257,11 +257,23 @@ def test_cba_hooks_register_once_and_roundtrip_the_versioned_metadata():
     private _hooks=createHashMap;
     CBA_fnc_addEventHandler={_hooks set [_this select 0,_this select 1];};
     call ACME_fnc_coolerPersistenceInit;call ACME_fnc_coolerPersistenceInit;
-    [count _hooks==2,"persistence hooks duplicated"] call _check;
+    [count _hooks==4,"persistence hooks duplicated"] call _check;
+    ACME_fnc_persistenceSnapshot={params ["_o"];[[],createHashMapFromArray [["ACME_checkpointLease_v1",""],["ACME_coolers_v1",[_o,"holder"] call ACME_fnc_coolerSnapshot],["ACME_inventory_v1",[1,[]]],["ACME_equipment_v1",[1,[],[],[],[]]],["ACME_blood_v1",[1,[]]]]]};
+    ACME_fnc_inventorySnapshotValid={true};ACME_fnc_equipmentSnapshotValid={true};ACME_fnc_bloodExposureSnapshotValid={true};
+    ACME_fnc_persistenceRestoreExtended={params ["_o","_m"];private _ok=[_o,_m get "ACME_coolers_v1"] call ACME_fnc_coolerRestore;_o setVariable ["ACME_coolerLastRestoreOK",_ok];_ok};
     private _metadata=createHashMap;
     [_medic,[],_metadata] call (_hooks get "CBA_loadoutGet");
     [(_metadata get "ACME_coolers_v1") isEqualTo _saved,"CBA get did not preserve metadata"] call _check;
     [_medic,[],_metadata] call (_hooks get "CBA_loadoutSet");
     [_medic getVariable ["ACME_coolerLastRestoreOK",false],"CBA set did not restore"] call _check;
     [_issueCount==1,"CBA set did not fund one replacement"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('invalid_token', [0, 65535])
+def test_default_or_zero_ammo_cooler_is_not_saved_as_empty_inventory(invalid_token):
+    execute(setup() + f'''
+    _medic setVariable ["native",[["ACME_CoolerCarrier_CSWB1U",{invalid_token}]]];
+    _medic setVariable ["rows",[]];
+    [([_medic] call ACME_fnc_coolerSnapshot) isEqualTo [],"unbound native cooler disappeared from save metadata"] call _check;
     ''')

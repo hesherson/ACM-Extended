@@ -4,6 +4,7 @@
 disableSerialization;
 private _dlg = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
 if (isNull _dlg) exitWith {};
+if !([] call ACME_fnc_ventPanelContext) exitWith {_dlg closeDisplay 2;};
 private _provider = _dlg getVariable ["ACME_vent_viewer", objNull];
 if (isNull _provider || {!alive _provider} || {_provider isNotEqualTo (call ACME_fnc_controlledProvider)}
     || {_provider getVariable ["ACE_isUnconscious", false]}
