@@ -176,8 +176,21 @@ def test_emulsion_volume_cannot_credit_saline_blood_plasma_or_return_unopened_st
     assert 'if (_type == "Saline" || {_flush}) then {' in read("fluidCommit")
     assert '(_bag param [0, ""]) == "ACME_Propofol"' in read("transfusionRemoveBagCommit")
     pull = read('transfusionPullCommit')
-    assert 'private _wasInfusion = _type == "ACME_Propofol";' in pull
-    assert '[_patient, _x, true] call ACME_fnc_infusionDeliver;' in pull
+    guard = pull[pull.index('private _medicated ='):pull.index('private _prepared = ["pull"')]
+    assert '_type == "ACME_Propofol"' in guard
+    assert '(_x param [23,""]) == _uid' in guard  # identified medication carrier
+    assert '(_x param [2,-1]) == _idx' in guard  # legacy carrier fallback
+    assert 'if (_medicated) exitWith {[false,' in guard
+    assert 'Use Remove Infusion for a medicated bag. The infusion remains attached.' in guard
+    # Pull never clears the dose or converts a medicated carrier to plain fluid.
+    # Explicit Remove Infusion owns that deliberate discard through its writer.
+    assert 'ACME_fnc_infusionDeliver' not in pull
+    assert 'ACME_fnc_infusionMedicationStateCommit' not in pull
+    remove = read('infusionRemoveLocal')
+    assert remove.index('call ACME_fnc_infusionRetire;') < remove.index('_arr deleteAt _index;')
+    retire = read('infusionRetire')
+    assert '[_patient, _x, true] call ACME_fnc_infusionDeliver;' in retire
+    assert '[_patient, _keep] call ACME_fnc_infusionMedicationStateCommit;' in retire
     setter = (ROOT / 'addons/circulation/functions/fnc_setIVLocal.sqf').read_text()
     special = re.search(r'private _special = .*?;', setter).group(0)
     assert '"ACME_Propofol"' in special  # accidental access removal retains exact bag/dose, never a fresh vial

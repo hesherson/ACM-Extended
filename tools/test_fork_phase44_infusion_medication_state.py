@@ -29,11 +29,19 @@ def test_current_contract():
                 if 'ACME_infusion_HasBagMedications' in line and 'ACME_fnc_setVarNet' in line: viol.append((p.name,line.strip()))
     assert not viol,viol
     callers=[p.name for p in FUN.glob('*.sqf') if 'ACME_fnc_infusionMedicationStateCommit' in p.read_text()]
-    for required in ['fn_clinicalReset.sqf','fn_clearAllAilments.sqf','fn_discardYTubingCommit.sqf','fn_transfusionPullCommit.sqf','fn_preparedAttachLocal.sqf','fn_fluidCommit.sqf','fn_infusionClampLocal.sqf','fn_infusionRegisterCore.sqf','fn_infusionRetire.sqf','fn_clinicalBagMove.sqf','fn_handleInfusions.sqf']:
+    for required in ['fn_clinicalReset.sqf','fn_clearAllAilments.sqf','fn_discardYTubingCommit.sqf','fn_preparedAttachLocal.sqf','fn_fluidCommit.sqf','fn_infusionClampLocal.sqf','fn_infusionRegisterCore.sqf','fn_infusionRetire.sqf','fn_clinicalBagMove.sqf','fn_handleInfusions.sqf']:
         assert required in callers,(required,callers)
+    pull=(FUN/'fn_transfusionPullCommit.sqf').read_text()
+    guard=pull[pull.index('private _medicated ='):pull.index('private _prepared = ["pull"')]
+    assert '_type == "ACME_Propofol"' in guard
+    assert '(_x param [23,""]) == _uid' in guard
+    assert 'if (_medicated) exitWith {[false,' in guard
+    assert 'ACME_fnc_infusionMedicationStateCommit' not in pull
+    assert 'ACME_fnc_infusionDeliver' not in pull
     from owner_route_contract import assert_owner_route
     assert_owner_route('fn_discardYTubing.sqf','discardYTubing','discardYTubingCommit','infusionMedicationStateCommit',ROOT)
-    assert_owner_route('fn_transfusionPullBag.sqf','transfusionPull','transfusionPullCommit','infusionMedicationStateCommit',ROOT)
+    assert_owner_route('fn_transfusionPullBag.sqf','transfusionPull','transfusionPullCommit','ivBagsCommit',ROOT)
+    assert_owner_route('fn_removeInfusionBag.sqf','infusionRemove','infusionRemoveLocal','infusionRetire',ROOT)
     print("fork phase 44 infusion medication state contract checks: PASS")
 
 if __name__ == "__main__":

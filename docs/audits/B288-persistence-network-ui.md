@@ -27,6 +27,12 @@ The review covers production callbacks, owner dispatch, replay decisions, native
 - Fresh-blood labels/logs use immutable bag facts; a configured base class without a donor suffix is formatted safely. Manufacturer capacity and donor metadata survive the canonical per-bag flow tick.
 - Treatment supply receipts, owner-private return decisions and public IV supply bindings fence checkpoints. Global journal checks also cover pending products whose original actors were deleted. Active grant indexes and bounded unproven requests keep terminal history out of recurring work.
 
+## Recorded validation
+
+The frozen combined B285–B288 selection passed **951 cases across 36 modules**, with no failures, errors or skips. This includes all 483 new B288 cases and retained networking, AI/performance, cooler and build/ownership checks. The complete root-3 allocation passed **254 cases** after its older medication assertions were updated to require refusal before any medicated Pull mutation; no test cases were removed.
+
+Strict HEMTT validation passed **2,045 SQF files and 12 stringtables**. The native-owner audit reported **zero violations**. Exact-commit full-suite and signed-package verification results are recorded in [draft PR #31](https://github.com/hesherson/ACM-Extended/pull/31); these checks are separate from native acceptance.
+
 ## Native acceptance
 
 Production SQF execution substitutes native cargo/config/UI/network/disk operations at explicit boundaries. It cannot certify Arma's scheduler, real replication order, rendering, engine profile durability or a particular mission's persistence writer.
