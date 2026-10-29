@@ -99,6 +99,7 @@ def setup(sync=False):
     '''+'ACME_fnc_inventoryLedgerClass={'+adapted(selector)+'};'+\
       'ACME_fnc_inventoryLedgerNative={'+native_code(read('inventoryLedgerNative'))+'};'+\
       'ACME_fnc_inventoryLedgerReply={'+adapted(reply)+'};'+\
+      'ACME_fnc_syringeDeliveryMachine={'+adapted(read('syringeDeliveryMachine'))+'};'+\
       'ACME_fnc_inventoryLedgerInit={'+native_code(read('inventoryLedgerInit'))+'};'+r'''
       call ACME_fnc_inventoryLedgerInit;
       ["ACME_inventoryBroker" in _registered && {"ACME_inventoryReply" in _registered},"runtime event handlers missing"] call _check;

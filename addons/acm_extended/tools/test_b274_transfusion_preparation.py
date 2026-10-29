@@ -17,10 +17,16 @@ def gui(source):
     source = source.replace("findDisplay 86000", "_display")
     source = source.replace("isNull (_display)", "(_display isEqualTo objNull)")
     source = source.replace("_display displayCtrl 86005", "_rightFixture")
+    source = source.replace("_display displayCtrl 86004", "_leftFixture")
     source = source.replace("lbCurSel _right", "_selection")
+    source = source.replace("lbCurSel _left", "_leftSelection")
+    source = source.replace("lbCurSel _list", "_leftSelection")
+    source = source.replace("_left lbValue _leftRow", "(_leftValues select _leftRow)")
+    source = source.replace("_list lbValue _row", "(_leftValues select _row)")
     source = source.replace("lbSize _right", "count _rowData")
     source = re.sub(r"_right lbData (_\w+)", r"(_rowData select \1)", source)
     source = source.replace("_medic distance _target", "_distance")
+    source = source.replace('getText (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type")', '([_action] call _fluidType)')
     source = source.replace("objectParent ACE_player", "objNull")
     # Native network identity is explicit at this namespace/object boundary.
     source = source.replace("netId _medic", '"medic"')
@@ -133,6 +139,13 @@ def stage_setup():
     return supply_setup() + picker_setup() + r'''
       ACME_fnc_clinicalEpoch={1};
       private _rightFixture=missionNamespace;
+      // Native left-list primitives expose the existing physical fluid card.
+      // The production line-context resolver must reject it as an empty line.
+      private _leftFixture=profileNamespace;
+      private _leftSelection=0;private _leftValues=[0];
+      ACM_circulation_TransfusionMenu_Selection_IVBags=[["Plasma",300,1,0,true,-1,500,-1,"existing-line"]];
+      private _fluidTypes=createHashMapFromArray [["SalineIV_500","Saline"],["BloodIV_ON_500","Blood"],["PlasmaLyteIV_500","PlasmaLyte"]];
+      private _fluidType={params ["_a"];_fluidTypes get _a};
       private _rowData=[];private _selection=0;private _bagRefreshes=0;
       private _initialBags=createHashMapFromArray [["leftarm",[["Plasma",300,1,1,true,-1,500,-1,"existing-line"]]]];
       _patient setVariable ["ACM_circulation_IV_Bags",_initialBags];
@@ -147,7 +160,7 @@ def stage_setup():
       ACM_circulation_fnc_TransfusionMenu_UpdateBagList={_bagRefreshes=_bagRefreshes+1;};
       ACME_fnc_carrierSupplyTake={[objNull,"",false,objNull]};
       ACME_fnc_itemTake={params ["_u","_c"];private _a=+(_u getVariable ["fixtureStock",[]]);private _i=_a find _c;if (_i<0) exitWith {false};_a deleteAt _i;_u setVariable ["fixtureStock",_a];true};
-    ''' + compiled("isSalineItem") + compiled("transfusionTakeSelected") + compiled("treatmentSupplyTakeMany") + compiled("transfusionSpikeOrAdd") + compiled("transfusionYTubing")
+    ''' + compiled("isSalineItem") + compiled("getSelectedIVLineContext") + compiled("transfusionTakeSelected") + compiled("treatmentSupplyTakeMany") + compiled("transfusionSpikeOrAdd") + compiled("transfusionYTubing")
 
 
 @pytest.mark.parametrize("bag,action,kind", [

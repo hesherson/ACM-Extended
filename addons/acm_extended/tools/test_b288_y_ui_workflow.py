@@ -77,6 +77,7 @@ def ui_source(name):
  s=s.replace('safeZoneX','0').replace('safeZoneY','0').replace('safeZoneW','1.7777778').replace('safeZoneH','1').replace('pixelW','(1/1920)').replace('pixelH','(1/1080)')
  # Config picture lookup is deliberately an engine boundary.
  s=re.sub(r'getText \([^;\n]*? >> "picture"\)','"picture.paa"',s)
+ s=re.sub(r'getText \(configFile >> "ace_medical_treatment" >> "IV" >> (_\w+) >> "type"\)',r'([\1] call _uiFluidType)',s)
  s=s.replace('netId _targetPatient','"casualty"')
  return primitives(adapt(s))
 
@@ -85,6 +86,8 @@ UI_BOUNDARY = r'''
  // Native getOrDefault must return its fallback without first manufacturing
  // a nil local (the older supply fixture does that and emits VM warnings).
  private _mapDefault={params["_map","_args"];_args params["_key","_default"];if(_key in _map)then{_map get _key}else{_default}};
+ private _uiFluidTypes=createHashMapFromArray [["",""],["usedbag",""],["BloodIV_ON_500","Blood"],["SalineIV_500","Saline"],["PlasmaLyteIV_500","PlasmaLyte"]];
+ private _uiFluidType={params["_action"];_uiFluidTypes get _action};
  private _controlProps=createHashMap;private _controlValues=createHashMap;private _events=[];private _writes=[];
  private _controlRead={params["_c","_a"];_a params["_k","_d"];private _key=format["%1:%2",_c,_k];if(_key in _controlProps)then{_controlProps get _key}else{_d}};
  private _controlSet={params["_c","_a"];_a params["_k","_v"];_controlProps set[format["%1:%2",_c,_k],_v];};

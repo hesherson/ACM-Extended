@@ -45,6 +45,11 @@ if ((_identity select 0) == "active") then {
     private _uid = _identity select 4;
     if (_uid != "" && {(_physical findIf {(_x param [8,""]) == _uid && {(_x param [3,-1]) == (_identity select 3)} && {(_x param [4,false]) isEqualTo (_identity select 2)}}) < 0}) then {_row = -1;};
 };
+if ((_identity select 0) == "line") then {
+    private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
+    if ((_identity select 5) != ([_patient] call ACME_fnc_clinicalEpoch)
+        || {([_patient, _identity select 1, _identity select 2, _identity select 3, _identity select 4] call ACME_fnc_ivLineSlot) isEqualTo []}) then {_row = -1;};
+};
 if (_row < 0) exitWith {true};
 private _pane = switch (_idc) do {case 86129:{"infusion"};case 86004:{"transfusion"};default {"inventory"};};
 _display setVariable ["ACME_txActivePane",_pane];

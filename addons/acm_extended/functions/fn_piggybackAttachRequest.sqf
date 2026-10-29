@@ -4,6 +4,7 @@ params ["_setId"];
 private _intent = missionNamespace getVariable ["ACME_piggybackPending", []];
 if (count _intent < 6 || {_setId == ""}) exitWith {false};
 _intent params ["_patient", "_part", "_iv", "_site", "_primaryUid", "_epoch"];
+if (ACE_player getVariable ["ACME_persistenceFrozen",false] || {_patient getVariable ["ACME_persistenceFrozen",false]}) exitWith {false};
 if !((_intent select [0,4]) isEqualTo [missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1]]) exitWith {["cancel"] call ACME_fnc_piggybackWorkflow;false};
 private _sets = +(ACE_player getVariable ["ACME_preparedIVSets", []]);
 private _si = _sets findIf {(_x param [0, ""]) == _setId};
@@ -12,9 +13,12 @@ private _set = +(_sets select _si);
 private _prepared = +(ACE_player getVariable ["ACME_infusion_PreparedBags", []]);
 private _mi = _prepared findIf {(_x param [0, ""]) == _setId};
 private _medication = if (_mi >= 0) then {+(_prepared select _mi)} else {[]};
-private _type = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_set param [2, ""]) >> "type");
-if ((_set param [8,"yset"]) in ["yset","blood","propofol"] || {!([_patient,_part,_iv,_site,_type,!(_medication isEqualTo [])] call ACME_fnc_piggybackEligible)}) exitWith {
-    [ACE_player,"Choose a matching non-blood fluid, or a prepared saline infusion for a saline primary."] call ACME_fnc_clinicalNotice;
+private _action = _set param [2, ""];
+private _fresh = ((_action splitString "_") param [0, ""]) == "FreshBloodBag";
+private _type = if (_fresh) then {"FreshBlood"} else {getText (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type")};
+if ((_set param [8,"yset"]) in ["yset","propofol","bagOnly"] || {_type == ""}
+    || {!([_patient,_part,_iv,_site,_type,!(_medication isEqualTo [])] call ACME_fnc_piggybackEligible)}) exitWith {
+    [ACE_player,"Choose a plain fluid bag, or a prepared saline infusion for a saline primary."] call ACME_fnc_clinicalNotice;
     false
 };
 // Do not reserve a physical set already in a normal Hang/Give transaction.

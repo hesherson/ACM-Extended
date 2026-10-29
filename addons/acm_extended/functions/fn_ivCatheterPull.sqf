@@ -9,6 +9,9 @@ private _marks=_patient getVariable ["ACME_IV_Marks",[]];
 private _i=_marks findIf {(_x param [14,""])==_uid && {(_x param [4,""])=="hub"}};
 if (_i<0) exitWith {false};
 private _row=+(_marks select _i);
+// A field catheter is seated through this primary's saline lock. Removing
+// the venous catheter is a separate pull after that downstream section is out.
+if (((_row param [15,[]]) param [5,0])>0) exitWith {false};
 private _raw=_row select 0;private _part=if (toLowerANSI _raw=="ej") then {"head"} else {toLowerANSI _raw};
 private _site=[_row select 10] call ACME_fnc_ivSiteIndex;
 isNil {

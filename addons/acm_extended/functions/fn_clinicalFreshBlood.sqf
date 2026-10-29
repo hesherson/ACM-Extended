@@ -22,12 +22,17 @@ private _registry = missionNamespace getVariable ["ACM_circulation_FreshBloodLis
     if !(_part isEqualType "" && {_rows isEqualType []}) exitWith {_invalid = true;};
     private _copied = [];
     {
+        // Foreign extensions may append their own fields. Only our exact
+        // bag-only marker claims the reserved metadata shape below.
         if !(_x isEqualType [] && {count _x >= 7} && {(_x select 0) isEqualType ""}
             && {(_x select 4) isEqualType true}
             && {private _row = _x; ([1,2,3,5,6] findIf {!([_row select _x] call _number)}) < 0}
             && {count _x < 8 || {[_x select 7] call _number}}
             && {count _x < 9 || {(_x select 8) isEqualType ""}}
-            && {count _x < 10 || {[_x select 9] call _number}}) exitWith {_invalid = true;};
+            && {count _x < 10 || {[_x select 9] call _number}}
+            && {count _x < 12 || {isNil {_x select 11} || {(_x select 11) isNotEqualTo "bagOnly"} || {
+                !isNil {_x select 10} && {(_x select 10) isEqualType []}
+                && {(_x select 0) == "FreshBlood" || {(_x select 10) isEqualTo []}}}}}) exitWith {_invalid = true;};
         private _bag = +_x;
         if ((_bag select 0) == "FreshBlood") then {
             private _meta = _bag param [10, []];

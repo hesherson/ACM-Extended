@@ -12,11 +12,12 @@ if (_operation == "cancel") exitWith {
 };
 if (_operation == "start") exitWith {
     if !([_patient, _part, _iv, _site] call ACME_fnc_piggybackEligible) exitWith {
-        [ACE_player, "Select a single running non-blood fluid line. Piggyback a matching fluid, or a saline infusion into saline."] call ACME_fnc_clinicalNotice;
+        [ACE_player, "Select one attached fluid bag on a connected IV line. Any plain fluid can be its secondary; prepared medication infusions still need a saline primary."] call ACME_fnc_clinicalNotice;
         false
     };
     private _bags = (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [toLowerANSI _part, []];
-    private _primary = _bags select (_bags findIf {(_x param [3, -1]) == _site && {(_x param [4, true]) == _iv}});
+    private _primary = _bags select (_bags findIf {(_x param [3, -1]) == _site && {(_x param [4, true]) == _iv}
+        && {!((_x param [0, ""]) in ["ACME_Empty", "ACME_EmptySaline"])}});
     missionNamespace setVariable ["ACME_piggybackPending", [_patient, _part, _iv, _site, _primary param [8, ""], [_patient] call ACME_fnc_clinicalEpoch]];
     missionNamespace setVariable ["ACME_yPending", ""];
     missionNamespace setVariable ["ACME_yPendingData", ""];

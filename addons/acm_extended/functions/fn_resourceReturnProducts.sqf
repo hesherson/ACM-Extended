@@ -9,11 +9,19 @@ private _ok = true;
 {
     if !(_x isEqualType [] && {count _x >= 7}) exitWith {_ok = false;};
     private _bag = _x;
+    // This bag used tubing retained on the patient's installed apparatus. Its
+    // exact-volume used product must not silently acquire an administration set.
+    private _bagOnly = (_bag param [11,""]) isEqualTo "bagOnly";
     if (([0,1,2,3,4,5,6] findIf {isNil {_bag select _x}}) >= 0) exitWith {_ok = false;};
     _bag params ["_type","_remaining","_access","","","_blood","_volume"];
     if !(_type isEqualType "" && {_remaining isEqualType 0} && {finite _remaining} && {_remaining >= 0}
         && {_volume isEqualType 0} && {finite _volume} && {_volume > 0} && {_remaining <= _volume}
         && {_access isEqualType 0} && {finite _access} && {_blood isEqualType 0} && {finite _blood}) exitWith {_ok = false;};
+    // Reattached used products can have a smaller actual fill at field 6.
+    // Field 9 retains their manufacturer's capacity; neither value is a refill.
+    private _capacity = _bag param [9,_volume];
+    if !(_capacity isEqualType 0 && {finite _capacity} && {_capacity > 0}
+        && {_capacity >= _remaining} && {_capacity <= 1e6}) then {_capacity = _volume;};
     private _returned = if (_mode == "remove") then {[_remaining] call ACM_circulation_fnc_getReturnVolume} else {_remaining};
     if (_mode == "remove" && {_type == "FBTK"}) then {
         private _tol = missionNamespace getVariable ["ACME_fbtk_fullToleranceMl",1];
@@ -42,8 +50,12 @@ private _ok = true;
                 case "ACME_SalineY": {"Saline"}; case "PlasmaLyte": {"Plasma-Lyte A"};
                 case "FreshBlood": {"Fresh blood"}; default {_type};
             };
-            private _row = [_id,_type,_returned,_access,_blood,_volume,_name,-1];
+            private _row = [_id,_type,_returned,_access,_blood,_capacity,_name,-1];
             if (_type == "FreshBlood") then {_row pushBack _fresh;};
+            if (_bagOnly) then {
+                if (count _row == 8) then {_row pushBack [];};
+                _row pushBack "bagOnly";
+            };
             _products pushBack ["used",_row];
         } else {
             private _class = [_type,_returned,_blood] call ACM_circulation_fnc_formatFluidBagName;

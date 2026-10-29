@@ -26,6 +26,7 @@ if (_idx < 0 && {_coolerResume isEqualTo []}) exitWith {
 
 private _class = if (_coolerResume isEqualTo []) then {((_right lbData _idx) splitString "|") param [0, ""]} else {_coolerResume select 0};
 if (_class isEqualTo "") exitWith {};
+private _action = if (_coolerResume isEqualTo []) then {((_right lbData _idx) splitString "|") param [1, ""]} else {_coolerResume select 1};
 
 private _piggybackIntent = missionNamespace getVariable ["ACME_piggybackPending", []];
 if !(_piggybackIntent isEqualTo []) then {
@@ -34,9 +35,11 @@ if !(_piggybackIntent isEqualTo []) then {
 };
 private _piggybackAllowed = true;
 if !(_piggybackIntent isEqualTo []) then {
-    _piggybackAllowed = count _piggybackIntent >= 6 && {[_piggybackIntent select 0,_piggybackIntent select 1,_piggybackIntent select 2,_piggybackIntent select 3,getText(configFile >> "ace_medical_treatment" >> "IV" >> (((_right lbData _idx) splitString "|") param [1,""]))] call ACME_fnc_piggybackEligible};
+    private _candidateType = if ((_action find "FreshBloodBag_") == 0) then {"FreshBlood"} else {getText(configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type")};
+    if (_action == "usedbag") then {_candidateType = _class;};
+    _piggybackAllowed = count _piggybackIntent >= 6 && {[_piggybackIntent select 0,_piggybackIntent select 1,_piggybackIntent select 2,_piggybackIntent select 3,_candidateType] call ACME_fnc_piggybackEligible};
 };
-if (!_piggybackAllowed) exitWith {[ACE_player,"Choose a matching non-blood piggyback fluid."] call ACME_fnc_clinicalNotice;};
+if (!_piggybackAllowed) exitWith {[ACE_player,"Select a fluid bag for the connected piggyback line."] call ACME_fnc_clinicalNotice;};
 
 // Direct emulsion bottles enter Prepared Infusions with their own administration
 // line. They never enter the generic saline-bag spike or Y-refill paths.
@@ -51,12 +54,21 @@ if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;}
 // this function does, so the pick carries over.
 if ((_class find "FieldBloodTransfusionKit") >= 0) exitWith { call ACME_fnc_fbtkHang; };
 
-private _action = if (_coolerResume isEqualTo []) then {((_right lbData _idx) splitString "|") param [1, ""]} else {_coolerResume select 1};
 // is it a cooler-sourced row? the available-list rows we add for cooler blood carry a trailing |COOLER
 // marker.
 private _fromCooler = !(_coolerResume isEqualTo []) || {((((_right lbData _idx) splitString "|") param [2, ""]) == "COOLER")};
 // is it a used-bag row? the rows we add for pulled partial bags carry a |USED marker and the store id.
 private _fromUsed = _coolerResume isEqualTo [] && {((((_right lbData _idx) splitString "|") param [2, ""]) == "USED")};
+
+private _target = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
+private _lineContext = if (isNil "ACME_fnc_getSelectedIVLineContext") then {[]} else {call ACME_fnc_getSelectedIVLineContext};
+private _left = _display displayCtrl 86004;
+private _leftRow = if (isNull _left) then {-1} else {lbCurSel _left};
+private _leftValue = if (_leftRow < 0) then {-1} else {_left lbValue _leftRow};
+private _lineSelection = if (_leftValue < 0) then {[]} else {(missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags",[]]) param [_leftValue,[]]};
+if ((_lineSelection param [0, ""]) == "ACME_Line" && {_lineContext isEqualTo []}) exitWith {
+    [ACE_player,"The selected IV line changed. Select its current entry before attaching a bag."] call ACME_fnc_clinicalNotice;
+};
 
 // re-hang a used bag. rebuild the pulled bag on the selected access with its exact remaining volume. the hung-bag
 // entry is pushed straight onto IV_Bags, because the flow is derived from IV_Bags, so it hangs and runs from
@@ -65,6 +77,9 @@ private _fromUsed = _coolerResume isEqualTo [] && {((((_right lbData _idx) split
 // loose-bag paths below.
 if (_fromUsed) exitWith {
     private _usedId=(((_right lbData _idx) splitString "|") param [3,""]);
+    if ((missionNamespace getVariable ["ACME_piggybackPending",[]]) isNotEqualTo []) exitWith {
+        [_usedId] call ACME_fnc_piggybackStageUsed;
+    };
     private _target2=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
     private _bp2=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""];
     private _iv2=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true];
@@ -73,6 +88,9 @@ if (_fromUsed) exitWith {
     if (_target2 getVariable ["ACME_persistenceFrozen",false]) exitWith {};
     private _used=ACE_player getVariable ["ACME_usedBags",[]]; private _ui=_used findIf {(_x param [0,""])==_usedId}; if (_ui<0) exitWith {};
     private _record=+(_used select _ui);
+    if ((_record param [9, ""]) isEqualTo "bagOnly" && {_lineContext isEqualTo []}) exitWith {
+        [ACE_player,"Select an installed empty IV line for this bag. It has no tubing of its own."] call ACME_fnc_clinicalNotice;
+    };
     // Reserve locally before the network round-trip. A rejected owner transaction restores this exact record.
     _used deleteAt _ui; ACE_player setVariable ["ACME_usedBags",_used,true];
     private _requestId=format ["rehang:%1:%2:%3",clientOwner,diag_frameNo,floor(diag_tickTime*1000)];
@@ -81,7 +99,9 @@ if (_fromUsed) exitWith {
     _contexts set [_requestId,[ACE_player,_target2,_usedId]];
     uiNamespace setVariable ["ACME_usedRehangContext",_contexts];
     private _warmer=false;
-    [_target2,"rehangUsedBag",[_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer,serverTime]] call ACME_fnc_ownerDispatch;
+    private _args = [_target2,ACE_player,_bp2,_iv2,_site2,_usedId,_record,[_target2] call ACME_fnc_clinicalEpoch,_requestId,_warmer,serverTime];
+    if (_lineContext isNotEqualTo []) then {_args pushBack (_lineContext select 4);};
+    [_target2,"rehangUsedBag",_args] call ACME_fnc_ownerDispatch;
 };
 
 private _isBlood  = ((toLowerANSI _class) find "blood")  >= 0;
@@ -92,8 +112,6 @@ private _isSaline = ((toLowerANSI _class) find "saline") >= 0;
 private _kind = "premixed";
 if (_isSaline) then { _kind = "saline"; } else { if (_isBlood) then { _kind = "blood"; }; };
 
-private _target = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
-
 // a blood unit that is mid-y-pairing, armed for a y set, must not be spiked out from under the build.
 if (_isBlood && {(missionNamespace getVariable ["ACME_yPending", ""]) == _class}) exitWith {
     ["This blood is armed for a Y set. Finish or clear the Y build first.", 3.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
@@ -102,6 +120,7 @@ if (_isBlood && {(missionNamespace getVariable ["ACME_yPending", ""]) == _class}
 // Draw once, then resume only if the original patient/access selection is live.
 if (_isBlood && {_fromCooler} && {_coolerResume isEqualTo []}) exitWith {
     private _context=[_target,missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1],if (isNull _target) then {-1} else {[_target] call ACME_fnc_clinicalEpoch},missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0]];
+    if (_lineContext isNotEqualTo []) then {_context pushBack (_lineContext select 4);};
     [ACE_player,_class,[ACME_fnc_coolerDrawDone,[_class,_action,_context]]] call ACME_fnc_coolerDraw;
 };
 
@@ -173,6 +192,12 @@ if (_isSaline && _lineYd && {!isNull _target} && {!_yReserveLive}) exitWith {
         ["Bag not on hand.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     };
     ["saline"] call _requestYRefill;
+};
+
+// A fitted empty line already paid for its tubing. Attach only the selected bag.
+private _plainType = getText (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type");
+if (_lineContext isNotEqualTo [] && {_plainType in ["Saline","PlasmaLyte","Plasma","Blood"] || {(_action find "FreshBloodBag_") == 0}}) exitWith {
+    [_class, _action, _lineContext select 4, _fromCooler] call ACME_fnc_attachBagToLine;
 };
 
 // spike into stage. any bag not caught above is spiked and staged into the prepared iv sets.

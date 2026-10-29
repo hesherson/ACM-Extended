@@ -45,10 +45,16 @@ switch (_action) do {
         if (_line) exitWith {[false,"The tubing is already connected.","",0]};
         [true,"","iv_line_attach",1]
     };
-    case "removeLock": {[_lock,if (_lock) then {""} else {"No saline lock is attached."},"",0.05]};
+    case "removeLock": {
+        if (_secondary>0) exitWith {[false,"Remove the field catheter from the saline lock first.","",0]};
+        [_lock,if (_lock) then {""} else {"No saline lock is attached."},"",0.05]
+    };
     case "removeSecondary": {[_secondary>0,if (_secondary>0) then {""} else {"No field catheter is attached."},"",0.05]};
     case "removeExtension": {[_extension,if (_extension) then {""} else {"No extension is attached."},"",0.05]};
-    case "removeDressing": {[_dressed || {_baseDressed},if (_dressed || {_baseDressed}) then {""} else {"No dressing is attached."},"",0.05]};
+    case "removeDressing": {
+        if (_secondary>0 && {!_dressed}) exitWith {[false,"Remove the field catheter before the primary lock dressing.","",0]};
+        [_dressed || {_baseDressed},if (_dressed || {_baseDressed}) then {""} else {"No dressing is attached."},"",0.05]
+    };
     case "removeLine": {[_line,if (_line) then {""} else {"No tubing is attached."},"",0.05]};
     default {[false,"Select an IV tool.","",0]};
 }

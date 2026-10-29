@@ -98,6 +98,13 @@ def test_secondary_holds_primary_until_depleted_and_roles_remain_distinct(volume
     ("Saline", "ACME_Propofol", True, False), ("ACME_SalineY", "Saline", False, False),
 ])
 def test_candidate_filter_matches_owner_compatibility_rules(primary, candidate, infusion, want):
+    # Keep historical case IDs while updating the intentionally relaxed B289
+    # plain-fluid contract. Medicated saline and special apparatus stay gated.
+    if not infusion and (primary, candidate) in {
+        ("Saline", "Plasma"), ("Saline", "Blood"),
+        ("Blood", "Blood"), ("FreshBlood", "Saline"),
+    }:
+        want = True
     execute(helpers() + f'''
         _patient setVariable ["ACME_PiggybackLines",createHashMap];
         _primary set [0,"{primary}"];
@@ -123,8 +130,8 @@ def test_piggyback_cannot_start_on_a_busy_or_unusable_primary(cause):
     execute(helpers() + r'''
         _patient setVariable ["ACME_PiggybackLines",createHashMap];
         _map set ["leftarm",[_primary,_neighbor]];
-    ''' + change + r'''
-        [!([_patient,"leftarm",true,0,"Saline",false] call ACME_fnc_piggybackEligible),"blocked primary accepted secondary"] call _check;
+    ''' + change + f'''
+        [([_patient,"leftarm",true,0,"Saline",false] call ACME_fnc_piggybackEligible) isEqualTo {str(cause == "stopped").lower()},"blocked primary or closed-clamp attachment resolved incorrectly"] call _check;
     ''')
 
 

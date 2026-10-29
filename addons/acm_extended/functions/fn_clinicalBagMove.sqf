@@ -19,6 +19,9 @@ if (_mode == "reserve") exitWith {
     private _idx = _arr findIf {(_x param [8,""]) == _id};
     if (_idx < 0) exitWith {[_medic,"That bag is no longer on this site."] call ACME_fnc_clinicalNotice;};
     private _bag = +(_arr select _idx);
+    if ((_bag param [11, ""]) isEqualTo "bagOnly") exitWith {
+        [_medic,"Pull this bag and attach it to another installed IV line. Its tubing stays with this access."] call ACME_fnc_clinicalNotice;
+    };
     private _originIV = _bag param [4,true]; private _originSite = _bag param [3,-1];
     private _key = toLowerANSI format["%1#%2#%3",_part,_originIV,_originSite];
     if (_key in (_p getVariable ["ACME_yFlushJobs",createHashMap])) exitWith {[_medic,"Finish priming/flushing before moving this line."] call ACME_fnc_clinicalNotice;};
@@ -52,6 +55,11 @@ if ((_dest findIf {(_x param [3,-1]) == _site && {(_x param [4,true]) == _iv}}) 
 private _onY = [_p,_origin,_originIV,_originSite] call ACME_fnc_isYLineAccess;
 private _pib = [_p,_origin,_originIV,_originSite] call ACME_fnc_piggybackLine;
 private _group = if (_onY || {!(_pib isEqualTo [])}) then {_source select {(_x param [3,-1]) == _originSite && {(_x param [4,true]) == _originIV}}} else {[_source select _sourceIndex]};
+if ((_group findIf {(_x param [11, ""]) isEqualTo "bagOnly"}) >= 0) exitWith {
+    _moves deleteAt _id;
+    [_p,"ACME_bagMoves",_moves] call ACME_fnc_setVarNet;
+    [_medic,"Pull the bag and reconnect it to an installed IV line. The original apparatus remains attached."] call ACME_fnc_clinicalNotice;
+};
 private _ids = _group apply {_x param [8,""]};
 private _pi = ACME_infusion_bodyParts find toLowerANSI _part;
 private _access = [_p,_iv,_pi,_site] call ACM_circulation_fnc_getAccessType;

@@ -6,7 +6,11 @@ if !(_receipt isEqualType [] && {count _receipt==4}
     && {(_receipt select 0) isEqualType objNull} && {(_receipt select 1) isEqualType ""}
     && {(_receipt select 2) isEqualType objNull} && {(_receipt select 3) isEqualType ""}
     && {(_receipt select 3)!=""} && {count (_receipt select 3)<=120}) exitWith {0};
-private _item=switch (_action) do {case "flush":{"ACM_SalineFlush_10"};case "field14":{"ACM_IV_14g"};case "field16":{"ACM_IV_16g"};default{""};};
+private _item=switch (_action) do {
+    case "extension":{"ACME_IVExtension"};case "dressing":{"ACME_Tegaderm"};
+    case "line":{"ACME_IVLine"};case "lock":{"ACME_SalineLock"};
+    case "flush":{"ACM_SalineFlush_10"};case "field14":{"ACM_IV_14g"};case "field16":{"ACM_IV_16g"};default{""};
+};
 if (_item=="" || {(_receipt select 1)!=_item}) exitWith {0};
 private _bindings=_medic getVariable ["ACME_IV_SupplyBindings",[]];
 if !(_bindings isEqualType [] && {count _bindings<=64}) exitWith {0};

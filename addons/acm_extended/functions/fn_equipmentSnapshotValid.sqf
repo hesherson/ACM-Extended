@@ -19,9 +19,12 @@ private _ok = true;
 if (!_ok) exitWith {false};
 _seen = createHashMap;
 {
-    if !(_x isEqualType [] && {count _x in [7,8,9]}) exitWith {_ok = false;};
+    if !(_x isEqualType [] && {count _x in [7,8,9,10]}) exitWith {_ok = false;};
     private _row = _x;
     if (([0,1,2,3,4,5,6] findIf {isNil {_row select _x}}) >= 0) exitWith {_ok = false;};
+    if (count _row == 10 && {isNil {_row select 7} || {isNil {_row select 8}} || {isNil {_row select 9}}
+        || {(_row select 9) isNotEqualTo "bagOnly"}
+        || {(_row select 1) isNotEqualTo "FreshBlood" && {(_row select 8) isNotEqualTo []}}}) exitWith {_ok = false;};
     _x params ["_id","_type","_ml","_access","_blood","_original","_name",["_fresh",-1]];
     if !(_id isEqualType "" && {count _id > 0} && {count _id <= 256} && {_type isEqualType ""} && {count _type > 0} && {count _type <= 128}
         && {_ml isEqualType 0} && {finite _ml} && {_ml >= 0} && {_original isEqualType 0} && {finite _original} && {_original > 0} && {_original <= 1e6} && {_ml <= _original}

@@ -41,15 +41,34 @@ private _inventoryCertificate = [_medic,"prepared",_setId,_id] call ACME_fnc_inv
 if (_inventoryCertificate isEqualTo [] || {(_inventoryCertificate param [1,[]]) isNotEqualTo _set}
     || {((_inventoryCertificate param [2,[]]) select [0,11]) isNotEqualTo (_prepared select [0,11])}) exitWith {[false,"Prepared bag inventory custody changed. It was not attached."] call _reply};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false,"Patient state changed. The prepared bag was returned."] call _reply};
+if (_patient getVariable ["ACME_persistenceFrozen",false] || {_medic getVariable ["ACME_persistenceFrozen",false]}) exitWith {
+    [false,"Equipment is being saved. The exact prepared bag was returned."] call _reply
+};
 private _sameVehicle = !isNull objectParent _medic && {objectParent _medic isEqualTo objectParent _patient};
-if (!alive _patient || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)} || {_medic distance _patient > 5 && {!_sameVehicle}}) exitWith {[false,"Provider is unavailable or out of range. The prepared bag was returned."] call _reply};
-if ((_set param [0,""]) != _setId || {(_set param [8,"yset"]) in ["yset","blood","propofol"]}
+if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)} || {_medic distance _patient > 5 && {!_sameVehicle}}) exitWith {[false,"Provider is unavailable or out of range. The prepared bag was returned."] call _reply};
+if ((_set param [0,""]) != _setId || {(_set param [8,"yset"]) in ["yset","propofol","bagOnly"]}
     || {(_set param [5,""]) != "" && {(_set select 5) != netId _patient}}) exitWith {[false,"That set cannot be used as a piggyback."] call _reply};
 private _action = _set param [2,""];
+private _actionParts = _action splitString "_";
+private _fresh = (_actionParts param [0, ""]) == "FreshBloodBag";
 private _cfg = configFile >> "ace_medical_treatment" >> "IV" >> _action;
-private _type = getText (_cfg >> "type");
-private _normalVolume = getNumber (_cfg >> "volume");
-if (!isClass _cfg || {!finite _normalVolume} || {_normalVolume <= 1}) exitWith {[false,"The selected fluid definition is unavailable. The bag was returned."] call _reply};
+private _type = if (_fresh) then {"FreshBlood"} else {getText (_cfg >> "type")};
+private _normalVolume = if (_fresh) then {parseNumber (_actionParts param [1, "0"])} else {getNumber (_cfg >> "volume")};
+if ((!_fresh && {!isClass _cfg}) || {!finite _normalVolume} || {_normalVolume <= 1}
+    || {_type == ""}) exitWith {[false,"The selected fluid definition is unavailable. The bag was returned."] call _reply};
+private _portableFresh = _set param [11, []];
+private _freshEntry = [];
+if (_fresh) then {
+    private _freshId = parseNumber (_actionParts param [2, "-1"]);
+    if (count _actionParts == 3 && {(_actionParts select 1) in ["250", "500"]}
+        && {_freshId >= 0} && {_freshId <= 512} && {_freshId == floor _freshId}
+        && {str _freshId == (_actionParts select 2)}) then {
+        _freshEntry = [_freshId, _portableFresh] call ACME_fnc_freshBloodResolve;
+    };
+};
+if (_fresh && {_freshEntry isEqualTo []}) exitWith {
+    [false,"Donor blood data is unavailable. The exact prepared bag was returned."] call _reply
+};
 private _isInfusion = !(_prepared isEqualTo []);
 if !([_patient,_part,_iv,_site,_type,_isInfusion] call ACME_fnc_piggybackEligible) exitWith {[false,"This line changed or cannot accept that piggyback. The prepared bag was returned."] call _reply};
 private _beforeMap = _patient getVariable ["ACM_circulation_IV_Bags",createHashMap];
@@ -73,7 +92,7 @@ private _pi = ACME_infusion_bodyParts find _part;
 private _access = [_patient,_iv,_pi,_site] call ACM_circulation_fnc_getAccessType;
 private _beforeMeds = +(_patient getVariable ["ACME_infusion_BagMedications",[]]);
 private _beforeActive = _patient getVariable ["ACM_circulation_IV_Bags_Active",false];
-[_patient,_part,_action,_access,_iv,_site,false,true] call ace_medical_treatment_fnc_ivBagLocal;
+[_patient,_part,_action,_access,_iv,_site,_fresh,true,_freshEntry,if (_fresh) then {_portableFresh} else {[]}] call ace_medical_treatment_fnc_ivBagLocal;
 private _created = [_patient,_part,_beforeBags,_type,_normalVolume,_site,_iv,_access] call ACME_fnc_preparedCarrierResolve;
 private _ok = !(_created isEqualTo []);
 private _doseId = "";
@@ -116,7 +135,26 @@ _lines set [toLowerANSI format["%1#%2#%3",_part,_iv,_site],[_primaryUid,_seconda
 [_patient,_patient getVariable ["ACME_infusion_BagMedications",[]]] call ACME_fnc_infusionMedicationStateCommit;
 [_patient,_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]] call ACME_fnc_ivBagsCommit;
 [_patient,_part] call ACM_circulation_fnc_updateActiveFluidBags;
-[_patient,_part,_iv,_site] call ACME_fnc_resumeSiteFlow;
+// Attaching equipment must not open a stopped line or rearm the master flow
+// switch. Existing native stopcock/clamp/perfusion controls continue to govern it.
 if (_isInfusion) then {ACME_infusion_activePatients pushBackUnique _patient;};
+// Staged creation defers native side effects until the secondary is proven and
+// committed. Preserve blood compatibility and thermal behavior exactly once.
+if (alive _patient && {_type in ["Blood", "FreshBlood"]}) then {
+    if ((_patient getVariable ["ACM_circulation_BloodType", -1]) < 0) then {[_patient] call ACM_circulation_fnc_generateBloodType;};
+    private _bag = (((_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_part,[]]) select {
+        (_x param [8, ""]) == _secondaryUid
+    }) select 0;
+    private _donorType = _bag param [5,-1];
+    if (_donorType >= 0 && {!([_patient getVariable ["ACM_circulation_BloodType", -1],_donorType] call ACM_circulation_fnc_isBloodTypeCompatible)}) then {
+        ["ACM_circulation_handleHemolyticReaction",[_patient],_patient] call CBA_fnc_targetEvent;
+    };
+    private _warmer = [_patient,_part,_iv,_site,false,_medic] call ACME_fnc_lineWarmer;
+    if (_warmer) then {
+        [_patient,true,false,objNull,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
+    } else {
+        if (_set param [7,false]) then {[_patient,false,true,CBA_missionTime,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;};
+    };
+};
 [_patient,"activity","%1 connected a piggyback secondary",[[_medic,false,true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
 [true,"Piggyback connected. Secondary gravity flow runs first; the primary is held until it empties.",_doseId] call _reply

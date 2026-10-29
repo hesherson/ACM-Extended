@@ -18,6 +18,8 @@ _pending set [_requestId, _row];
 missionNamespace setVariable ["ACME_preparedHangPending", _pending];
 _row params ["_patient", "_args"];
 _args params ["", "_medic", "", "_setId", "_part", "_iv", "_site"];
+private _linePending = _medic getVariable ["ACME_lineBagPending", []];
+if ((_linePending param [0, ""]) == _setId) then {_medic setVariable ["ACME_lineBagPending", []];};
 
 if (_ok && {!isNull _medic}) then {
     // Defensive local convergence. The owner already removed this ID publicly; filtering it here prevents a stale

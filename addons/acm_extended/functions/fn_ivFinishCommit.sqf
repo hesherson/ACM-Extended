@@ -12,6 +12,7 @@ private _reply = {
     [_medic,"ivFinishReply",[_medic,_patient,_token,_status,_accepted,_message,_row]] call ACME_fnc_ownerDispatch;
 };
 private _field=_action in ["field14","field16"];
+private _accessory=_action in ["extension","dressing","line","lock"];
 private _now=serverTime;
 private _history=+(_patient getVariable ["ACME_IV_FinishReceipts",[]]);
 _history=_history select {(_x param [5,0]) + 30 >= _now};
@@ -26,6 +27,11 @@ private _mi=_marks findIf {(_x param [4,""])=="hub" && {(_x param [14,""])==_uid
 private _row=if (_mi>=0) then {+(_marks select _mi)} else {[]};
 private _job=+(_row param [16,[]]);
 private _state=+(_row param [15,[false,false,false,false]]);
+private _lineGeneration=_row param [18,0];
+// Retain this patient-owner counter after removal. Provider serials and client
+// IDs can repeat; the bounded integer range also prevents scalar wrap/rounding.
+private _lineGenerationValid=_lineGeneration isEqualType 0 && {_lineGeneration>=0}
+    && {_lineGeneration<16777215} && {_lineGeneration==floor _lineGeneration};
 private _publish = {
     if (_mi>=0) then {
         _marks set [_mi,_row];
@@ -39,6 +45,8 @@ if (_bp=="ej") then {_bp="head";};
 private _site=[_row param [10,""]] call ACME_fnc_ivSiteIndex;
 private _valid=_epoch==([_patient] call ACME_fnc_clinicalEpoch) && {_mi>=0}
     && {_deadline>=_now} && {_deadline<=_now+(if (_field) then {100} else {40})} && {alive _medic}
+    && {!(_patient getVariable ["ACME_persistenceFrozen",false])}
+    && {!(_medic getVariable ["ACME_persistenceFrozen",false])}
     && {!(_medic getVariable ["ACE_isUnconscious",false])}
     && {([_medic,_patient] call ACME_fnc_patientInteractionDistance)<=3}
     && {(objectParent _medic) isEqualTo (objectParent _patient)}
@@ -63,7 +71,7 @@ if (_same && {(_record select 8)!="begin" || {_phase=="begin"}}) exitWith {
 // catheter UID, action, epoch and deadline. A missing replicated binding is not
 // a negative acknowledgement: leave stock reserved and let the retry deliver it.
 private _supplyState=1;
-if (_phase=="begin" && {_action=="flush" || {_field}}) then {
+if (_phase=="begin" && {_action=="flush" || {_field} || {_accessory}}) then {
     _supplyState=[_medic,_patient,_uid,_action,_token,_epoch,_deadline,_receipt] call ACME_fnc_ivSupplyScopeCheck;
 };
 if (_phase=="begin" && {_supplyState<0} && {_valid}) exitWith {};
@@ -72,6 +80,7 @@ if (_phase=="begin") exitWith {
     private _plan=[false,_reason,"",0];
     if (_valid) then {
         _plan=[_state,_action,[_patient,_row] call ACME_fnc_ivFinishPatency,_row param [7,0]] call ACME_fnc_ivFinishPlan;
+        if (_action=="line" && {!_lineGenerationValid}) then {_plan=[false,"Replace this catheter before attaching another IV line.","",0];};
         if (count _job>0 && {(_job param [6,0])>=_now}) then {_plan=[false,"This IV is already being worked on.","",0];};
         if (_action=="flush" && {_supplyState!=1 || {count _receipt!=4}
             || {(_history findIf {(_x param [9,""])==(_receipt param [3,""]) && {_x param [6,false]}})>=0}}) then {
@@ -83,6 +92,10 @@ if (_phase=="begin") exitWith {
                 || {(_history findIf {(_x param [9,""])==(_receipt param [3,""]) && {_x param [6,false]}})>=0}) then {
                 _plan=[false,"The selected catheter is not available.","",0];
             };
+        };
+        if (_accessory && {_supplyState!=1 || {count _receipt!=4} || {(_receipt param [3,""])==""}
+            || {(_history findIf {(_x param [9,""])==(_receipt param [3,""]) && {_x param [6,false]}})>=0}}) then {
+            _plan=[false,"The selected IV accessory is not available.","",0];
         };
         if (count _history>=64) then {_plan=[false,"Please wait for the previous IV request.","",0];};
     };
@@ -97,7 +110,7 @@ if (_phase=="begin") exitWith {
 };
 if (!_same || {count _job<7} || {(_job select 0)!=_token}) exitWith {["rejected",false,"The IV procedure has expired."] call _reply;};
 // B234 manual stages must arrive in order. These messages never mutate venous state.
-if (_field && {_valid}) then {
+if ((_field || {_action in ["removeLock","removeSecondary","removeExtension","removeDressing","removeLine"]}) && {_valid}) then {
     _valid=([_state,_action,true,_row param [7,0]] call ACME_fnc_ivFinishPlan) select 0;
 };
 if (_phase in ["advance","thread","retract"]) exitWith {
@@ -111,6 +124,7 @@ if (_phase in ["advance","thread","retract"]) exitWith {
     };
 };
 if (_field && {_valid} && {(_job param [7,1])!=13}) exitWith {};
+if (_action=="line" && {!_lineGenerationValid}) then {_valid=false;};
 if (_valid && {_now<(_job select 3)+(_job select 4)}) exitWith {}; // cannot accelerate clinical completion.
 private _message="";
 private _primaryFilm=_action=="dressing" && {_state param [4,false]} && {(_state param [5,0])==0} && {!(_state param [0,false])};
@@ -141,6 +155,14 @@ if (_valid) then {
         };
     };
     _row set [15,_state];
+    // A replacement administration line is a different physical carrier even
+    // when the venous catheter and its stable hub UID remain unchanged.
+    if (_action=="line") then {
+        _lineGeneration=_lineGeneration+1;
+        _row set [17,format ["ivline:%1:%2:%3",_uid,_epoch,_lineGeneration]];
+        _row set [18,_lineGeneration];
+    };
+    if (!(_state param [3,false]) && {count _row>17}) then {_row set [17,""];};
 } else {_message="The IV procedure was interrupted.";};
 _row set [16,[]];_record set [8,"done"];_history set [_ri,_record];
 call _publish;

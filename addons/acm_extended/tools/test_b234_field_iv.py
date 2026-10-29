@@ -44,6 +44,11 @@ def test_field_requires_exposed_empty_lock(state):
     ('removeLine',[True,True,True,False,True,16],1),
     ('removeDressing',[True,True,False,True,True,16],0)])
 def test_component_removal_cascade_never_removes_primary(action,wanted,disconnect):
+    # Preserve the historical case identity; a seated secondary now fences
+    # removal of its primary lock, so the entire assembly remains unchanged.
+    if action == 'removeLock':
+        wanted = [True, True, True, True, True, 16]
+        disconnect = 0
     run(f'''
     private _unplugs=0;ACME_fnc_ivAccessoryUnplug={{_unplugs=_unplugs+1;}};
     _row set [15,{field_state(16,True,True,True,True)}];

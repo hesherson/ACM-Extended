@@ -16,15 +16,18 @@ private _deepOrigin=[1006.5/2048,1052/2048];
     private _row=_x;
     if ((_row param [4,""])=="hub" && {(_row select 0)==_bp} && {(_row select 1)==_view}) then {
         private _state=_row param [15,[false,false,false,false]];
+        private _secondary=(_state param [5,0])>0;
         private _points=[];
         if (_state param [4,false]) then {
             if (_pull) then {
-                _points pushBack ["catheter",[(_rect select 0)+(_rect select 2)*(_row select 2),(_rect select 1)+(_rect select 3)*(_row select 3)]];
-                _points pushBack ["removeLock",[_row,[1006.5,1060]] call ACME_fnc_ivFieldPoint];
-                if ((_state param [5,0])>0) then {_points pushBack ["removeSecondary",[_row,[1006.5,1140]] call ACME_fnc_ivFieldPoint];};
+                if (!_secondary) then {
+                    _points pushBack ["catheter",[(_rect select 0)+(_rect select 2)*(_row select 2),(_rect select 1)+(_rect select 3)*(_row select 3)]];
+                    _points pushBack ["removeLock",[_row,[1006.5,1060]] call ACME_fnc_ivFieldPoint];
+                };
+                if (_secondary) then {_points pushBack ["removeSecondary",[_row,[1006.5,1140]] call ACME_fnc_ivFieldPoint];};
                 private _y=if ((_state param [5,0])>0) then {1189} else {1088};
                 if (_state select 0) then {_points pushBack ["removeExtension",[_row,[1007,_y+190]] call ACME_fnc_ivFieldPoint];};
-                if ((_state select 2) || {_state param [6,false]}) then {_points pushBack ["removeDressing",[_row,[1120,970]] call ACME_fnc_ivFieldPoint];};
+                if ((_state select 2) || {!_secondary && {_state param [6,false]}}) then {_points pushBack ["removeDressing",[_row,[1120,970]] call ACME_fnc_ivFieldPoint];};
                 if (_state select 3) then {_points pushBack ["removeLine",[_row,[1100,_y+(if (_state select 0) then {650} else {310})]] call ACME_fnc_ivFieldPoint];};
             } else {
                 private _point=switch (_tool) do {
@@ -38,7 +41,7 @@ private _deepOrigin=[1006.5/2048,1052/2048];
         } else {
         if (_tool in ["field","field14","field16"]) then {} else {
         if (_pull) then {
-            _points pushBack ["catheter",[(_rect select 0)+(_rect select 2)*(_row select 2),(_rect select 1)+(_rect select 3)*(_row select 3)]];
+            if (!_secondary) then {_points pushBack ["catheter",[(_rect select 0)+(_rect select 2)*(_row select 2),(_rect select 1)+(_rect select 3)*(_row select 3)]];};
             if (_state select 0) then {_points pushBack ["removeExtension",[_row,[1007/2048,1230/2048],_deepOrigin] call ACME_fnc_ivFinishPoint];};
             if (_state select 2) then {_points pushBack ["removeDressing",[_row,[1140/2048,970/2048]] call ACME_fnc_ivFinishPoint];};
             if (_state select 3) then {_points pushBack ["removeLine",[_row,[1100/2048,1720/2048],_deepOrigin] call ACME_fnc_ivFinishPoint];};

@@ -42,6 +42,12 @@ if (_kind in ["removeLock","removeSecondary","removeExtension","removeDressing",
 };
 
 private _mark=_marks select _idx;
+// Recheck the current assembly after a held drag. A secondary inserted since
+// the grab cannot turn a previously selected primary into a whole-assembly yank.
+if (((_mark param [15,[]]) param [5,0])>0) exitWith {
+    call _clear;
+    [] call ACME_fnc_ivMinigameRenderMarks;
+};
 private _medic=uiNamespace getVariable ["ACME_IV_Medic",ACE_player];
 [_patient,"ivCatheterPull",[_medic,_mark param [14,""],[_patient] call ACME_fnc_clinicalEpoch]] call ACME_fnc_ownerDispatch;
 call _clear;

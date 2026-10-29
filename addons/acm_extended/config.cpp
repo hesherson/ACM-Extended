@@ -541,7 +541,7 @@ class CfgPatches {
             "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100",
             "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_Spray_Esketamine",
             "ACM_Vial_Phentolamine", "ACM_Vial_Hyaluronidase", "ACM_Vial_CalciumGluconate", "ACM_Vial_Propofol", "ACM_Vial_Midazolam", "ACM_Vial_Fentanyl",
-            "ACME_IVLine", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood",
+            "ACME_IVLine", "ACME_IVExtension", "ACME_Tegaderm", "ACME_SalineLock", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood",
             "ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U"
         };
         requiredVersion = 2.18;
@@ -668,6 +668,55 @@ class CfgMagazines {
     class ACME_PreparedIVSet_M302: ACME_PreparedIVSet { mass = 30.2; };
     class ACME_PreparedIVSet_M352: ACME_PreparedIVSet { mass = 35.2; };
     class ACME_PreparedIVSet_M1_75: ACME_PreparedIVSet { mass = 1.75; }; // 50 mL propofol bottle + line.
+    // Bag-only custody never grants administration tubing; hanging requires an installed line.
+    class ACME_UnspikedBag: ACME_PreparedIVSet {
+        displayName = "Fluid Bag (IV Line Required)";
+        descriptionShort = "Fluid bag only. Connect it to an installed IV line before use.";
+    };
+    class ACME_UnspikedBag_M10: ACME_UnspikedBag { mass = 1; };
+    class ACME_UnspikedBag_M15: ACME_UnspikedBag { mass = 1.5; };
+    class ACME_UnspikedBag_M1_65: ACME_UnspikedBag { mass = 1.65; };
+    class ACME_UnspikedBag_M20: ACME_UnspikedBag { mass = 2; };
+    class ACME_UnspikedBag_M25: ACME_UnspikedBag { mass = 2.5; };
+    class ACME_UnspikedBag_M28: ACME_UnspikedBag { mass = 2.8; };
+    class ACME_UnspikedBag_M30: ACME_UnspikedBag { mass = 3; };
+    class ACME_UnspikedBag_M36: ACME_UnspikedBag { mass = 3.6; };
+    class ACME_UnspikedBag_M46: ACME_UnspikedBag { mass = 4.6; };
+    class ACME_UnspikedBag_M50: ACME_UnspikedBag { mass = 5; };
+    class ACME_UnspikedBag_M51: ACME_UnspikedBag { mass = 5.1; };
+    class ACME_UnspikedBag_M61: ACME_UnspikedBag { mass = 6.1; };
+    class ACME_UnspikedBag_M62: ACME_UnspikedBag { mass = 6.2; };
+    class ACME_UnspikedBag_M63: ACME_UnspikedBag { mass = 6.3; };
+    class ACME_UnspikedBag_M67: ACME_UnspikedBag { mass = 6.7; };
+    class ACME_UnspikedBag_M71: ACME_UnspikedBag { mass = 7.1; };
+    class ACME_UnspikedBag_M76: ACME_UnspikedBag { mass = 7.6; };
+    class ACME_UnspikedBag_M80: ACME_UnspikedBag { mass = 8; };
+    class ACME_UnspikedBag_M83: ACME_UnspikedBag { mass = 8.3; };
+    class ACME_UnspikedBag_M93: ACME_UnspikedBag { mass = 9.3; };
+    class ACME_UnspikedBag_M96: ACME_UnspikedBag { mass = 9.6; };
+    class ACME_UnspikedBag_M100: ACME_UnspikedBag { mass = 10; };
+    class ACME_UnspikedBag_M101: ACME_UnspikedBag { mass = 10.1; };
+    class ACME_UnspikedBag_M111: ACME_UnspikedBag { mass = 11.1; };
+    class ACME_UnspikedBag_M118: ACME_UnspikedBag { mass = 11.8; };
+    class ACME_UnspikedBag_M120: ACME_UnspikedBag { mass = 12; };
+    class ACME_UnspikedBag_M121: ACME_UnspikedBag { mass = 12.1; };
+    class ACME_UnspikedBag_M126: ACME_UnspikedBag { mass = 12.6; };
+    class ACME_UnspikedBag_M129: ACME_UnspikedBag { mass = 12.9; };
+    class ACME_UnspikedBag_M145: ACME_UnspikedBag { mass = 14.5; };
+    class ACME_UnspikedBag_M151: ACME_UnspikedBag { mass = 15.1; };
+    class ACME_UnspikedBag_M155: ACME_UnspikedBag { mass = 15.5; };
+    class ACME_UnspikedBag_M158: ACME_UnspikedBag { mass = 15.8; };
+    class ACME_UnspikedBag_M168: ACME_UnspikedBag { mass = 16.8; };
+    class ACME_UnspikedBag_M180: ACME_UnspikedBag { mass = 18; };
+    class ACME_UnspikedBag_M201: ACME_UnspikedBag { mass = 20.1; };
+    class ACME_UnspikedBag_M230: ACME_UnspikedBag { mass = 23; };
+    class ACME_UnspikedBag_M234: ACME_UnspikedBag { mass = 23.4; };
+    class ACME_UnspikedBag_M250: ACME_UnspikedBag { mass = 25; };
+    class ACME_UnspikedBag_M266: ACME_UnspikedBag { mass = 26.6; };
+    class ACME_UnspikedBag_M276: ACME_UnspikedBag { mass = 27.6; };
+    class ACME_UnspikedBag_M279: ACME_UnspikedBag { mass = 27.9; };
+    class ACME_UnspikedBag_M301: ACME_UnspikedBag { mass = 30.1; };
+    class ACME_UnspikedBag_M351: ACME_UnspikedBag { mass = 35.1; };
     class ACME_PreparedSyringe: ACME_PreparedIVSet {
         displayName = "Prepared Syringe";
         ACME_inventoryKind = "syringe";
@@ -1506,15 +1555,45 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         };
     };
 
-    // iv line, the administration set. this is the tubing you spike a bag with, and it is required to push any
-    // fluid. each bag must be spiked, which consumes one of these, before a medic can hang it. it weighs
-    // essentially nothing.
+    // Physical disposable IV accessories share a light, positive inventory mass.
+    class ACME_IVExtension: ACE_ItemCore {
+        dlc = "ACM_Extended";
+        scope = 2;
+        author = "mavis";
+        displayName = "IV Extension Set";
+        descriptionShort = "Disposable IV extension. Consumed when connected to a catheter or saline lock.";
+        picture = "\acm_extended\ui\iv\finish\icon_extension_ca.paa";
+        ACE_isMedicalItem = 1;
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.1; };
+    };
+    class ACME_Tegaderm: ACE_ItemCore {
+        dlc = "ACM_Extended";
+        scope = 2;
+        author = "mavis";
+        displayName = "Tegaderm (Transparent IV Dressing)";
+        descriptionShort = "Single-use transparent IV dressing. Consumed when securing an IV connection.";
+        picture = "\acm_extended\ui\iv\finish\icon_dressing_ca.paa";
+        ACE_isMedicalItem = 1;
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.1; };
+    };
+    class ACME_SalineLock: ACE_ItemCore {
+        dlc = "ACM_Extended";
+        scope = 2;
+        author = "mavis";
+        displayName = "Saline Lock";
+        descriptionShort = "Disposable saline-lock port. Consumed when attached to an IV catheter.";
+        picture = "\acm_extended\ui\iv\field\icon_lock_ca.paa";
+        ACE_isMedicalItem = 1;
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.1; };
+    };
+
+    // The administration line can be installed on a completed IV and receive bags.
     class ACME_IVLine: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "IV Line (Administration Set) (QTTS)";
-        descriptionShort = "Spike set / tubing. Required to spike a fluid bag before it can be hung. One per bag.";
+        descriptionShort = "Disposable IV administration tubing. Consumed when installed on an IV or used to prepare a fluid bag.";
         picture = "\acm_extended\ui\items\iv_line_qtts_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo {
@@ -2634,6 +2713,9 @@ class CfgFunctions {
             class canMedicateBagContext {};
             class findNewestBagContext {};
             class getSelectedActiveBagContext {};
+            class ivLineSlot {};
+            class getSelectedIVLineContext {};
+            class attachBagToLine {};
             class getSelectedInventoryBagContext {};
             class getSelectedInfusionEntryIndexes {};
             class isSalineItem {};
@@ -3039,6 +3121,7 @@ class CfgFunctions {
             class piggybackFlow {};
             class piggybackWorkflow {};
             class piggybackAttachRequest {};
+            class piggybackStageUsed {};
             class piggybackAttachLocal {};
             class piggybackAttachAck {};
             class piggybackRetry {};

@@ -57,15 +57,17 @@ def admission_source():
     source = read('updateTransfusionControls')
     # Execute the selection/classification predicates and both actual action gates.
     # The skipped interval is native layout geometry, not admission decisions.
+    line_context = re.search(r'^private _lineContext = [^\n]+', source, re.MULTILINE).group(0)
     visible = source[source.index('private _selRow0 ='):source.index('private _ctrlSpikeBtn =')]
     actions = source[source.index('private _ctrlSpike ='):source.index('[_display,_flTarget')]
-    source = visible + actions
+    source = line_context + visible + actions
     source = source.replace('_display displayCtrl 86141', 'uiNamespace')
     source = source.replace('_display displayCtrl 86142', 'profileNamespace')
     source = source.replace('lbCurSel _ctrlRightList', '_selection')
     source = source.replace('_ctrlRightList lbData _selRow0', '(_rowData select _selRow0)')
     source = source.replace('_ctrlRightList lbData _si2', '(_rowData select _si2)')
     source = source.replace('_ctrlRightList lbData _si', '(_rowData select _si)')
+    source = re.sub(r'getText \(configFile >> "ace_medical_treatment" >> "IV" >> (_\w+) >> "type"\)', r'([\1] call _fluidType)', source)
     source = source.replace('_ctrlSpike ctrlSetText', '_spikeText=')
     source = source.replace('_ctrlY ctrlSetText', '_yText=')
     source = re.sub(r'_ctrlSpike ctrlSetTooltip [^;]+;', '', source)
@@ -83,6 +85,9 @@ def input_setup():
         private _spikeEnabled=false;private _yEnabled=false;
         private _spikeText="";private _yText="";private _yVisible=false;
         private _diagnostics=[];
+        _fluidTypes set ["BloodBag_ON_500","Blood"];
+        _fluidTypes set ["FieldBloodTransfusionKit",""];
+        _fluidTypes set ["",""];
         private _mapDefault={params["_map","_args"];_args params["_key","_default"];if(_key in _map)then{_map get _key}else{_default}};
         ACME_fnc_itemList={(_this select 0)getVariable["fixtureStock",[]]};
         ACME_fnc_itemCount={params["_unit","_class"];{_x==_class}count(_unit getVariable["fixtureStock",[]])};

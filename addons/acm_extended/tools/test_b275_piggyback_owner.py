@@ -175,6 +175,24 @@ def test_owner_latest_state_preflight_rejects_before_native_creation(cause):
         "blood": '_configuredType="Blood";',
         "propofol": '_prepared set [14,[["Propofol",1000,1]]];call _reserve;',
     }[cause]
+    if cause in ("dead", "stopped"):
+        # Retain these historical case IDs while testing the B289 mechanical
+        # connection contract: life/flow do not determine port compatibility.
+        execute(owner_setup() + change + r'''
+          private _flowBefore=str (_patient getVariable "ACM_circulation_FluidBagsFlow_IV");
+          call _send;
+          [call _ack select 3 && {_factoryCalls==1},"retained apparatus refused a mechanical connection"] call _check;
+          private _bags=call _stock;
+          [count _bags==3 && {_bags select 0 isEqualTo _primary} && {_bags select 1 isEqualTo _neighbor},
+            "connection replaced the primary or neighboring bag"] call _check;
+          [str (_patient getVariable "ACM_circulation_FluidBagsFlow_IV")==_flowBefore,
+            "mechanical attachment changed the existing flow switches"] call _check;
+          private _certificate=(_patient getVariable "ACME_piggybackResults") get "pib1";
+          [_certificate select 0,"owner did not certify the mechanical attachment"] call _check;
+          call _send;
+          [_factoryCalls==1 && {count (call _stock)==3},"replay created another secondary"] call _check;
+        ''')
+        return
     execute(owner_setup() + change + r'''
       call _send;
       [!(call _ack select 3) && {_factoryCalls==0},"stale or incompatible request reached carrier factory"] call _check;

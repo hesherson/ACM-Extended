@@ -49,6 +49,15 @@ private _selectedBags = [];
     };
 } forEach _IVBagsOnBodyPart;
 
+// Installed, paid-for tubing remains selectable before a bag is connected.
+// This row is presentation only; it is never inserted into the patient's fluid map.
+private _lineSlot = if (isNil "ACME_fnc_ivLineSlot") then {[]} else {
+    [GVAR(TransfusionMenu_Target), GVAR(TransfusionMenu_Selected_BodyPart), GVAR(TransfusionMenu_SelectIV), GVAR(TransfusionMenu_Selected_AccessSite)] call ACME_fnc_ivLineSlot
+};
+if (_lineSlot isNotEqualTo []) then {
+    _selectedBags pushBack [["ACME_Line", 0, _lineSlot select 1, GVAR(TransfusionMenu_Selected_AccessSite), true, -1, 0, -1, _lineSlot select 0], -1];
+};
+
 if !(_update) then {
     private _previousRow = lbCurSel _ctrlBagPanel;
     private _previousIdentity = if (_previousRow >= 0) then {[_ctrlBagPanel,_previousRow] call ACME_fnc_transfusionCardIdentity} else {[]};
@@ -66,8 +75,11 @@ if !(_update) then {
         private _bagIndex = count GVAR(TransfusionMenu_Selection_IVBags);
 
         GVAR(TransfusionMenu_Selection_IVBags) pushBack [_type, _remainingVolume, _accessType, _accessSite, _iv, _bloodType, _volume, _id, _trueIndex, _physicalUID];
+        if (_type == "ACME_Line") then {
+            (GVAR(TransfusionMenu_Selection_IVBags) select _bagIndex) pushBack ([_patientPresentation] call ACME_fnc_clinicalEpoch);
+        };
 
-        private _itemClassName = [_type, _volume, _bloodType] call FUNC(formatFluidBagName);
+        private _itemClassName = if (_type == "ACME_Line") then {"ACME_IVLine"} else {[_type, _volume, _bloodType] call FUNC(formatFluidBagName)};
 
         if (_id > -1) then {
             _itemClassName = format ["%1_%2", _itemClassName, _id];
@@ -92,15 +104,17 @@ if !(_update) then {
             _name = if (_shortName != "") then {_shortName} else {getText (_config >> "displayName")};
             if (_name == "") then {_name = _itemClassName;};
         };
-        if !(_type in ["ACME_Empty", "ACME_EmptySaline"]) then {
+        if !(_type in ["ACME_Empty", "ACME_EmptySaline", "ACME_Line"]) then {
             _name = [_name, _remainingVolume] call ACME_fnc_fluidLabelVolume;
         };
-        ([_patientPresentation,_partPresentation,_bag,_name] call ACME_fnc_transfusionBagPresentation) params ["_rowName","_rowColor"];
+        (if (_type == "ACME_Line") then {["IV line · No bag attached", [0.65,0.90,0.95,1]]} else {
+            [_patientPresentation,_partPresentation,_bag,_name] call ACME_fnc_transfusionBagPresentation
+        }) params ["_rowName","_rowColor"];
         private _i = _ctrlBagPanel lbAdd _rowName;
         _ctrlBagPanel lbSetColor [_i,_rowColor];
         _ctrlBagPanel lbSetPicture [_i, getText (_config >> "picture")];
         _ctrlBagPanel lbSetValue [_i, _bagIndex];
-        _ctrlBagPanel lbSetTooltip [_i, (format [([(LLSTRING(TransfusionMenu_FluidRemaining)), ("%1ml filled")] select (_type == "FBTK")), round(_remainingVolume)])];
+        _ctrlBagPanel lbSetTooltip [_i, if (_type == "ACME_Line") then {"Select a fluid bag and choose Attach Bag. The IV line is already fitted."} else {(format [([(LLSTRING(TransfusionMenu_FluidRemaining)), ("%1ml filled")] select (_type == "FBTK")), round(_remainingVolume)])}];
     } forEach _selectedBags;
     // Reordering/removal cannot silently select another physical bag; the original UID must still exist.
     if (_previousIdentity isNotEqualTo []) then {
@@ -124,7 +138,8 @@ if !(_update) then {
 
         (GVAR(TransfusionMenu_Selection_IVBags) select _selectionIndex) params ["_cType", "_cRemainingVolume", "_cAccessType", "_cAccessSite", "_cIV", "_cBloodType", "_cVolume", "_cID", "_cIndex", ["_cUID", ""]];
 
-        if (_cIndex != _trueIndex || _cType != _type || _cAccessType != _accessType || _cAccessSite != _accessSite || _cIV isNotEqualTo _iv || _cBloodType != _bloodType || _cVolume != _volume || _cID != _id || _cUID != _physicalUID) exitWith {
+        if (_cIndex != _trueIndex || _cType != _type || _cAccessType != _accessType || _cAccessSite != _accessSite || _cIV isNotEqualTo _iv || _cBloodType != _bloodType || _cVolume != _volume || _cID != _id || _cUID != _physicalUID
+            || {_type == "ACME_Line" && {((GVAR(TransfusionMenu_Selection_IVBags) select _selectionIndex) param [10,-1]) != ([_patientPresentation] call ACME_fnc_clinicalEpoch)}}) exitWith {
             _rebuild = true;
         };
 
@@ -135,7 +150,7 @@ if !(_update) then {
             if ((_ctrlBagPanel lbValue _r) == _selectionIndex) exitWith {_row = _r;};
         };
         // Volume-only ticks update in place: no lbClear, no selection/input churn.
-        if (_row >= 0 && {!(_type in ["ACME_Empty", "ACME_EmptySaline"])}) then {
+        if (_row >= 0 && {!(_type in ["ACME_Empty", "ACME_EmptySaline", "ACME_Line"])}) then {
             private _liveLabel = [_ctrlBagPanel lbText _row, _remainingVolume] call ACME_fnc_fluidLabelVolume;
             if (_liveLabel != (_ctrlBagPanel lbText _row)) then {_ctrlBagPanel lbSetText [_row, _liveLabel];};
         };

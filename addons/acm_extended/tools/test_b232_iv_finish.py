@@ -63,6 +63,15 @@ uiNamespace setVariable ["ACME_IV_DLG",_d];
 uiNamespace setVariable ["ACME_IV_Medic",_medic];
 private _invoke={
     params ["_phase","_action",["_token","token"],["_receiptArg",[]],["_uid","ivhub:7:1"],["_ep",7],["_deadline",130]];
+    private _fixtureAccessory=false;
+    // Historical positive workflows assume the ordinary accessory is in stock.
+    // Model its real receipt/binding; B289 tests bypass this helper for missing
+    // or mismatched supplies and execute the actual inventory Take/Refund path.
+    if (_phase=="begin" && {_receiptArg isEqualTo []} && {_action in ["extension","dressing","line","lock"]}) then {
+        private _class=switch (_action) do {case "extension":{"ACME_IVExtension"};case "dressing":{"ACME_Tegaderm"};case "line":{"ACME_IVLine"};default{"ACME_SalineLock"};};
+        _receiptArg=[_medic,_class,objNull,"accessory:"+_token];
+        _fixtureAccessory=true;
+    };
     // Native inventory is a fixture boundary. Mint each fixture receipt once;
     // production binding/scope checks execute unchanged. Never rebind a replay.
     if (_phase=="begin" && {count _receiptArg==4} && {!((_receiptArg select 3) in _fixtureIssued)}) then {
@@ -71,6 +80,13 @@ private _invoke={
         [_medic,_patient,_uid,_action,_token,_ep,_deadline,_receiptArg] call ACME_fnc_ivSupplyBind;
     };
     [_patient,_medic,_phase,_uid,_action,_token,_ep,_deadline,_receiptArg] call ACME_fnc_ivFinishCommit;
+    if (_fixtureAccessory) then {
+        // This historical helper does not run the provider UI/ACK. Settle its
+        // fixture-funded accessory at BEGIN, as that provider would, so later
+        // explicit syringe receipts do not inherit an unrelated live binding.
+        [_medic,_token,_receiptArg] call ACME_fnc_ivSupplyRelease;
+        (missionNamespace getVariable "ACME_supplyReceipts") deleteAt (_receiptArg select 3);
+    };
 };
 private _getRow={(_patient getVariable ["ACME_IV_Marks",[]]) select 0};
 private _getState={(call _getRow) select 15};

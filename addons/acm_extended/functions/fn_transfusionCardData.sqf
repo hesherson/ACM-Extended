@@ -20,6 +20,21 @@ if (_idc in [86004,86129]) then {
     private _currentSite = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1];
     private _quiet = {_name="";_detail="";_status="";_thermal="";_color=[0.66,0.66,0.66,1];_icon="";_vial="";_fraction=-1;};
     if (_selected isEqualTo [] || {(_selected param [4,false]) isNotEqualTo _currentIV} || {(_selected param [3,-1]) != _currentSite}) exitWith {call _quiet;};
+    if ((_selected param [0, ""]) == "ACME_Line") exitWith {
+        if ((_selected param [10, -1]) != ([_patient] call ACME_fnc_clinicalEpoch)
+            || {([_patient, _part, _currentIV, _currentSite, _uid] call ACME_fnc_ivLineSlot) isEqualTo []}) then {
+            call _quiet;
+        } else {
+            _name = "IV line";
+            _detail = "No bag attached";
+            _status = "Select a bag to attach";
+            _thermal = "";
+            _color = [0.65,0.90,0.95,1];
+            _vial = "";
+            _fraction = -1;
+            _total = 0;
+        };
+    };
     private _physical = (_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [_part,[]];
     private _at = _physical findIf {(_x param [8,""]) == _uid && {_uid != ""}};
     if (_uid != "" && {_at < 0}) exitWith {call _quiet;};
@@ -68,7 +83,9 @@ if (_idc in [86004,86129]) then {
         if (_at >= 0) then {
             private _set = _sets select _at;
             _icon = getText (configFile >> "CfgWeapons" >> (_set param [1,""]) >> "picture");
-            _line = ["IV line fitted","Y tubing fitted"] select ((_set param [8,""]) == "yset");
+            _line = if ((_set param [8, ""]) == "bagOnly") then {"IV line required"} else {
+                ["IV line fitted","Y tubing fitted"] select ((_set param [8,""]) == "yset")
+            };
             _detail = if (_detail == "") then {_line} else {_detail + " · " + _line};
             _status = "Prepared";
         };

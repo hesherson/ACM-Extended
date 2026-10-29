@@ -1,7 +1,7 @@
 // Owner-authoritative placement of one provider-owned used bag onto the selected access.
 params [
     ["_patient",objNull,[objNull]],["_medic",objNull,[objNull]],["_part","",[""]],["_iv",true,[true]],["_site",-1,[0]],
-    ["_usedId","",[""]],["_record",[],[[]]],["_epoch",-1,[0]],["_requestId","",[""]],["_warmer",false,[false]],["_issued",-1,[0]]
+    ["_usedId","",[""]],["_record",[],[[]]],["_epoch",-1,[0]],["_requestId","",[""]],["_warmer",false,[false]],["_issued",-1,[0]],["_lineUID","",[""]]
 ];
 if (isNull _patient || {!local _patient} || {_requestId==""}) exitWith {false};
 if (count _requestId > 128 || {_usedId == ""} || {count _usedId > 128}
@@ -19,6 +19,13 @@ if (isNull _medic || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)
 if (count _record < 7 || {(_record param [0,""]) != _usedId} || {!(_site in (if (_iv) then {[0,1,2]} else {[0]}))}) exitWith {[false,"Used-bag record is invalid."] call _reply};
 private _hasAccess=if (_iv) then {[_patient,_part,0,_site] call ACM_circulation_fnc_hasIV}else{[_patient,_part,0] call ACM_circulation_fnc_hasIO};
 if (!_hasAccess) exitWith {[false,"That access is no longer available."] call _reply};
+private _bagOnly = (_record param [9, ""]) isEqualTo "bagOnly";
+if (_bagOnly && {_lineUID == ""}) exitWith {
+    [false,"Connect this bag to a selected installed IV line. It has no tubing of its own."] call _reply
+};
+if (_lineUID != "" && {([_patient,_part,_iv,_site,_lineUID] call ACME_fnc_ivLineSlot) isEqualTo []}) exitWith {
+    [false,"The selected IV line changed. The used bag was not attached."] call _reply
+};
 
 _record params ["",["_type","",[""]],["_remVol",0,[0]],["_oldAccessType",0,[0]],["_bloodType",-1,[0]],["_origVol",1000,[0]],["_name","",[""]],["_freshBloodID",-1,[0]]];
 if (!finite _remVol || {!finite _origVol} || {_origVol <= 0} || {_remVol > _origVol} || {_remVol <= 0} || {_type in ["","ACME_Empty","ACME_EmptySaline"]}) exitWith {[false,"That used bag is empty."] call _reply};
@@ -71,6 +78,11 @@ private _entry=[_type,_remVol,_accessType,_site,_iv,_bloodType,_origVol,_freshBl
 if (_type == "FreshBlood") then {
     private _freshMeta = _record param [8,[]];
     if (_freshMeta isEqualType [] && {count _freshMeta == 4} && {(_freshMeta select 0) == "freshV1"}) then {_entry set [9,_origVol]; _entry set [10,+_freshMeta];};
+};
+if (_bagOnly) then {
+    _entry set [9, _origVol];
+    if (count _entry < 11) then {_entry set [10, []];};
+    _entry set [11, "bagOnly"];
 };
 private _map=_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]; private _arr=+(_map getOrDefault [_part,[]]);
 private _wantMarker=["ACME_EmptySaline","ACME_Empty"] select (_type in ["Blood","FreshBlood","FBTK"]);

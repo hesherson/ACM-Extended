@@ -94,6 +94,11 @@ call ACME_fnc_updateTransfusionAccessHotspots;
 // their own selection.
 private _ctrlTransfusionList = _display displayCtrl 86004;
 private _bagRowSelected = (!isNull _ctrlTransfusionList) && {(lbCurSel _ctrlTransfusionList) >= 0};
+private _lineContext = if (isNil "ACME_fnc_getSelectedIVLineContext") then {[]} else {call ACME_fnc_getSelectedIVLineContext};
+private _selectedLineRow = if (!_bagRowSelected) then {[]} else {
+    (missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selection_IVBags",[]]) param [_ctrlTransfusionList lbValue (lbCurSel _ctrlTransfusionList),[]]
+};
+private _isEmptyLineRow = (_selectedLineRow param [0, ""]) == "ACME_Line";
 
 private _activeContext = [] call ACME_fnc_getSelectedActiveBagContext;
 private _canActive = false;
@@ -715,7 +720,7 @@ if (!isNull _ctrlPreparedList) then {
 if (!isNull _ctrlPrep) then {[_ctrlPrep,"enable",_canPrep] call ACME_fnc_transfusionUiSet;};
 // pull bag operates on the selected hung bag. it must never resolve to an infusion, and it must gray out
 // entirely when no bag row is selected in the transfusion list.
-if (!isNull _ctrlPullBag) then {[_ctrlPullBag,"enable",(_selectedAccessValid && {_bagRowSelected})] call ACME_fnc_transfusionUiSet;};
+if (!isNull _ctrlPullBag) then {[_ctrlPullBag,"enable",(_selectedAccessValid && {_bagRowSelected} && {!_isEmptyLineRow})] call ACME_fnc_transfusionUiSet;};
 private _preparedLineIsY = [
     missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull],
     missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""],
@@ -759,7 +764,7 @@ if (!isNull _ctrlRateText) then {
 if (!isNull _ctrlMove) then {
     private _nativeSelMedicated = _hasInfusion && {!isNull _ctrlLeftList} && {(lbCurSel _ctrlLeftList) >= 0};
     private _acmMoveBusy = (missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active", false]) || {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active_Moving", false]};
-    [_ctrlMove,"enable",(_acmMoveBusy || {_selectedAccessValid && {_bagRowSelected} && {!_nativeSelMedicated}})] call ACME_fnc_transfusionUiSet;
+    [_ctrlMove,"enable",(_acmMoveBusy || {_selectedAccessValid && {_bagRowSelected} && {!_isEmptyLineRow} && {!_nativeSelMedicated}})] call ACME_fnc_transfusionUiSet;
 };
 
 // infusions-specific move and remove. it is a vertical stack to the right of the infusions list, mirroring ACM's
@@ -960,6 +965,14 @@ if (!isNull _ctrlSpike) then {
             _ctrlSpike ctrlSetTooltip "Spike an unopened 50 mL propofol bottle with one IV line. It becomes a Prepared Infusion.";
         } else {
             _ctrlSpike ctrlSetTooltip "Spike the selected bag with an IV line, or refill its existing Y tubing.";
+        };
+        private _attachType = if ((_selAction find "FreshBloodBag_") == 0) then {"FreshBlood"} else {getText (configFile >> "ace_medical_treatment" >> "IV" >> _selAction >> "type")};
+        if (_selAction == "usedbag") then {_attachType = _selClass;};
+        if (_lineContext isNotEqualTo [] && {_attachType in ["Saline","PlasmaLyte","Plasma","Blood","FreshBlood"]} && {!_isSpikingSel}) then {
+            _txt = "Attach Bag";
+            _en = (ACE_player getVariable ["ACME_lineBagPending",[]]) isEqualTo [];
+            if (!_en) then {_txt = "Attaching Bag...";};
+            _ctrlSpike ctrlSetTooltip "Connect this bag to the selected installed IV line. No additional tubing is consumed.";
         };
         _ctrlSpike ctrlSetText _txt;
         [_ctrlSpike,"enable",_en] call ACME_fnc_transfusionUiSet;
@@ -1164,8 +1177,9 @@ if (!isNull _ctrlSetsList) then {
         // to Prepared Infusions, never the plain prepared-fluid overlay.
         private _canShow = (_x param [8,""]) != "propofol" && {_tied == "" || {_tied == _tgtNet}};
         if (_canShow && {_selectingPiggyback}) then {
-            private _candidateType = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_x param [2,""]) >> "type");
-            _canShow = !((_x param [8,"yset"]) in ["yset","blood","propofol"])
+            private _candidateAction = _x param [2, ""];
+            private _candidateType = if ((_candidateAction find "FreshBloodBag_") == 0) then {"FreshBlood"} else {getText (configFile >> "ace_medical_treatment" >> "IV" >> _candidateAction >> "type")};
+            _canShow = !((_x param [8,"yset"]) in ["yset","propofol","bagOnly"])
                 && {[_targetPatient,_targetBodyPart,_flIV,_flSite,_candidateType,false] call ACME_fnc_piggybackEligible};
         };
         if (_canShow) then {
