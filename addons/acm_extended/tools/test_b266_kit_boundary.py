@@ -42,6 +42,8 @@ def test_explicit_replacement_releases_only_existing_claim_without_equipment_or_
     execute(setup()+r'''
         call _activate;
         _medic setVariable ["ACME_hang_Raising",true];
+        // This fixture owns an existing prep reassert worker, not a pending holster.
+        _medic setVariable ["ACME_hang_PrepPoseEntered",true];
         _medic setVariable ["ACME_DP_Paused",true];
         _medic setVariable ["ACME_DP_PauseTreatmentClass","hangbag"];
     '''+f'_medic setVariable ["ACME_hang_Claimed",{str(claimed).lower()}];'+r'''
@@ -54,6 +56,51 @@ def test_explicit_replacement_releases_only_existing_claim_without_equipment_or_
         [_restores==0 && {count _moves==0} && {count _stances==0} && {count _reopens==0},"kit replacement restarted old equipment/pose/UI"] call _check;
         [!(_medic getVariable ["ACME_DP_Paused",true]),"retired bag kept DP paused"] call _check;
         [_freshKit=="untouched","new kit changed"] call _check;
+    ''')
+
+
+def test_claimed_but_unentered_holster_kit_replacement_does_not_invent_pose_or_equipment_return():
+    execute(setup()+r'''
+        // Start actual preparation with no outstanding old-kit weapon custody.
+        _medic setVariable ["ACME_hang_savedWeaponSlots",[]];
+        _medic setVariable ["ACME_hang_weaponRestoreOwned",[]];
+        _medic setVariable ["ACME_DP_Active",true];
+        _stance="STAND";_animation="holstering-sidearm";
+        private _ready=false;private _preflights=0;private _readinessChecks=0;
+        ACME_fnc_medicAnimationPrep={_preflights=_preflights+1;0};
+        ACME_fnc_medicAnimationReady={_readinessChecks=_readinessChecks+1;_ready};
+        [_medic] call ACME_fnc_hangBagPrep;
+        [_preflights==1 && {_readinessChecks==1} && {count _waits==1},
+            "actual preparation did not wait on unfinished native holster"] call _check;
+        [_medic getVariable ["ACME_hang_Raising",false]
+            && {!(_medic getVariable ["ACME_hang_PrepPoseEntered",true])}
+            && {count _held==0} && {count _moves==0} && {count _stances==0},
+            "pending holster already acquired a medical pose"] call _check;
+        // An accepted clinical claim may arrive while readiness remains false.
+        call _activate;
+        private _queued=+_waits;_waits=[];
+        [[_medic] call ACM_core_fnc_equipmentKitChanged,"kit replacement rejected"] call _check;
+        [!(_medic getVariable ["ACME_hang_Active",true])
+            && {!(_medic getVariable ["ACME_hang_Claimed",true])}
+            && {!(_medic getVariable ["ACME_hang_Raising",true])},
+            "unentered accepted claim remained active after replacement"] call _check;
+        [count _claims==1 && {(_claims select 0) isEqualTo [_patient,"hangBagRelease",[_medic,10]]},
+            "unentered claim released the wrong patient or epoch"] call _check;
+        [count _held==0 && {count _moves==0} && {count _stances==0}
+            && {_restores==0} && {count _reopens==0},
+            "replacement stopped an unowned pose or restored old equipment/UI"] call _check;
+        [!(_medic getVariable ["ACME_DP_Paused",true]) && {_freshKit=="untouched"},
+            "replacement left DP paused or changed the new kit"] call _check;
+        // A late readiness success and repeated kit notice cannot revive old work.
+        _ready=true;{[_x] call _deliver;} forEach _queued;
+        [_medic] call ACM_core_fnc_equipmentKitChanged;
+        [count _claims==1 && {count _held==0} && {count _moves==0}
+            && {count _stances==0} && {count _waits==0} && {_restores==0}
+            && {count _reopens==0} && {_preflights==1} && {_readinessChecks==1},
+            "retired holster callback or duplicate kit notice replayed old work"] call _check;
+        [isNil {_medic getVariable "ACME_hang_savedWeaponSlots"}
+            && {isNil {_medic getVariable "ACME_hang_weaponRestoreOwned"}},
+            "retired holster kept old-kit custody"] call _check;
     ''')
 
 

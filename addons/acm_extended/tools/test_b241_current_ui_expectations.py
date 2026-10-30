@@ -40,8 +40,20 @@ def pending_reopen_contract(source):
 def current_finish_tray_contract(refresh,tray):
     assert has(refresh,'[_dlg displayCtrl 86553, _held == "line", 1, false] call ACME_fnc_traySlotState;')
     assert not has(refresh,'missionNamespace getVariable ["ACME_iv_lineSlot", false]')
-    assert has(refresh,'if (_tool=="flush") then {["ACM_SalineFlush_10"] call _count} else {1}')
+    # Every finishing tool now consumes physical inventory. Keep this historical
+    # silhouette contract tied to the same item mapping, label and count source.
+    for tool, label, item in (
+        ('extension','EXTENSION','ACME_IVExtension'),
+        ('dressing','TEGADERM','ACME_Tegaderm'),
+        ('line','IV TUBING','ACME_IVLine'),
+        ('lock','SALINE LOCK','ACME_SalineLock'),
+    ):
+        assert has(refresh,f'case "{tool}": {{["{label}","{item}"]}};')
+    assert has(refresh,'default {["10 mL FLUSH","ACM_SalineFlush_10"]};')
+    assert has(refresh,'private _stock=[_data select 1] call _count;')
     assert has(refresh,'[_pic,_held==_tool,_stock] call ACME_fnc_traySlotState;')
+    assert has(refresh,'_label ctrlSetText format ["%1  x%2",_data select 0,_stock];')
+    assert has(refresh,'_label ctrlSetTextColor [0.90,0.95,1,if (_stock>0) then {1} else {0.30}];')
     assert has(refresh,'forEach (_dlg getVariable ["ACME_IV_FinishTray",[]]);')
     assert has(tray,'private _tools=[["extension","EXTENSION"],["flush","10 mL FLUSH"],["dressing","TEGADERM"],["line","IV TUBING"],["lock","SALINE LOCK"]];')
 
@@ -89,7 +101,7 @@ def test_current_ui_contracts_reject_reintroduced_historical_behavior(mutation):
     pending_reopen_contract(renderer);current_finish_tray_contract(refresh,tray);flush_selection_contract(flush)
     with pytest.raises(AssertionError):
         if mutation=='restore-line':current_finish_tray_contract(refresh.replace('false] call ACME_fnc_traySlotState;', 'true] call ACME_fnc_traySlotState;'),tray)
-        elif mutation=='flush-stock':current_finish_tray_contract(refresh.replace('["ACM_SalineFlush_10"] call _count','1'),tray)
+        elif mutation=='flush-stock':current_finish_tray_contract(refresh.replace('[_data select 1] call _count','1'),tray)
         elif mutation=='reopen-preflight':pending_reopen_contract(renderer.replace('ACME_chestAccessPreflightActive','wrongFlag'))
         elif mutation=='reopen-exclusion':pending_reopen_contract(renderer.replace("'opentransfusionmenu',",''))
         elif mutation=='syringe-recreate':flush_selection_contract(flush+'\ncloseDialog 0;')
