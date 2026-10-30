@@ -22,7 +22,7 @@ if (_target isNotEqualTo []) then {
             _ctrl ctrlSetText format ["\acm_extended\ui\iv\field\dressing_%1_ca.paa",["lock","field"] select ((_state param [5,0])>0)];
         };
     } else {
-        private _direct=(_state param [4,false]) && {!(_state param [0,false])} && {_tool in ["line","flush"]};
+        private _direct=!(_state param [0,false]) && {_tool=="line" || {(_state param [4,false]) && {_tool=="flush"}}};
         if (_direct && {_tool=="flush"}) then {_ctrl ctrlSetText "\acm_extended\ui\iv\field\cursor_flush_ca.paa";};
         _paintRow=[_row,_direct] call ACME_fnc_ivFieldAccessoryRow;
     };

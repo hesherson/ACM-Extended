@@ -67,6 +67,7 @@ def admission_source():
     source = source.replace('_ctrlRightList lbData _selRow0', '(_rowData select _selRow0)')
     source = source.replace('_ctrlRightList lbData _si2', '(_rowData select _si2)')
     source = source.replace('_ctrlRightList lbData _si', '(_rowData select _si)')
+    source = source.replace('_ctrlRightList lbData _usedRow', '(_rowData select _usedRow)')
     source = re.sub(r'getText \(configFile >> "ace_medical_treatment" >> "IV" >> (_\w+) >> "type"\)', r'([\1] call _fluidType)', source)
     source = source.replace('_ctrlSpike ctrlSetText', '_spikeText=')
     source = source.replace('_ctrlY ctrlSetText', '_yText=')

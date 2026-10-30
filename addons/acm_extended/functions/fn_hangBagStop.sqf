@@ -11,14 +11,23 @@ private _episodeStart = _medic getVariable ["ACME_hang_Start", -1];
 private _kitEpoch = _medic getVariable ["ACME_equipmentKitEpoch", 0];
 // A pending claim owns no props or held pose. Cancel it without touching the prior
 // episode's captured visual teardown, and restore prep-held weapons even after death.
-if !(_medic getVariable ["ACME_hang_Claimed", false]) exitWith {
+if (!(_medic getVariable ["ACME_hang_Claimed", false]) || {
+    _medic getVariable ["ACME_hang_Raising", false] && {!(_medic getVariable ["ACME_hang_PrepPoseEntered", false])}
+}) exitWith {
     _medic setVariable ["ACME_hang_Active", false, true];
+    // The accepted-claim tick can show the cancel prompt while a slow holster is still pending. That prompt
+    // belongs to this provider even before the full-body input lock exists, including after control changes.
+    if ((uiNamespace getVariable ["ACME_hang_HintMedic", objNull]) isEqualTo _medic
+        || {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
+        [false] call ACME_fnc_hangBagHint;
+    };
     private _pendingPFH = _medic getVariable ["ACME_hang_PFH", -1];
     if (_pendingPFH >= 0) then {[_pendingPFH] call CBA_fnc_removePerFrameHandler;};
     _medic setVariable ["ACME_hang_PFH", -1];
     {[_x, "keydown"] call CBA_fnc_removeKeyHandler;} forEach (_medic getVariable ["ACME_hang_KeyIDs", []]);
     _medic setVariable ["ACME_hang_KeyIDs", []];
     [_patient, "hangBagRelease", [_medic, _episodeStart]] call ACME_fnc_ownerDispatch;
+    _medic setVariable ["ACME_hang_Claimed", false, false];
     if (_kitReset) exitWith {};
     if (local _medic) then {
         [_medic] call ACME_fnc_hangBagPrepStop;

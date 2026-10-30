@@ -157,7 +157,7 @@ def escrow_setup():
         private _prep=["set1","ACM_SalineBag_100","SalineIV_100","TXA",1000,0,20,60,1,100,100,0,objNull,objNull,[],"set1",100];
         private _args=[_medic,_patient,"request1","set1","leftarm",true,0,"primary",1,_set,_prep,100];
         private _fingerprint=[_medic,"set1","leftarm",true,0,"primary",1,+_set,+_prep,100];
-        private _requests=createHashMapFromArray [["request1",[_args,100,false]]];
+        private _requests=createHashMapFromArray [["request1",[_args,100,false,0]]];
         missionNamespace setVariable ["ACME_piggybackRequests",_requests];
         _medic setVariable ["ACME_preparedIVSets",[]];
         _medic setVariable ["ACME_infusion_PreparedBags",[]];

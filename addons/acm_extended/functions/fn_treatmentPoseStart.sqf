@@ -334,7 +334,8 @@ private _pfh = [{
         case -1: {
             // Do not enter the medical RTM until both the logical selection and the visible skeleton are truly
             // empty-handed. In particular, currentWeapon can clear before a sidearm has visually left the hand.
-            private _visuallyEmpty = (((_current find "wnon") >= 0) && {((_current find "snon") >= 0)})
+            private _visuallyEmpty = (((_current find "wnon") >= 0) && {((_current find "snon") >= 0)}
+                && {(["wpst","wrfl","wlnr","wbin"] findIf {(_current find _x) >= 0}) < 0})
                 || {_current in ["acm_genericcontinuous", "acm_pronecontinuous"]};
             private _weaponReady = (currentWeapon _medic == "") && {_visuallyEmpty};
             if (_weaponReady && {_now >= _waitUntil}) then {

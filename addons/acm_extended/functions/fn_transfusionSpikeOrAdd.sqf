@@ -212,13 +212,25 @@ if (count (missionNamespace getVariable ["ACME_spikingActive", []]) > 0) exitWit
 
 // a "Spiking Bag..." beat on the button, then the commit, which consumes the iv line and the bag and stores a
 // single-bag set.
-missionNamespace setVariable ["ACME_spikingActive", [_class, diag_tickTime + 1.6]];
+private _spikeSerial = (missionNamespace getVariable ["ACME_spikeSerial",0]) + 1;
+missionNamespace setVariable ["ACME_spikeSerial",_spikeSerial];
+private _spikeSession = [_class,diag_tickTime + 1.6,format ["spike:%1:%2",clientOwner,_spikeSerial]];
+missionNamespace setVariable ["ACME_spikingActive",_spikeSession];
 call ACME_fnc_updateTransfusionControls;
 [{
-    params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold", "_medic", "_target", "_inventoryMode", "_sourceVehicle"];
+    params ["_class", "_action", "_setItem", "_setName", "_kind", "_cold", "_medic", "_target", "_inventoryMode", "_sourceVehicle", "_piggybackContext", "_spikeSession"];
+    if ((missionNamespace getVariable ["ACME_spikingActive",[]]) isNotEqualTo _spikeSession) exitWith {};
     missionNamespace setVariable ["ACME_spikingActive", []];
     if (isNull _medic || {!local _medic} || {!alive _medic}
-        || {!isNull _target && {_medic distance _target > 5}}) exitWith {};
+        || {_medic getVariable ["ACME_persistenceFrozen",false]}
+        || {!isNull _target && {_target getVariable ["ACME_persistenceFrozen",false] || {_medic distance _target > 5}}}) exitWith {};
+    private _sameProviderPeriod = _piggybackContext isEqualTo [] || {
+        (_medic getVariable ["ACME_equipmentKitEpoch",0]) == (_piggybackContext select 1)
+            && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) == (_piggybackContext select 2)}
+            && {(missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0]) == (_piggybackContext select 3)}
+            && {(missionNamespace getVariable ["ACME_piggybackPending",[]]) isEqualTo (_piggybackContext select 0)}
+    };
+    if (!_sameProviderPeriod) exitWith {};
     if (([_medic, _target, _setItem] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
         [format ["%1 is no longer available.", _setName], 2, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
@@ -238,8 +250,6 @@ call ACME_fnc_updateTransfusionControls;
     if (_receipts isEqualTo []) exitWith {
         ["The selected bag or administration set is no longer available.", 2, _medic, 13] call ace_common_fnc_displayTextStructured;
     };
-    {[_x, false] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
-
     private _cfg = configFile >> "CfgWeapons" >> _class;
     private _nm = [getText (_cfg >> "displayName"), getText (_cfg >> "shortName")] select (isText (_cfg >> "shortName"));
     if (_nm isEqualTo "") then { _nm = _class; };
@@ -249,11 +259,18 @@ call ACME_fnc_updateTransfusionControls;
 missionNamespace setVariable ["ACME_preparedItemSerial",_serial];
 private _id = format ["set:%1:%2:%3",clientOwner,netId _medic,_serial];
     private _rec = [_id, _class, _action, "", "", "", _label, _cold, _kind];
-    private _sets = _medic getVariable ["ACME_preparedIVSets", []];
+    private _setsBefore = +(_medic getVariable ["ACME_preparedIVSets", []]);
+    private _sets = +_setsBefore;
     _sets pushBack _rec;
     _medic setVariable ["ACME_preparedIVSets", _sets, true];
+    private _committed = [_medic] call ACME_fnc_preparedInventoryCommit;
+    if (isNil "_committed" || {!_committed}) exitWith {
+        _medic setVariable ["ACME_preparedIVSets",_setsBefore,true];
+        {[_x] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
+        [_medic,"The bag could not be prepared. Its fluid and IV line were kept."] call ACME_fnc_clinicalNotice;
+    };
+    {[_x, false] call ACME_fnc_treatmentSupplyRefund;} forEach _receipts;
     ["Bag spiked. Preparing the IV set.", 2, _medic] call ace_common_fnc_displayTextStructured;
-    [_medic] call ACME_fnc_preparedInventoryCommit;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 
 
@@ -261,6 +278,45 @@ private _id = format ["set:%1:%2:%3",clientOwner,netId _medic,_serial];
     // source inventory, then reveal the prepared list without touching Fluids.
     if (!isNull (findDisplay 86000)) then {[false] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;};
     [true] call ACME_fnc_togglePreparedSets;
+    // A loose secondary needs one real branch line, but no medication admixture.
+    // Wait for its native prepared carrier before reserving the exact new set.
+    // Changing patient, access, provider period or workflow keeps it carried.
+    if (_piggybackContext isNotEqualTo []) then {
+        _piggybackContext params ["_intent","_kit","_locality","_workflow"];
+        private _valid = {
+            params ["_medic","_intent","_id","_kit","_locality","_workflow"];
+            private _patient = _intent select 0;
+            !isNull _medic && {local _medic} && {alive _medic} && {_medic isEqualTo ACE_player}
+                && {(_medic getVariable ["ACME_equipmentKitEpoch",0]) == _kit}
+                && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) == _locality}
+                && {!(_medic getVariable ["ACME_persistenceFrozen",false])}
+                && {!isNull _patient} && {!(_patient getVariable ["ACME_persistenceFrozen",false])}
+                && {(_intent select 5) == ([_patient] call ACME_fnc_clinicalEpoch)}
+                && {(missionNamespace getVariable ["ACME_piggybackPending",[]]) isEqualTo _intent}
+                && {(missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0]) == _workflow}
+                && {(_intent select [0,4]) isEqualTo [missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull],
+                    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],
+                    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],
+                    missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite",-1]]}
+                && {(((_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]) getOrDefault [toLowerANSI (_intent select 1),[]]) findIf {
+                    (_x param [8,""]) == (_intent select 4) && {(_x param [3,-1]) == (_intent select 3)}
+                        && {(_x param [4,true]) isEqualTo (_intent select 2)}
+                }) >= 0}
+        };
+        [
+            {params ["_medic","_intent","_id","_kit","_locality","_workflow","_valid"];
+                !([_medic,_intent,_id,_kit,_locality,_workflow] call _valid) || {[_medic,"prepared",_id] call ACME_fnc_inventoryLedgerPossessed}},
+            {params ["_medic","_intent","_id","_kit","_locality","_workflow","_valid"];
+                if ([_medic,_intent,_id,_kit,_locality,_workflow] call _valid && {[_medic,"prepared",_id] call ACME_fnc_inventoryLedgerPossessed}) then {
+                    [_id] call ACME_fnc_piggybackAttachRequest;
+                };},
+            [_medic,_intent,_id,_kit,_locality,_workflow,_valid],10,
+            {params ["_medic"];
+                if (!isNull _medic && {local _medic}) then {[_medic,"The secondary remains in Prepared IV Sets while its inventory receipt is pending."] call ACME_fnc_clinicalNotice;};}
+        ] call CBA_fnc_waitUntilAndExecute;
+    };
 }, [_class, _action, _setItem, _setName, _kind, (_isBlood && _fromCooler), ACE_player, _target,
     (if (_fromCooler) then {0} else {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory", 0]}),
-    objectParent ACE_player], 1.6] call CBA_fnc_waitAndExecute;
+    objectParent ACE_player,if (_piggybackIntent isEqualTo []) then {[]} else {[+_piggybackIntent,
+        ACE_player getVariable ["ACME_equipmentKitEpoch",0],ACE_player getVariable ["ACME_providerLocalityEpoch",0],
+        missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0]]},_spikeSession], 1.6] call CBA_fnc_waitAndExecute;

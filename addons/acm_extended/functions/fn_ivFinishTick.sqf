@@ -62,13 +62,16 @@ if (count _active>=3 && {count _p>=9}) then {
             [_row,_job,_elapsed,[_accessory,_dressing,_lock,_secondary,_baseFilm]] call ACME_fnc_ivFieldRender;
         } else {
         {_x ctrlShow false;} forEach [_lock,_secondary,_baseFilm];
-        private _tex=if (_state select 3) then {"\acm_extended\ui\iv\finish\line_ca.paa"} else {
+        private _direct=!(_state param [0,false]);
+        private _lineJob=count _job>=7 && {(_job select 2)=="line"} && {serverTime<=(_job select 6)};
+        private _tex=if (_state select 3) then {if (_direct) then {"\acm_extended\ui\iv\finish\cursor_line_ca.paa"} else {"\acm_extended\ui\iv\finish\line_ca.paa"}} else {
             if (_state select 0) then {"\acm_extended\ui\iv\finish\extension_ca.paa"} else {""}
         };
         private _film=if (_state select 2) then {"\acm_extended\ui\iv\finish\dressing_ca.paa"} else {""};
         if (count _job>=7 && {serverTime<=(_job select 6)} && {(_job select 5)!=""}) then {
             private _frame=[_job select 5,_elapsed] call ACME_fnc_ivFinishFrame;
             if ((_job select 2)=="dressing") then {_film=_frame;} else {_tex=_frame;};
+            if (_direct && {_lineJob}) then {_tex="\acm_extended\ui\iv\finish\cursor_line_ca.paa";};
         };
         {
             _x params ["_ctrl","_texture"];
@@ -77,7 +80,12 @@ if (count _active>=3 && {count _p>=9}) then {
                 if ((_ctrl getVariable ["ACME_IV_FinishTexture","-"])!=_texture) then {
                     _ctrl ctrlSetText _texture;_ctrl setVariable ["ACME_IV_FinishTexture",_texture];
                 };
-                if (_ctrl isEqualTo _accessory) then {[_ctrl,_row,1052/2048] call ACME_fnc_ivFinishPose;} else {[_ctrl,_row] call ACME_fnc_ivFinishPose;};
+                if (_ctrl isEqualTo _accessory) then {
+                    private _directLine=_direct && {(_state select 3) || {_lineJob}};
+                    private _paintRow=[_row,_directLine] call ACME_fnc_ivFieldAccessoryRow;
+                    [_ctrl,_paintRow,1052/2048] call ACME_fnc_ivFinishPose;
+                    _ctrl ctrlSetFade (if (_directLine && {_lineJob}) then {1-((_elapsed max 0) min 1)} else {0});_ctrl ctrlCommit 0;
+                } else {[_ctrl,_row] call ACME_fnc_ivFinishPose;};
                 _ctrl ctrlShow (_texture!="");
             };
         } forEach [[_accessory,_tex],[_dressing,_film]];

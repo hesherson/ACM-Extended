@@ -110,7 +110,7 @@ if (_phase=="begin") exitWith {
 };
 if (!_same || {count _job<7} || {(_job select 0)!=_token}) exitWith {["rejected",false,"The IV procedure has expired."] call _reply;};
 // B234 manual stages must arrive in order. These messages never mutate venous state.
-if ((_field || {_action in ["removeLock","removeSecondary","removeExtension","removeDressing","removeLine"]}) && {_valid}) then {
+if ((_field || {_action in ["line","removeLock","removeSecondary","removeExtension","removeDressing","removeLine"]}) && {_valid}) then {
     _valid=([_state,_action,true,_row param [7,0]] call ACME_fnc_ivFinishPlan) select 0;
 };
 if (_phase in ["advance","thread","retract"]) exitWith {
@@ -128,7 +128,7 @@ if (_action=="line" && {!_lineGenerationValid}) then {_valid=false;};
 if (_valid && {_now<(_job select 3)+(_job select 4)}) exitWith {}; // cannot accelerate clinical completion.
 private _message="";
 private _primaryFilm=_action=="dressing" && {_state param [4,false]} && {(_state param [5,0])==0} && {!(_state param [0,false])};
-if (_action in ["dressing","line"] && {!_primaryFilm} && {!([_patient,_row] call ACME_fnc_ivFinishPatency)}) then {_valid=false;};
+if (_action=="dressing" && {!_primaryFilm} && {!([_patient,_row] call ACME_fnc_ivFinishPatency)}) then {_valid=false;};
 if (_valid) then {
     switch (_action) do {
         case "removeLock";

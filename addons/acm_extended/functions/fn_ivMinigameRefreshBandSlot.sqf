@@ -54,7 +54,15 @@ if (uiNamespace getVariable ["ACME_IV_EJMode", false]) then {
 
 {
     _x params ["_tool","_pic","_label","_button"];
-    private _stock=if (_tool=="flush") then {["ACM_SalineFlush_10"] call _count} else {1};
+    private _data=switch (_tool) do {
+        case "extension": {["EXTENSION","ACME_IVExtension"]};
+        case "dressing": {["TEGADERM","ACME_Tegaderm"]};
+        case "line": {["IV TUBING","ACME_IVLine"]};
+        case "lock": {["SALINE LOCK","ACME_SalineLock"]};
+        default {["10 mL FLUSH","ACM_SalineFlush_10"]};
+    };
+    private _stock=[_data select 1] call _count;
     [_pic,_held==_tool,_stock] call ACME_fnc_traySlotState;
-    if (_tool=="flush") then {_label ctrlSetText format ["10 mL FLUSH x%1",_stock];};
+    _label ctrlSetText format ["%1  x%2",_data select 0,_stock];
+    _label ctrlSetTextColor [0.90,0.95,1,if (_stock>0) then {1} else {0.30}];
 } forEach (_dlg getVariable ["ACME_IV_FinishTray",[]]);

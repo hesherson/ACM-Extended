@@ -19,15 +19,15 @@ class GVAR(TransfusionMenu_Dialog) {
             w = QUOTE(ACM_TRANSFUSION_WINDOW_W);
             h = QUOTE(safeZoneH * 0.84);
             class Controls {
-                class Slice_0: RscPicture { idc = 0; x = QUOTE(0); y = QUOTE(0); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_tl_ca.paa"; };
-                class Slice_1: RscPicture { idc = 1; x = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(0); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.024 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_top_ca.paa"; };
-                class Slice_2: RscPicture { idc = 2; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(0); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_tr_ca.paa"; };
-                class Slice_3: RscPicture { idc = 3; x = QUOTE(0); y = QUOTE(safeZoneH * 0.012); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.024)); text = "\acm_extended\ui\transfusion\window_left_ca.paa"; };
-                class Slice_4: RscPicture { idc = 4; x = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * 0.012); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.024 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.024)); text = "\acm_extended\ui\transfusion\window_center_ca.paa"; };
-                class Slice_5: RscPicture { idc = 5; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * 0.012); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.024)); text = "\acm_extended\ui\transfusion\window_right_ca.paa"; };
-                class Slice_6: RscPicture { idc = 6; x = QUOTE(0); y = QUOTE(safeZoneH * (0.84 - 0.012)); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_bl_ca.paa"; };
-                class Slice_7: RscPicture { idc = 7; x = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * (0.84 - 0.012)); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.024 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_bottom_ca.paa"; };
-                class Slice_8: RscPicture { idc = 8; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.012 * pixelW / pixelH); y = QUOTE(safeZoneH * (0.84 - 0.012)); w = QUOTE(safeZoneH * 0.012 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.012); text = "\acm_extended\ui\transfusion\window_br_ca.paa"; };
+                class Slice_0: RscPicture { idc = 0; x = QUOTE(0); y = QUOTE(0); w = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.007); text = "\acm_extended\ui\transfusion\window_tl_ca.paa"; };
+                class Slice_1: RscPicture { idc = 1; x = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); y = QUOTE(0); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.014 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.007); text = "\acm_extended\ui\transfusion\window_top_ca.paa"; };
+                class Slice_2: RscPicture { idc = 2; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.007 * pixelW / pixelH); y = QUOTE(0); w = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.007); text = "\acm_extended\ui\transfusion\window_tr_ca.paa"; };
+                class Slice_3: RscPicture { idc = 3; x = QUOTE(0); y = QUOTE(safeZoneH * 0.007); w = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.014)); text = "\acm_extended\ui\transfusion\window_left_ca.paa"; };
+                class Slice_4: RscPicture { idc = 4; x = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); y = QUOTE(safeZoneH * 0.007); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.014 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.014)); text = "\acm_extended\ui\transfusion\window_center_ca.paa"; };
+                class Slice_5: RscPicture { idc = 5; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.007 * pixelW / pixelH); y = QUOTE(safeZoneH * 0.007); w = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); h = QUOTE(safeZoneH * (0.84 - 0.014)); text = "\acm_extended\ui\transfusion\window_right_ca.paa"; };
+                class Slice_6: RscPicture { idc = 6; x = QUOTE(0); y = QUOTE(safeZoneH * (0.84 - 0.007)); w = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.007); text = "\acm_extended\ui\transfusion\window_bl_ca.paa"; };
+                class Slice_7: RscPicture { idc = 7; x = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); y = QUOTE(safeZoneH * (0.84 - 0.007)); w = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.014 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.007); text = "\acm_extended\ui\transfusion\window_bottom_ca.paa"; };
+                class Slice_8: RscPicture { idc = 8; x = QUOTE(ACM_TRANSFUSION_WINDOW_W - safeZoneH * 0.007 * pixelW / pixelH); y = QUOTE(safeZoneH * (0.84 - 0.007)); w = QUOTE(safeZoneH * 0.007 * pixelW / pixelH); h = QUOTE(safeZoneH * 0.007); text = "\acm_extended\ui\transfusion\window_br_ca.paa"; };
             };
         };
         // Presentation panels stay behind the shared body-map artwork and its device overlays.
@@ -391,6 +391,12 @@ class GVAR(TransfusionMenu_Dialog) {
             colorBackgroundActive[] = {0,0,0,0};
             colorFocused[] = {0,0,0,0};
             colorBorder[] = {0,0,0,0};
+            // The sliced background stays fixed during hover, focus and press.
+            offsetX = 0;
+            offsetY = 0;
+            offsetPressedX = 0;
+            offsetPressedY = 0;
+            borderSize = 0;
             idc = IDC_TRANSFUSIONMENU_BUTTON_STOPIV;
             style = ST_CENTER;
             x = QUOTE(ACM_TRANSFUSION_LEFT_X);

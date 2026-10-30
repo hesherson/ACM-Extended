@@ -169,11 +169,11 @@ if (!(uiNamespace getVariable ["ACME_IV_EJMode", false]) || {true}) then {
                         if (_kind in ["removeExtension","removeLine"]) then {_mc=_x select 1;};
                         _layers=if (_kind=="catheter") then {[_mc,_x select 1,_x select 2]} else {if (_kind=="removeExtension") then {[_x select 1,_x select 2]} else {[_mc]}};
                         // A line pull moves only its downstream tubing, not the extension baked into line_ca.
-                        if (_kind=="removeLine") then {
+                        if (_kind=="removeLine" && {(_row param [15,[]]) param [0,false]}) then {
                             (_x select 1) ctrlSetText "\acm_extended\ui\iv\finish\cursor_line_ca.paa";
                             private _base=_display ctrlCreate ["ACME_IV_HubMark",-1];
                             _base ctrlSetText "\acm_extended\ui\iv\finish\extension_ca.paa";
-                            [_base,_row] call ACME_fnc_ivFinishPose;_base ctrlShow true;
+                            [_base,_row,1052/2048] call ACME_fnc_ivFinishPose;_base ctrlShow true;
                             uiNamespace setVariable ["ACME_IV_PullExtra",_base];
                         };
                     };

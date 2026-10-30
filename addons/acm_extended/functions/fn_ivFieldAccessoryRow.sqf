@@ -2,8 +2,9 @@
    For bare-port flushing/lines, the synthetic transform maps their distal anchor to that port. */
 params ["_row",["_direct",false]];
 private _state=_row param [15,[]];
-if !(_state param [4,false]) exitWith {+_row};
-private _y=if ((_state param [5,0])>0) then {1189} else {1088};
+private _lock=_state param [4,false];
+if (!_lock && {!_direct}) exitWith {+_row};
+private _y=if (_lock) then {if ((_state param [5,0])>0) then {1189} else {1088}} else {1037};
 private _point=[1006.5,_y];
 if (_direct) then {_point=[1006.5-(1033.02-1006.5),_y-(1386.52-1052)];};
 private _socket=[_row,_point] call ACME_fnc_ivFieldPoint;

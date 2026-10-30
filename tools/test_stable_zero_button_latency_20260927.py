@@ -51,7 +51,7 @@ def test_conscious_patient_animation_is_never_seized_by_native_treatment():
 
 def test_spike_bag_repaints_active_state_before_its_timer():
     s = read("addons/acm_extended/functions/fn_transfusionSpikeOrAdd.sqf")
-    active = s.index('missionNamespace setVariable ["ACME_spikingActive", [_class, diag_tickTime + 1.6]];')
+    active = s.index('missionNamespace setVariable ["ACME_spikingActive",_spikeSession];')
     repaint = s.index("call ACME_fnc_updateTransfusionControls;", active)
     wait = s.index("1.6] call CBA_fnc_waitAndExecute;", repaint)
     assert active < repaint < wait

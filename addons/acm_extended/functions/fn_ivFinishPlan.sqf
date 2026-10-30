@@ -40,8 +40,9 @@ switch (_action) do {
         [true,"","tegaderm_apply",1.2]
     };
     case "line": {
-        if ((!_extension && {!_lock}) || {!_tested} || {!_dressed}) exitWith {[false,"Check and secure the connection first.","",0]};
-        if (!_patent) exitWith {[false,"Recheck the line with the saline flush.","",0]};
+        // Tubing is mechanical hardware. A bare catheter, extension or saline-lock
+        // port accepts it regardless of aspiration or dressing state. Connecting
+        // hardware never proves venous patency or changes flow controls.
         if (_line) exitWith {[false,"The tubing is already connected.","",0]};
         [true,"","iv_line_attach",1]
     };

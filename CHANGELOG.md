@@ -1,5 +1,14 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B290 (IV connections and transfusion presentation)
+
+- Allows physical tubing attachment to bare catheters and extension/lock ports without requiring a completed flush or dressing first. Fluid delivery keeps its existing patency rules.
+- Matches IV finishing-tool labels to the existing tray typography, spacing, inventory counts and unavailable-stock tint.
+- Fixes plain saline piggyback selection behind transfusion cards and adds direct loose-bag preparation/connection with real branch tubing and native inventory custody.
+- Aligns paired transfusion actions and tabs, unifies rounded corners and prevents pressed-label jumps and duplicate legacy return controls.
+- Removes duplicate IV sound cues and improves treatment transition/session handling. React and Rust remain discussion proposals.
+- Candidate validation and native acceptance: [B290 IV and transfusion review](docs/audits/B290-IV-transfusion-presentation.md). Public version remains **1.2.4.1**, network protocol **2**.
+
 ## 1.2.4.1 — B283 (community PR integration)
 
 - Integrates the non-Medmash community PR work on top of B282: Spanish localization, reviewed medical-item masses, controlled medic identity, optional intervention animation controls, and remaining IV/airway lifecycle fixes.

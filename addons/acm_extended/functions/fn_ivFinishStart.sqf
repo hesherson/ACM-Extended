@@ -52,5 +52,6 @@ if !(_action in ["field14","field16"]) then {uiNamespace setVariable ["ACME_IV_D
 (uiNamespace getVariable ["ACME_IV_HeldCursorCtrl",controlNull]) ctrlShow false;
 [_patient,"ivFinish",[_medic,"begin",_uid,_action,_token,_epoch,_deadline,_receipt]] call ACME_fnc_ownerDispatch;
 [{_this call ACME_fnc_ivFinishRetry;},[_medic,_token],1] call CBA_fnc_waitAndExecute;
-playSound "ACE_Sound_Click";
+// Pull breakaway already owns the removal sound.
+if !(_action in ["removeLock","removeSecondary","removeExtension","removeDressing","removeLine"]) then {playSound "ACE_Sound_Click";};
 true

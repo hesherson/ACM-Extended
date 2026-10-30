@@ -17,8 +17,8 @@ if ((_display getVariable ["ACME_txHeaderFontH",0]) != safeZoneH) then {
     _rule ctrlEnable false;
 } forEach [[86404,0.125,0.147,0.750],[86405,0.125,0.526,0.212],[86406,0.673,0.583,0.202]];
 // The authored native window draws first, so its opaque center never covers the body or device overlays.
-[(_display displayCtrl 86400),[_uiX + _uiW * 0.11,safeZoneY + safeZoneH * 0.08,_uiW * 0.78,safeZoneH * 0.84],"window",0.012] call ACME_fnc_transfusionRoundedFrame;
-{[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86091,86180,86181,86182];
+[(_display displayCtrl 86400),[_uiX + _uiW * 0.11,safeZoneY + safeZoneH * 0.08,_uiW * 0.78,safeZoneH * 0.84],"window",0.007] call ACME_fnc_transfusionRoundedFrame;
+{[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86008,86091,86180,86181,86182];
 private _moveBusy = (missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active", false])
     || {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active_Moving", false]};
 
@@ -202,8 +202,8 @@ private _place = {
     [86129,0.125,0.575,0.212,0.187],
     [86131,0.125,0.778,0.102,0.033],
     [86172,0.235,0.778,0.102,0.033],
-    [86214,0.673,0.232,0.074,0.034],
-    [86144,0.750,0.232,0.125,0.034],
+    [86214,0.673,0.232,0.097,0.034],
+    [86144,0.778,0.232,0.097,0.034],
     [86005,0.673,0.279,0.202,0.235],
     [86145,0.673,0.279,0.202,0.235],
     [86130,0.673,0.595,0.202,0.029],
@@ -321,12 +321,14 @@ if (_valid) then {
     };
 } forEach [86128,86130];
 
+// Paired actions use the same 0.008 canvas gap and equal widths. The full-width
+// fallback keeps its outer edges when the selected access has no Prime/Flush action.
 // Stop remains above Fluids. Prime/Flush belongs beside Bag Actions for the selected access.
 private _service = _display displayCtrl 86143;
 private _hasService = !isNull _service && {ctrlShown _service};
 if (_hasService) then {
-    [86170,0.125,0.478,0.100,0.033] call _place;
-    [86143,0.237,0.478,0.100,0.033] call _place;
+    [86170,0.125,0.478,0.102,0.033] call _place;
+    [86143,0.235,0.478,0.102,0.033] call _place;
 } else {
     [86170,0.125,0.478,0.212,0.033] call _place;
 };
@@ -371,13 +373,13 @@ _warmer setVariable ["ACME_warmerOperation",["add","remove"] select _warmerInsta
 if (_menu == "infusion") then {
     [86195,0.141,0.725,0.180,0.033] call _place;
     [86196,0.141,0.719,0.180,0.026] call _place;
-    [86197,0.141,0.747,0.087,0.025] call _place;
-    [86198,0.234,0.747,0.087,0.025] call _place;
+    [86197,0.141,0.747,0.086,0.025] call _place;
+    [86198,0.235,0.747,0.086,0.025] call _place;
 } else {
     [86195,0.141,0.430,0.180,0.029] call _place;
     [86196,0.141,0.425,0.180,0.026] call _place;
-    [86197,0.141,0.452,0.087,0.025] call _place;
-    [86198,0.234,0.452,0.087,0.025] call _place;
+    [86197,0.141,0.452,0.086,0.025] call _place;
+    [86198,0.235,0.452,0.086,0.025] call _place;
 };
 [_warmer,"show",_menu in ["bag","infusion"] && {_warmerShow} && {!_confirmWarmer}] call ACME_fnc_transfusionUiSet;
 {[_x,"show",_menu in ["bag","infusion"] && {_confirmWarmer}] call ACME_fnc_transfusionUiSet;} forEach [_warmerNotice,_warmerYes,_warmerNo];
@@ -420,7 +422,7 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
         private _selectedFrame = (_button getVariable ["ACME_txTabSelected",false])
             || {_button getVariable ["ACME_txRoundHover",false]} || {_button getVariable ["ACME_txRoundFocus",false]};
         private _frameProfiles = if ((ctrlIDC _button) in [86144,86214]) then {["tab","tab_selected"]} else {["button","selected"]};
-        [_frame,ctrlPosition _button,_frameProfiles select _selectedFrame,0.006,ctrlShown _button,_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionRoundedFrame;
+        [_frame,ctrlPosition _button,_frameProfiles select _selectedFrame,0.007,ctrlShown _button,_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionRoundedFrame;
         private _enabled = ctrlEnabled _button;
         if ((_frame getVariable ["ACME_txButtonEnabled",-1]) isNotEqualTo _enabled) then {
             _frame setVariable ["ACME_txButtonEnabled",_enabled];_frame ctrlSetFade (if (_enabled) then {0} else {0.45});_frame ctrlCommit 0;

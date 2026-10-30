@@ -52,4 +52,4 @@ private _medic=uiNamespace getVariable ["ACME_IV_Medic",ACE_player];
 [_patient,"ivCatheterPull",[_medic,_mark param [14,""],[_patient] call ACME_fnc_clinicalEpoch]] call ACME_fnc_ownerDispatch;
 call _clear;
 [] call ACME_fnc_ivMinigameRenderMarks;
-playSound "ACE_Sound_Click";
+// PullTick already emitted the breakaway cue. Completion must not play a second click on a quick yank.

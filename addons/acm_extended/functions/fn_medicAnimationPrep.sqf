@@ -22,7 +22,9 @@ private _ownedEmptyState = _state in [
     "acme_junctionalwork",
     "acm_pronecontinuous"
 ];
-private _visuallyEmpty = (((_state find "wnon") >= 0) && {((_state find "snon") >= 0)}) || {_ownedEmptyState};
+// A Wpst/Wrfl -> Wnon transition names both endpoints while the weapon is still visible.
+private _visuallyEmpty = (((_state find "wnon") >= 0) && {((_state find "snon") >= 0)}
+    && {(["wpst","wrfl","wlnr","wbin"] findIf {(_state find _x) >= 0}) < 0}) || {_ownedEmptyState};
 private _weapon = currentWeapon _medic;
 if (_ownedEmptyState) exitWith {
     // These are exact stable medical states, never a partial handgun-holstering transition.

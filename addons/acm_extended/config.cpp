@@ -2522,6 +2522,7 @@ class CfgFunctions {
             class doAnim {};
             class providerAnimation {};
             class medicAnimationPrep {};
+            class medicAnimationReady {};
             class rollProviderStart {};
             class recoveryPositionStart {};
             class recoveryPositionProgress {};
@@ -4442,12 +4443,17 @@ class ACME_Thoracostomy_Dialog {
 // mouse-catching surface that reports the cursor in true ui coords and is ultrawide-safe, and a feel dot that
 // tracks the fingertip. fn_ivminigameinit positions all the controls at runtime, and the limb and band
 // textures swap per selected site.
-class ACME_IV_ToolLabel: RscText {style=2; font="RobotoCondensed"; colorText[]={0.90,0.95,1,1}; colorBackground[]={0,0,0,0};};
+class ACME_IV_ToolLabel: RscText {
+    style=2; font="RobotoCondensed"; sizeEx="0.018 * safezoneH";
+    colorText[]={0.90,0.95,1,1}; colorBackground[]={0,0,0,0};
+};
 class ACME_IV_ToolButton: RscButton {
     colorText[] = {0,0,0,0}; colorBackground[] = {0,0,0,0};
     colorBackgroundActive[] = {0.3,0.5,0.7,0.30}; colorFocused[] = {0,0,0,0};
     colorBackgroundDisabled[] = {0,0,0,0}; colorShadow[] = {0,0,0,0}; borderSize=0;
     offsetX=0; offsetY=0; offsetPressedX=0; offsetPressedY=0;
+    // Tool handlers own their accepted-action sound; native button audio would double it.
+    soundEnter[]={"",0,1}; soundClick[]={"",0,1}; soundPush[]={"",0,1}; soundEscape[]={"",0,1};
 };
 class ACME_IVMinigame_Dialog {
     idd = 86500;
@@ -4558,14 +4564,15 @@ class ACME_IVMinigame_Dialog {
             colorBackgroundDisabled[] = {0,0,0,0};
             tooltip = "Pick up the constricting band. Move it over the limb and click to apply.";
             onButtonClick = "[] call ACME_fnc_ivMinigameGrabBand";
+            soundEnter[]={"",0,1}; soundClick[]={"",0,1}; soundPush[]={"",0,1}; soundEscape[]={"",0,1};
         };
         // alcohol pad slot. a medic uses it to clean the site after palpating.
-        class IV_BandLbl: RscText {
+        class IV_BandLbl: ACME_IV_ToolLabel {
             idc = 86533; x = 0; y = 0; w = 0; h = 0; style = 2;
             text = "BAND"; colorText[] = {0.95, 0.80, 0.80, 1}; colorBackground[] = {0,0,0,0};
             sizeEx = "0.018 * safezoneH"; font = "RobotoCondensed";
         };
-        class IV_PadLbl: RscText {
+        class IV_PadLbl: ACME_IV_ToolLabel {
             idc = 86538; x = 0; y = 0; w = 0; h = 0; style = 2;
             text = "PAD"; colorText[] = {0.80, 0.92, 1, 1}; colorBackground[] = {0,0,0,0};
             sizeEx = "0.018 * safezoneH"; font = "RobotoCondensed";
@@ -4585,6 +4592,7 @@ class ACME_IVMinigame_Dialog {
             colorBackgroundDisabled[] = {0,0,0,0};
             tooltip = "Alcohol pad. Hold and wipe the site at least three times.";
             onButtonClick = "[] call ACME_fnc_ivMinigameGrabPad";
+            soundEnter[]={"",0,1}; soundClick[]={"",0,1}; soundPush[]={"",0,1}; soundEscape[]={"",0,1};
         };
         class IV_NeedleHdr: IV_SlotHdr {
             idc = 86539;
@@ -4608,7 +4616,7 @@ class ACME_IVMinigame_Dialog {
             text = "\acm_extended\ui\iv\tray\iv_tray_14g_0_ca.paa";
             colorText[] = {1, 1, 1, 1};
         };
-        class IV_G14Lbl: RscText {
+        class IV_G14Lbl: ACME_IV_ToolLabel {
             idc = 86542; x = 0; y = 0; w = 0; h = 0; style = 2;
             text = "14g"; colorText[] = {0.95, 0.75, 0.75, 1}; colorBackground[] = {0,0,0,0};
             sizeEx = "0.018 * safezoneH"; font = "RobotoCondensed";
@@ -4623,6 +4631,7 @@ class ACME_IVMinigame_Dialog {
             // the three smaller gauges inherit this class, so blanking it here blanks all four.
             tooltip = "";
             onButtonClick = "[14] call ACME_fnc_ivMinigameGrabNeedle";
+            soundEnter[]={"",0,1}; soundClick[]={"",0,1}; soundPush[]={"",0,1}; soundEscape[]={"",0,1};
         };
         class IV_G16BG: IV_G14BG { idc = 86544; };
         class IV_G16Fan4: IV_G14Fan4 { idc = 86587; };
@@ -5028,6 +5037,11 @@ class ACM_circulation_TransfusionMenu_Dialog {
         // prep and give infusion and the narc box. this is the mod's own button, so an edit here is layout-safe.
         class ACME_InjectMedicationBagButton: RscButton {
             text = "Discard Y Tubing";
+            offsetX = 0;
+            offsetY = 0;
+            offsetPressedX = 0;
+            offsetPressedY = 0;
+            borderSize = 0;
             colorText[] = {1,1,1,1};
             colorDisabled[] = {1,1,1,0.25};
             colorBackground[] = {0,0,0,0};

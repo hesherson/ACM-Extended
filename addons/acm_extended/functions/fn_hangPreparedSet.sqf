@@ -18,8 +18,6 @@ if (!isNil "_this" && {_this isEqualType []}) then {
     if ((_this param [0, ""]) isEqualType "") then {_explicitId = _this param [0, ""];};
     if ((_this param [1, ""]) isEqualType "") then {_lineUID = _this param [1, ""];};
 };
-if (_lineUID == "" && {(missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []}) exitWith {["add"] call ACME_fnc_piggybackWorkflow;};
-
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 
@@ -29,6 +27,9 @@ private _setId = if (_explicitId != "") then {_explicitId} else {if (_row >= 0) 
 if (_setId isEqualTo "") exitWith {
     ["Select a prepared IV set first.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
+// Preserve the exact card/list identity instead of asking the infusion picker
+// to guess it from whether the hidden native prepared list is visible.
+if (_lineUID == "" && {(missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []}) exitWith {["add",_setId] call ACME_fnc_piggybackWorkflow;};
 
 private _sets = ACE_player getVariable ["ACME_preparedIVSets", []];
 private _setIdx = _sets findIf { (_x param [0, ""]) isEqualTo _setId };

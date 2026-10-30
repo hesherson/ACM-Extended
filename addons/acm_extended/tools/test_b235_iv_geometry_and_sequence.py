@@ -57,7 +57,7 @@ def test_full_cover_then_insert_workflow_retains_primary_film_without_fluid_cred
     ["begin","flush","flush",_receipt] call _invoke;_serverTime=114;["finish","flush","flush"] call _invoke;
     ["begin","dressing","outer"] call _invoke;_serverTime=116;["finish","dressing","outer"] call _invoke;
     ["begin","line","line"] call _invoke;_serverTime=118;["finish","line","line"] call _invoke;
-    [((call _getState) select 3)=={js(patent)},"line still requires proven primary patency and final dressing"] call _check;
+    [((call _getState) select 3),"mechanical line attaches while primary patency remains unchanged"] call _check;
     [((call _getState) param [6,false]),"short film remains after remaining apparatus"] call _check;
     [count (call _credits)=={1 if patent else 0},"only actual successful flush credits saline"] call _check;
     ''')
@@ -105,7 +105,7 @@ def test_peel_outer_then_primary_film_and_reinsert_after_secondary_removal():
     [!(_state select 6),"second peel removes base"] call _check;
     _state=[[true,true,true,true,true,16,true],"removeSecondary"] call ACME_fnc_ivFieldTransition;
     [([_state,"field14",true,16] call ACME_fnc_ivFinishPlan) select 0,"retained short film permits replacement"] call _check;
-    [!(([[false,false,false,false,true,0],"line",true,16] call ACME_fnc_ivFinishPlan) select 0),"a lock alone is not a connected line"] call _check;
+    [([[false,false,false,false,true,0],"line",true,16] call ACME_fnc_ivFinishPlan) select 0,"bare lock port accepts tubing"] call _check;
     ''')
 
 

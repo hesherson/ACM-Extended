@@ -47,7 +47,7 @@ if (_mi >= 0) then {_prepared deleteAt _mi;};
 ACE_player setVariable ["ACME_preparedIVSets",_sets,true];
 ACE_player setVariable ["ACME_infusion_PreparedBags",_prepared,true];
 private _requests = missionNamespace getVariable ["ACME_piggybackRequests",createHashMap];
-_requests set [_id,[_args,CBA_missionTime,false]];
+_requests set [_id,[_args,CBA_missionTime,false,missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0]]];
 missionNamespace setVariable ["ACME_piggybackRequests",_requests];
 private _source = findDisplay 86000;
 if (!isNull _source) then {_source setVariable ["ACME_piggybackConnecting",true]; _source closeDisplay 1;};

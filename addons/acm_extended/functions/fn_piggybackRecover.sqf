@@ -12,7 +12,8 @@ private _retry = [];
     private _id = _held select 0;
     private _known = _requests getOrDefault [_id,[]];
     if (_known isEqualTo [] || {_known param [2,false]} || {CBA_missionTime - (_known param [1,0]) > 120}) then {
-        _requests set [_id,[_args,CBA_missionTime,false]];
+        // Recovered custody may settle, but cannot own a newly opened workflow.
+        _requests set [_id,[_args,CBA_missionTime,false,_known param [3,-1]]];
         _retry pushBack _id;
     };
 } forEach _escrow;

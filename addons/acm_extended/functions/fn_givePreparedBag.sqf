@@ -12,7 +12,12 @@ if !([_patient,_bodyPart,_selectedIV,_accessSite] call ACME_fnc_transfusionAcces
     ["Establish and select an IV/IO access site first.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
-if ((missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []) exitWith {["add",_requestedId] call ACME_fnc_piggybackWorkflow;};
+if ((missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []) exitWith {
+    private _setId = _requestedId;
+    if (_setId == "") then {_setId = ((call ACME_fnc_getSelectedPreparedInfusion) param [1,[]]) param [0,""];};
+    if (_setId == "") exitWith {[ACE_player,"Select a prepared infusion for the piggyback."] call ACME_fnc_clinicalNotice;};
+    ["add",_setId] call ACME_fnc_piggybackWorkflow
+};
 
 private _blocked = [_patient, _bodyPart, _selectedIV, _accessSite] call ACME_fnc_preparedAttachBlockReason;
 if (_blocked != "") exitWith {[ACE_player, [_blocked] call ACME_fnc_preparedAttachMessage] call ACME_fnc_clinicalNotice;};

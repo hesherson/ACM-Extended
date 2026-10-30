@@ -3,6 +3,38 @@
 params ["_medic", "_patient", "_bodyPart", "_fluidType"];
 if (isNull _medic || {!local _medic} || {!(_medic getVariable ["ACME_hang_Active", false])}
     || {!(_medic getVariable ["ACME_hang_Claimed", false])}) exitWith {};
+// A short raise timer or a slow weapon mod can deliver the clinical ACK before provider preflight finishes.
+// The claim/heartbeat remains valid while presentation waits. No props or pose start until empty hands and
+// the preparation handoff are ready. Capture the exact episode so cancellation/restart cannot revive this job.
+if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {
+    (_medic getVariable ["ACME_hang_Raising", false] && {!(_medic getVariable ["ACME_hang_PrepComplete", false])})
+        || {!([_medic] call ACME_fnc_medicAnimationReady)}
+}) exitWith {
+    private _episode = _medic getVariable ["ACME_hang_Start", -1];
+    private _locality = _medic getVariable ["ACME_providerLocalityEpoch", 0];
+    private _kitEpoch = _medic getVariable ["ACME_equipmentKitEpoch", 0];
+    private _until = CBA_missionTime + 3.8;
+    _medic setVariable ["ACME_hang_PoseRetryAt", _until];
+    private _retry = {
+        params ["_medic", "_patient", "_bodyPart", "_fluidType", "_episode", "_locality", "_kitEpoch", "_until", "_again"];
+        if (isNull _medic || {!local _medic}
+            || {(_medic getVariable ["ACME_hang_Start", -2]) != _episode}
+            || {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _locality}
+            || {(_medic getVariable ["ACME_equipmentKitEpoch", 0]) != _kitEpoch}
+            || {!(_medic getVariable ["ACME_hang_Active", false])}
+            || {!(_medic getVariable ["ACME_hang_Claimed", false])}) exitWith {};
+        private _ready = !(missionNamespace getVariable ["ACME_interventionAnimations", true]) || {
+            [_medic] call ACME_fnc_medicAnimationReady && {
+                !(_medic getVariable ["ACME_hang_Raising", false]) || {_medic getVariable ["ACME_hang_PrepComplete", false]}
+            }
+        };
+        if (_ready) exitWith {[_medic, _patient, _bodyPart, _fluidType] call ACME_fnc_hangBagActivate;};
+        if (CBA_missionTime >= _until) exitWith {[true, _medic] call ACME_fnc_hangBagStop;};
+        [_again, _this, 0.05] call CBA_fnc_waitAndExecute;
+    };
+    [_retry, [_medic, _patient, _bodyPart, _fluidType, _episode, _locality, _kitEpoch, _until, _retry], 0.05]
+        call CBA_fnc_waitAndExecute;
+};
 _medic setVariable ["ACME_hang_Raising", false];
 if (dialog) then { closeDialog 0; };
 

@@ -44,12 +44,15 @@ private _deepOrigin=[1006.5/2048,1052/2048];
             if (!_secondary) then {_points pushBack ["catheter",[(_rect select 0)+(_rect select 2)*(_row select 2),(_rect select 1)+(_rect select 3)*(_row select 3)]];};
             if (_state select 0) then {_points pushBack ["removeExtension",[_row,[1007/2048,1230/2048],_deepOrigin] call ACME_fnc_ivFinishPoint];};
             if (_state select 2) then {_points pushBack ["removeDressing",[_row,[1140/2048,970/2048]] call ACME_fnc_ivFinishPoint];};
-            if (_state select 3) then {_points pushBack ["removeLine",[_row,[1100/2048,1720/2048],_deepOrigin] call ACME_fnc_ivFinishPoint];};
+            if (_state select 3) then {
+                private _lineRow=[_row,!(_state param [0,false])] call ACME_fnc_ivFieldAccessoryRow;
+                _points pushBack ["removeLine",[_lineRow,[1100/2048,1720/2048],_deepOrigin] call ACME_fnc_ivFinishPoint];
+            };
         } else {
             private _deep=_tool in ["extension","flush","line"];
-            private _uv=if (_tool in ["flush","line"]) then {[1033.02/2048,1386.52/2048]} else {
+            private _uv=if (_tool=="line" && {!(_state param [0,false])}) then {_deepOrigin} else {if (_tool in ["flush","line"]) then {[1033.02/2048,1386.52/2048]} else {
                 if (_deep) then {_deepOrigin} else {[1006.5/2048,1032/2048]}
-            };
+            }};
             _points pushBack [_tool,if (_deep) then {[_row,_uv,_deepOrigin] call ACME_fnc_ivFinishPoint} else {[_row,_uv] call ACME_fnc_ivFinishPoint}];
         };
         };

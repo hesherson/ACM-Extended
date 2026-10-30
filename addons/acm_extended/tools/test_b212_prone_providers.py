@@ -213,6 +213,7 @@ def hang_setup():
         private _stances=[]; private _held=[]; private _restores=0; private _stops=0;
         missionNamespace setVariable ["ACME_hang_removeWeapon",false];
         ACME_fnc_medicAnimationPrep={0};
+        ACME_fnc_animBlocked={false};
         ACME_fnc_doAnimHeld={_held pushBack _this;};
         ACME_fnc_doAnim={_moves pushBack _this;};
         ACME_fnc_hangBagRestoreWeapons={_restores=_restores+1;};

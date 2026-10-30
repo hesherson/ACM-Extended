@@ -45,7 +45,8 @@ if (!_ok) then {
 _escrow deleteAt _setId;
 _medic setVariable ["ACME_piggybackEscrow",_escrow,true];
 private _intent = missionNamespace getVariable ["ACME_piggybackPending",[]];
-private _sameWorkflow = _intent isEqualTo [_patient,_args select 4,_args select 5,_args select 6,_args select 7,_args select 8];
+private _sameWorkflow = _intent isEqualTo [_patient,_args select 4,_args select 5,_args select 6,_args select 7,_args select 8]
+    && {(missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0]) == (_pending param [3,-1])};
 if (_sameWorkflow) then {["cancel"] call ACME_fnc_piggybackWorkflow;};
 uiNamespace setVariable ["ACME_preparedRowSig","__force__"];
 if (_message != "") then {[_medic,_message] call ACME_fnc_clinicalNotice;};

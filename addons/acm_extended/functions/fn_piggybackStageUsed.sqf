@@ -4,6 +4,7 @@ if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_
 params [["_usedId", "", [""]]];
 private _medic = ACE_player;
 private _intent = +(missionNamespace getVariable ["ACME_piggybackPending", []]);
+private _workflow = missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0];
 if (isNull _medic || {!local _medic} || {!alive _medic} || {_usedId == ""} || {count _intent != 6}) exitWith {false};
 _intent params ["_patient", "_part", "_iv", "_site", "_primaryUid", "_epoch"];
 if (isNull _patient || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}
@@ -98,7 +99,7 @@ if (_lineReceipt isNotEqualTo []) then {[_lineReceipt, false] call ACME_fnc_trea
 uiNamespace setVariable ["ACME_usedRowSig", "__force__"];
 uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
 private _contextValid = {
-    params ["_medic", "_intent", "_kit", "_locality"];
+    params ["_medic", "_intent", "_kit", "_locality", "_workflow"];
     private _patient = _intent select 0;
     private _primaryLive = !isNull _patient && {
         (((_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [toLowerANSI (_intent select 1), []]) findIf {
@@ -111,6 +112,7 @@ private _contextValid = {
         && {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) == _locality}
         && {!(_medic getVariable ["ACME_persistenceFrozen", false])}
         && {(missionNamespace getVariable ["ACME_piggybackPending", []]) isEqualTo _intent}
+        && {(missionNamespace getVariable ["ACME_piggybackWorkflowGeneration",0]) == _workflow}
         && {_primaryLive} && {!(_patient getVariable ["ACME_persistenceFrozen", false])}
         && {(_intent select 5) == ([_intent select 0] call ACME_fnc_clinicalEpoch)}
         && {(_intent select [0, 4]) isEqualTo [missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull],
@@ -118,15 +120,15 @@ private _contextValid = {
             missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true],
             missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite", -1]]}
 };
-private _waitArgs = [_medic, _intent, _id, _medic getVariable ["ACME_equipmentKitEpoch", 0], _medic getVariable ["ACME_providerLocalityEpoch", 0], _contextValid];
+private _waitArgs = [_medic, _intent, _id, _medic getVariable ["ACME_equipmentKitEpoch", 0], _medic getVariable ["ACME_providerLocalityEpoch", 0], _workflow, _contextValid];
 [
     {
-        params ["_medic", "_intent", "_id", "_kit", "_locality", "_valid"];
-        !([_medic, _intent, _kit, _locality] call _valid) || {[_medic, "prepared", _id] call ACME_fnc_inventoryLedgerPossessed}
+        params ["_medic", "_intent", "_id", "_kit", "_locality", "_workflow", "_valid"];
+        !([_medic, _intent, _kit, _locality, _workflow] call _valid) || {[_medic, "prepared", _id] call ACME_fnc_inventoryLedgerPossessed}
     },
     {
-        params ["_medic", "_intent", "_id", "_kit", "_locality", "_valid"];
-        if ([_medic, _intent, _kit, _locality] call _valid
+        params ["_medic", "_intent", "_id", "_kit", "_locality", "_workflow", "_valid"];
+        if ([_medic, _intent, _kit, _locality, _workflow] call _valid
             && {[_medic, "prepared", _id] call ACME_fnc_inventoryLedgerPossessed}) then {
             [_id] call ACME_fnc_piggybackAttachRequest;
         };

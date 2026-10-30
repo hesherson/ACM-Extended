@@ -108,9 +108,9 @@ def run(body):
  ('dressing',[True,True,False,False],True,True,'tegaderm_apply'),
  ('dressing',[True,True,False,False],False,False,''),
  ('dressing',[True,True,True,False],True,False,''),
- ('line',[True,True,False,False],True,False,''),
+ ('line',[True,True,False,False],True,True,'iv_line_attach'),
  ('line',[True,True,True,False],True,True,'iv_line_attach'),
- ('line',[True,True,True,False],False,False,''),
+ ('line',[True,True,True,False],False,True,'iv_line_attach'),
  ('line',[True]*4,True,False,''),
  ('unknown',[False]*4,True,False,''),
 ])

@@ -134,6 +134,9 @@ private _dialog = false;
 private _stanceFreed = false;
 private _testAnimationSpeed = 1;
 ACME_fnc_choreographyRate = {1.5};
+// Retained lifecycle fixtures already provide a completed native holster. B290 separately executes
+// logical/visible empty-hands readiness and busy/timeout/cancellation cases at this engine boundary.
+ACME_fnc_medicAnimationReady = {true};
 private _moves = [];
 private _removed = [];
 private _keys = [];

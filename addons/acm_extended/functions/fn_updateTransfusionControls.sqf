@@ -974,6 +974,21 @@ if (!isNull _ctrlSpike) then {
             if (!_en) then {_txt = "Attaching Bag...";};
             _ctrlSpike ctrlSetTooltip "Connect this bag to the selected installed IV line. No additional tubing is consumed.";
         };
+        if (_selectingPiggyback) then {
+            private _needsBranchLine = true;
+            private _usedRow = if (isNull _ctrlRightList) then {-1} else {lbCurSel _ctrlRightList};
+            if (_selAction == "usedbag" && {_usedRow >= 0}) then {
+                private _usedId = (((_ctrlRightList lbData _usedRow) splitString "|") param [3,""]);
+                private _used = (ACE_player getVariable ["ACME_usedBags",[]]) select {(_x param [0,""]) == _usedId};
+                _needsBranchLine = count _used != 1 || {((_used select 0) param [9,""]) == "bagOnly"};
+            };
+            private _busy = count _spikingActive > 0;
+            _txt = ["Connect Piggyback","Preparing Piggyback..."] select _busy;
+            _en = !_busy && {_selectedAccessValid} && {_selClass != ""}
+                && {[_targetPatient,_targetBodyPart,_flIV,_flSite,_attachType,false] call ACME_fnc_piggybackEligible}
+                && {!_needsBranchLine || {([ACE_player,_targetPatient,"ACME_IVLine"] call ACME_fnc_treatmentSupplyCount) > 0}};
+            _ctrlSpike ctrlSetTooltip "Connect this fluid as the secondary. An unopened or bag-only fluid uses one IV line. Medication is optional.";
+        };
         _ctrlSpike ctrlSetText _txt;
         [_ctrlSpike,"enable",_en] call ACME_fnc_transfusionUiSet;
     };

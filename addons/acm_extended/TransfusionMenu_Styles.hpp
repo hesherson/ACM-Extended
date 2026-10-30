@@ -10,6 +10,12 @@ class ACME_TransfusionActionButton: RscButton {
     colorBackgroundActive[] = {0,0,0,0};
     colorFocused[] = {0,0,0,0};
     colorBorder[] = {0,0,0,0};
+    // Keep the label registered to its separately painted rounded frame.
+    offsetX = 0;
+    offsetY = 0;
+    offsetPressedX = 0;
+    offsetPressedY = 0;
+    borderSize = 0;
     style = 2;
     shadow = 0;
     font = "RobotoCondensed";
