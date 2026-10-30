@@ -7,7 +7,8 @@ private _components = [];
 } forEach [
     "ACM_main", "ACM_core", "ACM_airway", "ACM_breathing", "ACM_circulation", "ACM_cbrn",
     "ACM_damage", "ACM_disability", "ACM_evacuation", "ACM_gui", "ACM_mission", "ACM_zeus",
-    "ACM_Extended", "ACM_itemtext"
+    "ACM_Extended", "ACM_itemtext", "ACM_burns", "ACM_infection", "ACM_ophthalmology",
+    "DD1380_main", "DD1380_card"
 ];
 [1, missionNamespace getVariable ["ACME_infusion_version", "?"],
     missionNamespace getVariable ["ACME_buildBatch", "?"],

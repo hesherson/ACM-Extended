@@ -6,13 +6,19 @@ import pytest
 
 from medication_inventory import inventory
 from test_debug_single_overlay import definition
-from test_menu_death_lifecycle import ROOT, execute, read
+from test_menu_death_lifecycle import ROOT, adapt, execute, read
 
 SOURCE = read('debugMenuClinical')
 
 
 def helpers(*names):
     return ''.join(definition(name) for name in names)
+
+
+def medication_columns():
+    # Execute the actual shared ordering helper used by the extracted production
+    # medication section; it is a source dependency, not an engine boundary.
+    return 'ACME_fnc_debugMedicationColumns={' + adapt(read('debugMedicationColumns')) + '};'
 
 
 @pytest.mark.parametrize('value', ['yes', 'no'])
@@ -34,7 +40,7 @@ def test_all_installed_concrete_medication_classes_have_one_always_present_famil
     source=re.sub(r'\("true" configClasses .*?\) apply \{configName _x\}', '_catalog',source)
     source=source.replace('finite _value','true')
     import json
-    execute(helpers('_medicationFamily','_sect')+'''
+    execute(medication_columns()+helpers('_medicationFamily','_sect','_pair','_one')+'''
         private _right=[];private _cSect="gold";private _cGood="green";private _cMute="muted";
         missionNamespace setVariable ["ACME_debugMedicationGroups",[]];
         private _queries=[];
@@ -43,7 +49,8 @@ def test_all_installed_concrete_medication_classes_have_one_always_present_famil
         [count _queries=={len(names)},"a registered medication route was hidden or queried twice"] call _check;
         [(_queries apply {{_x select 1}}) arrayIntersect _catalog isEqualTo (_queries apply {{_x select 1}}),"noncatalog classes appeared"] call _check;
         [{{!(_x select 2)}} count _queries==count _queries,"drug rows bypass onset-aware effect calculation"] call _check;
-        [count _medicationRows==29,"unexpected concrete medication family coverage"] call _check;
+        [count _medicationRows==30,"unexpected concrete medication family coverage"] call _check;
+        [{{(_x select 0)=="Moxifloxacin"}} count _medicationRows==1,"new antibiotic family lost its always-present slot"] call _check;
         [{{(_x select 1)=="0.00"}} count _medicationRows==count _medicationRows,"empty drugs disappeared instead of retaining a zero slot"] call _check;
         private _allClasses=[];{{_allClasses append (_x select 1);}} forEach _medicationGroups;
         [count _allClasses=={len(names)} && {{count (_allClasses arrayIntersect _allClasses)==count _allClasses}},"medication class was lost/duplicated during grouping"] call _check;
@@ -60,7 +67,7 @@ def test_route_families_preserve_drug_identity_and_future_catalog_entries(name,f
 
 def test_medication_effects_sum_routes_without_using_sedation_components_or_inventory():
     source=SOURCE[SOURCE.index('private _medicationRows ='):SOURCE.index('// Nondrug sedation')].replace('finite _value','true')
-    execute(helpers('_sect')+'''
+    execute(medication_columns()+helpers('_sect','_pair','_one')+'''
         private _right=[];private _cSect="gold";private _cGood="green";private _cMute="muted";
         private _medicationGroups=[["Fentanyl",["Fentanyl","Fentanyl_IV","Fentanyl_BUC"]],["Naloxone",["Naloxone"]]];
         ACME_fnc_medicationCountCompat={switch (_this select 1) do {case "Fentanyl": {0.1};case "Fentanyl_IV":{0.7};case "Fentanyl_BUC":{0.2};default{0};}};

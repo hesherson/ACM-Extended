@@ -1,0 +1,14 @@
+PREP(applyInfectionStage);
+PREP(canCheckWound);
+PREP(checkWound);
+PREP(fullHealLocal);
+PREP(gui_updateInjuryListPart);
+PREP(getAntibioticLevel);
+PREP(getInfectionRisk);
+PREP(getWoundCount);
+PREP(handleInfectionPFH);
+PREP(handleRespawn);
+PREP(handleSepsisPFH);
+PREP(initUnit);
+PREP(reconcile);
+PREP(resetVariables);

@@ -95,6 +95,8 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         || {_u getVariable ["ACM_breathing_TensionPneumothorax_State", false]}
         || {(_u getVariable ["ACM_breathing_Hemothorax_Fluid",0]) >= 0.75}
         || {_circShock}
+        || {(_u getVariable ["ACM_burns_ShockSeverity",0]) > 0.05}
+        || {(_u getVariable ["ACM_infection_Sepsis_Severity",0]) > 0.01}
         || {(_u getVariable ["ACM_circulation_Blood_Volume",6]) < 5.1}) then {
         _shock pushBack _u;
     };
@@ -120,6 +122,9 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         || {(_circState getOrDefault ["respiratoryAcidosisDeficit", 0]) > 0.001}
         || {(_circState getOrDefault ["hyperSpike", 0]) > 0.001};
     private _needsCirc = _circArrest
+        || {(_u getVariable ["ACM_burns_SystemicBurden",0]) > 0.001}
+        || {(_u getVariable ["ACM_infection_Infection_Stage",0]) > 0}
+        || {_u getVariable ["ACM_infection_Sepsis_Permanent",false]}
         || {_u getVariable ["ACME_vent_connected", false]}
         || {_u getVariable ["ACME_ETT_Inserted", false]}
         || {_u getVariable ["ACME_nrb_on", false]}
@@ -156,7 +161,7 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         || {(_u getVariable ["ACME_coag_clotStrength", 1]) != 1}
         || {(_u getVariable ["ACME_coag_dilutionSeverity", 0]) != 0}
         || {(_u getVariable ["ACME_coag_extraMult", 1]) != 1};
-    if (_baseNeeds || {_platelets < 3} || {_saline > 0} || {_plasmaVol > 0} || {_givenMl > 0} || {_hasTXA} || {_hadCoagEffect}) then {
+    if (_baseNeeds || {(_u getVariable ["ACM_infection_Coag_Mult",1]) > 1} || {_platelets < 3} || {_saline > 0} || {_plasmaVol > 0} || {_givenMl > 0} || {_hasTXA} || {_hadCoagEffect}) then {
         _coag pushBackUnique _u;
     };
 

@@ -2364,6 +2364,8 @@ class CfgFunctions {
 
             class netNotice {};
             class ownerRegister {};
+            class medmashReconcile {};
+            class medmashSnapshotReady {};
             class ownerInit {};
             class aiProtectionWanted {};
             class aiProtectionSync {};

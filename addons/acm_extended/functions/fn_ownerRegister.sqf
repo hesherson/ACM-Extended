@@ -55,6 +55,8 @@ if (!alive _patient) exitWith {
     [_patient] call ACME_fnc_deadPhysiologyFreeze;
     if (_headState) then {[_patient] call ACME_fnc_headElevDeathRelease;};
 };
+// Rebuild newly integrated durable disease state before deriving shared circulation/coagulation.
+if (!isNil "ACME_fnc_medmashReconcile") then {[_patient] call ACME_fnc_medmashReconcile;};
 // Populate idle-capable physiology registries from this exact owner event.
 // The periodic full scan is only a missed-event fallback.
 [[_patient]] call ACME_fnc_idlePhysDiscovery;

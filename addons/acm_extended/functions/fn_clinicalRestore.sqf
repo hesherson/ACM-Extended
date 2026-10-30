@@ -27,6 +27,7 @@ if (_restoredPtx && {!_restoredObservation}) then {
     _patient setVariable ["ACME_ptx_observationRevision", nil, true];
 };
 private _chest = [];
+private _cardRestore = createHashMap;
 private _ettRestore = createHashMap;
 private _rocRestoreSet = false;
 private _rocRestore = false;
@@ -62,6 +63,15 @@ private _toxicityFiredRestore = createHashMap;
     if (_name in ["ACME_lineWarmers", "ACME_lineWarmerCustody"]) then {continue;};
     private _value = [_encoded, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;
     if (isNil "_value") then {continue;};
+    // A real rebased timeline can land exactly on the legacy -1 "unset" sentinel.
+    // Tagged timestamps are known to be real clocks; retain their age with a
+    // sub-millisecond displacement instead of silently restarting disease.
+    if (_name in ["ACM_infection_Infection_EligibleTime", "ACM_infection_Infection_NextStageTime", "ACM_infection_Sepsis_Onset"]
+        && {(_encoded select 0) == "T"} && {_value == -1}) then {_value = -1.000001;};
+    if (_name in ["DD1380_Document", "DD1380_Priority", "DD1380_Checkboxes", "DD1380_Text", "DD1380_Back_Checkboxes", "DD1380_Back_Text", "DD1380_Revision"]) then {
+        _cardRestore set [_name, _value];
+        continue;
+    };
     if (_name in ["ACME_nrb_on", "ACME_nrb_hasO2", "ACME_nrb_delivering"]) then {
         _nrbRestore set [_name, _value];
         continue;
@@ -267,6 +277,21 @@ if (_calciumRestoreSet) then {
 if (_toxicityFiredRestoreSet && {_toxicityFiredRestore isEqualType createHashMap}) then {
     [_patient, "set", "", -1, _toxicityFiredRestore, true] call ACME_fnc_medicationToxicityFiredCommit;
 };
+// Restore one card generation, then rebuild all legacy mirrors from it. Incoming
+// legacy-only saves explicitly retire any pre-existing canonical document first.
+if (count _cardRestore > 0) then {
+    if ("DD1380_Document" in _cardRestore) then {
+        _patient setVariable ["DD1380_Document", _cardRestore get "DD1380_Document", true];
+    } else {
+        _patient setVariable ["DD1380_Document", nil, true];
+        {
+            _patient setVariable [_x, _cardRestore getOrDefault [_x, createHashMap], true];
+        } forEach ["DD1380_Priority", "DD1380_Checkboxes", "DD1380_Text", "DD1380_Back_Checkboxes", "DD1380_Back_Text"];
+        _patient setVariable ["DD1380_Revision", _cardRestore getOrDefault ["DD1380_Revision", 0], true];
+    };
+    if (!isNil "DD1380_card_fnc_getDocument") then {[_patient, true] call DD1380_card_fnc_getDocument;};
+};
+
 // Work resumes with fresh ownership, epochs and clocks; no old network request is replayed.
 private _jobs = _patient getVariable ["ACME_yFlushJobs", createHashMap];
 {private _j = _jobs get _x; _j set [6, if (count _j >= 13) then {serverTime} else {CBA_missionTime}]; _j set [8, _epoch];} forEach keys _jobs;

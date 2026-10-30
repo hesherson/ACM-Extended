@@ -21,6 +21,8 @@ private _candidate = {
         || {_u getVariable ["ACM_breathing_TensionPneumothorax_State", false]}
         || {(_u getVariable ["ACM_breathing_Hemothorax_Fluid",0]) >= 0.75}
         || {_circ isEqualType createHashMap && {_circ getOrDefault ["shockActive",false]}}
+        || {(_u getVariable ["ACM_burns_ShockSeverity",0]) > 0.05}
+        || {(_u getVariable ["ACM_infection_Sepsis_Severity",0]) > 0.01}
         || {(_u getVariable ["ACM_circulation_Blood_Volume",6]) < 5.1}
 };
 private _patients = (missionNamespace getVariable ["ACME_shock_activePatients", []]) select {[_x] call _candidate};
@@ -30,6 +32,7 @@ private _patients = (missionNamespace getVariable ["ACME_shock_activePatients", 
 
     private _type = "none";
     private _sev = 0;
+    private _externalDrive = false;
     private _hadShock = (toLowerANSI (_u getVariable ["ACME_shock_phenotype","none"])) != "none"
         || {abs (_u getVariable ["ACME_shock_severity",0]) > 0.001}
         || {abs (_u getVariable ["ACME_shock_resistDelta",0]) > 0.01}
@@ -54,37 +57,62 @@ private _patients = (missionNamespace getVariable ["ACME_shock_activePatients", 
         && {!(_u getVariable ["ACME_shock_ownsCirc",false])};
     private _blood = _u getVariable ["ACM_circulation_Blood_Volume",6];
     private _forcedActive = _type != "none";
+    private _sepsis = (_u getVariable ["ACM_infection_Sepsis_Severity",0]) max 0 min 1;
+    private _burnShock = (_u getVariable ["ACM_burns_ShockSeverity",0]) max 0 min 1;
 
     // A healthy unit with no previous shock output is completely silent. Once a
     // phenotype existed, run one neutralization pass and then retire naturally.
-    if (!_forcedActive && {!_tension} && {_htx < 0.75} && {!_circShock} && {_blood >= 5.1} && {!_hadShock}) then {continue};
+    if (!_forcedActive && {!_tension} && {_htx < 0.75} && {!_circShock} && {_blood >= 5.1} && {_sepsis <= 0.01} && {_burnShock <= 0.05} && {!_hadShock}) then {continue};
 
     if (_type == "none") then {
-        // Obstructive shock outranks hypovolemia because its pulse/pressure character is clinically distinct.
+        // Obstruction and major hemorrhage retain their bedside character. Disease
+        // physiology still composes underneath through its dedicated endpoint drives.
         if (_tension || {_htx >= 0.75}) then {
             _type = "obstructive";
             _sev = (if (_tension) then {0.70} else {0}) max (linearConversion [0.5,1.5,_htx,0.25,1,true]);
         } else {
-            if (_circShock) then {
+            // Preserve B290's native circulation-shock precedence when no new
+            // disease drive is present. Disease polytrauma still labels major
+            // hemorrhage first while composing its separate endpoint effects.
+            if (_circShock && {_sepsis <= 0.01} && {_burnShock <= 0.05}) then {
                 _type = "distributive";
                 _sev = (_circProbe getOrDefault ["shockSeverity",0.4]) max 0 min 1;
             } else {
-                if (_blood < 5.1) then {
-                    _type = "hemorrhagic";
-                    _sev = linearConversion [5.1,2.8,_blood,0.12,1,true];
+            if (_blood < 5.1) then {
+                _type = "hemorrhagic";
+                _sev = linearConversion [5.1,2.8,_blood,0.12,1,true];
+            } else {
+                if (_sepsis > 0.01) then {
+                    _type = "distributive";
+                    _sev = _sepsis;
+                    _externalDrive = true;
+                } else {
+                    if (_burnShock > 0.05) then {
+                        _type = "burn";
+                        _sev = _burnShock;
+                        _externalDrive = true;
+                    } else {
+                        if (_circShock) then {
+                            _type = "distributive";
+                            _sev = (_circProbe getOrDefault ["shockSeverity",0.4]) max 0 min 1;
+                        };
+                    };
                 };
             };
         };
+            };
     };
 
     private _svrAdj = 0;
     private _hrAdj = 0;
-    switch (_type) do {
-        case "hemorrhagic":  {_svrAdj = 28 * _sev; _hrAdj = 48 * _sev;};
-        case "distributive": {_svrAdj = -48 * _sev; _hrAdj = 38 * _sev;};
-        case "cardiogenic":  {_svrAdj = 24 * _sev; _hrAdj = 26 * _sev;};
-        case "obstructive":  {_svrAdj = 30 * _sev; _hrAdj = 36 * _sev;};
-        case "neurogenic":   {_svrAdj = -38 * _sev; _hrAdj = -32 * _sev;};
+    if (!_externalDrive) then {
+        switch (_type) do {
+            case "hemorrhagic":  {_svrAdj = 28 * _sev; _hrAdj = 48 * _sev;};
+            case "distributive": {_svrAdj = -48 * _sev; _hrAdj = 38 * _sev;};
+            case "cardiogenic":  {_svrAdj = 24 * _sev; _hrAdj = 26 * _sev;};
+            case "obstructive":  {_svrAdj = 30 * _sev; _hrAdj = 36 * _sev;};
+            case "neurogenic":   {_svrAdj = -38 * _sev; _hrAdj = -32 * _sev;};
+        };
     };
 
     // Publish source-separated hemodynamic drives. The authoritative fork-native HR/resistance endpoints

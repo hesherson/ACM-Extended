@@ -2,6 +2,17 @@
  * journals involving this unit. This does not freeze other mission participants. */
 params ["_unit",["_requireLocal",true]];
 if (isNull _unit || {_requireLocal && {!local _unit}}) exitWith {false};
+// A terminal cleanup event can arrive late after provider locality moves. Ask
+// the native component to prune only bindings with exact settled funding proof.
+if (!isNil "ACM_ophthalmology_fnc_shieldSource" && {local _unit}) then {
+    ["cleanup", [_unit]] call ACM_ophthalmology_fnc_shieldSource;
+};
+// An eye-shield reservation remains live until the original supply owner settles it.
+private _shieldPending = missionNamespace getVariable ["ACM_ophthalmology_shieldPending", createHashMap];
+if (!(_shieldPending isEqualType createHashMap) || {count _shieldPending > 0}) exitWith {false};
+if (count (_unit getVariable ["ACM_ophthalmology_shieldBindings",[]]) > 0) exitWith {false};
+private _shieldIncoming = _unit getVariable ["ACM_ophthalmology_shieldIncoming",createHashMap];
+if (!(_shieldIncoming isEqualType createHashMap) || {count _shieldIncoming > 0}) exitWith {false};
 // Retire only IV reservations whose existing B236 unknown-outcome policy
 // already commits after deadline+30. Never refund or silently retire an
 // unscoped active supply; any remaining local receipt makes this owner busy.

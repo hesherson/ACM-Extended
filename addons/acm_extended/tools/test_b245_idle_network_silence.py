@@ -45,7 +45,7 @@ def test_aspiration_neutral_state_has_no_heartbeat():
 
 def test_shock_neutral_state_has_no_heartbeat():
     s = src("shockPhenotypeTick")
-    guard = 'if (!_forcedActive && {!_tension} && {_htx < 0.75} && {!_circShock} && {_blood >= 5.1} && {!_hadShock}) then {continue};'
+    guard = 'if (!_forcedActive && {!_tension} && {_htx < 0.75} && {!_circShock} && {_blood >= 5.1} && {_sepsis <= 0.01} && {_burnShock <= 0.05} && {!_hadShock}) then {continue};'
     assert guard in s
     assert s.index(guard) < s.index('call ACME_fnc_setVarNetApprox')
     for field in ("ACME_shock_resistDelta", "ACME_shock_hrAdj", "ACME_shock_severity"):

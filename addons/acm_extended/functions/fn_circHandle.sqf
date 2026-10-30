@@ -770,6 +770,22 @@ private _completed = [];
         _acidMAPBase = 0;
     };
     private _effMAPpre = (_acidMAPBase + _rawSupport - _shockDrop - _caMAPdrop);
+
+    // The legacy acid baseline intentionally strips most ACME modifiers and rebuilds known support/shock
+    // terms. Burns and sepsis are new source-separated physiology, so their preload/SVR effects would be
+    // invisible to that baseline. When either is active, allow the patient's actual composed MAP to LOWER
+    // the acid perfusion value. Using min() means this cannot manufacture recovery or double-count pressors;
+    // it only exposes disease hypotension the old native-only baseline could not see.
+    private _newDiseaseShock = (_patient getVariable ["ACM_infection_Sepsis_Severity",0]) > 0.001
+        || {(_patient getVariable ["ACM_burns_ShockSeverity",0]) > 0.001};
+    if (_newDiseaseShock && {!_inCardiacArrest}) then {
+        private _bpDisease = [_patient] call ace_medical_status_fnc_getBloodPressure;
+        _bpDisease params [["_dDisease",0],["_sDisease",0]];
+        private _mapDisease = _dDisease + ((_sDisease - _dDisease) / 3);
+        if (_mapDisease > 0) then {_effMAPpre = _effMAPpre min _mapDisease;};
+    };
+
+
     _state set ["acidMAPBase", _acidMAPBase];
     _state set ["acidEffMAP", _effMAPpre];
     _state set ["acidArrestDriver", _inCardiacArrest];
@@ -832,6 +848,11 @@ private _completed = [];
     if (missionNamespace getVariable ["ACME_sys_do2", true]) then {
         private _do2v = [_patient] call ACME_fnc_oxygenDelivery;
         _state set ["do2", _do2v];
+        // DO2 remains oxygen supply. Infection raises demand, so anaerobic debt keys on supply/demand adequacy.
+        private _metabolicDemand = (_patient getVariable ["ACM_infection_Metabolic_Demand", 1]) max 1;
+        private _do2Adequacy = _do2v / _metabolicDemand;
+        _state set ["do2Adequacy", _do2Adequacy];
+
 
         // guard 1. a casualty who is awake and saturating is winning. if they are conscious and their SpO2 meets what
         // ACM needs to keep them up, they are perfusing their brain by definition, whatever the delivery arithmetic
@@ -870,12 +891,12 @@ private _completed = [];
         private _clear = missionNamespace getVariable ["ACME_do2_clearFrac", 0.58];
         private _inDeficit = _state getOrDefault ["do2Deficit", false];
         if (_inDeficit) then {
-            if (_do2v >= _clear) then {
+            if (_do2Adequacy >= _clear) then {
                 _inDeficit = false;
                 _state set ["do2RecoveredAt", _now];  // start the reperfusion window.
             };
         } else {
-            if (_do2v < _crit) then { _inDeficit = true; };
+            if (_do2Adequacy < _crit) then { _inDeficit = true; };
         };
         _state set ["do2Deficit", _inDeficit];
         // on ROSC, open the reperfusion window. delivery is climbing back and the tissue is repaying, so the moments
@@ -892,7 +913,7 @@ private _completed = [];
         private _inReperf = (_now - (_state getOrDefault ["do2RecoveredAt", -1e9])) < _reperfWin;
 
         if (_inDeficit && {!_awakeOK} && {!_inReperf} && {!_arrestNow}) then {
-            private _deficit = linearConversion [_crit, (missionNamespace getVariable ["ACME_do2_lethalFrac", 0.2]), _do2v, 0, 1, true];
+            private _deficit = linearConversion [_crit, (missionNamespace getVariable ["ACME_do2_lethalFrac", 0.2]), _do2Adequacy, 0, 1, true];
             _metabolicAcidosis = (_metabolicAcidosis
                 + ((missionNamespace getVariable ["ACME_do2_acidosisPerSec", 0.0009]) * _deficit * _acidDt)) min 1;
         };

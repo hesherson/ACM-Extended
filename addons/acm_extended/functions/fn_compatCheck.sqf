@@ -67,7 +67,9 @@ private _hasMarker = {
     ["ace_dragging_fnc_canCarry", "B106:ace321Carry"],
     ["ace_dragging_fnc_canDrag", "B106:ace321Drag"],
     ["ace_interact_menu_fnc_compileMenuSelfAction", "B106:ace321SelfMenu"],
-    ["ace_zeus_fnc_moduleUnconscious", "B106:aiUnconsciousGuard"]
+    ["ace_zeus_fnc_moduleUnconscious", "B106:aiUnconsciousGuard"],
+    ["DD1380_card_fnc_openCardLocal", "B291:DD1380OwnerSnapshot"],
+    ["DD1380_card_fnc_setData", "B291:DD1380CapturedDocument"]
 ];
 
 // variable names we read off patients. these are stringly-typed in our overrides, because the macros are not
@@ -95,7 +97,7 @@ if (_missing isEqualTo []) exitWith {
 // A partial update can leave only ACM_acm_extended.pbo beside the upstream ACM components. Those functions
 // exist, but their fork markers are correctly absent. Keep every failed check and explain the installation
 // check instead of trying to replace another mod's runtime functions or suppressing the warning.
-private _installAdvice = "ACM_* function names are internal fork namespaces used by ACM Extended and do not mean the separate ACM mod is loaded. Verify the complete ACM Extended fork is installed on the server and all clients; if a separate Advanced Combat Medicine mod is also loaded, disable it. Update every fork PBO, then restart Arma.";
+private _installAdvice = "ACM_* function names are internal fork namespaces used by ACM Extended and do not mean the separate ACM mod is loaded. Verify the complete ACM Extended fork is installed on the server and all clients; if a separate Advanced Combat Medicine mod is also loaded, disable it. This build includes DD1380; remove a separately loaded standalone DD1380 copy. Update every fork PBO, then restart Arma.";
 diag_log format ["[ACME COMPAT] FAILED (%1), version %2 batch %3: %4 | %5", count _missing, _version, _batch, _missing joinString " | ", _installAdvice];
 
 if (hasInterface) then {

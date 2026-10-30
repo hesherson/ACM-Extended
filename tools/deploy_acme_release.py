@@ -22,7 +22,8 @@ import uuid
 
 PBO_NAMES = {f'ACM_{n}.pbo'.casefold() for n in (
     'acm_extended','airway','breathing','cbrn','circulation','core','damage',
-    'disability','evacuation','gui','itemtext','main','mission','zeus')}
+    'disability','evacuation','gui','itemtext','main','mission','zeus',
+    'burns','infection','ophthalmology','card','card_main')}
 
 class DeployError(RuntimeError):
     pass
@@ -82,8 +83,8 @@ def artifacts(release: Path) -> list[Path]:
         if p.suffix.casefold() == '.biprivatekey':
             raise DeployError('Private signing key found in distributable release.')
     pbos = sorted(p for p in (release / 'addons').iterdir() if p.is_file() and p.suffix.casefold() == '.pbo')
-    if len(pbos) != 14 or {p.name.casefold() for p in pbos} != PBO_NAMES:
-        raise DeployError('Release must contain the exact 14 ACME PBO names (no extras/duplicates).')
+    if len(pbos) != len(PBO_NAMES) or {p.name.casefold() for p in pbos} != PBO_NAMES:
+        raise DeployError(f'Release must contain the exact {len(PBO_NAMES)} ACME PBO names (no extras/duplicates).')
     keys = list((release / 'keys').glob('*.bikey'))
     if len(keys) != 1:
         raise DeployError('Release must contain exactly one public signing key.')

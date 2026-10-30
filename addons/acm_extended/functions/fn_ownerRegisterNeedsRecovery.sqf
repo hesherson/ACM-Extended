@@ -56,6 +56,30 @@ private _registryMissing = {
     !(_patient in (missionNamespace getVariable [_name, []]))
 };
 
+// Integrated disease fields can arrive after Local/init retries while another
+// condition already owns generic maintenance. Check the component registries
+// explicitly, without waking settled burn anatomy or creating new workers here.
+private _burnNeeds = (missionNamespace getVariable ["ACM_burns_burnsEnabled", true]) && {
+    (_patient getVariable ["ACM_burns_SystemicBurden", _patient getVariable ["ACM_burns_BurnBurden",0]]) > 0
+    || {(_patient getVariable ["ACM_burns_AirwayInflammation",0]) > 0.001}
+    || {_patient getVariable ["ACM_burns_AirwayBurned",false]}
+    || {_patient getVariable ["ACM_burns_PermanentInjury",false]}
+};
+if (_burnNeeds && {["ACM_burns_activePatients"] call _registryMissing}) exitWith {true};
+private _infectionNeeds = (_patient getVariable ["ACM_infection_Infection_Stage",0]) > 0
+    || {(_patient getVariable ["ACM_infection_Infection_EligibleTime",-1]) != -1}
+    || {_patient getVariable ["ACM_infection_Sepsis_Permanent",false]};
+if (_infectionNeeds && {["ACM_infection_activePatients"] call _registryMissing}) exitWith {true};
+if ((_patient getVariable ["ACM_infection_Coag_Mult",1]) > 1
+    && {["ACME_coag_activePatients"] call _registryMissing}) exitWith {true};
+private _eyes = _patient getVariable ["ACM_ophthalmology_eyeInjuries",[1,1]];
+private _ocularNeeds = (_eyes isEqualType [] && {count _eyes == 2}
+    && {(_eyes findIf {!(_x isEqualType 0) || {!finite _x}}) < 0}
+    && {({_x < 0.999} count _eyes) > 0})
+    || {_patient getVariable ["ACM_ophthalmology_ocularPermanent",false]}
+    || {(_patient getVariable ["ACM_ophthalmology_eyeShieldItem",""]) != ""};
+if (_ocularNeeds && {["ACM_ophthalmology_activePatients"] call _registryMissing}) exitWith {true};
+
 if (([
     ["ACME_nrb_activePatients", "ACME_nrb_on"],
     ["ACME_hpmk_activePatients", "ACME_hpmk_on"],

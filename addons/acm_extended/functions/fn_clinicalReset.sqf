@@ -71,6 +71,11 @@ if (_phase == "begin") exitWith {
     _patient setVariable ["ACME_nrb_session", "", true];
     _patient setVariable ["ACME_nrb_o2Pending", 0, true];
     {private _k = toLowerANSI _x; if ((_k find "acme_clock_") == 0 || {(_k find "acme_clamprate_") == 0}) then {_patient setVariable [_x, nil, false];};} forEach allVariables _patient;
+    // Native components retire their own local registries; durable anatomy is
+    // cleared later through the existing full-heal field/reset contract.
+    if (!isNil "ACM_burns_fnc_reconcile") then {[_patient, false, true] call ACM_burns_fnc_reconcile;};
+    if (!isNil "ACM_infection_fnc_reconcile") then {[_patient, false, true] call ACM_infection_fnc_reconcile;};
+    if (!isNil "ACM_ophthalmology_fnc_reconcile") then {[_patient, false, true] call ACM_ophthalmology_fnc_reconcile;};
     {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_flight_activePatients", "ACME_coag_activePatients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
 };
 // Physical equipment is detached, not converted into inventory by a medical full heal.

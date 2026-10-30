@@ -16,6 +16,10 @@ if (_patient getVariable ["ace_medical_inCardiacArrest", false]
     || {_patient getVariable ["ACME_tbi_HasTBI", false]}
     || {_patient getVariable ["ACME_headElevated", false]}
     || {(_patient getVariable ["ACME_blastLung_State", 0]) > 0}
+    || {(_patient getVariable ["ACM_burns_SystemicBurden", 0]) > 0.001}
+    || {(_patient getVariable ["ACM_burns_AirwayInflammation", 0]) > 0.001}
+    || {(_patient getVariable ["ACM_infection_Infection_Stage", 0]) > 0}
+    || {_patient getVariable ["ACM_infection_Sepsis_Permanent", false]}
     || {count (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) > 0}
     || {count (_patient getVariable ["ACME_infusion_BagMedications", []]) > 0}
     || {count (_patient getVariable ["ace_medical_medications", []]) > 0}

@@ -44,7 +44,11 @@ def setup(server=False, interface=True, client=11, initialize=True, protocol=1, 
         private _getDefault = {params ["_map", "_key", "_default"]; if (_key in _map) then {_map get _key} else {_default}};
         private _configRead = {
             params ["_field", "_component"];
-            if (_field == "identity") exitWith {toLower (_component select [4, 100])};
+            if (_field == "identity") exitWith {
+                if (_component == "DD1380_main") exitWith {"card_main"};
+                if (_component == "DD1380_card") exitWith {"card"};
+                toLower (_component select [4, 100])
+            };
             if (_field == "protocol") exitWith {if (_component in _staleProtocolComponents) then {1} else {_compiledProtocol}};
             if (_component in _staleComponents) then {"B206"} else {_buildStamp}
         };
@@ -91,7 +95,7 @@ def test_manifest_reads_all_fourteen_components_and_headless_role():
     execute(setup(interface=False, initialize=False) + r'''
         _staleComponents = ["ACM_core"]; _missingComponents = ["ACM_itemtext"];
         private _m = [] call ACME_fnc_networkCompatManifest;
-        [(_m select 4) == "HC" && {count (_m select 5) == 14}, "HC or component manifest omitted"] call _check;
+        [(_m select 4) == "HC" && {count (_m select 5) == 19}, "HC or component manifest omitted"] call _check;
         private _issues = [_m, _m] call ACME_fnc_networkCompatCompare;
         [count _issues == 2, "partial installation was not identified"] call _check;
         [(_issues findIf {(_x find "ACM_core") >= 0}) >= 0, "stale PBO not identified"] call _check;

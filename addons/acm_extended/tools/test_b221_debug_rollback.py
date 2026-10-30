@@ -125,12 +125,13 @@ def test_complete_installed_catalog_including_real_route_grouping_has_no_invalid
     '''
     rows=capture_rows(setup+generator+f'''
         [count _queries=={len(names)},"route omitted or queried twice"] call _check;
-        [count _medicationRows==29,"installed family catalog changed"] call _check;
+        [count _medicationRows==30,"installed family catalog changed"] call _check;
     '''+emit_rows())
     assert len(rows)==15
     assert_valid_colors(rows)
-    assert rows[-1].count(' :</t>')==1
-    assert 'Ketamine' in rows[-1]
+    assert rows[-1].count(' :</t>')==2
+    assert 'Ketamine' in rows[-1] and 'TXA' in rows[-1]
+    assert any('Moxifloxacin' in row for row in rows)
     assert ('#5FB56E' if effect else '#8A8474') in rows[-1]
 
 

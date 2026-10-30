@@ -32,7 +32,7 @@ def test_current_protocol_two_is_compiled_and_assigned_from_the_loaded_component
     ''' + adapted(assignment[0], protocol=2) + r'''
         [ACME_networkProtocol==2,"actual startup did not install loaded protocol two"] call _check;
         private _m=[] call ACME_fnc_networkCompatManifest;
-        [(_m select 3)==2 && {count (_m select 5)==14},"bootstrap manifest lost protocol or components"] call _check;
+        [(_m select 3)==2 && {count (_m select 5)==19},"bootstrap manifest lost protocol or components"] call _check;
         [(_m select 5 findIf {(_x select 3)!=2})<0,"runtime protocol disagreed with compiled PBO stamps"] call _check;
         [([_m,_m] call ACME_fnc_networkCompatCompare) isEqualTo [],"bootstrap self-manifest rejected"] call _check;
     ''')

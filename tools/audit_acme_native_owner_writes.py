@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Diagnose literal native-state writes from Extended; --strict makes them a CI gate.
+"""Diagnose literal native-state writes from Extended and its clinical/card ports.
 
 Scope: literal ACM core/airway/breathing/circulation/damage/CBRN and ACE keys in setVariable or direct
 calls to ACME_fnc_setVarNet/Approx. Comments, ordinary strings, reads and native
@@ -15,6 +15,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 EXT = ROOT / "addons" / "acm_extended" / "functions"
+PORTS = tuple(ROOT / "addons" / name for name in
+              ("burns", "infection", "ophthalmology", "card", "card_main"))
 sys.path.insert(0, str(ROOT / "addons" / "acm_extended" / "tools"))
 from source_scan import code_streams, matching, split_args
 
@@ -69,7 +71,7 @@ def scan_source(source: str, path: str = "<source>") -> list[Violation]:
 
 def scan_directory(directory: Path) -> list[Violation]:
     if not directory.is_dir():
-        raise ValueError(f"Extended function directory does not exist: {directory}")
+        raise ValueError(f"Audit source directory does not exist: {directory}")
     paths = sorted(directory.rglob("*.sqf"))
     if not paths:
         raise ValueError(f"No SQF functions found in {directory}")
@@ -81,10 +83,14 @@ def scan_directory(directory: Path) -> list[Violation]:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--strict", action="store_true", help="exit nonzero if any literal native write is found")
-    parser.add_argument("--functions-dir", type=Path, default=EXT)
+    parser.add_argument("--functions-dir", type=Path, help="scan only this directory instead of all integrated components")
     args = parser.parse_args(argv)
     try:
-        findings = scan_directory(args.functions_dir)
+        directories = (args.functions_dir,) if args.functions_dir else (EXT, *PORTS)
+        findings = [Violation(str(directory.relative_to(ROOT)) + "/" + finding.path
+                              if directory.is_relative_to(ROOT) else str(directory / finding.path),
+                              finding.line, finding.key, finding.kind)
+                    for directory in directories for finding in scan_directory(directory)]
     except (OSError, UnicodeError, ValueError) as exc:
         print(f"Native-owner audit could not complete: {exc}", file=sys.stderr)
         return 2

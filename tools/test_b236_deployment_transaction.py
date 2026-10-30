@@ -54,8 +54,9 @@ def test_failure_restores_both_targets_and_key(setup,phase,index):
     release,targets,root,keys=setup
     (keys/'test.bikey').write_bytes(b'OLD KEY')
     before=snapshot(targets+[keys])
+    failure_index = len(m.artifacts(release)) * len(targets) + 1 if phase == 'verify' else index
     def fault(p,i):
-        if (p,i)==(phase,index):raise OSError('injected disk/copy failure')
+        if (p,i)==(phase,failure_index):raise OSError('injected disk/copy failure')
     with pytest.raises(OSError,match='injected'):m.deploy(release,targets,root,keys,hook=fault)
     assert snapshot(targets+[keys])==before
     assert not (root/'active.json').exists()

@@ -155,3 +155,15 @@ addons/acm_extended/tools/test_pr6_iv_launch_lifecycle.py
 tools/test_b283_optional_animation_posture.py
 tools/test_b283_pr_weight_integration.py
 addons/acm_extended/tools/test_pr6_structural_animation_release.py
+
+# B291: Medmash clinical features, documentation and complete installation.
+addons/acm_extended/tools/test_b291_burns.py
+addons/acm_extended/tools/test_b291_infection.py
+addons/acm_extended/tools/test_b291_ocular_integration.py
+addons/acm_extended/tools/test_b291_cards.py
+addons/acm_extended/tools/test_b291_install_manifest.py
+addons/acm_extended/tools/test_b291_medmash_phys.py
+addons/acm_extended/tools/test_b291_medmash_checkpoint.py
+addons/acm_extended/tools/test_b291_medmash_recovery.py
+tools/test_b291_medmash_packaging.py
+tools/test_b291_offline_prefix_contract.py

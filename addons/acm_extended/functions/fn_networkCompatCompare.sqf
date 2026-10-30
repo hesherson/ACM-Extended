@@ -4,7 +4,8 @@ private _issues = [];
 private _expected = [
     "ACM_main", "ACM_core", "ACM_airway", "ACM_breathing", "ACM_circulation", "ACM_cbrn",
     "ACM_damage", "ACM_disability", "ACM_evacuation", "ACM_gui", "ACM_mission", "ACM_zeus",
-    "ACM_Extended", "ACM_itemtext"
+    "ACM_Extended", "ACM_itemtext", "ACM_burns", "ACM_infection", "ACM_ophthalmology",
+    "DD1380_main", "DD1380_card"
 ];
 private _valid = {
     params ["_m"];
@@ -25,10 +26,14 @@ private _endpoints = if (_reference isEqualTo _candidate) then {[["Local", _refe
 {
     _x params ["_label", "_manifest"];
     private _rows = _manifest select 5;
-    if (count _rows != count _expected) then {_issues pushBack format ["%1 component count %2 (expected 14)", _label, count _rows];};
+    if (count _rows != count _expected) then {_issues pushBack format ["%1 component count %2 (expected %3)", _label, count _rows, count _expected];};
     {
         private _component = _x;
-        private _identity = toLower (_component select [4, 100]);
+        private _identity = switch (_component) do {
+            case "DD1380_main": {"card_main"};
+            case "DD1380_card": {"card"};
+            default {toLower (_component select [4, 100])};
+        };
         private _matches = _rows select {_x isEqualType [] && {count _x == 5} && {(_x select 0) isEqualTo _component}};
         if (count _matches != 1) then {
             _issues pushBack format ["%1 component %2 missing/duplicated", _label, _component];

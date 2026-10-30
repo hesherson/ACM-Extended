@@ -2,6 +2,8 @@
  * were deleted. Owner-local captures/proofs are still required independently.
  * No unknown outcome is interpreted as a delivered or canceled resource. */
 if (!isServer) exitWith {false};
+private _shieldPending = missionNamespace getVariable ["ACM_ophthalmology_shieldPending", createHashMap];
+if (!(_shieldPending isEqualType createHashMap) || {count _shieldPending > 0}) exitWith {false};
 private _ok = true;
 {
     _x params ["_name","_stateIndex","_terminal"];
@@ -32,5 +34,9 @@ if !(_boxes isEqualType createHashMap) exitWith {false};
 if ((values _boxes findIf {!(_x isEqualType []) || {(_x param [0,""]) == "draw" && {!(_x param [7,false])}}}) >= 0) exitWith {false};
 // Private donor receipts are checked by each owner's local preflight. Public
 // patient bindings also fence a server checkpoint when another actor vanished.
-if (((allUnits + allDeadMen) findIf {count (_x getVariable ["ACME_IV_SupplyBindings",createHashMap]) > 0}) >= 0) exitWith {false};
+if (((allUnits + allDeadMen) findIf {
+    count (_x getVariable ["ACME_IV_SupplyBindings",createHashMap]) > 0
+    || {count (_x getVariable ["ACM_ophthalmology_shieldBindings",[]]) > 0}
+    || {count (_x getVariable ["ACM_ophthalmology_shieldIncoming",createHashMap]) > 0}
+}) >= 0) exitWith {false};
 true

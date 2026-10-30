@@ -1,8 +1,22 @@
 params ["_patient"];
+// Live supply escrow is never serialized as durable clinical equipment.
+if (count (_patient getVariable ["ACM_ophthalmology_shieldBindings",[]]) > 0) exitWith {[]};
+if (!isNil "ACME_fnc_medmashSnapshotReady" && {!([_patient] call ACME_fnc_medmashSnapshotReady)}) exitWith {[]};
 private _rows = [];
+// Prefer one normalized atomic document. Legacy rows are accepted on restore,
+// but never serialized alongside a canonical snapshot that could disagree.
+private _cardNormalized = false;
+if (!isNil "DD1380_card_fnc_getDocument") then {
+    private _document = [_patient, false] call DD1380_card_fnc_getDocument;
+    if (_document isEqualType [] && {count _document == 2}) then {
+        _rows pushBack ["DD1380_Document", [_document, true] call ACME_fnc_clinicalCodec];
+        _cardNormalized = true;
+    };
+};
 {
     _x params ["_name", "_clock", "", ["_persist", true]];
     if (!_persist) then {continue;};
+    if (_cardNormalized && {_name in ["DD1380_Document", "DD1380_Priority", "DD1380_Checkboxes", "DD1380_Text", "DD1380_Back_Checkboxes", "DD1380_Back_Text", "DD1380_Revision"]}) then {continue;};
     if (isNil {_patient getVariable _name}) then {continue;};
     private _v = _patient getVariable _name;
     private _data = [_v, true, _clock] call ACME_fnc_clinicalCodec;

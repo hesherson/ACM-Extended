@@ -1,5 +1,13 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B291 (burns, infection and ocular injuries)
+
+- Integrates the previously withheld medical content from PR #2, including later dev fixes: burns, infection/sepsis, ocular trauma and TCCC/DD1380 cards.
+- Connects source-separated burn and infection effects to the current authoritative vital-sign, temperature, coagulation and airway writers. Preserves normal-mode recovery and hardcore evacuation requirements.
+- Extends clinical persistence and owner reconciliation for the new disease states and card records without replacing the newer IV, inventory or networking implementation.
+- Corrects imported treatment, antibiotic, eye-shield side and card patient/save lifecycle defects. Existing external EFAK compatibility remains optional; no legacy FAK PBOs are bundled.
+- The complete candidate now contains **19 addons**. Public version remains **1.2.4.1**, network protocol **2**. Native acceptance: [B291 integration review](docs/audits/B291-medmash-integration.md).
+
 ## 1.2.4.1 — B290 (IV connections and transfusion presentation)
 
 - Allows physical tubing attachment to bare catheters and extension/lock ports without requiring a completed flush or dressing first. Fluid delivery keeps its existing patency rules.

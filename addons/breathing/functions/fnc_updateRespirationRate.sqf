@@ -14,6 +14,8 @@ if !(_aspiration isEqualTo []) then {
 };
 private _blast = if (missionNamespace getVariable ["ACME_sys_blastLung", true]) then {_unit getVariable ["ACME_blastLung_rrDrive", -1]} else {-1};
 if (_blast > 0) then {_desired = _desired max _blast;};
+// Infection composes once with existing aspiration/blast drives; central apnea/TBI commands still outrank it.
+_desired = _desired + (_unit getVariable ["ACM_infection_RR_Adjust", 0]);
 private _overload = _unit getVariable ["ACM_circulation_Overload_Volume", 0];
 private _edemaThreshold = missionNamespace getVariable ["ACME_edema_threshold", 0.5];
 if (_overload > _edemaThreshold) then {

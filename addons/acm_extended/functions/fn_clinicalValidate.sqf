@@ -11,6 +11,33 @@ private _seen = createHashMap;
 private _budget = [100000];
 private _reason = "";
 private _required = createHashMapFromArray [
+    // B291 clinical anatomy/document containers are checked before any restore mutation.
+    ["ACM_burns_AirwayBurned","BOOL"],
+    ["ACM_burns_AirwayInflammation","SCALAR"],
+    ["ACM_burns_BurnSurface","ARRAY"],
+    ["ACM_burns_BurnProtected","ARRAY"],
+    ["ACM_burns_BurnBurden","SCALAR"],
+    ["ACM_burns_SystemicBurden","SCALAR"],
+    ["ACM_burns_PermanentInjury","BOOL"],
+    ["ACM_infection_Infection_Stage","SCALAR"],
+    ["ACM_infection_Infection_RiskAccumulator","SCALAR"],
+    ["ACM_infection_Infection_TreatmentAccumulator","SCALAR"],
+    ["ACM_infection_Sepsis_Permanent","BOOL"],
+    ["ACME_infectionFeverActive","BOOL"],
+    ["ACM_ophthalmology_dustInjuryLight","SCALAR"],
+    ["ACM_ophthalmology_dustInjuryHeavy","SCALAR"],
+    ["ACM_ophthalmology_eyeInjuries","ARRAY"],
+    ["ACM_ophthalmology_eyeInjurySevere","BOOL"],
+    ["ACM_ophthalmology_ocularPermanent","BOOL"],
+    ["ACM_ophthalmology_eyeShieldItem","STRING"],
+    ["ACM_ophthalmology_eyeShieldIndex","SCALAR"],
+    ["DD1380_Document","ARRAY"],
+    ["DD1380_Priority","HASHMAP"],
+    ["DD1380_Checkboxes","HASHMAP"],
+    ["DD1380_Text","HASHMAP"],
+    ["DD1380_Back_Checkboxes","HASHMAP"],
+    ["DD1380_Back_Text","HASHMAP"],
+    ["DD1380_Revision","SCALAR"],
     ["ACME_aspiration_State","ARRAY"], ["ACME_ptx_state","ARRAY"], ["ACME_ptx_tensionSeverity","SCALAR"],
     ["ACME_ptx_observationRevision","SCALAR"],
     ["ACME_ptx_nativeSealCount","SCALAR"],
@@ -64,6 +91,48 @@ private _clampReceiptsValid = {
     if (_want != "" && {typeName _v != _want}) exitWith {_reason = "Wrong field type: " + _name;};
     private _bad = false;
     switch (_name) do {
+        case "ACM_burns_BurnSurface": {
+            _bad = count _v != 6 || {(_v findIf {!([_x] call _number) || {_x < 0 || {_x > 1}}}) >= 0};
+        };
+        case "ACM_burns_BurnProtected": {
+            _bad = count _v != 6 || {!(_v isEqualTypeAll true)};
+        };
+        case "ACM_burns_BurnBurden";
+        case "ACM_burns_SystemicBurden": {
+            _bad = !([_v] call _number) || {_v < 0 || {_v > 1}};
+        };
+        case "ACM_burns_AirwayInflammation": {
+            _bad = !([_v] call _number) || {_v < 0 || {_v > 100}};
+        };
+        case "ACM_infection_Infection_Stage": {
+            _bad = !([_v] call _number) || {_v < 0 || {_v > 3}} || {_v != floor _v};
+        };
+        case "ACM_infection_Infection_RiskAccumulator";
+        case "ACM_infection_Infection_TreatmentAccumulator": {
+            _bad = !([_v] call _number) || {_v < 0};
+        };
+        case "ACM_ophthalmology_eyeInjuries": {
+            _bad = count _v != 2 || {(_v findIf {!([_x] call _number) || {_x < 0 || {_x > 1}}}) >= 0};
+        };
+        case "ACM_ophthalmology_dustInjuryLight";
+        case "ACM_ophthalmology_dustInjuryHeavy": {
+            _bad = !([_v] call _number) || {_v < 0 || {_v > 5}};
+        };
+        case "ACM_ophthalmology_eyeShieldIndex": {
+            _bad = !([_v] call _number) || {!(_v in [-1, 0, 1])};
+        };
+        case "DD1380_Document": {
+            _bad = count _v != 2;
+            if (!_bad) then {
+                _v params ["_revision", "_document"];
+                _bad = !([_revision] call _number) || {_revision < 0} || {_revision != floor _revision}
+                    || {!(_document isEqualType [])} || {count _document != 5}
+                    || {!(_document isEqualTypeAll createHashMap)};
+            };
+        };
+        case "DD1380_Revision": {
+            _bad = !([_v] call _number) || {_v < 0} || {_v != floor _v};
+        };
         case "ACME_aspiration_State": {
             _bad = count _v != 5;
             if (!_bad) then {

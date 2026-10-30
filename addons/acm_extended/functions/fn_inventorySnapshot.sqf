@@ -3,6 +3,11 @@
  * Coolers have a separate clock-normalized snapshot. */
 params ["_holder"];
 if (isNull _holder) exitWith {[]};
+private _shieldPending = missionNamespace getVariable ["ACM_ophthalmology_shieldPending", createHashMap];
+if (!(_shieldPending isEqualType createHashMap) || {count _shieldPending > 0}) exitWith {[]};
+if (count (_holder getVariable ["ACM_ophthalmology_shieldBindings",[]]) > 0) exitWith {[]};
+private _shieldIncoming = _holder getVariable ["ACM_ophthalmology_shieldIncoming",createHashMap];
+if (!(_shieldIncoming isEqualType createHashMap) || {count _shieldIncoming > 0}) exitWith {[]};
 private _busy = false;
 {if (count (_holder getVariable [_x,createHashMap]) > 0) exitWith {_busy = true;};} forEach [
     "ACME_inventoryPending","ACME_inventoryEscrow","ACME_inventoryMutations",

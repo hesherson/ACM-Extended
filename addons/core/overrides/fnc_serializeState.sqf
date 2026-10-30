@@ -220,7 +220,9 @@ _state setVariable [VAR_MEDICATIONS, _medications];
 private _currentState = [_unit, ACEGVAR(medical,STATE_MACHINE)] call CBA_statemachine_fnc_getCurrentState;
 _state setVariable [QACEGVAR(medical,statemachineState), _currentState];
 
-_state setVariable ["ACME_Clinical_v3", [_unit] call ACME_fnc_clinicalSnapshot];
+private _clinicalSnapshot = [_unit] call ACME_fnc_clinicalSnapshot;
+if (_clinicalSnapshot isEqualTo []) exitWith {_state call CBA_fnc_deleteNamespace; ""};
+_state setVariable ["ACME_Clinical_v3", _clinicalSnapshot];
 
 // Serialize & return
 private _json = [_state] call CBA_fnc_encodeJSON;
