@@ -108,9 +108,10 @@ def run(body):
  ('dressing',[True,True,False,False],True,True,'tegaderm_apply'),
  ('dressing',[True,True,False,False],False,False,''),
  ('dressing',[True,True,True,False],True,False,''),
- ('line',[True,True,False,False],True,True,'iv_line_attach'),
+ # B290 relaxes mechanical attachment; retain the historical parameter identities.
+ pytest.param('line',[True,True,False,False],True,True,'iv_line_attach',id='line-state10-True-False-'),
  ('line',[True,True,True,False],True,True,'iv_line_attach'),
- ('line',[True,True,True,False],False,True,'iv_line_attach'),
+ pytest.param('line',[True,True,True,False],False,True,'iv_line_attach',id='line-state12-False-False-'),
  ('line',[True]*4,True,False,''),
  ('unknown',[False]*4,True,False,''),
 ])
