@@ -6,7 +6,7 @@ _bounds params ["_bx", "_by", "_bw", "_bh"];
 if (_bw <= 0 || {_bh <= 0} || {_w <= 0} || {_h <= 0}) exitWith {[]};
 _w = _w min _bw;
 _h = _h min _bh;
-private _leaderW = (_gap * 3) max (_aw * 0.35);
+private _leaderW = (_gap * 8) max (_aw * 1.1);
 private _labelX = if (_left) then {_ax - _leaderW - _w} else {_ax + _aw + _leaderW};
 _labelX = (_labelX max _bx) min (_bx + _bw - _w);
 private _anchorY = _ay + _ah / 2;

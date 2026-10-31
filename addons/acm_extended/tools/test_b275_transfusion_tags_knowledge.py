@@ -98,7 +98,7 @@ def test_live_renderer_only_shows_tags_for_nonempty_bags_and_reuses_native_artwo
     assert 'call ACME_fnc_transfusionAccessLabel' in source
     assert '["RscLine", 87030 + _siteIndex]' in source
     assert 'call ACME_fnc_transfusionTagLeader' in source
-    assert '[_tx,_ty,_tw,pixelH]' in source
+    assert '_tw + _flagOverhang,pixelH]' in source  # B297: top flag edge extends past the outer corner.
     assert 'call ACME_fnc_piggybackLine' in source
     assert 'call ACME_fnc_ejTexturePath' in source
     assert 'ctrlSetAngle' not in source and 'drawLine' not in source

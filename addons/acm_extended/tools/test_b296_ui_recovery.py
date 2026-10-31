@@ -2,6 +2,7 @@
 import hashlib
 import json
 import re
+import subprocess
 import pytest
 from test_menu_death_lifecycle import ROOT, execute, read
 
@@ -13,7 +14,14 @@ def test_b295_surface_exactly_restored_or_removed(path, expected):
     if expected is None:
         assert not p.exists(), f'B295-only surface remains: {path}'
     else:
-        assert hashlib.sha256(p.read_bytes()).hexdigest() == expected, path
+        # B297 intentionally updates only these ACME surfaces. Keep the recovery
+        # provenance check on the actual B296 commit; current behavior has B297 execution tests.
+        updated={'addons/acm_extended/config.cpp',
+                 'addons/acm_extended/functions/fn_reactMedicalSnapshot.sqf',
+                 'addons/acm_extended/ui/react/index.html',
+                 'addons/acm_extended/tools/test_b293_react_bridge.py'}
+        content=subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:'+path],cwd=ROOT) if path in updated else p.read_bytes()
+        assert hashlib.sha256(content).hexdigest() == expected, path
 
 
 def declaration(source, name):

@@ -24,7 +24,7 @@ if (!(_version isEqualTo 2) || {!(_session isEqualType "")} || {_session == ""}
     || {!(_sequence isEqualType 0)} || {!finite _sequence} || {_sequence != floor _sequence}
     || {_sequence < 1} || {_sequence > 1000000}
     || {_sequence <= (_display getVariable ["ACME_reactRequestSequence",0])}
-    || {!(_operation in ["ready","select","wheel","key"])} || {!(_route isEqualType [])}) exitWith {true};
+    || {!(_operation in ["ready","painted","select","wheel","key"])} || {!(_route isEqualType [])}) exitWith {true};
 if (_operation == "ready") exitWith {
     if (count _route == 0) then {
         _display setVariable ["ACME_reactRequestSequence",_sequence];
@@ -32,7 +32,15 @@ if (_operation == "ready") exitWith {
     };
     true
 };
-if (!(_display getVariable ["ACME_reactReady",false]) || {count _route != 1} || {isNil {_route select 0}}) exitWith {true};
+if (_operation == "painted") exitWith {
+    if (count _route == 0 && {_display getVariable ["ACME_reactReady",false]}
+        && {(_display getVariable ["ACME_reactStateSequence",0]) > 0}) then {
+        _display setVariable ["ACME_reactRequestSequence",_sequence];
+        _display setVariable ["ACME_reactPainted",true];
+    };
+    true
+};
+if (!(_display getVariable ["ACME_reactReady",false]) || {!(_display getVariable ["ACME_reactPainted",false])} || {count _route != 1} || {isNil {_route select 0}}) exitWith {true};
 private _argument = _route select 0;
 private _allowed = false;
 if (_operation == "select") then {

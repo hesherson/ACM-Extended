@@ -2114,6 +2114,7 @@ class CfgFunctions {
             class reactMedicalPage {};
             class reactMedicalMessage {};
             class reactMedicalTick {};
+            class reactMedicalRect {};
             class reactMedicalFallback {};
             class reactMedicalClose {};
             class initMedicationRegistry {};

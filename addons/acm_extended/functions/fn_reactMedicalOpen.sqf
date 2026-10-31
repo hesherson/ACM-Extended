@@ -23,7 +23,9 @@ if (isNull _browser) then {
     _browser = _display ctrlCreate ["ACME_ReactTransfusionCards",89301];
     if (isNull _browser) exitWith {_display setVariable ["ACME_reactFailed",true];};
     _browser ctrlShow false;
-    [_browser,"position",_layout select 0] call ACME_fnc_transfusionUiSet;
+    private _rect = [_layout] call ACME_fnc_reactMedicalRect;
+    _display setVariable ["ACME_reactRect",_rect];
+    [_browser,"position",_rect] call ACME_fnc_transfusionUiSet;
     _browser setVariable ["ACME_txListIDC",86004];
     _browser setVariable ["ACME_txCapacity",2];
     _display displayAddEventHandler ["Unload",{_this call ACME_fnc_reactMedicalClose;}];

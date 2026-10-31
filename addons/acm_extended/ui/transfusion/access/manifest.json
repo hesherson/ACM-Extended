@@ -1,0 +1,215 @@
+{
+  "alphaThreshold": 32,
+  "radiusPixels": 2,
+  "assets": [
+    {
+      "key": "rightarm_upper",
+      "source": "addons/gui/data/body_image/rightarm_iv_upper.paa",
+      "sourceSha256": "b1358338ee92977839614eb640537290185e655465df9fd8bfcc81360e91545d",
+      "file": "rightarm_upper_ca.paa",
+      "sha256": "cb68307d95f7ecb9edc61b95ef0f1af1bcdfd9d0ab44e66bbef0edec042bcdb2",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightarm_middle",
+      "source": "addons/gui/data/body_image/rightarm_iv_middle.paa",
+      "sourceSha256": "478a6721e4ef9cb120318e6fb4ab22b313b57ed089abdc36e0093fee2e64c230",
+      "file": "rightarm_middle_ca.paa",
+      "sha256": "37add2996d91120f527e4c2d60d81edd2bee5daa216bd48e7881927ef868f986",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightarm_lower",
+      "source": "addons/gui/data/body_image/rightarm_iv_lower.paa",
+      "sourceSha256": "5e585d5e019c1a72cd081c9017bab67fd94d552946dd31a19033b03a545fd746",
+      "file": "rightarm_lower_ca.paa",
+      "sha256": "b722947e846c28d0b41d55f159e0455881bcaac36c9364ce5594ac89ad52397a",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftarm_upper",
+      "source": "addons/gui/data/body_image/leftarm_iv_upper.paa",
+      "sourceSha256": "fa10d485508115dfb5550042ed3e7a124d9f2fb7c962d6a7b95a4b43b5822e45",
+      "file": "leftarm_upper_ca.paa",
+      "sha256": "4b7e5e281ac8115a3a6b6878bc1779d8626c8d815e1e8c87dfc3e85b8cf80928",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftarm_middle",
+      "source": "addons/gui/data/body_image/leftarm_iv_middle.paa",
+      "sourceSha256": "73f96dfdc673873a9151c33ba1488e9fa9b880601ebdd227ac5d9ecec3048a24",
+      "file": "leftarm_middle_ca.paa",
+      "sha256": "706d620834906aa6ae2bec4423a6b663af05e1e2f6966396907a47a89f567dcd",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftarm_lower",
+      "source": "addons/gui/data/body_image/leftarm_iv_lower.paa",
+      "sourceSha256": "4cfe19dfdc4f5c2d41f0b163e4a809c65ac6804614f78434f117fd20550d0119",
+      "file": "leftarm_lower_ca.paa",
+      "sha256": "673f36f93f09160d8ce505d630bf40b8c0f25c85cb2340c9ac38c66131274554",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightleg_upper",
+      "source": "addons/gui/data/body_image/rightleg_iv_upper.paa",
+      "sourceSha256": "d1563b29c9d18607c2764593841b5536aed094ffbf5961480909f1cee408d955",
+      "file": "rightleg_upper_ca.paa",
+      "sha256": "bbbff554b02a3b21758ead4e40bfec4f3366ca9a11fc611b95fdf49a9674bd02",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightleg_middle",
+      "source": "addons/gui/data/body_image/rightleg_iv_middle.paa",
+      "sourceSha256": "b101134da50cb75998640da413ba73d85e6a5d9b535822722f96e7c7a657d136",
+      "file": "rightleg_middle_ca.paa",
+      "sha256": "004d0003dd826fa6613f1a0bdc9d65a8c9950708a55a5e232cdffd2509b9b43d",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightleg_lower",
+      "source": "addons/gui/data/body_image/rightleg_iv_lower.paa",
+      "sourceSha256": "b9b879494ade1df7289ebdc2b185041b819a1d68f1a7cb4dcb46a8e6511c2026",
+      "file": "rightleg_lower_ca.paa",
+      "sha256": "6b6c8c9adf4d0c320e9a12d8b47bbef047b6d3a1df3e040074a025567807104e",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftleg_upper",
+      "source": "addons/gui/data/body_image/leftleg_iv_upper.paa",
+      "sourceSha256": "9215a79072561a7930556cdce80d1010bc308fc33f3eab7dca3ff1cb3f1457b4",
+      "file": "leftleg_upper_ca.paa",
+      "sha256": "59f4e8b8fb7b52f34e507a0fd0e17874e046f58ca9e6a9ea978b3c625181da49",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftleg_middle",
+      "source": "addons/gui/data/body_image/leftleg_iv_middle.paa",
+      "sourceSha256": "a75e0b6bf7ee2efb608be4525676054fd50e5a1cbe95edba5fa705354b596199",
+      "file": "leftleg_middle_ca.paa",
+      "sha256": "43884c316cb3e3291509cfca49f079e28e132912d7f79f1107543398e90381b5",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftleg_lower",
+      "source": "addons/gui/data/body_image/leftleg_iv_lower.paa",
+      "sourceSha256": "68cd4d727aea32937b7ff07a361f1f538908475559addd9e6c7bb630d0bca76b",
+      "file": "leftleg_lower_ca.paa",
+      "sha256": "97267e6b5cfd1dc0e043b9be43253cfe2262983f8c8cff8398eda92750d13944",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightarm_io",
+      "source": "addons/gui/data/body_image/rightarm_io.paa",
+      "sourceSha256": "aee9a6d31c82b090893074b265fd0a9e749791a00d0fac49e23b347e8621036f",
+      "file": "rightarm_io_ca.paa",
+      "sha256": "b8ed8050259b1355a1603b972c24ba528db30293cf003193c719370d012ee7db",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftarm_io",
+      "source": "addons/gui/data/body_image/leftarm_io.paa",
+      "sourceSha256": "eac8754257a63ddca66682bb3fa382aecc622072bdcab5d9c0c088289d181350",
+      "file": "leftarm_io_ca.paa",
+      "sha256": "679cfd43d9cca68e8563e1c8e863653e274973772457cea0f57472a71802123c",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "rightleg_io",
+      "source": "addons/gui/data/body_image/rightleg_io.paa",
+      "sourceSha256": "fe02d6a3125373da3a5bb7a0e5d8ed964519b12a9fda5ccbeada451c54d3a6a7",
+      "file": "rightleg_io_ca.paa",
+      "sha256": "3bf89f8b199367b6103050e607665f13c8d334b1f67434b3b5b09d57fc55d4cb",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "leftleg_io",
+      "source": "addons/gui/data/body_image/leftleg_io.paa",
+      "sourceSha256": "b071b5c14175b8a6df122021bf198e2390bf981368e2ea503fd0cfe0a64e5590",
+      "file": "leftleg_io_ca.paa",
+      "sha256": "1957d2bb6b6a53aeea25a7762c8a54592ad8992d207c57ef513240ae93279b5b",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "body_io",
+      "source": "addons/gui/data/body_image/torso_fast_io.paa",
+      "sourceSha256": "93463dbcd49534f90825c5fd544f8d7453a614a545e27266d3fedc686820a545",
+      "file": "body_io_ca.paa",
+      "sha256": "c61ed9cb7f06bd42ef611d550ce9288dd81f25e011cacbd3e2e6d024262e6aa5",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "left_ej",
+      "source": "addons/acm_extended/ui/iv/iv_ej_left_ca.paa",
+      "sourceSha256": "df0f5ce387e4dcd89de9d95a6b334bd9c9089e4fb01017257a93cf7b4c97f435",
+      "file": "left_ej_ca.paa",
+      "sha256": "895c8f435a6b5b5d8a90eef494a4cac12c437400b4692f6f011b507ac7ac3d94",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "key": "right_ej",
+      "source": "addons/acm_extended/ui/iv/iv_ej_right_ca.paa",
+      "sourceSha256": "43f1827c4a3b3228e489f3692a9d7b19fa446193ec23f7f1cafbd2c089413afa",
+      "file": "right_ej_ca.paa",
+      "sha256": "4eb08320be8a6b5230ca8268d07c83335952aa549d5b0c80c14e48db820ef137",
+      "size": [
+        512,
+        512
+      ]
+    }
+  ]
+}

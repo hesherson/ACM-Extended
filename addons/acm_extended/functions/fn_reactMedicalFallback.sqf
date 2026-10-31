@@ -3,6 +3,7 @@ params ["_display"];
 if (isNull _display) exitWith {false};
 _display setVariable ["ACME_reactActive",false];
 _display setVariable ["ACME_reactReady",false];
+_display setVariable ["ACME_reactPainted",false];
 _display setVariable ["ACME_reactFailed",true];
 _display setVariable ["ACME_reactSession",""];
 _display setVariable ["ACME_reactRows",createHashMap];

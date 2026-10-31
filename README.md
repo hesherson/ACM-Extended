@@ -36,3 +36,5 @@ After rebuilding, replace the installed mod with the new release output and rest
 - [Shared React UI architecture for ACME, BATDOK and Tempus Pro](docs/design/react-medical-ui-architecture.md): device/source associations, waveform rendering and native action boundaries. Device interfaces remain future work.
 
 B296 restores the B294 UI surfaces, removes B295 glass/scene blur and ACE menu styling, and makes ACME action highlights steady. Existing in-place React transfusion cards remain experimental and off by default. See [recovery validation](docs/audits/B296-ui-recovery.md).
+
+[B297 transfusion stability and access markers](docs/audits/B297-transfusion-stability.md): stable browser geometry, native card sizing, first-paint handoff, icon contours and extended flag leaders.

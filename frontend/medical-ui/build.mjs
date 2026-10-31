@@ -16,7 +16,7 @@ await mkdir(target, { recursive: true });
 const licenses = 'Roboto Condensed\n' + (await readFile(path.join(here, 'assets/OFL.txt'), 'utf8')).replace(/[ \t]+$/gm, '') + '\n' + (await Promise.all(['react', 'react-dom', 'scheduler'].map(async name =>
   `${name}\n${(await readFile(path.join(here, 'node_modules', name, 'LICENSE'), 'utf8')).trimEnd()}\n`))).join('\n');
 const digest = value => createHash('sha256').update(value).digest('hex');
-const inputs = ['App.jsx', 'bridge.mjs', 'style.css', 'build.mjs', 'package.json', 'package-lock.json', 'assets/RobotoCondensed.woff2', 'assets/OFL.txt'];
+const inputs = ['App.jsx', 'layout.mjs', 'bridge.mjs', 'style.css', 'build.mjs', 'package.json', 'package-lock.json', 'assets/RobotoCondensed.woff2', 'assets/OFL.txt'];
 const sources = Object.fromEntries(await Promise.all(inputs.map(async name => [name, digest(await readFile(path.join(here, name)))])));
 const manifest = JSON.stringify({ schema: 1, sources, htmlSha256: digest(html), licensesSha256: digest(licenses) }, null, 2) + '\n';
 if (process.argv.includes('--check')) {

@@ -40,7 +40,13 @@ private _cards = [];
     };
 } forEach (_window select 1);
 _display setVariable ["ACME_reactRows",_rows];
+private _rect = [_layout] call ACME_fnc_reactMedicalRect;
+private _unit = safeZoneH / pixelH;
+private _height = (_layout select 2) / pixelH;
+private _width = (_rect select 2) / pixelW;
+private _radius = floor ((_unit * 0.007) min (_height / 2) min (_width / 2));
 createHashMapFromArray [
+    ["layout",[_width,(_rect select 3) / pixelH,_unit,_height,safeZoneH * 0.007 / pixelH,_radius]],
     ["view","transfusion-cards"],["patient",createHashMapFromArray [
         ["ref",["encode",_context select 1] call ACME_fnc_clinicalObjectRef],["epoch",_context select 4]]],
     ["cards",_cards],["canPrevious",_window select 2],["canNext",_window select 3]

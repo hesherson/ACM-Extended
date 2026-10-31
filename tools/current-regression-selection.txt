@@ -177,3 +177,7 @@ tools/test_b293_react_frontend.py
 
 # B296: exact rollback and steady ACME controls.
 addons/acm_extended/tools/test_b296_ui_recovery.py
+
+# B297: stable in-place card transport and access flags.
+addons/acm_extended/tools/test_b297_transfusion_stability.py
+addons/acm_extended/tools/test_b275_transfusion_tags_knowledge.py

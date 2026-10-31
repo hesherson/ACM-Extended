@@ -83,6 +83,13 @@ private _placedLabels = [];
     private _hw = (_uw * _drawW) + (2 * _padX);
     private _hh = (_uh * _drawH) + (2 * _padY);
 
+    private _outline = _display displayCtrl (87300 + _siteIndex);
+    if (isNull _outline) then {
+        _outline = _display ctrlCreate ["RscPictureKeepAspect",87300 + _siteIndex];
+        _outline ctrlEnable false;
+        [_outline,"text",format ["\acm_extended\ui\transfusion\access\%1_ca.paa",toLowerANSI _key]] call ACME_fnc_transfusionUiSet;
+    };
+    [_outline,"position",[_outerX,_outerY,_outerW,_outerH]] call ACME_fnc_transfusionUiSet;
     private _hotIDC = 86900 + _siteIndex;
     private _hot = _display displayCtrl _hotIDC;
     if (isNull _hot) then {
@@ -90,12 +97,12 @@ private _placedLabels = [];
         _hot ctrlAddEventHandler ["MouseEnter", {
             params ["_ctrl"];
             _ctrl setVariable ["ACME_TX_Hover", true];
-            _ctrl ctrlSetBackgroundColor [0.20,0.65,0.20,0.22];
+            _ctrl ctrlSetBackgroundColor [0,0,0,0];
         }];
         _hot ctrlAddEventHandler ["MouseExit", {
             params ["_ctrl"];
             _ctrl setVariable ["ACME_TX_Hover", false];
-            _ctrl ctrlSetBackgroundColor (if (_ctrl getVariable ["ACME_TX_Selected",false]) then {[1,1,1,0.08]} else {[0,0,0,0]});
+            _ctrl ctrlSetBackgroundColor [0,0,0,0];
         }];
         _hot ctrlAddEventHandler ["ButtonClick", {
             params ["_ctrl"];
@@ -122,7 +129,9 @@ private _placedLabels = [];
     private _selected = _has && {(_selectedPart == _part)} && {(_selectedIV == (!_isIO))} && {if (_isIO) then {true} else {_selectedSite == _site}};
     _hot setVariable ["ACME_TX_Selected",_selected];
     private _hover = _hot getVariable ["ACME_TX_Hover", false];
-    _hot ctrlSetBackgroundColor (if (_hover) then {[0.20,0.65,0.20,0.22]} else {if (_selected) then {[1,1,1,0.08]} else {[0,0,0,0]}});
+    _hot ctrlSetBackgroundColor [0,0,0,0];
+    [_outline,"color",if (_selected) then {[1,1,1,1]} else {[0.45,1,0.45,1]}] call ACME_fnc_transfusionUiSet;
+    [_outline,"show",_has && {_selected || {_hover}}] call ACME_fnc_transfusionUiSet;
     if (_has && {!isNull _image}) then {
         // Same interaction language as Body Map: the real device artwork is the target. Selected/hovered = 100%;
         // other established sites stay slightly dim so selection is obvious without changing hue.
@@ -182,18 +191,20 @@ private _placedLabels = [];
         private _left = (_hx + _hw / 2) < (_drawX + _drawW / 2);
         private _above = _isEJ || {_v < 0.35} || {!_left && {_v < 0.55}};
         private _anchor = [_hx,_hy,_hw,_hh];
-        private _rect = [_anchor,[_labelW,_labelH],[_outerX,_outerY,_outerW,_outerH],_placedLabels,3 * pixelH,_left,_above] call ACME_fnc_transfusionTagRect;
+        private _flagOverhang = (_drawW * 0.035) max (10 * pixelW);
+        private _rect = [_anchor,[_labelW + _flagOverhang,_labelH],[_outerX,_outerY,_outerW,_outerH],_placedLabels,3 * pixelH,_left,_above] call ACME_fnc_transfusionTagRect;
         if (_rect isEqualTo []) then {_showLabel = false;} else {
-            _placedLabels pushBack _rect;
+            _placedLabels pushBack (+_rect); // Reserve the entire flag, including its overhang.
+            if (_left) then {_rect set [0,(_rect select 0) + _flagOverhang];};
+            _rect set [2,_labelW];
             [_label,"position",_rect] call ACME_fnc_transfusionUiSet;
             [_tagHit,"position",_rect] call ACME_fnc_transfusionUiSet;
             [_leader,"position",[_anchor,_rect,_left] call ACME_fnc_transfusionTagLeader] call ACME_fnc_transfusionUiSet;
             _rect params ["_tx","_ty","_tw","_th"];
-            // The short horizontal leader IS the rectangle's top edge. Its inner
-            // corner coincides with the diagonal endpoint, without a second rail.
+            // Extend the top edge beyond the outer corner for a flag silhouette.
             {
                 [(_borders select _forEachIndex),"position",_x] call ACME_fnc_transfusionUiSet;
-            } forEach [[_tx,_ty,_tw,pixelH],[_tx,_ty,pixelW,_th],[_tx,_ty + _th - pixelH,_tw,pixelH],[_tx + _tw - pixelW,_ty,pixelW,_th]];
+            } forEach [[_tx - (if (_left) then {_flagOverhang} else {0}),_ty,_tw + _flagOverhang,pixelH],[_tx,_ty,pixelW,_th],[_tx,_ty + _th - pixelH,_tw,pixelH],[_tx + _tw - pixelW,_ty,pixelW,_th]];
         };
     };
     [_label,"show",_showLabel] call ACME_fnc_transfusionUiSet;

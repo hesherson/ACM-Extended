@@ -17,7 +17,7 @@ def function(name):
     }.items(): text=text.replace(old,new)
     variable = {'reactMedicalPage':'_hello','reactMedicalTick':'_packet','reactMedicalMessage':'_reply'}.get(name,'_reply')
     text=re.sub(r'_(?:control|browser) ctrlWebBrowserAction \["ExecJS",format \[[^\n]+;', '_packets pushBack '+variable+';',text)
-    text=re.sub(r'_browser ctrlShow ([^;]+);',r'_shown=\1;',text)
+    text=re.sub(r'_browser ctrlShow ([^;]+);',r'_browserShown=\1;',text)
     text=re.sub(r'_browser ctrlEnable ([^;]+);',r'_enabled=\1;',text)
     text=text.replace('_browser ctrlSetPosition _rect;','_position=+_rect;').replace('_browser ctrlCommit 0;','')
     text=re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',text)
@@ -30,7 +30,7 @@ def setup():
     private _view=missionNamespace;private _browser=uiNamespace;private _list=parsingNamespace;
     private _patientOwner=9;private _medicLocal=true;private _closed=false;
     private _findView={if (_closed) then {objNull} else {_view}};
-    private _packets=[];private _selections=[];private _shown=false;private _enabled=false;private _position=[];
+    private _packets=[];private _selections=[];private _browserShown=false;private _enabled=false;private _position=[];
     private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];
         if (_key in _map && {!isNil {_map get _key}}) then {_map get _key} else {_default}};
     ACME_fnc_patientInteractionDistance={_distance};
@@ -39,7 +39,7 @@ def setup():
     ACME_fnc_transfusionCardSelect={_selections pushBack _this;};
     ACM_circulation_TransfusionMenu_Medic=_medic;ACM_circulation_TransfusionMenu_Target=_patient;
     ACME_fnc_transfusionUiSet={params ["_c","_property","_value"];switch (_property) do {
-        case "show": {_shown=_value};case "enable": {_enabled=_value};case "position": {_position=+_value};};true};
+        case "show": {_browserShown=_value};case "enable": {_enabled=_value};case "position": {_position=+_value};};true};
     private _context=[_medic,_patient,"",[],4,2,3,5,9];
     _patient setVariable ["ACME_equipmentKitEpoch",2];
     _medic setVariable ["ACME_equipmentKitEpoch",3];
@@ -47,12 +47,13 @@ def setup():
     _view setVariable ["ACME_reactContext",_context];
     _view setVariable ["ACME_reactSession","ui:7:1"];
     _view setVariable ["ACME_reactReady",true];
+    _view setVariable ["ACME_reactPainted",true];
     _view setVariable ["ACME_reactActive",true];
     _view setVariable ["ACME_reactRows",createHashMapFromArray [["row:1:0",["active","leftarm",true,1,"uid-a"]]]];
     _view setVariable ["ACME_txCardLayout",createHashMapFromArray [[86004,[[0.1,0.2,0.212,0.210],2,0.1,0,true]]]];
     private _decoded=createHashMapFromArray [["version",2],["session","ui:7:1"],
         ["sequence",2],["operation","select"],["route",["row:1:0"]]];
-    ''' + ''.join(function(n) for n in ('reactMedicalValid','reactMedicalFallback','reactMedicalMessage'))
+    ''' + ''.join(function(n) for n in ('reactMedicalValid','reactMedicalFallback','reactMedicalMessage','reactMedicalRect'))
 
 
 @pytest.mark.parametrize('change',[
@@ -144,7 +145,7 @@ def test_snapshot_uses_native_two_card_window_and_graduations():
         [count _cards==2 && {_state get "canNext"},"native viewport/overflow changed"] call _check;
         [((_cards select 0) get "name")=="Saline 750 mL" && {(_cards select 0) get "selected"},"native card presentation/selection lost"] call _check;
         [count ((_cards select 0) get "marks")==11,"native graduation model lost"] call _check;
-        [count _state==5 && {count (_cards select 0)==12},"raw patient state leaked"] call _check;
+        [count _state==6 && {count (_cards select 0)==12},"raw patient state leaked"] call _check;
     ''')
 
 
@@ -197,7 +198,7 @@ def test_timeout_restores_native_in_same_display_without_scheduling():
         _view setVariable ["ACME_reactReady",false];_view setVariable ["ACME_reactDeadline",9];
         [_view] call ACME_fnc_reactMedicalTick;
         [!(_view getVariable "ACME_reactActive") && {_view getVariable "ACME_reactFailed"},"failed browser retained pane"] call _check;
-        [!_shown && {!_enabled} && {!_closed} && {count _waits==0},"fallback navigated or trapped input"] call _check;
+        [!_browserShown && {!_enabled} && {!_closed} && {count _waits==0},"fallback navigated or trapped input"] call _check;
     ''')
 
 

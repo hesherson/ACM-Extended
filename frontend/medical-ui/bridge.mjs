@@ -5,11 +5,16 @@ const object = v => v !== null && typeof v === 'object' && !Array.isArray(v)
 const text = (v, max) => typeof v === 'string' && v.length <= max;
 const integer = v => Number.isSafeInteger(v) && v >= 0 && v <= 2_000_000_000;
 const reference = v => Array.isArray(v) && v.length === 3 && v.every(x => text(x, 256));
+// Packets are JSON data; this also supports embedded Chromium versions without structuredClone.
+const copy = v => JSON.parse(JSON.stringify(v));
 const freeze = v => { if (v && typeof v === 'object') { Object.values(v).forEach(freeze); Object.freeze(v); } return v; };
 export function validState(s) {
   if (!object(s) || s.view !== 'transfusion-cards' || !object(s.patient) || !reference(s.patient.ref)
     || !integer(s.patient.epoch) || !Array.isArray(s.cards) || s.cards.length > 2
     || typeof s.canPrevious !== 'boolean' || typeof s.canNext !== 'boolean') return false;
+  if (s.layout !== undefined && (!Array.isArray(s.layout) || s.layout.length !== 6
+    || !s.layout.every(x=>Number.isFinite(x) && x >= 0 && x <= 20000)
+    || s.layout.slice(0,4).some(x=>x<=0) || s.layout[3]*2+s.layout[4]>s.layout[1]+1)) return false;
   const slots = new Set(), tokens = new Set();
   return s.cards.every(c => {
     if (!object(c) || ![0,1].includes(c.slot) || slots.has(c.slot) || !text(c.token,64) || !c.token || tokens.has(c.token)
@@ -23,7 +28,7 @@ export function validState(s) {
   });
 }
 export function createMedicalStore(send, now = () => performance.now()) {
-  let binding = null, sequence = 0, request = 0, pendingAt = null;
+  let binding = null, sequence = 0, request = 0, pendingAt = null, painted = false;
   let snapshot = freeze({status:'loading',state:null,receivedAt:null,pending:false});
   const listeners = new Set();
   const update = value => { snapshot = freeze(value); listeners.forEach(fn => fn()); };
@@ -39,7 +44,7 @@ export function createMedicalStore(send, now = () => performance.now()) {
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }, getSnapshot: () => snapshot,
     bootstrap(p) {
       if (!object(p) || p.version !== VERSION || !text(p.session,64) || !p.session || !reference(p.patientRef) || !integer(p.epoch)) return false;
-      binding = freeze(structuredClone(p)); sequence = 0; request = 0; pendingAt = null;
+      binding = freeze(copy(p)); sequence = 0; request = 0; pendingAt = null; painted = false;
       update({status:'loading',state:null,receivedAt:null,pending:false}); return emit('ready');
     },
     receive(p) {
@@ -47,7 +52,11 @@ export function createMedicalStore(send, now = () => performance.now()) {
         || p.sequence <= sequence || !Number.isFinite(p.capturedAt) || !validState(p.state)
         || p.state.patient.epoch !== binding.epoch || !p.state.patient.ref.every((v,i) => v === binding.patientRef[i])) return false;
       sequence = p.sequence;
-      update({status:'connected',state:structuredClone(p.state),receivedAt:now(),pending:snapshot.pending}); return true;
+      update({status:'connected',state:copy(p.state),receivedAt:now(),pending:snapshot.pending}); return true;
+    },
+    painted() {
+      if (!binding || painted || snapshot.status !== 'connected' || !snapshot.state) return false;
+      painted = true; return emit('painted');
     },
     ack(p) {
       if (!binding || !snapshot.pending || !object(p) || p.version !== VERSION || p.session !== binding.session || p.request !== request) return false;
