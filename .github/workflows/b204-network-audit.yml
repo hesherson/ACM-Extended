@@ -6,12 +6,16 @@ on:
     paths:
       - "addons/**"
       - "tools/**"
+      - "frontend/**"
+      - ".hemtt/**"
       - ".github/workflows/b204-network-audit.yml"
   pull_request:
     branches: [main]
     paths:
       - "addons/**"
       - "tools/**"
+      - "frontend/**"
+      - ".hemtt/**"
       - ".github/workflows/b204-network-audit.yml"
   workflow_dispatch:
 
@@ -53,6 +57,13 @@ jobs:
           git diff --check 90e47ed7a2fc457099255f477f2b476fdae2ce9b HEAD
           python tools/build_contract.py
           python tools/audit_acme_native_owner_writes.py --strict
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Reproduce the offline React bundle from pinned sources
+        run: |
+          npm ci --prefix frontend/medical-ui --ignore-scripts --no-audit --no-fund
+          npm run check --prefix frontend/medical-ui
       - name: HEMTT static validation
         run: /tmp/acme-tools/hemtt check --error-on-all
 

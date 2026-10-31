@@ -1,5 +1,12 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B293 (first React medical panel)
+
+- Adds an opt-in, offline React IV/IO fluid overview with live connected-bag presentation, native bag scales and captured access navigation.
+- Adds a shared versioned local presentation bridge with patient/session/epoch fencing, stale-state handling and bounded snapshots. Native treatment and inventory transactions continue through existing controls.
+- Keeps native controls outside the browser and provides automatic startup fallback. The client CBA option defaults off; Arma 2.20+ is required. BATDOK and Tempus Pro device views remain future work.
+- [Usage, validation and deployment](docs/audits/B293-react-medical-ui.md). Public version stays **1.2.4.1**, multiplayer protocol **2**, with all **19 addons** required.
+
 ## 1.2.4.1 — B292 (ocular network publication)
 
 - Shield wearers and casualties with permanent ocular injuries no longer broadcast unchanged eye severity and shield history every second.

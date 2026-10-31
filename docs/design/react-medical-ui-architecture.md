@@ -1,8 +1,10 @@
 # Shared React medical UI: ACME, BATDOK and Tempus Pro
 
-Status: preparation and architecture, 2026-10-31. This records the agreed
-future-device constraint; it does not implement a React bridge or ship new
-BATDOK/Tempus Pro devices. Runtime remains the B292 candidate.
+Status: architecture with a limited first implementation, 2026-10-31.
+[B293](../audits/B293-react-medical-ui.md) implements an opt-in local React
+fluid overview and captured native-access handoff. The clinical command,
+measured-data, waveform and BATDOK/Tempus Pro device portions below remain
+future work; this document distinguishes the target design from that first slice.
 
 ## Decision
 
@@ -198,6 +200,7 @@ must stop drawing and unsubscribe. History and waveform buffers must stay bounde
 - [CT_WEBBROWSER local-content sandbox and JavaScript API](https://community.bistudio.com/wiki/CT_WEBBROWSER)
 - [ctrlWebBrowserAction](https://community.bistudio.com/wiki/ctrlWebBrowserAction)
 
-This preparation does not change game files, the 19-addon installation, public
-version 1.2.4.1, B292 build identity or multiplayer protocol 2. Device simulation,
-browser bridge, React implementation and native acceptance remain future work.
+B293 retains the 19-addon installation, public version 1.2.4.1 and multiplayer
+protocol 2. Its browser presentation protocol is independently versioned at 1.
+Complete native acceptance, clinical command migration, measured-device feeds,
+waveform rendering and the BATDOK/Tempus Pro applications remain future work.

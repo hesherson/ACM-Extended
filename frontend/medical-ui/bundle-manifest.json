@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "sources": {
+    "App.jsx": "0826741e25642ce70ccf71132c7bfa3e75a1d425addd5cfc5cc779d2adfbf2a7",
+    "bridge.mjs": "89bf6e649d6596fa2a724eb4e965cd45d7b91c40ca6565ceb835b7b4379682e4",
+    "style.css": "0892cef3a086a8e28997f0c894b9125abd945081a95b70dd984c3eeb4e383966",
+    "build.mjs": "85af91575f2365fb82fa3682831a6ad5c62bda738187c2d6fb522c4efb853db8",
+    "package.json": "c2170cf6ed378e20ce685d8f8be1039ae886e069bb97d8216b46366ef39d5ea2",
+    "package-lock.json": "53c5fac594d07c41e4fbd6cf715391359a600b9b05b64c736cda2f7e82537f46"
+  },
+  "htmlSha256": "1d0f6aae7b696eb4d4dc84eca234ed508a4e93b133c264c3f20516c4f0233f20",
+  "licensesSha256": "1e79eb578a40fbe17a74e81a485ac00c2ff1f7e431c5297d25217c3593d3be30"
+}

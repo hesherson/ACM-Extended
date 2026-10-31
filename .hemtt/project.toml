@@ -6,6 +6,7 @@ mainprefix = "x"
 
 [files]
 exclude = [
+    "**/.*",
     "**/tools/**/*.py",
     "**/__pycache__/**",
     "**/*.pyc",

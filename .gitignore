@@ -19,3 +19,4 @@ FORK_DEV.md
 __pycache__/
 *.py[cod]
 .pytest_cache/
+node_modules/

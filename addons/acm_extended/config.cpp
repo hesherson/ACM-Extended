@@ -544,7 +544,7 @@ class CfgPatches {
             "ACME_IVLine", "ACME_IVExtension", "ACME_Tegaderm", "ACME_SalineLock", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood",
             "ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U"
         };
-        requiredVersion = 2.18;
+        requiredVersion = 2.20;
         requiredAddons[] = {
             "A3_Data_F",
             "A3_Anims_F",
@@ -2108,6 +2108,14 @@ class CfgFunctions {
         class infusion {
             file = "\acm_extended\functions";
             class postInit {};
+            class reactMedicalValid {};
+            class reactMedicalSnapshot {};
+            class reactMedicalOpen {};
+            class reactMedicalPage {};
+            class reactMedicalMessage {};
+            class reactMedicalTick {};
+            class reactMedicalFallback {};
+            class reactMedicalClose {};
             class initMedicationRegistry {};
             class initTrainingCasualty {};
             class initInfusionConfig {};
@@ -3683,6 +3691,7 @@ class RscXSliderH;
 class RscEdit;
 
 #include "TransfusionMenu_Styles.hpp"
+#include "ReactMedical_Dialog.hpp"
 
 // add chest-tube markers to ACE's medical-menu body image. they inherit the torso chest-seal position, use our
 // textures and airway blue, and are hidden by default. the ace_medical_gui_updateBodyImage event toggles them

@@ -32,4 +32,5 @@ After rebuilding, replace the installed mod with the new release output and rest
 
 ## UI development
 
-- [Shared React UI architecture for ACME, BATDOK and Tempus Pro](docs/design/react-medical-ui-architecture.md): future presentation contract, device/source associations, waveform rendering and native action boundaries. Preparation only; the game UI remains native.
+- [B293 React fluid overview](docs/audits/B293-react-medical-ui.md): opt-in local React panel, captured IV/IO handoff, build instructions and remaining native acceptance.
+- [Shared React UI architecture for ACME, BATDOK and Tempus Pro](docs/design/react-medical-ui-architecture.md): device/source associations, waveform rendering and native action boundaries. Device interfaces remain future work.
