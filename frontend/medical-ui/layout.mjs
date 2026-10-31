@@ -17,7 +17,8 @@ export function cardLayout(layout, card, fontScale = 1) {
     thermal:{...rect(textX,top+nameH+(card.detail?detailH:0)+(card.status?statusH:0),trackW,thermalH),fontSize:font(.0125)},
     icon:rect(pad,Math.max(((card.fraction>=0?rowH*.75:rowH*.91)-iconH)/2,0),iconW,iconH),vial:rect(w-pad-vialW,top,vialW,vialH),
     volume:{...rect(textX,rowH*.79,trackW,rowH*.21),fontSize:font(.010),'--track-height':`${100*u*.0025/h}vh`},
-    mark:{top:`${100*u*.004/h}vh`,lineHeight:`${100*rowH*.15/h}vh`},
+    flowStripe:{width:`${100*trackW*32/31/h}vh`},
+    mark:{top:`${100*u*.003/h}vh`,lineHeight:`${100*rowH*.17/h}vh`},
     tick:{top:`${-100*u*.002/h}vh`,height:`${100*u*.006/h}vh`}};
 }
 
@@ -27,4 +28,11 @@ export function nativeFontScale(probe, measuredWidth, viewportWidth, nativeWidth
   if (!probe || !Number.isFinite(measuredWidth) || measuredWidth <= 0) return null;
   const scale = probe[0] * viewportWidth / nativeWidth / measuredWidth;
   return Number.isFinite(scale) && scale >= .25 && scale <= 4 ? scale : null;
+}
+
+// Same smooth proximity curve as the native label painter. No prediction beyond the received volume.
+export function markScale(fraction, mark, count) {
+  if (fraction < 0 || count < 2) return 1;
+  const near=Math.max(0,Math.min(1,1-Math.abs(fraction-mark)/(.7/(count-1))));
+  return 1+.35*near*near*(3-2*near);
 }

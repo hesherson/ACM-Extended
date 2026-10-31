@@ -67,7 +67,7 @@ def test_ace_surfaces_and_original_medical_artwork_unchanged():
     assert restored==subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:'+dialog],cwd=ROOT,text=True)
     config=(ROOT/'addons/acm_extended/config.cpp').read_text()
     original=subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:addons/acm_extended/config.cpp'],cwd=ROOT,text=True)
-    assert config.replace('            class reactMedicalRect {};\n','').replace('            class piggybackPreparedValid {};\n','')==original
+    assert config.replace('            class transfusionMarkScale {};\n','').replace('            class transfusionVisualTick {};\n','').replace('            class reactMedicalRect {};\n','').replace('            class piggybackPreparedValid {};\n','')==original
     source=(ROOT/'addons/acm_extended/functions/fn_updateTransfusionAccessHotspots.sqf').read_text()
     assert '[1,1,1,0.08]' not in source and '[0.20,0.65,0.20,0.22]' not in source
     assert '_outline ctrlEnable false;' in source

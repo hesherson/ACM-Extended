@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
 import {createRoot} from 'react-dom/client';
 import {createMedicalStore} from './bridge.mjs';
-import {cardLayout, nativeFontScale, FONT_PROBE} from './layout.mjs';
+import {cardLayout, markScale, nativeFontScale, FONT_PROBE} from './layout.mjs';
 const store = createMedicalStore(message => globalThis.A3API?.SendAlert(message));
 window.ACMEUI = Object.freeze({bootstrap:p=>store.bootstrap(p),receive:p=>store.receive(p),ack:p=>store.ack(p)});
 const textures = new Map();
@@ -34,8 +34,10 @@ function Card({card,enabled,layout,fontScale}) {
     {card.thermal && <div className={`thermal caption ${card.thermal.includes('Warming')?'warming':''}`} style={geometry.thermal}>{card.thermal}</div>}
     <div className="vial-icon" style={geometry.vial}><Texture path={card.vial}/></div>
     {card.fraction>=0 && <div className="volume" style={geometry.volume} role="progressbar" aria-label={`${card.name} remaining volume`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={card.fraction*100}>
-      <div className="track"><div className="fill" style={{width:`${card.fraction*100}%`}}/></div>
-      {card.marks.map(([fraction,ml])=><span className="mark" key={ml} style={{...geometry.mark,left:`${fraction*100}%`}}><i style={geometry.tick}/>{ml}</span>)}
+      <div className="track"><div className="fill" style={{width:`${card.fraction*100}%`}}/>
+        {card.flowing && enabled && <div className="flow-mask" style={{width:`${card.fraction*100}%`}}><div className="flow-stripes" style={geometry.flowStripe}/></div>}
+      </div>
+      {card.marks.map(([fraction,ml])=><span className="mark" key={ml} style={{...geometry.mark,left:`${fraction*100}%`}}><i style={geometry.tick}/><span className="mark-label" style={{fontSize:`${markScale(card.fraction,fraction,card.marks.length)}em`}}>{ml}</span></span>)}
     </div>}
   </button>;
 }

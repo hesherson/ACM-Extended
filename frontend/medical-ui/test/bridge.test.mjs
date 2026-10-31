@@ -30,3 +30,9 @@ for(const value of [[0,100,1080,50,0,7],[360,227,1080,200,7,7],[360,227,NaN,100,
 test('native geometry can accompany existing card state',()=>{const s=state();s.layout=[360,227,1080,109.72,7.56,7];assert.equal(validState(s),true);});
 test('embedded runtime does not require structuredClone',()=>{const p=packet();const original=globalThis.structuredClone;try{globalThis.structuredClone=undefined;const store=createMedicalStore(()=>{});assert.equal(store.bootstrap(hello),true);assert.equal(store.receive(p),true);}finally{globalThis.structuredClone=original;}});
 test('presentation failure retires input and requests native fallback once',()=>{const {store,sent,advance}=setup();assert.equal(store.fallback(),true);assert.equal(sent.at(-1).operation,'fallback');assert.deepEqual(sent.at(-1).route,[]);assert.equal(store.select(card.token),false);assert.equal(store.fallback(),false);advance(10000);store.checkFreshness();assert.equal(store.getSnapshot().status,'fallback');assert.equal(store.receive(packet(2)),false);});
+
+test('flow is an explicit optional boolean observation, never inferred from a piggyback caption',()=>{
+ const s=state();s.cards[0].status='Piggyback Primary';
+ for(const flowing of [true,false]){s.cards[0].flowing=flowing;assert.equal(validState(s),true);}
+ for(const flowing of [0,1,'true',null,{}]){s.cards[0].flowing=flowing;assert.equal(validState(s),false);}
+});

@@ -98,6 +98,17 @@ class ACME_TransfusionCard: ACME_TransfusionRoundedFrame {
         ACME_TX_MARK(6,24,35) ACME_TX_MARK(7,25,36) ACME_TX_MARK(8,26,37)
         ACME_TX_MARK(9,27,38) ACME_TX_MARK(10,28,39)
 #undef ACME_TX_MARK
+        // Clip a fixed-width stripe texture to the measured remaining volume. It never changes the hit target.
+        class Flow: RscControlsGroupNoScrollbars {
+            idc = 40; x = 0; y = 0; w = 0; h = 0;
+            class Controls {
+                class Stripe: RscPicture {
+                    idc = 41; x = 0; y = 0; w = 0; h = 0;
+                    text = "\acm_extended\ui\transfusion\flow_stripes.paa";
+                    colorText[] = {1,1,1,1};
+                };
+            };
+        };
         // Last child is the native button face: decorative captions/art cannot
         // sit above the hit target and swallow native mouse clicks or sounds.
         class Hit: ACME_TransfusionActionButton { idc = 9; x = 0; y = 0; w = 0; h = 0; sizeEx = 0; };

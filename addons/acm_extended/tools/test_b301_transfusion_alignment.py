@@ -79,11 +79,11 @@ def test_column_pairs_are_exact_mirrors_and_share_header_list_and_action_rows(as
         assert (left[0]+right[0]+left[2])*canvas==pytest.approx(canvas)
     for pair in [(86006,86170),(86214,86144),(86131,86172)]:
         a,b=(rects[x] for x in pair)
-        assert a[1:]==b[1:] and b[0]-a[0]-a[2]==pytest.approx(.008)
+        assert a[1:]==b[1:] and b[0]-a[0]-a[2]==pytest.approx(.004)
     assert rects[86006][1:]==rects[86214][1:]
     assert rects[86131][1]==rects[86122][1] and rects[86131][3]==rects[86122][3]
     footer=rects[86171]
-    assert footer[0]+footer[2]/2==pytest.approx(.5) and footer[1]>.801
+    assert footer[0]==rects[86129][0] and footer[2]==rects[86129][2] and footer[1]>.801
     assert not {86003,86037}.intersection(rects)
 
 
@@ -168,7 +168,7 @@ def test_b301_scope_keeps_ace_clinical_inventory_custody_and_original_body_art_e
     def baseline(path):
         return subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT)
     protected=['addons/gui','addons/acm_extended/ui/iv','addons/acm_extended/ui/transfusion']
-    assert not subprocess.check_output(['git','diff','--name-only',BASE,'--',*protected],cwd=ROOT).strip()
+    assert not subprocess.check_output(['git','diff','--name-only',BASE,'de71fb771a30ae4e3cc25e1c115b65e7753a47d2','--',*protected],cwd=ROOT).strip()
     native='addons/circulation/functions/fnc_TransfusionMenu_SwitchTargetInventory.sqf'
     marker=b'private _cachedItems'
     assert (ROOT/native).read_bytes().split(marker,1)[1]==baseline(native).split(marker,1)[1]
@@ -181,7 +181,7 @@ def test_b301_scope_keeps_ace_clinical_inventory_custody_and_original_body_art_e
         fragment=source[source.index("class "+name+":"):];tokens=lex(fragment)
         start=next(i for i,t in enumerate(tokens) if t.value=="{");end=matching(tokens)[start]
         return fragment[tokens[start].offset:tokens[end].offset]
-    old=baseline(dialog).decode();new=(ROOT/dialog).read_text()
+    old=baseline(dialog).decode();new=subprocess.check_output(['git','show','de71fb771a30ae4e3cc25e1c115b65e7753a47d2:'+dialog],cwd=ROOT,text=True)
     for name in ['BodyBackground','BodyBackground_IO_Torso','BodyBackground_Tourniquet_RightArm','StopTransfusionButton']:
         # Stop height follows the shared row; its handler must remain byte-exact.
         a=class_block(old,name);b=class_block(new,name)

@@ -11,14 +11,15 @@ const js = result.outputFiles[0].text.replaceAll('</script', '<\\/script');
 const font = await readFile(path.join(here, 'assets/RobotoCondensed.woff2'));
 const style = await readFile(path.join(here, 'style.css'), 'utf8');
 const stamp = style.match(/^(?:\/\*[\s\S]*?\*\/\s*)+/)?.[0] || '';
-const css = stamp + `@font-face{font-family:"Roboto Condensed";font-style:normal;font-weight:100 900;src:url(data:font/woff2;base64,${font.toString('base64')}) format('woff2');}` + '\n' + await readFile(path.join(here, 'tokens.css'), 'utf8') + '\n' + style.slice(stamp.length);
+const flow = await readFile(path.join(here, 'assets/flow-stripes.png'));
+const css = `:root{--flow-texture:url(data:image/png;base64,${flow.toString('base64')})}\n` + stamp + `@font-face{font-family:"Roboto Condensed";font-style:normal;font-weight:100 900;src:url(data:font/woff2;base64,${font.toString('base64')}) format('woff2');}` + '\n' + await readFile(path.join(here, 'tokens.css'), 'utf8') + '\n' + style.slice(stamp.length);
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACME Transfusion Cards</title><style>${css}</style></head><body><div id="root"></div><script>${js}</script></body></html>\n`;
 const target = path.resolve(here, '../../addons/acm_extended/ui/react');
 await mkdir(target, { recursive: true });
 const licenses = 'Roboto Condensed\n' + (await readFile(path.join(here, 'assets/OFL.txt'), 'utf8')).replace(/[ \t]+$/gm, '') + '\n' + (await Promise.all(['react', 'react-dom', 'scheduler'].map(async name =>
   `${name}\n${(await readFile(path.join(here, 'node_modules', name, 'LICENSE'), 'utf8')).trimEnd()}\n`))).join('\n');
 const digest = value => createHash('sha256').update(value).digest('hex');
-const inputs = ['App.jsx', 'layout.mjs', 'bridge.mjs', 'tokens.css', 'style.css', 'build.mjs', 'package.json', 'package-lock.json', 'assets/RobotoCondensed.woff2', 'assets/OFL.txt'];
+const inputs = ['App.jsx', 'layout.mjs', 'bridge.mjs', 'tokens.css', 'style.css', 'build.mjs', 'package.json', 'package-lock.json', 'assets/RobotoCondensed.woff2', 'assets/OFL.txt', 'assets/flow-stripes.png'];
 const sources = Object.fromEntries(await Promise.all(inputs.map(async name => [name, digest(await readFile(path.join(here, name)))])));
 const manifest = JSON.stringify({ schema: 1, sources, htmlSha256: digest(html), licensesSha256: digest(licenses) }, null, 2) + '\n';
 if (process.argv.includes('--check')) {

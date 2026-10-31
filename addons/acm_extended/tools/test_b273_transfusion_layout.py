@@ -105,7 +105,7 @@ def test_line_flow_service_and_details_have_distinct_rows(has_service):
 def test_spike_and_y_setup_keep_inventory_list_and_prepared_list_selectable(mode):
     candidates = re.findall(r"\[86141,(0\.\d+),(0\.\d+),(0\.\d+),(0\.\d+)\] call _place", LAYOUT)
     spike = next(tuple(map(float, row)) for row in candidates
-                 if (float(row[2]) == {"prepared":.102,"blood":.176,"loose":.212}[mode]))
+                 if (float(row[2]) == {"prepared":.104,"blood":.176,"loose":.212}[mode]))
     assert not overlap(spike, fixed_layout()[86005])
     assert not overlap(spike, fixed_layout()[86130])
     assert not overlap(spike, fixed_layout()[86127])

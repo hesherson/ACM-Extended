@@ -23,7 +23,7 @@ def control_metadata(source):
     for index, token in enumerate(tokens):
         if token.value not in ("getVariable", "setVariable") or index == 0:
             continue
-        if tokens[index - 1].value not in ("_group", "_hit", "_rail", "_emptyCaption"):
+        if tokens[index - 1].value not in ("_group", "_hit", "_rail", "_emptyCaption", "_label"):
             continue
         assert tokens[index + 1].value == "["
         end = pairs[index + 1]
@@ -43,6 +43,8 @@ def renderer_source(name):
     source = re.sub(r"_display displayCtrl (\([^;]+?\)|_\w+)", r"\1", source)
     source = re.sub(r"_display ctrlCreate (\[[^;]+?\])", r"(\1 call _createControl)", source)
     source = re.sub(r"_group controlsGroupCtrl (\([^;]+?\)|_\w+|\d+)", r"[_group,\1]", source)
+    source = source.replace("_mask controlsGroupCtrl 41", "[_mask,41]")
+    source = source.replace("_label ctrlSetFontHeight _markFont", '[_label,"font",_markFont] call ACME_fnc_transfusionUiSet')
     source = source.replace("ctrlPosition _list", "(_positions get _list)")
     source = source.replace("lbSize _list", "(_counts get _list)").replace("lbCurSel _list", "(_selected get _list)")
     source = source.replace("_list lbTooltip _row", '""')
@@ -82,7 +84,7 @@ def renderer_setup():
         private _registerEvent={_events pushBack _this;};
         ACME_fnc_transfusionUiSet={params["_c","_property","_value"];private _key=format["%1:%2",_c,_property];
             if(!(_key in _controlValues)||{(_controlValues get _key)isNotEqualTo _value})then{_controlValues set[_key,_value];_writes pushBack _this;};true};
-        private _positions=createHashMapFromArray[[86004,[.125*1.7777778,.228,.212*1.7777778,.210]],[86129,[.125*1.7777778,.575,.212*1.7777778,.187]],[86005,[.663*1.7777778,.228,.212*1.7777778,.210]],[86145,[.663*1.7777778,.228,.212*1.7777778,.210]],[86127,[.663*1.7777778,.575,.212*1.7777778,.187]]];
+        private _positions=createHashMapFromArray[[86004,[.125*1.7777778,.228,.212*1.7777778,.187]],[86129,[.125*1.7777778,.575,.212*1.7777778,.187]],[86005,[.663*1.7777778,.228,.212*1.7777778,.187]],[86145,[.663*1.7777778,.228,.212*1.7777778,.187]],[86127,[.663*1.7777778,.575,.212*1.7777778,.187]]];
         private _counts=createHashMapFromArray[[86004,8],[86129,8],[86005,8],[86145,8],[86127,8]];
         private _selected=createHashMapFromArray[[86004,0],[86129,0],[86005,0],[86145,0],[86127,0]];
         ACME_fnc_transfusionCardIdentity={params["_l","_r"];if(_r<0)exitWith{[]};["fixture",_l,_r]};
@@ -93,7 +95,7 @@ def renderer_setup():
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_SelectIV",true];
         missionNamespace setVariable["ACM_circulation_TransfusionMenu_Selected_AccessSite",0];
     ''' + 'ACME_fnc_transfusionCardWindow={' + adapt((FUN / 'fn_transfusionCardWindow.sqf').read_text()) + '};' + \
-        '\n'.join('ACME_fnc_' + name + '={' + renderer_source(name) + '};' for name in ('transfusionRoundedFrame', 'transfusionGraduations', 'updateTransfusionCards'))
+        '\n'.join('ACME_fnc_' + name + '={' + renderer_source(name) + '};' for name in ('transfusionRoundedFrame', 'transfusionGraduations', 'transfusionMarkScale', 'updateTransfusionCards'))
 
 
 def test_full_card_refresh_is_bounded_and_backing_lists_never_redraw():

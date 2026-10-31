@@ -104,8 +104,8 @@ def test_stop_and_bag_actions_have_one_equal_width_top_row_and_service_keeps_low
     placements={}
     for ctrl,x,y,w,h in re.findall(r'\[(86006|86170|86143),([\d.]+),([\d.]+),([\d.]+),([\d.]+)\]',source):
         placements.setdefault(int(ctrl),[]).append(tuple(map(float,[x,y,w,h])))
-    assert placements[86006]==[(.125,.188,.102,.033)]
-    assert placements[86170]==[(.235,.188,.102,.033)]
+    assert placements[86006]==[(.125,.188,.104,.033)]
+    assert placements[86170]==[(.233,.188,.104,.033)]
     assert placements[86143]==[(.125,.478,.212,.033)]
     assert '[_x' not in source[source.index('// Mirrored top actions and lower footer rows keep both sides on the same grid.'):source.index('[_ctrlFluids,"show"')]
 
@@ -116,7 +116,7 @@ def test_original_flat_material_is_byte_exact_and_no_glass_effect_remains():
         if p.name=='body_gradient_ca.paa':continue
         assert p.read_bytes()==subprocess.check_output(['git','show',PALETTE+':'+p.relative_to(ROOT).as_posix()],cwd=ROOT),p.name
     css=(ROOT/'frontend/medical-ui/style.css').read_text();generator=(ROOT/'tools/generate_transfusion_chrome.py').read_text()
-    assert 'backdrop-filter' not in css and 'gradient' not in css and 'animation' not in css and 'transition' not in css
+    assert 'backdrop-filter' not in css and 'gradient' not in css and 'animation:acme-flow .8s linear infinite' in css and '.mark-label { transition:font-size .25s linear;' in css
     assert 'window_material' not in generator
     assert 'color-scheme: normal' in css
 

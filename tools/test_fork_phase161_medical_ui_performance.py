@@ -20,7 +20,10 @@ def test_current_contract():
 
     # One registration only; expensive custom transfusion controls at 4 Hz.
     assert 'ACME_transfusionUiRuntimeRegistered' in reg
-    assert '}, 0.25, []] call CBA_fnc_addPerFrameHandler;' in reg
+    assert '}, 0.05, []] call CBA_fnc_addPerFrameHandler;' in reg
+    assert 'diag_tickTime >= (_display getVariable ["ACME_txNextRefresh",0])' in reg
+    assert 'diag_tickTime + 0.25' in reg
+    assert reg.count('call ACME_fnc_updateTransfusionControls') == 1
     assert 'ACME_transfusionUiPFH' in reg
 
     # Native transfusion display repaint loop is 10 Hz instead of every rendered frame.

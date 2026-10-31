@@ -46,7 +46,7 @@ if (_show) then {
     if (count _rows == 1) then {_top = _top - _rowH * 0.18;};
     [(_controls select 0),"position",[_railX,_top,pixelW max 0.0005,(_bottom - _top) max pixelH]] call ACME_fnc_transfusionUiSet;
     {
-        [(_controls select (_forEachIndex + 1)),"position",[_railX,if (_cardsReady) then {(_cardPoints select _forEachIndex) select 1} else {_listY + (_x + 0.5) * _rowH},_uiW * 0.006,pixelH max 0.0005]] call ACME_fnc_transfusionUiSet;
+        [(_controls select (_forEachIndex + 1)),"position",[_railX,if (_cardsReady) then {(_cardPoints select _forEachIndex) select 1} else {_listY + (_x + 0.5) * _rowH},(_cardLeft - _railX) max (_uiW * 0.006),pixelH max 0.0005]] call ACME_fnc_transfusionUiSet;
     } forEach _rows;
     if (count _rows == 1) then {[(_controls select 2),"show",false] call ACME_fnc_transfusionUiSet;};
 };

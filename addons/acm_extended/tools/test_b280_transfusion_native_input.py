@@ -28,7 +28,7 @@ def native_inventory_setup():
 def card_event_setup():
     source = read('updateTransfusionCards')
     start = source.index('_hit ctrlAddEventHandler ["ButtonClick",')
-    end = source.index('for "_child" from 10 to 39', start)
+    end = source.index('for "_child" from 10 to 40', start)
     source = source[start:end].replace('_hit ctrlAddEventHandler', '_cardEvents pushBack')
     return 'private _cardEvents=[];' + source + 'private _cardClick=(_cardEvents select 0)select 1;'
 
@@ -195,7 +195,7 @@ def test_card_hit_is_last_enabled_face_above_disabled_artwork():
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
         {[_controlValues get format ["%1:enable",_x] isEqualTo true,"card ancestor remained disabled"]call _check;}forEach [86500,86510,86520,86530,86540];
         {[_controlValues get format ["%1:enable",[_x,9]] isEqualTo true,"native card button remained disabled"]call _check;}forEach [86500,86510,86520,86530,86540];
-        for "_child" from 10 to 39 do {
+        for "_child" from 10 to 40 do {
             [_controlValues get format ["%1:enable",[86520,_child]] isEqualTo false,"decorative child claimed card input"]call _check;
         };
     ''')

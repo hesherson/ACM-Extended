@@ -65,7 +65,7 @@ private _viewport = ctrlPosition _group;
 if ((_group getVariable ["ACME_txDetailsViewport",[]]) isNotEqualTo _viewport) then {
     _group setVariable ["ACME_txDetailsViewport",_viewport];
     private _rect = ctrlPosition _ctrl;
-    _rect set [0,safeZoneH * 0.007 * (pixelW / pixelH)];
+    _rect set [0,(safeZoneW min (safeZoneH * 1.7777778)) * 0.004];
     _rect set [1,safeZoneH * 0.005];
     _rect set [2,(_viewport select 2) - safeZoneH * 0.014 * (pixelW / pixelH) - 5 * pixelW];
     [_ctrl,"position",_rect] call ACME_fnc_transfusionUiSet;

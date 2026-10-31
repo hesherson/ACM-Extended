@@ -463,8 +463,8 @@ private _pfh = [{
         // occlusion and perfusion still gate the owner-side drainer, never this label.
         _ctrlStopTransfusionButton ctrlEnable true;
         if (_siteFlowRate > 0) then {
-            _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StopTransfusion_Display), _typeString]);
-            _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StopTransfusion_ToolTip), _typeString]);
+            _ctrlStopTransfusionButton ctrlSetText (format ["Pause %1 Transfusion", _typeString]);
+            _ctrlStopTransfusionButton ctrlSetTooltip (format ["Pause fluid flow through the selected %1 access.", _typeString]);
         } else {
             _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StartTransfusion_Display), _typeString]);
             _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StartTransfusion_ToolTip), _typeString]);

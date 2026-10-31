@@ -9,6 +9,7 @@ private _color = _list lbColor _row;
 private _icon = _list lbPicture _row;
 private _vial = _list lbPictureRight _row;
 private _fraction = -1;
+private _flowing = false;
 private _total = 0;
 private _idc = ctrlIDC _list;
 if (_idc in [86004,86129]) then {
@@ -41,7 +42,8 @@ if (_idc in [86004,86129]) then {
     private _bag = if (_at >= 0) then {+(_physical select _at)} else {_selected select [0,8]};
     if ((_bag param [4,false]) isNotEqualTo _currentIV || {(_bag param [3,-1]) != _currentSite}) exitWith {call _quiet;};
     _bag set [8,_uid];
-    ([_patient,_part,_bag] call ACME_fnc_transfusionBagPresentation) params ["_label","_temperatureColor","_lineThermal","_role","_flowing"];
+    ([_patient,_part,_bag] call ACME_fnc_transfusionBagPresentation) params ["_label","_temperatureColor","_lineThermal","_role","_bagFlowing"];
+    _flowing = _bagFlowing;
     _name = _label;
     _color = _temperatureColor;
     _thermal = _lineThermal;
@@ -105,4 +107,4 @@ if (_idc in [86004,86129]) then {
         _status = "Prepared";
     };
 };
-[_name,_detail,_status,_thermal,_color,_icon,_vial,_fraction,_total]
+[_name,_detail,_status,_thermal,_color,_icon,_vial,_fraction,_total,_flowing]

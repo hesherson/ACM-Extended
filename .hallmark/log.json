@@ -1,6 +1,18 @@
 {
   "runs": [
     {
+      "batch": "B302",
+      "date": "2026-10-31",
+      "mode": "requested correction",
+      "scope": "existing ACME transfusion UI",
+      "composition": "compact equal-height cards; 0.004 paired gaps matching details inset; left details panel",
+      "motion": "flowing white-bar stripes, smooth proximity number scale, ready-action frame opacity only",
+      "data": "explicit native flow Boolean; no prediction, dosing or custody changes",
+      "performance": "same idempotent worker; 4 Hz data and 20 Hz cached decoration",
+      "preserved": "flat palette, rounded corners, ACE, body art and native treatment handlers",
+      "method": "project system; no Hallmark redesign run"
+    },
+    {
       "batch": "B301",
       "date": "2026-10-31",
       "mode": "requested correction",

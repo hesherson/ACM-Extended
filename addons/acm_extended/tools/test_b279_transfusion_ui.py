@@ -126,11 +126,11 @@ def data_setup():
 def test_card_keeps_original_dose_and_physical_capacity_after_diluent_and_delivery():
     execute(data_setup()+r'''
         private _data=[missionNamespace,0]call ACME_fnc_transfusionCardData;
-        [(_data select 1)=="125 mL · Calcium 1000 added","card disclosed remaining drug instead of initially added dose"]call _check;
+        [(_data select 1)=="125 mL / Calcium 1000 added","card disclosed remaining drug instead of initially added dose"]call _check;
         [(_data select 8)==250 && {(_data select 7)==.5},"added diluent changed manufacturer graduation scale"]call _check;
         _med set[14,5];_bag set[1,50];
         _data=[missionNamespace,0]call ACME_fnc_transfusionCardData;
-        [(_data select 1)=="50 mL · Calcium 1000 added" && {(_data select 8)==250},"delivery changed the fixed medication label or capacity"]call _check;
+        [(_data select 1)=="50 mL / Calcium 1000 added" && {(_data select 8)==250},"delivery changed the fixed medication label or capacity"]call _check;
     ''')
 
 

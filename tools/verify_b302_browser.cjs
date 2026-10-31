@@ -1,0 +1,103 @@
+// Run from the repository root with Playwright and Chromium available. Optional ACME_PLAYWRIGHT_MODULE / ACME_CHROMIUM_EXECUTABLE select installed tools.
+const fs=require('fs');
+const assert=require('node:assert/strict');
+const pw=require(process.env.ACME_PLAYWRIGHT_MODULE || 'playwright');
+(async()=>{
+ const browser=await pw.chromium.launch({headless:true,executablePath:process.env.ACME_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const html=fs.readFileSync('addons/acm_extended/ui/react/index.html','utf8');
+ const hello={version:2,session:'ui:7:1',patientRef:['1:2','mission','patient'],epoch:4};
+ const card={slot:0,token:'row:1:0',name:'Saline 750 mL',detail:'Primary',status:'Running',thermal:'LW Quantum / Inline',flowing:false,color:[1,1,1,1],icon:'\\acm_extended\\ui\\bag.paa',vial:'',fraction:.75,marks:Array.from({length:11},(_,i)=>[i/10,i*100]),selected:true};
+ const state={view:'transfusion-cards',patient:{ref:hello.patientRef,epoch:4},cards:[card,{...card,slot:1,flowing:true,token:'row:1:1',name:'Blood [PiB] 125 mL',thermal:'',fraction:.5,selected:false,marks:Array.from({length:6},(_,i)=>[i/5,i*50])}],canPrevious:false,canNext:true};
+ for(const [width,height] of [[360,202],[272,152],[210,118],[522,201]]){
+  const page=await browser.newPage({viewport:{width:width+40,height:height+40}});
+  await page.setContent(`<iframe sandbox="allow-scripts" style="border:0;width:${width}px;height:${height}px"></iframe>`);
+  const frame=page.frames()[1];
+  await frame.evaluate(()=>{window.messages=[];window.texturePaths=[];window.A3API={SendAlert:s=>window.messages.push(JSON.parse(s)),RequestTexture:(path)=>{window.texturePaths.push(path);return Promise.resolve('data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="64"><rect x="4" y="4" width="24" height="50" fill="white"/></svg>'));}};});
+  await frame.setContent(html);
+  state.layout=[width,height,height/.187,(height-height/.187*.007)/2,height/.187*.007,Math.floor(height/.187*.007)];
+  // Independent native metric fixture: engine advance is 74% of nominal CSS em.
+  // Hold font readiness to exercise the exact initial-native -> React handoff.
+  state.fontProbe=await frame.evaluate(async nominal=>{
+   await document.fonts.load('18px "Roboto Condensed"');
+   const ctx=document.createElement('canvas').getContext('2d');ctx.font=`${nominal}px "Roboto Condensed"`;
+   const probe=[ctx.measureText('Hg0123456789').width*.74,nominal,8];
+   const load=document.fonts.load.bind(document.fonts);
+   document.fonts.load=(...args)=>new Promise(resolve=>{window.releaseFont=()=>load(...args).then(resolve);});
+   return probe;
+  },state.layout[2]*.018);
+  await frame.evaluate(({hello,state})=>{ACMEUI.bootstrap(hello);ACMEUI.receive({version:2,session:hello.session,sequence:1,capturedAt:10,state});},{hello,state});
+  await frame.waitForFunction(()=>typeof window.releaseFont==='function');
+  assert.equal(await frame.locator('.card').count(),0);
+  assert.equal((await frame.evaluate(()=>window.messages)).filter(m=>m.operation==='painted').length,0);
+  await frame.evaluate(()=>window.releaseFont());
+  await frame.locator('.card').first().waitFor();
+  await frame.waitForFunction(()=>window.messages.some(m=>m.operation==='painted'));await frame.evaluate(()=>document.fonts.ready);
+  assert.equal(await frame.getByRole('button').count(),2);
+  assert.equal(await frame.getByText('Manage access').count(),0);
+  assert.equal(await frame.getByRole('heading').count(),0);
+  assert.equal((await frame.evaluate(()=>window.messages)).filter(m=>m.operation==='painted').length,1);
+  const metrics=await frame.evaluate(()=>({font:parseFloat(getComputedStyle(document.querySelector('.name')).fontSize),icon:document.querySelector('.fluid-icon').getBoundingClientRect().width,radius:parseFloat(getComputedStyle(document.querySelector('.card')).borderRadius),card:document.querySelector('.card').getBoundingClientRect().height,gap:parseFloat(getComputedStyle(document.querySelector('main')).rowGap)}));
+  assert.ok(Math.abs(metrics.font-state.layout[2]*.018*.74)<.05);assert.ok(Math.abs(metrics.icon-Math.min(state.layout[3]*.62,state.layout[2]*.052))<.05);
+  assert.ok(Math.abs(metrics.radius-state.layout[5])<.05);assert.ok(Math.abs(metrics.card-state.layout[3])<1);
+  await frame.getByRole('button').nth(1).focus();
+  await frame.evaluate(()=>{window.stableButton=document.querySelectorAll('.card')[1];window.stableImage=document.querySelector('.fluid-icon img');window.initialPaths=texturePaths.length;window.baseColor=getComputedStyle(stableButton).backgroundColor;});
+  for(let sequence=2;sequence<=26;sequence++){
+   await frame.evaluate(({hello,state,sequence})=>ACMEUI.receive({version:2,session:hello.session,sequence,capturedAt:10+sequence/10,state:{...state,cards:state.cards.map(c=>({...c,name:c.slot?'Blood [PiB] '+(150-sequence)+' mL':c.name,fraction:c.fraction-sequence/1000,thermal:'LW Quantum / Warming'+['.','..','...'][(sequence-2)%3]}))}}),{hello,state,sequence});
+   await frame.evaluate(()=>new Promise(requestAnimationFrame));
+   const stable=await frame.evaluate(()=>({node:document.querySelectorAll('.card')[1]===stableButton,focus:document.activeElement===stableButton,image:document.querySelector('.fluid-icon img')===stableImage,paths:texturePaths.length,color:getComputedStyle(stableButton).backgroundColor,base:baseColor,animation:getComputedStyle(stableButton).animationName,transition:getComputedStyle(stableButton).transitionDuration}));
+   assert.ok(stable.node&&stable.focus&&stable.image);
+   assert.equal(await frame.locator('.thermal').first().textContent(),'LW Quantum / Warming'+['.','..','...'][(sequence-2)%3]);
+   assert.equal(await frame.locator('.thermal').first().evaluate(e=>getComputedStyle(e).color),'rgb(255, 140, 33)');
+   assert.equal(await frame.locator('.name').first().evaluate(e=>parseFloat(getComputedStyle(e).fontSize)),metrics.font);assert.equal(stable.paths,1);assert.equal(stable.color,stable.base);assert.equal(stable.animation,'none');assert.equal(stable.transition,'0s');
+  }
+  assert.equal(await frame.locator('.card').first().locator('.flow-mask').count(),0);
+  assert.equal(await frame.locator('.card').nth(1).locator('.flow-mask').count(),1);
+  const stripe=await frame.locator('.flow-stripes').evaluate(e=>getComputedStyle(e).transform);
+  await page.waitForTimeout(100);
+  assert.notEqual(await frame.locator('.flow-stripes').evaluate(e=>getComputedStyle(e).transform),stripe);
+  // After handoff, metric changes reuse the loaded face synchronously.
+  await frame.evaluate(()=>{window.lateFontCalls=0;document.fonts.load=()=>{lateFontCalls++;return Promise.reject(new Error('late font load must not run'));};});
+  for (const sequence of [27,28]) {
+   const changed={...state,layout:[...state.layout.slice(0,5),state.layout[5]+sequence-26]};
+   await frame.evaluate(({hello,state,sequence})=>ACMEUI.receive({version:2,session:hello.session,sequence,capturedAt:13,state}),{hello,state:changed,sequence});
+   await frame.evaluate(()=>new Promise(requestAnimationFrame));
+   assert.ok(await frame.evaluate(()=>document.querySelectorAll('.card')[1]===stableButton && document.activeElement===stableButton));
+   assert.equal(await frame.evaluate(()=>lateFontCalls),0);
+  }
+  await frame.getByRole('button').nth(1).click();
+  assert.ok(await frame.evaluate(()=>document.querySelectorAll('.card')[1]===stableButton && document.activeElement===stableButton));
+  let messages=await frame.evaluate(()=>window.messages);
+  assert.equal(messages.at(-1).operation,'select');assert.deepEqual(messages.at(-1).route,['row:1:1']);
+  await frame.evaluate(()=>ACMEUI.ack({version:2,session:'ui:7:1',request:window.messages.at(-1).sequence}));
+  await frame.getByRole('button').nth(1).press('ArrowDown');
+  messages=await frame.evaluate(()=>window.messages);assert.equal(messages.at(-1).operation,'key');assert.deepEqual(messages.at(-1).route,[208]);
+  const layout=await frame.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,paths:texturePaths,rects:[...document.querySelectorAll('.card')].map(e=>({y:e.offsetTop,h:e.offsetHeight,w:e.offsetWidth})),font:getComputedStyle(document.querySelector('.name')).fontFamily}));
+  assert.equal(layout.scroll,layout.width);assert.ok(layout.paths.every(p=>!p.startsWith('\\')));assert.ok(layout.rects.every(r=>r.y+r.h<=height+1));
+
+  const labelSizes=[];
+  for (const [i,fraction] of [.42,.48,.5,.52,.58].entries()) {
+   await frame.evaluate(({hello,state,i,fraction})=>ACMEUI.receive({version:2,session:hello.session,sequence:30+i,capturedAt:14,state:{...state,cards:state.cards.map(c=>({...c,fraction,marks:Array.from({length:11},(_,m)=>[m/10,m*100])}))}}),{hello,state,i,fraction});
+   await page.waitForTimeout(300);
+   labelSizes.push(await frame.locator('.card').first().locator('.mark-label').nth(5).evaluate(e=>parseFloat(getComputedStyle(e).fontSize)));
+   assert.ok(await frame.evaluate(()=>document.querySelectorAll('.card')[1]===stableButton && document.activeElement===stableButton));
+  }
+  assert.ok(labelSizes[0]<labelSizes[1] && labelSizes[1]<labelSizes[2] && labelSizes[2]>labelSizes[3] && labelSizes[3]>labelSizes[4]);
+  // Paused flow removes only its decoration; volume and card/hit identity remain.
+  await frame.evaluate(({hello,state})=>ACMEUI.receive({version:2,session:hello.session,sequence:35,capturedAt:14,state:{...state,cards:state.cards.map(c=>({...c,flowing:false}))}}),{hello,state});
+  await frame.evaluate(()=>new Promise(requestAnimationFrame));
+  assert.equal(await frame.locator('.flow-mask').count(),0);
+  assert.ok(await frame.evaluate(()=>document.querySelectorAll('.card')[1]===stableButton));
+  await frame.evaluate(({hello})=>ACMEUI.receive({version:2,session:hello.session,sequence:100,capturedAt:13,state:{view:'transfusion-cards',patient:{ref:hello.patientRef,epoch:4},cards:[],canPrevious:false,canNext:false}}),{hello});
+  await frame.evaluate(()=>new Promise(requestAnimationFrame));assert.equal(await frame.getByText('No fluids at this access').count(),0);assert.equal(await frame.getByRole('button').count(),0);
+  assert.equal((await frame.evaluate(()=>window.messages)).filter(m=>m.operation==='painted').length,1);
+  await frame.evaluate(({hello,state})=>ACMEUI.receive({version:2,session:hello.session,sequence:101,capturedAt:13,state}),{hello,state});
+  await frame.locator('.card').first().waitFor();
+  await frame.evaluate(()=>{window.failureCard=document.querySelector('.card');});
+  await frame.evaluate(({hello,state})=>ACMEUI.receive({version:2,session:hello.session,sequence:102,capturedAt:13,state:{...state,fontProbe:[20000,state.fontProbe[1],8]}}),{hello,state});
+  await frame.waitForFunction(()=>window.messages.some(m=>m.operation==='fallback'));
+  assert.ok(await frame.evaluate(()=>document.querySelector('.card')===failureCard && failureCard.disabled));
+  assert.equal(await frame.evaluate(({hello,state})=>ACMEUI.receive({version:2,session:hello.session,sequence:103,capturedAt:13,state}),{hello,state}),false);
+  console.log(JSON.stringify({labelSizes,size:[width,height],...layout,...metrics,passed:true}));await page.close();
+ }
+ await browser.close();
+})().catch(e=>{console.error(e);process.exitCode=1;});

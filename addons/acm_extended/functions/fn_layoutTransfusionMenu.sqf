@@ -61,6 +61,7 @@ private _sourceIndex = (missionNamespace getVariable ["ACM_circulation_Transfusi
 private _inventoryLabel = format ["Inventory (%1)",["Self","Patient","Vehicle"] select _sourceIndex];
 private _inventoryTab = [86214,"ACME_TransfusionTabButton",_inventoryLabel] call _ensure;
 [_inventoryTab,"text",_inventoryLabel] call ACME_fnc_transfusionUiSet;
+_inventoryTab ctrlSetTooltip "Click to switch between Self and Patient inventory. Vehicle inventory is also available when occupied.";
 
 if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
     _display setVariable ["ACME_txLayoutHooks", true];
@@ -207,22 +208,22 @@ private _place = {
     [86213,0.141,0.441,0.184,0.027],
     [86160,0.125,0.151,0.212,0.027],
     [86161,0.663,0.151,0.212,0.027],
-    [86006,0.125,0.188,0.102,0.033],
-    [86170,0.235,0.188,0.102,0.033],
-    [86214,0.663,0.188,0.102,0.033],
-    [86144,0.773,0.188,0.102,0.033],
-    [86004,0.125,0.228,0.212,0.210],
-    [86005,0.663,0.228,0.212,0.210],
-    [86145,0.663,0.228,0.212,0.210],
+    [86006,0.125,0.188,0.104,0.033],
+    [86170,0.233,0.188,0.104,0.033],
+    [86214,0.663,0.188,0.104,0.033],
+    [86144,0.771,0.188,0.104,0.033],
+    [86004,0.125,0.228,0.212,0.187],
+    [86005,0.663,0.228,0.212,0.187],
+    [86145,0.663,0.228,0.212,0.187],
     [86128,0.125,0.538,0.212,0.029],
     [86130,0.663,0.538,0.212,0.029],
     [86129,0.125,0.575,0.212,0.187],
     [86127,0.663,0.575,0.212,0.187],
-    [86131,0.125,0.778,0.102,0.033],
-    [86172,0.235,0.778,0.102,0.033],
-    [86121,0.773,0.478,0.102,0.033],
+    [86131,0.125,0.778,0.104,0.033],
+    [86172,0.233,0.778,0.104,0.033],
+    [86121,0.771,0.478,0.104,0.033],
     [86122,0.663,0.778,0.212,0.033],
-    [86171,0.125,0.822,0.750,0.068],
+    [86171,0.125,0.822,0.212,0.068],
     [86176,0.133,0.581,0.196,0.029],
     [86177,0.671,0.581,0.196,0.029],
     [86178,0.133,0.235,0.196,0.029],
@@ -240,8 +241,8 @@ private _showY = !_preparedMode && {_display getVariable ["ACME_txShowY",false]}
     [_tab,"color",if (_selected) then {[1,1,1,1]} else {[0.75,0.75,0.75,1]}] call ACME_fnc_transfusionUiSet;
 } forEach [[_inventoryTab,!_preparedMode],[_display displayCtrl 86144,_preparedMode]];
 if (_preparedMode) then {
-    [86141,0.663,0.478,0.102,0.033] call _place;
-    [86121,0.773,0.478,0.102,0.033] call _place;
+    [86141,0.663,0.478,0.104,0.033] call _place;
+    [86121,0.771,0.478,0.104,0.033] call _place;
     [_spikeDropdown,"show",false] call ACME_fnc_transfusionUiSet;
 } else {
     if (_showY) then {
@@ -380,13 +381,13 @@ _warmer setVariable ["ACME_warmerOperation",["add","remove"] select _warmerInsta
 if (_menu == "infusion") then {
     [86195,0.141,0.725,0.180,0.033] call _place;
     [86196,0.141,0.719,0.180,0.026] call _place;
-    [86197,0.141,0.747,0.086,0.025] call _place;
-    [86198,0.235,0.747,0.086,0.025] call _place;
+    [86197,0.141,0.747,0.088,0.025] call _place;
+    [86198,0.233,0.747,0.088,0.025] call _place;
 } else {
     [86195,0.141,0.430,0.180,0.029] call _place;
     [86196,0.141,0.425,0.180,0.026] call _place;
-    [86197,0.141,0.452,0.086,0.025] call _place;
-    [86198,0.235,0.452,0.086,0.025] call _place;
+    [86197,0.141,0.452,0.088,0.025] call _place;
+    [86198,0.233,0.452,0.088,0.025] call _place;
 };
 [_warmer,"show",_menu in ["bag","infusion"] && {_warmerShow} && {!_confirmWarmer}] call ACME_fnc_transfusionUiSet;
 {[_x,"show",_menu in ["bag","infusion"] && {_confirmWarmer}] call ACME_fnc_transfusionUiSet;} forEach [_warmerNotice,_warmerYes,_warmerNo];
@@ -413,6 +414,7 @@ if (_menu == "infusion") then {
 } forEach [[86148,86151],[86149,86152]];
 [_display] call ACME_fnc_updateTransfusionLineDetails;
 // Native action handlers stay on their original controls. Their nine-slice backgrounds live in ControlsBackground.
+private _pulseFrames = [];
 private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,86133,86134,86141,86142,86143,86144,86148,86149,86170,86172,86194,86195,86197,86198,86212,86214];
 {
     private _button = _display displayCtrl _x;
@@ -431,8 +433,15 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
         private _frameProfiles = if ((ctrlIDC _button) in [86144,86214]) then {["tab","tab_selected"]} else {["button","selected"]};
         [_frame,ctrlPosition _button,_frameProfiles select _selectedFrame,0.007,ctrlShown _button,_button getVariable ["ACME_txSkinTint",[1,1,1,1]]] call ACME_fnc_transfusionRoundedFrame;
         private _enabled = ctrlEnabled _button;
-        if ((_frame getVariable ["ACME_txButtonEnabled",-1]) isNotEqualTo _enabled) then {
-            _frame setVariable ["ACME_txButtonEnabled",_enabled];_frame ctrlSetFade (if (_enabled) then {0} else {0.45});_frame ctrlCommit 0;
+        private _pulse = _enabled && {ctrlShown _button} && {
+            (ctrlIDC _button) in [86120,86121,86122,86141,86142,86143,86147]
+            || {(ctrlIDC _button) == 86144 && {!_preparedMode} && {
+                ({(_x param [8, ""]) != "propofol"} count (ACE_player getVariable ["ACME_preparedIVSets",[]])) > 0
+            }}
+        };
+        if (_pulse) then {_pulseFrames pushBack (86410 + _forEachIndex);};
+        if (((_frame getVariable ["ACME_txButtonEnabled",-1]) isNotEqualTo _enabled) || {(_frame getVariable ["ACME_txPulsing",false]) isNotEqualTo _pulse}) then {
+            _frame setVariable ["ACME_txButtonEnabled",_enabled];_frame setVariable ["ACME_txPulsing",_pulse];_frame ctrlSetFade (if (_enabled) then {0} else {0.45});_frame ctrlCommit 0;
         };
         _frame ctrlEnable false;
         // B277 prepared chooser caption fits a narrow screen while retaining the familiar workflow text.
@@ -441,6 +450,7 @@ private _roundButtons = [86006,86007,86146,86120,86147,86121,86122,86131,86132,8
         if ((_button getVariable ["ACME_txFontH",0]) != _fontHeight) then {_button ctrlSetFontHeight _fontHeight;_button setVariable ["ACME_txFontH",_fontHeight];};
     };
 } forEach _roundButtons;
+_display setVariable ["ACME_txPulseFrames",_pulseFrames];
 [(_display displayCtrl 86401),ctrlPosition _bagBackdrop,"popup",0.007,_menu == "bag"] call ACME_fnc_transfusionRoundedFrame;
 [(_display displayCtrl 86402),ctrlPosition _infBackdrop,"popup",0.007,_menu == "infusion"] call ACME_fnc_transfusionRoundedFrame;
 [(_display displayCtrl 86403),ctrlPosition _lineDetails,"panel",0.007,_valid] call ACME_fnc_transfusionRoundedFrame;

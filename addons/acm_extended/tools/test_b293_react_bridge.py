@@ -146,7 +146,7 @@ def test_snapshot_uses_native_two_card_window_and_graduations():
         [count _cards==2 && {_state get "canNext"},"native viewport/overflow changed"] call _check;
         [((_cards select 0) get "name")=="Saline 750 mL" && {(_cards select 0) get "selected"},"native card presentation/selection lost"] call _check;
         [count ((_cards select 0) get "marks")==11,"native graduation model lost"] call _check;
-        [count _state==7 && {count (_cards select 0)==12},"raw patient state leaked"] call _check;
+        [count _state==7 && {count (_cards select 0)==13 && {((_cards select 0) get "flowing") isEqualType true}},"raw patient state leaked"] call _check;
     ''')
 
 

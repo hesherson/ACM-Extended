@@ -24,3 +24,12 @@ test('native measured width calibrates independently of nominal sizeEx and viewp
  assert.ok(Math.abs(parseFloat(calibrated.name.fontSize)/parseFloat(normal.name.fontSize)-.8)<.000001);
  for (const width of [0,NaN,Infinity,-1]) assert.equal(nativeFontScale([100,18],width,522,522),null);
 });
+
+import {markScale} from '../layout.mjs';
+test('tick proximity uses the same bounded smooth native curve without moving graduations',()=>{
+ for (const count of [3,6,11]) for (const delta of [-1,-.7,-.35,0,.35,.7,1]) {
+  const near=Math.max(0,1-Math.abs(delta));
+  assert.ok(Math.abs(markScale(.5+delta*.7/(count-1),.5,count)-(1+.35*near*near*(3-2*near)))<1e-10);
+ }
+ assert.equal(markScale(-1,0,11),1);assert.equal(markScale(.5,.5,1),1);
+});

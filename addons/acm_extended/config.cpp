@@ -2605,6 +2605,8 @@ class CfgFunctions {
             class transfusionCardSelect {};
             class transfusionCardData {};
             class transfusionGraduations {};
+            class transfusionMarkScale {};
+            class transfusionVisualTick {};
             class updateTransfusionCards {};
             class transfusionYRows {};
             class paintTransfusionYBracket {};

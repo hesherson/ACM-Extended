@@ -1,11 +1,12 @@
 /* B277: fixed native card pools. Original lists remain the single selection/workflow model.
- * Twelve cards are allocated once per display; scrolling rebinds slots, never copies or removes a bag. */
+ * Ten cards are allocated once per display; scrolling rebinds slots, never copies or removes a bag. */
 disableSerialization;
 params [["_display",findDisplay 86000]];
 if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)}) exitWith {};
 private _menu = _display getVariable ["ACME_txActionMenu",""];
 private _preparedMode = uiNamespace getVariable ["ACME_preparedListMode",false];
 private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
+private _visualCards = [];
 private _endpoints = createHashMap;
 private _layout = createHashMap;
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
@@ -56,7 +57,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 _hit ctrlAddEventHandler ["MouseExit",{(ctrlParentControlsGroup (_this select 0)) setVariable ["ACME_txHover",false];[ctrlParent (_this select 0)] call ACME_fnc_updateTransfusionCards;}];
                 _hit ctrlAddEventHandler ["SetFocus",{(ctrlParentControlsGroup (_this select 0)) setVariable ["ACME_txFocus",true];[ctrlParent (_this select 0)] call ACME_fnc_updateTransfusionCards;}];
                 _hit ctrlAddEventHandler ["KillFocus",{(ctrlParentControlsGroup (_this select 0)) setVariable ["ACME_txFocus",false];[ctrlParent (_this select 0)] call ACME_fnc_updateTransfusionCards;}];
-                for "_child" from 10 to 39 do {(_group controlsGroupCtrl _child) ctrlEnable false;};
+                for "_child" from 10 to 40 do {(_group controlsGroupCtrl _child) ctrlEnable false;};
             };
             private _row = (_window select 1) select _slot;
             private _identity = if (_row >= 0) then {[_list,_row] call ACME_fnc_transfusionCardIdentity} else {[]};
@@ -64,7 +65,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             [_group,"show",_visible && {!_reactPane}] call ACME_fnc_transfusionUiSet;
             if (_identity isNotEqualTo []) then {
                 private _data = [_list,_row] call ACME_fnc_transfusionCardData;
-                _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction",["_total",0]];
+                _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction",["_total",0],["_flowing",false]];
                 if (_name == "") exitWith {
                     [_group,"show",false] call ACME_fnc_transfusionUiSet;
                     (_group controlsGroupCtrl 9) setVariable ["ACME_txIdentity",[]];
@@ -122,6 +123,12 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                     [16,[_textX,_trackY,_trackW,safeZoneH * 0.0025]],
                     [17,[_textX,_trackY,_trackW * (_fraction max 0 min 1),safeZoneH * 0.0025]]
                 ]);
+                private _mask = _group controlsGroupCtrl 40;
+                [_mask,"position",[_textX,_trackY,_trackW * (_fraction max 0 min 1),safeZoneH * 0.0025]] call ACME_fnc_transfusionUiSet;
+                [_mask,"show",_flowing && {_hasTrack}] call ACME_fnc_transfusionUiSet;
+                _mask ctrlEnable false;
+                (_mask controlsGroupCtrl 41) ctrlEnable false;
+                if (_visible && {!_reactPane} && {_flowing}) then {_visualCards pushBack [_groupId,_trackW,safeZoneH * 0.0025];};
                 private _marks = [_total] call ACME_fnc_transfusionGraduations;
                 for "_mark" from 0 to 10 do {
                     private _tick = _group controlsGroupCtrl (18 + _mark);
@@ -136,7 +143,12 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                         // clamping them into the track would halve the 0/next and last/previous spacing.
                         private _labelW = (_trackW / ((count _marks) max 2)) min (_w * 0.15) min (2 * _pad);
                         private _labelX = _tickX - _labelW / 2;
-                        [_label,"position",[_labelX,_trackY + safeZoneH * 0.004,_labelW,_rowH * 0.15]] call ACME_fnc_transfusionUiSet;
+                        [_label,"position",[_labelX,_trackY + safeZoneH * 0.003,_labelW,_rowH * 0.17]] call ACME_fnc_transfusionUiSet;
+                        private _scale = [_fraction,_markFraction,count _marks] call ACME_fnc_transfusionMarkScale;
+                        private _markFont = safeZoneH * 0.010 * _scale;
+                        if ((_label getVariable ["ACME_txMarkFont",0]) != _markFont) then {
+                            _label ctrlSetFontHeight _markFont;_label setVariable ["ACME_txMarkFont",_markFont];
+                        };
                         [_label,"text",str _markMl] call ACME_fnc_transfusionUiSet;
                     };
                 };
@@ -174,6 +186,8 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
         [_list,"show",false] call ACME_fnc_transfusionUiSet;
     };
 } forEach _panes;
+_display setVariable ["ACME_txVisualCards",_visualCards];
+_display setVariable ["ACME_txVisualRefresh",diag_tickTime];
 _display setVariable ["ACME_txCardsReady",true];
 _display setVariable ["ACME_txCardEndpoints",_endpoints];
 _display setVariable ["ACME_txCardLayout",_layout];

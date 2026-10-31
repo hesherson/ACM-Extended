@@ -35,7 +35,7 @@ def test_each_authored_pair_has_equal_bounds_and_one_shared_gap(aspect, pair):
     canvas = min(aspect, 1.7777778)
     physical = [tuple(v * canvas if i in [0, 2] else v for i, v in enumerate(rect)) for rect in [left, right]]
     assert physical[0][1:] == pytest.approx(physical[1][1:])
-    assert physical[1][0] - (physical[0][0] + physical[0][2]) == pytest.approx(canvas * .008)
+    assert physical[1][0] - (physical[0][0] + physical[0][2]) == pytest.approx(canvas * .004)
     assert not overlap(*physical)
 
 

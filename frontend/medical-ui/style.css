@@ -1,4 +1,4 @@
-/* ACME transfusion only: original flat palette, fixed native geometry, no effects. */
+/* ACME transfusion only: original flat palette, fixed native geometry, functional flow and action cues only. */
 :root { font-family: var(--font-body); color: var(--color-muted); background: var(--color-clear); font-synthesis: none; color-scheme: normal; }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; width: 100%; height: 100%; overflow-y: hidden; }
@@ -33,3 +33,10 @@ button { font: inherit; }
 .acme-medical-surface .mark i { position: absolute; left: 50%; width: 1px; background: var(--color-muted); }
 /* Native RscText has 0.008 UI-unit side margins; the browser uses the measured inset. */
 .acme-medical-surface .caption { padding-inline: var(--text-inset,0px); }
+
+/* Clip moving texture to the existing measured white fill. Motion never changes volume or card geometry. */
+.acme-medical-surface .track { position: relative; }
+.acme-medical-surface .flow-mask { position:absolute; inset:0 auto auto 0; height:100%; overflow:hidden; pointer-events:none; }
+.acme-medical-surface .flow-stripes { height:100%; background:var(--flow-texture) 0 0 / 100% 100%; animation:acme-flow .8s linear infinite; }
+@keyframes acme-flow { from { transform:translateX(-3.125%); } to { transform:translateX(0); } }
+.acme-medical-surface .mark-label { transition:font-size .25s linear; }

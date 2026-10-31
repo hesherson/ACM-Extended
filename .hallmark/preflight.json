@@ -4,8 +4,8 @@
     "font": "Roboto Condensed: frontend/medical-ui/build.mjs:12; native card fonts in addons/acm_extended/TransfusionMenu_Styles.hpp:21",
     "framework": "React 18.3.1, offline single-file bundle: frontend/medical-ui/package.json:10",
     "geometry": "native physical-pixel metrics: frontend/medical-ui/layout.mjs:3",
-    "motion": "no animations or layout transitions: frontend/medical-ui/style.css",
-    "authority": "B301: native captions, source selection and mirrored layout; React occupied cards only. Clinical handlers and ACE unchanged.",
+    "motion": "Requested functional motion only: cached native stripes/action backgrounds, React stripes and proximity font scale.",
+    "authority": "B302: existing native handlers and mirrored compact layout; React occupied fluid cards only.",
     "material": "Original flat pre-Dusk palette restored; no blur, reflection or effect."
   },
   "preserve": [
@@ -17,9 +17,9 @@
     "native fallback and bounded React updates"
   ],
   "introduce": [
-    "Mirrored columns and shared rows/separators around the existing body map",
-    "Source switching on the existing Inventory button; remove Target caption/icon",
-    "ASCII warming text and existing native-clock dots for flowing medication carriers",
-    "Live UID endpoints retained while action popovers hide card faces"
+    "Compact equal-height cards and restored left details panel",
+    "Inventory hover tooltip, button gap matching panel padding, Pause wording",
+    "Explicit physical-flow stripe mask and 35% smooth proximity graduation labels",
+    "Ready action background pulses with fixed labels/hit regions"
   ]
 }
