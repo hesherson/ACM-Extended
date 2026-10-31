@@ -10,6 +10,9 @@ if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
 private _eyes = _patient getVariable [QGVAR(eyeInjuries),[1,1]];
 if !(_eyes isEqualType [] && {count _eyes == 2}
     && {(_eyes findIf {!(_x isEqualType 0) || {!finite _x}}) == -1}) exitWith {};
+// Recovery mutates its working array. Keep the stored anatomy unchanged until
+// the comparison/publication below; getVariable arrays are reference values.
+_eyes = +_eyes;
 private _injured = ({_x < 0.999} count _eyes) > 0;
 private _shieldItem = _patient getVariable [QGVAR(eyeShieldItem),""];
 private _shieldIndex = _patient getVariable [QGVAR(eyeShieldIndex),-1];
@@ -21,10 +24,12 @@ private _permanent = _patient getVariable [QGVAR(ocularPermanent),false];
 if (!_injured && {!_permanent}) exitWith {
     // The worker's tolerance must not strand a tiny residual injury/GUI label forever.
     if !(_eyes isEqualTo [1,1]) then {_patient setVariable [QGVAR(eyeInjuries),[1,1],true];};
-    _patient setVariable [QGVAR(eyeInjurySevere),false,true];
+    if (_patient getVariable [QGVAR(eyeInjurySevere),false]) then {
+        _patient setVariable [QGVAR(eyeInjurySevere),false,true];
+    };
     if (!_shieldActive) then {
-        _patient setVariable [QGVAR(eyeShieldItem),"",true];
-        _patient setVariable [QGVAR(eyeShieldIndex),-1,true];
+        if (_shieldItem != "") then {_patient setVariable [QGVAR(eyeShieldItem),"",true];};
+        if (_shieldIndex != -1) then {_patient setVariable [QGVAR(eyeShieldIndex),-1,true];};
     };
 };
 
@@ -68,11 +73,15 @@ if (_permanent) then {
             _eyes set [_i,_next];
         };
     };
-    _patient setVariable [QGVAR(eyeInjuries),_eyes,true];
+    if !(_eyes isEqualTo (_patient getVariable [QGVAR(eyeInjuries),[1,1]])) then {
+        _patient setVariable [QGVAR(eyeInjuries),_eyes,true];
+    };
 };
 
 private _severe = ({_x < 0.25} count _eyes) >= 2;
-_patient setVariable [QGVAR(eyeInjurySevere),_severe,true];
+if !(_severe isEqualTo (_patient getVariable [QGVAR(eyeInjurySevere),false])) then {
+    _patient setVariable [QGVAR(eyeInjurySevere),_severe,true];
+};
 
 // updateVisualEffects is the single presentation worker. It follows controlled-unit,
 // consciousness and HMD changes without the slower physiology worker reopening an old overlay.

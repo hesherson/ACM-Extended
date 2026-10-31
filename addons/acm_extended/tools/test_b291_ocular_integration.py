@@ -16,7 +16,7 @@ from test_historical_vial_execution import map_defaults
 OCULAR = ROOT / "addons/ophthalmology"
 
 
-def source(name, component="ophthalmology"):
+def source(name, component="ophthalmology", instrument_public=False):
     folder = ROOT / "addons" / component.lower()
     path = folder / (name if name.endswith(".sqf") else f"functions/fnc_{name}.sqf")
     text = path.read_text()
@@ -44,6 +44,13 @@ def source(name, component="ophthalmology"):
     text = text.replace('_patient isKindOf "CAManBase"', "true")
     # SQF-VM lacks this native command; preserve its interpolation/clamping exactly.
     text = re.sub(r"\blinearConversion (\[[^\n;]*?\])", r"(\1 call _linear)", text)
+    if instrument_public:
+        # Snapshot real publication requests before the namespace adapter removes
+        # Arma's public flag. Keep local writes and all production decisions.
+        text = re.sub(
+            r'(_patient) setVariable \[(QGVAR\(\w+\)),\s*(.*?),\s*true\];',
+            r'[\1,\2,\3] call _ocularPublish;', text,
+        )
     return map_defaults(adapt(text, component))
 
 

@@ -1,5 +1,12 @@
 # ACM Extended patch notes
 
+## 1.2.4.1 — B292 (ocular network publication)
+
+- Shield wearers and casualties with permanent ocular injuries no longer broadcast unchanged eye severity and shield history every second.
+- Ordinary eye recovery still publishes changed anatomy immediately. Exact healthy endpoints, severity changes, removed-shield metadata and expired settled history still publish once.
+- Unresolved spent shield records remain protected, including on dead casualties. Public version remains **1.2.4.1**, network protocol **2**, with all **19 addons** required.
+- Validation and deployment: [B292 ocular publication review](docs/audits/B292-ocular-publication.md).
+
 ## 1.2.4.1 — B291 (burns, infection and ocular injuries)
 
 - Integrates the previously withheld medical content from PR #2, including later dev fixes: burns, infection/sepsis, ocular trauma and TCCC/DD1380 cards.

@@ -10,9 +10,16 @@ private _incoming = _patient getVariable [QGVAR(shieldIncoming),createHashMap];
     };
 } forEach +(keys _incoming);
 private _terminal = _patient getVariable [QGVAR(shieldTerminal),createHashMap];
+private _pruned = false;
 {
     private _entry = _terminal get _x;
     if (serverTime > ((_entry select 0) select 7)+30
-        && {(_entry select 1) in ["applied","refunded"] || {count _entry == 3 && {_entry select 2}}}) then {_terminal deleteAt _x;};
+        && {(_entry select 1) in ["applied","refunded"] || {count _entry == 3 && {_entry select 2}}}) then {
+        _terminal deleteAt _x;
+        _pruned = true;
+    };
 } forEach +(keys _terminal);
-_patient setVariable [QGVAR(shieldTerminal),_terminal,true];
+// Healthy shield wearers and permanent casualties stay enrolled. Their empty
+// or unchanged transaction history must not become a one-second broadcast.
+// Real deletions, including the final empty map, still publish immediately.
+if (_pruned) then {_patient setVariable [QGVAR(shieldTerminal),_terminal,true];};
