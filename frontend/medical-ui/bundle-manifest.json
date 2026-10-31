@@ -3,7 +3,7 @@
   "sources": {
     "App.jsx": "efa12955f241c7093b05cffcda38e9f5d6817673395a48b53bf87c18fdcdf9ae",
     "layout.mjs": "8d270b31e7d462885799c3e7033b822011eb108f344400351096be98a92dcc0a",
-    "bridge.mjs": "32c272f958996f16b5b91aee9d0ffa66321056e9e18fe63ead33722f929736f0",
+    "bridge.mjs": "37feb0d96357e0a8ffbe3e9735b8233f7b93ed720fa1266c27c253b55b543253",
     "tokens.css": "7fc457ffaecebf5835a9ad5257bccef72b601a4f076d2aeb8b38354f2605cbd8",
     "style.css": "9b4827a68611f0aab35e0ced92feddb1d62f7bbcfb15d08c42fb57d08787811d",
     "build.mjs": "df8d63997ac025d62014d925cb29e3b637d5346c464cd4b586094aee2306d4dd",
@@ -12,6 +12,6 @@
     "assets/RobotoCondensed.woff2": "231573d5444afbbf7e9bc17bb04dea95eb14225abe7877a1d86c36edbed52bf3",
     "assets/OFL.txt": "0b3098464626138c0e2b29b95239e9f27ffbe322c6256305852018d8a9587ede"
   },
-  "htmlSha256": "be20a4d45aa6f4ed7d70702734fec5840b7b29fcedf6d3338383fe454ad522e2",
+  "htmlSha256": "996b5edd17e5faa57ded04b6afdbc911475bcd9c16ce6f787b199446dab6c3bc",
   "licensesSha256": "ae9db7f9fa10382202b823d68cf94fa34c22a3dd26e8fc391b3ef012636dcf37"
 }

@@ -62,6 +62,7 @@ export function createMedicalStore(send, now = () => performance.now()) {
     },
     fallback() {
       if (!binding || snapshot.status==='fallback') return false;
+      pendingAt = null;
       update({...snapshot,status:'fallback',pending:false});
       return emit('fallback');
     },
@@ -70,6 +71,7 @@ export function createMedicalStore(send, now = () => performance.now()) {
       pendingAt = null; update({...snapshot,pending:false}); return true;
     },
     checkFreshness() {
+      if (snapshot.status === 'fallback') return;
       const stale = snapshot.receivedAt !== null && now()-snapshot.receivedAt > 3500;
       const expired = pendingAt !== null && now()-pendingAt > 2000;
       if (expired) pendingAt = null;
