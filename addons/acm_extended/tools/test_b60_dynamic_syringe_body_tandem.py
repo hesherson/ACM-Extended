@@ -33,10 +33,13 @@ def test_active_syringe_is_85_percent_then_100_percent_on_hover():
     from test_bounded_current_carousel_contract import render_contract
     render_contract()
     car = txt('functions/fn_skCarouselRender.sqf')
-    # Compact center is 85% opacity; hover is opacity-only and never changes geometry.
+    # Compact center is 85% opacity. B243 deliberately removed the remaining
+    # hover alpha promotion as well as hover geometry, so pointer movement cannot
+    # repaint the carousel.
     assert '[0.06,0.24,0.85,0.24,0.06]' in car
     assert 'private _activeScale = 1;' in car
-    assert 'if (!_editMode && {_off == _hoverOffset}) then {_alpha = 1;};' in car
+    assert '_hoverOffset' not in car
+    assert 'then {_alpha = 1;}' not in car
 
 def test_same_five_carousel_controls_are_used_in_both_layouts():
     inj = txt('functions/fn_skInject.sqf')

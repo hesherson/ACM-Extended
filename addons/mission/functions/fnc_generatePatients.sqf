@@ -19,7 +19,7 @@
  * Public: No
  */
 
-params ["_object", "_location", "_initiator", "_casualtyCount", "_severity"];
+params ["_object", "_location", "_initiator", "_casualtyCount", "_severity", ["_faction", "BLUFOR"], ["_presetID", ""], ["_type", 0]];
 
 [_object] call FUNC(clearPatients);
 
@@ -36,7 +36,7 @@ for "_i" from 1 to _casualtyCount do {
         _patientSeverity =  1 + (round (random 3));
     };
 
-    _patientList pushBack ([_object, _location, _initiator, _patientSeverity, 0, false] call FUNC(generatePatient));
+    _patientList pushBack ([_object, _location, _initiator, _patientSeverity, _type, false, _faction, _presetID] call FUNC(generatePatient));
 };
 
 _object setVariable [QGVAR(ActivePatients), _patientList, true];

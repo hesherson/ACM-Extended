@@ -55,3 +55,5 @@ ACM_MEDICALMENU_ACTION_BUTTON(ACM_SAMSplint,QPATHTOEF(disability,ui\samSplint.pa
 
 ACM_MEDICALMENU_ACTION_BUTTON(ACM_ATNA_Autoinjector,QPATHTOEF(cbrn,ui\autoinjector_ATNA_ca.paa));
 ACM_MEDICALMENU_ACTION_BUTTON(ACM_Midazolam_Autoinjector,QPATHTOEF(cbrn,ui\autoinjector_midazolam_ca.paa));
+
+ACM_MEDICALMENU_ACTION_BUTTON(ACE_salineIV_500,QACEPATHTOF(medical_treatment,ui\salineIV_ca.paa));

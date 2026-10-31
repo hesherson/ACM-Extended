@@ -3,7 +3,8 @@
 // the player can freelook while the body remains fixed with the raised arm animation.
 params [["_medic", objNull, [objNull]], ["_enable", false, [false]]];
 if (!hasInterface || {isNull _medic}) exitWith {};
-if (_enable && {!(_medic isEqualTo ACE_player)}) exitWith {};
+if (_enable && {!(_medic isEqualTo (call ACME_fnc_controlledProvider))
+    || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}}) exitWith {};
 if (!_enable && {!((uiNamespace getVariable ["ACME_HangInputMedic", objNull]) isEqualTo _medic)}) exitWith {};
 
 private _oldDisplay = uiNamespace getVariable ["ACME_HangInputDisplay", displayNull];
@@ -60,8 +61,8 @@ uiNamespace setVariable ["ACME_HangBlockedKeys", _blockedKeys];
 
 private _keyEH = _display displayAddEventHandler ["KeyDown", {
     params ["_display", "_key", "_shift", "_ctrl", "_alt"];
-    private _unit = ACE_player;
-    private _locked = !isNull _unit && {alive _unit} && {_unit getVariable ["ACME_hang_Active", false]};
+    private _unit = uiNamespace getVariable ["ACME_HangInputMedic", objNull];
+    private _locked = !isNull _unit && {_unit isEqualTo (call ACME_fnc_controlledProvider)} && {alive _unit} && {_unit getVariable ["ACME_hang_Active", false]};
     if (!_locked) exitWith {false};
     _key in (uiNamespace getVariable ["ACME_HangBlockedKeys", []])
 }];
@@ -75,18 +76,19 @@ private _keyEH = _display displayAddEventHandler ["KeyDown", {
 // lower a new bag started before the callback executes.
 private _mouseEH = _display displayAddEventHandler ["MouseButtonDown", {
     params ["_display", "_button"];
-    private _unit = ACE_player;
-    private _locked = !isNull _unit && {alive _unit} && {_unit getVariable ["ACME_hang_Active", false]};
+    if (call ACME_fnc_transfusionInputOwned) exitWith {false};
+    private _unit = uiNamespace getVariable ["ACME_HangInputMedic", objNull];
+    private _locked = !isNull _unit && {_unit isEqualTo (call ACME_fnc_controlledProvider)} && {alive _unit} && {_unit getVariable ["ACME_hang_Active", false]};
     if (!_locked) exitWith {false};
     if (_button isEqualTo 1) then {
         private _episodeStart = _unit getVariable ["ACME_hang_Start", -1];
         [{
-            params ["_episodeStart"];
-            private _unit = ACE_player;
-            if (isNull _unit) exitWith {};
+            params ["_episodeStart", "_unit"];
+            if (call ACME_fnc_transfusionInputOwned) exitWith {};
+            if (isNull _unit || {_unit isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
             if ((_unit getVariable ["ACME_hang_Start", -2]) != _episodeStart) exitWith {};
-            if (_unit getVariable ["ACME_hang_Active", false]) then { [false] call ACME_fnc_hangBagStop; };
-        }, [_episodeStart]] call CBA_fnc_execNextFrame;
+            if (_unit getVariable ["ACME_hang_Active", false]) then { [false, _unit] call ACME_fnc_hangBagStop; };
+        }, [_episodeStart, _unit]] call CBA_fnc_execNextFrame;
         true  // swallow the RMB so the weapon does not aim
     } else {
         false

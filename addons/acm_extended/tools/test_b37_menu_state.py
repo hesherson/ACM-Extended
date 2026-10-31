@@ -228,8 +228,10 @@ class RuntimeSourceContracts(unittest.TestCase):
     def test_callbacks_item_counts_and_pending_reopen_are_retained(self):
         self.assertIn('call ace_medical_gui_fnc_countTreatmentItems', RENDER)
         self.assertIn("ctrlAddEventHandler ['ButtonClick', _statement]", RENDER)
-        self.assertIn("if (_groupKey isEqualTo '' && {!(_actionClass in ['acme_directpressure', 'acme_stopdirectpressure'])}) then", RENDER)
-        self.assertIn('ace_medical_gui_pendingReopen = true', RENDER)
+        from test_b241_current_ui_expectations import pending_reopen_contract
+        # Modal workflows own their own close/reopen lifetime; normal treatments
+        # still arm ACE's reopen after their treatment statement runs.
+        pending_reopen_contract(RENDER)
 
 
 if __name__ == '__main__':

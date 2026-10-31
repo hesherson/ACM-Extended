@@ -6,6 +6,10 @@
 params ["_medic", "_patient", "_items", ["_personalOnly", false]];
 if (isNull _medic || {!local _medic} || {!(_items isEqualType [])} || {_items isEqualTo []}) exitWith {[]};
 
+// Save admission pauses new debits, while exact refunds/owner ACKs remain
+// independently available to settle already reserved supplies.
+if (_medic getVariable ["ACME_persistenceFrozen",false]
+    || {!isNull _patient && {_patient getVariable ["ACME_persistenceFrozen",false]}}) exitWith {[]};
 private _receipt = [];
 isNil {
     private _sources = [];
@@ -44,6 +48,11 @@ isNil {
                 scopeName "ACME_EFAK_SUPPLY";
                 {
                     private _unit = _x;
+                    private _carrierUsed = [_unit, _items] call ACME_fnc_carrierSupplyTake;
+                    if (!isNull (_carrierUsed select 0)) then {
+                        _used = _carrierUsed;
+                        breakOut "ACME_EFAK_SUPPLY";
+                    };
                     private _unitVehicle = objectParent _unit;
                     private _unitItems = [_unit, 0] call ace_common_fnc_uniqueItems;
                     private _unitMagazines = [_unit, 2] call ace_common_fnc_uniqueItems;
@@ -95,11 +104,11 @@ isNil {
 
     _used params [["_donor", objNull], ["_item", ""]];
     if (!isNull _donor && {_item != ""}) then {
-        private _vehicle = objNull;
+        private _vehicle = _used param [3, objNull];
         private _index = _sources findIf {(_x select 0) isEqualTo _donor};
         if (_index >= 0) then {
             private _source = _sources select _index;
-            if (!_personalOnly && {_item in (_source select 2)}) then {
+            if (!_personalOnly && {isNull _vehicle} && {_item in (_source select 2)}) then {
                 _vehicle = _source select 1;
             };
         };

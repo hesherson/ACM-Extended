@@ -7,7 +7,7 @@ SQF. No clinical dose or chemical-compatibility claim is made.
 import re
 import pytest
 from source_scan import lex, matching
-from test_menu_death_lifecycle import execute
+from test_menu_death_lifecycle import ROOT, adapt, execute
 from test_historical_vial_execution import F, source, code, function, setup
 
 
@@ -203,7 +203,8 @@ def ui_code(text):
 
 
 def ui_setup():
-    return setup()+'''
+    native=(ROOT/'addons/circulation/functions/fnc_setLocalUiState.sqf').read_text()
+    return setup()+'ACM_circulation_fnc_setLocalUiState={'+adapt(native,'circulation')+'};'+'''
         _drawDisplay=missionNamespace;
         private _hitCtrl=uiNamespace; private _visualCtrl=profileNamespace;
         _hitCtrl setVariable ["position",[0.2,0.1,0.05,0.02]];
@@ -241,7 +242,7 @@ def inject_setup():
     text=text.replace('getNumber (_med >> "concentration")','([_med,"concentration"] call _configNumber)')
     # Replace this specific config read before the common concentration-node adapter.
     text=text.replace('getNumber (configFile >> "ACM_Medication" >> "Concentration" >> _med >> "concentration")','([_med,"concentration"] call _configNumber)')
-    return transaction_setup()+'ACME_fnc_injectIntoBag={'+prep_code(text)+'};'+'''
+    return transaction_setup()+prep_function('infusionDrawResolve')+'ACME_fnc_injectIntoBag={'+prep_code(text)+'};'+'''
         _drawDisplay=missionNamespace;
         private _clamps=[]; private _bagWrites=[]; private _notices=0;
         private _limit=10; private _bagAccept=true;

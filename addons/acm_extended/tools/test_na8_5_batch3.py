@@ -113,8 +113,11 @@ class CustodySource(unittest.TestCase):
         self.assertIn('supplierUID',source('ventCustodyTick'))
         self.assertNotIn('ACME_vent_operator',source('ventCustodyTick'))
     def test_attach_removes_on_medic_owner_only(self):
-        s=source('ventInventoryLocal');self.assertIn('!local _medic',s);self.assertEqual(s.count('_medic removeItem "ACME_Ventilator"'),1)
-        self.assertIn('(_before - 1)',s)
+        s=source('ventInventoryLocal');self.assertIn('!local _medic',s)
+        self.assertEqual(s.count('call ACME_fnc_treatmentSupplyTake'),1)
+        self.assertIn('["ACME_Ventilator"]',s)
+        self.assertIn('call ACME_fnc_treatmentSupplyRefund',s)
+        self.assertLess(s.index('call ACME_fnc_treatmentSupplyTake'),s.index('_ok = true;'))
     def test_allocate_before_removing(self):
         s=source('ventCustodyRequest');self.assertLess(s.index('_records set [_id, _r]'),s.index('call ACME_fnc_ventCustodyTick'))
         self.assertIn('_id in _records',s)

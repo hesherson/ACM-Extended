@@ -318,6 +318,10 @@ private _PFH = [{
     private _vitalsPO = abs ((_patient getVariable [QGVAR(AED_Monitor_OxygenSaturation), 0]) - _oxygenSaturation) > 6;
     private _vitalsCO = abs ((_patient getVariable [QGVAR(AED_Monitor_EtCO2), 0]) - _etco2) > 10;
 
+    // Motion can begin/end with no rhythm, rate or connection change. Refresh the future strip
+    // in this same monitor episode, rather than waiting up to a whole sweep to show the seizure.
+    private _artifactBand = round (([_patient] call ACME_fnc_ecgArtifactStrength) * 10);
+    private _artifactChanged = _artifactBand != (_patient getVariable ["ACME_AED_Monitor_ArtifactBand", -1]);
     private _stepCondition = _monitorUpdateStep >= AED_MONITOR_LASTINDEX;
     private _oldEKGRhythm = _patient getVariable [QGVAR(AED_EKGRhythm), -2];
     private _oldPORhythm = _patient getVariable [QGVAR(AED_PORhythm), -2];
@@ -348,9 +352,10 @@ private _PFH = [{
     private _connectedCondition = _connectedEKG || _connectedPO || _connectedCO;
     private _listCondition = (count _monitorArray_EKGRefresh < AED_MONITOR_WIDTH) || (count _monitorArray_PORefresh < AED_MONITOR_WIDTH) || (count _monitorArray_CORefresh < AED_MONITOR_WIDTH);
 
-    if (_stepCondition || {_rrChanged || {_vitalsCondition || {_rhythmChangeCondition || {_connectedCondition || {_listCondition}}}}}) then {
+    if (_artifactChanged || {_stepCondition} || {_rrChanged || {_vitalsCondition || {_rhythmChangeCondition || {_connectedCondition || {_listCondition}}}}}) then {
         _patient setVariable [QGVAR(AED_EKGRhythm), _EKGRhythm];
         _patient setVariable ["ACME_AED_Monitor_PEAForm",_peaWide,false];
+        _patient setVariable ["ACME_AED_Monitor_ArtifactBand", _artifactBand, false];
         _patient setVariable [QGVAR(AED_PORhythm), _PORhythm];
         _patient setVariable [QGVAR(AED_CORhythm), _CORhythm];
 
@@ -444,9 +449,14 @@ private _PFH = [{
         } else {
             private _startIndex = (_monitorUpdateStep + 1) min AED_MONITOR_LASTINDEX;
 
-            if (_rhythmChangeEKG || {_connectedEKG || {_vitalsEKG || {_rrChanged || {count _monitorArray_EKGRefresh < AED_MONITOR_WIDTH}}}}) then {
+            if (_artifactChanged || {_rhythmChangeEKG} || {_connectedEKG || {_vitalsEKG || {_rrChanged || {count _monitorArray_EKGRefresh < AED_MONITOR_WIDTH}}}}) then {
                 private _ekgBasis = if (count _monitorArray_EKGRefresh >= AED_MONITOR_WIDTH) then {_monitorArray_EKGRefresh} else {_monitorArray_EKG};
-                _monitorArray_EKGRefresh = [_ekgBasis, _freshEKG, _freshSafeEKG, _startIndex, _rhythmChangeEKG] call _fnc_spliceEKG;
+                _monitorArray_EKGRefresh = if (_artifactChanged && {!_rhythmChangeEKG}) then {
+                    // Mechanical noise need not wait for a safe QRS gap. Never overwrite already-drawn history.
+                    [_ekgBasis, _freshEKG, _startIndex, 3] call _fnc_bridge
+                } else {
+                    [_ekgBasis, _freshEKG, _freshSafeEKG, _startIndex, _rhythmChangeEKG] call _fnc_spliceEKG
+                };
                 _patient setVariable [QGVAR(AED_EKGRefreshDisplay), _monitorArray_EKGRefresh];
             };
 

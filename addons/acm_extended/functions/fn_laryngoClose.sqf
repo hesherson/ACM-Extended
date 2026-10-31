@@ -30,6 +30,26 @@ uiNamespace setVariable ["ACME_laryngo_pfh", -1];
 // patient before the screen state is cleared, so the next person to open it, whoever they are, finds the airway
 // exactly as it was left: the same mess, the same damage and the same count against it.
 private _pat = uiNamespace getVariable ["ACME_laryngo_patient", objNull];
+// The render loop batches migration updates. Preserve the last real adjustment even when the screen closes
+// before its next 0.20-second send or the final movement was smaller than the visual threshold.
+// Ejection owns its own removal transaction; an abandoned new intubation is not an existing tube adjustment.
+if (!isNull _pat && {(uiNamespace getVariable ["ACME_laryngo_state", "idle"]) == "migrated"}
+    && {!(uiNamespace getVariable ["ACME_laryngo_ejecting", false])}
+    && {_pat getVariable ["ACME_ETT_Inserted", false]}) then {
+    private _depth = uiNamespace getVariable ["ACME_laryngo_tubeDepth", 0];
+    private _epoch = uiNamespace getVariable ["ACME_suctionEpoch", -1];
+    private _tubeTime = uiNamespace getVariable ["ACME_laryngo_migrationTubeTime", -1];
+    private _last = uiNamespace getVariable ["ACME_laryngo_migrationSyncLast", [-1, -1, false]];
+    if (_depth isEqualType 0 && {finite _depth} && {_depth > 0.001} && {_depth <= 1}
+        && {(_last param [0, -1]) >= 0} && {_epoch == ([_pat] call ACME_fnc_clinicalEpoch)}
+        && {_tubeTime == (_pat getVariable ["ACME_ETT_Time", -1])}) then {
+        private _frame = 1 + round (_depth * 7);
+        private _mainstem = _frame > (uiNamespace getVariable ["ACME_laryngo_idealFrame", 8]);
+        if !([_depth, _frame, _mainstem] isEqualTo _last) then {
+            [_pat, "placement", [_depth, _frame, _mainstem, _epoch, _tubeTime]] call ACME_fnc_ettMigrationStateCommit;
+        };
+    };
+};
 if (!isNull _pat) then {[_pat, "ui:laryngo:" + str clientOwner, false] call ACME_fnc_ecgJostleRequest;};
 // leaving the screen stops the suction, so the clock stops with it.
 // B13: release command above; physiology recovers on the patient owner.
@@ -65,6 +85,7 @@ uiNamespace setVariable ["ACME_laryngo_reveal", 0];
 uiNamespace setVariable ["ACME_laryngo_tubeDepth", 0];
 uiNamespace setVariable ["ACME_laryngo_migrationSyncNext", 0];
 uiNamespace setVariable ["ACME_laryngo_migrationSyncLast", [-1, -1, false]];
+uiNamespace setVariable ["ACME_laryngo_migrationTubeTime", -1];
 uiNamespace setVariable ["ACME_laryngo_tubeAim", ""];
 uiNamespace setVariable ["ACME_laryngo_pryPressure", 0];
 uiNamespace setVariable ["ACME_laryngo_pryReveal", 0];

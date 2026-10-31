@@ -26,7 +26,7 @@
 
 params ["_totalTime", "_args", "_onFinish", "_onFail", ["_localizedTitle", ""], ["_condition", {true}], ["_exceptions", []], ["_dialog", true]];
 
-private _acmeDPPlayer = ACE_player;
+private _acmeDPPlayer = call ACME_fnc_controlledProvider;
 if (!isNull _acmeDPPlayer
     && {_acmeDPPlayer getVariable ["ACME_DP_Active", false]}
     && {(_acmeDPPlayer getVariable ["ACME_DP_Mode", ""]) in ["limb", "self"]}
@@ -34,7 +34,7 @@ if (!isNull _acmeDPPlayer
     _totalTime = _totalTime * (missionNamespace getVariable ["ACME_DP_treatTimeMult", 1.6]);
 };
 
-private _player = ACE_player;
+private _player = call ACME_fnc_controlledProvider;
 
 //Open Dialog and set the title
 closeDialog 0;
@@ -84,7 +84,7 @@ _ctrlPos set [1, ((0 + 29 * ACEGVAR(common,settingProgressBarLocation)) * ((((sa
     if (isNull (uiNamespace getVariable [QACEGVAR(common,ctrlProgressBar), controlNull])) then {
         _errorCode = 1;
     } else {
-        if (ACE_player != _player || !alive _player) then {
+        if ((call ACME_fnc_controlledProvider) != _player || !alive _player) then {
             _errorCode = 2;
         } else {
             if !([_args, _elapsedTime, _totalTime, _errorCode] call _condition) then {

@@ -264,7 +264,7 @@ if (_pending isEqualType [] && {count _pending >= 3}) then {
     _btn ctrlSetText (if (_armed == _id) then {"Confirm discard?"} else {"Discard Syringe"});
     _btn ctrlSetTooltip "Discard the currently selected syringe. Requires two presses.";
     _btn ctrlEnable (!_busy);
-    private _a = 0.48 + 0.42 * (0.5 + 0.5 * sin (diag_tickTime * 300));
+    private _a = 0.69; // Keep the discard warning steady; retain two-press confirmation.
     _back ctrlSetBackgroundColor (["danger",_a] call ACME_fnc_a11yColor);
 };
 _back ctrlShow true;

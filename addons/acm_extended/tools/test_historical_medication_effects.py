@@ -196,6 +196,8 @@ def test_disabled_or_remote_overdose_check_does_not_emit_callback(limit,local):
 
 def cbrn_setup():
     return setup()+function('medicationCBRNTick',extended=True)+'''
+        // Exact local writer boundary: packet suppression is tested separately.
+        ACME_fnc_setVarNetApprox={params ["_obj","_name","_value"];_obj setVariable [_name,_value];};
         private _dt=.5; ACME_fnc_clinicalTickDelta={_dt};
         _patient setVariable ["ACM_CBRN_Chemical_Sarin_Buildup",.5];
         _patient setVariable ["ACM_CBRN_Chemical_Lewisite_Buildup",10];

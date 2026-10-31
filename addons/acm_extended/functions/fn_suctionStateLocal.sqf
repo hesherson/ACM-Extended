@@ -13,7 +13,7 @@ _sequences set [_si, [_token, _sequence, _mode == "closed"]];
 if (count _sequences > 64) then {_sequences deleteAt 0;};
 _patient setVariable ["ACME_suctionSequence", _sequences, true];
 private _sessions = (_patient getVariable ["ACME_suctionSessions", []]) select {(_x select 0) != _token};
-private _valid = alive _patient && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])};
+private _valid = alive _medic && {!(_medic getVariable ["ACE_isUnconscious", false])};
 _valid = _valid && {_medic distance _patient <= 5 || {!isNull objectParent _medic && {objectParent _medic == objectParent _patient}}};
 if (_mode in ["hand","salad"]) then {
     _valid = _valid && {_device == 1} && {([_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount) > 0};

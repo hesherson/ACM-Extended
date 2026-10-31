@@ -4,3 +4,4 @@ PREP(isZoneOverlapping);
 PREP(updateBodyImage);
 PREP(pauseMedicalMenuPFH);
 PREP(resumeMedicalMenuPFH);
+PREP(retireMedicalMenuPFH);

@@ -18,12 +18,25 @@ def test_carrier_provider_is_literal_medic4_and_freezes_at_22():
     init = read("addons/acm_extended/functions/fn_initChestSealProcedureRuntime.sqf")
     assert 'case "chestAccess": {"AinvPknlMstpSnonWnonDnon_medic4"};' in pose
     assert '["chestAccess", 2.2]' in init
-    assert '["chestSealWorkspace"' not in init
+    assert '["chestSealWorkspace", "AinvPknlMstpSnonWnonDnon_medicUp4"]' in init
 
 def test_patient_lift_waits_for_real_provider_medic4():
     provider = read("addons/acm_extended/functions/fn_chestAccessVestProvider.sqf")
     acquire = read("addons/acm_extended/functions/fn_chestAccessVestAcquire.sqf")
-    assert 'animationState _m) == "ainvpknlmstpsnonwnondnon_medic4"' in provider
+    # B212 keeps literal medic4 for kneeling providers and accepts the supported prone mapping.
+    # Both wait admission and publication must observe the actual resolved work state and exact episode.
+    probe = provider.split("private _armReadyProbe = {", 1)[1].split("private _entry = _medic", 1)[0]
+    for requirement in (
+        '(_state param [0,-2]) == _epoch',
+        '(_state param [1,""]) == "chestAccess"',
+        '(_state param [3,-2]) >= _requiredStage',
+        '(toLowerANSI (_state param [2, ""])) in ["ainvpknlmstpsnonwnondnon_medic4", "acm_pronecontinuous"]',
+        '(toLowerANSI animationState _m) == (toLowerANSI (_state param [2, ""]))',
+    ):
+        assert probe.count(requirement) == 2, requirement
+    assert '(_entry param [2,""]) != _token || {(_entry param [1,-1]) != _epoch}' in probe
+    assert '(_entry param [2,""]) == _token && {(_entry param [1,-1]) == _epoch}' in probe
+    assert '"ACME_chestAccessProviderReady", [_token, serverTime], true' in probe
     assert "ACME_chestAccessProviderReady" in provider
     wait_block = acquire.split("// After any Semi-Fowler lay-flat finishes", 1)[1]
     assert "ACME_chestAccessProviderReady" in wait_block
@@ -40,6 +53,7 @@ def test_removal_order_is_lift_remove_park_release():
     lower_stage = begin.index("// Start the lower interval from the callback that actually removes the")
     commit = begin.index("private _removed = [_p,_ctx,_savedVar,_propVar,_pfhVar] call _commit;", lower_stage)
     release = begin.index('"ACME_HeadElevPatientRelease"', commit)
+    # B218 delegates exact carrier/cargo custody; do not restore the unsafe whole loadout.
     assert grab < lower_stage < commit < release
     commit_fn = s.split("private _commitRemoval = {", 1)[1].split("// Animation is allowed", 1)[0]
     assert commit_fn.index("removeVest _p") < commit_fn.index("ACME_fnc_chestAccessVestPark")
@@ -48,7 +62,7 @@ def test_restoration_is_patient_lift_revest_release_without_extra_provider_medic
     s = read("addons/acm_extended/functions/fn_chestAccessVestRestore.sqf")
     begin = s.split("private _beginRestore = {", 1)[1]
     grab = begin.index('"ACME_HeadElevPatientGrab"')
-    revest = begin.index("_loadout set [4,+_saved]")
+    revest = begin.index("call ACME_fnc_carrierInventoryRestore")
     release = begin.index('"ACME_HeadElevPatientRelease"')
     assert grab < revest < release
     assert '"chestAccessVestProvider", [_medic, _patient, "start"' not in s

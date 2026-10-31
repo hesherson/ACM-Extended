@@ -2,16 +2,17 @@
 #include "\x\ACM\addons\circulation\SyringeDraw_defines.hpp"
 /* Change Narc Box syringe size without destroying/recreating the dialog. */
 disableSerialization;
-params [["_size",10,[0]]];
+params [["_size",10,[0]], ["_flushClass","",[""]]];
+if (_flushClass != "" && {_flushClass != "ACM_SalineFlush_10" || {_size != 10}}) exitWith {false};
 if !(_size in [1,3,5,10]) exitWith {false};
 private _d = findDisplay 84000;
 if (isNull _d) exitWith {false};
-if (([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], format ["ACM_Syringe_%1",_size]] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {false};
+if (([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], (if (_flushClass != "") then {_flushClass} else {format ["ACM_Syringe_%1",_size]})] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {false};
 if (uiNamespace getVariable ["ACME_SK_InjectionBusy",false]) exitWith {false};
 
 private _current = uiNamespace getVariable ["ACME_SK_CurSize",10];
 private _stageBefore = uiNamespace getVariable ["ACME_SK_WasteStage",""];
-if (_size == _current && {_stageBefore == "compound"}) exitWith {true};
+if (_flushClass == "" && {_size == _current} && {_stageBefore == "compound"}) exitWith {true};
 
 // Preserve an already prepared compound exactly as the old reopen path did.
 private _autoSaved = false;
@@ -66,13 +67,18 @@ if (!isNull _vis) then {
 
 // Update the geometry cache used by the Body Map carousel without recreating the dialog.
 private _barrel = _d displayCtrl (_base+2);
-if (!isNull _barrel) then {_d setVariable ["ACME_SK_CarouselNativeRect",ctrlPosition _barrel];};
+if (!isNull _barrel) then {
+    _barrel ctrlSetText (if (_size==10 && {_flushClass!=""}) then {
+        "\acm_extended\ui\syringe\syringe_flush_10_barrel_ca.paa"
+    } else {format ["\x\ACM\addons\circulation\ui\syringe\syringe_%1_barrel_ca.paa",_size]});
+    _d setVariable ["ACME_SK_CarouselNativeRect",ctrlPosition _barrel];
+};
 private _travelNow = _bottom - _top;
 private _ratio = switch (_size) do {case 1:{10.2/10.5};case 3:{9.83/10.5};case 5:{10.3/10.5};default{1};};
 if (_travelNow > 0) then {_d setVariable ["ACME_SK_CarouselTravel10",_travelNow / (_ratio max 0.01)];};
 
 // Plain Narc Box returns immediately to a fresh compound preparation in the same display.
-if ((missionNamespace getVariable ["ACME_infusion_pendingContext",[]]) isEqualTo []) then {[] call ACME_fnc_skCompoundBegin;};
+if (_flushClass == "" && {(missionNamespace getVariable ["ACME_infusion_pendingContext",[]]) isEqualTo []}) then {[] call ACME_fnc_skCompoundBegin;};
 call ACME_fnc_skPendingTagRender;
 call ACME_fnc_skListRefresh;
 true

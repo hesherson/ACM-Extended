@@ -12,7 +12,7 @@ def read(rel):
 def test_debug_overlay_uses_one_safezone_reference_box_only():
     s = read("addons/acm_extended/functions/fn_debugMenuClinical.sqf")
     assert 'private _baseFontH = safeZoneH * 0.0092;' in s
-    assert 'private _totalW = (safeZoneH * 0.255)' in s
+    assert 'private _totalW = (safeZoneH * 0.40)' in s
     assert 'private _x = safeZoneXAbs + _marginX;' in s
     assert 'private _y = safeZoneY + _marginY;' in s
     assert 'private _panelBottom = safeZoneY + safeZoneH - _marginY;' in s
@@ -68,10 +68,11 @@ def test_reference_geometry_is_resolution_independent_across_common_and_odd_mode
         (5120, 1440),
     ]
     for width, height in resolutions:
-        panel_width_to_height = 0.255
+        panel_width_to_height = min(0.40, width / height * 0.245)
         top_margin_fraction = 0.004
         bottom_margin_fraction = 0.004
-        assert panel_width_to_height == 0.255
+        assert panel_width_to_height <= 0.40
+        assert panel_width_to_height * height <= width * 0.245 + 1e-9
         assert abs((1 - top_margin_fraction - bottom_margin_fraction) - 0.992) < 1e-9
         assert width > 0 and height > 0
 

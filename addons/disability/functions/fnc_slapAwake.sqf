@@ -18,7 +18,7 @@
 
 params ["_medic", "_patient"];
 
-if (ACE_player == _medic) then {
+if ((call ACME_fnc_controlledProvider) == _medic) then {
     addCamShake [2, 0.2, 10];
 };
 

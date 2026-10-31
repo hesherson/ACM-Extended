@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Stable B204 build: B180 clot-only reopening plus B199 physical-dressing invariants remain enforced."""
+"""Stable B216 build: B180 clot-only reopening plus B199 physical-dressing invariants remain enforced."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +25,7 @@ def test_applied_bandage_commit_has_no_reopen_scheduler():
 def test_custom_clot_pop_never_reads_or_writes_physical_dressings():
     s = read("addons/acm_extended/functions/fn_popClots.sqf")
     assert 'getVariable ["ACM_damage_ClottedWounds", createHashMap]' in s
-    assert 'setVariable ["ACM_damage_ClottedWounds", _clotted, true]' in s
+    assert '[["clottedWounds", _clotted]], true] call ACM_damage_fnc_setWoundState;' in s
     for forbidden in (
         "ace_medical_bandagedWounds",
         "GET_BANDAGED_WOUNDS",
@@ -112,8 +113,8 @@ def test_generic_reopen_helper_is_future_proofed_to_clots_only():
 def test_build_identity_is_b203_stable():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4.1";' in cfg
-    assert 'ACME_buildBatch = "B204";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 
@@ -121,4 +122,4 @@ if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
             fn()
-    print("stable B204 bandage/clot invariant regression: PASS")
+    print("stable B216 bandage/clot invariant regression: PASS")

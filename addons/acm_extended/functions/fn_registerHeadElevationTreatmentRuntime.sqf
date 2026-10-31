@@ -15,7 +15,9 @@
     // suspended state and does not replay another release animation.
     if (_classLC in ["recoveryposition","cpr"]) exitWith {
         private _alreadyFlat = _patient getVariable ["ACME_headElev_Suspended", false];
-        [_medic, _patient, _alreadyFlat] call ACME_fnc_headElevateStop;
+        // Recovery already owns Flip's provider motion. Only the casualty needs the authored
+        // lowering here; a second provider lower sequence would overwrite that Flip episode.
+        [_medic, _patient, _alreadyFlat, false, false, _classLC == "recoveryposition"] call ACME_fnc_headElevateStop;
     };
 
     private _cfg = configFile >> "ace_medical_treatment_actions" >> _classname;

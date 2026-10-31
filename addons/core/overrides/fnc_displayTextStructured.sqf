@@ -61,10 +61,8 @@ if (typeName _text != "TEXT") then {
     if (_text isEqualType "" && {isLocalized _text}) then {
         _text = localize _text;
     };
-    _text = composeText [lineBreak, parseText format ["<t align='center'>%1</t>", _text]];
+    _text = parseText format ["<t align='center'><t size='0.35'> </t><br/>%1<br/><t size='0.35'> </t></t>", _text];
 };
-
-private _isShown = ctrlShown (uiNamespace getVariable ["ACE_ctrlHint", controlNull]);
 
 ("ACE_RscHint" call BIS_fnc_rscLayer) cutRsc ["ACE_RscHint", "PLAIN", 0, true];
 
@@ -78,22 +76,19 @@ _ctrlHint ctrlSetTextColor ACEGVAR(common,displayTextFontColor);
 private _xPos = profileNamespace getVariable ["IGUI_GRID_ACE_displayText_X", ((safeZoneX + safeZoneW) - (10 *(((safeZoneW / safeZoneH) min 1.2) / 40)) - 2.9 *(((safeZoneW / safeZoneH) min 1.2) / 40))];
 private _yPos = profileNamespace getVariable ["IGUI_GRID_ACE_displayText_Y", safeZoneY + 0.175 * safeZoneH];
 private _wPos =  (_width *(((safeZoneW / safeZoneH) min 1.2) / 40));
-private _hPos = _size * (2 *((((safeZoneW / safeZoneH) min 1.2) / 1.2) / 25));
+// The legacy size argument is a caller estimate, not a minimum height. Measure actual wrapped
+// content after establishing width, for strings, localized arrays and preformatted TEXT alike.
+_ctrlHint ctrlSetPosition [_xPos, _yPos, _wPos, safeZoneH];
+_ctrlHint ctrlCommit 0;
+_ctrlHint ctrlSetStructuredText _text;
+private _hPos = ((ctrlTextHeight _ctrlHint) + (safeZoneH * 0.003)) min safeZoneH;
 
-// Ensure still in bounds for large width/height
+// Ensure still in bounds for the measured width/height.
 _xPos = safeZoneX max (_xPos min (safeZoneX + safeZoneW - _wPos));
 _yPos = safeZoneY max (_yPos min (safeZoneY + safeZoneH - _hPos));
-
-// Zeus Interface Open and Display would be under the "CREATE" list
 if (!isNull curatorCamera) then {
     _xPos = _xPos min ((safeZoneX + safeZoneW - 12.5 * (((safeZoneW / safeZoneH) min 1.2) / 40)) - _wPos);
 };
-
-private _position = [_xPos, _yPos, _wPos, _hPos];
-
-_ctrlHint ctrlSetPosition _position;
+_ctrlHint ctrlSetPosition [_xPos, _yPos, _wPos, _hPos];
+// Position/height settle together: no frame with the old oversized backing under a new short result.
 _ctrlHint ctrlCommit 0;
-
-_ctrlHint ctrlSetStructuredText _text;
-_ctrlHint ctrlSetPosition _position;
-_ctrlHint ctrlCommit ([0.5, 0] select _isShown);

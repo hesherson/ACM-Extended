@@ -18,6 +18,12 @@ if (isNull _patient) exitWith {};
 if (!(_patient getVariable ["ACME_headElevated", false])) exitWith {
     _patient setVariable ["ACME_headElev_lastAnim", ""];
 };
+// With presentation disabled, the patient's ordinary lying animation is expected. Clinical treatment and
+// transport events still suspend/cancel the posture through their existing logical leases.
+if (!(missionNamespace getVariable ["ACME_interventionAnimations", true])
+    || {_patient getVariable ["ACME_headElev_noAnimation", false]}) exitWith {
+    _patient setVariable ["ACME_headElev_lastAnim", ""];
+};
 
 private _anim = toLower (animationState _patient);
 if (_anim isEqualTo (_patient getVariable ["ACME_headElev_lastAnim", ""])) exitWith {};

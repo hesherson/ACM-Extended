@@ -16,6 +16,9 @@
  */
 
 params ["_display"];
+private _controlledProvider = call ACME_fnc_controlledProvider;
+if (isNull _controlledProvider) exitWith {};
+ACE_player = _controlledProvider;
 
 // Create background effects based on interact menu setting
 if (ACEGVAR(interact_menu,menuBackground) == 1) then {[QACEGVAR(medical_gui,id), true] call ACEFUNC(common,blurScreen)};

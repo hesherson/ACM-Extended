@@ -85,6 +85,20 @@ if (_total <= 0) exitWith {
     call ACME_fnc_skBodyActionRender;
     false
 };
+// B259: a long IV/IO push is pharmacologically incremental. The visual
+// normal-push path below waits until the animation ENDS to commit, which
+// makes a 300-second calcium push deliver nothing for five minutes.
+// Reuse the acknowledged plunger worker (also used by Hardcore): it delivers
+// measured aliquots during the action, preserves leftovers on Stop, and
+// revalidates the line and treatment owner on every tick. Short/default
+// 3-second pushes and IM retain the existing bounded normal animation.
+// Measured epinephrine cocktails have a separate exact-volume debit and
+// selector-capture protocol. Keep that legacy timed path until a measured
+// partial-dose migration is implemented; ordinary calcium and other slow
+// vascular pushes still use the incremental worker.
+if (_iv && {_pushSec > 3} && {(_entry param [6,""]) != "epiMixB12"}) exitWith {
+    [true] call ACME_fnc_hardcorePushStart
+};
 
 // Push-dose epinephrine can intentionally leave solution behind. Every other prepared syringe empties to zero.
 private _remainingFrac = 0;

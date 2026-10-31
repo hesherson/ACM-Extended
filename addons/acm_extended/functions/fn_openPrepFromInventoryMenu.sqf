@@ -49,7 +49,7 @@ private _hasAllowedMedication = false;
 } forEach _allowedVials;
 
 if (!_hasAllowedMedication) exitWith {
-    ["You need a supported infusion medication vial, including ketamine or propofol.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+    ["You need a medication vial suitable for mixing into saline. Spike propofol bottles directly.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
 
 // The spiked set remains in custody until attachment succeeds.

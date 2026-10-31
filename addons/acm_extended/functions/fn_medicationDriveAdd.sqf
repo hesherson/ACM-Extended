@@ -20,7 +20,14 @@ if (!_infusion && {!(missionNamespace getVariable ["ACME_hcEff_medications",fals
 };
 private _queue = _patient getVariable ["ACME_medicationDriveQueue",[]];
 _queue pushBack [_base,_amount,_seconds,if (_infusion) then {"infusion"} else {"bolus"}];
-// A new queue entry is a structural transition, so publish it immediately. The circulation tick keeps later
-// mass/time decay owner-local and snapshots it at a bounded cadence.
-[_patient, "ACME_medicationDriveQueue", _queue] call ACME_fnc_setVarNet;
-_patient setVariable ["ACME_medicationDriveNetAt", diag_tickTime, false];
+// Infusion entries are admitted-flow samples, not new interventions: every bag can add one each medical tick.
+// Preserve exact owner mass immediately while sharing the one-second snapshot budget with the consumer.
+// Manual bolus additions remain immediate so a newly administered dose survives locality migration.
+_patient setVariable ["ACME_medicationDriveQueue", _queue, false];
+private _driveNow = diag_tickTime;
+private _driveLast = _patient getVariable ["ACME_medicationDriveNetAt", -1];
+if (!_infusion || {_driveLast < 0} || {(_driveNow - _driveLast) >= 1}) then {
+    [_patient, "ACME_medicationDriveQueue", _queue] call ACME_fnc_setVarNet;
+    _patient setVariable ["ACME_medicationDriveNetAt", _driveNow, false];
+    _patient setVariable ["ACME_medicationDriveFlushToken", [], false];
+};

@@ -20,18 +20,7 @@ if (([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], _flushCla
     _ctrl lbSetCurSel -1;
 };
 
-private _saveFailed = false;
-if ((uiNamespace getVariable ["ACME_SK_WasteStage", ""]) == "compound" && {!((uiNamespace getVariable ["ACME_SK_CompoundComponents", []]) isEqualTo [])}) then {_saveFailed = !(call ACME_fnc_skCompoundCommit);};
-if (_saveFailed) exitWith {};
-// ACM captures both sprite geometry and _size in its continuous-action closure.
-// Reopen at 10 mL so a previous 1/3/5 mL selection cannot control a flush.
-private _patient = uiNamespace getVariable ["ACME_SK_Patient", objNull];
-private _bodyPart = uiNamespace getVariable ["ACME_SK_BodyPart", ""];
-[] call ACME_fnc_skWasteEnd;
-uiNamespace setVariable ["ACME_SK_RestoreMouse", getMousePosition];
-_display closeDisplay 0;
-[{
-    params ["_size", "_patient", "_part", "_flush"];
-    if (dialog) exitWith {uiNamespace setVariable ["ACME_SK_RestoreMouse", []];};
-    [_size, _patient, _part, _flush] call ACME_fnc_skOpenDraw;
-}, [10, _patient, _bodyPart, _flushClass], 0.05] call CBA_fnc_waitAndExecute;
+// B233: the same in-place size switch used by ordinary syringes updates the
+// captured native geometry and controls. Do not close/recreate the Narc Box.
+if !([10, _flushClass] call ACME_fnc_skApplySize) exitWith {};
+[_flushClass] call ACME_fnc_skWasteBegin;

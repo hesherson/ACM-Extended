@@ -6,6 +6,11 @@ if (isNil "ACME_junctionalWoundReceivedEH") then {
     ACME_junctionalWoundReceivedEH = ["ace_medical_woundReceived", {
         params ["_unit", ["_allDamages", []], ["_source", objNull], ["_ammo", ""]];
         [_unit, _allDamages, _ammo] call ACME_fnc_junctionalRollSpawn;
+        // Remember significant torso injury for the next wake even if treated before consciousness returns.
+        if (local _unit && {((_unit getVariable ["ace_medical_bodyPartDamage",[]]) param [1,0]) >= 0.5}
+            && {!(_unit getVariable ["ACME_wakeHadTorsoDamage",false])}) then {
+            _unit setVariable ["ACME_wakeHadTorsoDamage",true,true];
+        };
     }] call CBA_fnc_addEventHandler;
 };
 

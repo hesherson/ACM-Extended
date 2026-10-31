@@ -93,7 +93,9 @@ class B27JunctionalCPRBVM(unittest.TestCase):
         b=(ADDONS/'breathing/functions/fnc_bvmSessionValid.sqf').read_text()
         c=(ADDONS/'circulation/functions/fnc_cprSessionValid.sqf').read_text()
         for name,component,text in [('bvm','breathing',b),('cpr','circulation',c)]:
-            text=text.replace('_medic distance2D _patient','_distance')
+            # These retained native reservation cases run on one authority;
+            # the new patient-owner MP protocol has its own reordered transport suite.
+            text=text.replace('_medic distance2D _patient','_distance').replace('isMultiplayer','false')
             body=adapt(text,component)
             setup='''
                 ace_common_fnc_isAwake = {!_unconscious};

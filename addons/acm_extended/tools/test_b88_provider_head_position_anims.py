@@ -1,5 +1,6 @@
 from historical_source import read_source, assert_release_identity
 from pathlib import Path
+from test_b89_provider_head_position_anims import assert_provider_choreography
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -22,15 +23,13 @@ def main():
     assert '[_medic, "elevate"] call ACME_fnc_headElevMedicSeq;' in start
     assert '[_medic, "lower"] call ACME_fnc_headElevMedicSeq;' in stop
     assert f'private _forcePose = _rest;' in seq
-    assert f'private _first = "{first}";' in seq
-    assert f'private _second = "{second}";' in seq
+    assert_provider_choreography()
     assert "DraggerBasenon" not in seq
     assert "AcinPknlMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon" not in seq
     assert '_u setUnitPos "UP";' not in seq
-    assert '_u setUnitPos "MIDDLE";' in seq
 
-    # Each finite move remains exact-once and provider control ends in an unarmed crouch,
-    # then releases the stance lock back to AUTO.
+    # Kneeling Putdown entry/return remain exact-once. Prone providers retain
+    # their supported work pose and return to prone idle before releasing AUTO.
     assert seq.count('[_u, _first, 2] call ACME_fnc_doAnim;') == 1
     assert seq.count('[_u, _second, 2] call ACME_fnc_doAnim;') == 1
     assert '_u selectWeapon "";' in seq
@@ -39,7 +38,7 @@ def main():
     assert '_m setUnitPos "AUTO";' in cancel
 
     # Patient release remains the authored lay-flat animation and is independent of the provider graph.
-    assert '[_patient, "ACME_HeadElevPatientRelease", 2] call ACME_fnc_doAnim;' in stop
+    assert 'call ACME_fnc_patientAnimRequest;' in stop
     assert 'class ACME_HeadElevPatientGrab: AinjPpneMrunSnonWnonDb_grab' in cfg
     assert 'class ACME_HeadElevPatientRelease: AinjPpneMrunSnonWnonDb_release' in cfg
 

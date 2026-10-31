@@ -33,7 +33,10 @@ private _preparedMixture = (_delivery param [4, false]) isEqualTo true;
 // therefore consumed successfully but never entered ace_medical_medications, which made both the physiology and
 // ACME debug readers see exactly zero. Keep the server's global basic-mode behavior for ordinary ACE medication,
 // but always run the complete ACM medication record path for the RSI/reversal family.
-private _forceAdvanced = _classname in ["Ketamine", "Ketamine_IV", "Rocuronium", "Rocuronium_IV", "Sugammadex_IV"];
+private _forceAdvanced = _classname in ["Ketamine", "Ketamine_IV", "Rocuronium", "Rocuronium_IV", "Sugammadex_IV"]
+    // Enabled infection needs a real antibiotic record even when ACE basic medications are selected.
+    || {(missionNamespace getVariable ["ACM_infection_infectionEnabled", false])
+        && {_classname in ["Moxifloxacin", "Ertapenem", "Ertapenem_IV", "Ceftriaxone", "Ceftriaxone_IV"]}};
 private _useAdvanced = ACEGVAR(medical_treatment,advancedMedication) || {_forceAdvanced};
 
 // Medication has no effects on dead units

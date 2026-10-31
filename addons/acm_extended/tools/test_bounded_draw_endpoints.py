@@ -59,6 +59,7 @@ def setup(size, amount, pixel=0.001):
         private _mouseWrites=[]; private _commits=[]; private _sessions=[];
         uiNamespace setVariable ["ACM_circulation_SyringeDraw_DLG",missionNamespace];
         ACM_circulation_SyringeDraw_Medication="Ketamine";
+        ACM_circulation_SyringeDraw_Size={size};
         ACM_circulation_SyringeDraw_MaxDose=99;
         ACM_circulation_SyringeDraw_DrawnAmount=0;
         ACM_circulation_SyringeDraw_Ctrl_LimitTop=0.2;

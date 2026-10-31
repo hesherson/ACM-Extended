@@ -1,25 +1,13 @@
-private _paused = missionNamespace getVariable ["ACME_infusion_pendingPausedFlow", []];
-if (_paused isEqualTo []) exitWith {};
-
-_paused params ["_patient", "_partIndex", "_iv", "_accessSite", "_oldFlow"];
-ACME_infusion_pendingPausedFlow = nil;
-
-if (isNull _patient || {_partIndex < 0} || {_oldFlow < 0}) exitWith {};
-
-if (_iv) then {
-    private _flowArray = +(_patient getVariable ["ACM_circulation_FluidBagsFlow_IV", [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]]]);
-    if (_partIndex < count _flowArray) then {
-        private _partFlow = +(_flowArray select _partIndex);
-        if (_accessSite >= 0 && {_accessSite < count _partFlow}) then {
-            _partFlow set [_accessSite, _oldFlow];
-            _flowArray set [_partIndex, _partFlow];
-            [_patient, [["fluidBagsFlowIV", _flowArray]], true] call ACM_circulation_fnc_setRuntimeState;
-        };
-    };
-} else {
-    private _flowArray = +(_patient getVariable ["ACM_circulation_FluidBagsFlow_IO", [1,1,1,1,1,1]]);
-    if (_partIndex < count _flowArray) then {
-        _flowArray set [_partIndex, _oldFlow];
-        [_patient, [["fluidBagsFlowIO", _flowArray]], true] call ACM_circulation_fnc_setRuntimeState;
-    };
+/* Release the exact owner-held pause. Legacy client snapshots cannot safely
+ * authorize a clinical write and are retired without restoring stale arrays. */
+private _paused=missionNamespace getVariable ["ACME_infusion_pendingPausedFlow",[]];
+ACME_infusion_pendingPausedFlow=nil;
+if (count _paused!=11 || {(_paused select 0)!="pause"}) exitWith {};
+private _patient=_paused select 1;
+private _medic=_paused select 2;
+if (!isNull _medic && {(_medic getVariable ["ACME_infusionMixFlowInput",[]]) isEqualTo [_paused select 3,_patient,_paused select 7]}) then {
+    _medic setVariable ["ACME_infusionMixFlowInput",[],true];
 };
+if (isNull _patient) exitWith {};
+_paused set [0,"resume"];
+[_patient,"transfusionMixFlow",_paused] call ACME_fnc_ownerDispatch;

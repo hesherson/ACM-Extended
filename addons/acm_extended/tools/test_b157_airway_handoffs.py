@@ -78,13 +78,21 @@ def test_invalid_htcl_callback_never_installs_locks_or_handlers(invalid):
     '_medic setVariable ["ACME_chestAccessPreflightActive",true];',
 ])
 def test_pending_head_position_sequence_yields_without_resetting_new_airway_pose(takeover):
-    execute(sequence_setup() + begin() + takeover + r'''
+    # B182 split stance ownership from animation-speed ownership. A continuous
+    # hold/preflight must retain its pose, but must not inherit the old finite rate.
+    speed_owned = 'nativeTreatmentRate' in takeover or 'treatmentPoseState' in takeover
+    execute(sequence_setup() + begin() + takeover + '_stanceOwned=true;' + r'''
         _moves=[]; _stances=[]; _events=[]; _waits=[]; _testAnimationSpeed=0;
         [_job] call _tick;
         [!(_medic getVariable ["ACME_headElev_seqActive",true]),"old head sequence stayed active"] call _check;
-        [count _moves==0 && {count _stances==0} && {count _events==0} && {count _waits==0},"old sequence touched new owner's pose"] call _check;
-        [_testAnimationSpeed==0 && {_removed isEqualTo [73]},"old sequence reset new freeze or leaked PFH"] call _check;
-    ''')
+        [count _moves==0 && {count _stances==0} && {count _waits==0},"old sequence touched new owner's pose"] call _check;
+        [_removed isEqualTo [73],"old sequence leaked PFH"] call _check;
+    ''' + ('''
+        [_testAnimationSpeed==0 && {count _events==0},"new speed owner was reset"] call _check;
+    ''' if speed_owned else '''
+        [_testAnimationSpeed==1 && {count _events==1},"old finite rate leaked into stance-only handoff"] call _check;
+        [(_events select 0 select 0)=="ace_common_setAnimSpeedCoef","handoff broadcast a pose instead of retiring speed"] call _check;
+    '''))
 
 
 def test_head_sequence_cancel_retires_without_replacing_a_new_treatment():

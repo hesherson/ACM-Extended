@@ -22,10 +22,12 @@ if (count _normalPush >= 5 && {(_normalPush select 0) isEqualTo _display}) then 
 };
 private _restore = uiNamespace getVariable ["ACME_SK_RestoreMouse", []];
 private _switch = (_restore isEqualType []) && {count _restore == 2};
+private _provider = _display getVariable ["ACME_SK_Provider", objNull];
+private _providerCurrent = !isNull _provider && {_provider isEqualTo (call ACME_fnc_controlledProvider)};
 private _infusion = !((_display getVariable ["ACME_SK_Return", []]) isEqualTo []);
 // Infusion prep borrows the Narc Box compound plunger engine, but its contents are committed only by Inject Into Bag.
 // Never let the Narc Box close handler auto-save that transient infusion syringe as a stored compound syringe.
-if (!_switch && {!_infusion} && {(uiNamespace getVariable ["ACME_SK_WasteStage", ""]) == "compound"}) then {
+if (_providerCurrent && {!_switch} && {!_infusion} && {(uiNamespace getVariable ["ACME_SK_WasteStage", ""]) == "compound"}) then {
     call ACME_fnc_skPendingTagCommit;
     call ACME_fnc_skCompoundCommit;
 };
@@ -37,7 +39,7 @@ uiNamespace setVariable ["ACME_SK_PushDurationEditing", false];
 uiNamespace setVariable ["ACME_SK_CarouselZoneHover", false];
 uiNamespace setVariable ["ACME_SK_PendingInjection", []];
 uiNamespace setVariable ["ACME_SK_DiscardArmedId", ""];
-[ACE_player] call ACME_fnc_vialLeaseRelease;
+if (!isNull _provider) then {[_provider] call ACME_fnc_vialLeaseRelease;};
 {
     private _h = uiNamespace getVariable [_x, -1];
     if (_h >= 0) then {[_h] call CBA_fnc_removePerFrameHandler;};
@@ -58,6 +60,6 @@ if (_hcPushClose isEqualType createHashMap && {count _hcPushClose > 0} && {_hcPu
 ACME_infusion_pendingContext = nil;
 missionNamespace setVariable ["ACME_infusion_bagTally", []];
 uiNamespace setVariable ["ACME_SK_suppressReturn", false];
-if (_suppressReturn) exitWith {};
+if (_suppressReturn || {!_providerCurrent}) exitWith {};
 if !(_return isEqualTo []) exitWith {[_return] call ACME_fnc_reopenTransfusion;};
-[_patient, "medication"] call ACME_fnc_reopenMedicalMenu;
+[_patient, "medication", -1, [], _provider] call ACME_fnc_reopenMedicalMenu;

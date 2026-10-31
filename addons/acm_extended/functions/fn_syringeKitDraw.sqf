@@ -1,5 +1,6 @@
 /* Legacy bench retains exact recipe validation and writes the same B12 syringe as the Narc Box. */
-private _player = ACE_player;
+private _player = uiNamespace getVariable ["ACME_SK_BenchMedic", objNull];
+if (isNull _player || {_player isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
 private _med = uiNamespace getVariable ["ACME_SK_Med", ""];
 private _epi = uiNamespace getVariable ["ACME_SK_EpiMl", 0];
 private _base = uiNamespace getVariable ["ACME_SK_SalineBase", -1];

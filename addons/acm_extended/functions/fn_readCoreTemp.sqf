@@ -24,4 +24,5 @@ private _band = switch (true) do {
 
 if (!isNil "ace_medical_treatment_fnc_addToLog") then {
     [_patient, "activity", "Core temperature measured: %1 C (%2)", "Core temp %1 C, %2", [_t toFixed 1, _band]] call ACME_fnc_medLog;
+    [_patient, "quick_view", "Core temperature measured: %1 C (%2)", "Core temp %1 C, %2", [_t toFixed 1, _band]] call ACME_fnc_medLog;
 };

@@ -1,13 +1,51 @@
 
 disableSerialization;
-params [["_closing", displayNull]];
+params [["_closing", displayNull], ["_pending", [], [[]]], ["_allowReturn", true, [true]]];
+private _restore = {
+    params ["_return", "_session", "_medic"];
+    if (count _return == 3 && {count _session == 3} && {[_session] call ACME_fnc_ivUiValid}) then {
+        (_return + [_session, _medic]) call ACME_fnc_reopenMedicalMenu;
+    };
+};
+// A cancelled next-frame launch never reached init, so it has no display/PFH,
+// controls or unfinished work to save. Release only its captured lease once.
+if (_pending isNotEqualTo []) exitWith {
+    if (count _pending != 8 || {_pending isNotEqualTo (uiNamespace getVariable ["ACME_IV_PendingLaunch", []])}) exitWith {};
+    uiNamespace setVariable ["ACME_IV_PendingLaunch", []];
+    _pending params ["_session", "_medic", "_return", "_medicalEpoch", "_lastOpened", "_displays", "_returnSerial", "_ecgKey"];
+    private _patient = _session param [0, objNull];
+    if (!isNull _patient) then {[_patient, _ecgKey, false] call ACME_fnc_ecgJostleRequest;};
+    // Creation failure can also run this path. Recheck the captured UI before
+    // enqueueing a return, rather than adopting a newer display as its baseline.
+    if (_allowReturn
+        && {(uiNamespace getVariable ["ACME_medicalMenuRendererEpoch", 0]) == _medicalEpoch}
+        && {(missionNamespace getVariable ["ace_medical_gui_lastOpenedOn", -1]) == _lastOpened}
+        && {(uiNamespace getVariable ["ACME_medicalReturnSerial", 0]) == _returnSerial}
+        && {(allDisplays findIf {!(_x in _displays)}) < 0}
+        && {!(uiNamespace getVariable ["ACME_minigame_open", false])}) then {
+        [_return, _session, _medic] call _restore;
+    };
+};
 private _active = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
-if (!isNull _closing && {_closing isNotEqualTo _active}) exitWith {};
+if (!isNull _closing && {_closing isNotEqualTo _active}) exitWith {
+    // An obsolete display owns no global controls or provider/menu context,
+    // but its captured lease still needs an idempotent release of its own key.
+    if (_closing getVariable ["ACME_IV_Closed", false]) exitWith {};
+    _closing setVariable ["ACME_IV_Closed", true];
+    private _session = _closing getVariable ["ACME_IV_Session", []];
+    private _patient = _session param [0, objNull];
+    private _key = _closing getVariable ["ACME_IV_ECGKey", ""];
+    if (!isNull _patient && {_key != ""}) then {[_patient, _key, false] call ACME_fnc_ecgJostleRequest;};
+};
 if (isNull _active) exitWith {};
+if (_active getVariable ["ACME_IV_Closed", false]) exitWith {};
+_active setVariable ["ACME_IV_Closed", true];
 private _session = +(_active getVariable ["ACME_IV_Session", []]);
 private _return = +(_active getVariable ["ACME_IV_ReturnMenu", []]);
-private _ecgPat = uiNamespace getVariable ["ACME_IV_Patient", objNull];
-if (!isNull _ecgPat) then {[_ecgPat, "ui:iv:" + str clientOwner, false] call ACME_fnc_ecgJostleRequest;};
+private _medic = _active getVariable ["ACME_IV_Medic", objNull];
+private _ecgPat = _session param [0, objNull];
+private _ecgKey = _active getVariable ["ACME_IV_ECGKey", "ui:iv:" + str clientOwner];
+if (!isNull _ecgPat) then {[_ecgPat, _ecgKey, false] call ACME_fnc_ecgJostleRequest;};
 // this fires first, before anything in this function can run or fail. the order against the keydown probes is the
 // whole answer: a close landing at the same instant ACE's cursormenu is created means creating a second child
 // display of 46 destroyed the first, and display mode is structurally impossible.
@@ -90,6 +128,4 @@ uiNamespace setVariable ["ACME_minigame_open", false];
 
 // The same return applies after complete placement, partial work, or Escape.
 // Flashlight rebuilding preserves the captured page without opening it underneath.
-if (count _return == 3 && {count _session == 3} && {[_session] call ACME_fnc_ivUiValid}) then {
-    (_return + [_session]) call ACME_fnc_reopenMedicalMenu;
-};
+[_return, _session, _medic] call _restore;

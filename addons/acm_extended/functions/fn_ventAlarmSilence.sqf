@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // silence, and close the window.
 // silencing acknowledges the alarm you have seen. it does not deafen you to the next one: fn_ventalarmtick clears the
 // silence the moment a new alarm appears, so nobody can mute the machine and walk away from the problem that kills

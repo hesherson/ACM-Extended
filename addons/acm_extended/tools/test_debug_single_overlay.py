@@ -51,7 +51,7 @@ def test_measurement_uses_wrapped_content_height_without_changing_font(metric_he
 def test_common_base_font_is_safezone_relative_and_uniform_across_resolutions():
     source = read("debugMenuClinical")
     assert 'private _baseFontH = safeZoneH * 0.0092;' in source
-    assert 'private _totalW = (safeZoneH * 0.255)' in source
+    assert 'private _totalW = (safeZoneH * 0.40)' in source
     assert 'private _measureNaturalWidth = {' in source
     assert '_fontH = _fontH * ((_totalW / _naturalW) min 1);' in source
     assert '_fontH = _fontH * ((_availableH / _neededH) * 0.992);' in source
@@ -59,7 +59,10 @@ def test_common_base_font_is_safezone_relative_and_uniform_across_resolutions():
     assert 'max _bodyH' not in source
     assert 'pixelH' not in source and 'pixelW' not in source and 'getResolution' not in source
     assert '{_x ctrlSetFontHeight _fontH;} forEach [_ctrlH, _ctrlT, _ctrlL, _ctrlR, _ctrlS, _ctrlM];' in source
-    assert "size='" not in source
+    # B218 permits exactly the requested larger version heading; all other
+    # rows and section titles retain the common safezone-scaled base font.
+    assert source.count("size='1.12'") == 1
+    assert source.count("size='") == 1
 
 
 def test_section_color_spacing_and_values_survive_shared_formatting():
@@ -118,7 +121,7 @@ def test_disabling_cleans_up_backing_header_all_sections_and_hidden_measurement(
 ])
 def test_layout_is_narrow_single_column_and_spans_safearea_height(header, body):
     source=definition("_layout")
-    source=re.sub(r'(_ctrl\\w+) ctrlSetPosition (\\[[^;]+\\]);', r'_positions pushBack [\\1,\\2];',source)
+    source=re.sub(r'(_ctrl\w+) ctrlSetPosition (\[[^;]+\]);', r'_positions pushBack [\1,\2];',source)
     source=source.replace('{_x ctrlShow false;} forEach [_ctrlT, _ctrlR, _ctrlS];','_hidden append [_ctrlT,_ctrlR,_ctrlS];')
     source=source.replace('{_x ctrlCommit 0;} forEach [_ctrlB, _ctrlH, _ctrlL, _ctrlT, _ctrlR, _ctrlS];','')
     execute('''
@@ -156,13 +159,14 @@ def test_original_number_and_state_anchors_preserve_digits_decimals_units_and_fu
         private _temp=["37.5 C"] call _alignValue;
         private _negative=["-0.42"] call _alignValue;
         private _bleed=["1200 mL/min"] call _alignValue;
-        [(_hr find "3")==6 && {(_map find "5")==6},"compact integer ones anchor changed"] call _check;
-        [(_temp find ".")==7 && {(_negative find ".")==7},"compact decimal anchor changed"] call _check;
+        // B208 deliberately replaces the old right/decimal anchor with one left edge.
+        [(_hr find "103")==0 && {(_map find "75")==0},"integer does not start at value column"] call _check;
+        [(_temp find "37.5 C")==0 && {(_negative find "-0.42")==0},"decimal reading does not start at value column"] call _check;
         [count _hr==11 && {count _temp==11} && {count _bleed==11},"compact minimum value width changed"] call _check;
         {
             private _aligned=[_x] call _alignValue;
-            [(_aligned find _x)+(count _x)==7,"text state does not end at compact value anchor"] call _check;
-        } forEach ["yes","no","none","OPEN","awake","client","host","n/a","120/80","99%"];
+            [(_aligned find _x)==0,"text state does not start at value column"] call _check;
+        } forEach ["yes","no","none","OPEN","NARROWED","awake","client","host","n/a","120/80","99%"];
         [(_temp find "37.5 C")>=0 && {(_bleed find "1200 mL/min")>=0},"units or numbers were truncated"] call _check;
         private _long=["CONDITION VALUE LONGER THAN TWELVE"] call _alignValue;
         [_long=="CONDITION VALUE LONGER THAN TWELVE","long state text lost data"] call _check;
@@ -173,7 +177,7 @@ def test_original_number_and_state_anchors_preserve_digits_decimals_units_and_fu
     "7.3 L/min", "0 mL/min", "1200 mL/min", "37.0 C", "6.00L",
     "0 / 0.00L", "1.00 / 0.00", "-0.42",
     "BVM:- V:-", "BVM:Y V:Y", "OBSTRUCTED", "ETT+cuff", "OPA+NPA",
-    "postictal", "C0 V0 B0",
+    "postictal", "C0 V0 B0", "NARROWED", "OPEN", "yes",
 ])
 def test_normal_readings_stay_complete_on_one_row_with_fixed_label_positions(value):
     source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_formatRow'))
@@ -183,7 +187,7 @@ def test_normal_readings_stay_complete_on_one_row_with_fixed_label_positions(val
         private _row=[["Reading",_value,"good","Other",0,"good"],_valueW] call _formatRow;
         private _baseline=[["Reading",0,"good","Other",0,"good"],_valueW] call _formatRow;
         [(_row find "<br/>")==-1,"ordinary reading split onto another line"] call _check;
-        [(_row find _value)>=0,"reading or unit was split/truncated"] call _check;
+        [(_row find ("<t color='good'>"+_value))>=0,"reading gained leading padding or lost its units"] call _check;
         [(_row find "Other")==(_baseline find "Other"),"reading moved the next label"] call _check;
     ''')
 
@@ -191,7 +195,7 @@ def test_normal_readings_stay_complete_on_one_row_with_fixed_label_positions(val
 def test_extended_device_values_expand_field_and_never_wrap():
     source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_pair','_one','_formatRow','_renderAll'))
     execute('''
-        private _cLabel="label";private _valueW=11;private _baseFontH=0.018;private _fontH=0.018;
+        private _cLabel="label";private _cMute="muted";private _valueW=11;private _baseFontH=0.018;private _fontH=0.018;
         private _gapFactor=0.26;private _gap=_fontH*_gapFactor;private _totalW=0.21;
         private _panelBottom=0.84;private _y=-0.16;
         private _ctrlH="head";private _ctrlL="body";
@@ -212,8 +216,43 @@ def test_extended_device_values_expand_field_and_never_wrap():
         [_valueW==count "Z3+Ing-left+AxL+AxR+additional device","value field did not grow to longest current value"] call _check;
         private _rows=(_renders select 1) select 1;
         [count _rows==4,"logical sections were lost while serializing the single column"] call _check;
-        private _long=_rows select 2;
+        private _long=_rows select 3;
         [(_long find "<br/>")==-1,"long device value wrapped despite dynamic field width"] call _check;
         [(_long find "Z3+Ing-left+AxL+AxR+additional device")>=0,"long device value was truncated"] call _check;
     ''')
 
+
+
+def test_revision_full_width_row_cannot_widen_paired_values_or_move_their_left_edge():
+    source=''.join(definition(n) for n in ('_safe','_padRight','_alignValue','_wrapValue','_pair','_one','_formatRow','_renderAll'))
+    execute('''
+        private _cLabel="label";private _cMute="muted";private _valueW=11;private _baseFontH=0.018;private _fontH=0.018;
+        private _gapFactor=0.26;private _gap=0;private _totalW=0.21;
+        private _panelBottom=0.84;private _y=-0.16;private _ctrlH="head";private _ctrlL="body";
+        private _renders=[];private _applyFont={};private _measureNaturalWidth={0.20};
+        private _measureRows={0.20};private _layout={};private _renderBlock={_renders pushBack _this;};
+    '''+source+'''
+        private _header=["ACME DEBUG"];
+        private _top=[["MachineRole","client","good","MP","yes","good"] call _pair];
+        private _left=[["Ext","1067 mL/min","good","Auto","0.27 / 0.00","good"] call _pair];
+        private _right=[["Airway","NARROWED","good","CO","0.0 L/min","good"] call _pair];
+        private _network=[];
+        call _renderAll;
+        private _before=+((_renders select 1) select 1);
+        private _revision="NA7-B208-1.2.4.1-stable-extra-build-information";
+        _network pushBack (["Revision",_revision,"good"] call _one);
+        _renders=[];
+        call _renderAll;
+        private _after=(_renders select 1) select 1;
+        [_valueW==11,"full-width revision inflated paired fields"] call _check;
+        [[_after select 0,_after select 2,_after select 3] isEqualTo _before,"revision moved another section's readings"] call _check;
+        private _valueStart=-1;
+        {
+            private _row=_x;
+            [(_row find "<br/>")==-1,"ordinary row gained a continuation line"] call _check;
+            private _start=_row find "<t color='good'>";
+            if (_valueStart<0) then {_valueStart=_start;};
+            [_start==_valueStart,"word, number or unit reading has a different left edge"] call _check;
+        } forEach _after;
+        [((_after select 1) find _revision)>=0,"revision was truncated to paired-field width"] call _check;
+    ''')

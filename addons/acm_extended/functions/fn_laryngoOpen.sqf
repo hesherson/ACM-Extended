@@ -18,6 +18,7 @@ if (!(_patient getVariable ["ACME_ETT_Inserted", false]) && {_patient getVariabl
 // so if a close is ever missed the next intubation inherits them. a stale standalone-suction flag hides the entire
 // tray, which is exactly the case of the tray icons never coming back.
 uiNamespace setVariable ["ACME_suction_standalone", false];
+uiNamespace setVariable ["ACME_suction_requestedType", -1];
 uiNamespace setVariable ["ACME_suction_bagOwner", []];
 uiNamespace setVariable ["ACME_suction_resume", []];
 uiNamespace setVariable ["ACME_suction_type", -2];

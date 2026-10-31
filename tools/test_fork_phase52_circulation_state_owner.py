@@ -35,9 +35,17 @@ for p in EXT.glob('*.sqf'):
 for required in [
     'fn_clearAllAilments.sqf','fn_rhythmThresholdTick.sqf','fn_aedBeatClockTick.sqf','fn_resumeSiteFlow.sqf',
     'fn_ivEnforceSite.sqf','fn_rhythmSet.sqf','fn_edemaSet.sqf','fn_yFlushTick.sqf',
-    'fn_arrestLocal.sqf','fn_toggleOverResus.sqf','fn_shockLocal.sqf','fn_circHandle.sqf','fn_registerRhythmLifecycleRuntime.sqf',
-    'fn_initBlastOverpressureRuntime.sqf','fn_restorePausedFlow.sqf','fn_registerRoscBreathingRuntime.sqf','fn_openFromTransfusionMenu.sqf','fn_ventDriveTick.sqf']:
+    'fn_arrestLocal.sqf','fn_toggleOverResus.sqf','fn_shockLocal.sqf','fn_circHandle.sqf','fn_respawnClinicalReset.sqf',
+    'fn_initBlastOverpressureRuntime.sqf','fn_registerRoscBreathingRuntime.sqf','fn_transfusionMixFlowLocal.sqf','fn_ventDriveTick.sqf']:
     assert 'ACM_circulation_fnc_setRuntimeState' in (EXT/required).read_text(),required
+for required in ['fn_openFromTransfusionMenu.sqf','fn_restorePausedFlow.sqf']:
+    text=(EXT/required).read_text()
+    assert 'ACM_circulation_fnc_setRuntimeState' not in text,required
+    assert '"transfusionMixFlow"' in text and 'ACME_fnc_ownerDispatch' in text,required
+from current_source_contracts import _has
+respawn=(EXT/'fn_registerRhythmLifecycleRuntime.sqf').read_text()
+assert _has(respawn, '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;')
+assert _has(respawn, '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;')
 for required in ['fn_initMedicationRegistry.sqf','fn_restoreMedicationList.sqf','fn_vialHolder.sqf']:
     assert 'ACM_circulation_fnc_setLocalUiState' in (EXT/required).read_text(),required
 

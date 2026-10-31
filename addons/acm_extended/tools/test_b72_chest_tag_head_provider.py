@@ -104,17 +104,31 @@ def test_head_elevation_only_rolls_patient_when_actually_prone():
 
 
 def test_generic_provider_work_preflights_to_empty_hands_and_crouch_once():
-    from test_historical_weapon_preflight import test_native_treatment_waits_for_logical_and_visible_holster_then_crouch, test_repeated_click_cannot_queue_a_second_generic_preflight, test_active_direct_pressure_remains_a_native_handoff_without_reholstering
-    for stance in ('STAND','PRONE','CROUCH'):
-        test_native_treatment_waits_for_logical_and_visible_holster_then_crouch(stance)
-    test_repeated_click_cannot_queue_a_second_generic_preflight()
-    test_active_direct_pressure_remains_a_native_handoff_without_reholstering()
+    # B177 removed the generic presentation waits so accepted treatment starts immediately.
+    # The real helper still issues only one holster request and never restores a weapon.
+    from test_historical_weapon_preflight import (
+        test_one_engine_holster_request_is_retained,
+        test_treatment_bridge_contains_no_generic_presentation_wait,
+        test_native_treatment_is_called_directly_after_presentation_setup,
+    )
+    for weapon, delay in (("pistol", .95), ("rifle", .70), ("launcher", .70)):
+        for ace in (False, True):
+            test_one_engine_holster_request_is_retained(weapon, delay, ace)
+    test_treatment_bridge_contains_no_generic_presentation_wait()
+    test_native_treatment_is_called_directly_after_presentation_setup()
 
 
 def test_generic_acme_treatment_poses_never_choose_standing_medicup_variants():
     pose = txt('functions/fn_treatmentPoseStart.sqf')
     assert 'private _upright = false;' in pose
-    assert 'call ACME_fnc_poseUprightState' not in pose
+    # medicUp is a kneeling provider working toward a conscious upright casualty.
+    # It is deliberately available since B175, with a native-class fallback.
+    helper = txt('functions/fn_poseUprightState.sqf')
+    assert 'call ACME_fnc_poseUprightState' in pose
+    assert '!_enteredProne' in pose and '"assessmentAirway", "assessmentBreathing"' in pose
+    assert '!([_patient] call ACME_fnc_patientUpright)' in helper
+    assert 'isClass (configFile >> "CfgMovesMaleSdr" >> "States" >> _candidate)' in helper
+    assert '[_normal, false]' in helper
 
 
 def test_no_automatic_weapon_restore_in_core_provider_paths():
@@ -132,14 +146,17 @@ def test_no_automatic_weapon_restore_in_core_provider_paths():
 
 
 def test_generic_preflight_never_falls_through_with_weapon_or_standing_state():
-    # The current preflight has two sequential waits, not the retired single callback tuple.
-    from test_historical_weapon_preflight import test_preflight_timeout_releases_its_own_reservation_without_starting_treatment, test_superseded_preflight_callback_cannot_clear_new_reservation, test_second_phase_does_not_bypass_readiness_after_weapon_or_stance_changes
-    for phase in (0,1):
-        test_preflight_timeout_releases_its_own_reservation_without_starting_treatment(phase)
-        for delivery in ('_deliver','_timeout'):
-            test_superseded_preflight_callback_cannot_clear_new_reservation(phase,delivery)
-    for change in ('_weaponNow="rifle"; _stanceNow="CROUCH";', '_animNowFixture="AmovPknlMstpSrasWpstDnon"; _stanceNow="CROUCH";', '_stanceNow="STAND";'):
-        test_second_phase_does_not_bypass_readiness_after_weapon_or_stance_changes(change)
+    # Historical case identity: no generic wait remains. Verify the current helper
+    # cannot reselect a live weapon or queue another holster once empty hands settle.
+    from test_historical_weapon_preflight import (
+        test_no_direct_weapon_reselection_was_reintroduced,
+        test_visible_empty_hands_do_not_reholster,
+        test_treatment_bridge_contains_no_generic_presentation_wait,
+    )
+    test_no_direct_weapon_reselection_was_reintroduced()
+    test_treatment_bridge_contains_no_generic_presentation_wait()
+    for state in ('AmovPknlMstpSnonWnonDnon','ACME_DirectPressureHold','ACM_GenericContinuous','ACM_ProneContinuous'):
+        test_visible_empty_hands_do_not_reholster(state)
 
 
 def test_provider_stance_lock_is_released_after_native_and_custom_treatment_end():
@@ -149,7 +166,12 @@ def test_provider_stance_lock_is_released_after_native_and_custom_treatment_end(
     assert '} forEach ["ace_treatmentSucceded", "ace_treatmentFailed"];' in post
     assert '_m setUnitPos "AUTO";' in post
     assert '_u setUnitPos "AUTO";' in stop
-    assert '0.85] call CBA_fnc_waitAndExecute;' in stop
+    # B251 carries the provider locality epoch through both bounded stance releases.
+    assert '[_medic,_currentEpoch,_localityEpoch,_releaseIfFree], 0.35] call CBA_fnc_waitAndExecute;' in stop
+    assert '[_medic,_currentEpoch,_localityEpoch,_releaseIfFree], 4.25] call CBA_fnc_waitAndExecute;' in stop
+    assert '(_u getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch' in stop
+    assert 'if ((_u getVariable ["ACME_treatmentPoseEpoch",0]) != _endedEpoch) exitWith {};' in stop
+    assert 'if ([_u] call ACME_fnc_providerStanceOwned) exitWith {};' in stop
 
 
 def test_cursor_menu_defers_before_provider_preflight():

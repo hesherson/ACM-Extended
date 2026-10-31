@@ -19,7 +19,8 @@ if (_name in ["acme_removeej", "acme_burpchestseal"]) exitWith {[_category, "", 
 // Exact actions only. BVM inherits UseStethoscope, so class lineage cannot decide its category: route every
 // BVM variant into Breathing before the stethoscope re-category runs.
 if (_name in ["usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"]) exitWith {["airway", "ventilation", false]};
-if (_name in ["acme_inspectchest", "usestethoscope"]) exitWith {["airway", "chest", false]};
+if (_name in ["checkbreathing", "acme_measurerespirations"]) exitWith {["airway", "ventilation", false]};
+if (_name in ["acme_inspectchest", "usestethoscope"]) exitWith {["airway", "ventilation", false]};
 if (_name == "slapawake") then {_category = "examine";};
 // Dog tags are a standalone final Examine action, never a dropdown child.
 if (_name == "checkdogtags") exitWith {["examine", "", false]};
@@ -45,15 +46,15 @@ private _iv = (_category == "advanced") && {
     }}
 };
 if (_iv) exitWith {["medication", "iv_access", false]};
-if (_name in ["checkairway", "headturn", "beginheadtiltchinlift"] || {(_lineage findIf {_x in [
-    "usesuctionbag", "drainfluid_accuvac", "acme_drainfluid_accuvac"
-]}) >= 0}) exitWith {["airway", "adjuncts", false]};
-if (_name == "checkbreathing") exitWith {["airway", "ventilation", false]};
 if (_name in [
     "acme_applychestseal", "acme_performnarspear", "acme_performthoracostomy", "acme_adjustthoracostomy",
     "acme_insertchesttube", "acme_drainfluid_accuvac", "acme_drainfluid_suctionbag",
     "acme_resealchesttube", "acme_closeincision", "acme_suturechesttube"
-]) exitWith {["airway", "chest", false]};
+]) exitWith {["airway", "ventilation", false]};
+if (_name in ["recoveryposition", "cancelrecoveryposition"]) exitWith {["airway", "adjuncts", false]};
+if (_name in ["checkairway", "headturn", "beginheadtiltchinlift"] || {(_lineage findIf {_x in [
+    "usesuctionbag", "drainfluid_accuvac", "acme_drainfluid_accuvac"
+]}) >= 0}) exitWith {["airway", "adjuncts", false]};
 if (_name in ["acme_attachemma", "acme_removeemma", "acme_attachemmaett", "acme_removeemmaett",
     "acme_attachemmaigel", "acme_removeemmaigel"]) exitWith {["airway", "capno", false]};
 // Specific routes must precede Paracetamol: ACM derives its inhalants and lozenge from it.

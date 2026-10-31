@@ -16,11 +16,15 @@
  * Public: No
  */
 
-params ["_medic", "_patient", ["_usedKit", false]];
+params ["_medic", "_patient", ["_usedKit", false], ["_report", true]];
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {
     ["ACM_breathing_Thoracostomy_startLocal", _this, _patient] call CBA_fnc_targetEvent;
 };
+// Native treatment has no side identifier. A completed tract/tube must not be
+// overwritten by a delayed legacy start packet; surgical side-aware repeats use
+// the epoch-checked owner aftercare transaction instead.
+if (_report && {(_patient getVariable ["ACM_breathing_Thoracostomy_State", 0]) >= 1}) exitWith {};
 [_patient] call ACME_fnc_ptxEnsure;
 
 
@@ -91,8 +95,12 @@ switch (true) do {
 private _logArray = ["STR_ACM_Breathing_ThoracostomySweep_ActionLog"];
 _logArray append _hintLogArray;
 
-["ace_common_displayTextStructured", [_hintArray, _height, _medic, 13], _medic] call CBA_fnc_targetEvent;
-[_patient, "quick_view", _hintLogFormat, _logArray] call ace_medical_treatment_fnc_addToLog;
+if (_report) then {
+    private _drained = [_patient, _medic, "finger", [_patient] call ACME_fnc_clinicalEpoch, [], false] call ACME_fnc_thoraDrainBloodLocal;
+    _hintArray set [0, (_hintArray select 0) + format ["<br/>Blood drained: %1 mL", (round ((_drained max 0) * 10000)) / 10]];
+    ["ace_common_displayTextStructured", [_hintArray, _height, _medic, 13], _medic] call CBA_fnc_targetEvent;
+    [_patient, "quick_view", _hintLogFormat, _logArray] call ace_medical_treatment_fnc_addToLog;
+};
 
 _patient setVariable ["ACM_breathing_Thoracostomy_State", 1, true];
 

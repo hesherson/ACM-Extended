@@ -7,7 +7,7 @@ from test_menu_death_lifecycle import ROOT, adapt, execute, read
 
 
 FUNCTIONS = (
-    "pulsePerfusionProfile", "preoxygenationTick", "shockSetPhenotype",
+    "pulsePerfusionProfile", "idlePhysDiscovery", "preoxygenationTick", "shockSetPhenotype",
     "shockPhenotypeTick", "coagulationTick", "aspirationTick",
     "megacodeAARRecord", "megacodeAARReset", "megacodeAARTick",
     "megacodeAARShow", "expansionRegisterRuntime",
@@ -29,6 +29,11 @@ def test_repeated_bootstrap_keeps_bindings_and_registers_handlers_once():
         private _names = {names};
         private _tickCalls = 0;
         {{missionNamespace setVariable [_x, {{_tickCalls = _tickCalls + 1;}}];}} forEach _names;
+        private _intervals = [];
+        CBA_fnc_addPerFrameHandler = {{
+            _intervals pushBack (_this select 1);
+            _handlers pushBack [_this select 0,_this select 2,true];count _handlers-1
+        }};
         private _eventRegistrations = [];
         CBA_fnc_addEventHandler = {{_eventRegistrations pushBack _this;}};
         ACME_fnc_expansionRegisterRuntime = {{ {adapt(read('expansionRegisterRuntime'))} }};
@@ -43,9 +48,11 @@ def test_repeated_bootstrap_keeps_bindings_and_registers_handlers_once():
         {(_x select 1) call (_x select 0);} forEach _waits;
         [(_names apply {str (missionNamespace getVariable _x)}) isEqualTo _before,
             "bootstrap replaced a compiled binding"] call _check;
+        // Discovery and preoxygenation share one 1 Hz callback, retaining both ticks.
         [count _handlers == 5, "missing or duplicate expansion tick handlers"] call _check;
+        [_intervals isEqualTo [1,0.5,0.2,0.5,1], "expansion tick cadence changed"] call _check;
         [count _eventRegistrations == 1, "missing or duplicate reset event handler"] call _check;
         [(_eventRegistrations select 0 select 0) == "ACME_megacodeAARReset", "wrong reset event"] call _check;
         {(_x select 1) call (_x select 0);} forEach _handlers;
-        [_tickCalls == 5, "registered tick callbacks did not run"] call _check;
+        [_tickCalls == 6, "registered tick callbacks did not run"] call _check;
     """)

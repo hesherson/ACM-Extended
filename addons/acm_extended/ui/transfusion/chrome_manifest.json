@@ -1,0 +1,547 @@
+{
+  "schema": 1,
+  "generator": "tools/generate_transfusion_chrome.py",
+  "size": [
+    64,
+    64
+  ],
+  "sourceCornerRadius": 64,
+  "sourceBorderWidth": 8,
+  "parts": [
+    "tl",
+    "top",
+    "tr",
+    "left",
+    "center",
+    "right",
+    "bl",
+    "bottom",
+    "br"
+  ],
+  "profiles": {
+    "window": {
+      "fill": "#111214",
+      "border": "#34363c"
+    },
+    "panel": {
+      "fill": "#18191c",
+      "border": "#292b30"
+    },
+    "button": {
+      "fill": "#202125",
+      "border": "#34363c"
+    },
+    "selected": {
+      "fill": "#303239",
+      "border": "#9498a2"
+    },
+    "tab": {
+      "fill": "#2e2e2e",
+      "border": "#404040"
+    },
+    "tab_selected": {
+      "fill": "#4d4d4d",
+      "border": "#949494"
+    },
+    "popup": {
+      "fill": "#24262b",
+      "border": "#50545e"
+    },
+    "piggyback": {
+      "fill": "#28252e",
+      "border": "#a392bd"
+    },
+    "piggyback_selected": {
+      "fill": "#302a3a",
+      "border": "#d2c2ec"
+    }
+  },
+  "assets": [
+    {
+      "file": "window_tl_ca.paa",
+      "profile": "window",
+      "part": "tl",
+      "sha256": "5da968e3a03184cc8b8a36c0d4be4de9ac556c9c4cea5f023639fb7f1569c924"
+    },
+    {
+      "file": "window_top_ca.paa",
+      "profile": "window",
+      "part": "top",
+      "sha256": "2deedea1d9b2f461e845a5635742c0f48627c695b850e50dcf9288cb45216e38"
+    },
+    {
+      "file": "window_tr_ca.paa",
+      "profile": "window",
+      "part": "tr",
+      "sha256": "3959d6eebdcc7318fc5a28169a52db5adab8e6c654a074b7b7c7932e6046b27c"
+    },
+    {
+      "file": "window_left_ca.paa",
+      "profile": "window",
+      "part": "left",
+      "sha256": "7b98a76eed6a28eb33db4af3f8097befdd4cc2040f86fbe4d1bddcc7148737af"
+    },
+    {
+      "file": "window_center_ca.paa",
+      "profile": "window",
+      "part": "center",
+      "sha256": "6b1123f8440bd3d14464236356eb3e089a916f2096bcd4ff6fc08d5fbf7741a3"
+    },
+    {
+      "file": "window_right_ca.paa",
+      "profile": "window",
+      "part": "right",
+      "sha256": "15b83ca97086fff62d27363cc97f4eba8b1a584162cfcb0d841b28616bc5eb09"
+    },
+    {
+      "file": "window_bl_ca.paa",
+      "profile": "window",
+      "part": "bl",
+      "sha256": "56aec1a73a0b4cff15622fa354b34333272bb0fd6ae26f1cc07d80d708711a03"
+    },
+    {
+      "file": "window_bottom_ca.paa",
+      "profile": "window",
+      "part": "bottom",
+      "sha256": "abff343c4a982e7dc6dd0afa90236b7747d8aae577b381f41e2ec227f3023bb8"
+    },
+    {
+      "file": "window_br_ca.paa",
+      "profile": "window",
+      "part": "br",
+      "sha256": "850d1decc00f0d474a2b981b0b310f4b21ed1f7a3f338182c968b429a691a858"
+    },
+    {
+      "file": "panel_tl_ca.paa",
+      "profile": "panel",
+      "part": "tl",
+      "sha256": "5227076ba9fe101c7052a7a51873cdc010b65c098a723ad1e41220b1df0b9088"
+    },
+    {
+      "file": "panel_top_ca.paa",
+      "profile": "panel",
+      "part": "top",
+      "sha256": "981f046e96e84517402d7cdda3af1ef0cb95994e794c0f8d30d6c467dfa3ce40"
+    },
+    {
+      "file": "panel_tr_ca.paa",
+      "profile": "panel",
+      "part": "tr",
+      "sha256": "3e183c04aff364f5452d429167073a01d5e8bcff8a39d8827045b40b39e7bedd"
+    },
+    {
+      "file": "panel_left_ca.paa",
+      "profile": "panel",
+      "part": "left",
+      "sha256": "4e5971d9ac3c979ae52d2dab38d26481aefec4675dbdcf79ecde87a7e4e81303"
+    },
+    {
+      "file": "panel_center_ca.paa",
+      "profile": "panel",
+      "part": "center",
+      "sha256": "98e931dfbdaea1bc960a509d8264c1cca7d666b629fa6e7e79274e78b589536a"
+    },
+    {
+      "file": "panel_right_ca.paa",
+      "profile": "panel",
+      "part": "right",
+      "sha256": "72152031848c444e98a14b06447ca6c5a53e30b0db6232c66157a98eb272ad6b"
+    },
+    {
+      "file": "panel_bl_ca.paa",
+      "profile": "panel",
+      "part": "bl",
+      "sha256": "75c77d87e880d66aa957e5e8797e7dfc3c6ad856681b83d68eff10251d5945ff"
+    },
+    {
+      "file": "panel_bottom_ca.paa",
+      "profile": "panel",
+      "part": "bottom",
+      "sha256": "b21093a1e57325d31cf562405d6ef0732faa1541ad27fdc8f600a4d39adfcd97"
+    },
+    {
+      "file": "panel_br_ca.paa",
+      "profile": "panel",
+      "part": "br",
+      "sha256": "054cceee08e8560e2c9d5e4fbc83e7ae334a8a757426c7a2ea06c23fbb0ad57b"
+    },
+    {
+      "file": "button_tl_ca.paa",
+      "profile": "button",
+      "part": "tl",
+      "sha256": "95470b93db7ef3f8782bb38e5096ae33fd139f18317d0543e6cac0eefb799297"
+    },
+    {
+      "file": "button_top_ca.paa",
+      "profile": "button",
+      "part": "top",
+      "sha256": "c2f309a8dfd2e8f531b1c4f1946d7a01c43bcb4dfefc63d4f7945d73ae43b1da"
+    },
+    {
+      "file": "button_tr_ca.paa",
+      "profile": "button",
+      "part": "tr",
+      "sha256": "0f426557959554372d67f7e231b62d820e6beb5c2755a089b48636138e88d39e"
+    },
+    {
+      "file": "button_left_ca.paa",
+      "profile": "button",
+      "part": "left",
+      "sha256": "b0f356f10915f41b241d5ea308ce30c6c7fe0176449bce8f965b9b214ed43bfc"
+    },
+    {
+      "file": "button_center_ca.paa",
+      "profile": "button",
+      "part": "center",
+      "sha256": "e8daf8f4d529c7a024b82d9df43d2125d7134e5ba9e980ae4067ee1af653649e"
+    },
+    {
+      "file": "button_right_ca.paa",
+      "profile": "button",
+      "part": "right",
+      "sha256": "009bb8b3e80975d8c68bb11b7ee6884a0026628133609f1c6d8d5b35e332b7a0"
+    },
+    {
+      "file": "button_bl_ca.paa",
+      "profile": "button",
+      "part": "bl",
+      "sha256": "c8ae86e8f0190fbc0928c4d3d7e1d07733a62d121c7bf73306c5ce338cd8f089"
+    },
+    {
+      "file": "button_bottom_ca.paa",
+      "profile": "button",
+      "part": "bottom",
+      "sha256": "7fba709780c2009bec46a5839374a08a20aa0cc31476ef33d532c8c71108f6e8"
+    },
+    {
+      "file": "button_br_ca.paa",
+      "profile": "button",
+      "part": "br",
+      "sha256": "f1fa23e775e5cbbd1b06be57b8c8fbca239f2350a23c1756d8ed9f96927e69ef"
+    },
+    {
+      "file": "selected_tl_ca.paa",
+      "profile": "selected",
+      "part": "tl",
+      "sha256": "837558fc72b0dbedb8e3b7a383632ca1bab5b35e6e64de6a28a16a1b24cb4ac3"
+    },
+    {
+      "file": "selected_top_ca.paa",
+      "profile": "selected",
+      "part": "top",
+      "sha256": "8f6257b86f072a99ab88618af833854a8c207ab5ab623178dd74bb1b0d0f8f1e"
+    },
+    {
+      "file": "selected_tr_ca.paa",
+      "profile": "selected",
+      "part": "tr",
+      "sha256": "6849f23adc02799611e69f2e677d1dbbc6122fa7105f69abfb9f0c13bf4f75d2"
+    },
+    {
+      "file": "selected_left_ca.paa",
+      "profile": "selected",
+      "part": "left",
+      "sha256": "40f5a2fdbd2cc47f3ec7d256fd9e0c8113ea39d7247882941833a5c668b831d5"
+    },
+    {
+      "file": "selected_center_ca.paa",
+      "profile": "selected",
+      "part": "center",
+      "sha256": "0f54dc54b5aabb8014b8fa262e2a63acc6f66534aad5e2603b685cedd0701917"
+    },
+    {
+      "file": "selected_right_ca.paa",
+      "profile": "selected",
+      "part": "right",
+      "sha256": "eed1ac204952ced4b65863ff60cd8f2d1d7900046d70fa78ace876a21502d58b"
+    },
+    {
+      "file": "selected_bl_ca.paa",
+      "profile": "selected",
+      "part": "bl",
+      "sha256": "3fd4b8b907eb1c4cea7db2bf5f627e0f4b5ed93173ac3b55796d4f84633b289d"
+    },
+    {
+      "file": "selected_bottom_ca.paa",
+      "profile": "selected",
+      "part": "bottom",
+      "sha256": "3e244d58d5e78a8e973f03701ecb20fa6f3adb39823944958ccd74a89ed96202"
+    },
+    {
+      "file": "selected_br_ca.paa",
+      "profile": "selected",
+      "part": "br",
+      "sha256": "cdb4a7693813acab03ae812b21298777ab21ae90163efe2df4354d251cf2522a"
+    },
+    {
+      "file": "tab_tl_ca.paa",
+      "profile": "tab",
+      "part": "tl",
+      "sha256": "898bdbd3afc88a0809f8ec1748e3ea50180f42d75ff7e7cb5a26d4ca7bf8aa78"
+    },
+    {
+      "file": "tab_top_ca.paa",
+      "profile": "tab",
+      "part": "top",
+      "sha256": "d3d65d78a8cb2de75a3e1528a14df2c0c9fcdb9aa8971c3d92f7525c3b7ef384"
+    },
+    {
+      "file": "tab_tr_ca.paa",
+      "profile": "tab",
+      "part": "tr",
+      "sha256": "88ce9547168ff7dd8eff4bdef9e9d08255d57acce09877001497a9f37fee49bf"
+    },
+    {
+      "file": "tab_left_ca.paa",
+      "profile": "tab",
+      "part": "left",
+      "sha256": "c684628ea18857f5451f8293899baeeb639770ded8edbaaafaa44035832e072b"
+    },
+    {
+      "file": "tab_center_ca.paa",
+      "profile": "tab",
+      "part": "center",
+      "sha256": "d9f8d000d727eaf5d3d46e0547dbee90bcf48a6cd2efe3182c75648eb9d68b28"
+    },
+    {
+      "file": "tab_right_ca.paa",
+      "profile": "tab",
+      "part": "right",
+      "sha256": "5c993a1430e8d905343a114227bc41b6149b7e5dc307e2a4a60479dd506b32df"
+    },
+    {
+      "file": "tab_bl_ca.paa",
+      "profile": "tab",
+      "part": "bl",
+      "sha256": "e39180e920e6f300599b72595684c4c6d7c236943fc08e2fdcfd1f14ea57c1b8"
+    },
+    {
+      "file": "tab_bottom_ca.paa",
+      "profile": "tab",
+      "part": "bottom",
+      "sha256": "73f2a8c78f5bdce9bb3fe99577aa1b538792abcad0178ba0bda8620feb491ffe"
+    },
+    {
+      "file": "tab_br_ca.paa",
+      "profile": "tab",
+      "part": "br",
+      "sha256": "1868c70aa40da14331dedeb1262e62b88a68f57bbf7267b84f8d33f8c2f33c66"
+    },
+    {
+      "file": "tab_selected_tl_ca.paa",
+      "profile": "tab_selected",
+      "part": "tl",
+      "sha256": "7d3954f4e1e74df2877d8f26eef6a616452177df5552c83d0be15d511e61eb28"
+    },
+    {
+      "file": "tab_selected_top_ca.paa",
+      "profile": "tab_selected",
+      "part": "top",
+      "sha256": "261507df0a6e5a6174d4a0e0de5228213257333445220e71a45cb476b767be1d"
+    },
+    {
+      "file": "tab_selected_tr_ca.paa",
+      "profile": "tab_selected",
+      "part": "tr",
+      "sha256": "335d413ccd9dca0ad4c7e1992247dd98f738a2bf7e51f834aa1fe2c413e88ea8"
+    },
+    {
+      "file": "tab_selected_left_ca.paa",
+      "profile": "tab_selected",
+      "part": "left",
+      "sha256": "cc733b768904ff71a02b94b2a1859f9faf157de216adf729c06e5ee18af4235c"
+    },
+    {
+      "file": "tab_selected_center_ca.paa",
+      "profile": "tab_selected",
+      "part": "center",
+      "sha256": "c8fb3ba9a64b17bc0359f94e1c4da93cf3622cd61de34996297d96880f9845a6"
+    },
+    {
+      "file": "tab_selected_right_ca.paa",
+      "profile": "tab_selected",
+      "part": "right",
+      "sha256": "7d95e2cff9607fc544bd35ec787cda643ced88aa9cdc2efdf1f73ee26309fa2f"
+    },
+    {
+      "file": "tab_selected_bl_ca.paa",
+      "profile": "tab_selected",
+      "part": "bl",
+      "sha256": "7db67472cdc08fbf815844fd4d95143e48fdfed0af87e7c93f292e31988d4252"
+    },
+    {
+      "file": "tab_selected_bottom_ca.paa",
+      "profile": "tab_selected",
+      "part": "bottom",
+      "sha256": "bc86df0914659980e5c734ece06fcfd74aeb01132766ab2c84c98b4f40bcdc78"
+    },
+    {
+      "file": "tab_selected_br_ca.paa",
+      "profile": "tab_selected",
+      "part": "br",
+      "sha256": "f9126c5fe996ce54270448348772299739fb9dfd503f63d76a723e7d50b99b92"
+    },
+    {
+      "file": "popup_tl_ca.paa",
+      "profile": "popup",
+      "part": "tl",
+      "sha256": "cf1653cbda4d27972c3bfc17469eb6f657e3bbff5160169cebc5030b4e8be586"
+    },
+    {
+      "file": "popup_top_ca.paa",
+      "profile": "popup",
+      "part": "top",
+      "sha256": "8c940e228a0acfa77bc6a82202a032be54a6667d42844b6be36a9a38cc128c03"
+    },
+    {
+      "file": "popup_tr_ca.paa",
+      "profile": "popup",
+      "part": "tr",
+      "sha256": "bc1f2a901104307ec46487348bc48124d3562b4ab382fded814e4919caae66a9"
+    },
+    {
+      "file": "popup_left_ca.paa",
+      "profile": "popup",
+      "part": "left",
+      "sha256": "230697a0a9c2a8957ab75f19fee1964d08d7758e583da88b344fde6cda7a9573"
+    },
+    {
+      "file": "popup_center_ca.paa",
+      "profile": "popup",
+      "part": "center",
+      "sha256": "b851b1d34f6fe250d712e440902d7b9f318f8147d112bf8c65a9396e85ce89ce"
+    },
+    {
+      "file": "popup_right_ca.paa",
+      "profile": "popup",
+      "part": "right",
+      "sha256": "b223273b463259777caf0926214c76c3c0f22f9ff2ed16cd3a344315118f3906"
+    },
+    {
+      "file": "popup_bl_ca.paa",
+      "profile": "popup",
+      "part": "bl",
+      "sha256": "684a622616098c54fe6390625f61f4c7ea7219fea3b01fa376301451f38d0a7f"
+    },
+    {
+      "file": "popup_bottom_ca.paa",
+      "profile": "popup",
+      "part": "bottom",
+      "sha256": "e680f5d55142212e199604e7ddd2c93298be2eba7684adbcc37e22173f3da79e"
+    },
+    {
+      "file": "popup_br_ca.paa",
+      "profile": "popup",
+      "part": "br",
+      "sha256": "9e5d68cb9e99d87d3eff8d3fc17a50c9ea1e7ac13c3f0f50baa1c56db1941592"
+    },
+    {
+      "file": "piggyback_tl_ca.paa",
+      "profile": "piggyback",
+      "part": "tl",
+      "sha256": "381d1073e236ffb636d8beaceefe464b21b6a02cec86ea9e58d4e47fe4ed6b9d"
+    },
+    {
+      "file": "piggyback_top_ca.paa",
+      "profile": "piggyback",
+      "part": "top",
+      "sha256": "403e23fbe7e58bc1de08c9f5b3c94097b7d521744e6454c8aa68938b37fc7cd6"
+    },
+    {
+      "file": "piggyback_tr_ca.paa",
+      "profile": "piggyback",
+      "part": "tr",
+      "sha256": "34a92e7ce8b1503b255f05092c0e43e347fd9b9b122be24b9faa847abdafc14b"
+    },
+    {
+      "file": "piggyback_left_ca.paa",
+      "profile": "piggyback",
+      "part": "left",
+      "sha256": "59ec1e65c37f199b33a1823707e1f4c45a1e7e9c034d446be216078a660af49a"
+    },
+    {
+      "file": "piggyback_center_ca.paa",
+      "profile": "piggyback",
+      "part": "center",
+      "sha256": "7a408c59ed3cb1d0155baea689ce59fe921203808a6f1d6be1f38f24dce2a2ed"
+    },
+    {
+      "file": "piggyback_right_ca.paa",
+      "profile": "piggyback",
+      "part": "right",
+      "sha256": "97b8e9fbaf4b626b2f838af92b9943d80205e6f6985892b90f5823eda900d5cd"
+    },
+    {
+      "file": "piggyback_bl_ca.paa",
+      "profile": "piggyback",
+      "part": "bl",
+      "sha256": "eb1211a655f65930e6829fc0121e9ccbe468eacd47f36689539b6bcd7de1ffba"
+    },
+    {
+      "file": "piggyback_bottom_ca.paa",
+      "profile": "piggyback",
+      "part": "bottom",
+      "sha256": "99b84dfc7c7e720367e57a3ab42df9ed6fad498745bf3766bc841ae0b1674d6d"
+    },
+    {
+      "file": "piggyback_br_ca.paa",
+      "profile": "piggyback",
+      "part": "br",
+      "sha256": "07d6bdba3109d69d7289f32fcc2f138f0e099b5acfaa9322f5b597c7b1e78e6a"
+    },
+    {
+      "file": "piggyback_selected_tl_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "tl",
+      "sha256": "ca1039053d1ee400dd3fe83b9d307e5a00a4278e6546f041b25234cfc5baae96"
+    },
+    {
+      "file": "piggyback_selected_top_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "top",
+      "sha256": "2d6f2e5d4714be66e459651cc3457947ccee0253552ff5a67100a37cd7ef517f"
+    },
+    {
+      "file": "piggyback_selected_tr_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "tr",
+      "sha256": "1ef82cd37261af026cc4a32aa8318b4e45b3c773b5ea54ab5769084c1533e433"
+    },
+    {
+      "file": "piggyback_selected_left_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "left",
+      "sha256": "62ad5c1c412f120ce752ddf81e217ec32515c5f7bc000d20060309a4f8299940"
+    },
+    {
+      "file": "piggyback_selected_center_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "center",
+      "sha256": "d014074d6d471f67007f52340cc379ef879629c6f1c8baae2ac0791d78d9ef37"
+    },
+    {
+      "file": "piggyback_selected_right_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "right",
+      "sha256": "e5ab55edf1973da2bfe521731427d12405b188816ba348d6f631521d75b92480"
+    },
+    {
+      "file": "piggyback_selected_bl_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "bl",
+      "sha256": "ec6ae8e9c20ee574e0f48d254627f7790fcac24e519863d8960f698eebb365ac"
+    },
+    {
+      "file": "piggyback_selected_bottom_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "bottom",
+      "sha256": "caf60304985e9ee9b516e6e26b358f90df22b2a8b316e7f8adcda7252b122af8"
+    },
+    {
+      "file": "piggyback_selected_br_ca.paa",
+      "profile": "piggyback_selected",
+      "part": "br",
+      "sha256": "8e5c792a20b5da51b404fc02726fd5d29726528e64b369aa8030519eaa53cbfe"
+    }
+  ]
+}

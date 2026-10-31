@@ -54,7 +54,16 @@ class B19Source(unittest.TestCase):
     def test_infusion_done_explicitly_returns(self):
         d=read('functions/fn_infusionDone.sqf'); c=read('functions/fn_skClose.sqf')
         self.assertIn('ACME_SK_suppressReturn',d); self.assertIn('ACME_fnc_reopenTransfusion',d)
-        self.assertIn('if (_suppressReturn) exitWith {}',c)
+        from test_b241_current_ui_expectations import has
+        # Suppression remains authoritative; a stale provider also cannot route
+        # this display's return through a newly controlled actor.
+        self.assertTrue(has(c, 'private _provider = _display getVariable ["ACME_SK_Provider", objNull];'))
+        self.assertTrue(has(c, 'private _providerCurrent = !isNull _provider && {_provider isEqualTo (call ACME_fnc_controlledProvider)};'))
+        self.assertTrue(has(c, 'uiNamespace setVariable ["ACME_SK_suppressReturn", false];'))
+        self.assertTrue(has(c, 'if (_suppressReturn || {!_providerCurrent}) exitWith {};'))
+        self.assertTrue(has(c, 'if !(_return isEqualTo []) exitWith {[_return] call ACME_fnc_reopenTransfusion;};'))
+        self.assertTrue(has(c, '[_patient, "medication", -1, [], _provider] call ACME_fnc_reopenMedicalMenu;'))
+        self.assertLess(c.index('if (_suppressReturn || {!_providerCurrent})'), c.index('call ACME_fnc_reopenTransfusion;'))
     def test_true_pea_bp_zero_before_modifiers(self):
         s=read('functions/fn_bpCompute.sqf')
         self.assertRegex(s,r'rhythmGet\) == 5\) exitWith \{\[0, 0\]\}')

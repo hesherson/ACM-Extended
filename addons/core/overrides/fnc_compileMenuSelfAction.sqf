@@ -44,7 +44,7 @@ private _recurseFnc = {
         private _condition = getText (_entryCfg >> "condition");
 
         // Add canInteract (including exceptions) and canInteractWith to condition
-        private _canInteractCondition = format [QUOTE([ARR_3(ACE_player,_target,%1)] call ACEFUNC(common,canInteractWith)), getArray (_entryCfg >> "exceptions")];
+        private _canInteractCondition = format [QUOTE([ARR_3((call ACME_fnc_controlledProvider),_target,%1)] call ACEFUNC(common,canInteractWith)), getArray (_entryCfg >> "exceptions")];
         private _conditionFormatPattern = ["%1 && {%2}", "%2"] select (_condition isEqualTo "" || {_condition == "true"});
         _condition = compile format [_conditionFormatPattern, _condition, _canInteractCondition];
 
@@ -115,7 +115,7 @@ private _actions = [
                     // Dummy statement so it's not collapsed when there's no available actions
                     true
                 },
-                {[ACE_player, _target, ["isNotInLyingState", "isNotInside","isNotDragging", "isNotCarrying", "isNotSwimming", "notOnMap", "isNotEscorting", "isNotSurrendering", "isNotHandcuffed", "isNotSitting", "isNotOnLadder", "isNotRefueling"]] call ACEFUNC(common,canInteractWith)},
+                {[(call ACME_fnc_controlledProvider), _target, ["isNotInLyingState", "isNotInside","isNotDragging", "isNotCarrying", "isNotSwimming", "notOnMap", "isNotEscorting", "isNotSurrendering", "isNotHandcuffed", "isNotSitting", "isNotOnLadder", "isNotRefueling"]] call ACEFUNC(common,canInteractWith)},
                 {},
                 {},
                 "Spine3",

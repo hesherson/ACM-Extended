@@ -6,6 +6,20 @@
 [QGVAR(handleAirwayObstruction_Blood), LINKFUNC(handleAirwayObstruction_Blood)] call CBA_fnc_addEventHandler;
 
 [QGVAR(handleRecoveryPosition), LINKFUNC(handleRecoveryPosition)] call CBA_fnc_addEventHandler;
+// Fixed native owner endpoint; no dynamic function or arbitrary variable transport.
+[QGVAR(setRecoveryPosition), LINKFUNC(setRecoveryPosition)] call CBA_fnc_addEventHandler;
+
+// B220: catch native/third-party rolls as well as ACME's arbiter. State changes
+// in an animation chain are observed immediately, without an all-unit polling loop.
+if (isNil QGVAR(recoveryRollEH)) then {
+    GVAR(recoveryRollEH) = ["CAManBase", "AnimStateChanged", {
+        params ["_patient", "_animation"];
+        if (!local _patient || {!alive _patient}) exitWith {};
+        private _anim = toLowerANSI _animation;
+        if ((_anim find "rolltofront") < 0 && {(_anim find "rolltoback") < 0}) exitWith {};
+        [objNull, _patient, false, true, "interrupt"] call FUNC(setRecoveryPosition);
+    }] call CBA_fnc_addClassEventHandler;
+};
 
 [QGVAR(handleSuctionLocal), LINKFUNC(handleSuctionLocal)] call CBA_fnc_addEventHandler;
 [QGVAR(setAirwayCheckedTime), {

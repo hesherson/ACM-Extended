@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 
 import pytest
 from source_scan import lex, matching, split_args
@@ -64,6 +65,9 @@ def namespace_public_arguments(source):
 
 def adapt(s, component='core'):
     s = re.sub(r'^#include.*$', '', s, flags=re.M)
+    # HEMTT consumes this static-analysis annotation before Arma compilation;
+    # SQF-VM otherwise warns about the tool-specific pragma. No runtime code changes.
+    s = re.sub(r'^#pragma hemtt ignore_variables[^\n]*$', '', s, flags=re.M)
     for macro, prefix, quote in [('QACEGVAR', 'ace', True), ('QEGVAR', 'ACM', True), ('EGVAR', 'ACM', False), ('ACEGVAR', 'ace', False)]:
         s = re.sub(r'\b' + macro + r'\((\w+),\s*(\w+)\)', lambda m: ('"' if quote else '') + f'{prefix}_{m[1]}_{m[2]}' + ('"' if quote else ''), s)
     for macro, suffix, quote in [('QGVAR', '', True), ('GVAR', '', False), ('FUNC', 'fnc_', False)]:
@@ -74,10 +78,11 @@ def adapt(s, component='core'):
     for old, new in {
         'IS_UNCONSCIOUS(_medic)': '_unconscious',
         'alive _medic': '_alive', 'alive _m': '_alive',
-        'alive _patient': '_patientAlive', 'alive _target': '_patientAlive', 'alive _custodyTarget': '_patientAlive', 'alive _provider': '_alive', 'alive _p': '_patientAlive',
+        'alive _viewer': '_alive', 'alive _patient': '_patientAlive', 'alive _target': '_patientAlive', 'alive _custodyTarget': '_patientAlive', 'alive _provider': '_alive', 'alive _p': '_patientAlive',
         'local _medic': 'true', 'local _m': 'true', 'local _patient': 'true', 'local _p': 'true',
+        'local _viewer': 'true',
         'owner _medic': '_ownerNum',
-        'objectParent _medic': 'objNull', 'objectParent _patient': 'objNull', 'objectParent _p': 'objNull',
+        'vest _patient': '""', 'objectParent _medic': 'objNull', 'objectParent _patient': 'objNull', 'objectParent _p': 'objNull',
         '_patient distance2D _medic': '_distance', '_medic distance _patient': '_distance',
         'stance _medic': '"CROUCH"', 'stance _patient': '"PRONE"', 'stance _p': '"PRONE"',
         'animationState _patient': '"unconscious"', 'lifeState _p': '"DEAD"',
@@ -91,7 +96,7 @@ def adapt(s, component='core'):
         # Match command/identifier boundaries on both sides. In particular,
         # `stance _p` must not match the tail of `_m distance _p`.
         s = re.sub(r'(?<!\w)' + re.escape(old) + (r'\b' if old[-1].isalnum() else ''), lambda _: new, s)
-    s = s.replace('objNull, [objNull]', 'objNull, [profileNamespace]')
+    s = re.sub(r'\bobjNull\s*,\s*\[objNull\]', 'objNull, [profileNamespace]', s)
     # Objects are namespace stand-ins here. This SQF-VM returns nil for missing
     # typed-object param values instead of Arma's objNull fallback; adapt only
     # that engine type boundary, preserving the actual default and lease logic.
@@ -120,12 +125,18 @@ private _patient = profileNamespace;
 private _alive = true;
 private _patientAlive = true;
 private _unconscious = false;
+// Extracted native-animation excerpts in historical tests represent non-dressing procedures.
+// Full native treatment computes its own local predicate from the actual class/body part.
+private _torsoDressing = false;
 private _ownerNum = 7;
 private _distance = 1;
 private _dialog = false;
 private _stanceFreed = false;
 private _testAnimationSpeed = 1;
 ACME_fnc_choreographyRate = {1.5};
+// Retained lifecycle fixtures already provide a completed native holster. B290 separately executes
+// logical/visible empty-hands readiness and busy/timeout/cancellation cases at this engine boundary.
+ACME_fnc_medicAnimationReady = {true};
 private _moves = [];
 private _removed = [];
 private _keys = [];
@@ -137,6 +148,11 @@ private _track = {};
 private _nowTime = 10;
 CBA_missionTime = 10;
 ACE_player = _medic;
+ACME_fnc_controlledProvider = {ACE_player};
+// Historical feature fixtures supply a valid native panel; B288 executes the
+// complete captured-device predicate and invalidation cases separately.
+ACME_fnc_ventPanelContext = {true};
+ACME_fnc_ivInteractionValid = {true};
 ace_medical_gui_maxDistance = 3;
 ACM_core_ContinuousAction_Active = false;
 private _check = {if !(_this select 0) then {_ok = false; diag_log ("MENU_FIX_FAIL " + (_this select 1));};};
@@ -168,18 +184,65 @@ private _tick = {private _id = ACM_core_ContinuousAction_PFH; if (_id < 0) exitW
 '''
 
 
+# These historical fixtures contain no removed carrier. Execute the production
+# custody reader/debit early-exit rather than silently replacing the new boundary.
+PREAMBLE += "\nACME_fnc_carrierInventoryGet={" + adapt(read('carrierInventoryGet')) + "};"
+PREAMBLE += "\nACME_fnc_carrierSupplyTake={" + adapt(read('carrierSupplyTake')) + "};"
+# Default engine-clock adapter; suites with independent server clocks override
+# this helper with that same clock while retaining the production decisions.
+PREAMBLE += "\nACME_fnc_chestAccessLeaseRetire={" + adapt(read('chestAccessLeaseRetire').replace('objNull, [objNull]', 'objNull').replace('serverTime', 'CBA_missionTime')) + "};"
+
+
+# Shared new dependencies run as production SQF, not constant-return stubs.
+# ventMaskSelected is a read-only settings predicate with no engine operations.
+PREAMBLE += "\nACME_fnc_ventMaskSelected={" + adapt(read('ventMaskSelected')) + "};"
+PREAMBLE += "\nACME_fnc_ventRecoveryNear={" + adapt(read('ventRecoveryNear')) + "};"
+PREAMBLE += "\nACME_fnc_ventSyncMask={" + adapt(read('ventSyncMask')) + "};"
+
+
+PREAMBLE += "\nACME_fnc_stethoscopePressureRelease={" + adapt(read("stethoscopePressureRelease")) + "};"
+
+# B226 pure production dependencies used by full treatment/IV code in historical fixtures.
+PREAMBLE += "\nACME_fnc_isTorsoBandage={" + adapt(read("isTorsoBandage")) + "};"
+PREAMBLE += "\nACME_fnc_yBagReplaceEmpty={" + adapt(read("yBagReplaceEmpty")) + "};"
+
+
+GROUND_CONTACT_SOURCE = adapt(read('patientInteractionContact'))
+GROUND_CONTACT_SOURCE = re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',GROUND_CONTACT_SOURCE)
+PREAMBLE += 'ACME_fnc_patientInteractionDistance={'+adapt(read('patientInteractionDistance'))+'};'
+PREAMBLE += 'ACME_fnc_flightAirframe={objNull};ACME_fnc_patientInteractionContact={'+GROUND_CONTACT_SOURCE+'};'
+
+
+# New read-only aspiration authority is executed by retained production paths.
+# Delayed import inside execute avoids the fixture module's intentional import of this adapter.
+
 def execute(code):
     vm = os.environ.get('SQFVM') or shutil.which('sqfvm')
     if not vm:
         pytest.skip('SQF-VM required')
-    result = subprocess.run([vm, '--automated', '--suppress-welcome', '--no-execute-print', '--no-work-print', '--sqf', PREAMBLE + code + '\ndiag_log (if (_ok) then {"MENU_FIX_OK"} else {"MENU_FIX_FAIL"});'], capture_output=True, text=True, timeout=15)
+    # A complete production bridge can exceed both Windows and Linux argument limits.
+    # A temporary input file preserves every source byte without truncation or weakening assertions.
+    with tempfile.TemporaryDirectory(prefix="acme-sqf-test-") as directory:
+        source_path = Path(directory) / "case.sqf"
+        from b282_aspiration_fixture import definitions as aspiration_definitions
+        resource_dependencies = ""
+        if "ACME_fnc_resourceReturnProducts" in code or "ACME_fnc_resourceReturnSource" in code or "ACME_fnc_resourceReturnReceive" in code:
+            from b288_resource_return_fixture import definitions as resource_definitions
+            resource_dependencies = resource_definitions()
+        source_path.write_text(PREAMBLE + aspiration_definitions() + resource_dependencies + code + '\ndiag_log (if (_ok) then {"MENU_FIX_OK"} else {"MENU_FIX_FAIL"});', encoding="utf-8")
+        result = subprocess.run([vm, '--automated', '--suppress-welcome', '--no-execute-print', '--no-work-print', '--input-sqf', str(source_path)], capture_output=True, text=True, timeout=15)
     output = result.stdout + result.stderr
     assert result.returncode == 0 and '[ERR]' not in output and '[FAT]' not in output, output
     assert 'MENU_FIX_OK' in output and 'MENU_FIX_FAIL' not in output, output
 
 
 def core(name):
-    return adapt((ROOT / 'addons/core/functions' / f'fnc_{name}.sqf').read_text())
+    source = (ROOT / 'addons/core/functions' / f'fnc_{name}.sqf').read_text()
+    if name == 'beginContinuousAction':
+        # Native graph state is an engine boundary; this fixture already fixes stance to CROUCH.
+        # The B212 native-provider suite supplies independent prone/UNDEFINED graph-state inputs.
+        source = source.replace('animationState _medic', '"amovpknlmstpsnonwnondnon"')
+    return adapt(source)
 
 
 def test_engine_adapter_does_not_replace_command_suffixes():
@@ -232,7 +295,7 @@ def test_drag_retains_resistance_with_duplicate_timestamp(elapsed):
 
 
 def test_last_viewer_restore_cannot_clear_reopened_workspace():
-    execute('private _begin = {' + adapt(read('chestSealPatientBegin')) + '}; private _end = {' + adapt(read('chestSealPatientEnd')) + '};' + '''
+    execute('private _begin = {' + adapt(read('chestSealPatientBegin').replace('serverTime', 'CBA_missionTime')) + '}; private _end = {' + adapt(read('chestSealPatientEnd').replace('serverTime', 'CBA_missionTime')) + '};' + '''
         ACME_fnc_chestSealCanPhysicalRoll = {false};
         private _acquires=0;
         ACME_fnc_chestAccessVestAcquire = {_acquires=_acquires+1;};
@@ -257,7 +320,7 @@ def test_last_viewer_restore_cannot_clear_reopened_workspace():
 
 
 def test_final_corpse_viewer_restores_workspace_without_rolling_body():
-    execute('private _end = {' + adapt(read('chestSealPatientEnd')) + '};' + '''
+    execute('private _end = {' + adapt(read('chestSealPatientEnd').replace('serverTime', 'CBA_missionTime')) + '};' + '''
         private _actualSide = "front";
         _patientAlive = false;
         _patient setVariable ["ACME_CS_ProcedureActive",true];
@@ -426,3 +489,6 @@ def test_carry_assist_releases_after_provider_death():
         [!(_patient getVariable "ACM_core_CarryAssist_State"),"carry assist stranded after provider death"] call _check;
         [!ACM_core_ContinuousAction_Active && {count _removed == 2},"carry assist cleanup aborted"] call _check;
     ''')
+
+# Transfusion display presence is an engine UI boundary; dedicated B228 tests execute its predicate.
+PREAMBLE += "\nACME_fnc_transfusionInputOwned={false};"

@@ -11,7 +11,8 @@ private _display = findDisplay 86000;
 if (isNull _display) exitWith {false};
 
 private _ctrlInf = _display displayCtrl 86129;
-if (isNull _ctrlInf || {!ctrlShown _ctrlInf}) exitWith {false};
+private _ownsPopover = (_display getVariable ["ACME_txActionMenu", ""]) == "infusion";
+if (isNull _ctrlInf || {!ctrlShown _ctrlInf && {!_ownsPopover}}) exitWith {false};
 
 private _row = lbCurSel _ctrlInf;
 if (_row < 0) exitWith {

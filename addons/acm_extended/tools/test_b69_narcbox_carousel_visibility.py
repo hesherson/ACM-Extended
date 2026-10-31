@@ -43,7 +43,7 @@ def test_tag_text_controls_require_an_actual_tag_color():
 def test_body_map_hides_all_preparation_source_sections_until_draw_syringe_returns():
     view = txt('functions/fn_skSetView.sqf')
     rows = txt('functions/fn_skListRefresh.sqf')
-    assert '(_display displayCtrl 84007) ctrlShow (!_infusion && {!_body});' in view
+    assert '(_display displayCtrl 84007) ctrlShow (!_body);' in view
     assert '(_display displayCtrl 84008) ctrlShow (!_body);' in view
     assert '(_display displayCtrl 84129) ctrlShow (!_body);' in view
     assert '(_display displayCtrl 84131) ctrlShow (!_infusion && {!_body});' in view

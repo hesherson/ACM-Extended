@@ -16,6 +16,9 @@
 // next step does not start until that length has elapsed.
 params ["_unit", "_steps", ["_mode", "append"]];
 if (isNull _unit) exitWith {};
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    _unit setVariable ["ACME_animQ", [], false];
+};
 if !(_steps isEqualType []) exitWith {};
 // NOTHING ANIMATES A UNIT IN A VEHICLE. see fn_doAnim for why. the whole run is dropped rather than queued,
 // because a queue that survives the ride would fire the moment the casualty is unloaded, several minutes after
@@ -39,7 +42,7 @@ _unit setVariable ["ACME_animQActive", true];
 [{
     params ["_args", "_h"];
     _args params ["_u"];
-    if (isNull _u || {!alive _u}) exitWith {
+    if (isNull _u || {!alive _u} || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}) exitWith {
         [_h] call CBA_fnc_removePerFrameHandler;
         if (!isNull _u) then {
             _u setVariable ["ACME_animQ", [], false];

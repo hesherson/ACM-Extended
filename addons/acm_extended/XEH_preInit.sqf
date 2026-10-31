@@ -23,15 +23,42 @@ if (hasInterface) then {
 };
 
 private _settings = [
+    ["ACME_reactTransfusion", "CHECKBOX",
+        ["React transfusion cards (experimental)", "Render the existing fluid cards in React inside the normal transfusion menu. The original cards remain available if the browser cannot initialize."],
+        [_cSys, "Interface"], false, 2, {}],
+    ["ACME_menuPoseEnabled", "CHECKBOX",
+        ["Crouch when opening the medical menu", "Automatically kneel when opening another casualty's medical menu while standing. Prone medics keep their posture. Disabling this stops automatic menu posture changes; treatment animations keep their own posture requirements."],
+        [_cSys, "Interface"], true, 2, {
+            if (!_this && {hasInterface} && {!isNil "ACE_player"} && {!isNil "ACME_fnc_menuPoseStop"}) then {
+                [ACE_player] call ACME_fnc_menuPoseStop;
+            };
+        }],
     ["ACME_ptx_stableSec", "SLIDER",
-        ["Pneumothorax stability interval", "Seconds of controlled air accumulation before the internal model records stability. Does not display a provider notification."],
+        ["Pneumothorax stability interval", "Seconds of low, controlled PTX with an open or vented-seal-covered finger thoracostomy or chest tube, covered communicating wounds and relieved tension before the internal leak settles. Vented seals can be applied while healing continues. Settled, observed PTX permits surgical closure."],
         [_cTrau, "Pneumothorax"], [0, 300, 60, 0], 1, {}],
     ["ACME_ptx_leakSettleSec", "SLIDER",
         ["Pneumothorax leak settling time", "Simulation time scale for internal air leaks to settle. Larger values prolong leakage. Open chest wounds and actual drainage remain consequential."],
         [_cTrau, "Pneumothorax"], [120, 1800, 600, 0], 1, {}],
+    ["ACME_ptx_resolveSec", "SLIDER",
+        ["Pneumothorax residual air clearance", "Seconds to clear one normalized unit of remaining PTX after the internal leak settles, communicating wounds are covered and pressure is controlled. Open finger drainage and chest tubes accelerate clearance. This is simulation tuning."],
+        [_cTrau, "Pneumothorax"], [60, 1800, 600, 0], 1, {}],
     ["ACME_vent_simpleMode", "CHECKBOX",
         ["Simple Ventilator Mode", "Use the selected breathing rate with automatic supporting settings. Lung and airway problems, circulation, power and circuit failures still affect the patient. Advanced settings are retained for when this mode is disabled."],
-        [_cVent, "Mode"], false, 1, {}],
+        [_cVent, "Mode"], false, 1, {
+            // CBA passes the new Boolean directly. Corpse physiology has no
+            // drive tick, so advance only device protocol metadata on changes.
+            private _simple = _this;
+            {
+                private _patient = _x;
+                if (!isNull _patient && {local _patient} && {!alive _patient}
+                    && {_patient getVariable ["ACME_vent_onPatient", false]}) then {
+                    private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [!_simple, 0]];
+                    if !((_episode select 0) isEqualTo _simple) then {
+                        [_patient, "ACME_vent_simpleEpisode", [_simple, (_episode select 1) + 1]] call ACME_fnc_setVarNet;
+                    };
+                };
+            } forEach allDeadMen;
+        }],
     // systems: enable and disable, plus hardcore.
     // hardcore descriptors. it uses precise anatomical and clinical wording in the assessment text instead of
     // plain-language terms, and appends findings, such as chest-seal counts and NCD laterality, that a trained
@@ -52,6 +79,9 @@ private _settings = [
     // these workers or strand existing equipment; runtime actions enforce the separate access policy.
     // what is left in this list is genuinely optional: a mission can run without it and nothing else notices.
     ["ACME_sys_junc",      "CHECKBOX", ["Junctional Wounds", "Junctional hemorrhage + Combat-Gauze/pressure chain. OFF: junctional wounds are neither inflicted nor bled. Takes effect immediately."], [_cSys, "Systems"], true, 1, {}],
+    ["ACME_interventionAnimations", "CHECKBOX",
+        ["Intervention Animations", "Play provider and casualty treatment animations. Turning this off keeps treatment times, progress bars, item use and clinical effects. Necessary movement recovery still runs."],
+        [_cSys, "Presentation"], true, 1, {}],
     ["ACME_sys_dp",        "CHECKBOX", ["Direct Pressure", "Hold-pressure hemorrhage control. OFF: direct pressure cannot be started, and any hold in progress is released. Takes effect immediately."], [_cSys, "Systems"], true, 1, {}],
     ["ACME_sys_chestSeal", "CHECKBOX", ["Chest Seal Mini-game", "Drag-to-find seal placement. Off = ACM's instant seal. OFF: the mini-game cannot be opened and seals are handled without it. Takes effect immediately."], [_cSys, "Systems"], true, 1, {}],
     ["ACME_sys_hang",      "CHECKBOX", ["Hang Bag", "Raise an IV/blood bag for gravity-assisted flow. OFF: the bag cannot be raised, and a bag being held is lowered. Takes effect immediately."], [_cSys, "Systems"], true, 1, {}],
@@ -78,6 +108,16 @@ private _settings = [
         [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
     ["ACME_hc_vent", "CHECKBOX",
         ["[HARDCORE] Ventilation", "Enable the existing ventilator-induced lung-injury model for excessive tidal volumes. Disabling this stops additional injury from this mode; it does not heal injury already present. Takes effect immediately."],
+        [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
+
+    ["ACME_hc_burns", "CHECKBOX",
+        ["[HARDCORE] Major Burns", "Major burns can leave a residual field-unresolved systemic burden after the acute capillary-leak and heat-loss phase. The casualty can be stabilized but requires evacuation/definitive care. OFF: systemic burn physiology is game-reversible; burn wounds and infection risk still remain."],
+        [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
+    ["ACME_hc_infection", "CHECKBOX",
+        ["[HARDCORE] Infection / Sepsis", "Prolonged septic shock can leave residual organ dysfunction and an evacuation requirement even after antibiotics control the infection. OFF: infection and sepsis can fully regress in the field on the game-compressed timeline."],
+        [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
+    ["ACME_hc_ophthalmology", "CHECKBOX",
+        ["[HARDCORE] Ocular Trauma", "Structural ocular trauma becomes a stabilization-and-evacuation problem. Eye shields protect the injury but do not field-heal it. OFF: structural ocular injury recovers on a game-compressed timeline; dust and irritant injury remain eyewash-reversible in either mode."],
         [_cSys, "Hardcore"], false, 1, { call ACME_fnc_applyHardcore; }],
 
     // infusion, which is global because it affects the flow math.
@@ -456,11 +496,11 @@ private _settings = [
     // the physiology of a seizure is core gameplay and has no switch: the casualty still seizes, still loses
     // consciousness, and still carries every vital sign and consequence of it. this setting governs the BODY
     // MOTION and nothing else.
-    // ACME uses BI's GestureSpasm3-6 as dedicated 1.35x seizure gestures. Each gesture finishes before the next
+    // ACME uses BI's GestureSpasm0/4/5/6 as isolated seizure gestures. Each gesture finishes before the next
     // begins. The old heading tremor, random yaw jitter and repeated ragdoll-flop loop are no longer used.
     [
         "ACME_seizure_animEnabled", "CHECKBOX",
-        ["Seizure body motion", "The convulsion ANIMATION only. ON: active seizures cycle BI GestureSpasm3-6 at 1.35x, allowing each spasm to finish before the next begins. OFF: a seizing casualty lies still, while loss of consciousness, apnea, vitals, postictal state and treatment remain unchanged. Takes effect immediately, including on a seizure already running."],
+        ["Seizure body motion", "The convulsion ANIMATION only. ON: active seizures randomly play BI GestureSpasm0, GestureSpasm4, GestureSpasm5 and GestureSpasm6, allowing each spasm to finish before the next begins. OFF: a seizing casualty lies still, while loss of consciousness, apnea, vitals, postictal state and treatment remain unchanged. Takes effect immediately, including on a seizure already running."],
         [_cTrau, "3. Seizures"],
         true, 2, {}
     ],

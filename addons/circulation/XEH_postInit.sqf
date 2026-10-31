@@ -158,46 +158,25 @@ if (hasInterface || isServer) then {
     } forEach _pairs;
 }] call CBA_fnc_addEventHandler;
 
-// Filled FBTKs request their unique donor-bag ID from the server. This removes both the JIP ID-0 failure and
-// concurrent-client ID collisions. The exact donor entry is sent back with the item so the receiving medic has
-// valid metadata before the inventory class is exposed to the transfusion menu.
-[QGVAR(requestFreshBloodBag), {
-    if (!isServer) exitWith {};
-    params ["_medic", "_donor", "_volume"];
-    if (isNull _medic || {isNull _donor} || {!(_volume in [250, 500])}) exitWith {};
-    private _freshBloodID = [_donor, _volume] call FUNC(generateFreshBloodEntry);
-    if (_freshBloodID < 1) exitWith {
-        [QGVAR(receiveFreshBloodBag), [_medic, _volume, -1, []], _medic] call CBA_fnc_targetEvent;
+// A filled FBTK is funded by its patient-owner removal receipt. Allocation,
+// replay and delivery are journaled independently of the collector's UI.
+[QGVAR(requestFreshBloodBag), {["request",_this] call FUNC(freshBloodGrant);}] call CBA_fnc_addEventHandler;
+[QGVAR(receiveFreshBloodBag), {_this call FUNC(receiveFreshBloodBag);}] call CBA_fnc_addEventHandler;
+[QGVAR(freshBloodGrantAck), {["ack",_this] call FUNC(freshBloodGrant);}] call CBA_fnc_addEventHandler;
+[QGVAR(freshBloodGrantDecision), {["decision",_this] call FUNC(freshBloodGrant);}] call CBA_fnc_addEventHandler;
+[QGVAR(freshBloodGrantQuery), {_this call FUNC(freshBloodGrantQuery);}] call CBA_fnc_addEventHandler;
+["ACME_resourceReturn", {
+    // Internal proof/admission flags belong to server recursion, never a wire.
+    if (_this isEqualType [] && {count _this==2}
+        && {(_this select 0) in ["request","ack","decision","sourceProof","recover"]}) then {
+        [_this select 0,_this select 1] call ACME_fnc_resourceReturnBroker;
     };
-    private _freshEntry = [_freshBloodID] call FUNC(getFreshBloodEntry);
-    private _freshBloodType = _freshEntry param [2, -1];
-    [QGVAR(updateFreshBloodBagName), [_volume, _freshBloodID, _freshBloodType]] call CBA_fnc_globalEvent;
-    [QGVAR(receiveFreshBloodBag), [_medic, _volume, _freshBloodID, _freshEntry], _medic] call CBA_fnc_targetEvent;
 }] call CBA_fnc_addEventHandler;
-
-[QGVAR(receiveFreshBloodBag), {
-    if (!hasInterface) exitWith {};
-    params ["_medic", "_volume", "_id", "_entry"];
-    if (_id < 1 || {!(_entry isEqualType [])} || {count _entry < 3}) exitWith {
-        ["Unable to allocate a donor blood bag ID. The filled FBTK was not returned.", 3] call ACEFUNC(common,displayTextStructured);
-    };
-
-    // Install the donor metadata first. This guarantees the menu and ivBag callback can resolve ABO/time data even
-    // if the server's public registry update arrives after this targeted delivery event.
-    private _freshList = missionNamespace getVariable [QGVAR(FreshBloodList), createHashMap];
-    _freshList set [_id, _entry];
-    missionNamespace setVariable [QGVAR(FreshBloodList), _freshList, false];
-
-    private _className = format ["%1_%2", (["FreshBlood", _volume] call FUNC(formatFluidBagName)), _id];
-    private _returnedItem = [_medic, _className] call ACEFUNC(common,addToInventory);
-    if !(_returnedItem param [0, false]) then {
-        // Preserve the donor product instead of deleting it when the collector's inventory is full.
-        private _holder = createVehicle ["GroundWeaponHolder", _medic modelToWorld [0, 1, 0], [], 0, "CAN_COLLIDE"];
-        _holder addItemCargoGlobal [_className, 1];
-        ["Inventory full. Fresh donor blood was placed on the ground.", 2.5] call ACEFUNC(common,displayTextStructured);
-    };
-    [QGVAR(updateFreshBloodBagName), [_volume, _id, _entry param [2, -1]]] call CBA_fnc_localEvent;
-}] call CBA_fnc_addEventHandler;
+["ACME_resourceReturnDelivery", {_this call ACME_fnc_resourceReturnReceive;}] call CBA_fnc_addEventHandler;
+["ACME_resourceReturnQuery", {_this call ACME_fnc_resourceReturnQuery;}] call CBA_fnc_addEventHandler;
+["ACME_resourceReturnSourceQuery", {_this call ACME_fnc_resourceReturnSourceQuery;}] call CBA_fnc_addEventHandler;
+["ACME_resourceReturnSourceAdmitted", {["admitted",_this] call ACME_fnc_resourceReturnSource;}] call CBA_fnc_addEventHandler;
+["ACME_resourceReturnSourceDelivered", {["delivered",_this] call ACME_fnc_resourceReturnSource;}] call CBA_fnc_addEventHandler;
 
 if (hasInterface) then {
     [{!isNull player}, {

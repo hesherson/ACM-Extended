@@ -9,9 +9,9 @@ def read(rel):
 
 def test_chest_preflight_condition_unpacks_full_cba_payload():
     s = read("addons/core/overrides/fnc_treatment.sqf")
-    start = s.index("// CBA passes the ENTIRE _args payload")
-    block = s[start:start + 1100]
-    assert 'params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch"];' in block
+    start = s.index('params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch","_finish","_abort"];')
+    block = s[start:start + 1800]
+    assert 'params ["_m","_p","_args","_tok","_leaseId","_classKey","_launch","_finish","_abort"];' in block
     assert 'getVariable ["ACME_chestAccessPreflightToken",""]) != _tok' in block
 
 def test_removal_provider_wait_unwraps_nested_call_args():
@@ -38,7 +38,8 @@ def test_native_stethoscope_callback_accepts_classname_slot():
 
 def test_rc19_stethoscope_lifetime_still_present():
     s = read("addons/acm_extended/functions/fn_beginStethoscopeAction.sqf")
-    assert 'ACM_core_ContinuousAction_Session", [_patient, _epoch]' in s
+    assert '["session", [_patient, _epoch]]' in s
+    assert 'call ACM_core_fnc_setContinuousActionState' in s
     assert "_args call _onStart;" in s
     assert 'findDisplay _dialogID' in s
 

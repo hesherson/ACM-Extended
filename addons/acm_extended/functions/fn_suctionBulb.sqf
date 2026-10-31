@@ -43,7 +43,7 @@ switch (_mode) do {
     case "squeeze": {
         if ((uiNamespace getVariable ["ACME_laryngo_held", ""]) isNotEqualTo "suction") exitWith {};
 
-        // Recheck at input time: a newly carried ACCUVAC takes priority before a bag is spent.
+        // Recheck the selected device at input time; explicit manual selection stays on the bag.
         if (([true] call ACME_fnc_suctionSelectDevice) != 0) exitWith {};
         private _medic = uiNamespace getVariable ["ACME_laryngo_medic", objNull];
         if (isNull _medic || {!local _medic}) exitWith {};
@@ -71,7 +71,7 @@ switch (_mode) do {
 
         uiNamespace setVariable ["ACME_suction_sqT0", diag_tickTime];
         uiNamespace setVariable ["ACME_suction_sqBand", ([_vol] call _fnc_band)];
-        if (!isNull _pat) then {[_pat, (_dev getOrDefault ["sfxSqueeze", "ACME_ManualSuction"])] call ACME_fnc_worldSfxNearby;};
+        [_medic] call ACME_fnc_manualSuctionSound;
 
         if (!_inMouth) exitWith {};
 

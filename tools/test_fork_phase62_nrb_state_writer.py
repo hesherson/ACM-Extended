@@ -10,8 +10,12 @@ commit=read('addons/acm_extended/functions/fn_nrbStateCommit.sqf')
 for key in ('ACME_nrb_on','ACME_nrb_hasO2','ACME_nrb_delivering'):
     assert key in commit
 assert 'if (!_newOn)' in commit and 'if (!_newO2)' in commit
-for rel in ('fn_nrbStateLocal.sqf','fn_nrbTick.sqf','fn_nrbOxygenAck.sqf','fn_clinicalRestore.sqf','fn_clinicalReset.sqf','fn_registerRhythmLifecycleRuntime.sqf'):
+for rel in ('fn_nrbStateLocal.sqf','fn_nrbTick.sqf','fn_nrbOxygenAck.sqf','fn_clinicalRestore.sqf','fn_clinicalReset.sqf','fn_respawnClinicalReset.sqf'):
     assert 'ACME_fnc_nrbStateCommit' in read('addons/acm_extended/functions/'+rel), rel
+from current_source_contracts import _has
+respawn=read('addons/acm_extended/functions/fn_registerRhythmLifecycleRuntime.sqf')
+assert _has(respawn, '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;')
+assert _has(respawn, '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;')
 viol=[]
 keys='(?:ACME_nrb_on|ACME_nrb_hasO2|ACME_nrb_delivering)'
 for p in FUN.rglob('*.sqf'):

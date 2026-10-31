@@ -16,6 +16,7 @@ ACME_tbi_activePatients pushBackUnique _patient;
 // and dragged ICP below zero through the autoregulation relax. always clamp to a sane 0 to 1.
 if (_severity < 0) then { _severity = 0.30 + random 0.60; };  // a random moderate-to-severe TBI.
 _severity = (_severity max 0) min 1;
+if (_severity > 0) then {_patient setVariable ["ACME_wakeHadTBI",true,true];};
 
 private _existing = _patient getVariable ["ACME_tbi_State", createHashMap];
 if (count _existing > 0 && {!_force}) exitWith {_existing};

@@ -83,8 +83,13 @@ private _PFH = [{
         _patient setVariable ["ACM_airway_AirwayObstructionVomit_Count", ((_vomitCount - 1) max 0), true];
 
         if !(_inRecovery) then { // TODO check for pose
-            _patient setVariable ["ACM_airway_AirwayObstructionVomit_State", (_obstructionState + 1), true];
+            [_patient, [["vomit", _obstructionState + 1]], true] call ACM_airway_fnc_setAirwayState;
         };
+
+        // Every real emesis receives an episode receipt, including protected recovery-position emesis.
+        // Tick applies the existing recovery-position protection; clearing/grace-only ticks emit nothing.
+        private _emesis = [_patient,"make",format ["ACME-native-vomit:%1:%2",_epoch,CBA_missionTime],_obstructionState + 1,2] call ACME_fnc_aspirationEventKey;
+        if !(_emesis isEqualTo []) then {_patient setVariable ["ACME_laryngo_emesis",_emesis,true];};
 
         playSound3D [format ["%1%2.wav", "\x\ACM\addons\airway\sound\vomit",(1 + round(random 5))], _patient, false, getPosASL _patient, 10, (0.9 + (random 0.2)), 10];
     };

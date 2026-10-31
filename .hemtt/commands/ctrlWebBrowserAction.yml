@@ -1,0 +1,25 @@
+# Native Arma 3 2.20 command missing from HEMTT 1.22's bundled/wiki snapshot.
+# Signature source: https://community.bistudio.com/wiki/ctrlWebBrowserAction
+# This describes an engine command; it does not inject a custom runtime command.
+name: ctrlWebBrowserAction
+description: Executes a native action on a CT_WEBBROWSER control.
+groups:
+- GUI Control
+syntax:
+- call: !Binary
+  - control
+  - action
+  ret:
+  - Nothing
+  - null
+  params:
+  - name: control
+    type: Control
+  - name: action
+    type: ArrayUnknown
+argument_loc: Local
+effect_loc: Local
+since:
+  arma_3:
+    major: 2
+    minor: 20

@@ -15,6 +15,11 @@ params [
 ];
 if !(_fallback in ["front", "back"]) then {_fallback = "front";};
 if (isNull _patient) exitWith {_fallback};
+// Without body animation, the timed procedural roll updates only its logical side. Engine geometry remains
+// unchanged and cannot be used to undo that accepted endpoint or force entry normalization into a retry loop.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+    _patient getVariable ["ACME_CS_facing", _fallback]
+};
 
 private _as = toLowerANSI animationState _patient;
 private _faceUpState = toLowerANSI (missionNamespace getVariable ["ACME_uncon_faceUp", "ACM_LyingState"]);

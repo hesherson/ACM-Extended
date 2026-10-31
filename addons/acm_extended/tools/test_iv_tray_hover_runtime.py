@@ -86,66 +86,37 @@ def setup(gauge, stock):
     ''' + 'ACME_fnc_ivTrayHover={' + hover_source() + '};'
 
 
+# Legacy test identifiers retained; B233 intentionally removes stock fans/badges.
 @pytest.mark.parametrize('gauge', [14, 16, 18, 20])
 @pytest.mark.parametrize('stock', [0, 1, 5, 6, 20])
 def test_hover_stock_count_badge_uses_live_tile_and_collapses_on_exit(gauge, stock):
     execute(setup(gauge, stock) + f'''
         ["needle",{gauge},true] call ACME_fnc_ivTrayHover;
-        private _fan=_display getVariable ["ACME_IV_TrayFan_{gauge}",[]];
-        [count _fan==5 && {{count _created==1}},"fan creation lost a control"] call _check;
-        private _badge=_fan select 4;
-        private _expected=[1.60+0.14*0.08,0.35+0.08*0.055,0.14*0.18,0.08*0.22];
-        [[[_badge] call _position,_expected] call _closeRect,"badge is not inside live tile"] call _check;
-        [(_fades get str _badge)=={0 if stock > 5 else 1},"wrong badge stock threshold"] call _check;
-        private _shownClones=(_fan select [0,4]) select {{(_fades get str _x)==0}};
-        [count _shownClones=={max(0, min(stock, 5) - 1)},"wrong stock fan size"] call _check;
-        [(_stockReads select 0) isEqualTo [_medic,_patient,"ACM_IV_{gauge}g"],"stock read used wrong treatment/item"] call _check;
+        [count _created==0,"hover must not create a badge"] call _check;
+        [[[_base select 0,_base select 1,_base select 2,_base select 3], [88000] call _position] call _closeRect,"centered logo moved"] call _check;
         ["needle",{gauge},false] call ACME_fnc_ivTrayHover;
-        [count _created==1,"exit recreated fan controls"] call _check;
-        {{[(_fades get str _x)==1,"exit left fan visible"] call _check;}} forEach _fan;
-        {{[[[_x] call _position,_base] call _closeRect,"exit did not collapse clone"] call _check;}} forEach (_fan select [0,4]);
+        [count _created==0 && {{count _stockReads==0}},"no hover inventory churn"] call _check;
     ''')
-
 
 @pytest.mark.parametrize('gauge', [14, 16, 18, 20])
 def test_first_badge_reveal_never_animates_from_ui_origin(gauge):
     execute(setup(gauge, 6) + f'''
         ["needle",{gauge},true] call ACME_fnc_ivTrayHover;
-        private _badge=(_display getVariable "ACME_IV_TrayFan_{gauge}") select 4;
-        private _transitions=_reveals select {{(_x select 0)==_badge}};
-        {{
-            [[_x select 1,_x select 2] call _closeRect,"badge reveals while moving from UI origin"] call _check;
-        }} forEach _transitions;
-        {{
-            private _position=_x select 1;
-            [(_position select 0)>=(_slot select 0) && {{(_position select 1)>=(_slot select 1)}},
-                "visible badge text written before tile placement"] call _check;
-        }} forEach (_visibleText select {{(_x select 0)==_badge}});
-        [(_fades get str _badge)==0,"badge never became visible"] call _check;
+        [count _reveals==0 && {{count _visibleText==0}},"no moving badge reveal"] call _check;
+        [count _created==0,"no badge created"] call _check;
     ''')
-
 
 @pytest.mark.parametrize('gauge', [14, 16, 18, 20])
 def test_fan_uses_original_color_with_progressively_lower_opacity(gauge):
     first_idc = {14: 86580, 16: 86584, 18: 86588, 20: 86592}[gauge]
     execute(setup(gauge, 6) + f'''
-        ["needle",{gauge},true] call ACME_fnc_ivTrayHover;
-        private _fan=_display getVariable ["ACME_IV_TrayFan_{gauge}",[]];
-        private _expectedAlpha=[0.72,0.52,0.34,0.18];
-        for "_i" from 0 to 3 do {{
-            private _control=_fan select _i;
-            [_control=={first_idc}+_i,"fan did not use its predeclared layer"] call _check;
-            private _colorWrites=_writes select {{(_x select 0)==_control && {{(_x select 1)=="ctrlSetTextColor"}}}};
-            private _rgba=(_colorWrites select ((count _colorWrites)-1)) select 2;
-            [_rgba isEqualTo [1,1,1,_expectedAlpha select _i],"fan is tinted or distance alpha is wrong"] call _check;
-        }};
-        [count (_writes select {{(_x select 0)==88000 && {{(_x select 1)=="ctrlSetTextColor"}}}})==0,
-            "hover overwrote the main logo inventory state"] call _check;
         for "_j" from 1 to 25 do {{
-            ["needle",{gauge},false] call ACME_fnc_ivTrayHover;
             ["needle",{gauge},true] call ACME_fnc_ivTrayHover;
+            ["needle",{gauge},false] call ACME_fnc_ivTrayHover;
         }};
-        [count _created==1,"repeated hover recreated controls above the real logo"] call _check;
+        for "_i" from 0 to 3 do {{[!(_visible get str ({first_idc}+_i)),"retired fan visible"] call _check;}};
+        [count _created==0,"no dynamic fan controls"] call _check;
+        [count (_writes select {{(_x select 0)==88000 && {{(_x select 1)=="ctrlSetTextColor"}}}})==0,"inventory tint preserved"] call _check;
     ''')
 
 

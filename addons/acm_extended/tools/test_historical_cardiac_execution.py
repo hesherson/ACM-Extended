@@ -15,6 +15,10 @@ C = ROOT / 'addons/circulation/functions'
 
 
 def code(text, component='circulation'):
+    # SQF-VM returns nil for the missing typed B279 marker on legacy rows.
+    # Preserve Arma's empty-string default without changing a present marker
+    # or the physical possession/canonical-claim branch it selects.
+    text = text.replace('param [13,"",[""]]', 'param [13,""]')
     fields = {
         'IN_CRDC_ARRST': ('ace_medical_inCardiacArrest', 'false'),
         'GET_CIRCULATIONSTATE': ('ACM_circulation_CirculationState', 'true'),
@@ -55,7 +59,10 @@ def setup():
         values = re.findall(r'^#define\s+'+name+r'\s+([0-9.]+)\b', headers, re.M)
         assert len(values)==1, (name, values)
         constants += name+' = '+values[0]+';\n'
-    return constants + '''
+    proximity = (F/'fn_patientInteractionDistance.sqf').read_text()
+    proximity = proximity.replace('objectParent _medic', 'objNull').replace('objectParent _patient', 'objNull')
+    proximity = proximity.replace('_medic distance _patient', '_distance')
+    return 'ACME_fnc_patientInteractionDistance={' + adapt(proximity) + '};' + constants + '''
         private _patientLocal=true;
         private _linear={params ["_lo","_hi","_x","_a","_b","_clamp"];
             private _f=(_x-_lo)/(_hi-_lo); if (_clamp) then {_f=(_f max 0) min 1;}; _a+(_f*(_b-_a))};

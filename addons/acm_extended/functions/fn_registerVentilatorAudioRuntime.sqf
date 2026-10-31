@@ -137,19 +137,23 @@ if (isServer) then {
                 };
                 };
             } else {
-                // dead. never leave a looping source attached to a corpse.
+                // Death can interrupt startup/shutdown before a source exists. Retire the state as well as the
+                // source, otherwise a source-less nonzero state pins the corpse in this 10 Hz registry forever.
                 private _src = _pat getVariable ["ACME_vent_sndSrc", objNull];
                 if (!isNull _src) then {
                     detach _src; deleteVehicle _src;
                     _pat setVariable ["ACME_vent_sndSrc", objNull];
-                    _pat setVariable ["ACME_vent_sndState", 0, true];
                 };
+                [_pat, "ACME_vent_sndState", 0] call ACME_fnc_setVarNet;
+                _pat setVariable ["ACME_vent_sndLoopAt", 0];
             };
         } forEach (+(missionNamespace getVariable ["ACME_vent_serverPatients", []]));
 
-        // Retain only attached/configured patients and patients whose shutdown/source cleanup is still in flight.
+        // Dead patients have completed source cleanup above. Old attached/configured flags must not retain them;
+        // a new living casualty is registered by ventilator custody/configuration, independently of this list.
+        // Retain only living attached/configured patients and patients whose shutdown/source cleanup is in flight.
         ACME_vent_serverPatients = (missionNamespace getVariable ["ACME_vent_serverPatients", []]) select {
-            !isNull _x && {
+            !isNull _x && {alive _x} && {
                 (_x getVariable ["ACME_vent_onPatient", false])
                     || {_x getVariable ["ACME_vent_configured", false]}
                     || {(_x getVariable ["ACME_vent_sndState", 0]) != 0}
@@ -171,6 +175,10 @@ if (isServer) then {
 // you.
 if (hasInterface) then {
     ACME_vent_alarmSnd = createHashMap;  // netid -> [prio, beepsleft, nextbeept, nextburstt, lowdone]
+    ACME_vent_alarmCandidates = [];
+    ACME_vent_alarmDiscoverAt = -1;
+    ACME_vent_alarmViewer = objNull;
+    ACME_vent_alarmVehicle = objNull;
     private _beepLen = missionNamespace getVariable ["ACME_vent_alarmBeepLen", 0.336];  // matches the ogg
     [{
         params ["_args"];
@@ -178,11 +186,30 @@ if (hasInterface) then {
         private _plr = ACE_player;
         if (isNull _plr) exitWith {};
         private _now = diag_tickTime;
+        // Candidate discovery is not the beep clock. Refresh at 2 Hz, or immediately when the listener changes
+        // player/vehicle. Vehicle crew are explicit because nearEntities may omit embarked CAManBase objects.
+        private _listenerVehicle = vehicle _plr;
+        if (_now >= ACME_vent_alarmDiscoverAt || {_plr isNotEqualTo ACME_vent_alarmViewer}
+            || {_listenerVehicle isNotEqualTo ACME_vent_alarmVehicle}) then {
+            private _candidates = [];
+            {
+                if (_x isKindOf "CAManBase") then {_candidates pushBackUnique _x;} else {
+                    {_candidates pushBackUnique _x;} forEach (crew _x);
+                };
+            } forEach (_plr nearEntities [["CAManBase", "LandVehicle", "Air", "Ship"], 25]);
+            {_candidates pushBackUnique _x;} forEach (crew _listenerVehicle);
+            ACME_vent_alarmCandidates = _candidates;
+            ACME_vent_alarmDiscoverAt = _now + 0.5;
+            ACME_vent_alarmViewer = _plr;
+            ACME_vent_alarmVehicle = _listenerVehicle;
+        };
         private _gap = _beepLen + (missionNamespace getVariable ["ACME_vent_alarmBeepGap", 0.04]);
         private _seen = [];
 
         {
             private _pat = _x;
+            // Leaving range silences immediately; discovery latency never extends an audible alarm.
+            if (isNull _pat || {!alive _pat} || {_plr distance _pat > 25}) then {continue};
             private _id = netId _pat;
             private _alarms = _pat getVariable ["ACME_vent_alarms", []];
             private _prio = _pat getVariable ["ACME_vent_alarmPrio", 0];
@@ -250,7 +277,7 @@ if (hasInterface) then {
 
                 ACME_vent_alarmSnd set [_id, [_sPrio, _beepsLeft, _nextBeepT, _nextBurstT, _lowDone]];
             };
-        } forEach (_plr nearEntities [["CAManBase"], 25]);
+        } forEach ACME_vent_alarmCandidates;
 
         // forget the casualties we can no longer hear, so their pattern restarts cleanly when we come back.
         { if !(_x in _seen) then { ACME_vent_alarmSnd deleteAt _x; }; } forEach (keys ACME_vent_alarmSnd);

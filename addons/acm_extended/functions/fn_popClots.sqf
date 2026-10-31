@@ -76,7 +76,7 @@ if (_oi >= 0) then {
 };
 _open set [_part, _oRows];
 
-_unit setVariable ["ACM_damage_ClottedWounds", _clotted, true];
+[_unit, [["clottedWounds", _clotted]], true] call ACM_damage_fnc_setWoundState;
 [_unit, [["openWounds", _open, true]]] call ACM_core_fnc_setAceMedicalState;
 [_unit] call ace_medical_status_fnc_updateWoundBloodLoss;
 

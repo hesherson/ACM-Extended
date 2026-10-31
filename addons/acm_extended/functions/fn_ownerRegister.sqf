@@ -2,6 +2,10 @@
    No patient physiology is cleared on ownership loss. PFH IDs never travel. */
 params ["_patient"];
 if (isNull _patient || {!local _patient} || {_patient getVariable ["ACME_clinicalRestoring", false]}) exitWith {};
+private _batteryPeriod = [clientOwner, _patient getVariable ["ACME_providerLocalityEpoch", 0]];
+if ((_patient getVariable ["ACME_vent_batterySwapOwnerPeriod", []]) isNotEqualTo _batteryPeriod) then {
+    _patient setVariable ["ACME_vent_batterySwapOwnerPeriod", _batteryPeriod, true];
+};
 
 // Event-driven ownership registry. Keeping this current makes the periodic world sweep a cheap missed-event fallback
 // instead of a scheduler rebuild across every local unit.
@@ -9,8 +13,27 @@ private _owned = missionNamespace getVariable ["ACME_clinical_ownedUnits", []];
 _owned pushBackUnique _patient;
 missionNamespace setVariable ["ACME_clinical_ownedUnits", _owned];
 _patient setVariable ["ACME_ownerRegisterSeen", owner _patient, false];
+// Escrow replication can follow the Local event. The existing next-frame and
+// delayed registrations also adopt outstanding provider transactions.
+[_patient] call ACME_fnc_piggybackRecover;
+[_patient] call ACME_fnc_lineWarmerRecover;
+if (!isNil "ACME_fnc_syringeDeliveryRecover") then {[_patient] call ACME_fnc_syringeDeliveryRecover;};
+["recover", _patient] call ACME_fnc_ventBatteryRequest;
+if (count (_patient getVariable ["ACME_lineWarmerReturns",createHashMap]) > 0) then {
+    private _pending = missionNamespace getVariable ["ACME_lineWarmerReturnPatients",[]];
+    _pending pushBackUnique _patient;
+    missionNamespace setVariable ["ACME_lineWarmerReturnPatients",_pending];
+};
 
+[_patient] call ACME_fnc_aiProtectionSync;
 [_patient] call ACME_fnc_transientStateReconcile;
+private _rhythmRegistry = missionNamespace getVariable ["ACME_rhythm_activePatients", []];
+if ((_patient getVariable ["ACME_rhythm_active", 0]) >= 100) then {
+    _rhythmRegistry pushBackUnique _patient;
+} else {
+    _rhythmRegistry = _rhythmRegistry - [_patient];
+};
+missionNamespace setVariable ["ACME_rhythm_activePatients", _rhythmRegistry];
 
 // Migrate old bilateral inguinal AAJT saves exactly once. The physical AAJT-S has one wedge, so an old
 // ACME_AAJT_legs=[leftleg,rightleg] state must become one deterministic side instead of silently retaining
@@ -32,6 +55,11 @@ if (!alive _patient) exitWith {
     [_patient] call ACME_fnc_deadPhysiologyFreeze;
     if (_headState) then {[_patient] call ACME_fnc_headElevDeathRelease;};
 };
+// Rebuild newly integrated durable disease state before deriving shared circulation/coagulation.
+if (!isNil "ACME_fnc_medmashReconcile") then {[_patient] call ACME_fnc_medmashReconcile;};
+// Populate idle-capable physiology registries from this exact owner event.
+// The periodic full scan is only a missed-event fallback.
+[[_patient]] call ACME_fnc_idlePhysDiscovery;
 // Rebuild coagulation immediately on treatment enrollment and ownership recovery.
 [[_patient]] call ACME_fnc_coagulationTick;
 
@@ -78,39 +106,8 @@ private _hasPtx = (_patient getVariable ["ACM_breathing_Pneumothorax_State", 0])
     || {count (_patient getVariable ["ACME_ptx_state", []]) > 0};
 if (_hasPtx) then {[_patient] call ACME_fnc_ptxEnsure;};
 
-// NA3 one enrollment registry supplies independent medical maintenance.
-// B203: a non-empty circulation HashMap is historical state, not proof that physiology still needs a 4 Hz worker.
-// Once created, that map retains neutral bookkeeping fields for the rest of the casualty's life.
-private _circState = _patient getVariable ["ACME_circ_State", createHashMap];
-private _circNeeds = (_circState getOrDefault ["shockActive", false])
-    || {abs (_circState getOrDefault ["shockDrop", 0]) > 0.01}
-    || {abs (_circState getOrDefault ["pressorSupport", 0]) > 0.01}
-    || {abs (_circState getOrDefault ["pushDoseSupport", 0]) > 0.01}
-    || {(_circState getOrDefault ["ichRisk", 0]) > 0.001}
-    || {(_circState getOrDefault ["ionizedCa", 1.15]) < 0.999}
-    || {(_circState getOrDefault ["temp", 37]) < 35.99}
-    || {(_circState getOrDefault ["salineAcidosis", 0]) > 0.001}
-    || {(_circState getOrDefault ["totalAcidosis", 0]) > 0.001}
-    || {(_circState getOrDefault ["paCO2", 40]) > 40.1}
-    || {(_circState getOrDefault ["respiratoryAcidosisDeficit", 0]) > 0.001}
-    || {(_circState getOrDefault ["hyperSpike", 0]) > 0.001};
-
-private _needs = (_patient getVariable ["ace_medical_inCardiacArrest", false])
-    || {_hasPtx}
-    || {_patient getVariable ["ACE_isUnconscious", false]}
-    || {_patient getVariable ["ACME_vent_connected", false]}
-    || {_patient getVariable ["ACME_ETT_Inserted", false]}
-    || {_patient getVariable ["ACME_nrb_on", false]}
-    || {_patient getVariable ["ACME_tbi_HasTBI", false]}
-    || {(_patient getVariable ["ACME_blastLung_State", 0]) > 0}
-    || {_circNeeds}
-    || {count (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) > 0}
-    || {count (_patient getVariable ["ace_medical_medications", []]) > 0}
-    || {count (_patient getVariable ["ACME_yFlushJobs", createHashMap]) > 0}
-    || {count (_patient getVariable ["ACME_suctionSessions", []]) > 0}
-    || {(_patient getVariable ["ACME_suctionExposure", 0]) > 0}
-    || {(_patient getVariable ["ACME_o2Drain_suction", 0]) > 0}
-    || {(_patient getVariable ["ACME_laryngo_irritationUntil", 0]) > CBA_missionTime};
+// One live indication governs enrollment and completed-pass retirement.
+private _needs = [_patient] call ACME_fnc_clinicalNeedsTick;
 private _registry = missionNamespace getVariable ["ACME_clinical_activePatients", []];
 if (_needs) then {_registry pushBackUnique _patient;} else {_registry = _registry - [_patient];};
 missionNamespace setVariable ["ACME_clinical_activePatients", _registry];
@@ -136,6 +133,14 @@ if (_patient getVariable ["ACME_nativeBloodObstructionActive", false]) then {
 };
 if (_patient getVariable ["ACME_nativeHemolysisActive", false]) then {
     [_patient, true] call ACM_circulation_fnc_handleHemolyticReaction;
+};
+
+// Adopt only an accepted, activated CPR episode whose independently replicated
+// native provider/session have also arrived. Reconstruct elapsed clinical time
+// in this owner's CBA clock; the native handler deduplicates exact ownership.
+if ([_patient, "cpr"] call ACME_fnc_ownerRegisterNeedsRecovery) then {
+    private _cprGrant = _patient getVariable ["ACME_resus_cpr", []];
+    [_patient, CBA_missionTime - ((serverTime - (_cprGrant select 9)) max 0), _cprGrant] call ACM_circulation_fnc_handleCPR;
 };
 
 // Recovery is keyed by actual worker absence, not a once-per-owner attempt.

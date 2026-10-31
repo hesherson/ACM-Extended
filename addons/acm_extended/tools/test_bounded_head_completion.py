@@ -131,10 +131,14 @@ def test_completion_retains_owner_and_life_guards(kind,change):
 @pytest.mark.parametrize('kind',['suspend','stop'])
 @pytest.mark.parametrize('vehicle',[False,True])
 def test_current_completion_preserves_collision_and_gear_handoff(kind,vehicle):
+    # B202 also requests restore when a moving lease is released/replaced.
+    # These calls coalesce in the real next-frame helper (covered separately).
+    restores = 1 if kind == 'suspend' and vehicle else 2
     execute(setup() + begin(kind) + ('_parent=missionNamespace;' if vehicle else '') + '''
         [abs ((_pending select 2)-(1.4/1.5))<.000001,"authored lower delay changed"] call _check;
         [_pending] call _deliver;
-        [_collisions isEqualTo [[_patient,true]],"current completion failed to restore collision once"] call _check;
+    ''' + f'''
+        [count _collisions=={restores} && {{(_collisions findIf {{!(_x isEqualTo [_patient,true])}})<0}},"current completion failed collision recovery"] call _check;
     ''' + (f'''
         [count _parks==1 && {{count _restores==0}},"suspension re-wore support instead of parking"] call _check;
         [count _animRequests=={int(not vehicle)},"wrong flat lease request"] call _check;
@@ -186,7 +190,7 @@ def test_new_lift_keeps_collision_until_its_own_completion(kind):
         [_pending] call _deliver;
         [count _collisions==0,"old completion interfered with actual new lift"] call _check;
         [_newCompletion] call _deliver;
-        [_collisions isEqualTo [[_patient,true]],"new lift did not recover its own collision"] call _check;
+        [_collisions isEqualTo [[_patient,true],[_patient,true]],"new lift did not recover its own collision"] call _check;
     ''')
 
 

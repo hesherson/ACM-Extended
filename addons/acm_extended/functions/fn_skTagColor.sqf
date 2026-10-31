@@ -9,10 +9,22 @@ private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
 private _i = [_store,false] call ACME_fnc_skSelectedIndex;
 if (_i < 0) exitWith {};
 private _entry = +(_store select _i);
+private _editorDisplay = findDisplay 84000;
+if (!isNull _editorDisplay && {_editorDisplay getVariable ["ACME_SK_TagEditRetired",false]}) exitWith {};
+private _boundSyringe = if (isNull _editorDisplay) then {""} else {_editorDisplay getVariable ["ACME_SK_TagEditSyringeId",""]};
+if ((_entry param [13,"",[""]]) == "inventoryB279" || {_boundSyringe != ""}) then {
+    private _valid = !isNull _editorDisplay
+        && {_boundSyringe == (_entry param [11,"",[""]])}
+        && {(_editorDisplay getVariable ["ACME_SK_TagEditSignature",[]]) isEqualTo (_entry select [7,4])}
+        && {(_entry param [13,"",[""]]) != "inventoryB279" || {[ACE_player,_entry] call ACME_fnc_skInventoryEditable}};
+    if (!_valid) then {_i = -1; if (!isNull _editorDisplay) then {_editorDisplay setVariable ["ACME_SK_TagEditSyringeId",""]; _editorDisplay setVariable ["ACME_SK_TagEditRetired",true];};};
+};
+if (_i < 0) exitWith {};
 while {count _entry < 12} do {_entry pushBack "";};
 _entry set [7,_id];
 _store set [_i,_entry];
 [ACE_player, _store] call ACME_fnc_narcStoreCommit;
+if (!isNull _editorDisplay) then {_editorDisplay setVariable ["ACME_SK_TagEditSignature",_entry select [7,4]];};
 _c lbSetCurSel -1;
 _c ctrlShow false;
 call ACME_fnc_skCarouselRender;

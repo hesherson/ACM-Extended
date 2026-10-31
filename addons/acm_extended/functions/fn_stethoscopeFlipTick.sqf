@@ -91,9 +91,11 @@ if (_epoch < 0 || {_rollToken == ""}
     || {diag_tickTime >= _deadline}) exitWith {call _finish;};
 
 private _work = toLowerANSI (_pose param [2,""]);
+private _presentationReady = (_pose param [21, false])
+    || {(_work == "ainvpknlmstpsnonwnondnon_medic4" || {(_pose param [20, false]) && {_work == "acm_pronecontinuous"}})
+        && {(toLowerANSI animationState _provider) == _work}};
 if ((_pose param [3,-2]) >= 1
-    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
-    && {(toLowerANSI animationState _provider) == _work}) then {
+    && {_presentationReady}) then {
     _args set [8,diag_tickTime];
     _args set [10,true];
     [_display,_side] call ACME_fnc_stethoscopeSetView;

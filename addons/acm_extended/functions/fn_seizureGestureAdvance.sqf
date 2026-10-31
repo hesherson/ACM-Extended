@@ -9,6 +9,9 @@ if (_session isEqualTo []
     || {!(_patient getVariable ["ACME_seizure_motionActive",false])}
     || {_patient getVariable ["ACME_roc_paralyzed", false]}
     || {! (missionNamespace getVariable ["ACME_seizure_animEnabled",true])}) exitWith {};
+if (([_patient] call ACME_fnc_seizureMotorMode) != (_patient getVariable ["ACME_seizure_motionMode", "full"])) exitWith {
+    [_patient, true] call ACME_fnc_seizureMotion;
+};
 if (CBA_missionTime < (_patient getVariable ["ACME_seizure_motionReadyAt",0])) exitWith {};
 
 private _retry = {
@@ -28,7 +31,8 @@ if (!isNull objectParent _patient
     || {_patient call ace_common_fnc_isBeingDragged}
     || {_patient call ace_common_fnc_isBeingCarried}
     || {[_patient] call ACM_core_fnc_cprActive}
-    || {CBA_missionTime < (_patient getVariable ["ACME_CS_rollUntil",-1])}) exitWith {call _retry;};
+    || {CBA_missionTime < (_patient getVariable ["ACME_CS_rollUntil",-1])}
+    || {((_patient getVariable ["ACME_patientAnimLock",[]]) param [4,-1]) > serverTime}) exitWith {call _retry;};
 
 // A settled unconscious ragdoll can stay asleep indefinitely. Merely waiting for isAwake was why
 // debug seizures appeared only after CPR/rolling woke the skeleton. End that physical state once,
@@ -36,7 +40,7 @@ if (!isNull objectParent _patient
 if (!isAwake _patient && {!_afterHandoff}) exitWith {
     if (vectorMagnitude (velocity _patient) > 0.6) exitWith {call _retry;};
     private _lock = _patient getVariable ["ACME_patientAnimLock",[]];
-    if ((_lock param [4,-1]) > CBA_missionTime) exitWith {call _retry;};
+    if ((_lock param [4,-1]) > serverTime) exitWith {call _retry;};
     private _rest = "";
     if (_patient getVariable ["ACME_headElevated",false]
         && {!(_patient getVariable ["ACME_headElev_Suspended",false])}) then {
@@ -49,6 +53,7 @@ if (!isAwake _patient && {!_afterHandoff}) exitWith {
             missionNamespace getVariable ["ACME_uncon_faceDown","ace_medical_engine_uncon_anim_1"]
         };
     };
+    if (_patient getVariable ["ACM_airway_RecoveryPosition_State",false]) then {_rest = "ACM_RecoveryPosition";};
     _patient setVariable ["ACME_seizure_motionAdvancePending",true];
     _patient switchMove [_rest,0,1,false];
     [{
@@ -61,7 +66,7 @@ if (!isAwake _patient && {!_afterHandoff}) exitWith {
     },[_patient,_session]] call CBA_fnc_execNextFrame;
 };
 private _gestures = [
-    "ACME_SeizureSpasm3",
+    "ACME_SeizureSpasm0",
     "ACME_SeizureSpasm4",
     "ACME_SeizureSpasm5",
     "ACME_SeizureSpasm6"
@@ -76,5 +81,28 @@ _patient setVariable ["ACME_seizure_motionCurrentGesture",_next];
 // Owner-local switchGesture was not a reliable multiplayer presentation contract, especially for debug-induced
 // seizures on hosted servers. Broadcast the exact gesture/session. The owner machine also receives the event, so
 // its GestureDone EH remains the sole authoritative sequencer while every connected client sees the same spasm.
-["ACME_seizureGestureSync", [_patient, _session, _next, true]] call CBA_fnc_globalEvent;
+private _pulse = (_patient getVariable ["ACME_seizure_motionPulse",0]) + 1;
+_patient setVariable ["ACME_seizure_motionPulse",_pulse];
+private _jerk = (_patient getVariable ["ACME_seizure_motionMode","full"]) == "jerks";
+private _onset = _patient getVariable ["ACME_seizure_arrestStartedAt", -1];
+// Unknown onset on a transferred longstanding arrest must not restart frequent early jerks.
+private _age = if (_onset isEqualType 0 && {_onset >= 0}) then {(serverTime - _onset) max 0} else {200};
+([_age] call ACME_fnc_seizureJerkTiming) params ["_snippet", "_quiet"];
+private _duration = if (_jerk) then {_snippet} else {0};
+if (_jerk) then {
+    // Hold the owner sequencer through both the snippet and its random quiet interval.
+    private _nextAt = CBA_missionTime + _duration + _quiet;
+    _patient setVariable ["ACME_seizure_motionReadyAt",_nextAt];
+    _patient setVariable ["ACME_seizure_motionAdvancePending",true];
+    [{
+        params ["_p","_session","_pulse"];
+        if (isNull _p || {!local _p} || {!alive _p}
+            || {!((_p getVariable ["ACME_seizure_motionSession",[]]) isEqualTo _session)}
+            || {(_p getVariable ["ACME_seizure_motionPulse",-1]) != _pulse}
+            || {(_session param [0,-1]) != ([_p] call ACME_fnc_clinicalEpoch)}) exitWith {};
+        _p setVariable ["ACME_seizure_motionAdvancePending",false];
+        [_p,_session] call ACME_fnc_seizureGestureAdvance;
+    },[_patient,_session,_pulse],_nextAt - CBA_missionTime] call CBA_fnc_waitAndExecute;
+};
+["ACME_seizureGestureSync", [_patient, _session, _next, true, _pulse, _duration]] call CBA_fnc_globalEvent;
 true

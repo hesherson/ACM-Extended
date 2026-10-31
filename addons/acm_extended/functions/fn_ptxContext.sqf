@@ -1,8 +1,8 @@
 /* Read-only pleural context. No patient state, UI, or progression writes.
-   [openHoles,totalHoles,ventCapacity,bleedSource0to1,ppvFactor,hasDrain,hasSealOutlet]
+   [openHoles,totalHoles,ventCapacity,bleedSource0to1,ppvFactor,hasDrain,hasSealOutlet,hasDefinitiveDrain]
    Capacities are gameplay coefficients for ptxStep, not physical flow units. */
 params [["_patient", objNull, [objNull]]];
-if (isNull _patient) exitWith {[0, 0, 0, 0, 1, false, false]};
+if (isNull _patient) exitWith {[0, 0, 0, 0, 1, false, false, false]};
 
 private _holes = _patient getVariable ["ACME_CS_holeData", []];
 if !(_holes isEqualType []) then {_holes = [];};
@@ -62,6 +62,8 @@ _ventCapacity = _ventCapacity max (1.4 * _ncdPatency);
 // (split/kelly) has not yet established a patent pleural outlet.
 private _hasSideState = false;
 private _hasDefinitiveDrain = false;
+private _hasOpenSurgicalDrain = false;
+private _hasCoveredFinger = false;
 {
     private _side = _x;
     private _tract = _patient getVariable [format ["ACME_thora_open_%1", _side], ""];
@@ -74,21 +76,30 @@ private _hasDefinitiveDrain = false;
     if !(_sealed isEqualType false) then {_sealed = false;};
     if !(_closed isEqualType false) then {_closed = false;};
     if !(_incision isEqualType []) then {_incision = [];};
-    // Backward compatibility for B120-B132 casualties: a sealed tract is closed even if the new explicit
-    // closed flag has not been written yet.
-    _closed = _closed || {_sealed && {_tract == "sealed"} && {!_tube}};
     _hasSideState = _hasSideState || {_tract != ""} || {_tube} || {_sealed} || {_closed} || {count _incision == 3};
-    _hasDefinitiveDrain = _hasDefinitiveDrain || {_tube} || {_tract == "finger" && {!_sealed} && {!_closed}};
+    // All available chest seals are vented. Historical covered fingers used
+    // closed=true/open="sealed"; that combination still denotes a dressing,
+    // whereas actual surgical closure removes the tract. A sutured tube wins.
+    _hasOpenSurgicalDrain = _hasOpenSurgicalDrain || {_tube}
+        || {_tract == "finger" && {!_sealed} && {!_closed}};
+    _hasCoveredFinger = _hasCoveredFinger
+        || {!_tube && {_sealed} && {_tract in ["finger", "sealed"]}};
 } forEach ["left", "right"];
 if (!_hasSideState) then {
     private _nativeThora = _patient getVariable ["ACM_breathing_Thoracostomy_State", 0];
-    if (_nativeThora isEqualType 0 && {finite _nativeThora}) then {_hasDefinitiveDrain = _nativeThora in [1, 2];};
+    if (_nativeThora isEqualType 0 && {finite _nativeThora}) then {_hasOpenSurgicalDrain = _nativeThora in [1, 2];};
 };
-// A chest seal over a completed finger thoracostomy is an occlusive CLOSED tract. It removes the
-// surgical drain/vent and does not add one-way vent capacity. The retained internal leak/air state therefore
-// determines whether PTX can reaccumulate after the tract is closed.
-if (_hasDefinitiveDrain) then {
+if (_hasCoveredFinger) then {
+    // Capacity is bounded per casualty, not multiplied by icons or sides. The
+    // dressing protects surgical access without covering unrelated wounds.
+    private _coveredCapacity = 2.0 * (1 - _occ);
+    _hasSealOutlet = true;
+    _ventCapacity = _ventCapacity max _coveredCapacity;
+    if (_coveredCapacity > 0) then {_hasDrain = true;_hasDefinitiveDrain = true;};
+};
+if (_hasOpenSurgicalDrain) then {
     _hasDrain = true;
+    _hasDefinitiveDrain = true;
     _ventCapacity = _ventCapacity max 5.0;
 };
 
@@ -132,4 +143,4 @@ if !(_lastBreath isEqualType 0 && {finite _lastBreath}) then {_lastBreath = -100
 private _breathAge = (serverTime - _lastBreath) max 0;
 if (alive _provider && {_breathAge >= 0} && {_breathAge <= 12}) then {_ppvFactor = _ppvFactor max 1.5;};
 
-[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet]
+[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet, _hasDefinitiveDrain]

@@ -1,6 +1,8 @@
 /* Stage-to-clamp handoff. The set stays in the medic's custody until owner acceptance. */
 params ["_set", "_patient", "_part", "_iv", "_site", "_action"];
 if (isNull _patient || {_iv && {_site < 0}}) exitWith {};
+private _blocked = [_patient, _part, _iv, _site] call ACME_fnc_preparedAttachBlockReason;
+if (_blocked != "") exitWith {[ACE_player, [_blocked] call ACME_fnc_preparedAttachMessage] call ACME_fnc_clinicalNotice;};
 _set params ["_uid", "_item", "", "", "", "", "_label"];
 private _cfg = configFile >> "ace_medical_treatment" >> "IV" >> _action;
 private _type = getText (_cfg >> "type");
@@ -18,12 +20,7 @@ private _prepared = [_uid, _item, _action, _med, _dose, _duration, ACME_infusion
 private _args = [ACE_player, _patient, ACE_player, _item, _action, objNull, _part, _iv, _site, _volume, _prepared, -1, _label, _set];
 private _pending = missionNamespace getVariable ["ACME_preparedPending", createHashMap];
 if (((values _pending) findIf {(!(_x select 2)) && {(((_x select 0) select 10) select 0) == _uid}}) >= 0) exitWith {};
-[_args, {
-    params ["_medic", "", "", "", "", "", "", "", "", "", "", "", "", "_set"];
-    if (((_medic getVariable ["ACME_preparedIVSets", []]) findIf {(_x select 0) == (_set select 0)}) < 0) exitWith {};
-    [_this] call ACME_fnc_preparedAttachRequest;
-}, {
-    params ["_medic", "_patient", "", "", "", "", "_part", "_iv", "_site"];
-    closeDialog 0;
-    [[_medic, _patient, _part, _iv, _site]] call ACME_fnc_reopenTransfusion;
-}, format ["Connecting %1 (clamped)", _label], 5] call ACM_core_fnc_progressBarAction;
+if (((ACE_player getVariable ["ACME_preparedIVSets", []]) findIf {(_x select 0) == _uid}) < 0) exitWith {
+    [ACE_player, ["prepared-set-missing"] call ACME_fnc_preparedAttachMessage] call ACME_fnc_clinicalNotice;
+};
+[_args] call ACME_fnc_preparedAttachRequest;

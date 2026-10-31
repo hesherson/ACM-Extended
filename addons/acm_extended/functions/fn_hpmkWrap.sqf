@@ -9,10 +9,19 @@
 params ["_medic", "_patient"];
 if (!local _patient) exitWith { ["ACME_ownerCommand", [_patient, "hpmkWrap", _this], _patient] call CBA_fnc_targetEvent; };
 if (isNull _patient) exitWith {};
+// Recheck at completion on the casualty owner: CPR may have started after
+// the medic clicked Wrap, while the ACE progress bar was still running.
+if (_patient isEqualType objNull && {
+    !isNull (_patient getVariable ["ACM_circulation_CPR_Medic", objNull])
+    || {!isNull (_patient getVariable ["ace_medical_CPR_provider", objNull])}
+}) exitWith {
+    ["Cannot wrap HPMK while CPR is in progress.", 2, _medic] call ACME_fnc_netNotice;
+};
 
 private _lyingState = _patient getVariable ["ACM_core_Lying_State", false];
 private _isLying = if (_lyingState isEqualType true) then {_lyingState} else {_lyingState > 0};
-private _eligible = (_patient getVariable ["ACE_isUnconscious", false]) || {_isLying};
+// Engine death may clear ACE unconscious/lying flags; a corpse is still a valid physical recipient.
+private _eligible = !alive _patient || {_patient getVariable ["ACE_isUnconscious", false]} || {_isLying};
 if (!_eligible) exitWith {
     private _receiver = _patient getVariable ["ACME_hpmk_provider", _medic];
     [_receiver, _patient, true] call ACME_fnc_hpmkRemove;
@@ -33,7 +42,7 @@ if ((_patient getVariable ["ACME_hpmk_state", ""]) == "wrapped") exitWith {
 [_patient, "wrapped", true, false] call ACME_fnc_hpmkStateCommit;
 _patient setVariable ["ACME_hpmk_lastTickLocal", CBA_missionTime, false];
 if (isNil "ACME_hpmk_activePatients") then { ACME_hpmk_activePatients = []; };
-ACME_hpmk_activePatients pushBackUnique _patient;
+if (alive _patient) then {ACME_hpmk_activePatients pushBackUnique _patient;};
 
 ["Wrapped in HPMK.", 3, _medic] call ACME_fnc_netNotice;
 if (!isNil "ace_medical_treatment_fnc_addToLog") then {

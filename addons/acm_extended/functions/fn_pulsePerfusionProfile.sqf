@@ -102,7 +102,7 @@ private _shockSev = (_patient getVariable ["ACME_shock_severity",0]) max 0 min 1
 if (_shockType == "distributive" && {_shockSev > 0.2}) then {
     _strength = (_strength + (0.18 * _shockSev)) min 1;
 };
-if (_shockType in ["hemorrhagic","cardiogenic","obstructive"] && {_shockSev > 0.2}) then {
+if (_shockType in ["hemorrhagic","cardiogenic","obstructive","burn"] && {_shockSev > 0.2}) then {
     _strength = (_strength - (0.20 * _shockSev)) max 0;
     _deficit = (_deficit + (0.10 * _shockSev)) min (if (_rhythm == 102) then {0.98} else {0.65});
 };

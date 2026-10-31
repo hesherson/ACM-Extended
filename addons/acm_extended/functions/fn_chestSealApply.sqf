@@ -46,8 +46,10 @@ if (!isNull _medic && {local _medic}) then {
     // The chest workspace is already visibly empty-handed. Clear only Arma's logical weapon selection before
     // handing into medic3, then use the SAME normal priority-1 pose path as the rest of the chest choreography.
     // This avoids the priority-2/switchMove fallback which can visibly pull the selected weapon back into the hands.
-    if (currentWeapon _medic != "") then {_medic selectWeapon "";};
-    _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_ready", CBA_missionTime, ""], false];
+    if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+        if (currentWeapon _medic != "") then {_medic selectWeapon "";};
+        _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_ready", CBA_missionTime, ""], false];
+    };
     private _placeEpoch = [_medic, "chestSeal", _duration, _patient] call ACME_fnc_treatmentPoseStart;
 
     if (_placeEpoch >= 0) then {

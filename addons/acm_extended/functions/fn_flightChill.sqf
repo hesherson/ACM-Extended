@@ -14,7 +14,8 @@
 // ambient.
 params ["_unit"];
 if (isNull _unit) exitWith {0};
-if (!(missionNamespace getVariable ["ACME_flightChill_enable", true])) exitWith {0};
+if (!(missionNamespace getVariable ["ACME_sys_flight", true])
+    || {!(missionNamespace getVariable ["ACME_flightChill_enable", true])}) exitWith {0};
 
 private _veh = vehicle _unit;
 if (_veh == _unit) exitWith {0};  // not in a vehicle, so the ordinary ambient applies.
@@ -46,9 +47,10 @@ if (_open > 0.02) then {
 // altitude: the air is simply colder up there.
 // it only counts what has been gained over the ground, so a mission on a high plateau is not double-penalised,
 // because the ambient model has already taken the terrain height into account.
-private _altM = [_veh] call ACME_fnc_altitudeTrue;  // datum-corrected. see fn_altitudedatum.
 private _lapse = missionNamespace getVariable ["ACME_ambient_lapsePer1000m", 6.5];
-private _agl = (_altM - (getPos _veh select 2)) max 0;  // meters climbed above the ground below.
+// ATL measures climb above terrain directly. Subtracting AGLS from ASL instead
+// measures terrain elevation, suppressing flight cooling over sea-level ground.
+private _agl = ((getPosATL _veh) select 2) max 0;
 _drop = _drop + ((_agl / 1000) * _lapse);
 
 // a wrapped casualty is protected, which is the entire point of wrapping them.

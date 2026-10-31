@@ -18,6 +18,9 @@
 // body map, the buttons, the injury list and the difficulty model cannot drift apart again.
 params [["_text", ""], ["_selectionN", -1], ["_isButton", false], ["_actionClass", ""]];
 if (_text isEqualTo "") exitWith { _text };
+if (_isButton && {toLowerANSI _actionClass == "insertio_ez"}) exitWith {
+    if (_selectionN in [2,3]) then {"Insert EZ-IO (Humeral Head)"} else {"Insert EZ-IO (Tibial Tuberosity)"}
+};
 // Resolve posture by stable action class before the clinical gate or generic
 // "Place " trimming. Indented children retain their indentation in both modes.
 private _positionKey = "";

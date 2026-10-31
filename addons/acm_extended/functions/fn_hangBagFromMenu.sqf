@@ -11,7 +11,7 @@ if ((_ctx param [10, 0]) <= 0.5 || {_bagIndex < 0}) exitWith {};
 private _bag = ((_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [_bodyPart, []]) param [_bagIndex, []];
 private _id = _bag param [8, ""];
 if (((_patient getVariable ["ACME_infusion_BagMedications", []]) findIf {(_x param [23, ""]) == _id && {_id != ""}}) >= 0) exitWith {};
-private _medic = ACE_player;
+private _medic = (call ACME_fnc_controlledProvider);
 if (isNull _patient || {isNull _medic}) exitWith {};
 
 if (_medic getVariable ["ACME_hang_Active", false]) exitWith {

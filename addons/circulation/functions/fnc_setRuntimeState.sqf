@@ -75,8 +75,14 @@ private _applied = 0;
         switch (_field) do {
             case "cardiacArrestPFH": { _accepted = [QGVAR(CardiacArrest_PFH), _value] call _publish; };
             case "reversibleCardiacArrestPFH": { _accepted = [QGVAR(ReversibleCardiacArrest_PFH), _value] call _publish; };
+            case "cprProvider": { _accepted = [QACEGVAR(medical,CPR_provider), _value] call _publish; };
             case "cprMedic": { _accepted = [QGVAR(CPR_Medic), _value] call _publish; };
             case "cprSession": { _accepted = [QGVAR(CPR_session), _value] call _publish; };
+            case "cprPerforming": { _accepted = [QGVAR(isPerformingCPR), _value] call _publish; };
+            case "cprPatient": { _accepted = [QGVAR(CPR_Patient), _value] call _publish; };
+            case "cprEpoch": { _accepted = [QGVAR(CPR_Epoch), _value] call _publish; };
+            case "cprStoppedTotal": { _accepted = [QGVAR(CPR_StoppedTotal), _value] call _publish; };
+            case "cprStoppedTime": { _accepted = [QGVAR(CPR_StoppedTime), _value] call _publish; };
             case "aedUpdateStep": { _accepted = [QGVAR(AED_UpdateStep), _value] call _publish; };
             case "aedPadsLastBeep": { _accepted = [QGVAR(AED_Pads_LastBeep), _value] call _publish; };
             case "aedPadsLastSync": { _accepted = [QGVAR(AED_Pads_LastSync), _value] call _publish; };

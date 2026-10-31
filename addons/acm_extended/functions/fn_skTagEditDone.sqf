@@ -5,6 +5,9 @@ if (isNull _d) exitWith {false};
 // Retire pending autofocus before another editor can open on this same display.
 _d setVariable ["ACME_SK_TagEditEpoch", (_d getVariable ["ACME_SK_TagEditEpoch", 0]) + 1];
 call ACME_fnc_skTagCommit;
+_d setVariable ["ACME_SK_TagEditSyringeId",""];
+_d setVariable ["ACME_SK_TagEditSignature",[]];
+_d setVariable ["ACME_SK_TagEditRetired",true];
 private _list = _d displayCtrl 84471;
 if (!isNull _list) then {_list lbSetCurSel -1; _list ctrlShow false;};
 uiNamespace setVariable ["ACME_SK_TagEditMode", false];

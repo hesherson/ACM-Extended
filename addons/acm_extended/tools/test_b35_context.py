@@ -69,7 +69,9 @@ class ContextSourceContracts(unittest.TestCase):
         s = source('ptxContext')
         for forbidden in ('setVariable', 'setVarNet', 'displayText', 'hint ', 'medLog', 'globalEvent', 'addPerFrameHandler'):
             self.assertNotIn(forbidden, s)
-        self.assertIn('[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet]', s)
+        # B271 appends definitive-drain status; the seven historical clinical
+        # indices remain in their original order for every existing consumer.
+        self.assertIn('[_open, _total, _ventCapacity, _bleedSource, _ppvFactor max 1 min 3, _hasDrain, _hasSealOutlet, _hasDefinitiveDrain]', s)
 
     def test_discovery_flag_cannot_change_physiology(self):
         s = source('ptxContext')
@@ -101,9 +103,14 @@ class ContextSourceContracts(unittest.TestCase):
 
     def test_new_penetration_is_not_lost_to_old_visual_cap(self):
         s = source('chestSealGenHoles')
-        self.assertIn('if (_frontCount < _maxPerSide || {!_historical}) then', s)
+        # Current generator keeps every eligible wound represented in the tracked
+        # ledger while bounding rendered entry/exit holes to the authoritative
+        # per-side cap. A new injury therefore cannot disappear from physiology
+        # merely because an older build already filled the visual field.
         self.assertIn('_tracked pushBack [_id, -1, -1]', s)
         self.assertIn('private _wanted = ((ceil _amount) max 1) min _maxPerSide', s)
+        self.assertIn('if (_frontCount < _maxPerSide) then', s)
+        self.assertIn('_processed = count _tracked;', s)
 
     def test_side_state_overrides_stale_native_aggregate(self):
         s = source('ptxContext')

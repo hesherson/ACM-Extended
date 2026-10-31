@@ -20,21 +20,21 @@ switch (_op) do {
     };
     case "thoraSeal": {
         _args params [["_side", ""], ["_clinicalEpoch", -1]];
-        if (!(_side in ["left", "right"]) || {_clinicalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {};
-        // The provider publishes immediate seal/closed presentation before this owner command. Do not require
-        // those two newly-published booleans here: on a remote patient the owner event can arrive before their
-        // publicVariable replication. The pre-existing patent finger tract plus no tube is the authoritative gate.
-        if ((_patient getVariable [format ["ACME_thora_open_%1", _side], ""]) != "finger"
-            || {_patient getVariable [format ["ACME_thora_tube_%1", _side], false]}) exitWith {};
-        [_patient] call ACME_fnc_ptxEnsure;
-        // This is a per-tract closure, not ACM's global whole-chest ChestSeal_State. Setting the native
+        if (!(_side in ["left", "right"]) || {_clinicalEpoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {false};
+        // Only this owner commits the dressing after accepting its supply transaction.
+        // An incomplete or sutured tract cannot become a vented finger outlet.
+        if (count (_patient getVariable [format ["ACME_thora_incision_%1", _side], []]) != 3
+            || {(_patient getVariable [format ["ACME_thora_open_%1", _side], ""]) != "finger"}
+            || {_patient getVariable [format ["ACME_thora_tube_%1", _side], false]}
+            || {_patient getVariable [format ["ACME_thora_sealed_%1", _side], false]}
+            || {_patient getVariable [format ["ACME_thora_closed_%1", _side], false]}) exitWith {false};
+        // This is a per-tract dressing, not ACM's global whole-chest ChestSeal_State. Setting the native
         // aggregate here would incorrectly imply that unrelated penetrating chest wounds are also sealed.
 
-        // A seal over the finger-thoracostomy is a true occlusive closure of that surgical communication.
-        // Preserve the incision/seal evidence, but retire the tract from the patent finger-drain state. It is
-        // deliberately NOT a vent: any remaining internal pleural leak can therefore reaccumulate after closure.
+        // All available chest seals are vented. The covered finger tract retains outward drainage;
+        // applying its dressing does not close the incision or discard earned injury-healing progress.
         [_patient, _side, "sealed", true] call ACME_fnc_thoraSideStateCommit;
-        [_patient, _side, "closed", true] call ACME_fnc_thoraSideStateCommit;
+        [_patient, _side, "closed", false] call ACME_fnc_thoraSideStateCommit;
         [_patient, _side, "open", "sealed"] call ACME_fnc_thoraSideStateCommit;
         [_patient] call ACME_fnc_thoraBumpVer;
         [_patient, "thoraSeal"] call ACME_fnc_ptxTreat;
@@ -42,8 +42,10 @@ switch (_op) do {
 
         private _logged = [_patient, "apply", "%1 applied a chest seal over the thoracostomy incision", [[_medic, false, true] call ace_common_fnc_getName], _medic] call ACME_fnc_chestSealLogOnce;
         if (_logged) then {[_patient, localize "STR_ACM_Breathing_ChestSeal"] call ace_medical_treatment_fnc_addToTriageCard;};
+        true
     };
     case "peel": {
+        // Ordinary wound seals vent air only. Blood drainage requires the separate surgical tract aftercare.
         if !(_args param [0, false]) then {
             [_patient, [["chestSeal", false]], true] call ACM_breathing_fnc_setRuntimeState;
             _patient setVariable ["ACME_CS_sealApplied", false, true];
@@ -51,6 +53,7 @@ switch (_op) do {
         };
         // Removing any individual seal changes communicating-wound coverage.
         [_patient, "peel"] call ACME_fnc_ptxTreat;
+        if (alive _patient) then {[_patient] call ACM_breathing_fnc_updateLungState;};
     };
     // Obsolete ncdTension packets intentionally have no handler. A delayed packet
     // cannot recreate tension after successful treatment or a healed leak.

@@ -1,7 +1,7 @@
-/* ACM procedure callback, adapted by ACM Extended B35.
-   Completion logs stay in the native public entry. Body posture does not cause
-   delayed tube failure. Closing drainage preserves any residual pleural injury. */
-params ["_medic", "_patient"];
+/* ACM procedure callback: patient-owner readiness gate and completion log.
+   Body posture does not cause delayed tube failure. Closing drainage preserves
+   residual collapse after the internal leak has settled. */
+params ["_medic", "_patient", ["_report", false]];
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {
     ["ACM_breathing_Thoracostomy_closeLocal", _this, _patient] call CBA_fnc_targetEvent;
@@ -12,6 +12,9 @@ if ((_patient getVariable ["ACME_thora_tube_left", false])
     ["ace_common_displayTextStructured", ["Remove the chest tube before closing the incision.", 2, _medic], _medic] call CBA_fnc_targetEvent;
 };
 [_patient] call ACME_fnc_ptxEnsure;
+if !([_patient] call ACME_fnc_ptxCanClose) exitWith {
+    ["ace_common_displayTextStructured", ["Maintain chest drainage until PTX is stable, and seal all chest wounds before closing the incision.", 3, _medic], _medic] call CBA_fnc_targetEvent;
+};
 
 _patient setVariable ["ACM_breathing_Thoracostomy_State", 0, true];
 _patient setVariable ["ACM_breathing_Thoracostomy_UsedKit", false, true];
@@ -29,3 +32,6 @@ _patient setVariable ["ACM_breathing_Thoracostomy_UsedKit", false, true];
 _patient setVariable ["ACME_thora_ver", (_patient getVariable ["ACME_thora_ver", 0]) + 1, true];
 [_patient, "close"] call ACME_fnc_ptxTreat;
 [_patient] call ACM_breathing_fnc_updateLungState;
+if (_report) then {
+    [_patient, "activity", localize "STR_ACM_Breathing_ThoracostomyClose_ActionLog", [[_medic, false, true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
+};

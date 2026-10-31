@@ -23,7 +23,7 @@ private _actions = [];
                 _args params ["_anchor", "_class"];
                 [_anchor, _class, _player] call ACME_fnc_bloodFridgeTake;
             },
-            { true },
+            {params ["_target", "_player"]; (_player getVariable ["ACME_bf_take", []]) isEqualTo []},
             {},
             [_anchor, _class]
         ] call ace_interact_menu_fnc_createAction;

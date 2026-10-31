@@ -1,7 +1,7 @@
 // Head-only debug action: induce one full ACME generalized seizure episode.
 //
 // This is not an animation-only test. It enters the same active seizure state used by lidocaine toxicity,
-// TBI and nerve-agent seizures: loss of consciousness, apnea drive, seizure HR response, GestureSpasm3-6,
+// TBI and nerve-agent seizures: loss of consciousness, apnea drive, seizure HR response, GestureSpasm0/4/5/6,
 // then the normal postictal phase. A short-lived debug cause keeps the shared state machine from immediately
 // resolving simply because the patient has no toxicologic/TBI trigger.
 //

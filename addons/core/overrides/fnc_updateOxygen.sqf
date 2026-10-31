@@ -27,42 +27,30 @@ params ["_patient", "_respirationRateAdjustment", "_coSensitivityAdjustment", "_
 
 [_patient] call ACME_fnc_suctionPhysiologyTick;
 // Fold once into the native target. Native ventilation/perfusion controls actual recovery.
-private _desiredOxygenSaturation = (ACM_TARGETVITALS_OXYGEN(_patient) - (_patient getVariable ["ACME_o2Drain_suction", 0])) max 0;
+private _nativeOxygenTarget = ACM_TARGETVITALS_OXYGEN(_patient);
+private _suctionDrain = _patient getVariable ["ACME_o2Drain_suction", 0];
+private _desiredOxygenSaturation = (_nativeOxygenTarget - _suctionDrain) max 0;
 
 #define IDEAL_PPO2 0.255
 
 private _currentOxygenSaturation = GET_OXYGEN(_patient);
 private _heartRate = GET_HEART_RATE(_patient);
 
-private _altitude = ACEGVAR(common,mapAltitude) + ((getPosASL _patient) select 2);
-private _po2 = if (missionNamespace getVariable [QACEGVAR(weather,enabled), false]) then {
-    private _temperature = _altitude call ACEFUNC(weather,calculateTemperatureAtHeight);
-    private _pressure = _altitude call ACEFUNC(weather,calculateBarometricPressure);
-    [_temperature, _pressure, ACEGVAR(weather,currentHumidity)] call ACEFUNC(weather,calculateOxygenDensity)
-} else {
-    // Rough approximation of the partial pressure of oxygen in the air
-    0.25725 * (_altitude / 1000 + 1)
+// One exposure pressure and gear condition serve both ACM altitude and ACME
+// flight physiology. Apply a ceiling to the original target; no altitude tick
+// replaces it, and the native air-density multiplier must not apply it twice.
+private _exposure = [_patient] call ACME_fnc_flightExposure;
+private _altitudeCeiling = [_patient, _exposure] call ACME_fnc_altitudeOxygenCeiling;
+_desiredOxygenSaturation = ((_nativeOxygenTarget min _altitudeCeiling) - _suctionDrain) max 0;
+// The driving ventilator already includes these two lung/device penalties in
+// its shared target. Without it, the native writer is their sole consumer.
+if !(_patient getVariable ["ACME_vent_driving", false]) then {
+    _desiredOxygenSaturation = (_desiredOxygenSaturation
+        - (_patient getVariable ["ACME_o2Drain_mainstem", 0])
+        - (_patient getVariable ["ACME_o2Drain_vili", 0])) max 0;
 };
-
+private _po2 = IDEAL_PPO2;
 private _airOxygenSaturation = 1;
-
-if (EGVAR(breathing,altitudeAffectOxygen)) then {
-    _airOxygenSaturation = (IDEAL_PPO2 min _po2) / IDEAL_PPO2;
-
-    // Check gear for oxygen supply
-    [goggles _patient, headgear _patient, vest _patient] findIf {
-        _x in ACEGVAR(medical_vitals,oxygenSupplyConditionCache) &&
-        {ACE_player call (ACEGVAR(medical_vitals,oxygenSupplyConditionCache) get _x)} &&
-        { // Will only run this if other conditions are met due to lazy eval
-            _airOxygenSaturation = 1;
-            _po2 = IDEAL_PPO2;
-            true
-        }
-    };
-} else {
-    _po2 = IDEAL_PPO2;
-    _airOxygenSaturation = 1;
-};
 
 // Fatigue & exercise will demand more oxygen
 // Assuming a trained male in midst of peak exercise will have a peak heart rate of ~180 BPM

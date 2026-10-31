@@ -29,17 +29,33 @@ def execute(code):
     assert "PUSH_SECONDS_OK" in output and "PUSH_SECONDS_FAIL" not in output, output
 
 
-def test_actual_edit_handler_preserves_digits_and_backspace_without_rewriting():
-    handler = read("skBodyActionRender").split('ctrlAddEventHandler ["KeyUp", {', 1)[1].split("}];", 1)[0]
+def edit_handler():
+    from source_scan import lex, matching
+    text = read("skBodyActionRender")
+    marker = 'ctrlAddEventHandler ["KeyUp", {'
+    begin = text.index(marker) + len(marker) - 1
+    tokens = lex(text); pairs = matching(tokens)
+    opening = next(i for i, t in enumerate(tokens) if t.offset == begin)
+    handler = text[begin+1:tokens[pairs[opening]].offset]
     handler = handler.replace("ctrlText _ctrl", "_testInput")
     handler = handler.replace("_ctrl ctrlSetText _clean", "_testInput = _clean; _writes = _writes + 1")
+    handler = handler.replace("ctrlParent _ctrl", "_testDisplay")
+    handler = handler.replace("isNull _display", "(_display isEqualTo objNull)")
+    return handler
+
+
+def test_actual_edit_handler_preserves_digits_and_backspace_without_rewriting():
+    handler = edit_handler()
     execute('''
         private _ok = true;
+        private _testDisplay = profileNamespace;
         {
             _x params ["_testInput", "_expected", "_expectedWrites"];
+            _testDisplay setVariable ["ACME_SK_NextBodyAction",99];
             private _writes = 0;
             [uiNamespace] call {''' + handler + '''};
-            if (_testInput != _expected || {_writes != _expectedWrites}) then {_ok = false;};
+            if (_testInput != _expected || {_writes != _expectedWrites}
+                || {(_testDisplay getVariable ["ACME_SK_NextBodyAction",-1]) != 0}) then {_ok = false;};
         } forEach [["", "", 0], ["3", "3", 0], ["30", "30", 0], ["120", "120", 0],
             ["300", "300", 0], ["30s", "30", 1], ["abc", "", 1]];
         diag_log (if (_ok) then {"PUSH_SECONDS_OK"} else {"PUSH_SECONDS_FAIL"});

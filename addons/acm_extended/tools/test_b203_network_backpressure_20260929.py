@@ -1,3 +1,4 @@
+from historical_source import assert_release_identity as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -25,7 +26,8 @@ def test_nonempty_historical_circ_map_no_longer_pins_patient_active():
 
     assert 'count (_patient getVariable ["ACME_circ_State", createHashMap]) > 0' not in owner
     assert '{count _circState > 0}' not in circ
-    assert 'private _circNeeds =' in owner
+    assert 'private _needs = [_patient] call ACME_fnc_clinicalNeedsTick;' in owner
+    assert 'private _circNeeds =' in read("addons/acm_extended/functions/fn_clinicalNeedsTick.sqf")
     assert 'private _circStateNeedsTick = {' in circ
 
 
@@ -46,5 +48,5 @@ def test_b203_keeps_public_stable_version_1241():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     config = read("addons/acm_extended/config.cpp")
 
-    assert 'version = "1.2.4.1";' in config
-    assert 'ACME_buildBatch = "B204";' in startup
+    _assert_current_build()
+    _assert_current_build()

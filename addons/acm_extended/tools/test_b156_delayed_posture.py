@@ -4,6 +4,7 @@ import re
 import pytest
 
 from test_menu_death_lifecycle import F, adapt, execute
+from b282_locality_fixture import definitions as locality_dependencies
 
 
 def posture_engine(source):
@@ -17,6 +18,7 @@ def posture_engine(source):
     )
     for unit in ('_unit', '_u', '_p', '_patient'):
         source = re.sub(r'\blocal ' + re.escape(unit) + r'\b', '_patientLocal', source)
+        source = re.sub(r'\bowner ' + re.escape(unit) + r'\b', '_ownerNum', source)
         source = re.sub(r'\balive ' + re.escape(unit) + r'\b', '_patientAlive', source)
         source = re.sub(r'\bobjectParent ' + re.escape(unit) + r'\b', 'objNull', source)
         source = re.sub(r'\battachedTo ' + re.escape(unit) + r'\b', 'objNull', source)
@@ -155,7 +157,7 @@ def test_departed_owner_does_not_change_engine_posture(kind):
 @pytest.mark.parametrize('kind', ['blast', 'sprint'])
 def test_locality_transfer_releases_exact_owned_fall(kind):
     local_change = (F / 'fn_ownerInit.sqf').read_text().split('["CAManBase", "Local", {', 1)[1].split('}] call CBA_fnc_addClassEventHandler;', 1)[0]
-    execute(setup() + '''
+    execute(setup() + locality_dependencies(posture_engine) + '''
         ACME_fnc_aajtDownedStop = {};
         ACME_fnc_ownerRegister = {};
         CBA_fnc_execNextFrame = {};

@@ -3,6 +3,9 @@
 // are no clicks and no prompts. the band stays on so another iv can be placed, above the used and removed sites.
 // call it as [_stickU, _stickV] call ACME_fnc_ivMinigameStickSuccess.
 params ["_su", "_sv"];
+if ((uiNamespace getVariable ["ACME_IV_DLG",displayNull]) getVariable ["ACME_IV_FieldInserting",false]) exitWith {
+    [] call ACME_fnc_ivFieldInsertEnd;
+};
 if !([] call ACME_fnc_ivUiValid) exitWith {};
 private _dlg = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
 if (isNull _dlg) exitWith {};
@@ -22,8 +25,6 @@ private _heldC = uiNamespace getVariable ["ACME_IV_HeldCursorCtrl", controlNull]
 if (!isNull _heldC) then { _heldC ctrlShow false; };
 private _dot = uiNamespace getVariable ["ACME_IV_DotCtrl", controlNull];
 if (!isNull _dot) then { _dot ctrlShow false; };
-
-playSound "ACE_Sound_Click";
 
 // a live catheter sprite at the stick site, tip-anchored, going from base to inserted. it seats at the angle it was
 // committed at, so the hover tilt carries through the seat animation and into the persistent hub.
@@ -113,8 +114,9 @@ private _context = [_dlg, +(uiNamespace getVariable ["ACME_IV_Session", []]),
     uiNamespace setVariable ["ACME_IV_Held", "none"];
     // refresh again, because the first refresh ran while the needle was still in hand and hid its slot button.
     [] call ACME_fnc_ivMinigameRefreshBandSlot;
-    if (!isNull _dlg) then { (_dlg displayCtrl 86503) ctrlSetText "Catheter is in. Take the line from the tray."; };
+    if (!isNull _dlg) then { (_dlg displayCtrl 86503) ctrlSetText "Catheter seated. Connect the extension, check with saline, then secure it."; };
     // the catheter is in and the insertion is over, so clear the saved half-done state for this limb.
     [] call ACME_fnc_ivMinigameSaveState;
+    // One accepted seating cue. The former early cue repeated this same sound only 0.15 seconds beforehand.
     playSound "ACE_Sound_Click";
 }, [_frame, _context], 0.15] call CBA_fnc_waitAndExecute;

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stable B189: Seconds-to-Push owns keyboard focus even on the first Narc Box display."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,8 +81,8 @@ def test_first_open_delayed_tag_repaint_remains_safe_after_body_switch():
 def test_build_identity_is_b189_stable():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4";' in cfg
-    assert 'ACME_buildBatch = "B190";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 

@@ -100,7 +100,7 @@ def assert_startup_grace(data=None):
 def assert_dead_stop_delegates_first(data=None):
     d=sources() if data is None else data
     s=d['headElevateStop']
-    guard='if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;};'
+    guard='if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;'
     assert contains(s,guard)
     # Token offsets establish source ordering, not general reachability.
     ts=lex(s)
@@ -134,10 +134,18 @@ def test_lift_uses_connected_grab_and_one_guarded_hold_completion(lift,delay,alr
 
 
 @pytest.mark.parametrize('change,collision_count',[
-    ('_patientLocal=false;',0), ('_patientAlive=false;',1),
-    ('_patient setVariable ["ACME_headElev_poseToken","later"];',0),
-    ('_patient setVariable ["ACME_headElevated",false];',1),
-    ('_patient setVariable ["ACME_headElev_Suspended",true];',1),
+    ('_patientLocal=false;',0),
+    # Preserve historical test IDs while expected request counts follow B202's
+    # lease-release cleanup. This keeps the before/after gate comparing the same cases.
+    pytest.param('_patientAlive=false;',2,id='_patientAlive=false;-1'),
+    # B202 releases the exact moving lease too. A logical replacement without
+    # its own new animation lease still lets that old lease recover collision.
+    pytest.param('_patient setVariable ["ACME_headElev_poseToken","later"];',1,
+        id='_patient setVariable ["ACME_headElev_poseToken","later"];-0'),
+    pytest.param('_patient setVariable ["ACME_headElevated",false];',2,
+        id='_patient setVariable ["ACME_headElevated",false];-1'),
+    pytest.param('_patient setVariable ["ACME_headElev_Suspended",true];',2,
+        id='_patient setVariable ["ACME_headElev_Suspended",true];-1'),
     ('_patient setVariable ["ACME_patientAnimLock",["new-owner","roll","provider",3,2000]];',0),
 ])
 def test_lift_completion_retires_own_lease_without_touching_replacement(change,collision_count):
@@ -158,7 +166,7 @@ def test_legacy_helper_cleanup_does_not_start_a_new_positioning_helper(helper,ma
         _patient setVariable ["ACME_headElev_mass",{mass}];
         [_patient,false] call ACME_fnc_headElevApplyTilt;
         [count _releases==1 && {{count _deleted=={int(helper)}}},"legacy helper cleanup changed"] call _check;
-        [count _masses=={int(mass>0)},"wrong legacy mass recovery"] call _check;
+        [count _masses==0 && {{count _collisions=={int(mass>0)}}},"legacy mass recovery bypassed deferred collision helper"] call _check;
         [(_patient getVariable ["ACME_headElev_helper",missionNamespace]) isEqualTo objNull,"helper reference survived"] call _check;
         [count _moves==0 && {{count _waits==0}},"no-replay cleanup started animation"] call _check;
     ''')
@@ -181,7 +189,12 @@ def test_lift_eligibility_blocks_local_presentation(change,events):
     (assert_no_patient_teleport,'headElevSuspend','', '_patient attachTo [objNull];'),
     (assert_legacy_helper_is_retired,'headElevApplyTilt','', 'createVehicle ["Helper",[0,0,0],[],0,"CAN_COLLIDE"];'),
     (assert_startup_grace,'headElevApplyTilt','CBA_missionTime + 2.5','CBA_missionTime + 0'),
-    (assert_dead_stop_delegates_first,'headElevateStop','if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;};',''),
+    pytest.param(
+        assert_dead_stop_delegates_first, 'headElevateStop',
+        'if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;', '',
+        # Retain the published case identity while mutating the current early-death guard.
+        id='assert_dead_stop_delegates_first-headElevateStop-if (!alive _patient) exitWith {[_patient] call ACME_fnc_headElevDeathRelease;};-',
+    ),
 ])
 def test_contracts_reject_regressions_even_with_original_text_in_comments(validator,filename,old,new):
     d=sources()

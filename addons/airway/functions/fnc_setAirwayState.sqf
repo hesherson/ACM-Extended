@@ -35,10 +35,50 @@ private _applied = 0;
                 _applied = _applied + 1;
             };
             case "blood": {
+                // Clearing/restarting this native compartment retires its partial suction ledger.
+                if (_value isEqualType 0 && {_value <= 0 || {(_patient getVariable [QGVAR(AirwayObstructionBlood_State), 0]) <= 0}}) then {
+                    _patient setVariable ["ACME_laryngo_bloodRemaining", [], _public];
+                    // Retire only the shared blood pool; an overlying vomit pool
+                    // has its own independently suctioned remaining volume.
+                    private _pool = _patient getVariable ["ACME_laryngo_pool", []];
+                    if (_pool isEqualType [] && {count _pool >= 1}) then {
+                        private _stamp = _pool select 0;
+                        if (_stamp isEqualType [] && {count _stamp >= 2}
+                            && {(_stamp select 0) isEqualType 0} && {(_stamp select 1) isEqualType 0}
+                            && {(_stamp select 0) <= 0} && {(_stamp select 1) > 0}) then {
+                            _patient setVariable ["ACME_laryngo_pool", [], _public];
+                        };
+                    };
+                };
                 _patient setVariable [QGVAR(AirwayObstructionBlood_State), _value, _public];
                 _applied = _applied + 1;
             };
             case "vomit": {
+                // Preserve physical remainder before advancing the native event counter.
+                // Explicit laryngoscopy stages already include the previous contents;
+                // reading the live compartment here retains that exact additive stage.
+                private _oldCount = _patient getVariable [QGVAR(AirwayObstructionVomit_State), 0];
+                if (_value isEqualType 0 && {_value != _oldCount || {_value <= 0}}) then {
+                    private _remaining = 0;
+                    if (_value > 0 && {_oldCount > 0}) then {
+                        private _state = [_patient] call ACME_fnc_laryngoFluidState;
+                        if ((_state param [1, ""]) == "v") then {_remaining = _state select 2;};
+                    };
+                    private _seen = _oldCount max 0;
+                    _patient setVariable ["ACME_laryngo_vomitRemaining", [
+                        _seen, _remaining, +(_patient getVariable ["ACME_laryngo_emesis", []])
+                    ], _public];
+                    // Retire only the cleared vomit pool, preserving the other compartments
+                    // and the independent aspiration receipt/injury high-water record.
+                    if (_value <= 0 || {_oldCount <= 0}) then {
+                        private _pool = _patient getVariable ["ACME_laryngo_pool", []];
+                        private _stamp = _pool param [0, []];
+                        if (_stamp isEqualType [] && {count _stamp >= 1}
+                            && {(_stamp select 0) isEqualType 0} && {(_stamp select 0) > 0}) then {
+                            _patient setVariable ["ACME_laryngo_pool", [], _public];
+                        };
+                    };
+                };
                 _patient setVariable [QGVAR(AirwayObstructionVomit_State), _value, _public];
                 _applied = _applied + 1;
             };

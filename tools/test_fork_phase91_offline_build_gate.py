@@ -3,15 +3,27 @@
 from pathlib import Path
 import re
 ROOT=Path(__file__).resolve().parents[1]; ADDONS=ROOT/'addons'
+CARD_PREFIXES={'card':'z\\DD1380\\addons\\card','card_main':'z\\DD1380\\addons\\main'}
+
+def validate_prefix(addon):
+ pf=addon/'$PBOPREFIX$'; assert pf.is_file(),addon
+ got=pf.read_text(errors='replace').strip().replace('/','\\')
+ exp=CARD_PREFIXES.get(addon.name,'acm_extended' if addon.name=='acm_extended' else 'x\\ACM\\addons\\'+addon.name)
+ assert got.lower()==exp.lower(),f'{addon.name}: {got!r} != {exp!r}'
+ if addon.name in CARD_PREFIXES:
+  options=addon/'addon.toml'; assert options.is_file(),f'{addon.name}: missing addon-scoped prefix declaration'
+  flags=re.findall(r'^\s*ignore_pboprefix\s*=\s*(true|false)\s*(?:#.*)?$',options.read_text(),re.M)
+  assert flags==['true'],f'{addon.name}: retained DD1380 prefix must declare ignore_pboprefix = true exactly once'
+
 addons=sorted(p for p in ADDONS.iterdir() if p.is_dir() and (p/'config.cpp').is_file()); assert addons
-for a in addons:
- pf=a/'$PBOPREFIX$'; assert pf.is_file(),a
- got=pf.read_text(errors='replace').strip().replace('/','\\'); exp='acm_extended' if a.name=='acm_extended' else 'x\\ACM\\addons\\'+a.name
- assert got.lower()==exp.lower(),f'{a.name}: {got!r} != {exp!r}'
+for a in addons: validate_prefix(a)
 inc_re=re.compile(r'^\s*#\s*include\s*["<]([^">]+)[">]',re.M); external=('\\a3\\','\\x\\cba\\','\\z\\ace\\'); seen=set(); missing=[]; unknown=[]
 def virtual(s):
  n=s.replace('/','\\'); lo=n.lower(); pref='\\x\\acm\\addons\\'
  if lo.startswith(pref): return ADDONS.joinpath(*[x for x in n[len(pref):].split('\\') if x])
+ for folder,prefix in CARD_PREFIXES.items():
+  pref='\\'+prefix+'\\'
+  if lo.startswith(pref.lower()): return (ADDONS/folder).joinpath(*[x for x in n[len(pref):].split('\\') if x])
  if any(lo.startswith(x) for x in external): return None
  if n.startswith('\\'): unknown.append(n); return None
  raise AssertionError(n)

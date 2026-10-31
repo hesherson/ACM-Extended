@@ -1,7 +1,9 @@
+#include "../main/script_build.hpp"
 #include "script_component.hpp"
 
 class CfgPatches {
     class ADDON {
+        ACME_BUILD_CONFIG("airway");
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {

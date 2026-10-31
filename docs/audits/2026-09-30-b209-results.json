@@ -1,0 +1,103 @@
+{
+  "public_version": "1.2.4.1",
+  "runtime_revision": "NA8-B209-1.2.4.1-stable",
+  "base_commit": "1bf8e5d7856060f037512e77bc6a38ae634d0b5f",
+  "build": {
+    "batch": "B209",
+    "hemtt": "1.22.0",
+    "check_passed": true,
+    "release_no_bin_no_archive_passed": true,
+    "verified_pbos": 14,
+    "verified_signatures": 14,
+    "verified_component_configs": 14,
+    "signing_keys": 1,
+    "strict_native_owner_audit_violations": 0
+  },
+  "focused": {
+    "ownership_passed": 75,
+    "network_passed": 837,
+    "behavior_passed": 689,
+    "total_passed": 1601
+  },
+  "full_suite_green": false,
+  "comparisons": {
+    "b208": {
+      "passed": true,
+      "counts": {
+        "baseline": {
+          "error": 46,
+          "failed": 790,
+          "passed": 5475,
+          "skipped": 29
+        },
+        "current": {
+          "error": 45,
+          "failed": 332,
+          "passed": 6110,
+          "skipped": 29
+        }
+      },
+      "problems": [],
+      "resolved_collection_errors": [
+        "tools.test_fork_phase87_narc_store_owner: collection error resolved; 1 passing tests executed"
+      ],
+      "new_passing_cases": 177,
+      "improved_existing_cases": 458
+    },
+    "b204": {
+      "passed": true,
+      "counts": {
+        "baseline": {
+          "error": 47,
+          "failed": 868,
+          "passed": 4879,
+          "skipped": 29
+        },
+        "current": {
+          "error": 45,
+          "failed": 332,
+          "passed": 6110,
+          "skipped": 29
+        }
+      },
+      "problems": [],
+      "resolved_collection_errors": [
+        "tools.test_fork_phase134_named_remote_command_endpoints: collection error resolved; 1 passing tests executed",
+        "tools.test_fork_phase87_narc_store_owner: collection error resolved; 1 passing tests executed"
+      ],
+      "new_passing_cases": 695,
+      "improved_existing_cases": 536
+    }
+  },
+  "remaining_failure_error_records": 377,
+  "final_run": {
+    "report": "b209-final-full.xml",
+    "sha256": "3e0a4afd4f09319bf5b5d5b95c35bec931d54d54f6abbb81e3b2cc3302e8b5d8",
+    "pytest_exit_code": 1,
+    "complete_rerun_after_all_runtime_and_test_changes": true,
+    "reconciled_records": 0,
+    "source_freeze_files": 75,
+    "source_changed_during_or_after_run": false,
+    "outcome_unit": "JUnit testcase identity, with duplicate occurrences preserved",
+    "console_accounting_note": "One temperature-assessment parent has two failing unittest subtests. Pytest console counts both failures and the completed parent; JUnit identity accounting records that parent as one failed case. Passing subtest counts are not additional passing testcase identities."
+  },
+  "reproductions": {
+    "esketamine": {
+      "before_failed": 4,
+      "after_passed": 4
+    },
+    "native_syringe_preparation_new_cases": {
+      "before_failed": 7,
+      "before_passed": 2,
+      "after_passed": 9
+    },
+    "native_syringe_preparation_unchanged_b156_cases": {
+      "after_passed": 3
+    }
+  },
+  "limits": [
+    "Remaining fixture or unsupported-engine failures do not certify later assertions that have not executed.",
+    "Hardcore push worker retirement contains ownership loss but does not transfer an unsettled transaction or guarantee automatic continuation/refund.",
+    "Windows asset binarization, live Arma rendering/animations/network delivery, dedicated-server/two-client/HC acceptance and representative-load soak remain unverified."
+  ]
+}

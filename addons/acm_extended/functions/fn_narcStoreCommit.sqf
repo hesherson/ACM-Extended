@@ -1,4 +1,11 @@
-/* Phase 87: authoritative writer for the provider's persistent Narc Box syringe/medication store. */
-params ["_owner", "_store"];
-if (isNull _owner) exitWith {};
-_owner setVariable ["ACME_narcStore", _store, true];
+/* Provider-owner writer for the persistent Narc Box syringe/medication store.
+ * Live Hardcore plunger steps and rejected-dose corrections stay local; final settlement
+ * publishes the reconciled store once. Never broadcast the 20 Hz plunger updates.
+ */
+params ["_owner", "_store", ["_public", true, [true]]];
+if (isNull _owner || {!local _owner}) exitWith {false};
+if (_public && {!isNil "ACME_fnc_inventoryLedgerCommit"}) then {
+    _store = [_owner,_store] call ACME_fnc_skInventoryCommit;
+};
+_owner setVariable ["ACME_narcStore", _store, _public];
+true

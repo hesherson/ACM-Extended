@@ -38,12 +38,16 @@ if (alive _patient && {isNull objectParent _patient}) then {
             missionNamespace getVariable ["ACME_uncon_faceUp", "ACM_LyingState"]
         };
         _patient setVariable ["ACME_CS_facing", _stableSide, true];
-        _patient switchMove _hold;
-        ["ace_common_switchMove", [_patient, _hold]] call CBA_fnc_globalEvent;
+        if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+            _patient switchMove _hold;
+            ["ace_common_switchMove", [_patient, _hold]] call CBA_fnc_globalEvent;
+        };
     } else {
         // If the casualty woke during the roll, do not seize them into an unconscious hold just to satisfy a cancel.
-        _patient switchMove "";
-        ["ace_common_switchMove", [_patient, ""]] call CBA_fnc_globalEvent;
+        if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+            _patient switchMove "";
+            ["ace_common_switchMove", [_patient, ""]] call CBA_fnc_globalEvent;
+        };
     };
 };
 true

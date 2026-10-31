@@ -16,11 +16,16 @@
  * Public: No
  */
 
-params ["_patient", "_volume"];
+params ["_patient", "_volume", ["_facts", []]];
 
-private _collectionTime = CBA_missionTime;
-private _bloodType = [_patient] call FUNC(generateBloodType);
-private _alive = alive _patient;
+private _frozen=count _facts==4 && {(_facts select 0) isEqualTo "freshV1"}
+    && {(_facts select 1) isEqualType true} && {(_facts select 2) isEqualType 0} && {finite (_facts select 2)}
+    && {(_facts select 3) isEqualType 0} && {finite (_facts select 3)}
+    && {(_facts select 3)>=0} && {(_facts select 3)<=7} && {(_facts select 3)==floor (_facts select 3)};
+if (_facts isNotEqualTo [] && {!_frozen}) exitWith {-1};
+private _collectionTime=if (_frozen) then {_facts select 2} else {CBA_missionTime};
+private _bloodType=if (_frozen) then {_facts select 3} else {[_patient] call FUNC(generateBloodType)};
+private _alive=if (_frozen) then {_facts select 1} else {alive _patient};
 
 private _freshBloodlist = (missionNamespace getVariable [QGVAR(FreshBloodList), createHashMap]);
 

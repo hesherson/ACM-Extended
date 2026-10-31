@@ -1,10 +1,46 @@
 // a server tick, registered once in postinit at about 0.25 s. it has two jobs.
 // 1. the daily restock: when the in-game day rolls over at midnight, reset each restock-enabled fridge to its load.
 // 2. the auto open and close: a fridge is in use while any client has pinged it within the timeout, because the
-// menu poll pings while a player has the ACE menu on it. on the 0 to 1 transition, swap the visible model and play
-// the door sfx. the show-then-hide ordering avoids a one-frame gap where neither model is visible.
-if !(missionNamespace getVariable ["ACME_sys_bloodChain", true]) exitWith {};  // the system toggle. fully off means this stops.
+// menu poll pings while a player has the ACE menu on it. Takes retain a bounded door lease through the provider
+// reach, including after the ACE menu closes. Door movement is independent of the cold-chain simulation toggle.
 if (!isServer) exitWith {};
+// The grant outlives its furniture object and cosmetic door lease. Continue
+// delivery even if Zeus removed the fridge after its stock was committed.
+private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+private _returns=missionNamespace getVariable ["ACME_resourceReturns",createHashMap];
+private _activeGrants=[];
+{
+    private _grant=_serverGrants get _x;
+    if ((_grant select 3)=="pending") then {
+        private _bridge=_grant param [6,""];
+        private _journal=_returns getOrDefault [_bridge,[]];
+        private _unit=_grant select 0;
+        if (count _journal>=11 && {(_journal select 4)=="delivered"}) then {
+            _grant set [3,"delivered"];_serverGrants set [_x,_grant];
+            private _anchor=_grant select 5;
+            if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
+            if (!isNull _unit) then {
+                private _pending=_unit getVariable ["ACME_bf_pendingGrants",createHashMap];_pending deleteAt _x;_unit setVariable ["ACME_bf_pendingGrants",_pending,true];
+                ["ACME_bfGive",[_anchor,_grant select 2,_unit,_grant select 1,"delivered",_bridge],_unit] call CBA_fnc_targetEvent;
+            };
+        } else {
+            // Dispatch, retries and ownership proof all belong to the generic
+            // journal. Never send another native Give while its outcome is held.
+            if (_journal isEqualTo [] && {_bridge!=""}) then {
+                ["fridgeStock",[_unit,_grant select 5,_bridge,[["item",_grant select 2]]]] call ACME_fnc_resourceReturnBroker;
+            };
+            if (count _journal>=11 && {(_journal select 4)=="orphaned"}) then {
+                // Retain canonical orphaned custody without a permanent idle
+                // poll. Mission recovery must explicitly resolve the journals.
+                _grant set [3,"orphaned"];_serverGrants set [_x,_grant];
+                private _anchor=_grant select 5;
+                if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
+            } else {_activeGrants pushBack _x;};
+        };
+    };
+} forEach (missionNamespace getVariable ["ACME_bf_activeGrants",[]]);
+missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
+missionNamespace setVariable ["ACME_bf_activeGrants",_activeGrants];
 private _fridges = missionNamespace getVariable ["ACME_bloodFridges", []];
 if (_fridges isEqualTo []) exitWith {};
 
@@ -18,7 +54,8 @@ private _yearHours = 365.25 * 24;
 private _nowGameHours = (dateToNumber date) * _yearHours;
 {
     private _fridge = _x;
-    if (!isNull _fridge && {_fridge getVariable ["ACME_bf_restock", true]}) then {
+    if (!isNull _fridge && {missionNamespace getVariable ["ACME_sys_bloodChain", true]}
+        && {_fridge getVariable ["ACME_bf_restock", true]}) then {
         // the per-fridge interval override, in minutes, or the global hours plus minutes setting.
         private _intervalMins = _fridge getVariable ["ACME_bf_regenMins", -1];
         if (_intervalMins < 0) then {
@@ -26,7 +63,7 @@ private _nowGameHours = (dateToNumber date) * _yearHours;
                           + (missionNamespace getVariable ["ACME_bf_regenMinutes", 0]);
         };
         if (_intervalMins > 0) then {
-            private _intervalHours = _intervalMins / 60;
+            private _intervalHours = (_fridge getVariable ["ACME_bf_restoreRestockDelayMins",_intervalMins]) / 60;
             private _last = _fridge getVariable ["ACME_bf_lastRestockGH", -1];
             if (_last < 0) then {
                 // the first tick after placement: anchor the clock and do not restock yet.
@@ -39,6 +76,7 @@ private _nowGameHours = (dateToNumber date) * _yearHours;
                     if ((_nowGameHours - _last) >= _intervalHours) then {
                         [_fridge, "ACME_bf_stock", +(_fridge getVariable ["ACME_bf_default", []])] call ACME_fnc_setVarNet;
                         [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
+                        _fridge setVariable ["ACME_bf_restoreRestockDelayMins",nil,false];
                     };
                 };
             };
@@ -55,22 +93,34 @@ private _timeout = missionNamespace getVariable ["ACME_bf_viewTimeout", 0.9];
         private _viewers = _anchor getVariable ["ACME_bf_viewers", createHashMap];
         private _live = false;
         {
-            if ((_now - _y) <= _timeout) then { _live = true; };
-        } forEach _viewers;
+            if ((_now - (_viewers get _x)) <= _timeout) then {_live = true;} else {_viewers deleteAt _x;};
+        } forEach keys _viewers;
+        private _takers = _anchor getVariable ["ACME_bf_takers", createHashMap];
+        {
+            (_takers get _x) params ["_unit", "_token", "_until"];
+            if (!isNull _unit && {alive _unit} && {_now < _until} && {_unit distance _anchor <= 4.5}) then {
+                _live = true;
+            } else {_takers deleteAt _x;};
+        } forEach keys _takers;
 
         private _open = _anchor getVariable ["ACME_bf_open", false];
+        // Retire a pre-B216 twin from a saved running mission without hiding the stock/interaction anchor.
         private _openObj = _anchor getVariable ["ACME_bf_openObj", objNull];
+        if (!isNull _openObj) then {
+            _openObj hideObjectGlobal true;
+            _anchor hideObjectGlobal false;
+            _anchor setVariable ["ACME_bf_openObj", objNull, true];
+            _anchor animateSource ["Door_1_noSound_source", [0, 1] select _open, true];
+        };
 
         if (_live && !_open) then {
             [_anchor, "ACME_bf_open", true] call ACME_fnc_setVarNet;
-            if (!isNull _openObj) then { _openObj hideObjectGlobal false; };
-            _anchor hideObjectGlobal true;
+            _anchor animateSource ["Door_1_noSound_source", 1, 2];
             private _near = allPlayers select {alive _x && {(_x distance _anchor) <= 80}}; if !(_near isEqualTo []) then {["ACME_worldSfx", [_anchor, "ACME_BloodFridgeDoorOpen"], _near] call CBA_fnc_targetEvent;};
         };
         if (!_live && _open) then {
             [_anchor, "ACME_bf_open", false] call ACME_fnc_setVarNet;
-            _anchor hideObjectGlobal false;
-            if (!isNull _openObj) then { _openObj hideObjectGlobal true; };
+            _anchor animateSource ["Door_1_noSound_source", 0, 2];
             private _near = allPlayers select {alive _x && {(_x distance _anchor) <= 80}}; if !(_near isEqualTo []) then {["ACME_worldSfx", [_anchor, "ACME_BloodFridgeDoorClose"], _near] call CBA_fnc_targetEvent;};
         };
     };

@@ -63,6 +63,9 @@ ACME_hcEff_blastLung = missionNamespace getVariable ["ACME_hc_blastLung", false]
 ACME_hcEff_hypo      = missionNamespace getVariable ["ACME_hc_hypothermia", false];
 ACME_hcEff_flight    = missionNamespace getVariable ["ACME_hc_flight", false];
 ACME_hcEff_vent     = missionNamespace getVariable ["ACME_hc_vent", false];
+ACME_hcEff_burns    = missionNamespace getVariable ["ACME_hc_burns", false];
+ACME_hcEff_infection = missionNamespace getVariable ["ACME_hc_infection", false];
+ACME_hcEff_ophthalmology = missionNamespace getVariable ["ACME_hc_ophthalmology", false];
 
 // apply, or restore the baseline.
 if (ACME_hcEff_junc) then {

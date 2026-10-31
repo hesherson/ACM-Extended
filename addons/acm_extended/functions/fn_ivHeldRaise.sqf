@@ -32,7 +32,7 @@ if (_n == 0) exitWith {};
 
 // The square catheter canvas uses a plain-picture class. Other tools keep their
 // established keep-aspect cursor. Styles cannot be changed at runtime in Arma.
-private _cathCanvas = (uiNamespace getVariable ["ACME_IV_Held", "none"]) in ["needle", "line"];
+private _cathCanvas = (uiNamespace getVariable ["ACME_IV_Held", "none"]) in ["needle", "line", "extension", "flush", "dressing", "lock"];
 // Already on top with the right class: this is the normal steady-state path.
 if (((_all select (_n - 1)) isEqualTo _held) && {(_held getVariable ["ACME_IV_CathCanvas", false]) isEqualTo _cathCanvas}) exitWith {};
 

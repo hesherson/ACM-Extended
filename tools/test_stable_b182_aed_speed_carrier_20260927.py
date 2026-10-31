@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stable B189: LifePak geometry, provider-speed cleanup, and animated persistent manual carrier toggle."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -169,7 +170,7 @@ def test_manual_carrier_row_is_pinned_above_all_menu_categories():
     menu = read("addons/gui/overrides/fnc_updateActions.sqf")
     assert "private _manualCarrier = _menuActions select {" in menu
     assert "_row set [1, _selectedCategory];" in menu
-    assert "_menuActions = _manualCarrier + _stopPressure + _pressure + _menuActions + _dogTags;" in menu
+    assert "_menuActions = _manualCarrier + _bvmEmma + _stopPressure + _pressure + _menuActions + _dogTags;" in menu
 
 
 def test_manual_carrier_auto_returns_on_wake_getup_transport_and_movement():
@@ -201,8 +202,8 @@ def test_automatic_chest_access_reuses_manual_custody_without_replaying_removal(
 def test_build_identity_is_b183_stable():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4";' in cfg
-    assert 'ACME_buildBatch = "B190";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 

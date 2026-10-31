@@ -1,7 +1,13 @@
 // Owner-local visible seizure driver. Physiology, unconsciousness and recovery remain in the shared state machine.
-// BI Spasm3-6 use isolated ACME aliases at 1.05 times each clip's native cycles/second.
+// BI Spasm0/4/5/6 use isolated aliases. Arrest changes only the motor pattern, not seizure physiology.
 params ["_patient", ["_on",true]];
 if (isNull _patient || {!local _patient}) exitWith {};
+
+// A physiology-driven ROSC path may clear native arrest before its ACE event is delivered.
+if (!(_patient getVariable ["ace_medical_inCardiacArrest",false])
+    && {(_patient getVariable ["ACME_seizure_arrestStartedAt",-1]) >= 0}) then {
+    _patient setVariable ["ACME_seizure_arrestStartedAt",-1,true];
+};
 
 // Seizure PHYSIOLOGY continues in vehicles, but body-spasm animation must not. If the casualty enters a seat during
 // an active episode, tear down only the visual driver. The active seizure state remains, and the next owner tick
@@ -51,6 +57,11 @@ if (!_enabled) exitWith {
     _patient setVariable ["ACME_seizure_motionCurrentGesture",""];
 };
 
+private _mode = [_patient] call ACME_fnc_seizureMotorMode;
+if (_patient getVariable ["ACME_seizure_motionActive",false]
+    && {(_patient getVariable ["ACME_seizure_motionMode", "full"]) != _mode}) then {
+    [_patient,false] call ACME_fnc_seizureMotion;
+};
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 private _session = _patient getVariable ["ACME_seizure_motionSession",[]];
 if (_patient getVariable ["ACME_seizure_motionActive",false]
@@ -71,6 +82,8 @@ private _serial = (missionNamespace getVariable ["ACME_seizure_motionSerial",0])
 missionNamespace setVariable ["ACME_seizure_motionSerial",_serial];
 _session = [_epoch,clientOwner,_serial];
 _patient setVariable ["ACME_seizure_motionSession",_session];
+_patient setVariable ["ACME_seizure_motionMode",_mode];
+_patient setVariable ["ACME_seizure_motionPulse",0];
 _patient setVariable ["ACME_seizure_motionActive",true];
 _patient setVariable ["ACME_seizure_motionRetryPending",false];
 _patient setVariable ["ACME_seizure_motionAdvancePending",false];
@@ -81,6 +94,8 @@ if (_oldEH isEqualType 0 && {_oldEH >= 0}) then {_patient removeEventHandler ["G
 private _eh = _patient addEventHandler ["GestureDone",{
     params ["_unit","_gesture"];
     if (!local _unit || {!(_unit getVariable ["ACME_seizure_motionActive",false])}) exitWith {};
+    // Short arrest jerks are timed snippets, not complete clips. Their bounded scheduler owns advancement.
+    if ((_unit getVariable ["ACME_seizure_motionMode", "full"]) == "jerks") exitWith {};
     private _current = _unit getVariable ["ACME_seizure_motionCurrentGesture",""];
     if (_current == "" || {(toLowerANSI _gesture) != (toLowerANSI _current)}) exitWith {};
     if (_unit getVariable ["ACME_seizure_motionAdvancePending",false]) exitWith {};
@@ -97,7 +112,7 @@ private _eh = _patient addEventHandler ["GestureDone",{
 _patient setVariable ["ACME_seizure_motionGestureEH",_eh];
 
 // Give the onset collapse time to settle. An already-down casualty retains its base pose throughout.
-private _settle = (missionNamespace getVariable ["ACME_seizure_settleDur",1.5]) max 0;
+private _settle = if (_mode == "jerks") then {0.15} else {(missionNamespace getVariable ["ACME_seizure_settleDur",1.5]) max 0};
 _patient setVariable ["ACME_seizure_motionReadyAt",CBA_missionTime + _settle];
 [{
     params ["_p","_session"];

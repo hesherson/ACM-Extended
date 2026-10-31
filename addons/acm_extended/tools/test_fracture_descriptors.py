@@ -34,7 +34,9 @@ def reference(state=0, damage=0, splint=0, ace=0, prepared=False, part='leftarm'
         key = BASE + 'swelling'
     elif state == 1:
         key = BASE + 'severebruising'
-    elif state not in (0, 1, 2, 3) or ace > 0:
+    elif ace > 0:
+        key = CUSTOM + 'confirmed'
+    elif state not in (0, 1, 2, 3):
         key = CUSTOM + 'indeterminate'
     elif damage > 1:
         key = BASE + 'bruised'
@@ -66,8 +68,8 @@ class FracturePresentationExamples(unittest.TestCase):
 
     def test_mild_fracture(self):
         hint, log = reference(state=1, ace=1)
-        self.assertIn('severely contused; no crepitus found', hint)
-        self.assertIn('no crepitus found', log)
+        self.assertIn('severely contused; crepitus present', hint)
+        self.assertIn('crepitus present', log)
 
     def test_severe_fracture(self):
         hint, log = reference(state=2, ace=1)
@@ -141,7 +143,7 @@ class FracturePresentationExamples(unittest.TestCase):
         self.assertNotIn('no crepitus found', hint)
 
     def test_native_fracture_without_acm_grade(self):
-        self.assertIn('indeterminate', reference(state=0, ace=1)[0])
+        self.assertIn('has crepitus on assessment', reference(state=0, ace=1)[0])
 
     def test_repeat_same_state_same_findings(self):
         self.assertEqual(reference(state=2), reference(state=2))
@@ -204,7 +206,7 @@ class FractureSourceContracts(unittest.TestCase):
 
     def test_all_result_keys_have_hint_and_log_entries(self):
         keys = re.findall(r'\{"(STR_[^"]+)"\}', CALLBACK)
-        self.assertEqual(len(keys), 8)
+        self.assertEqual(len(keys), 9)
         for key in keys:
             self.assertIn(key.lower(), TERMS)
             self.assertIn(key.lower() + '_short', TERMS)

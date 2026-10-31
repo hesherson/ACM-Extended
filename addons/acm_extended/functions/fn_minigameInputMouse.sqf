@@ -8,6 +8,10 @@ if (_source isEqualType controlNull) then {_display = ctrlParent _source;};
 if (_source isEqualType displayNull) then {_display = _source;};
 if (isNull _display) exitWith {false};
 private _key = _event param [1,-1,[0]];
+// B222: a procedure may reserve a physical button before generic/remapped bindings.
+// Returning false here means "not a generic action"; the procedure dispatches it once.
+private _priority = _display getVariable ["ACME_InputMousePriority", {false}];
+if ([_display, _key, _phase] call _priority) exitWith {false};
 private _mods = _display getVariable ["ACME_InputMods", [false,false,false]];
 if (count _event >= 7) then {_mods = [_event param [4,false,[true]], _event param [5,false,[true]], _event param [6,false,[true]]];};
 if (_phase == "wheel") exitWith {

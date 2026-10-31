@@ -34,7 +34,7 @@ if ((_context param [0, ""]) == "prepared") then {
         {
             if ((_x param [23, ""]) == _bagId) then {
                 private _med = _x param [11, ""];
-                private _dose = _x param [14, 0];
+                private _dose = _x param [13, 0];
                 private _count = _x param [27, 1];
                 private _ri = _confirmedRows findIf {(_x param [0, ""]) == _med};
                 if (_ri < 0) then {_confirmedRows pushBack [_med, _dose, _count];} else {

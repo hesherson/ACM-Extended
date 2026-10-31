@@ -1,9 +1,13 @@
 #include "..\script_component.hpp"
 // Release public ownership first, before any interface or input cleanup can fail.
-params ["_medic", "_patient", "_epoch"];
-[_medic, _patient, _epoch] call FUNC(bvmRelease);
-if !((missionNamespace getVariable [QGVAR(BVM_LocalSession), []]) isEqualTo [_medic, _patient, _epoch]) exitWith {false};
+params ["_medic", "_patient", "_epoch", ["_capturedGrant",[]]];
+private _localGrant = missionNamespace getVariable [QGVAR(BVM_LocalGrant),[]];
+if (isMultiplayer && {_capturedGrant isEqualTo []}) then {_capturedGrant = +_localGrant;};
+private _sameGrant = !isMultiplayer || {count _capturedGrant == 6 && {_capturedGrant isEqualTo _localGrant}};
+[_medic, _patient, _epoch, _capturedGrant] call FUNC(bvmRelease);
+if (!_sameGrant || {(missionNamespace getVariable [QGVAR(BVM_LocalSession), []]) isNotEqualTo [_medic, _patient, _epoch]}) exitWith {false};
 GVAR(BVM_LocalSession) = [];
+GVAR(BVM_LocalGrant) = [];
 GVAR(BVMTarget) = objNull;
 GVAR(BVMActive) = false;
 GVAR(CPRActive) = false;

@@ -3,6 +3,10 @@
 disableSerialization;
 private _display = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
 if (isNull _display) exitWith {};
+[] call ACME_fnc_ivFinishAbort;
+private _extra=uiNamespace getVariable ["ACME_IV_PullExtra",controlNull];
+if (!isNull _extra) then {ctrlDelete _extra;};
+uiNamespace setVariable ["ACME_IV_PullExtra",controlNull];
 _display setVariable ["ACME_IV_ViewGeneration", (_display getVariable ["ACME_IV_ViewGeneration", 0]) + 1];
 private _retract = _display getVariable ["ACME_IV_RetractPFH", -1];
 if (_retract >= 0) then {[_retract] call CBA_fnc_removePerFrameHandler;};
@@ -21,6 +25,7 @@ _display setVariable ["ACME_IV_RetractPFH", -1];
     ["ACME_IV_StickU", 0.5], ["ACME_IV_StickV", 0.5], ["ACME_IV_RegOK", false],
     ["ACME_IV_NeedleFrame", ""], ["ACME_IV_LastNeedleState", []],
     ["ACME_IV_NeedleTipPos", []], ["ACME_IV_NeedleTipUV", []],
+    ["ACME_IV_PullLayers",[]], ["ACME_IV_PullLayerBases",[]], ["ACME_IV_PullUID",""], ["ACME_IV_PullKind","catheter"],
     ["ACME_IV_PullIdx", -1], ["ACME_IV_PullProg", 0], ["ACME_IV_PullPin", []],
     ["ACME_IV_PullBroke", false], ["ACME_IV_PullCtrl", controlNull],
     ["ACME_IV_PullBase", []], ["ACME_IV_PullSuffix", ""],

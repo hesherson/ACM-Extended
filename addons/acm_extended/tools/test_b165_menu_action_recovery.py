@@ -1,5 +1,6 @@
 """B165 regression contracts: restore B161 action execution and keep anatomy fixes presentation-only."""
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 RENDER = (ROOT.parent / "gui" / "overrides" / "fnc_updateActions.sqf").read_text(encoding="utf-8")
@@ -28,9 +29,17 @@ def test_anatomy_fix_is_group_visibility_only():
     # These group gates do not mutate treatment rows/callbacks.
     assert '["adjuncts", "Airway", "airway"' in GROUPS
     assert '["ventilation", "Breathing", "airway"' in GROUPS
-    assert '["chest", "Chest", "airway"' in GROUPS
-    assert '["position", "Positioning", "airway"' in GROUPS
+    assert '["chest", "Chest", "airway"' not in GROUPS
+    assert '["position", "Positioning", "airway"' not in GROUPS
+    assert '"Apply Chest Seal", "Perform Needle-Chest-Decompression", "Perform NCD (NAR SPEAR)"' in GROUPS
+    assert '"Establish Recovery Position", "Cancel Recovery Position"' in GROUPS
     assert '["capno", "Capnography", "airway"' in GROUPS
-    assert GROUPS.count("{ace_medical_gui_selectedBodyPart == 0}") >= 6
-    assert GROUPS.count("{ace_medical_gui_selectedBodyPart == 1}") >= 2
+    gates = dict(re.findall(r'\["([^"]+)", "[^"]+", "[^"]+",.*?\], \{([^}]+)\}', GROUPS, re.S))
+    assert {name for name, gate in gates.items() if gate == "ace_medical_gui_selectedBodyPart == 0"} == {
+        "capno", "route_po", "route_in", "route_buc"
+    }
+    assert {name for name, gate in gates.items() if gate == "ace_medical_gui_selectedBodyPart == 1"} == set()
+    # Chest care and respiratory assessment share Breathing on Head/Body.
+    assert gates["ventilation"] == "ace_medical_gui_selectedBodyPart in [0, 1]"
+    assert gates["adjuncts"] == "ace_medical_gui_selectedBodyPart in [0, 1]"
     assert "private _anatomyFiltered" not in GROUPS

@@ -14,12 +14,13 @@ def setup():
     for name in ('_medic','_m'):
         for old,new in (
             ('local '+name,'_local'),('alive '+name,'_alive'),
-            ('objectParent '+name,'_parent'),
+            ('objectParent '+name,'_parent'), ('stance '+name,'_providerStance'),
             (name+' selectWeapon "";', '_weapon="";'),
             (name+' setUnitPos "MIDDLE";', '_stances pushBack "MIDDLE";'),
             (name+' setUnitPos "AUTO";', '_stances pushBack "AUTO";'),
         ):
             s=re.sub(re.escape(old)+(r'\b' if old[-1].isalnum() else ''),lambda _:new,s)
+    s=re.sub(r'_(?:medic|m) setUnitPos ([^;]+);',r'_stances pushBack (\1);',s)
     return controller_setup()+'ACME_fnc_headElevateCancelSeq={'+adapt(s)+'};\n'+'''
         _patient setVariable ["ACME_headElevated",true];
         _patient setVariable ["ACME_headElev_poseToken","casualty:original"];

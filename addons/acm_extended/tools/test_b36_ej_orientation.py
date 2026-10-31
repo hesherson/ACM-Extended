@@ -84,7 +84,10 @@ class EJOrientation(unittest.TestCase):
     def test_requested_public_version_is_consistent(self):
         config = (ROOT/'config.cpp').read_text(encoding='utf-8-sig')
         startup = src('initForkStartupRuntime')
-        self.assertIn('version = "1.2.2.1";', config)
+        # Explicit shared build contract supersedes the historical B36 patch literal.
+        import runpy
+        expected = runpy.run_path(str(ROOT.parents[1]/"tools/build_contract.py"))["assert_current_build"]()
+        self.assertIn('version = "'+expected['version']+'";', config)
         self.assertIn('ACME_infusion_version = getText', startup)
         assert_release_identity()
 

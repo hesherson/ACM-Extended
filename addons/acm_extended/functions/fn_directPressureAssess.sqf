@@ -1,6 +1,6 @@
 // MMB on the torso maneuver: toggle a pause and read out the bleeding on the held part. while paused the clot tick
 // is skipped, because you have eased off to look, and the mouse hint reflects it.
-private _medic = ACE_player;
+private _medic = (call ACME_fnc_controlledProvider);
 if !(_medic getVariable ["ACME_DP_Active", false]) exitWith {};
 private _patient = _medic getVariable ["ACME_DP_Patient", objNull];
 private _part    = _medic getVariable ["ACME_DP_Part", ""];

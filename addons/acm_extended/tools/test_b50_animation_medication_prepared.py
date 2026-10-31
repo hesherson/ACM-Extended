@@ -56,11 +56,86 @@ def test_medication_source_mirrors_acm_vial_membership_and_never_requires_extra_
     assert 'if !(isClass _conc) then {continue}' not in s
 
 def test_prepared_iv_sets_button_counts_and_pulses_green():
+    from test_menu_death_lifecycle import adapt, execute
     s = txt('functions/fn_updateTransfusionControls.sqf')
-    assert 'private _preparedSetCountB50 = count (ACE_player getVariable ["ACME_preparedIVSets", []]);' in s
+    # Preserve this historical identity. B275 deliberately replaces the green
+    # pulse with the approved black/grey toggle; bottle custody and counts still
+    # execute the real filters and the original prepared-entry index mapping.
+    count = re.search(r'private _preparedSetCountB50 = .*?;', s).group()
+    shown = s[s.index('private _shown = [];'):s.index('private _wantSig = str _shown;')]
+    entries = re.search(r'private _preparedEntries = .*?;', s).group()
+    prepared_filter = s[s.index('private _shownPrepared = [];'):s.index('if (!isNull _ctrlPreparedList) then {', s.index('private _shownPrepared = [];'))]
+    prepared_filter = prepared_filter.replace('getText (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "type")', '"Saline"')
+    # B276 restores prepared selection by custody ID. Execute its real capture
+    # and fallback block so filtered rows still map to their original indices.
+    restore_start = s.index('private _oldSelected = missionNamespace getVariable ["ACME_infusion_SelectedPreparedIndex"')
+    restore_identity = s[restore_start:s.index('lbClear _ctrlPreparedList;', restore_start)]
+    row_start = s.index('private _label = [_entry] call ACME_fnc_formatPreparedLabel;')
+    row_begin = s.rfind('{', 0, row_start)
+    row_end = s.index('} forEach _shownPrepared;', row_start) + len('} forEach _shownPrepared;')
+    rows = s[row_begin:row_end]
+    rows = rows.replace('private _i = _ctrlPreparedList lbAdd _label;', 'private _i = _renderedPrepared pushBack _label;')
+    rows = rows.replace('_ctrlPreparedList lbSetValue [_i,_index];', '_renderedPreparedIndices pushBack _index;')
+    rows = rows.replace('_ctrlPreparedList lbSetTooltip [_i,_label];', '')
+    rows = rows.replace('_ctrlPreparedList lbSetColor [_i,[0.79,0.73,0.89,1]];', '_renderedPreparedColors pushBack [0.79,0.73,0.89,1];')
+    rows = rows.replace('_ctrlPreparedList lbSetCurSel _i;', '_restoredSelection=_i;')
+    paint = s[s.index('_ctrlSetsBtn ctrlSetText (format ["Prepared IV sets (%1)"'):s.index('[_ctrlSetsBtn,"show",true]')]
+    paint = paint.replace('_ctrlSetsBtn ctrlSetText (', '_buttonLabel = (')
+    paint = paint.replace('_ctrlSetsBtn ctrlSetFontHeight', '_paintFontHeight =').replace('safeZoneH','1')
+    paint = paint.replace('_ctrlSetsBtn ctrlSetBackgroundColor', '_paintBackground =')
+    paint = paint.replace('_ctrlSetsBtn ctrlSetTextColor', '_paintText =')
+    execute(r'''
+        private _normal=["saline-set","SalineIV_500","SalineIV_500","","","","Saline prepared",false,"yset",500,0];
+        private _bottle=["prop-bottle","ACM_Vial_Propofol","ACME_PropofolIV_50","","","","Propofol prepared",false,"propofol",50,0];
+        private _prepared=["prop-bottle","ACM_Vial_Propofol","ACME_PropofolIV_50","Propofol",500,1800,20,0,0,0,50];
+        ACE_player setVariable ["ACME_preparedIVSets",[_normal,_bottle]];
+        ACE_player setVariable ["ACME_infusion_PreparedBags",[_prepared]];
+        private _sets=ACE_player getVariable ["ACME_preparedIVSets",[]];
+        private _tgtNet="";
+        private _targetPatient=_patient;private _targetBodyPart="leftarm";private _flIV=true;private _flSite=0;
+        private _selectingPiggyback=false;private _preparedMode=false;
+        private _display=missionNamespace;private _restoredSelection=-1;
+        missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",0];
+        _display setVariable ["ACME_txPreparedIdentity",[]];
+        private _renderedPrepared=[];private _renderedPreparedIndices=[];
+        private _renderedPreparedColors=[];
+        ACME_fnc_piggybackEligible={true};
+        ACME_fnc_formatPreparedLabel={(_this select 0) param [0,""];};
+    ''' + adapt(count + shown + entries + prepared_filter + restore_identity + rows) + r'''
+        [_preparedSetCountB50==1,"paired bottle incorrectly counted as a plain IV set"] call _check;
+        [_shown isEqualTo [["saline-set","Saline prepared"]],"bottle leaked into the plain Prepared IV Sets overlay"] call _check;
+        [_renderedPrepared isEqualTo ["prop-bottle"] && {_renderedPreparedIndices isEqualTo [0]},"prepared bottle is missing or duplicated in Prepared Infusions"] call _check;
+        [_restoredSelection==0,"prepared selection mapping was lost"] call _check;
+        [count (ACE_player getVariable "ACME_preparedIVSets")==2,"UI filtering destroyed paired bottle custody"] call _check;
+        private _paintBackground=[];private _paintText=[];private _buttonLabel="";private _paintFontHeight=0;
+        private _paint={
+    ''' + adapt(paint) + r'''
+        };
+        {
+            _nowTime=_x;call _paint;
+            [_paintBackground isEqualTo [0,0,0,0] && {_paintFontHeight==.017},"native tab face covered the rounded grey surface or lost its type size"] call _check;
+            [_buttonLabel=="Prepared IV sets (1)","plain-set count missing from toggle"] call _check;
+        } forEach [0,0.25,0.5,0.75];
+        _preparedMode=true;call _paint;
+        [_buttonLabel=="Prepared IV sets (1)","prepared tab changed its title when selected"] call _check;
+        ACE_player setVariable ["ACME_preparedIVSets",[_bottle]];
+    ''' + adapt(count) + r'''
+        [_preparedSetCountB50==0,"bottle-only inventory should show zero plain prepared IV sets"] call _check;
+        call _paint;
+        [_paintBackground isEqualTo [0,0,0,0] && {_buttonLabel=="Prepared IV sets (0)"},"bottle-only custody changed plain-set count or covered the rounded tab surface"] call _check;
+        private _salineA=["saline-a","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
+        private _salineB=["saline-b","SalineIV_100","SalineIV_100","TXA",1000,0,20,60,1,100,100];
+        ACE_player setVariable ["ACME_infusion_PreparedBags",[_salineA,_prepared,_salineB]];
+        _selectingPiggyback=true;_oldSelected=2;_restoredSelection=-1;
+        missionNamespace setVariable ["ACME_infusion_SelectedPreparedIndex",2];
+        _renderedPrepared=[];_renderedPreparedIndices=[];_renderedPreparedColors=[];
+    ''' + adapt(entries + prepared_filter + restore_identity + rows) + r'''
+        [_renderedPrepared isEqualTo ["saline-a [PiB]","saline-b [PiB]"] && {_renderedPreparedIndices isEqualTo [0,2]},"filtered prepared rows retargeted the original infusion indices"] call _check;
+        [_restoredSelection==1 && {count _renderedPreparedColors==2},"filtered selection/highlight did not follow the visible row"] call _check;
+        [count _preparedEntries==3 && {(ACE_player getVariable "ACME_infusion_PreparedBags") isEqualTo [_salineA,_prepared,_salineB]},"picker filtering consumed prepared custody"] call _check;
+    ''')
     assert 'Prepared IV sets (%1)' in s
-    assert '[0.20, 0.65, 0.20, 0.30 + 0.45 * _setPulse]' in s
-    assert 'diag_tickTime % 1' in s
+    assert 'private _setPulse =' not in s
 
 def test_prep_infusion_only_enables_for_selected_prepared_saline():
     s = txt('functions/fn_updateTransfusionControls.sqf')

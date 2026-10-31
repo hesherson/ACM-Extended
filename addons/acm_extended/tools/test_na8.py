@@ -87,7 +87,7 @@ class ActionSourceData(unittest.TestCase):
     def test_chest_examination_does_not_move_bvm_descendants(self):
         from test_historical_menu_execution import test_current_routes_do_not_capture_foreign_descendants_or_restore_basic_dropdowns as verify
         for name in ('ACME_InspectChest','UseStethoscope'):
-            verify(name,'examine','CheckBreathing',['airway','chest',False])
+            verify(name,'examine','CheckBreathing',['airway','ventilation',False])
         for name in ('UseBVM','UseBVM_Oxygen','UseBVM_VehicleOxygen','UseBVM_PortableOxygen'):
             verify(name,'airway','UseStethoscope',['airway','ventilation',False])
     def test_injectable_not_misclassified(self):self.assertEqual(classify('Morphine'),('medication','',False))

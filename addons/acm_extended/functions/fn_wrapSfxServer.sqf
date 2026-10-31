@@ -6,17 +6,26 @@ private _active = missionNamespace getVariable ["ACME_wrapSfxSources", []];
 
 if (_op == "start") then {
     if (!isNull _medic && {alive _medic} && {!isNull _patient} && {owner _medic == _providerOwner}) then {
-        // A provider can run one ACE progress action at a time. Replace only
-        // that provider's emitter; other medics treating this patient continue.
-        _active = _active select {
-            if ((_x select 0) isEqualTo _medic) then {
-                deleteVehicle (_x select 3);
-                false
-            } else {true};
+        // An exact replay is still the same audible episode. Keep its emitter playing instead of deleting and
+        // recreating it at frame zero; a newer token continues to replace only this provider's previous loop.
+        private _sameEpisode = (_active findIf {
+            (_x select 0) isEqualTo _medic && {(_x select 1) isEqualTo _patient}
+                && {(_x select 2) == _token} && {(_x select 4) == _providerOwner}
+                && {!isNull (_x select 3)}
+        }) >= 0;
+        if (!_sameEpisode) then {
+            // A provider can run one ACE progress action at a time. Replace only
+            // that provider's emitter; other medics treating this patient continue.
+            _active = _active select {
+                if ((_x select 0) isEqualTo _medic) then {
+                    deleteVehicle (_x select 3);
+                    false
+                } else {true};
+            };
+            private _src = createSoundSource ["ACME_JunctionalPack_SoundSource", getPosATL _medic, [], 0];
+            _src attachTo [_medic, [0, 0, 0]];
+            _active pushBack [_medic, _patient, _token, _src, _providerOwner, isPlayer _medic, -1];
         };
-        private _src = createSoundSource ["ACME_JunctionalPack_SoundSource", getPosATL _medic, [], 0];
-        _src attachTo [_medic, [0, 0, 0]];
-        _active pushBack [_medic, _patient, _token, _src, _providerOwner, isPlayer _medic, -1];
     };
 };
 

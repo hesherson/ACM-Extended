@@ -12,7 +12,11 @@
 // numbers disagree with each other. that is the whole lesson.
 // the fix is to pull the tube back a frame or two, which is exactly what the airway screen now allows.
 params ["_patient"];
-if (isNull _patient) exitWith {};
+if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+// This worker runs at clinical cadence, not once per rendered/server frame.
+// Sample before inactive exits so correcting/reinserting the tube cannot
+// charge elapsed time during which there was no mainstem obstruction.
+private _dt = [_patient, "ettMainstem", 0.25, 5] call ACME_fnc_clinicalTickDelta;
 if (!(_patient getVariable ["ACME_ETT_Mainstem", false])) exitWith {
     [_patient, "ACME_o2Drain_mainstem", 0] call ACME_fnc_setVarNet;
     [_patient, "ACME_vent_complianceMult", 1] call ACME_fnc_setVarNet;
@@ -25,7 +29,6 @@ if (!(_patient getVariable ["ACME_ETT_Inserted", false])) exitWith {
 
 // the shunt builds rather than appearing: the unventilated lung takes time to collapse, and the drift is what the
 // medic is meant to notice.
-private _dt = diag_deltaTime;
 private _drain = _patient getVariable ["ACME_o2Drain_mainstem", 0];
 private _cap = missionNamespace getVariable ["ACME_ettMainstemSatDrop", 22];
 _drain = (_drain + ((missionNamespace getVariable ["ACME_ettMainstemRate", 0.55]) * _dt)) min _cap;

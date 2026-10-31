@@ -21,8 +21,11 @@
 // to work. turn it on, open a thoracostomy, and answer the four questions in the patch notes. if the mouse holds
 // up, the other two follow in one build and a great deal of code gets deleted. if it does not, flip the switch
 // back and nothing was lost.
-params ["_dialogClass"];
-if (!hasInterface) exitWith {};
+params ["_dialogClass", ["_guard", {true}, [{}]], ["_guardArgs", [], [[]]], ["_completed", {}, [{}]]];
+if (!hasInterface) exitWith {[false, _guardArgs] call _completed;};
+// Callers with a deferred preparation episode can guard its exact identity.
+// Default callers retain the existing behavior; never close a newer UI first.
+if !(_guardArgs call _guard) exitWith {[false, _guardArgs] call _completed;};
 
 // record how this panel is being opened rather than what the setting says. they are not the same thing, because
 // display mode currently converts only the thoracostomy, so with the switch on, the iv and chest seal are still
@@ -31,7 +34,9 @@ if (!hasInterface) exitWith {};
 // closed it.
 if (!(missionNamespace getVariable ["ACME_minigame_displayMode", false])) exitWith {
     uiNamespace setVariable ["ACME_minigame_openedAsDisplay", false];
-    createDialog _dialogClass;  // the known-good path.
+    private _opened = createDialog _dialogClass;  // the known-good path.
+    [_opened, _guardArgs] call _completed;
+    _opened
 };
 
 uiNamespace setVariable ["ACME_minigame_openedAsDisplay", true];
@@ -42,7 +47,9 @@ if (isNull _parent) exitWith {
     // This is a dialog fallback, so do not leave the display-mode flag armed. installLightKey and close/reopen
     // behavior must follow the object that actually exists, not the requested experimental mode.
     uiNamespace setVariable ["ACME_minigame_openedAsDisplay", false];
-    createDialog _dialogClass;
+    private _opened = createDialog _dialogClass;
+    [_opened, _guardArgs] call _completed;
+    _opened
 };
 
 // close every open dialog first. this is the whole ballgame, and the first spike missed it.
@@ -61,7 +68,12 @@ while {dialog} do { closeDialog 0; };
 // a frame, so the closing dialog is fully gone before the display takes its place. creating a display in the same
 // frame that a dialog is tearing down is asking for the focus to land in the wrong place.
 [{
-    params ["_cls", "_p"];
-    if (isNull _p) exitWith { createDialog _cls; };
-    _p createDisplay _cls;
-}, [_dialogClass, _parent]] call CBA_fnc_execNextFrame;
+    params ["_cls", "_p", "_guard", "_guardArgs", "_completed"];
+    if !(_guardArgs call _guard) exitWith {[false, _guardArgs] call _completed;};
+    private _opened = if (isNull _p) then {
+        // The parent may disappear after the outer-frame lookup too.
+        uiNamespace setVariable ["ACME_minigame_openedAsDisplay", false];
+        createDialog _cls
+    } else {!isNull (_p createDisplay _cls)};
+    [_opened, _guardArgs] call _completed;
+}, [_dialogClass, _parent, _guard, +_guardArgs, _completed]] call CBA_fnc_execNextFrame;

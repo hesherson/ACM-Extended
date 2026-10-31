@@ -1,7 +1,7 @@
 """B13 source contracts and independent reference models; these do NOT execute SQF.
 
 The inherited B12 tests remain active. Per-class checks cover the entire supplied
-46-class inventory. Runtime visual, multiplayer and clinical validation are separate.
+47-class inventory, including Moxifloxacin. Runtime visual, multiplayer and clinical validation are separate.
 Run with PYTHONDONTWRITEBYTECODE=1 to keep an exact-source patch tree clean.
 """
 from __future__ import annotations
@@ -70,8 +70,17 @@ def permitted(name,iv,injectable=False):
     return (route=='ACM_ROUTE_IV')==iv
 
 class Inventory(unittest.TestCase):
-    def test_complete_source_class_count(self):self.assertEqual(len(MEDS),46)
-    def test_complete_source_concentration_count(self):self.assertEqual(len(SOURCES),26)
+    def test_complete_source_class_count(self):
+        self.assertEqual(len(MEDS),47)
+        self.assertIn('Moxifloxacin',MEDS)
+        self.assertEqual(MEDS['Moxifloxacin']['administrationType'],'ACM_ROUTE_PO')
+        self.assertEqual(MEDS['Moxifloxacin']['medicationType'],'Moxifloxacin')
+    def test_complete_source_concentration_count(self):
+        self.assertEqual(len(SOURCES),27)
+        self.assertIn('Moxifloxacin',SOURCES)
+        self.assertEqual(SOURCES['Moxifloxacin']['concentration'],400)
+        self.assertEqual(SOURCES['Moxifloxacin']['volume'],1)
+        self.assertEqual(SOURCES['Moxifloxacin']['dose'],'400mg')
     def test_unique_classnames(self):self.assertEqual(len(MEDS),len(MATRIX['medication_classes']))
     def test_source_concentrations_and_volumes_positive(self):
         for n,r in SOURCES.items():

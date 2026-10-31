@@ -17,6 +17,26 @@ private _svtHR = missionNamespace getVariable ["ACME_rhythmCustomSVTHR", mission
 private _svtSustain = missionNamespace getVariable ["ACME_rhythmCustomSVTSustainSec", 8];
 private _shockGrace = missionNamespace getVariable ["ACME_rhythmNativeShockGraceSec", 10];
 
+private _candidate = {
+    params ["_u"];
+    if (isNull _u || {!alive _u} || {!local _u}) exitWith {false};
+    private _rhythmActive = _u getVariable ["ACME_rhythm_active",0];
+    private _nativeRhythm = _u getVariable ["ACM_circulation_Cardiac_RhythmState",0];
+    private _arrest = _u getVariable ["ace_medical_inCardiacArrest",false];
+    private _thresholdPending = (_u getVariable ["ACME_rhythmThresholdKind",""]) != ""
+        || {!isNil {_u getVariable "ACME_rhythmThresholdStart"}}
+        || {(_u getVariable ["ACME_rhythmThresholdForced",""]) != ""};
+    private _legacyHold = (_u getVariable ["ACME_rhythmNativeHoldKind",""]) != ""
+        || {(_u getVariable ["ACME_rhythmNativeHoldRhythm",-1]) != -1}
+        || {(_u getVariable ["ACME_rhythmNativeHighHRFloorUntil",0]) > 0};
+    private _lidoCandidate = _nativeRhythm == 4 && {!_arrest}
+        && {count (_u getVariable ["ace_medical_medications",[]]) > 0};
+    private _hr = _u getVariable ["ace_medical_heartRate",0];
+    private _autoCandidate = _autoSVT && {!_arrest} && {_rhythmActive == 0}
+        && {_nativeRhythm in [0,5]} && {_hr >= _svtHR} && {_hr <= _acmHighHR};
+    _rhythmActive >= 100 || {_thresholdPending} || {_legacyHold} || {_lidoCandidate} || {_autoCandidate}
+};
+
 private _fnc_clearLegacyNativeHold = {
     params ["_u"];
     if ((_u getVariable ["ACME_rhythmNativeHoldKind", ""]) != ""
@@ -30,6 +50,8 @@ private _fnc_clearLegacyNativeHold = {
     _u setVariable ["ACME_rhythmNativeClearStart", -1, false];
 };
 
+private _patients = (missionNamespace getVariable ["ACME_rhythmThreshold_activePatients", []])
+    select {!isNull _x && {alive _x} && {local _x}};
 {
     private _u = _x;
     if (isNull _u || {!alive _u} || {!local _u}) then {continue};
@@ -112,4 +134,5 @@ private _fnc_clearLegacyNativeHold = {
 
     [objNull, _u, 104, "SVT", (_hr min _acmHighHR)] call ACME_fnc_rhythmToggle;
     _u setVariable ["ACME_rhythmThresholdForced", "SVT", false];
-} forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
+} forEach _patients;
+ACME_rhythmThreshold_activePatients = _patients select {[_x] call _candidate};

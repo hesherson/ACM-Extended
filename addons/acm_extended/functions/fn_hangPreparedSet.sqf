@@ -10,21 +10,35 @@
 // only a blood refill is allowed, and the clamped saline reserve stays.
 // a unit still running on this site refuses.
 // a set is single-use, so hanging it consumes it.
+// An installed-line connection supplies an explicit prepared ID and its exact
+// catheter UID. Native button/control payloads retain the list-selection path.
+private _explicitId = "";
+private _lineUID = "";
+if (!isNil "_this" && {_this isEqualType []}) then {
+    if ((_this param [0, ""]) isEqualType "") then {_explicitId = _this param [0, ""];};
+    if ((_this param [1, ""]) isEqualType "") then {_lineUID = _this param [1, ""];};
+};
 private _display = findDisplay 86000;
 if (isNull _display) exitWith {};
 
 private _setList = _display displayCtrl 86145;
 private _row = if (!isNull _setList) then { lbCurSel _setList } else { -1 };
-private _setId = if (_row >= 0) then { _setList lbData _row } else { "" };
+private _setId = if (_explicitId != "") then {_explicitId} else {if (_row >= 0) then { _setList lbData _row } else { "" }};
 if (_setId isEqualTo "") exitWith {
     ["Select a prepared IV set first.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
+// Preserve the exact card/list identity instead of asking the infusion picker
+// to guess it from whether the hidden native prepared list is visible.
+if (_lineUID == "" && {(missionNamespace getVariable ["ACME_piggybackPending", []]) isNotEqualTo []}) exitWith {["add",_setId] call ACME_fnc_piggybackWorkflow;};
 
 private _sets = ACE_player getVariable ["ACME_preparedIVSets", []];
 private _setIdx = _sets findIf { (_x param [0, ""]) isEqualTo _setId };
 if (_setIdx < 0) exitWith {
     ["That prepared set is no longer available.", 3, ACE_player, 13] call ace_common_fnc_displayTextStructured;
     uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
+};
+if !([ACE_player,"prepared",_setId] call ACME_fnc_inventoryLedgerPossessed) exitWith {
+    [ACE_player,"That set is awaiting inventory confirmation or is no longer carried."] call ACME_fnc_clinicalNotice;
 };
 private _rec = _sets select _setIdx;
 _rec params [["_id", ""], ["_bloodClass", ""], ["_bloodAction", ""], ["_salineClass", ""], ["_salineAction", ""], ["_tied", ""], ["_label", ""], ["_bloodCold", false], ["_kind", "yset"], ["_bloodExactVol", 0], ["_salineExactVol", 0]];
@@ -34,13 +48,27 @@ private _target = missionNamespace getVariable ["ACM_circulation_TransfusionMenu
 if (isNull _target) exitWith {
     ["No casualty selected.", 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
 };
+if (ACE_player getVariable ["ACME_persistenceFrozen", false]
+    || {_target getVariable ["ACME_persistenceFrozen", false]}) exitWith {
+    ["Equipment is being saved. The fluid remains in Prepared IV Sets.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;
+};
 private _bodyPart = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""];
 private _iv       = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true];
 private _site     = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_AccessSite", -1];
 if !([_target,_bodyPart,_iv,_site] call ACME_fnc_transfusionAccessValid) exitWith {
     ["Establish and select an IV/IO before hanging this set.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;
 };
+if (_kind == "bagOnly") then {
+    private _slot = [_target, _bodyPart, _iv, _site, _lineUID] call ACME_fnc_ivLineSlot;
+    _lineUID = _slot param [0, ""];
+};
+if (_kind == "bagOnly" && {_lineUID == ""}) exitWith {
+    ["This fluid bag has no tubing. Select an established IV with an attached, empty IV line.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
+};
 private _lineKey  = format ["%1#%2#%3", _bodyPart, _iv, _site];
+if ((_target getVariable ["ACME_yFlushJobs",createHashMap]) getOrDefault [toLowerANSI _lineKey,[]] isNotEqualTo []) exitWith {
+    ["Finish priming/flushing this line first.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;
+};
 
 // a set that came off a patient, through remove-to-list, is tied to that patient. untied sets hang on anyone.
 if (_tied != "" && {_tied != (netId _target)}) exitWith {
@@ -68,6 +96,10 @@ if (!_isSingle && {_salineAction isEqualTo ""}) exitWith {
 // the site state, for the one-line-per-site rule.
 private _lineYd = _lineKey in (_target getVariable ["ACME_YLines", []]);
 private _siteBags = (_target getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [_bodyPart, []];
+if (_lineUID != "") then {
+    private _detached = (_target getVariable ["ACME_detachedBags", []]) + (_target getVariable ["ACME_IV_DisconnectedBagUIDs", []]);
+    _siteBags = _siteBags select {!((_x param [8, ""]) in _detached)};
+};
 private _activeBlood = (_siteBags findIf {
     ((_x param [3, -1]) isEqualTo _site) && {(_x param [4, true]) isEqualTo _iv} &&
     {((_x param [0, ""]) in ["Blood", "FreshBlood"])} && {(_x param [1, 0]) > 0.01}
@@ -84,18 +116,18 @@ private _refuse = "";
 if (!_isSingle) then {
     // a y set needs a clear site: no existing y line and no running single line.
     if (_lineYd) then { _refuse = "This IV spot already has a Y line."; };
-    if (_refuse == "" && _activeOther) then { _refuse = "This IV/IO already has a line running."; };
+    if (_refuse == "" && _activeOther) then { _refuse = "There is already a bag on this line."; };
 } else {
     if (_lineYd) then {
         // an existing y line: only a blood unit can refill it, because the clamped saline reserve stays.
         if (_kind != "blood") then { _refuse = "This IV spot already has a Y line."; }
         else {
-            if (_activeBlood) then { _refuse = "A unit is still running on this Y line."; };
+            if (_activeBlood) then { _refuse = "There is already a bag on this line."; };
             if (_refuse == "" && _dirty) then { _refuse = "Flush the line (Flush Line) before hanging the next unit."; };
         };
     } else {
         // a non-y site: refuse only if a unit is actively running. an empty slot or a fresh site is fine to hang on.
-        if (_activeOther) then { _refuse = "This IV/IO already has a line running."; };
+        if (_activeOther) then { _refuse = "There is already a bag on this line."; };
     };
 };
 if (_refuse != "") exitWith {
@@ -141,10 +173,19 @@ private _epoch = [_target] call ACME_fnc_clinicalEpoch;
 private _serial = (missionNamespace getVariable ["ACME_preparedHangSerial", 0]) + 1;
 missionNamespace setVariable ["ACME_preparedHangSerial", _serial];
 private _requestId = format ["preparedHang:%1:%2:%3", clientOwner, _serial, floor (diag_tickTime * 1000)];
-private _warmer = ([ACE_player, _target, "ACME_BloodWarmer"] call ACME_fnc_treatmentSupplyCount) >= 1;
+private _warmer = false; // A warmer is fitted only through explicit Add Fluid Warmer custody.
 private _args = [_target, ACE_player, _requestId, _id, _bodyPart, _iv, _site, _epoch, _warmer, _freshEntry];
+if (_lineUID != "") then {_args pushBack _lineUID;};
+private _receipt = [ACE_player,"prepared",_id,_requestId] call ACME_fnc_inventoryLedgerReserve;
+if (_receipt isEqualTo []) exitWith {[ACE_player,"That prepared set is no longer carried."] call ACME_fnc_clinicalNotice;};
 _pending set [_requestId, [_target, _args, CBA_missionTime, false]];
 missionNamespace setVariable ["ACME_preparedHangPending", _pending];
 
 ["Connecting prepared set...", 2.5, ACE_player] call ace_common_fnc_displayTextStructured;
-[_target, "preparedHang", _args] call ACME_fnc_ownerDispatch;
+private _intents = ACE_player getVariable ["ACME_inventoryActionIntents",createHashMap]; _intents set [_requestId,["preparedHang",_args,0]]; ACE_player setVariable ["ACME_inventoryActionIntents",_intents,true];
+[ACE_player,_requestId,{
+    params ["_accepted","_args"];
+    _args params ["_target","_provider","_request"];
+    if (_accepted) then {[_target,"preparedHang",_args] call ACME_fnc_ownerDispatch;}
+    else {[_provider,_request,false] call ACME_fnc_inventoryLedgerSettle; [_request,false,"The prepared set could not be reserved."] call ACME_fnc_preparedHangResult;};
+},_args] call ACME_fnc_inventoryLedgerClaim;

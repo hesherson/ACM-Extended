@@ -27,6 +27,7 @@ _patient setVariable ["ACM_core_Sitting_State", false, true];
 
 // A reset/respawn also invalidates any local provider-roll theatre left from the previous unit state.
 if (local _patient) then {
+    if (!isNil "ACME_fnc_aiProtectionSync") then {[_patient, "reset"] call ACME_fnc_aiProtectionSync;};
     _patient setVariable ["ACME_rollProviderActive", false];
     _patient setVariable ["ACME_rollProviderToken", ""];
 };

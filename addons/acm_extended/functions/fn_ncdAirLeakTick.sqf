@@ -22,28 +22,37 @@
 // random clustering used elsewhere. a regular, quiet, wrong-sounding breath is what a medic notices when nothing
 // on the monitor has changed yet.
 params ["_patient"];
-if (isNull _patient) exitWith {};
-if (!alive _patient) exitWith {};
-if !(missionNamespace getVariable ["ACME_sys_ncdLeak", true]) exitWith {};
+if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+// Keep the five-second clinical cadence without replaying time spent with a
+// patent drain, disabled physiology or a different patient owner. Clock-prefixed
+// local bookkeeping is cleared by the existing locality/reset lifecycle.
+private _sameOwner = (_patient getVariable ["ACME_clock_ncdLeak_owner", -1]) == clientOwner;
+private _elapsed = [_patient, "ncdLeak", 0.25, 5] call ACME_fnc_clinicalTickDelta;
+private _pending = if (_sameOwner) then {_patient getVariable ["ACME_clock_ncdLeakPending", 0]} else {0};
+if !(missionNamespace getVariable ["ACME_sys_ncdLeak", true]) exitWith {
+    _patient setVariable ["ACME_clock_ncdLeakPending", 0, false];
+};
 
 // bilateral is free. it is the third needle onward that starts this, because at that point either the diagnosis
 // was wrong or the first two did not hold, and both of those mean more holes than the chest can close.
 private _n = _patient getVariable ["ACME_ncd_total", 0];
 private _free = missionNamespace getVariable ["ACME_ncd_freeCount", 2];
-if (_n <= _free) exitWith {};
+if (_n <= _free) exitWith {
+    _patient setVariable ["ACME_clock_ncdLeakPending", 0, false];
+};
 
 // a tube fixes it, which is the entire point of the mechanic. a chest with a drain in it is not accumulating air,
 // because the air has somewhere to go.
 if ((_patient getVariable ["ACM_breathing_Thoracostomy_State", 0]) >= 2) exitWith {
+    _patient setVariable ["ACME_clock_ncdLeakPending", 0, false];
     _patient setVariable ["ACME_ncd_leak", 0, true];
 };
 
-private _last = _patient getVariable ["ACME_ncd_leakLast", -1];
-private _now = CBA_missionTime;
-if (_last < 0) then { _patient setVariable ["ACME_ncd_leakLast", _now, false]; _last = _now; };
-private _dt = _now - _last;
-if (_dt < 5) exitWith {};
-_patient setVariable ["ACME_ncd_leakLast", _now, false];
+_pending = (_pending + _elapsed) max 0;
+_patient setVariable ["ACME_clock_ncdLeakPending", _pending, false];
+if (_pending < 5) exitWith {};
+private _dt = _pending min 5;
+_patient setVariable ["ACME_clock_ncdLeakPending", 0, false];
 
 // the rate. each needle past the free allowance adds its own slow contribution, so a chest that has been needled
 // five times fills three times faster than one needled three times. it is still slow: the default puts a single

@@ -1,0 +1,42 @@
+/* ACME transfusion only: original flat palette, fixed native geometry, functional flow and action cues only. */
+:root { font-family: var(--font-body); color: var(--color-muted); background: var(--color-clear); font-synthesis: none; color-scheme: normal; }
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; width: 100%; height: 100%; overflow-y: hidden; }
+html, body { overflow-x: clip; }
+button { font: inherit; }
+.acme-medical-surface { position: relative; height: 100vh; width: 100%; display: grid; grid-template-rows: repeat(var(--rows,2),minmax(0,1fr)); --space-row: var(--gap); gap: var(--space-row); }
+.acme-medical-surface .card {
+  --card-surface: var(--color-card); --card-rule: var(--color-rule);
+  position: relative; width: 100%; height: 100%; min-width: 0; border: 0; border-radius: var(--radius);
+  background: var(--color-card-opaque); background: var(--card-surface); color: var(--color-muted);
+  box-shadow: inset 0 0 0 1px var(--card-rule);
+  padding: 0; text-align: left; cursor: pointer; overflow: hidden;
+}
+.acme-medical-surface .card:hover { --card-surface: var(--color-card-hover); }
+.acme-medical-surface .card.selected { --card-surface: var(--color-card-selected); --card-rule: var(--color-selected-rule); }
+.acme-medical-surface .card.piggyback { --card-surface: var(--color-piggyback-card); --card-rule: var(--color-piggyback-rule); }
+.acme-medical-surface .card.piggyback.selected { --card-surface: var(--color-piggyback-selected); --card-rule: var(--color-piggyback-selected-rule); }
+.acme-medical-surface .card:active:not(:disabled) { --card-surface: var(--color-card-pressed); }
+.acme-medical-surface .card:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.acme-medical-surface .card:disabled { cursor: not-allowed; }
+.acme-medical-surface .fluid-icon, .acme-medical-surface .vial-icon, .acme-medical-surface .caption, .acme-medical-surface .volume { position: absolute; }
+.acme-medical-surface .fluid-icon img, .acme-medical-surface .vial-icon img { width: 100%; height: 100%; object-fit: contain; }
+.acme-medical-surface .caption { display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; line-height: 1; }
+.acme-medical-surface .name { color: var(--color-clinical,var(--color-native-label)); }
+.acme-medical-surface .thermal { justify-content: flex-end; }
+.acme-medical-surface .warming { color: var(--color-warming); }
+.acme-medical-surface .piggyback .status { color: var(--color-piggyback); }
+.acme-medical-surface .track { height: var(--track-height); background: var(--color-track); }
+.acme-medical-surface .fill { height: 100%; background: var(--color-fill); }
+.acme-medical-surface .volume { font-variant-numeric: tabular-nums; }
+.acme-medical-surface .mark { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.acme-medical-surface .mark i { position: absolute; left: 50%; width: 1px; background: var(--color-muted); }
+/* Native RscText has 0.008 UI-unit side margins; the browser uses the measured inset. */
+.acme-medical-surface .caption { padding-inline: var(--text-inset,0px); }
+
+/* Clip moving texture to the existing measured white fill. Motion never changes volume or card geometry. */
+.acme-medical-surface .track { position: relative; }
+.acme-medical-surface .flow-mask { position:absolute; inset:0 auto auto 0; height:100%; overflow:hidden; pointer-events:none; }
+.acme-medical-surface .flow-stripes { height:100%; background:var(--flow-texture) 0 0 / 100% 100%; animation:acme-flow .8s linear infinite; }
+@keyframes acme-flow { from { transform:translateX(-3.125%); } to { transform:translateX(0); } }
+.acme-medical-surface .mark-label { transition:font-size .25s linear; }

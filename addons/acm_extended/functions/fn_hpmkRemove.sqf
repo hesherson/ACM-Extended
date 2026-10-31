@@ -1,7 +1,9 @@
 // Stow/remove the HPMK from prepped, wrapped or exposed state and recover the reusable kit.
 // Patient state is mutated only by the patient owner. Inventory recovery is targeted to the receiver's owner.
 // _automatic is used by Get Up/mobile-state cleanup; manual treatment already plays its removal SFX in callbackStart.
-params [
+// The ACE callback's third argument is bodyPart; only internal cleanup callers pass the automatic flag.
+private _entryArgs = if ((_this param [2, false]) isEqualType "") then {_this select [0, 2]} else {_this};
+_entryArgs params [
     ["_medic", objNull, [objNull]],
     ["_patient", objNull, [objNull]],
     ["_automatic", false, [false]]

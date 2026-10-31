@@ -24,5 +24,6 @@
 // level higher and never reaches this function.
 params ["_unit", ["_animation", ""], ["_priority", 0]];
 if (isNull _unit) exitWith {};
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
 if ([_unit] call ACME_fnc_animBlocked) exitWith {};
 [_unit, _animation, _priority] call ace_common_fnc_doAnimation;

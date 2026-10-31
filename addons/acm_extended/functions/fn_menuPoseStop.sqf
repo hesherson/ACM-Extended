@@ -22,17 +22,20 @@ if (!alive _medic || {_medic getVariable ["ACE_isUnconscious", false]} || {[_med
 // First-contact menus never acquired empty hands or an animation-speed override.
 // Releasing that menu must leave its current weapon stance alone.
 if ((_medic getVariable ["ACME_menuPoseGenericEpoch", -1]) != _currentEpoch) exitWith {};
-private _rate = [] call ACME_fnc_choreographyRate;
+private _rate = if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+    [] call ACME_fnc_choreographyRate
+} else {1};
 _medic setAnimSpeedCoef _rate;
 ["ace_common_setAnimSpeedCoef", [_medic, _rate]] call CBA_fnc_globalEvent;
-[_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;
+[_medic, [_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation, 1] call ACME_fnc_doAnim;
 [{
-    params ["_medic", "_epoch", "_poseEpoch", "_continuousEpoch"];
+    params ["_medic", "_epoch", "_rate"];
+    // A stance handoff to DP is not ownership of animation SPEED. Do not strand this
+    // exit's coefficient merely because the provider has another empty-hands stance.
     if (!isNull _medic && {local _medic} && {(_medic getVariable ["ACME_menuPoseEpoch", -1]) == _epoch}
-        && {(_medic getVariable ["ACME_treatmentPoseEpoch", 0]) == _poseEpoch}
-        && {(missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", 0]) == _continuousEpoch}
-        && {!([_medic, true] call ACME_fnc_providerStanceOwned)}) then {
+        && {abs ((getAnimSpeedCoef _medic) - _rate) < 0.01}
+        && {!([_medic] call ACME_fnc_providerAnimSpeedOwned)}) then {
         _medic setAnimSpeedCoef 1;
         ["ace_common_setAnimSpeedCoef", [_medic, 1]] call CBA_fnc_globalEvent;
     };
-}, [_medic, _currentEpoch, _medic getVariable ["ACME_treatmentPoseEpoch", 0], missionNamespace getVariable ["ACM_core_ContinuousAction_Epoch", 0]], 0.85 / _rate] call CBA_fnc_waitAndExecute;
+}, [_medic, _currentEpoch, _rate], 0.85 / _rate] call CBA_fnc_waitAndExecute;

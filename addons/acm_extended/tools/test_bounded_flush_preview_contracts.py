@@ -58,7 +58,7 @@ def tag_save_contract(pending=None,draw=None,save=None,pick=None):
     require(save,'[ACE_player, _store] call ACME_fnc_narcStoreCommit;')
     tokens=[t.value for t in lex(save)]
     assert tokens.index('ACME_fnc_skPendingTagCommit')<tokens.index('ACME_fnc_skApplyPendingTag')<tokens.index('ACME_fnc_narcStoreCommit')
-    require(pick,'[10, _patient, _bodyPart, _flushClass]')
+    require(pick,'[10, _flushClass] call ACME_fnc_skApplySize')
 
 
 @pytest.mark.parametrize('color',['none','white_saline_flush','yellow_induction'])
@@ -112,7 +112,7 @@ def test_legacy_body_preview_helpers_delegate_without_rewriting_navigation(args)
     ('preview','hot','skBuildHotspots','(_flush != "") || {_syringeIndex >= 0}','_syringeIndex >= 0'),
     ('tag','pending','skPendingTagRender','(_view == "syringe");','(_view == "syringe") && {!_infusion};'),
     ('tag','save','skFlushSave','call ACME_fnc_skApplyPendingTag','call ACME_fnc_skCompoundLabel'),
-    ('tag','pick','skPickFlush','[10, _patient, _bodyPart, _flushClass]','[1, _patient, _bodyPart, _flushClass]'),
+    ('tag','pick','skPickFlush','[10, _flushClass] call ACME_fnc_skApplySize','[1, _flushClass] call ACME_fnc_skApplySize'),
 ])
 def test_current_contracts_reject_regressions_despite_comment_decoys(kind,field,name,old,new):
     check=preview_contract if kind=='preview' else tag_save_contract

@@ -7,6 +7,7 @@ if (!local _patient) exitWith {[_patient, "headElevDeath", [_patient]] call ACME
 if (canSuspend) exitWith {isNil {[_patient] call ACME_fnc_headElevDeathRelease;};};
 
 private _wasElevated = (_patient getVariable ["ACME_headElevated", false])
+    && {missionNamespace getVariable ["ACME_interventionAnimations", true]}
     && {_patient getVariable ["ACME_headElev_visualActive", true]};
 private _inVehicle = !isNull objectParent _patient;
 private _releaseTime = missionNamespace getVariable ["ACME_headElev_lowerAnimTime", 1.4];
@@ -21,6 +22,7 @@ _patient setVariable ["ACME_headElev_ResumePending", false, true];
 _patient setVariable ["ACME_headElev_TransportPending", nil, true];
 _patient setVariable ["ACME_headElev_poseToken", "", true];
 _patient setVariable ["ACME_headElev_visualActive", false, true];
+_patient setVariable ["ACME_headElev_noAnimation", false, true];
 _patient setVariable ["ACME_headElev_suspendVestLoadout", [], false];
 _patient setVariable ["ACME_headElev_suspendReadyAt", -1, false];
 

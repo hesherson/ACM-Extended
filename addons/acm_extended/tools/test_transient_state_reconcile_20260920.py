@@ -77,7 +77,9 @@ def test_direct_pressure_part_is_replicated():
 
 def test_transfusion_menu_explains_real_flow_blocks():
     src = read(ADDONS / "circulation/functions/fnc_openTransfusionMenu.sqf")
-    assert "IV placement band is still applied" in src
-    assert "AAJT-S compression is physically occluding" in src
-    assert "No forward perfusion during cardiac arrest" in src
-    assert 'ctrlSetText "Flow physically blocked"' in src
+    assert "GET_IV_FLOW_X" in src and "GET_IO_FLOW_X" in src
+    assert "_siteFlowRate > 0" in src
+    assert "IV placement band is still applied" not in src
+    assert "AAJT-S compression is physically occluding" not in src
+    assert "No forward perfusion during cardiac arrest" not in src
+    assert 'ctrlSetText "Flow physically blocked"' not in src

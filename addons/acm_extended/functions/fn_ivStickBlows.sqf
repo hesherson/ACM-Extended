@@ -5,7 +5,7 @@
 params [["_bodyPart", "", [""]], ["_site", ""], ["_gauge", 16, [0]],
     ["_hit", false, [true]], ["_accuracy", 1, [0]]];
 if (!_hit) exitWith {true};
-if !(_site isEqualType "" || {_site isEqualType 0}) exitWith {true};
+if !(_site isEqualTypeAny ["", 0]) exitWith {true};
 if !(_gauge in [14, 16, 18, 20]) exitWith {true};
 if (!finite _accuracy || {_accuracy < 0} || {_accuracy > 1}) exitWith {true};
 private _vein = [_bodyPart, _site] call ACME_fnc_ivVeinCatalog;

@@ -13,7 +13,7 @@ private _type = uiNamespace getVariable ["ACME_suction_type", -1];
 private _pin = uiNamespace getVariable ["ACME_laryngo_sucPinned", false];
 private _holding = (uiNamespace getVariable ["ACME_laryngo_held", ""]) == "suction";
 private _inMouth = uiNamespace getVariable ["ACME_laryngo_sucInMouth", false];
-private _valid = _sameLife && {!isNull _dlg} && {alive _patient} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])}
+private _valid = _sameLife && {!isNull _dlg} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])}
     && {_medic distance _patient <= 5 || {!isNull objectParent _medic && {objectParent _medic == objectParent _patient}}};
 if (_valid && {_inMouth}) then {
     if (_type == 1 && {(_pin || _holding)} && {uiNamespace getVariable ["ACME_laryngo_sucOn", false]}) then {_mode = if (_pin) then {"salad"} else {"hand"};};

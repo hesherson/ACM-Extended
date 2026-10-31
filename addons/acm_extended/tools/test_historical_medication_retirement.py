@@ -117,7 +117,8 @@ def suction_setup():
     oxygen=(ROOT/'addons/core/overrides/fnc_updateOxygen.sqf').read_text()
     fragment=oxygen[oxygen.index('[_patient] call ACME_fnc_suctionPhysiologyTick;'):oxygen.index('#define IDEAL_PPO2')]
     fragment=fragment.replace('ACM_TARGETVITALS_OXYGEN(_patient)','98')
-    return effects_setup()+'''
+    approx=(F/'fn_setVarNetApprox.sqf').read_text().replace('local _obj','_patientLocal').replace('owner _obj','_ownerNum')
+    return effects_setup()+'ACME_fnc_setVarNetApprox={'+code(approx)+'};'+'''
         private _dt=1;private _equipment=1;
         ACME_fnc_clinicalTickDelta={_dt};
         ACME_fnc_clinicalEpoch={1};

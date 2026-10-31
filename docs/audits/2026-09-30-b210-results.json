@@ -1,0 +1,90 @@
+{
+  "public_version": "1.2.4.1",
+  "runtime_revision": "NA8-B210-1.2.4.1-stable",
+  "base_commit": "653c746489895be8b3e9e2e4027cb938c33b623a",
+  "build": {
+    "batch": "B210",
+    "hemtt": "1.22.0",
+    "check_passed": true,
+    "release_no_bin_no_archive_passed": true,
+    "verified_pbos": 14,
+    "verified_signatures": 14,
+    "verified_component_configs": 14,
+    "signing_keys": 1,
+    "strict_native_owner_audit_violations": 0
+  },
+  "focused": {
+    "ownership_passed": 75,
+    "network_passed": 897,
+    "behavior_passed": 689,
+    "total_passed": 1661
+  },
+  "full_suite_green": false,
+  "comparisons": {
+    "b209": {
+      "passed": true,
+      "counts": {
+        "baseline": {
+          "error": 45,
+          "failed": 332,
+          "passed": 6110,
+          "skipped": 29
+        },
+        "current": {
+          "error": 45,
+          "failed": 332,
+          "passed": 6170,
+          "skipped": 29
+        }
+      },
+      "problems": [],
+      "resolved_collection_errors": [],
+      "new_passing_cases": 60,
+      "improved_existing_cases": 0
+    },
+    "b204": {
+      "passed": true,
+      "counts": {
+        "baseline": {
+          "error": 47,
+          "failed": 868,
+          "passed": 4879,
+          "skipped": 29
+        },
+        "current": {
+          "error": 45,
+          "failed": 332,
+          "passed": 6170,
+          "skipped": 29
+        }
+      },
+      "problems": [],
+      "resolved_collection_errors": [
+        "tools.test_fork_phase134_named_remote_command_endpoints: collection error resolved; 1 passing tests executed",
+        "tools.test_fork_phase87_narc_store_owner: collection error resolved; 1 passing tests executed"
+      ],
+      "new_passing_cases": 755,
+      "improved_existing_cases": 536
+    }
+  },
+  "remaining_failure_error_records": 377,
+  "final_run": {
+    "report": "b210-final-full.xml",
+    "sha256": "aec9774e270fbc94ac6fe88276649cd82ee6673dcf3f7d1fe9491cd92c089654",
+    "pytest_exit_code": 1,
+    "complete_rerun_after_all_runtime_and_test_changes": true,
+    "reconciled_records": 0,
+    "source_freeze_files": 39,
+    "source_changed_during_or_after_run": false,
+    "outcome_unit": "JUnit testcase identity, with duplicate occurrences preserved",
+    "console_accounting_note": "One temperature-assessment parent has two failing unittest subtests. Pytest console counts both failures and the completed parent; JUnit identity accounting records that parent as one failed case. Passing subtest counts are not additional passing testcase identities."
+  },
+  "ai_protection_execution_cases": 60,
+  "ace_fixture_archive_sha256": "68ea3359bc3aea116b53a7a01151426ceb293f1a12b9df491ca92b185ed88e0a",
+  "limits": [
+    "AI targeting, group knowledge and forced targeting by other mods are not executed by SQFVM.",
+    "Remaining fixture or unsupported-engine failures do not certify later assertions that have not executed.",
+    "Hardcore push worker retirement contains ownership loss but does not transfer an unsettled transaction or guarantee automatic continuation/refund.",
+    "Windows asset binarization, live Arma rendering/animations/network delivery, dedicated-server/two-client/HC acceptance and representative-load soak remain unverified."
+  ]
+}

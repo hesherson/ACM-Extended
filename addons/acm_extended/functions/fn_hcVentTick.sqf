@@ -11,12 +11,13 @@
 // enough of it and the lung stiffens, which raises the pressure needed, which tempts the operator to turn the
 // pressure limit up, which does more damage. that loop is the point.
 params ["_patient"];
-if (isNull _patient) exitWith {};
+if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+// VILI accrues over patient-owner clinical time. Frame duration would make
+// an identical ventilator exposure progress differently at 5 and 60 FPS.
+// Inactive passes establish a baseline without charging disconnected time.
+private _dt = [_patient, "hcVent", 0.25, 5] call ACME_fnc_clinicalTickDelta;
 if (!(missionNamespace getVariable ["ACME_hcEff_vent", false])) exitWith {};
 if (!(_patient getVariable ["ACME_vent_driving", false])) exitWith {};
-if (!alive _patient) exitWith {};
-
-private _dt = diag_deltaTime;
 private _vt = _patient getVariable ["ACME_vent_vti", 0];
 if (_vt <= 0) exitWith {};
 

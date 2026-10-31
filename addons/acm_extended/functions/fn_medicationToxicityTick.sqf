@@ -3,6 +3,10 @@
    A reversal cannot be immediately undone by replaying the same historical exposure. */
 params ["_patient"];
 if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+// No admitted medication means every native effective count below is zero.
+// Generations and fired latches are history, not an exposure. Avoid repeated
+// config/kinetics lookups for untreated casualties without caching later doses.
+if ((_patient getVariable ["ace_medical_medications", []]) isEqualTo []) exitWith {};
 private _handleOverdoseEffect = {
     params ["_patient", "_classname"];
 

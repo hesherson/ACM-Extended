@@ -37,6 +37,22 @@ class ACM_Medication {
             maxPainReduce = 0.45;
         };
 
+        // Infection support. The infection component reads this medication by its
+        // pharmacological name, so retain that identity rather than treating it as
+        // another analgesic.
+        class Moxifloxacin: ACM_PO_Medication {
+            medicationType = "Moxifloxacin";
+            timeInSystem = 7200;
+            timeTillMaxEffect = 600;
+            maxEffectTime = 2400;
+            maxDose = 0;
+            maxDoseDeviation = 0;
+            maxPainReduce = 0;
+            painReduce = 0;
+            viscosityChange = 0;
+            weightEffect = 0;
+        };
+
         class ACM_Inhalant_Medication {
             painReduce = 0;
             timeInSystem = 40;
@@ -482,6 +498,10 @@ class ACM_Medication {
         class Ertapenem {
             classnames[] = {"Ertapenem_IV", "Ertapenem"};
         };
+
+        class Moxifloxacin {
+            classnames[] = {"Moxifloxacin"};
+        };
     };
     class Concentration {
         class Naloxone {
@@ -560,6 +580,12 @@ class ACM_Medication {
             concentration = 312.5;
             dose = "1g/3.2ml";
             volume = 3.2;
+        };
+
+        class Moxifloxacin {
+            concentration = 400;
+            dose = "400mg";
+            volume = 1;
         };
 
         class Esmolol {

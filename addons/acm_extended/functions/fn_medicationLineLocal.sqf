@@ -2,19 +2,51 @@
    Receipts survive full-heal for the SESSION so a delayed ACK cannot refund an accepted dose.
    No new exposure is produced by a duplicate, rejected request or drug still in line dead space. */
 params ["_patient","_medic","_epoch","_id","_operation","_bodyPart",["_doses",[]],["_site",-2],["_identity",[]],["_meta",[]]];
-private _hcPush = _meta isEqualType [] && {(_meta param [0,""]) == "hcPush"};
+private _journal = _meta isEqualType [] && {(_meta param [0,""]) == "syringeDeliveryB285"};
+if (_journal && {canSuspend}) exitWith {isNil {_this call ACME_fnc_medicationLineLocal;};};
+private _hcPush = _meta isEqualType [] && {(_meta param [0,""]) == "hcPush"
+    || {_journal && {((_meta param [4,[]]) param [0,""]) == "hcPush"}}};
 if (isNull _patient) exitWith {};
 if (!local _patient) exitWith {[_patient,"medicationLine",_this] call ACME_fnc_ownerDispatch;};
 if (isNull _medic || {_id == ""}) exitWith {};
 private _receipts = _patient getVariable ["ACME_medicationReceiptsB14",createHashMap];
+private _fingerprint = if (_journal) then {[_patient,_meta param [1,""],_meta param [2,""],_meta param [3,""],_meta param [6,""]]} else {[]};
+private _remember = {
+    params ["_accepted","_reason"];
+    if (!_journal) exitWith {};
+    private _decisions = missionNamespace getVariable ["ACME_syringeDeliveryPatientDecisions",createHashMap];
+    _decisions set [_id,[_fingerprint,_accepted,_reason]];
+    missionNamespace setVariable ["ACME_syringeDeliveryPatientDecisions",_decisions];
+};
 private _reply = {
     params ["_accepted","_reason"];
+    [_accepted,_reason] call _remember;
     _receipts set [_id,[_accepted,_reason]];
     _patient setVariable ["ACME_medicationReceiptsB14",_receipts,true];
-    ["ACME_medicationAck",[_medic,_id,_accepted,_reason],_medic] call CBA_fnc_targetEvent;
+    if (_journal) then {
+        ["ACME_syringeDelivery",["receipt",_medic,_meta select 1,clientOwner,[_meta select 2,_meta select 3,_id,_patient,_accepted,_reason]]] call CBA_fnc_serverEvent;
+    } else {["ACME_medicationAck",[_medic,_id,_accepted,_reason],_medic] call CBA_fnc_targetEvent;};
 };
 private _prior = _receipts getOrDefault [_id,[]];
-if !(_prior isEqualTo []) exitWith {["ACME_medicationAck",[_medic,_id,_prior select 0,_prior select 1],_medic] call CBA_fnc_targetEvent;};
+private _conflictingDecision = false;
+if (_journal) then {
+    private _decision = (missionNamespace getVariable ["ACME_syringeDeliveryPatientDecisions",createHashMap]) getOrDefault [_id,[]];
+    if !(_decision isEqualTo []) then {
+        if ((_decision select 0) isEqualTo _fingerprint) then {_prior = [_decision select 1,_decision select 2];}
+        else {_conflictingDecision = true;};
+    };
+};
+if (_conflictingDecision) exitWith {};
+if !(_prior isEqualTo []) exitWith {
+    if (_journal) then {[_prior select 0,_prior select 1] call _reply;}
+    else {["ACME_medicationAck",[_medic,_id,_prior select 0,_prior select 1],_medic] call CBA_fnc_targetEvent;};
+};
+// Registered requests are dispatched to one captured patient ownership period.
+// A new patient owner may replay a known receipt, but missing replication cannot
+// prove that the old owner did not already apply the systemic dose.
+if (_journal && {(_meta param [5,-1]) != clientOwner
+    || {(_meta param [6,""]) == ""}
+    || {(_meta param [6,""]) != (missionNamespace getVariable ["ACME_syringeDeliveryMachineNonce",""])}}) exitWith {};
 if ((!_hcPush && {!alive _medic || {_medic getVariable ["ACE_isUnconscious",false]}})
     || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {[false,"patient/provider state changed"] call _reply};
 if (!_hcPush && {_medic distance _patient > 5 && {isNull objectParent _medic || {objectParent _medic != objectParent _patient}}}) exitWith {[false,"out of treatment range"] call _reply};
@@ -36,6 +68,7 @@ if (_operation == "administer" && {_iv} && {[_patient,_bodyPart,_site] call ACME
 // Do not add ACE medication records, line-rate queues, sedation state, IO pain, saline physiology or active-patient
 // enrollment. The local receipt is enough for an in-owner duplicate and avoids another replicated corpse ledger.
 if (!alive _patient) exitWith {
+    if (_journal) exitWith {[true,"postmortem: no physiology"] call _reply;true};
     _receipts set [_id, [true, "postmortem: no physiology"]];
     _patient setVariable ["ACME_medicationReceiptsB14", _receipts, false];
     ["ACME_medicationAck", [_medic,_id,true,"postmortem: no physiology"], _medic] call CBA_fnc_targetEvent;
@@ -93,6 +126,7 @@ if (_operation == "flush") then {
 };
 // Unscheduled commit: reserve receipt and drain before callbacks can reenter.
 _receipts set [_id,[true,"accepted"]];
+if (_journal) then {[true,"accepted"] call _remember;};
 _patient setVariable ["ACME_medicationReceiptsB14",_receipts,true];
 _patient setVariable ["ACME_pendingFlush",_pending,true];
 // The exact IO line has route-specific pain behavior. Medication pushes cause the severe pressure-pain response

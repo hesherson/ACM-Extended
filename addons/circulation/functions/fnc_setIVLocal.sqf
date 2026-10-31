@@ -53,7 +53,7 @@ private _retained = false;
     // bagIdentity stamps the source bag in place; fetch it to retain the UID.
     _bag = (_map get _bodyPart) select _forEachIndex;
     private _drug = (_entries findIf {(_x param [23, ""]) == _uid}) >= 0;
-    private _special = _bagType in ["FreshBlood","FBTK","ACME_SalineY","ACME_Empty","ACME_EmptySaline"];
+    private _special = _bagType in ["FreshBlood","FBTK","ACME_SalineY","ACME_Empty","ACME_EmptySaline","ACME_Propofol"];
     private _returnVolume = [_volume] call FUNC(getReturnVolume);
     private _item = if (_returnVolume > 0 && {!_drug} && {!_special}) then {
         [_bagType, _returnVolume, _bloodType] call FUNC(formatFluidBagName)
@@ -76,7 +76,7 @@ private _retained = false;
     };
 } forEach _bags;
 _map set [_bodyPart, _keep];
-[_patient, QGVAR(IV_Bags), _map] call ACME_fnc_setVarNet;
+[_patient, _map, true] call FUNC(setIVBagsState);
 [_patient, "ACME_detachedBags", _detached] call ACME_fnc_setVarNet;
 if (_doseChanged) then {[_patient, "ACME_infusion_BagMedications", _entries] call ACME_fnc_setVarNet;};
 _patient setVariable [format ["ACME_clampRate_%1_%2_%3", _part, _iv, _accessSite], -1, false];

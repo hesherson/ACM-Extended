@@ -26,8 +26,11 @@ if (_reason in ["awakeTube", "tubeManip"]) exitWith {
     private _amount = if (_reason == "awakeTube") then {1 + floor random 2} else {2 + floor random 3};
     private _stage = (_previousVomit + _amount) min 8;
     [_patient, [["vomit", _old + 1], ["vomitCount", (_remaining - 1) max 0], ["vomitGrace", CBA_missionTime]], true] call ACM_airway_fnc_setAirwayState;
-    _patient setVariable ["ACME_laryngo_emesis", [_id, _old + 1, _stage], true];
-    _patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, [_id, _old + 1, _stage]], _stage], true];
+    private _emesis = [_patient,"make",_id,_old + 1,_stage] call ACME_fnc_aspirationEventKey;
+    if !(_emesis isEqualTo []) then {
+        _patient setVariable ["ACME_laryngo_emesis", _emesis, true];
+        _patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, _emesis], _stage], true];
+    };
     _patient setVariable ["ACME_laryngo_soiled", "vomit", true];
     _patient setVariable ["ACME_laryngo_gagMisses", 0, true];
     [_patient] call ACME_fnc_vomitDislodgeOPA;
@@ -118,8 +121,11 @@ private _previousVomit = if ((_poolBefore select 1) == "v") then {_poolBefore se
 private _stage = (_previousVomit + _amount) min 8;
 [_patient, [["vomit", _old + 1], ["vomitCount", (_remaining - 1) max 0], ["vomitGrace", CBA_missionTime]], true] call ACM_airway_fnc_setAirwayState;
 // Atomic, event-specific visual volume; all open views use the same randomized amount.
-_patient setVariable ["ACME_laryngo_emesis", [_id, _old + 1, _stage], true];
-_patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, [_id, _old + 1, _stage]], _stage], true];
+private _emesis = [_patient,"make",_id,_old + 1,_stage] call ACME_fnc_aspirationEventKey;
+if !(_emesis isEqualTo []) then {
+    _patient setVariable ["ACME_laryngo_emesis", _emesis, true];
+    _patient setVariable ["ACME_laryngo_pool", [[_old + 1, 0, _emesis], _stage], true];
+};
 _patient setVariable ["ACME_laryngo_soiled", "vomit", true];
 _patient setVariable ["ACME_laryngo_gagMisses", 0, true];
 _patient setVariable ["ACME_laryngo_missTolerance", 3 + floor random 3, true];

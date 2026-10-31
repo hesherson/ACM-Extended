@@ -17,6 +17,8 @@
  */
 
 params ["_patient", "_partIndex"];
+// Retain injury history for the next wake even if the fracture is treated before then.
+if (local _patient && {_partIndex in [2,3]}) then {_patient setVariable ["ACME_wakeHadArmFracture",true,true];};
 private _acmeReconcile = "B106:fracturePainChance";
 
 if !(GVAR(enableFractureSeverity)) exitWith {};

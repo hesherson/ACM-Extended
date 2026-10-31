@@ -47,7 +47,7 @@ def test_auscultate_chest_keeps_group_child_indent():
 
 def test_direct_pressure_activity_log_exact_limb_wording():
     limb = text('functions/fn_directPressureLimb.sqf')
-    assert '"%1 started Direct pressure on %2"' in limb
+    assert '"%1 applied direct pressure to %2"' in limb
     assert '[_bodyPart, "abbr"] call ACME_fnc_bodyPartName' in limb
     body = text('functions/fn_bodyPartName.sqf')
     for short in ('LUE', 'RUE', 'LLE', 'RLE'):
@@ -55,8 +55,8 @@ def test_direct_pressure_activity_log_exact_limb_wording():
 
 
 def test_direct_pressure_torso_self_and_stop_use_same_log_grammar():
-    assert '"%1 started Direct pressure on %2"' in text('functions/fn_directPressureTorso.sqf')
-    assert '"%1 started Direct pressure on own %2"' in text('functions/fn_directPressureSelf.sqf')
+    assert '"%1 applied direct pressure to %2"' in text('functions/fn_directPressureTorso.sqf')
+    assert '"%1 applied direct pressure to %2"' in text('functions/fn_directPressureSelf.sqf')
     assert '"%1 stopped Direct pressure on %2"' in text('functions/fn_directPressureStop.sqf')
 
 

@@ -1,0 +1,135 @@
+{
+  "build": "B214",
+  "public_version": "1.2.4.1",
+  "base": "23b27fb090a5adc4b67989279273c12631ad5c09",
+  "required_checks": {
+    "ownership": 75,
+    "network": 1452,
+    "behavior": 689
+  },
+  "required_total": 2216,
+  "additional_version_regressions": 24,
+  "hemtt_check": true,
+  "release_no_bin": true,
+  "package": {
+    "pbos": 14,
+    "signatures": 14,
+    "keys": 1,
+    "verified_configs_and_signatures": [
+      {
+        "pbo": "ACM_acm_extended.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "extended"
+      },
+      {
+        "pbo": "ACM_airway.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "airway"
+      },
+      {
+        "pbo": "ACM_breathing.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "breathing"
+      },
+      {
+        "pbo": "ACM_cbrn.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "cbrn"
+      },
+      {
+        "pbo": "ACM_circulation.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "circulation"
+      },
+      {
+        "pbo": "ACM_core.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "core"
+      },
+      {
+        "pbo": "ACM_damage.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "damage"
+      },
+      {
+        "pbo": "ACM_disability.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "disability"
+      },
+      {
+        "pbo": "ACM_evacuation.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "evacuation"
+      },
+      {
+        "pbo": "ACM_gui.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "gui"
+      },
+      {
+        "pbo": "ACM_itemtext.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "itemtext"
+      },
+      {
+        "pbo": "ACM_main.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "main"
+      },
+      {
+        "pbo": "ACM_mission.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "mission"
+      },
+      {
+        "pbo": "ACM_zeus.pbo",
+        "signature_verified": true,
+        "config_build": "B214",
+        "protocol": 1,
+        "component": "zeus"
+      }
+    ]
+  },
+  "native_config": {
+    "compiled_concrete_states_checked": 16,
+    "native_end_is_external_reference": true,
+    "actual_b213_defect_rejected": true,
+    "source_and_package_match_count": 29,
+    "live_arma_config_merge_executed": false
+  },
+  "production_sha256": {
+    "addons/acm_extended/config.cpp": "16352d2ef4298605d03c1a302ff7e5113918becce4ebd415112ea3652b85fd6e",
+    "addons/acm_extended/functions/fn_headElevMedicSeq.sqf": "37e75bffdfe891737b69a62ea804686d813f2b9659be773698deb27769c3812c",
+    "addons/acm_extended/functions/fn_initForkStartupRuntime.sqf": "2274ef8e0dfd0953ac2cacc569d785fdcef51d83d5aa4051261078feb8b69be0",
+    "addons/main/script_build.hpp": "53b5381b530129bb01518f1aebafffdf57468863235ab6ec6142b4ff0c51ab10"
+  },
+  "full_suite_rerun": false,
+  "live_arma_rendering_verified": false,
+  "live_multiplayer_verified": false
+}

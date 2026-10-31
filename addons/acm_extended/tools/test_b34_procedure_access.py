@@ -85,10 +85,10 @@ class ProcedureAccessContracts(unittest.TestCase):
         self.assertEqual(kit.count('call ace_medical_treatment_fnc_hasItem'), 2)
         click = source("thoraMouseDown")
         begin = click.index('private _usedKit = _kit == "ACM_ThoracostomyKit"')
-        end = click.index('[_patient, _side, "open", "finger"] call ACME_fnc_thoraSideStateCommit;', begin)
+        end = click.index('call ACME_fnc_thoraAftercareRequest;', begin)
         debit = click[begin:end]
         self.assertIn('if (_usedKit) then', debit)
-        self.assertIn('call ace_medical_treatment_fnc_useItem', debit)
+        self.assertIn('call ACME_fnc_treatmentSupplyTake', debit)
         self.assertIn('if (_kit == "") exitWith {false}', debit)
         self.assertNotIn('removeItem "ACE_surgicalKit"', click)
 
@@ -105,13 +105,14 @@ class ProcedureAccessContracts(unittest.TestCase):
         text = source("thoraMouseDown")
         start = text.index('private _tubeMedic')
         tube = text[start:]
-        self.assertLess(tube.index('call ACME_fnc_thoraClosureMode'), tube.index('removeItem "ACM_ChestTubeKit"'))
-        self.assertLess(tube.index('>= _tubeBefore) exitWith'), tube.index('[_patient, _side, "tube", true] call ACME_fnc_thoraSideStateCommit;'))
+        self.assertLess(tube.index('call ACME_fnc_thoraClosureMode'), tube.index('call ACME_fnc_treatmentSupplyTake'))
+        self.assertLess(tube.index('if (_tubeReceipt isEqualTo []) exitWith {false};'), tube.index('[_patient, _side, "tube", true] call ACME_fnc_thoraSideStateCommit;'))
+        self.assertLess(tube.index('call ACME_fnc_treatmentSupplyRefund'), tube.index('[_patient, _side, "tube", true] call ACME_fnc_thoraSideStateCommit;'))
         self.assertIn('Thoracostomy_State", 0]) != 2', tube)
 
     def test_ncd_rechecks_at_authoritative_acceptance_before_snapshot_changes(self):
         request = source("chestSealRequest")
-        self.assertLess(request.index('call ACME_fnc_procedureAllowed'), request.index('_medic removeItem'))
+        self.assertLess(request.index('call ACME_fnc_procedureAllowed'), request.index('call ACME_fnc_treatmentSupplyTake'))
         server = source("chestSealEdit")
         self.assertLess(server.index('call ACME_fnc_procedureAllowed'), server.index('switch (_op)'))
         self.assertIn('ACME_CS_editResults set', server)

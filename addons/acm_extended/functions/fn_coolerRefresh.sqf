@@ -7,33 +7,40 @@
 // lbdata on 87410 to know which unit is selected, keeps working unchanged: clicking a bay selects the matching
 // mirror row.
 private _dlg = uiNamespace getVariable ["ACME_CLR_DLG", displayNull];
-private _class = uiNamespace getVariable ["ACME_CLR_Class", ""];
-// self-heal: if the open path did not leave a class in uinamespace, from a timing problem or the wrong entry point,
-// resolve the cooler the player is actually carrying, so the panel still populates instead of going blank.
-if (_class == "" || {(_class find "ACME_BloodCooler_") != 0}) then {
-    private _carried = items ACE_player;
-    {
-        if (_x in _carried) exitWith { _class = _x; };
-    } forEach ["ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U"];
-    if (_class != "") then { uiNamespace setVariable ["ACME_CLR_Class", _class]; };
+if (isNull _dlg) exitWith {};
+private _rows=[ACE_player] call ACME_fnc_coolerRows;
+private _sid=uiNamespace getVariable ["ACME_CLR_Id",""];
+private _hit=_rows findIf {(_x select 0)==_sid};
+private _ready=_hit>=0;
+(_dlg displayCtrl 87412) ctrlEnable _ready;
+(_dlg displayCtrl 87413) ctrlEnable _ready;
+if (!_ready) exitWith {(_dlg displayCtrl 87403) ctrlSetText "Waiting for cooler inventory synchronization...";};
+private _state=[(_rows select _hit) select 1] call ACME_fnc_coolerAdvance;
+private _class=_state select 0;
+uiNamespace setVariable ["ACME_CLR_Class",_class];
+private _contents=_state select 2;
+_dlg setVariable ["ACME_CLR_RenderState",[_sid,_state]];
+private _capacity=getNumber(configFile >> "CfgWeapons" >> _class >> "ACME_coolerCapacityMl");
+private _used=0;{_used=_used+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach _contents;
+private _cap=(ceil (_capacity/500)) max count _contents;
+private _selector=_dlg displayCtrl 87422;
+_selector setVariable ["ACME_filling",true];
+lbClear _selector;
+{
+    private _i=_selector lbAdd format ["%1 (%2)",getText(configFile >> "CfgWeapons" >> ((_x select 1) select 0) >> "displayName"),_forEachIndex+1];
+    _selector lbSetData [_i,_x select 0];
+} forEach _rows;
+_selector lbSetCurSel _hit;
+_selector setVariable ["ACME_filling",false];
+(_dlg displayCtrl 87402) ctrlSetText getText(configFile >> "CfgWeapons" >> _class >> "displayName");
+(_dlg displayCtrl 87421) ctrlSetText format ["%1 mL",_capacity];
+private _start=_state select 1;
+private _chain=getNumber(configFile >> "CfgWeapons" >> _class >> "ACME_coolerColdChainTime");
+private _remaining=if (_chain<=0) then {-1} else {(_chain-(serverTime-_start)) max 0};
+private _coldStr=if (_remaining<0) then {"coolant: stable"} else {
+    if (_remaining>0) then {format ["coolant: %1 min left",ceil(_remaining/60)]} else {"COOLANT EXPIRED - contents warming"}
 };
-
-private _cap   = floor ((getNumber (configFile >> "CfgWeapons" >> _class >> "ACME_coolerCapacityMl")) / 500);
-private _store = ACE_player getVariable ["ACME_coolerStore", createHashMap];
-private _contents = _store getOrDefault [_class, []];
-
-(_dlg displayCtrl 87402) ctrlSetText (getText (configFile >> "CfgWeapons" >> _class >> "displayName"));
-(_dlg displayCtrl 87421) ctrlSetText (format ["x%1 UNIT%2", _cap, ["S",""] select (_cap == 1)]);
-
-// the coolant remaining.
-private _coolant = ACE_player getVariable ["ACME_coolerCoolant", createHashMap];
-private _start   = _coolant getOrDefault [_class, time];
-private _chain   = getNumber (configFile >> "CfgWeapons" >> _class >> "ACME_coolerColdChainTime");
-private _rem     = if (_chain <= 0) then { -1 } else { (_chain - (time - _start)) max 0 };
-private _coldStr = if (_rem < 0) then { "coolant: stable" } else {
-    if (_rem > 0) then { format ["coolant: %1 min left", ceil (_rem / 60)] } else { "COOLANT EXPIRED - contents warming" };
-};
-(_dlg displayCtrl 87403) ctrlSetText format ["%1 of %2 bays filled    -    %3", count _contents, _cap, _coldStr];
+(_dlg displayCtrl 87403) ctrlSetText format ["%1 / %2 mL   -   %3",_used,_capacity,_coldStr];
 
 // the mirror list, off-screen, which drives the selection and the existing load and unload code.
 private _lin = _dlg displayCtrl 87410;

@@ -19,7 +19,9 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart", ["_size", 10]];
+params ["_medic", "_patient", "_bodyPart", ["_size", 10], ["_ready", [], [[]]]];
+if (isNull _medic || {!local _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
+ACE_player = _medic;
 
 private _inject = true;
 
@@ -28,6 +30,7 @@ if (isNull _patient) then {
     _patient = _medic;
 };
 
+GVAR(SyringeDraw_Medic) = _medic;
 GVAR(SyringeDraw_MedicationList) = [];
 GVAR(SyringeDraw_InventorySelection) = 0;
 
@@ -56,9 +59,9 @@ private _fnc_updateSelectedMedication = {
     GVAR(SyringeDraw_MaxDose) = getNumber (configFile >> "ACM_Medication" >> "Concentration" >> GVAR(SyringeDraw_Medication) >> "volume");
 };
 
-[[_medic, _patient, _bodyPart, [_inject, _size, _fnc_updateSelectedMedication]], { // On Start
+[[_medic, _patient, _bodyPart, [_inject, _size, _fnc_updateSelectedMedication, _ready]], { // On Start
     params ["_medic", "_patient", "_bodyPart", "_extraArgs"];
-    _extraArgs params ["_inject", "_size"];
+    _extraArgs params ["_inject", "_size", "", ["_ready",[]]];
 
     createDialog QGVAR(SyringeDraw_Dialog);
     uiNamespace setVariable [QGVAR(SyringeDraw_DLG),(findDisplay IDC_SYRINGEDRAW)];
@@ -168,6 +171,9 @@ private _fnc_updateSelectedMedication = {
 
         _ctrlBText ctrlSetText format ["%1 (%2)", ([_patient, false, true] call ACEFUNC(common,getName)), _bodyPartString];
     };
+    if (count _ready == 2 && {(_ready select 1) isEqualType {}}) then {
+        [_ready select 0,_display] call (_ready select 1);
+    };
 }, { // On cancel
     params ["_medic", "_patient", "_bodyPart"];
 
@@ -223,7 +229,7 @@ private _fnc_updateSelectedMedication = {
         };
     };
 
-    if (GVAR(SyringeDraw_Moving)) then {
+    if (GVAR(SyringeDraw_Moving) && {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) then {
         // In-place size changes update the barrel and travel limits without
         // restarting this continuous action. Use that barrel's current capacity.
         _size = GVAR(SyringeDraw_Size);

@@ -18,7 +18,7 @@
 
 params ["_unit", "_carrier"];
 
-if (ACE_player != _unit) exitWith {};
+if ((call ACME_fnc_controlledProvider) != _unit) exitWith {};
 
 ["", LLSTRING(CancelCarrying), ""] call ACEFUNC(interaction,showMouseHint);
 GVAR(Carrier) = _carrier;

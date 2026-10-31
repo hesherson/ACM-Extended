@@ -4,6 +4,7 @@ B170 originally made presentation preflight bounded and fail-open. B177 removes 
 presentation is now strictly non-blocking and native treatment starts on the accepted click.
 """
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 TREATMENT = ROOT / "addons" / "core" / "overrides" / "fnc_treatment.sqf"
@@ -47,10 +48,25 @@ def test_provider_owned_animation_prep_is_nonblocking():
     marker = s.index("// Presentation begins now but never delays native progress")
     end = s.index("// A newly accepted head-position action", marker)
     block = s[marker:end]
-    assert 'if (_ownsProviderAnim)' in block
+    from test_b241_current_ui_expectations import has
+    assert has(block, 'if (_animationsEnabled && {_ownsProviderAnim}) then {')
     assert 'call ACME_fnc_menuPoseStop' in block
     assert 'call ACME_fnc_medicAnimationPrep' in block
     assert "waitUntil" not in block
+
+
+@pytest.mark.parametrize('old,new', [
+    ('if (_animationsEnabled && {_ownsProviderAnim}) then {', 'if (true && {_ownsProviderAnim}) then {'),
+    ('if (_animationsEnabled && {_ownsProviderAnim}) then {', 'if (_animationsEnabled && {true}) then {'),
+])
+def test_nonblocking_prep_contract_rejects_ignored_setting_or_pose_owner(monkeypatch, old, new):
+    real=read
+    current=real(TREATMENT)
+    assert old in current
+    broken=current.replace(old,new)
+    monkeypatch.setitem(globals(), 'read', lambda path: broken if path==TREATMENT else real(path))
+    with pytest.raises(AssertionError):
+        test_provider_owned_animation_prep_is_nonblocking()
 
 
 def test_native_treatment_call_remains_after_nonblocking_presentation_setup():

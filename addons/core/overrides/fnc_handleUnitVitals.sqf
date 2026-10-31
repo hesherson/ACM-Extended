@@ -30,6 +30,9 @@ if (_elapsed > 7 && (GVAR(NextWarningTime) < CBA_missionTime)) then {
     WARNING_1("VITALS TIME BETWEEN SYNC IS LONG (%1s)",_elapsed);
 };
 
+private _acmePerf = missionNamespace getVariable ["ACME_performance_enabled", false];
+private _acmePerfGeneration = if (_acmePerf) then {(missionNamespace getVariable ["ACME_performance_state", createHashMap]) get "generation"} else {-1};
+private _acmePerfStart = if (_acmePerf) then {diag_tickTime} else {0};
 BEGIN_COUNTER(Vitals);
 
 _unit setVariable [QACEGVAR(medical_vitals,lastTimeUpdated), CBA_missionTime];
@@ -90,11 +93,11 @@ private _coSensitivityAdjustment = 0;
 private _breathingEffectivenessAdjustment = 0;
 private _adjustments = _unit getVariable [VAR_MEDICATIONS,[]];
 
-private _HRAdjustmentMap = +GVAR(MedicationTypes_MaxHRAdjust);
-private _RRAdjustmentMap = +GVAR(MedicationTypes_MaxRRAdjust);
-private _painSuppressAdjustmentMap = +GVAR(MedicationTypes_MaxPainAdjust);
-
 if (_adjustments isNotEqualTo []) then {
+    // These working copies are consumed only by the medication branch. Untreated casualties need none.
+    private _HRAdjustmentMap = +GVAR(MedicationTypes_MaxHRAdjust);
+    private _RRAdjustmentMap = +GVAR(MedicationTypes_MaxRRAdjust);
+    private _painSuppressAdjustmentMap = +GVAR(MedicationTypes_MaxPainAdjust);
     private _deleted = false;
     {
         _x params ["_medication", "_timeAdded", "_timeTillMaxEffect", "_maxTimeInSystem", "_hrAdjust", "_painAdjust", "_flowAdjust", "_administrationType", "_maxEffectTime", "_rrAdjust", "_coSensitivityAdjust", "_breathingEffectivenessAdjust", "_concentration", "_medicationType"];
@@ -354,7 +357,14 @@ switch (true) do {
 
 END_COUNTER(Vitals);
 
-//placed outside the counter as 3rd-party code may be called from this event
+//placed outside the ACE counter as 3rd-party code may be called from this event.
+// The opt-in ACME total deliberately includes synchronous listeners; its nested event row isolates their cost.
+private _acmePerfEventStart = if (_acmePerf) then {diag_tickTime} else {0};
 [QACEGVAR(medical,handleUnitVitals), [_unit, _deltaT]] call CBA_fnc_localEvent;
+if (_acmePerf) then {
+    private _acmePerfEnd = diag_tickTime;
+    ["handleUnitVitalsEvent", (_acmePerfEnd - _acmePerfEventStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;
+    ["handleUnitVitals", (_acmePerfEnd - _acmePerfStart) * 1000, -1, _acmePerfGeneration] call ACME_fnc_performanceRecord;
+};
 
 true

@@ -13,6 +13,13 @@ if (_s isEqualType [] && {count _s==9} && {(_s select 0)==1}
     if (!(_native isEqualType 0) || {!finite _native}) then {_native=_s select 7;};
     _native=_native max 0 min 4;
     private _tension=_patient getVariable ["ACM_breathing_TensionPneumothorax_State",false];
+    // B271 observation is stricter than an older build's quiet-air timer. Adopt
+    // old/save-restored episodes without granting their old observation credit.
+    if !((_patient getVariable ["ACME_ptx_observationRevision", 0]) isEqualTo 1) then {
+        _s set [3, 0];
+        [_patient,"ACME_ptx_observationRevision",1] call ACME_fnc_setVarNet;
+        [_patient,_s,_tension] call ACME_fnc_ptxPublish;
+    };
     // Native Zeus or another injury source may deliberately set native severity.
     // Equal projection values (including save/load) never reseed a settled leak.
     if (_native!=(_s select 7)) then {
@@ -40,5 +47,6 @@ if (_tension) then {_air=4;};
 private _leak=if (_air>0) then {(_air*0.20) min 0.8} else {0};
 private _ncd=if (count (_patient getVariable ["ACME_CS_ncdPlacedSides",[]])>0) then {1} else {0};
 _s=[1,_air,_leak,0,if (_tension) then {1} else {0},_ncd,if (_air>0) then {1} else {0},_air,_air min 1];
+[_patient,"ACME_ptx_observationRevision",1] call ACME_fnc_setVarNet;
 [_patient,_s,_tension] call ACME_fnc_ptxPublish;
 _s

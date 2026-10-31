@@ -51,7 +51,12 @@ private _timeStamp = format ["%1:%2", _hour, [_minute, 2] call CBA_fnc_formatNum
 private _logVarName = format ["ace_medical_log_%1", _logType];
 private _log = _unit getVariable [_logVarName, []];
 
-if (count _log >= 8) then {
+if (_logType == "quick_view" && {_message == "Pulse oximeter (%1): %2"}) then {
+    _log = _log select {(_x param [0, ""]) != _message
+        || {((_x param [2, []]) param [0, ""]) != (_arguments param [0, ""])}};
+};
+private _limit = [8, 32] select (_logType == "quick_view");
+while {count _log >= _limit} do {
     _log deleteAt 0;
 };
 

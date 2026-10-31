@@ -28,8 +28,9 @@ def assert_debug_component_contract():
     has(read('debugMenu'), 'call ACME_fnc_debugMenuClinical;')
     rows = debug_rows()
     has(rows, '([_patient] call ACME_fnc_sedationComponents) params ["_ket","_prop","_mid","_fent","_adjunct","_sed"];')
-    has(rows, '["Ket",_ket toFixed 2,_cLabel,"Prop",_prop toFixed 2,_cLabel] call _pair')
-    has(rows, '["Mid",_mid toFixed 2,_cLabel,"Fent",_fent toFixed 2,_cLabel] call _pair')
+    has(rows, '["Sedation load",_sed toFixed 2')
+    has(rows, '["Paralyzed",[_par] call _yn')
+    assert '"Ket"' not in rows and '"Prop"' not in rows  # B213 drug amounts have a separate complete catalog.
 
 
 def emma_setup():
@@ -39,11 +40,13 @@ def emma_setup():
         ace_common_fnc_getCountOfItem = {_inventory};
         BIS_fnc_rscLayer = {0};
     '''
-    for name in ('emmaAirwayKind','emmaCanAttachIGel','emmaIGelStateCommit','emmaMarkContact','emmaAttachIGel','emmaRemoveIGel'):
+    for name in ('itemCount','treatmentSupplyOrder','treatmentSupplyCount','emmaAirwayKind','emmaCanAttachIGel','emmaIGelStateCommit','emmaMarkContact','emmaAttachIGel','emmaRemoveIGel'):
         source = read(name)
         for old,new in [
             ('_patient isKindOf "CAManBase"','_isMan'),
             ('_medic isKindOf "CAManBase"','true'),
+            ('objectParent _x','objNull'),
+            ('itemCargo _vehicle','[]'),
             ('(vehicle _medic != _medic)','_aboard'),
             ('(vehicle _medic) isEqualTo (vehicle _patient)','_sameVehicleBoundary'),
             ('getPlayerUID _medic','"provider-uid"'),
@@ -115,10 +118,11 @@ def test_clinical_debug_keeps_each_normalized_component_in_its_own_column(values
         private _pair={_this}; private _sect={_this}; private _yn={_this select 0};
         ACME_fnc_rocuroniumOnBoard={0};
     ''' + 'ACME_fnc_sedationComponents = {' + str(values) + '};' + debug_rows() + f'''
-        [count _right == 5,"debug rows missing"] call _check;
-        [(_right select 2) isEqualTo ["Ket",({values[0]}) toFixed 2,"label","Prop",({values[1]}) toFixed 2,"label"],"ketamine and propofol columns mixed"] call _check;
-        [(_right select 3) isEqualTo ["Mid",({values[2]}) toFixed 2,"label","Fent",({values[3]}) toFixed 2,"label"],"midazolam and fentanyl columns mixed"] call _check;
-        [((_right select 1) select 1) == (({values[5]}) toFixed 2),"total not supplied component result"] call _check;
+        // B220 removes the duplicate blank before this section, not either clinical row.
+        [count _right == 3,"separate nondrug sedation rows missing or duplicate gap retained"] call _check;
+        [(_right select 0) isEqualTo ["SEDATION / AWARENESS"],"sedation section header missing"] call _check;
+        [((_right select 1) select 0)=="Sedation load" && {{((_right select 1) select 1)==(({values[5]}) toFixed 2)}},"total not supplied normalized component result"] call _check;
+        [(_right select 2) isEqualTo ["Paralyzed",false,"mute","Aware",false,"good"],"paralysis/awareness values mixed with drug quantities"] call _check;
     ''')
 
 

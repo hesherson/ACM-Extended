@@ -6,8 +6,16 @@ if (missionNamespace getVariable ["ACME_transfusionUiRuntimeRegistered", false])
 missionNamespace setVariable ["ACME_transfusionUiRuntimeRegistered", true];
 
 private _txPFH = [{
-    if (!isNull (findDisplay 86000)) then {call ACME_fnc_updateTransfusionControls;};
-}, 0.25, []] call CBA_fnc_addPerFrameHandler;
+    private _display = findDisplay 86000;
+    if (!isNull _display) then {
+        // Keep data/workflow refresh at 4 Hz; animate only cached decoration at 20 Hz.
+        if (diag_tickTime >= (_display getVariable ["ACME_txNextRefresh",0])) then {
+            _display setVariable ["ACME_txNextRefresh",diag_tickTime + 0.25];
+            call ACME_fnc_updateTransfusionControls;
+        };
+        [_display] call ACME_fnc_transfusionVisualTick;
+    };
+}, 0.05, []] call CBA_fnc_addPerFrameHandler;
 missionNamespace setVariable ["ACME_transfusionUiPFH", _txPFH];
 
 private _clampPFH = [{

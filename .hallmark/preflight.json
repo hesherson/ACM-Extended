@@ -1,0 +1,25 @@
+{
+  "scanned": "2026-10-31",
+  "findings": {
+    "font": "Roboto Condensed: frontend/medical-ui/build.mjs:12; native card fonts in addons/acm_extended/TransfusionMenu_Styles.hpp:21",
+    "framework": "React 18.3.1, offline single-file bundle: frontend/medical-ui/package.json:10",
+    "geometry": "native physical-pixel metrics: frontend/medical-ui/layout.mjs:3",
+    "motion": "Requested functional motion only: cached native stripes/action backgrounds, React stripes and proximity font scale.",
+    "authority": "B302: existing native handlers and mirrored compact layout; React occupied fluid cards only.",
+    "material": "Original flat pre-Dusk palette restored; no blur, reflection or effect."
+  },
+  "preserve": [
+    "existing screens",
+    "native handlers and clinical model",
+    "Roboto Condensed",
+    "original medical artwork and IV/IO flags",
+    "ACE surfaces",
+    "native fallback and bounded React updates"
+  ],
+  "introduce": [
+    "Compact equal-height cards and restored left details panel",
+    "Inventory hover tooltip, button gap matching panel padding, Pause wording",
+    "Explicit physical-flow stripe mask and 35% smooth proximity graduation labels",
+    "Ready action background pulses with fixed labels/hit regions"
+  ]
+}

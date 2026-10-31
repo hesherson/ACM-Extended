@@ -16,8 +16,14 @@
  */
 
 params ["_patient"];
+if (isNull _patient || {!local _patient}) exitWith {};
+if ((_patient getVariable [QGVAR(AirwayObstructionBlood_State), 0]) > 0) then {
+    _patient setVariable ["ACME_airwayBloodRefillAt", CBA_missionTime + 30, true];
+};
+_patient setVariable ["ACME_laryngo_bloodRemaining", [], true];
+_patient setVariable ["ACME_laryngo_pool", [], true];
 
-_patient setVariable [QGVAR(AirwayObstructionVomit_State), 0, true];
+[_patient, [["vomit", 0]], true] call FUNC(setAirwayState);
 _patient setVariable [QGVAR(AirwayObstructionBlood_State), 0, true];
 _patient setVariable [QGVAR(AirwayObstructionVomit_GracePeriod), CBA_missionTime, true];
 [_patient, true] call FUNC(clearAirwayCheckedTime);

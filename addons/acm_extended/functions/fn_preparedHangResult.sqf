@@ -4,11 +4,22 @@ private _pending = missionNamespace getVariable ["ACME_preparedHangPending", cre
 private _row = _pending getOrDefault [_requestId, []];
 if (_row isEqualTo []) exitWith {};
 if (_row param [3, false]) exitWith {};
+private _patient = _row select 0;
+private _args = _row select 1;
+private _provider = _args select 1;
+private _certificate = (_patient getVariable ["ACME_preparedHangResults",createHashMap]) getOrDefault [_requestId,[]];
+private _held = (_provider getVariable ["ACME_inventoryEscrow",createHashMap]) getOrDefault [_requestId,[]];
+if (count _held >= 6 && {_held select 5} && {(_certificate param [0,!_ok]) isNotEqualTo _ok || {(_certificate param [2,[]]) isNotEqualTo _args}}) exitWith {
+    [{_this call ACME_fnc_preparedHangResult;},_this,0.1] call CBA_fnc_waitAndExecute;
+};
+[_provider,_requestId,_ok] call ACME_fnc_inventoryLedgerSettle;
 _row set [3, true];
 _pending set [_requestId, _row];
 missionNamespace setVariable ["ACME_preparedHangPending", _pending];
 _row params ["_patient", "_args"];
 _args params ["", "_medic", "", "_setId", "_part", "_iv", "_site"];
+private _linePending = _medic getVariable ["ACME_lineBagPending", []];
+if ((_linePending param [0, ""]) == _setId) then {_medic setVariable ["ACME_lineBagPending", []];};
 
 if (_ok && {!isNull _medic}) then {
     // Defensive local convergence. The owner already removed this ID publicly; filtering it here prevents a stale

@@ -12,6 +12,9 @@ if (isNull _pat) exitWith {};
 
 switch (_mode) do {
     case "start": {
+        // Tool ownership precedes cuff diagnostics; suction/right-click is not cuff work.
+        if ((uiNamespace getVariable ["ACME_laryngo_held", ""]) != "syringe"
+            || {!(_pat getVariable ["ACME_ETT_Inserted", false])}) exitWith {};
         if (_pat getVariable ["ACME_ETT_Secured", false]) exitWith {
             ["Take the collar off first.", 2.5] call ace_common_fnc_displayTextStructured;
         };

@@ -56,9 +56,11 @@ def test_hang_bag_normal_entry_and_exit_blend():
     # Start owns only the patient-owner lease request. Provider presentation begins after acceptance.
     assert '"hangBagClaim"' in start
     assert 'ACME_fnc_doAnimHeld' not in start
-    assert '[_medic, _inAnim, 1.4, 1] call ACME_fnc_doAnimHeld;' in activate
+    assert '[_medic, _inAnim, 1.4, 1, true] call ACME_fnc_doAnimHeld;' in activate
+    assert '_medic setVariable ["ACME_hang_Pose", _pose];' in activate
+    assert 'call ACME_fnc_providerAnimation;' in activate
     assert '[_medic, _outAnim, 1] call ACME_fnc_doAnim;' in stop
-    assert '[_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACME_fnc_doAnim;' in stop
+    assert '[_medic, [_medic, "AmovPknlMstpSnonWnonDnon", _prone] call ACME_fnc_providerAnimation, 1] call ACME_fnc_doAnim;' in stop
 
 def test_hpmk_roll_uses_guarded_animation_wrapper():
     # HPMK wrapping is intentionally state-only now. It must not animate, attach, roll, or reposition the casualty.

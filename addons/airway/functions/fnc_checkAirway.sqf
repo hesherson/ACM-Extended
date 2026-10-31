@@ -128,6 +128,11 @@ if (_showInflammation) then {
             _inflammationStateLog = LSTRING(CheckAirway_Inflammation_Mild_Short);
         };
     };
+
+    if (_patient getVariable [QEGVAR(burns,AirwayBurned), false]) then {
+        _inflammationState = ELSTRING(burns,CheckAirway_Burned);
+        _inflammationStateLog = ELSTRING(burns,CheckAirway_Burned);
+    };
 };
 
 _collapseManaged = _collapseManaged || _airwaySecure;

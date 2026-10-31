@@ -33,7 +33,7 @@ missionNamespace setVariable ["ACME_hang_linePatientEuler", _lineRot];
 (_d displayCtrl 87124) ctrlSetText format ["Pitch      %1 deg", round (_lineRot#1)];
 (_d displayCtrl 87125) ctrlSetText format ["Roll       %1 deg", round (_lineRot#2)];
 
-private _medic = ACE_player;
+private _medic = (call ACME_fnc_controlledProvider);
 private _bag = _medic getVariable ["ACME_hang_Bag", objNull];
 if (!isNull _bag) then {
     detach _bag;

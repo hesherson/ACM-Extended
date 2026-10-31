@@ -16,18 +16,51 @@
  * Public: No
  */
 
-params ["_patient", "_CPRStartTime"];
+params ["_patient", "_CPRStartTime", ["_grant", []]];
+if (isNull _patient || {!local _patient}) exitWith {};
 
-if (_patient getVariable [QGVAR(CPR_PFH), -1] != -1) exitWith {};
+private _ownerEpoch = _patient getVariable ["ACME_providerLocalityEpoch",0];
+private _identity = if (_grant isEqualTo []) then {[]} else {_grant select [0,6]};
+private _currentGrant = _patient getVariable ["ACME_resus_cpr",[]];
+if (!(_grant isEqualTo []) && {count _currentGrant != 11 || {(_currentGrant select [0,6]) isNotEqualTo _identity}
+    || {(_currentGrant select 2) != ([_patient] call ACME_fnc_clinicalEpoch)}}) exitWith {};
+private _existing = _patient getVariable [QGVAR(CPR_PFH),-1];
+private _worker = _patient getVariable ["ACME_cprClinicalWorker",[]];
+private _sameWorker = _existing >= 0 && {count _worker == 3}
+    && {(_worker select 0) == _existing} && {(_worker select 1) isEqualTo _identity} && {(_worker select 2) == _ownerEpoch};
+if (_sameWorker || {_grant isEqualTo [] && {_existing >= 0}}) exitWith {};
+// A new accepted grant/ownership period cannot wait behind an obsolete clinical PFH.
+if (_existing >= 0) then {[_existing] call CBA_fnc_removePerFrameHandler;};
 
 private _PFH = [{
     params ["_args", "_idPFH"];
-    _args params ["_patient", "_CPRStartTime"];
+    _args params ["_patient", "_CPRStartTime", "_grant", "_ownerEpoch"];
+    private _captured = _patient getVariable ["ACME_resus_cpr",[]];
+    private _grantCurrent = _grant isEqualTo [] || {count _captured == 11 && {count _grant == 11}
+        && {(_captured select [0,6]) isEqualTo (_grant select [0,6])}
+        && {(_captured select 2) == ([_patient] call ACME_fnc_clinicalEpoch)}};
+    if (isNull _patient || {!local _patient} || {!_grantCurrent}
+        || {(_patient getVariable ["ACME_providerLocalityEpoch",0]) != _ownerEpoch}) exitWith {
+        if ((_patient getVariable [QGVAR(CPR_PFH),-1]) == _idPFH) then {_patient setVariable [QGVAR(CPR_PFH),-1];};
+        [_idPFH] call CBA_fnc_removePerFrameHandler;
+    };
 
     private _medic = _patient getVariable [QACEGVAR(medical,CPR_provider), objNull];
 
-    if !(alive _medic) exitWith {
-        _patient setVariable [QGVAR(CPR_PFH), -1];
+    if (!(alive _medic) || {!([_medic] call ACEFUNC(common,isAwake))}) exitWith {
+        // Pausing compressions preserves the exact reservation. Keep the dormant worker so a later
+        // resume cannot leave a live animation/provider with no clinical ROSC processing.
+        private _reserved = _patient getVariable [QGVAR(CPR_Medic),objNull];
+        if !([_reserved,_patient] call FUNC(cprSessionValid)) then {
+            if ((_patient getVariable [QGVAR(CPR_PFH),-1]) == _idPFH) then {_patient setVariable [QGVAR(CPR_PFH),-1];};
+            [_idPFH] call CBA_fnc_removePerFrameHandler;
+        };
+    };
+
+    // The patient owner can observe a teleport or separation before the provider's
+    // stop packet arrives. No active compression effects survive lost contact.
+    if !([_medic,_patient] call FUNC(cprSessionValid)) exitWith {
+        if ((_patient getVariable [QGVAR(CPR_PFH),-1]) == _idPFH) then {_patient setVariable [QGVAR(CPR_PFH),-1];};
         [_idPFH] call CBA_fnc_removePerFrameHandler;
     };
 
@@ -94,6 +127,7 @@ private _PFH = [{
             [QGVAR(attemptROSC), _patient] call CBA_fnc_localEvent;
         };
     };
-}, 5, [_patient, _CPRStartTime]] call CBA_fnc_addPerFrameHandler;
+}, 5, [_patient, _CPRStartTime, _grant, _ownerEpoch]] call CBA_fnc_addPerFrameHandler;
 
 _patient setVariable [QGVAR(CPR_PFH), _PFH];
+_patient setVariable ["ACME_cprClinicalWorker",[_PFH,_identity,_ownerEpoch],false];

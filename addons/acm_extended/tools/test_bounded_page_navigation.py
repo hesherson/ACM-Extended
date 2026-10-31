@@ -67,8 +67,10 @@ def typing_contract(inject=None):
 def setup():
     base=carousel_setup().replace('["_owner", ACE_player, [objNull]]',
                                   '["_owner", ACE_player, [missionNamespace]]')
-    text=source('skPageNavigate').replace('findDisplay 84000','_drawDisplay').replace('findDisplay 86000','_txDisplay')
-    text=text.replace('closeDialog 0;', '_closes=_closes+1;')
+    text=source('skPageNavigate').replace('getMousePosition','[.2,.3]').replace('findDisplay 84000','_drawDisplay').replace('findDisplay 86000','_txDisplay')
+    # A native close destroys the source handle before the queued page opens.
+    text=text.replace('closeDialog 0;', '_closes=_closes+1;_drawDisplay=objNull;_txDisplay=objNull;')
+    text=text.replace('isNull (_drawDisplay)', '(_drawDisplay isEqualTo objNull)').replace('isNull (_txDisplay)', '(_txDisplay isEqualTo objNull)')
     return base + '''
         private _txDisplay=objNull; private _closes=0; private _transfuse=[];
         ACME_fnc_skOpenDraw={_opens pushBack _this;};
@@ -108,10 +110,10 @@ def test_three_page_routes_preserve_patient_part_and_inventory(view,dir,target,e
         missionNamespace setVariable ["ACME_infusion_bagTally",["late tally"]];
         call _drain;
     '''+(f'''
-        [_transfuse isEqualTo [[_medic,_patient,"rightarm"]],"transfusion target changed"] call _check;
+        [count _transfuse==1 && {{((_transfuse select 0) select [0,3]) isEqualTo [_medic,_patient,"rightarm"]}},"transfusion target changed"] call _check;
         [uiNamespace getVariable ["ACME_SK_suppressReturn",false],"old return handler was not suppressed"] call _check;
     ''' if target=='transfuse' else f'''
-        [_opens isEqualTo [[10,_patient,"rightarm"]],"draw target changed"] call _check;
+        [count _opens==1 && {{((_opens select 0) select [0,3]) isEqualTo [10,_patient,"rightarm"]}},"draw target changed"] call _check;
         [(uiNamespace getVariable "ACME_SK_RequestedView")=="{target}","requested page lost"] call _check;
         [isNil "ACME_infusion_pendingContext","normal page inherited prep context"] call _check;
         [(missionNamespace getVariable "ACME_infusion_bagTally") isEqualTo [],"normal page inherited tally"] call _check;
@@ -129,7 +131,7 @@ def test_in_place_navigation_uses_display_return_patient_then_self(fallback):
         uiNamespace setVariable ["ACME_SK_BodyPart",""];
     '''+('_drawDisplay setVariable ["ACME_SK_ReturnPatient",_patient];' if fallback=='display' else '')+'''
         ["left"] call _navigate; call _drain;
-    '''+f'[_transfuse isEqualTo [[_medic,{"_patient" if fallback=="display" else "_medic"},"leftarm"]],"patient/body-part fallback changed"] call _check;')
+    '''+f'[count _transfuse==1 && {{((_transfuse select 0) select [0,3]) isEqualTo [_medic,{"_patient" if fallback=="display" else "_medic"},"leftarm"]}},"patient/body-part fallback changed"] call _check;')
 
 
 @pytest.mark.parametrize('body',[False,True])
