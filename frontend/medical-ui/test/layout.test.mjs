@@ -33,3 +33,17 @@ test('tick proximity uses the same bounded smooth native curve without moving gr
  }
  assert.equal(markScale(-1,0,11),1);assert.equal(markScale(.5,.5,1),1);
 });
+
+for (const unit of [720,1080,1440]) for (const paneHeight of [.244,.187]) {
+ test(`five compact rows fit ${unit} / ${paneHeight} without changing update geometry`,()=>{
+  const h=unit*paneHeight,w=unit*.35,gap=unit*.004,rowH=(h-gap*4)/5;
+  const layout=[w,h,unit,rowH,gap,Math.floor(unit*.007),5];
+  const card={detail:'765 / 1000 mL',status:'Piggyback Primary',thermal:'LW Quantum / Warming...',fraction:.7};
+  const g=cardLayout(layout,card);
+  assert.equal(g.root['--rows'],5);
+  assert.ok(rowH<unit*.05);
+  assert.ok(parseFloat(g.detail.top)+parseFloat(g.detail.height)<=100);
+  assert.ok(parseFloat(g.thermal.left)+parseFloat(g.thermal.width)<=100);
+  assert.deepEqual(cardLayout(layout,{...card,detail:'764 / 1000 mL',fraction:.699}),g);
+ });
+}

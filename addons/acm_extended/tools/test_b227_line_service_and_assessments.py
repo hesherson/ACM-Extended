@@ -221,11 +221,10 @@ def test_flush_accounting_uses_actual_patient_admission_not_nominal_reserve_drai
 
 @pytest.mark.parametrize('pump,age',[ (p,t) for p in [0,.25,.5,.75,1] for t in [0,60,120,240]])
 def test_pressure_bar_and_drainer_share_the_same_decaying_level(pump,age):
-    expected=pump*2**(-age/60)
-    if expected<.08:expected=0
+    expected=pump  # B304: elapsed time cannot deflate a cuff.
     execute(basic()+fn('pressureLevel')+f'''
       private _p=[[100-{age},{pump},"server"],60] call ACME_fnc_pressureLevel;
-      [abs (_p-{expected})<.0001,"pressure level disagrees with decay"] call _check;
+      [abs (_p-{expected})<.0001,"pressure changed without volume leaving the bag"] call _check;
       CBA_missionTime=5000;
       [abs (([[100-{age},{pump},"server"],60] call ACME_fnc_pressureLevel)-_p)<.0001,"owner-local clock changed pressure"] call _check;
     ''')
@@ -268,7 +267,7 @@ def test_actual_marker_snapshot_codec_preserves_server_clock_age_on_save():
     assert 'CBA_missionTime - ((serverTime - _at) max 0)' in s
     assert '_entry set [2, ["cba", true]' in s
     assert '_j set [6, if (count _j >= 13) then {serverTime}' in read('clinicalRestore')
-    assert 'count _c in [2,3]' in read('clinicalValidate')
+    assert 'count _c in [2,3,4]' in read('clinicalValidate')
 
 
 def test_no_obsolete_catheter_inspection_actions_are_advertised():
@@ -338,9 +337,9 @@ def test_owner_pump_commit_increments_once_per_click_and_clamps_at_full(count):
     execute(pump_setup()+f'''
       for "_i" from 1 to {count} do {{[str _i] call _pump;[str _i] call _pump;}};
       [abs (call _level-{min(count*.25,1)})<.0001,"duplicate pumping or wrong increment"] call _check;
-      _serverTime=160;[abs (call _level-{min(count*.25,1)*.5})<.0001,"pressure did not fall with clock"] call _check;
+      _serverTime=160;[abs (call _level-{min(count*.25,1)})<.0001,"pressure changed on elapsed time"] call _check;
       _supply=0;["repump"] call _pump;
-      [abs (call _level-{min(min(count*.25,1)*.5+.25,1)})<.0001,"existing cuff required second physical item"] call _check;
+      [abs (call _level-{min(min(count*.25,1)+.25,1)})<.0001,"existing cuff required second physical item"] call _check;
     ''')
 
 

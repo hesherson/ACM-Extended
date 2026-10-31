@@ -2,6 +2,24 @@
 // scaled together to the browser viewport rather than using independent font/icon vh guesses.
 export function cardLayout(layout, card, fontScale = 1) {
   const [w,h,u,rowH,gap,radius]=layout || [360,227,1080,109.72,7.56,7];
+  const rows=layout?.[6] || 2;
+  if (rows===5) {
+    const pad=w*.045,iconH=Math.min(rowH*.80,u*.052),column=u*.052,textX=pad+column+w*.025;
+    const vialH=Math.min(u*.026,rowH*.30),vialW=vialH*.55,trackW=w-textX-pad;
+    const rect=(x,y,width,height)=>({left:`${100*x/w}%`,top:`${100*y/rowH}%`,width:`${100*width/w}%`,height:`${100*height/rowH}%`});
+    const font=value=>`${100*u*value*fontScale/h}vh`;
+    return {root:{'--rows':rows,'--u':`${100*u/h}vh`,'--gap':`${100*gap/h}vh`,'--radius':`${100*radius/h}vh`},
+      name:{...rect(textX,u*.0015,trackW*(card.status ? .66:1),u*.017),fontSize:font(.014)},
+      detail:{...rect(textX,u*.0185,trackW*(card.thermal ? .56:1),u*.013),fontSize:font(.011)},
+      status:{...rect(textX+trackW*.70,u*.0015,Math.max(trackW*.30-(card.vial?vialW:0),0),u*.017),fontSize:font(.010)},
+      thermal:{...rect(textX+trackW*.60,u*.0185,trackW*.40,u*.013),fontSize:font(.010)},
+      icon:rect(pad+(column-iconH)/2,(rowH-iconH)/2,iconH,iconH),vial:rect(w-pad-vialW,u*.0015,vialW,vialH),
+      volume:{...rect(textX,rowH*.72,trackW,rowH*.28),fontSize:font(.009),'--track-height':`${100*u*.0025/h}vh`},
+      flowStripe:{width:`${100*trackW*32/31/h}vh`},
+      mark:{top:`${100*u*.0015/h}vh`,lineHeight:`${100*rowH*.225/h}vh`},
+      tick:{top:`${-100*u*.002/h}vh`,height:`${100*u*.006/h}vh`}};
+  }
+
   const pad=w*.045, iconH=Math.min(rowH*.62,u*.052), iconW=iconH, textX=pad+iconW+w*.025;
   const vialH=Math.min(u*.026,rowH*.30), vialW=vialH*.55;
   const trackW=w-textX-pad, nameH=Math.min(u*.021,rowH*.25), detailH=Math.min(u*.017,rowH*.22);
@@ -10,7 +28,7 @@ export function cardLayout(layout, card, fontScale = 1) {
   const top=Math.max(((card.fraction>=0?rowH*.75:rowH*.91)-contentH)/2,0);
   const rect=(x,y,width,height)=>({left:`${100*x/w}%`,top:`${100*y/rowH}%`,width:`${100*width/w}%`,height:`${100*height/rowH}%`});
   const font=value=>`${100*u*value*fontScale/h}vh`;
-  return {root:{'--u':`${100*u/h}vh`,'--gap':`${100*gap/h}vh`,'--radius':`${100*radius/h}vh`},
+  return {root:{'--rows':rows,'--u':`${100*u/h}vh`,'--gap':`${100*gap/h}vh`,'--radius':`${100*radius/h}vh`},
     name:{...rect(textX,top,Math.max(w-textX-pad-(card.vial?vialW:0),0),nameH),fontSize:font(.018)},
     detail:{...rect(textX,top+nameH,Math.max(w-textX-pad-(card.vial?vialW:0),0),detailH),fontSize:font(.014)},
     status:{...rect(textX,top+nameH+(card.detail?detailH:0),trackW,statusH),fontSize:font(.0125)},

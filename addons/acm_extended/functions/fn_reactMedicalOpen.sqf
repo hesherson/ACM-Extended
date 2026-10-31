@@ -27,7 +27,7 @@ if (isNull _browser) then {
     _display setVariable ["ACME_reactRect",_rect];
     [_browser,"position",_rect] call ACME_fnc_transfusionUiSet;
     _browser setVariable ["ACME_txListIDC",86004];
-    _browser setVariable ["ACME_txCapacity",2];
+    _browser setVariable ["ACME_txCapacity",5];
     _display displayAddEventHandler ["Unload",{_this call ACME_fnc_reactMedicalClose;}];
     _browser ctrlWebBrowserAction ["LoadFile","acm_extended\ui\react\index.html"];
 };

@@ -23,16 +23,16 @@ DATA = (ROOT / "addons/acm_extended/functions/fn_transfusionCardData.sqf").read_
 
 
 def authored_geometry():
-    # B277 replaces four passive overlays with a bounded two-card fluid pool.
+    # B277 replaces four passive overlays with a bounded five-card fluid pool.
     # Execute its actual viewport and authored rectangle arithmetic; original
     # native lists remain the custody and selection model behind the cards.
     capacity = re.search(r'private _panes = \[\[86004,(\d+),', CARDS).group(1)
-    start = CARDS.index("        private _gap = safeZoneH * 0.007;")
+    start = CARDS.index("        private _compact = _paneIndex in [0,3,4];")
     end = CARDS.index('        private _offsetKey =', start)
     sizing = CARDS[start:end].replace("safeZoneH", "1")
     rectangle = re.search(r'private _cardRect = \[[^;]+;', CARDS).group()
     window = (ROOT / "addons/acm_extended/functions/fn_transfusionCardWindow.sqf").read_text()
-    return f"ACME_test_window={{" + window + "};" + f"private _capacity={capacity};private _h=_lh;private _py=_ly;private _px=0;private _w=.2;" + sizing + r'''
+    return f"ACME_test_window={{" + window + "};" + f"private _paneIndex=0;private _capacity={capacity};private _h=_lh;private _py=_ly;private _px=0;private _w=.2;" + sizing + r'''
         private _window=[_rowCount,_capacity,floor ((_rowCount-_capacity) max 0)*_scrollValue] call ACME_test_window;
         private _rows=_rowCount;
         for "_slot" from 0 to (_capacity-1) do {
@@ -56,7 +56,7 @@ def test_real_native_card_rectangles_never_escape_the_owning_list(height, rows, 
             [_cy>=_ly-.001 && {_cy+_rowH<=_ly+_lh+.001},"card leaked beyond list clip"] call _check;
         };
     };
-    [_shown<=4,"unbounded surface growth"] call _check;
+    [_shown<=5,"unbounded surface growth"] call _check;
     ''' + (r'[_shown==2,"two independently selectable Y bags no longer fit"] call _check;' if rows == 2 else ""))
 
 
@@ -149,7 +149,7 @@ def test_every_row_and_topology_bracket_uses_the_authored_native_card_pitch():
     assert '"ACME_txCardEndpoints"' in CARDS and '"ACME_txCardEndpoints"' in bracket
     assert '"ACME_txCardsReady"' in bracket
     assert 'count _cardPoints == count _rows' in bracket
-    assert 'private _gap = safeZoneH * 0.007;' in CARDS
+    assert 'private _gap = safeZoneH * ([0.007,0.004] select _compact);' in CARDS
     assert '(_h - _gap * (_capacity - 1)) / _capacity' in CARDS
     assert 'call ACME_fnc_transfusionCardWindow' in CARDS
 

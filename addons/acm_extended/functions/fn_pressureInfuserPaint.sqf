@@ -22,7 +22,7 @@ if (count _context >= 11) then {
     private _uid = _bag param [8,""];
     private _cuff = (_patient getVariable ["ACME_piCuffs",createHashMap]) getOrDefault [_uid,[]];
     _fitted = _cuff isNotEqualTo [];
-    _level = [_cuff] call ACME_fnc_pressureLevel;
+    _level = [_cuff, _bag param [1,0]] call ACME_fnc_pressureLevel;
 };
 _bar progressSetPosition _level;
 private _text = if (_fitted) then {format ["Pump (%1%2)",round (_level * 100),"%"]} else {"Pressure Infuse"};

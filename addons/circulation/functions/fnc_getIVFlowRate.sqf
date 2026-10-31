@@ -64,7 +64,11 @@ private _hang = if (_gravityOnly) then {1} else {_patient getVariable ["ACME_han
 private _pressure = 1;
 private _cuff = (_patient getVariable ["ACME_piCuffs", createHashMap]) getOrDefault [_bagId, []];
 if (!_gravityOnly && {_bagId != ""} && {!(_cuff isEqualTo [])}) then {
-    private _p = [_cuff] call ACME_fnc_pressureLevel;
+    private _part = ["head","body","leftarm","rightarm","leftleg","rightleg"] select _partIndex;
+    private _bags = (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [_part,[]];
+    private _index = _bags findIf {(_x param [8,""]) == _bagId};
+    private _remaining = if (_index < 0) then {0} else {(_bags select _index) param [1,0]};
+    private _p = [_cuff, _remaining] call ACME_fnc_pressureLevel;
     if (_p > 0) then {_pressure = 1 + ((missionNamespace getVariable ["ACME_pressureInfuser_boost", 2.5]) - 1) * _p;};
 };
 private _baseCeil = _rate * _hang;  // the gauge, gravity and hand-squeeze ceiling, before the pressure infuser.

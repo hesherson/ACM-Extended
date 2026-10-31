@@ -36,3 +36,15 @@ test('flow is an explicit optional boolean observation, never inferred from a pi
  for(const flowing of [true,false]){s.cards[0].flowing=flowing;assert.equal(validState(s),true);}
  for(const flowing of [0,1,'true',null,{}]){s.cards[0].flowing=flowing;assert.equal(validState(s),false);}
 });
+
+test('five-slot compact state permits the last row but rejects oversized or duplicate bindings',()=>{
+ const s=state();s.layout=[360,264,1080,49.344,4.32,7,5];
+ s.cards=Array.from({length:5},(_,slot)=>({...card,slot,token:'row:1:'+slot}));
+ assert.equal(validState(s),true);
+ const store=createMedicalStore(()=>{});store.bootstrap(hello);
+ assert.equal(store.receive({...packet(),state:s}),true);
+ assert.equal(store.select('row:1:4'),true);
+ const extra=structuredClone(s);extra.cards.push({...card,slot:5,token:'extra'});assert.equal(validState(extra),false);
+ const duplicate=structuredClone(s);duplicate.cards[4].slot=3;assert.equal(validState(duplicate),false);
+ const legacy=structuredClone(s);legacy.layout.pop();assert.equal(validState(legacy),false);
+});

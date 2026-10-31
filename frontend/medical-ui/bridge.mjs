@@ -9,17 +9,19 @@ const reference = v => Array.isArray(v) && v.length === 3 && v.every(x => text(x
 const copy = v => JSON.parse(JSON.stringify(v));
 const freeze = v => { if (v && typeof v === 'object') { Object.values(v).forEach(freeze); Object.freeze(v); } return v; };
 export function validState(s) {
+  const capacity = Array.isArray(s?.layout) && s.layout.length===7 ? s.layout[6] : 2;
+  if (![2,5].includes(capacity)) return false;
   if (!object(s) || s.view !== 'transfusion-cards' || !object(s.patient) || !reference(s.patient.ref)
-    || !integer(s.patient.epoch) || !Array.isArray(s.cards) || s.cards.length > 2
+    || !integer(s.patient.epoch) || !Array.isArray(s.cards) || s.cards.length > capacity
     || typeof s.canPrevious !== 'boolean' || typeof s.canNext !== 'boolean') return false;
-  if (s.layout !== undefined && (!Array.isArray(s.layout) || s.layout.length !== 6
+  if (s.layout !== undefined && (!Array.isArray(s.layout) || ![6,7].includes(s.layout.length)
     || !s.layout.every(x=>Number.isFinite(x) && x >= 0 && x <= 20000)
-    || s.layout.slice(0,4).some(x=>x<=0) || s.layout[3]*2+s.layout[4]>s.layout[1]+1)) return false;
+    || s.layout.slice(0,4).some(x=>x<=0) || s.layout[3]*capacity+s.layout[4]*(capacity-1)>s.layout[1]+1)) return false;
   if (s.fontProbe !== undefined && (!Array.isArray(s.fontProbe) || s.fontProbe.length !== 3
     || !s.fontProbe.every(x=>Number.isFinite(x) && x > 0 && x <= 20000) || !s.layout)) return false;
   const slots = new Set(), tokens = new Set();
   return s.cards.every(c => {
-    if (!object(c) || ![0,1].includes(c.slot) || slots.has(c.slot) || !text(c.token,64) || !c.token || tokens.has(c.token)
+    if (!object(c) || !Number.isInteger(c.slot) || c.slot<0 || c.slot>=capacity || slots.has(c.slot) || !text(c.token,64) || !c.token || tokens.has(c.token)
       || !text(c.name,512) || !c.name || !text(c.detail,1024) || !text(c.status,128) || !text(c.thermal,128)
       || !text(c.icon,512) || !text(c.vial,512) || typeof c.selected !== 'boolean'
       || (c.flowing !== undefined && typeof c.flowing !== 'boolean')

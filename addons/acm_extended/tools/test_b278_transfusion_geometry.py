@@ -44,7 +44,7 @@ def renderer_source(name):
     source = re.sub(r"_display ctrlCreate (\[[^;]+?\])", r"(\1 call _createControl)", source)
     source = re.sub(r"_group controlsGroupCtrl (\([^;]+?\)|_\w+|\d+)", r"[_group,\1]", source)
     source = source.replace("_mask controlsGroupCtrl 41", "[_mask,41]")
-    source = source.replace("_label ctrlSetFontHeight _markFont", '[_label,"font",_markFont] call ACME_fnc_transfusionUiSet')
+    source = re.sub(r'_label ctrlSetFontHeight (_\w+)',r'[_label,"font",\1] call ACME_fnc_transfusionUiSet',source)
     source = source.replace("ctrlPosition _list", "(_positions get _list)")
     source = source.replace("lbSize _list", "(_counts get _list)").replace("lbCurSel _list", "(_selected get _list)")
     source = source.replace("_list lbTooltip _row", '""')
@@ -84,7 +84,7 @@ def renderer_setup():
         private _registerEvent={_events pushBack _this;};
         ACME_fnc_transfusionUiSet={params["_c","_property","_value"];private _key=format["%1:%2",_c,_property];
             if(!(_key in _controlValues)||{(_controlValues get _key)isNotEqualTo _value})then{_controlValues set[_key,_value];_writes pushBack _this;};true};
-        private _positions=createHashMapFromArray[[86004,[.125*1.7777778,.228,.212*1.7777778,.187]],[86129,[.125*1.7777778,.575,.212*1.7777778,.187]],[86005,[.663*1.7777778,.228,.212*1.7777778,.187]],[86145,[.663*1.7777778,.228,.212*1.7777778,.187]],[86127,[.663*1.7777778,.575,.212*1.7777778,.187]]];
+        private _positions=createHashMapFromArray[[86004,[.125*1.7777778,.228,.212*1.7777778,.244]],[86129,[.125*1.7777778,.575,.212*1.7777778,.187]],[86005,[.663*1.7777778,.228,.212*1.7777778,.187]],[86145,[.663*1.7777778,.228,.212*1.7777778,.244]],[86127,[.663*1.7777778,.575,.212*1.7777778,.187]]];
         private _counts=createHashMapFromArray[[86004,8],[86129,8],[86005,8],[86145,8],[86127,8]];
         private _selected=createHashMapFromArray[[86004,0],[86129,0],[86005,0],[86145,0],[86127,0]];
         ACME_fnc_transfusionCardIdentity={params["_l","_r"];if(_r<0)exitWith{[]};["fixture",_l,_r]};
@@ -102,8 +102,8 @@ def test_full_card_refresh_is_bounded_and_backing_lists_never_redraw():
     execute(renderer_setup() + r'''
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
         private _created=_creationCount;private _registered=count _events;private _written=count _writes;
-        [_created==25,"card/caption/rail pool is unbounded"]call _check;
-        [count _events==70,"card input hooks were duplicated or absent"]call _check;
+        [_created==34,"card/caption/rail pool is unbounded"]call _check;
+        [count _events==133,"card input hooks were duplicated or absent"]call _check;
         for "_tick" from 0 to 10 do {[missionNamespace]call ACME_fnc_updateTransfusionCards;};
         [_creationCount==_created&&{count _events==_registered},"refresh allocated duplicate cards or callbacks"]call _check;
         [count _writes==_written,"unchanged refresh repainted identical card rectangles"]call _check;
@@ -149,7 +149,7 @@ def test_prepared_view_and_nested_menu_hide_only_their_own_cards():
         uiNamespace setVariable["ACME_preparedListMode",false];
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
         [(_controlValues get "86500:show")isEqualTo true&&{(_controlValues get "86520:show")isEqualTo true}&&{(_controlValues get "86530:show")isEqualTo false},"return from popover did not restore sole card layer"]call _check;
-        [_creationCount==25&&{count _events==70},"view switch allocated another runtime"]call _check;
+        [_creationCount==34&&{count _events==133},"view switch allocated another runtime"]call _check;
     ''')
 
 

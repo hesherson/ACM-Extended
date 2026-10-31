@@ -1,5 +1,5 @@
 /* B277: fixed native card pools. Original lists remain the single selection/workflow model.
- * Ten cards are allocated once per display; scrolling rebinds slots, never copies or removes a bag. */
+ * Nineteen cards are allocated once per display; scrolling rebinds slots, never copies or removes a bag. */
 disableSerialization;
 params [["_display",findDisplay 86000]];
 if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)}) exitWith {};
@@ -10,7 +10,7 @@ private _visualCards = [];
 private _endpoints = createHashMap;
 private _layout = createHashMap;
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
-private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,2,!_preparedMode],[86145,2,_preparedMode],[86127,2,true]];
+private _panes = [[86004,5,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,2,!_preparedMode],[86145,5,_preparedMode],[86127,5,true]];
 {
     _x params ["_idc","_capacity","_shown"];
     private _paneIndex = _forEachIndex;
@@ -28,7 +28,8 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
         private _cardViewportW = _listW min (_uiW * 0.202);
         private _w = (_cardViewportW - _railW - _railGap) max (10 * pixelW);
         _px = _px + ((_listW - _w) / 2);
-        private _gap = safeZoneH * 0.007;
+        private _compact = _paneIndex in [0,3,4];
+        private _gap = safeZoneH * ([0.007,0.004] select _compact);
         private _rowH = (_h - _gap * (_capacity - 1)) / _capacity;
         private _offsetKey = format ["ACME_txCardOffset_%1",_idc];
         private _offset = _display getVariable [_offsetKey,0];
@@ -86,9 +87,12 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 if ((_hit getVariable ["ACME_txTooltip",""]) != _tooltip) then {_hit ctrlSetTooltip _tooltip;_hit setVariable ["ACME_txTooltip",_tooltip];};
                 [_hit,"position",[0,0,_w,_rowH]] call ACME_fnc_transfusionUiSet;
                 private _pad = _w * 0.045;
-                private _iconH = (_rowH * 0.62) min (safeZoneH * 0.052);
+                private _iconH = (_rowH * ([0.62,0.80] select _compact)) min (safeZoneH * 0.052);
                 private _iconW = _iconH * (pixelW / pixelH);
-                private _textX = _pad + _iconW + _w * 0.025;
+                private _iconColumnW = if (_compact) then {safeZoneH * 0.052 * (pixelW / pixelH)} else {_iconW};
+                private _iconX = _pad + (_iconColumnW - _iconW) / 2;
+                private _iconY = if (_compact) then {(_rowH - _iconH) / 2} else {0};
+                private _textX = _pad + _iconColumnW + _w * 0.025;
                 private _vialH = (safeZoneH * 0.026) min (_rowH * 0.30);
                 private _vialW = _vialH * 0.55 * (pixelW / pixelH);
                 private _textW = (_w - _textX - _pad - (if (_vial != "") then {_vialW} else {0})) max 0;
@@ -96,7 +100,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 // Thermal text ends at the progress track's right edge, above its graduations.
                 private _hasTrack = _fraction >= 0;
                 private _trackW = _w - _textX - _pad;
-                private _trackY = _rowH * 0.79;
+                private _trackY = _rowH * ([0.79,0.72] select _compact);
                 private _captionBottom = if (_hasTrack) then {_rowH * 0.75} else {_rowH * 0.91};
                 private _nameH = (safeZoneH * 0.021) min (_rowH * 0.25);
                 private _detailH = (safeZoneH * 0.017) min (_rowH * 0.22);
@@ -114,11 +118,30 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                     [12,[_textX,_statusY,_trackW,_statusH]],
                     [13,[_textX + _trackW - _thermalW,_thermalY,_thermalW,_thermalH]]
                 ];
+                if (_compact) then {
+                    // Two compact text lines retain full hover information while fitting five bags.
+                    _captionTop = safeZoneH * 0.0015;
+                    private _nameW = _trackW * (if (_status == "") then {1} else {0.66});
+                    private _detailW = _trackW * (if (_thermal == "") then {1} else {0.56});
+                    _metaPositions = [
+                        [10,[_textX,_captionTop,_nameW,safeZoneH * 0.017]],
+                        [11,[_textX,safeZoneH * 0.0185,_detailW,safeZoneH * 0.013]],
+                        [12,[_textX + _trackW * 0.70,_captionTop,(_trackW * 0.30 - (if (_vial != "") then {_vialW} else {0})) max 0,safeZoneH * 0.017]],
+                        [13,[_textX + _trackW * 0.60,safeZoneH * 0.0185,_trackW * 0.40,safeZoneH * 0.013]]
+                    ];
+                    {
+                        private _label = _group controlsGroupCtrl (10 + _forEachIndex);
+                        private _font = safeZoneH * _x;
+                        if ((_label getVariable ["ACME_txCompactFont",0]) != _font) then {
+                            _label ctrlSetFontHeight _font;_label setVariable ["ACME_txCompactFont",_font];
+                        };
+                    } forEach [0.014,0.011,0.010,0.010];
+                };
                 {
                     _x params ["_child","_position"];
                     [(_group controlsGroupCtrl _child),"position",_position] call ACME_fnc_transfusionUiSet;
                 } forEach (_metaPositions + [
-                    [14,[_pad,((_captionBottom - _iconH) / 2) max 0,_iconW,_iconH]],
+                    [14,[_iconX,if (_compact) then {_iconY} else {((_captionBottom - _iconH) / 2) max 0},_iconW,_iconH]],
                     [15,[_w - _pad - _vialW,_captionTop,_vialW,_vialH]],
                     [16,[_textX,_trackY,_trackW,safeZoneH * 0.0025]],
                     [17,[_textX,_trackY,_trackW * (_fraction max 0 min 1),safeZoneH * 0.0025]]
@@ -143,9 +166,9 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                         // clamping them into the track would halve the 0/next and last/previous spacing.
                         private _labelW = (_trackW / ((count _marks) max 2)) min (_w * 0.15) min (2 * _pad);
                         private _labelX = _tickX - _labelW / 2;
-                        [_label,"position",[_labelX,_trackY + safeZoneH * 0.003,_labelW,_rowH * 0.17]] call ACME_fnc_transfusionUiSet;
+                        [_label,"position",[_labelX,_trackY + safeZoneH * ([0.003,0.0015] select _compact),_labelW,_rowH * ([0.17,0.225] select _compact)]] call ACME_fnc_transfusionUiSet;
                         private _scale = [_fraction,_markFraction,count _marks] call ACME_fnc_transfusionMarkScale;
-                        private _markFont = safeZoneH * 0.010 * _scale;
+                        private _markFont = safeZoneH * ([0.010,0.009] select _compact) * _scale;
                         if ((_label getVariable ["ACME_txMarkFont",0]) != _markFont) then {
                             _label ctrlSetFontHeight _markFont;_label setVariable ["ACME_txMarkFont",_markFont];
                         };
@@ -197,5 +220,5 @@ if (missionNamespace getVariable ["ACME_reactTransfusion",false] || {_display ge
     [_display] call ACME_fnc_reactMedicalOpen;
 };
 if (_display getVariable ["ACME_reactActive",false]) then {
-    {[_display displayCtrl _x,"show",false] call ACME_fnc_transfusionUiSet;} forEach [86500,86501,86178];
+    {[_display displayCtrl _x,"show",false] call ACME_fnc_transfusionUiSet;} forEach [86500,86501,86502,86503,86504,86178];
 };

@@ -25,7 +25,7 @@ def test_current_contract():
     blood_block = flow.split('// Blood has an explicit device/temperature flow envelope', 1)[1].split('// Final perfusion gate', 1)[0]
 
     # B238 expectation: the existing pressure model is continuous, not an on/off 300 mL/min switch.
-    assert 'private _pressureLevel = [_cuff] call ACME_fnc_pressureLevel;' in blood_block
+    assert 'private _pressureLevel = [_cuff, _bagVolumeRemaining] call ACME_fnc_pressureLevel;' in blood_block
     assert 'if (_pressureLevel > 0) then {' in blood_block
     assert '_fixedRate = _base + ((_bloodCap - _base) max 0) * _pressureLevel;' in blood_block
     assert blood_block.index('if (_coldFlag) then {') < blood_block.index('if (_warmedFlag) then {')

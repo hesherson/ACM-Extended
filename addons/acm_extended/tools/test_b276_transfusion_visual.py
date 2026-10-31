@@ -190,7 +190,7 @@ def test_native_window_is_rounded_and_draws_before_body_and_overlays():
 def test_card_rendering_is_bounded_change_only_and_preserves_popup_guards():
     render = (FUN / 'fn_updateTransfusionCards.sqf').read_text()
     layout = (FUN / 'fn_layoutTransfusionMenu.sqf').read_text()
-    assert '[[86004,2,' in render and '[86129,2,' in render and '[86005,2,' in render and '[86145,2,' in render and '[86127,2,' in render
+    assert '[[86004,5,' in render and '[86129,2,' in render and '[86005,2,' in render and '[86145,5,' in render and '[86127,5,' in render
     assert render.index('findDisplay 86200') < render.index('ctrlCreate')
     assert render.index('findDisplay 84000') < render.index('ctrlCreate')
     assert 'if (isNull _group) then {' in render
@@ -237,27 +237,31 @@ def test_default_rounded_profile_points_to_shipped_native_assets():
 
 @pytest.mark.parametrize("width,height,idc,thermal", [(1280,960,86004,"LW Quantum · Warming..."),(1440,1080,86129,"LW Quantum · Warming..."),(1920,1080,86129,"LW Quantum · Warming..."),(5120,1440,86127,"")])
 def test_narrow_active_metadata_stacks_full_labels_above_progress(width, height, idc, thermal):
-    source = (FUN / "fn_updateTransfusionCards.sqf").read_text()
-    begin = source.index('private _hasTrack =')
-    end = source.index('                {', begin)
-    geometry = source[begin:end].replace('safeZoneH', '1').replace('pixelW', str(1 / width)).replace('pixelH', str(1 / height))
-    card_width = .202
-    execute(f'''
-        private _idc={idc};private _thermal="{thermal}";private _w={card_width};private _rowH=.09;
-        private _pad=_w*.045;private _textX=_w*.15;private _textW=_w*.75;
-        private _fraction={.5 if thermal else -1};private _detail="250 mL";private _status="Running";
-    ''' + geometry + r'''
-        private _name=_metaPositions select 0 select 1;private _dose=_metaPositions select 1 select 1;
-        private _statusBox=_metaPositions select 2 select 1;private _warm=_metaPositions select 3 select 1;
-        [(_name select 1)+(_name select 3)<=(_dose select 1)+.00001,"name/dose text boxes overlap"]call _check;
-        [(_dose select 1)+(_dose select 3)<=(_statusBox select 1)+.00001,"dose/role text boxes overlap"]call _check;
-        [(_statusBox select 0)==(_name select 0),"status is not aligned with its title/detail"]call _check;
-        if(_thermal!="")then{
-            [(_statusBox select 1)+(_statusBox select 3)<=(_warm select 1)+.00001,"role/temperature boxes overlap"]call _check;
-            [(_warm select 1)+(_warm select 3)<_trackY,"warming ellipsis collides with progress track"]call _check;
-            [(_warm select 2)==_trackW && {(_warm select 0)+(_warm select 2)==_textX+_trackW},"warmer text is confined or not aligned with the full progress track"]call _check;
-        };
-        [abs(_captionTop-(_captionBottom-_contentH-_captionTop))<.00001,"occupied captions are not vertically centered inside their card"]call _check;
+    from test_b278_transfusion_geometry import renderer_setup
+    group={86004:86500,86129:86510,86127:86540}[idc]
+    fixture=renderer_setup().replace('(1/1920)',f'(1/{width})').replace('(1/1080)',f'(1/{height})')
+    fixture=fixture.replace('"Running","",',f'"Running","{thermal}",')
+    execute(fixture+f'''
+        [missionNamespace] call ACME_fnc_updateTransfusionCards;
+        private _group={group};private _compact={str(idc in [86004,86127]).lower()};
+        private _name=_controlValues get format["%1:position",[_group,10]];
+        private _dose=_controlValues get format["%1:position",[_group,11]];
+        private _status=_controlValues get format["%1:position",[_group,12]];
+        private _warm=_controlValues get format["%1:position",[_group,13]];
+        private _track=_controlValues get format["%1:position",[_group,16]];
+        [(_name select 1)+(_name select 3)<=(_dose select 1)+.00001,"name/dose overlap"] call _check;
+        if (_compact) then {{
+            [(_name select 0)+(_name select 2)<=(_status select 0),"compact title and role overlap"] call _check;
+            if ("{thermal}"!="") then {{[(_dose select 0)+(_dose select 2)<=(_warm select 0),"compact detail and warmer overlap"] call _check;}};
+        }} else {{
+            [(_dose select 1)+(_dose select 3)<=(_status select 1)+.00001,"dose/role overlap"] call _check;
+            [(_name select 0)==(_status select 0),"normal status lost text-column alignment"] call _check;
+            [(_status select 1)+(_status select 3)<=(_warm select 1)+.00001,"role/warmer overlap"] call _check;
+        }};
+        if ({str(bool(thermal)).lower()}) then {{
+            [(_warm select 1)+(_warm select 3)<=(_track select 1),"warmer overlaps progress"] call _check;
+            [abs ((_warm select 0)+(_warm select 2)-(_track select 0)-(_track select 2))<.00001,"warmer lost track alignment"] call _check;
+        }};
     ''')
 
 

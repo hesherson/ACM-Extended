@@ -372,9 +372,9 @@ if (_hasFluidBags) then {
                 //
                 // Cold-stored blood: 100 mL/min baseline, 200 with Hang Bag.
                 // LifeWarmer + non-cold blood: 200 mL/min.
-                // Full cuff pressure reaches the universal 300 mL/min ceiling. Partial/decaying pressure interpolates
+                // Full cuff pressure reaches the universal 300 mL/min ceiling. Partial volume-anchored pressure interpolates
                 // between the unpressurized temperature/gauge baseline and that ceiling, then gives no boost
-                // below the shared minimum level. UI and this drainer use the same pressure model.
+                // when deflated. UI and this drainer use the same pressure model.
                 if (_type in ["Blood", "FreshBlood"]) then {
                     private _bloodCap = (missionNamespace getVariable ["ACME_bloodMax_mlPerMin", 300]) max 1;
                     private _coldBase = (missionNamespace getVariable ["ACME_coldBlood_mlPerMin", 100]) max 0;
@@ -384,7 +384,7 @@ if (_hasFluidBags) then {
                     private _hangActive = (_unit getVariable ["ACME_hang_flowMult", 1]) > 1.001;
 
                     private _cuff = (_unit getVariable ["ACME_piCuffs", createHashMap]) getOrDefault [_bagUid, []];
-                    private _pressureLevel = [_cuff] call ACME_fnc_pressureLevel;
+                    private _pressureLevel = [_cuff, _bagVolumeRemaining] call ACME_fnc_pressureLevel;
                     private _fixedRate = -1;
                     if (_coldFlag) then {_fixedRate = [_coldBase, _coldHang] select _hangActive;} else {
                         if (_warmedFlag) then {_fixedRate = _warmBase;};

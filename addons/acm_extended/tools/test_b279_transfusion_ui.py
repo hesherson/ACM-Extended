@@ -148,7 +148,7 @@ def test_renderer_shares_tracks_and_aligns_status_and_thermal_without_overlap():
         private _name=_controlValues get "[86500,10]:position";
         private _status=_controlValues get "[86500,12]:position";
         private _thermal=_controlValues get "[86500,13]:position";
-        [(_status select 0)==(_name select 0),"Running floated left of the title/detail column"]call _check;
+        [(_name select 0)+(_name select 2)<=(_status select 0),"compact title and Running overlap"]call _check;
         [(_status select 1)+(_status select 3)<=(_thermal select 1)+.00001,"status and LW label overlap"]call _check;
         [abs((_thermal select 0)+(_thermal select 2)-((_track select 0)+(_track select 2)))<.00001,"LW label does not end with its scale"]call _check;
         [(_controlValues get "[86500,34]:text")=="250","physical scale marks are absent"]call _check;

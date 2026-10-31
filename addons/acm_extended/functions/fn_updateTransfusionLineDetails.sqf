@@ -51,7 +51,7 @@ _lines append (if (_warmingThermal isEqualTo []) then {_thermalLines} else {_war
 private _cuffs = _patient getVariable ["ACME_piCuffs",createHashMap];
 {
     private _cuff = _cuffs getOrDefault [_x param [8,""],[]];
-    if (_cuff isNotEqualTo []) then {_lines pushBack format ["Pressure cuff: %1%2",round (([_cuff] call ACME_fnc_pressureLevel) * 100),"%"];};
+    if (_cuff isNotEqualTo []) then {_lines pushBack format ["Pressure cuff: %1%2",round (([_cuff, _x param [1,0]] call ACME_fnc_pressureLevel) * 100),"%"];};
 } forEach _bags;
 if (_bags isEqualTo []) then {_lines = ["No bag connected"] + _lines;};
 private _content = _lines joinString "<br/>";

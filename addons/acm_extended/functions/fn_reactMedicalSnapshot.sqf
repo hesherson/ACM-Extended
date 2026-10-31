@@ -6,7 +6,7 @@ private _list = _display displayCtrl 86004;
 private _layout = (_display getVariable ["ACME_txCardLayout",createHashMap]) getOrDefault [86004,[]];
 if (isNull _list || {count _layout != 5}) exitWith {createHashMap};
 private _offset = _layout select 3;
-private _window = [lbSize _list,2,_offset] call ACME_fnc_transfusionCardWindow;
+private _window = [lbSize _list,_layout select 1,_offset] call ACME_fnc_transfusionCardWindow;
 private _identities = (_window select 1) apply {if (_x < 0) then {[]} else {[_list,_x] call ACME_fnc_transfusionCardIdentity}};
 private _route = [missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""],
     missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true],
@@ -47,7 +47,7 @@ private _width = (_rect select 2) / pixelW;
 private _radius = floor ((_unit * 0.007) min (_height / 2) min (_width / 2));
 createHashMapFromArray [
     ["fontProbe",[("Hg0123456789" getTextWidth ["RobotoCondensed",safeZoneH * 0.018]) / pixelW,_unit * 0.018,0.008 / pixelW]],
-    ["layout",[_width,(_rect select 3) / pixelH,_unit,_height,safeZoneH * 0.007 / pixelH,_radius]],
+    ["layout",[_width,(_rect select 3) / pixelH,_unit,_height,((_rect select 3) - (_layout select 2) * (_layout select 1)) / (((_layout select 1) - 1) max 1) / pixelH,_radius,_layout select 1]],
     ["view","transfusion-cards"],["patient",createHashMapFromArray [
         ["ref",["encode",_context select 1] call ACME_fnc_clinicalObjectRef],["epoch",_context select 4]]],
     ["cards",_cards],["canPrevious",_window select 2],["canNext",_window select 3]

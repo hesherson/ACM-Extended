@@ -68,7 +68,8 @@ def test_equal_fluid_and_infusion_widths_include_identical_progress_and_connecto
 
 def test_compact_rows_gaps_log_and_source_tooltip_stay_in_existing_menu():
     rects=fixed_layout()
-    for idc in [86004,86005,86145,86129,86127]:assert rects[idc][3]==.187
+    for idc in [86004,86145]:assert rects[idc][3]==.244
+    for idc in [86005,86129,86127]:assert rects[idc][3]==.187
     for a,b in [(86006,86170),(86131,86172),(86214,86144)]:
         left,right=(rects[x] for x in [a,b]);assert left[2]==right[2]==.104
         assert right[0]-left[0]-left[2]==pytest.approx(.004)

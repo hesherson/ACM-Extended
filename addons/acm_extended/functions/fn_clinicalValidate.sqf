@@ -215,9 +215,10 @@ private _clampReceiptsValid = {
         case "ACME_piCuffs": {
             _bad = ((keys _v) findIf {
                 private _c = _v get _x;
-                !(_x isEqualType "" && {_c isEqualType []} && {count _c in [2,3]} && {count _c == 2 || {(_c select 2) in ["server", "cba"]}}
+                !(_x isEqualType "" && {_c isEqualType []} && {count _c in [2,3,4]} && {count _c == 2 || {(_c select 2) in ["server", "cba"]}}
                     && {[_c select 0] call _number} && {[_c select 1] call _number}
-                    && {(_c select 1) >= 0} && {(_c select 1) <= 1})
+                    && {(_c select 1) >= 0} && {(_c select 1) <= 1}
+                    && {count _c < 4 || {[_c select 3] call _number && {(_c select 3) > 0}}})
             }) >= 0;
         };
         case "ACME_infusion_BagMedications": {
