@@ -3,13 +3,13 @@
 // on _size sets the textures and the plunger limits, so switching size means re-opening at the new size, and this
 // wrapper is what the size list calls back into.
 // Args: size, patient, body part, optional flush item. A null patient opens a self draw.
-params [["_size", 10], ["_patient", objNull], ["_bodyPart", ""], ["_flushClass", "", [""]]];
+params [["_size", 10], ["_patient", objNull], ["_bodyPart", ""], ["_flushClass", "", [""]], ["_navigation", [], [[]]]];
 private _medic = call ACME_fnc_controlledProvider;
 private _flow = +(missionNamespace getVariable ["ACME_infusion_pendingPausedFlow", []]);
 private _context = +(missionNamespace getVariable ["ACME_infusion_pendingContext", []]);
 private _serial = 1 + (uiNamespace getVariable ["ACME_SK_DrawLaunchSerial", 0]);
 uiNamespace setVariable ["ACME_SK_DrawLaunchSerial", _serial];
-private _launch = [_serial, _medic, _flow, _context];
+private _launch = [_serial, _medic, _flow, _context, _navigation];
 uiNamespace setVariable ["ACME_SK_DrawLaunch", _launch];
 private _abort = {
     params ["_launch"];
@@ -57,11 +57,31 @@ uiNamespace setVariable ["ACME_SK_BodyPart", _bodyPart];
 private _infusion = !((missionNamespace getVariable ["ACME_infusion_pendingContext", []]) isEqualTo []);
 ace_medical_gui_pendingReopen = false;
 private _beforeDisplay = findDisplay 84000;
-[ACE_player, if (_infusion) then {objNull} else {_patient}, _bodyPart, _size] call ACM_circulation_fnc_Syringe_Draw;
+// Inject the requested page after native geometry is ready, before its first paint.
+// The deferred watchdog below remains responsible for setup/cleanup and failed opens.
+private _ready = [_serial,{
+    params ["_serial","_display"];
+    private _launch = uiNamespace getVariable ["ACME_SK_DrawLaunch",[]];
+    if (count _launch < 5 || {(_launch select 0) != _serial} || {_display isNotEqualTo (findDisplay 84000)}) exitWith {};
+    private _navigation = _launch select 4;
+    if (count _navigation != 2) exitWith {};
+    private _medic = _launch select 1;
+    if (isNull _medic || {!local _medic} || {!alive _medic}
+        || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}
+        || {_medic getVariable ["ACE_isUnconscious",false]}
+        || {_medic getVariable ["ACME_persistenceFrozen",false]}
+        || {(_launch select 3) isNotEqualTo (missionNamespace getVariable ["ACME_infusion_pendingContext",[]])}) exitWith {};
+    if (!((_navigation select 0) isEqualTo (uiNamespace getVariable ["ACME_pageTransitionEpoch",-1]))) exitWith {};
+    call ACME_fnc_skInject;
+    if ((_display getVariable ["ACME_SK_Provider",objNull]) isNotEqualTo _medic
+        || {(_display getVariable ["ACME_SK_CloseEpoch",-1]) < 0}) exitWith {};
+    [_display,_navigation] call ACME_fnc_restorePageCursor;
+}];
+[ACE_player, if (_infusion) then {objNull} else {_patient}, _bodyPart, _size, _ready] call ACM_circulation_fnc_Syringe_Draw;
 
 // Bind the injector to this launch. A failed or superseded constructor cannot
 // inject a later dialog or keep its patient flow paused indefinitely.
-// wait for ACM's dialog to come up (its createdialog is one frame later), then inject.
+// Complete setup once the dialog exists; the native ready hook has already selected its first visible page.
 [{
     params ["_args", "_h"];
     _args params ["_tries", "_flushClass", "_launch", "_abort", "_beforeDisplay", "_deadline"];
@@ -89,7 +109,8 @@ private _beforeDisplay = findDisplay 84000;
             };
             _barrel10B51 ctrlSetText _barrelTexture;
         };
-        call ACME_fnc_skInject;
+        if ((_drawDisplayB51 getVariable ["ACME_SK_Provider",objNull]) isNotEqualTo _medic
+            || {(_drawDisplayB51 getVariable ["ACME_SK_CloseEpoch",-1]) < 0}) then {call ACME_fnc_skInject;};
         if ((_drawDisplayB51 getVariable ["ACME_SK_Provider",objNull]) isNotEqualTo _medic
             || {(_drawDisplayB51 getVariable ["ACME_SK_CloseEpoch",-1]) < 0}) exitWith {
             [_launch] call _abort;
@@ -120,10 +141,10 @@ private _beforeDisplay = findDisplay 84000;
                 call ACME_fnc_patchDrawDialog;
             } else {
                 // PLAIN narc-box draw: compounding is the DEFAULT.
-                if (_flushClass != "" && {([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], _flushClass] call ACME_fnc_treatmentSupplyCount) > 0}) then {
+                if ((uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body" && {_flushClass != ""} && {([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], _flushClass] call ACME_fnc_treatmentSupplyCount) > 0}) then {
                     [_flushClass] call ACME_fnc_skWasteBegin;
                 } else {
-                    if ((uiNamespace getVariable ["ACME_SK_WasteStage", ""]) == "") then {
+                    if ((uiNamespace getVariable ["ACME_SK_WasteStage", ""]) == "" && {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) then {
                         [] call ACME_fnc_skCompoundBegin;
                     };
                 };
@@ -139,7 +160,7 @@ private _beforeDisplay = findDisplay 84000;
         // if this open came from a size switch, drop the cursor back where it was (skPickSize stashed it),
         // so switching syringe size doesn't fling the mouse to the screen edge.
         private _rm = uiNamespace getVariable ["ACME_SK_RestoreMouse", []];
-        if (_rm isEqualType [] && {count _rm == 2}) then {
+        if ((_launch param [4,[]]) isEqualTo [] && {_rm isEqualType []} && {count _rm == 2}) then {
             setMousePosition _rm;
             uiNamespace setVariable ["ACME_SK_RestoreMouse", []];
         };

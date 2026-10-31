@@ -94,7 +94,7 @@ def test_native_cards_are_centered_and_scrollbars_face_outward_without_browser_d
         [missionNamespace] call ACME_fnc_updateTransfusionCards;
         private _left=_controlValues get "86500:position";private _right=_controlValues get "86520:position";
         [abs ((_left select 0)+(_right select 0)+(_left select 2)-1.7777778)<.00001,"card surfaces not mirrored"] call _check;
-        [(_left select 1)==(_right select 1) && {(_left select 3)<(_right select 3)},"compact fluid row lost its shared top or density"] call _check;
+        [(_left select 1)==(_right select 1) && {(_left select 3)>(_right select 3)},"compact fluid row lost its shared top or density"] call _check;
         private _ls=_controlValues get "86610:position";private _rs=_controlValues get "86614:position";
         [(_ls select 0)<(_left select 0) && {(_rs select 0)>(_right select 0)+(_right select 2)},"scrollbars encroach on mirrored card areas"] call _check;
     '''+'ACME_fnc_reactMedicalRect={'+renderer_source('reactMedicalRect')+'};'+r'''

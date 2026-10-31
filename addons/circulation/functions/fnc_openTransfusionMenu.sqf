@@ -19,7 +19,7 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart", ["_returnAccess", [], [[]]]];
+params ["_medic", "_patient", "_bodyPart", ["_returnAccess", [], [[]]], ["_navigation", [], [[]]]];
 _bodyPart = toLowerANSI _bodyPart;
 // The existing native screen remains the entry point for either card renderer.
 ACEGVAR(medical_gui,pendingReopen) = false;
@@ -500,3 +500,5 @@ _display displayAddEventHandler ["Unload", {
         GVAR(TransfusionMenu_Target) = objNull;
     };
 }];
+
+[_display,_navigation] call ACME_fnc_restorePageCursor;

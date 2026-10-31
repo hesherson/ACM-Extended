@@ -39,6 +39,8 @@ if (!isNull _draw && {_target in ["syringe","body"]}) exitWith {
         uiNamespace setVariable ["ACME_SK_CarouselExpanded",false];
         uiNamespace setVariable ["ACME_SK_CarouselCollapseAt",0];
     };
+    uiNamespace setVariable ["ACME_SK_WasteMoving",false];
+    ACM_circulation_SyringeDraw_Moving = false;
     call ACME_fnc_skSetView;
 };
 
@@ -51,7 +53,7 @@ private _transitionEpoch = (uiNamespace getVariable ["ACME_pageTransitionEpoch",
 uiNamespace setVariable ["ACME_pageTransitionEpoch",_transitionEpoch];
 
 private _openPage = {
-    params ["_p","_part","_epoch","_requestedView","_source","_retry","_attempt"];
+    params ["_p","_part","_epoch","_requestedView","_source","_retry","_attempt","_navigation"];
     if ((uiNamespace getVariable ["ACME_pageTransitionEpoch",-1]) != _epoch) exitWith {};
     private _liveDraw = findDisplay 84000;
     private _liveTx = findDisplay 86000;
@@ -61,13 +63,13 @@ private _openPage = {
         private _sameSource = (isNull _liveDraw || {_liveDraw isEqualTo _source})
             && {isNull _liveTx || {_liveTx isEqualTo _source}};
         if (_sameSource && {_attempt < 20}) then {
-            [_retry,[_p,_part,_epoch,_requestedView,_source,_retry,_attempt + 1],0.05] call CBA_fnc_waitAndExecute;
+            [_retry,[_p,_part,_epoch,_requestedView,_source,_retry,_attempt + 1,_navigation],0.05] call CBA_fnc_waitAndExecute;
         } else {
             if (_sameSource) then {_source setVariable ["ACME_pageTransitionPending",false];};
         };
     };
     if (_requestedView == "transfuse") exitWith {
-        [ACE_player,_p,_part] call ACM_circulation_fnc_openTransfusionMenu;
+        [ACE_player,_p,_part,[],_navigation] call ACM_circulation_fnc_openTransfusionMenu;
     };
     // A recently closed Syringe Draw may still own ACM's continuous-action
     // lock until its next PFH tick. Retire that exact closed-dialog controller
@@ -88,7 +90,7 @@ private _openPage = {
     // between the button click and creation of the normal Narc Box.
     ACME_infusion_pendingContext = nil;
     missionNamespace setVariable ["ACME_infusion_bagTally", []];
-    [uiNamespace getVariable ["ACME_SK_CurSize",10],_p,_part] call ACME_fnc_skOpenDraw;
+    [uiNamespace getVariable ["ACME_SK_CurSize",10],_p,_part,"",_navigation] call ACME_fnc_skOpenDraw;
 };
 
 if (_target == "transfuse") then {
@@ -99,5 +101,6 @@ if (_target == "transfuse") then {
     ACME_infusion_pendingContext = nil;
     missionNamespace setVariable ["ACME_infusion_bagTally", []];
 };
+private _navigation = [_transitionEpoch,getMousePosition];
 closeDialog 0;
-[_openPage,[_patient,_part,_transitionEpoch,_target,_source,_openPage,0]] call CBA_fnc_execNextFrame;
+[_openPage,[_patient,_part,_transitionEpoch,_target,_source,_openPage,0,_navigation]] call CBA_fnc_execNextFrame;

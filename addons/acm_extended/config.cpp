@@ -2807,6 +2807,7 @@ class CfgFunctions {
             class skPickSize {};
             class skApplySize {};
             class skPageNavigate {};
+            class restorePageCursor {};
             class skPickFlush {};
             class skWasteBegin {};
             class skWasteToggleMove {};

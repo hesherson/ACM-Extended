@@ -27,7 +27,7 @@ def authored_geometry():
     # Execute its actual viewport and authored rectangle arithmetic; original
     # native lists remain the custody and selection model behind the cards.
     capacity = re.search(r'private _panes = \[\[86004,(\d+),', CARDS).group(1)
-    start = CARDS.index("        private _compact = _paneIndex in [0,3,4];")
+    start = CARDS.index("        private _compact = _paneIndex in [0,2,3,4];")
     end = CARDS.index('        private _offsetKey =', start)
     sizing = CARDS[start:end].replace("safeZoneH", "1")
     rectangle = re.search(r'private _cardRect = \[[^;]+;', CARDS).group()

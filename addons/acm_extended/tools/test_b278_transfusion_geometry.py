@@ -84,7 +84,7 @@ def renderer_setup():
         private _registerEvent={_events pushBack _this;};
         ACME_fnc_transfusionUiSet={params["_c","_property","_value"];private _key=format["%1:%2",_c,_property];
             if(!(_key in _controlValues)||{(_controlValues get _key)isNotEqualTo _value})then{_controlValues set[_key,_value];_writes pushBack _this;};true};
-        private _positions=createHashMapFromArray[[86004,[.125*1.7777778,.228,.212*1.7777778,.244]],[86129,[.125*1.7777778,.575,.212*1.7777778,.187]],[86005,[.663*1.7777778,.228,.212*1.7777778,.187]],[86145,[.663*1.7777778,.228,.212*1.7777778,.244]],[86127,[.663*1.7777778,.575,.212*1.7777778,.187]]];
+        private _positions=createHashMapFromArray[[86004,[.125*1.7777778,.228,.212*1.7777778,.244]],[86129,[.125*1.7777778,.575,.212*1.7777778,.187]],[86005,[.663*1.7777778,.228,.212*1.7777778,.244]],[86145,[.663*1.7777778,.228,.212*1.7777778,.244]],[86127,[.663*1.7777778,.575,.212*1.7777778,.187]]];
         private _counts=createHashMapFromArray[[86004,8],[86129,8],[86005,8],[86145,8],[86127,8]];
         private _selected=createHashMapFromArray[[86004,0],[86129,0],[86005,0],[86145,0],[86127,0]];
         ACME_fnc_transfusionCardIdentity={params["_l","_r"];if(_r<0)exitWith{[]};["fixture",_l,_r]};
@@ -102,8 +102,8 @@ def test_full_card_refresh_is_bounded_and_backing_lists_never_redraw():
     execute(renderer_setup() + r'''
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
         private _created=_creationCount;private _registered=count _events;private _written=count _writes;
-        [_created==34,"card/caption/rail pool is unbounded"]call _check;
-        [count _events==133,"card input hooks were duplicated or absent"]call _check;
+        [_created==38,"card/caption/rail pool is unbounded"]call _check;
+        [count _events==161,"card input hooks were duplicated or absent"]call _check;
         for "_tick" from 0 to 10 do {[missionNamespace]call ACME_fnc_updateTransfusionCards;};
         [_creationCount==_created&&{count _events==_registered},"refresh allocated duplicate cards or callbacks"]call _check;
         [count _writes==_written,"unchanged refresh repainted identical card rectangles"]call _check;
@@ -118,8 +118,8 @@ def test_scrolling_rebinds_one_exact_card_rectangle_for_artwork_caption_and_hit(
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
     ''' + f'missionNamespace setVariable["ACME_txCardOffset_86005",{offset}];' + r'''
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
-        private _window=[8,2,missionNamespace getVariable["ACME_txCardOffset_86005",0]]call ACME_fnc_transfusionCardWindow;
-        for "_slot" from 0 to 1 do {
+        private _window=[8,6,missionNamespace getVariable["ACME_txCardOffset_86005",0]]call ACME_fnc_transfusionCardWindow;
+        for "_slot" from 0 to 5 do {
             private _group=86520+_slot;private _rect=_controlValues get format["%1:position",_group];
             private _hit=_controlValues get format["%1:position",[_group,9]];
             private _icon=_controlValues get format["%1:position",[_group,14]];
@@ -149,7 +149,7 @@ def test_prepared_view_and_nested_menu_hide_only_their_own_cards():
         uiNamespace setVariable["ACME_preparedListMode",false];
         [missionNamespace]call ACME_fnc_updateTransfusionCards;
         [(_controlValues get "86500:show")isEqualTo true&&{(_controlValues get "86520:show")isEqualTo true}&&{(_controlValues get "86530:show")isEqualTo false},"return from popover did not restore sole card layer"]call _check;
-        [_creationCount==34&&{count _events==133},"view switch allocated another runtime"]call _check;
+        [_creationCount==38&&{count _events==161},"view switch allocated another runtime"]call _check;
     ''')
 
 

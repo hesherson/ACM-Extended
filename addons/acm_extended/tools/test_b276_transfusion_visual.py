@@ -190,7 +190,7 @@ def test_native_window_is_rounded_and_draws_before_body_and_overlays():
 def test_card_rendering_is_bounded_change_only_and_preserves_popup_guards():
     render = (FUN / 'fn_updateTransfusionCards.sqf').read_text()
     layout = (FUN / 'fn_layoutTransfusionMenu.sqf').read_text()
-    assert '[[86004,5,' in render and '[86129,2,' in render and '[86005,2,' in render and '[86145,5,' in render and '[86127,5,' in render
+    assert '[[86004,5,' in render and '[86129,2,' in render and '[86005,6,' in render and '[86145,5,' in render and '[86127,5,' in render
     assert render.index('findDisplay 86200') < render.index('ctrlCreate')
     assert render.index('findDisplay 84000') < render.index('ctrlCreate')
     assert 'if (isNull _group) then {' in render

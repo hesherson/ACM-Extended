@@ -68,8 +68,8 @@ def test_equal_fluid_and_infusion_widths_include_identical_progress_and_connecto
 
 def test_compact_rows_gaps_log_and_source_tooltip_stay_in_existing_menu():
     rects=fixed_layout()
-    for idc in [86004,86145]:assert rects[idc][3]==.244
-    for idc in [86005,86129,86127]:assert rects[idc][3]==.187
+    for idc in [86004,86005,86145]:assert rects[idc][3]==.244
+    for idc in [86129,86127]:assert rects[idc][3]==.187
     for a,b in [(86006,86170),(86131,86172),(86214,86144)]:
         left,right=(rects[x] for x in [a,b]);assert left[2]==right[2]==.104
         assert right[0]-left[0]-left[2]==pytest.approx(.004)
@@ -87,6 +87,8 @@ def test_new_motion_is_read_only_cached_and_keeps_native_pause_action():
     native='addons/circulation/functions/fnc_openTransfusionMenu.sqf'
     current=(ROOT/native).read_text();old=subprocess.check_output(['git','show',BASE+':'+native],cwd=ROOT,text=True)
     normalized=current.replace('format ["Pause %1 Transfusion", _typeString]','format [LLSTRING(TransfusionMenu_StopTransfusion_Display), _typeString]').replace('format ["Pause fluid flow through the selected %1 access.", _typeString]','format [LLSTRING(TransfusionMenu_StopTransfusion_ToolTip), _typeString]')
+    # B305 adds only a navigation cursor packet and one constructor-time restore.
+    normalized=normalized.replace(', ["_navigation", [], [[]]]];','];').replace('\n[_display,_navigation] call ACME_fnc_restorePageCursor;\n','')
     assert normalized==old
     for path in ['addons/gui','addons/acm_extended/ui/iv','addons/circulation/functions/fnc_TransfusionMenu_ToggleIVFlow.sqf']:
         assert not subprocess.check_output(['git','diff','--name-only',BASE,'--',path],cwd=ROOT).strip()

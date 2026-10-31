@@ -1,5 +1,5 @@
 /* B277: fixed native card pools. Original lists remain the single selection/workflow model.
- * Nineteen cards are allocated once per display; scrolling rebinds slots, never copies or removes a bag. */
+ * Twenty-three cards are allocated once per display; scrolling rebinds slots, never copies or removes a bag. */
 disableSerialization;
 params [["_display",findDisplay 86000]];
 if (isNull _display || {!isNull (findDisplay 86200)} || {!isNull (findDisplay 84000)}) exitWith {};
@@ -10,7 +10,7 @@ private _visualCards = [];
 private _endpoints = createHashMap;
 private _layout = createHashMap;
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
-private _panes = [[86004,5,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,2,!_preparedMode],[86145,5,_preparedMode],[86127,5,true]];
+private _panes = [[86004,5,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,6,!_preparedMode],[86145,5,_preparedMode],[86127,5,true]];
 {
     _x params ["_idc","_capacity","_shown"];
     private _paneIndex = _forEachIndex;
@@ -28,7 +28,7 @@ private _panes = [[86004,5,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
         private _cardViewportW = _listW min (_uiW * 0.202);
         private _w = (_cardViewportW - _railW - _railGap) max (10 * pixelW);
         _px = _px + ((_listW - _w) / 2);
-        private _compact = _paneIndex in [0,3,4];
+        private _compact = _paneIndex in [0,2,3,4];
         private _gap = safeZoneH * ([0.007,0.004] select _compact);
         private _rowH = (_h - _gap * (_capacity - 1)) / _capacity;
         private _offsetKey = format ["ACME_txCardOffset_%1",_idc];
@@ -120,7 +120,7 @@ private _panes = [[86004,5,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 ];
                 if (_compact) then {
                     // Two compact text lines retain full hover information while fitting five bags.
-                    _captionTop = safeZoneH * 0.0015;
+                    _captionTop = if (_paneIndex == 2 && {_detail == ""} && {_status == ""} && {_thermal == ""}) then {(_rowH - safeZoneH * 0.017) / 2} else {safeZoneH * 0.0015};
                     private _nameW = _trackW * (if (_status == "") then {1} else {0.66});
                     private _detailW = _trackW * (if (_thermal == "") then {1} else {0.56});
                     _metaPositions = [
