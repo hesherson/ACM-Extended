@@ -26,15 +26,15 @@ BORDER = 8
 SUPERSAMPLE = 4
 PARTS = ("tl", "top", "tr", "left", "center", "right", "bl", "bottom", "br")
 PROFILES = {
-    "window": ("#111214ad", "#34363c"),
-    "panel": ("#18191cad", "#292b30"),
-    "button": ("#202125b8", "#34363c"),
-    "selected": ("#303239d1", "#9498a2"),
-    "tab": ("#2e2e2eb8", "#404040"),
-    "tab_selected": ("#4d4d4dd1", "#949494"),
-    "popup": ("#24262be0", "#50545e"),
-    "piggyback": ("#28252eb8", "#a392bd"),
-    "piggyback_selected": ("#302a3ad1", "#d2c2ec"),
+    "window": ("#111214", "#34363c"),
+    "panel": ("#18191c", "#292b30"),
+    "button": ("#202125", "#34363c"),
+    "selected": ("#303239", "#9498a2"),
+    "tab": ("#2e2e2e", "#404040"),
+    "tab_selected": ("#4d4d4d", "#949494"),
+    "popup": ("#24262b", "#50545e"),
+    "piggyback": ("#28252e", "#a392bd"),
+    "piggyback_selected": ("#302a3a", "#d2c2ec"),
 }
 
 
@@ -96,15 +96,12 @@ def main() -> None:
                 parts[part].save(png)
                 if args.png_output:
                     parts[part].save(args.png_output / png.name)
-                encoded = Path(temporary) / f"{name}.paa"
-                subprocess.run([args.hemtt, "utils", "paa", "convert", "--no-color", str(png), str(encoded)],
+                subprocess.run([args.hemtt, "utils", "paa", "convert", "--no-color", str(png), str(paa)],
                                check=True, capture_output=True, text=True)
-                paa.write_bytes(encoded.read_bytes())
                 assets.append({"file": paa.name, "profile": profile, "part": part,
                                "sha256": hashlib.sha256(paa.read_bytes()).hexdigest()})
     manifest = {
         "schema": 1,
-        "surface": "translucent-glass",
         "generator": "tools/generate_transfusion_chrome.py",
         "size": [SIZE, SIZE],
         "sourceCornerRadius": SIZE,

@@ -2597,12 +2597,6 @@ class CfgFunctions {
             class ivCatheterPull {};
             class transfusionUiSet {};
             class layoutTransfusionMenu {};
-            class uiGlassClose {};
-            class uiGlassInstall {};
-            class uiGlassTrack {};
-            class uiGlassTick {};
-            class uiGlassControl {};
-            class uiGlassBlur {};
             class transfusionRoundedFrame {};
             class transfusionCardIdentity {};
             class transfusionCardResolve {};
@@ -3740,12 +3734,6 @@ class ace_medical_gui_BodyImage: RscControlsGroupNoScrollbars {
 
 // Category label is shared by self/other patients and grouped/flat menu modes.
 class ACE_Medical_Menu {
-    acmeGlassTargets[] = {{93000,"Center","window"},{93001,"Bottom","window"}};
-    class controlsBackground {
-        class ACME_Glass_93000: ACME_TransfusionRoundedFrame {idc = 93000;};
-        class ACME_Glass_93001: ACME_TransfusionRoundedFrame {idc = 93001;};
-    };
-
     class Controls {
         class Triage;
         class Medication: Triage {
@@ -3757,46 +3745,20 @@ class ACE_Medical_Menu {
 // ACM explicitly mutes Button_Draw. Restore the normal Arma button sound arrays.
 // Button_Inject and Button_Push retain their original inheritance and action handlers.
 class ACM_circulation_SyringeDraw_Dialog {
-    class ControlsBackground {
-        class ACME_Glass_93000: ACME_TransfusionRoundedFrame {idc = 93000;};
-        class ACME_Glass_93001: ACME_TransfusionRoundedFrame {idc = 93001;};
-        class ACME_Glass_93002: ACME_TransfusionRoundedFrame {idc = 93002;};
-    };
-
-    onLoad = "[_this select 0, 'ACM_circulation_SyringeDraw_Dialog'] call ACME_fnc_uiGlassInstall;";
-    acmeGlassTargets[] = {{93000,"Button_Draw","button"},{93001,"Button_Inject","button"},{93002,"Button_Push","button"}};
     class Controls {
         class Button_Draw: RscButton {
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorShadow[] = {0,0,0,0};
-            borderSize = 0;
             soundClick[] = {"\a3\ui_f\data\sound\rscbutton\soundClick", 0.09, 1};
             soundEnter[] = {"\a3\ui_f\data\sound\rscbutton\soundEnter", 0.09, 1};
             soundPush[] = {"\a3\ui_f\data\sound\rscbutton\soundPush", 0.09, 1};
             soundEscape[] = {"\a3\ui_f\data\sound\rscbutton\soundEscape", 0.09, 1};
         };
         class Button_Inject: Button_Draw {
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorShadow[] = {0,0,0,0};
-            borderSize = 0;
             soundClick[] = {"\a3\ui_f\data\sound\rscbutton\soundClick", 0.09, 1};
             soundEnter[] = {"\a3\ui_f\data\sound\rscbutton\soundEnter", 0.09, 1};
             soundPush[] = {"\a3\ui_f\data\sound\rscbutton\soundPush", 0.09, 1};
             soundEscape[] = {"\a3\ui_f\data\sound\rscbutton\soundEscape", 0.09, 1};
         };
         class Button_Push: Button_Inject {
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorShadow[] = {0,0,0,0};
-            borderSize = 0;
             soundClick[] = {"\a3\ui_f\data\sound\rscbutton\soundClick", 0.09, 1};
             soundEnter[] = {"\a3\ui_f\data\sound\rscbutton\soundEnter", 0.09, 1};
             soundPush[] = {"\a3\ui_f\data\sound\rscbutton\soundPush", 0.09, 1};
@@ -3879,46 +3841,21 @@ class ACME_CoolerHotspot: RscButton {
 // re-opening of the controls of the dialog. see the body-image lesson. this addon loads after ACM, so this
 // onload wins. everything else on the dialog is inherited from ACM untouched.
 class ACM_circulation_Lifepak_Monitor_Dialog {
-    onLoad = "_this call ACME_fnc_aedSyncSetup; [_this select 0,'ACM_circulation_Lifepak_Monitor_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "_this call ACME_fnc_aedSyncSetup";
     // Local operator/SYNC intent belongs to this display only. Clear it on close so an out-of-dialog
     // AdministerShock call cannot reuse a stale local SYNC choice from an older patient/session.
     onUnload = "uiNamespace setVariable ['ACM_circulation_AEDMonitor_DLG', nil]; uiNamespace setVariable ['ACME_sync_localArmed', nil]; missionNamespace setVariable ['ACM_circulation_AED_Monitor_Medic', objNull]";
 };
 
-
-class ACM_breathing_Stethoscope_Dialog {
-    onLoad = "[_this select 0,'ACM_breathing_Stethoscope_Dialog'] call ACME_fnc_uiGlassInstall;";
-    acmeGlassTargets[] = {{93000,"ChangeView","button"}};
-    class controlsBackground {class ACME_Glass_93000: ACME_TransfusionRoundedFrame {idc = 93000;};};
-    class controls {
-        class ChangeView: RscButton {
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            borderSize = 0;
-        };
-    };
-};
-class ACM_circulation_MeasureBP_Dialog {
-    onLoad = "[_this select 0,'ACM_circulation_MeasureBP_Dialog'] call ACME_fnc_uiGlassInstall;";
-};
-class ACM_airway_SurgicalAirway_Dialog {
-    onLoad = "[_this select 0,'ACM_airway_SurgicalAirway_Dialog'] call ACME_fnc_uiGlassInstall;";
-};
 class ACME_RollerClamp_Dialog {
-    acmeGlassTargets[] = {{93000,"ACME_Backdrop","window"},{93001,"ACME_RateText","panel"},{93002,"ACME_DropSet","button"},{93003,"ACME_ToggleClamp","button"},{93004,"ACME_Close","button"}};
-
     idd = 86200;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; call ACME_fnc_onClampLoad; [_this select 0,'ACME_RollerClamp_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; call ACME_fnc_onClampLoad";
     onMouseZChanged = "_this call ACME_fnc_scrollClamp";
     onUnload = "if ((_this select 0) isEqualTo (uiNamespace getVariable ['ACME_RollerClamp_InitDisplay',displayNull])) then {[uiNamespace getVariable ['ACME_RollerClamp_Position',1],true,-1,true] call ACME_fnc_setClampPosition; uiNamespace setVariable ['ACME_RollerClamp_DLG',displayNull]; uiNamespace setVariable ['ACME_RollerClamp_InitDisplay',displayNull]; uiNamespace setVariable ['ACME_RollerClamp_Session',[]]; uiNamespace setVariable ['ACME_RollerClamp_Edit',[]]; uiNamespace setVariable ['ACME_RollerClamp_Dragging',false]; uiNamespace setVariable ['ACME_RollerClamp_ReleaseOnUp',false]; uiNamespace setVariable ['ACME_RollerClamp_Track',[]];};";
 
     class ControlsBackground {
-        #include "ui/glass/ACME_RollerClamp_Dialog.hpp"
-
         class ACME_Backdrop: RscText {
             idc = 86210;
             text = "";
@@ -4005,9 +3942,9 @@ class ACME_RollerClamp_Dialog {
             colorText[] = {1,1,1,1};
             colorDisabled[] = {1,1,1,0.25};
             colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
+            colorBackgroundDisabled[] = {0,0,0,0.35};
+            colorBackgroundActive[] = {0.12,0.12,0.12,1};
+            colorFocused[] = {0,0,0,1};
             colorBorder[] = {0,0,0,0};
             style = 2;
             shadow = 0;
@@ -4015,8 +3952,6 @@ class ACME_RollerClamp_Dialog {
             sizeEx = "safeZoneH / 50";
             action = "call ACME_fnc_cycleDropSet";
             tooltip = "Cycle drop set: 10, 15, 20, or 60 gtt/mL";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
         };
         class ACME_ToggleClamp: ACME_DropSet {
             idc = 86208;
@@ -4024,13 +3959,6 @@ class ACME_RollerClamp_Dialog {
             x = "safeZoneX + (safeZoneW / 2) - (safeZoneW / 21)";
             action = "call ACME_fnc_toggleClamp";
             tooltip = "Fully close or reopen the roller clamp";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class ACME_Close: ACME_DropSet {
             idc = 86209;
@@ -4038,13 +3966,6 @@ class ACME_RollerClamp_Dialog {
             x = "safeZoneX + (safeZoneW / 2) + (safeZoneW / 15.3)";
             action = "call ACME_fnc_closeClamp";
             tooltip = "Close roller clamp controls";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
     };
 };
@@ -4128,9 +4049,9 @@ class ACME_SK_StyledLabel: RscText {
 // here.
 class ACME_SK_StyledButton: RscButton {
     colorBackground[] = {0.05,0.05,0.05,0.65};
-    colorBackgroundActive[] = {0,0,0,0};
-    colorBackgroundDisabled[] = {0,0,0,0};
-    colorFocused[] = {0,0,0,0};
+    colorBackgroundActive[] = {0.28,0.28,0.28,0.90};
+    colorBackgroundDisabled[] = {0,0,0,0.30};
+    colorFocused[] = {0.05,0.05,0.05,0.65};
     colorText[] = {1,1,1,1};
     colorDisabled[] = {1,1,1,0.30};
     font = "RobotoCondensed";
@@ -4189,15 +4110,11 @@ class ACME_SK_HotspotButton: ACME_SK_StyledButton {
 // it uses the same pickup and return behavior, and guides the needle to the patient-side fifth intercostal
 // space. a flip checks the opposite side without a close of the procedure. the logic is in acme_fnc_chestseal*.
 class ACME_ChestSeal_Dialog {
-    acmeGlassTargets[] = {{93000,"CS_SlotBG","panel"},{93001,"CS_SpearSlotBG","panel"},{93002,"CS_Flip","button"},{93003,"CS_Close","button"},{93004,"CS_Cancel","button"}};
-
     idd = 86400;
     movingEnable = 0;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_chestSealInit; [_this select 0,'ACME_ChestSeal_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_chestSealInit";
     onUnload = "_this call ACME_fnc_chestSealClose";
     class ControlsBackground {
-        #include "ui/glass/ACME_ChestSeal_Dialog.hpp"
-
         class CS_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
@@ -4342,12 +4259,6 @@ class ACME_ChestSeal_Dialog {
             onButtonClick = "[] call ACME_fnc_chestSealFlip";
             colorBackground[] = {0.14, 0.20, 0.30, 0.90};
             colorText[] = {0.93, 0.89, 0.80, 1};
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         // this was the rake and feel mode toggle. the hands moved onto the mouse buttons, where lmb rakes and RMB is
         // the feeler, so the toggle is gone. because RMB no longer closes the dialog, this slot becomes the explicit
@@ -4358,12 +4269,6 @@ class ACME_ChestSeal_Dialog {
             onButtonClick = "[86400] call ACME_fnc_minigameClose;";
             colorBackground[] = {0.13, 0.22, 0.17, 0.90};
             colorText[] = {0.93, 0.89, 0.80, 1};
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class CS_Cancel: RscButton {
             idc = 86425;
@@ -4373,12 +4278,6 @@ class ACME_ChestSeal_Dialog {
             action = "[86400] call ACME_fnc_minigameClose;";
             colorBackground[] = {0.30, 0.10, 0.10, 0.85};
             colorText[] = {0.93, 0.89, 0.80, 1};
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
     };
 };
@@ -4491,15 +4390,11 @@ class ACME_Thora_SlotBtn: RscButton {
     soundEscape[] = {"", 0, 1};
 };
 class ACME_Thoracostomy_Dialog {
-    acmeGlassTargets[] = {{93000,"Thora_Flip","button"},{93001,"Thora_Close","button"}};
-
     idd = 86600;
     movingEnable = 0;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_thoraInit; [_this select 0,'ACME_Thoracostomy_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_thoraInit";
     onUnload = "_this call ACME_fnc_thoraClose";
     class ControlsBackground {
-        #include "ui/glass/ACME_Thoracostomy_Dialog.hpp"
-
         class Thora_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
@@ -4533,13 +4428,8 @@ class ACME_Thoracostomy_Dialog {
             onButtonClick = "[] call ACME_fnc_thoraFlip";
             colorText[] = {0.93, 0.89, 0.80, 1};
             colorBackground[] = {0, 0, 0, 0.85};
-            colorBackgroundActive[] = {0,0,0,0};
+            colorBackgroundActive[] = {1, 1, 1, 0.06};
             sizeEx = "0.026 * safezoneH";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
         };
         class Thora_Close: RscButton {
             idc = -1;
@@ -4552,13 +4442,8 @@ class ACME_Thoracostomy_Dialog {
             onButtonClick = "[86600] call ACME_fnc_minigameClose;";
             colorText[] = {0.93, 0.89, 0.80, 1};
             colorBackground[] = {0, 0, 0, 0.85};
-            colorBackgroundActive[] = {0,0,0,0};
+            colorBackgroundActive[] = {1, 1, 1, 0.06};
             sizeEx = "0.028 * safezoneH";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
         };
     };
 };
@@ -4582,15 +4467,11 @@ class ACME_IV_ToolButton: RscButton {
     soundEnter[]={"",0,1}; soundClick[]={"",0,1}; soundPush[]={"",0,1}; soundEscape[]={"",0,1};
 };
 class ACME_IVMinigame_Dialog {
-    acmeGlassTargets[] = {{93000,"IV_BandSlotBG","panel"},{93001,"IV_PadBG","panel"},{93002,"IV_G14BG","panel"},{93003,"IV_G16BG","panel"},{93004,"IV_G18BG","panel"},{93005,"IV_G20BG","panel"},{93006,"IV_LineBG","panel"},{93007,"IV_Flip","button"},{93008,"IV_Cancel","button"}};
-
     idd = 86500;
     movingEnable = 0;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_ivMinigameInit; [_this select 0,'ACME_IVMinigame_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_ivMinigameInit";
     onUnload = "_this call ACME_fnc_ivMinigameClose";
     class ControlsBackground {
-        #include "ui/glass/ACME_IVMinigame_Dialog.hpp"
-
         class IV_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
@@ -4812,12 +4693,6 @@ class ACME_IVMinigame_Dialog {
             onButtonClick = "[] call ACME_fnc_ivMinigameFlip";
             colorBackground[] = {0.14, 0.18, 0.24, 0.90};
             colorText[] = {0.85, 0.92, 1, 1};
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         // remove an existing iv. click this, then click a placed catheter hub to pull it.
         class IV_Cancel: RscButton {
@@ -4828,12 +4703,6 @@ class ACME_IVMinigame_Dialog {
             action = "[] call ACME_fnc_ivMinigameDone";
             colorBackground[] = {0.30, 0.10, 0.10, 0.85};
             colorText[] = {0.93, 0.89, 0.80, 1};
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         // cursor-following item sprites. they are defined last, so the carried band, needle and pad render on top of
         // the buttons and everything else. they stay hidden unless something is held, and are positioned at the cursor
@@ -4939,18 +4808,14 @@ class ACME_IV_CathCursor: ACME_IV_HeldCursor {
 // procedural fills, #(argb,8,8,3)color(1,1,1,1) tinted through ctrlSetTextColor, draw the barrel, the fluid,
 // the plunger and the rod. the lists and buttons are populated and wired at runtime.
 class ACME_SyringeKit_Dialog {
-    acmeGlassTargets[] = {{93000,"ACME_SK_Backdrop","window"},{93001,"ACME_SK_SizesList","panel"},{93002,"ACME_SK_Info","panel"},{93003,"ACME_SK_Waste","button"},{93004,"ACME_SK_Draw","button"},{93005,"ACME_SK_Close","button"}};
-
     idd = 86300;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; call ACME_fnc_syringeKitOnLoad; [_this select 0,'ACME_SyringeKit_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; call ACME_fnc_syringeKitOnLoad";
 
     onUnload = "private _h = uiNamespace getVariable ['ACME_SK_PFH', -1]; if (_h >= 0) then {[_h] call CBA_fnc_removePerFrameHandler;}; uiNamespace setVariable ['ACME_SK_PFH', -1]; uiNamespace setVariable ['ACME_SK_DLG', displayNull]; uiNamespace setVariable ['ACME_SK_InitDisplay', displayNull]; uiNamespace setVariable ['ACME_SK_Grab', false]; uiNamespace setVariable ['ACME_SK_Shade', []]; uiNamespace setVariable ['ACME_SK_Shade_dlg', displayNull]; uiNamespace setVariable ['ACME_flashlightMenuActive', false];";
 
     class ControlsBackground {
-        #include "ui/glass/ACME_SyringeKit_Dialog.hpp"
-
         class ACME_SK_Backdrop: RscText {
             idc = 86310;
             text = "";
@@ -5122,9 +4987,9 @@ class ACME_SyringeKit_Dialog {
             colorText[] = {1,1,1,1};
             colorDisabled[] = {1,1,1,0.25};
             colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
+            colorBackgroundDisabled[] = {0,0,0,0.35};
+            colorBackgroundActive[] = {0.12,0.12,0.12,1};
+            colorFocused[] = {0,0,0,1};
             colorBorder[] = {0,0,0,0};
             style = 2;
             shadow = 0;
@@ -5132,38 +4997,21 @@ class ACME_SyringeKit_Dialog {
             sizeEx = "safeZoneH / 46";
             action = "";
             tooltip = "Expel down to the plunger and lock that as the saline base.";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
         };
         class ACME_SK_Draw: ACME_SK_Waste {
             idc = 86324;
             text = "Draw";
             tooltip = "Store the prepared push-dose pressor.";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class ACME_SK_Close: ACME_SK_Waste {
             idc = 86325;
             text = "Close";
             tooltip = "Close the syringe kit.";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
     };
 };
 
 class ACM_circulation_TransfusionMenu_Dialog {
-    onLoad = "[_this select 0, 'ACM_circulation_TransfusionMenu_Dialog'] call ACME_fnc_uiGlassInstall;";
     class ControlsBackground {
         #include "TransfusionMenu_Chrome.hpp"
     };
@@ -5476,15 +5324,11 @@ class ACM_circulation_TransfusionMenu_Dialog {
 // ACM's own breath sounds: {file, db, pitch}.
 
 class ACME_HangBag_Tuner {
-    acmeGlassTargets[] = {{93000,"BG","window"},{93001,"Report","button"},{93002,"Close","button"}};
-
     idd = 87100;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_hangBagTuneLoad; [_this select 0,'ACME_HangBag_Tuner'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_hangBagTuneLoad";
     class controlsBackground {
-        #include "ui/glass/ACME_HangBag_Tuner.hpp"
-
         class BG: RscText {
             idc = -1;
             x = "safeZoneX + safeZoneW - 0.44";
@@ -5585,13 +5429,6 @@ class ACME_HangBag_Tuner {
             h = 0.04;
             action = "[] call ACME_fnc_hangBagTuneReport";
             tooltip = "Show exact right-hand bag and patient-end line values";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class Close: Report {
             text = "DONE";
@@ -5599,13 +5436,6 @@ class ACME_HangBag_Tuner {
             w = 0.195;
             action = "closeDialog 0";
             tooltip = "Close the tuner";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
     };
 };
@@ -5613,16 +5443,12 @@ class ACME_HangBag_Tuner {
 // live tilt tuner for "Elevate Head 30". it has sliders for the pitch angle, the pivot offset and the body
 // lift, applied live to the currently elevated casualty. it mirrors the hang-bag tuner.
 class ACME_HeadElev_Tuner {
-    acmeGlassTargets[] = {{93000,"BG","window"},{93001,"Report","button"},{93002,"Close","button"}};
-
     idd = 87200;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_headElevTuneLoad; [_this select 0,'ACME_HeadElev_Tuner'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_headElevTuneLoad";
     onUnload = "missionNamespace setVariable ['ACME_headElev_tuning', false]";
     class controlsBackground {
-        #include "ui/glass/ACME_HeadElev_Tuner.hpp"
-
         class BG: RscText {
             idc = -1;
             x = "safeZoneX + safeZoneW - 0.44";
@@ -5726,13 +5552,6 @@ class ACME_HeadElev_Tuner {
             h = 0.04;
             action = "[] call ACME_fnc_headElevTuneReport";
             tooltip = "Show exact tilt/pivot/lift values";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class Close: RscButton {
             idc = -1;
@@ -5743,13 +5562,6 @@ class ACME_HeadElev_Tuner {
             h = 0.04;
             action = "closeDialog 0";
             tooltip = "Close the tuner";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
     };
 };
@@ -5761,15 +5573,11 @@ class ACME_HeadElev_Tuner {
 // idd 87900 was free. the taken set is 71500, 71510, 86200, 86300, 86400, 86500, 86600, 87100, 87200, 87300,
 // 87310, 87400, 87500, 87600, 87620, 87700 and 87800.
 class ACME_IVModule_Dialog {
-    acmeGlassTargets[] = {{93000,"BG","window"},{93001,"BtnConfirm","button"},{93002,"BtnCancel","button"}};
-
     idd = 87900;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "uiNamespace setVariable ['ACME_IVModule_display', _this select 0]; private _d = _this select 0; lbClear (_d displayCtrl 87901); { (_d displayCtrl 87901) lbAdd _x } forEach ['Left arm','Right arm','Left leg','Right leg','Neck (EJ)']; (_d displayCtrl 87901) lbSetCurSel 0; lbClear (_d displayCtrl 87902); { (_d displayCtrl 87902) lbAdd _x } forEach ['Upper','Middle','Lower','Left (EJ)','Right (EJ)']; (_d displayCtrl 87902) lbSetCurSel 1; call ACME_fnc_zeusIVDialogSite; lbClear (_d displayCtrl 87903); { (_d displayCtrl 87903) lbAdd _x } forEach ['14g','16g','18g','20g']; (_d displayCtrl 87903) lbSetCurSel 1; [_this select 0,'ACME_IVModule_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "uiNamespace setVariable ['ACME_IVModule_display', _this select 0]; private _d = _this select 0; lbClear (_d displayCtrl 87901); { (_d displayCtrl 87901) lbAdd _x } forEach ['Left arm','Right arm','Left leg','Right leg','Neck (EJ)']; (_d displayCtrl 87901) lbSetCurSel 0; lbClear (_d displayCtrl 87902); { (_d displayCtrl 87902) lbAdd _x } forEach ['Upper','Middle','Lower','Left (EJ)','Right (EJ)']; (_d displayCtrl 87902) lbSetCurSel 1; call ACME_fnc_zeusIVDialogSite; lbClear (_d displayCtrl 87903); { (_d displayCtrl 87903) lbAdd _x } forEach ['14g','16g','18g','20g']; (_d displayCtrl 87903) lbSetCurSel 1;";
     class controlsBackground {
-        #include "ui/glass/ACME_IVModule_Dialog.hpp"
-
         class BG: RscText {
             idc = -1;
             x = 0.5 - 0.22;
@@ -5867,12 +5675,6 @@ class ACME_IVModule_Dialog {
             h = 0.04;
             colorBackground[] = {0.12,0.28,0.16,1};
             action = "call ACME_fnc_zeusIVDialogConfirm";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class BtnCancel: RscButton {
             idc = -1;
@@ -5883,12 +5685,6 @@ class ACME_IVModule_Dialog {
             h = 0.04;
             colorBackground[] = {0.20,0.20,0.20,1};
             action = "closeDialog 0";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
     };
 };
@@ -5899,15 +5695,11 @@ class ACME_IVModule_Dialog {
 // in uinamespace ACME_TBIModule_target, and the confirm handler, ACME_fnc_zeusTBIDialogConfirm, reads the
 // controls and applies it.
 class ACME_TBIModule_Dialog {
-    acmeGlassTargets[] = {{93000,"BG","window"},{93001,"BtnConfirm","button"},{93002,"BtnCancel","button"}};
-
     idd = 87500;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "uiNamespace setVariable ['ACME_TBIModule_display', _this select 0]; lbClear ((_this select 0) displayCtrl 87502); { ((_this select 0) displayCtrl 87502) lbAdd _x } forEach ['Mild','Moderate','Severe','Herniating']; ((_this select 0) displayCtrl 87502) lbSetCurSel 1; ((_this select 0) displayCtrl 87501) sliderSetRange [0, 1]; ((_this select 0) displayCtrl 87501) sliderSetPosition 0.5; [_this select 0,'ACME_TBIModule_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "uiNamespace setVariable ['ACME_TBIModule_display', _this select 0]; lbClear ((_this select 0) displayCtrl 87502); { ((_this select 0) displayCtrl 87502) lbAdd _x } forEach ['Mild','Moderate','Severe','Herniating']; ((_this select 0) displayCtrl 87502) lbSetCurSel 1; ((_this select 0) displayCtrl 87501) sliderSetRange [0, 1]; ((_this select 0) displayCtrl 87501) sliderSetPosition 0.5;";
     class controlsBackground {
-        #include "ui/glass/ACME_TBIModule_Dialog.hpp"
-
         class BG: RscText {
             idc = -1;
             x = 0.5 - 0.18;
@@ -5970,12 +5762,6 @@ class ACME_TBIModule_Dialog {
             h = 0.04;
             colorBackground[] = {0.30,0.12,0.12,1};
             action = "call ACME_fnc_zeusTBIDialogConfirm";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class BtnCancel: RscButton {
             idc = -1;
@@ -5986,12 +5772,6 @@ class ACME_TBIModule_Dialog {
             h = 0.04;
             colorBackground[] = {0.15,0.15,0.15,1};
             action = "closeDialog 2";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
     };
 };
@@ -6006,15 +5786,11 @@ class ACME_TBIModule_Dialog {
 // interaction menu could only ever be a list of take actions. this is the fridge itself, so a medic can look
 // before they commit to opening it and see at a glance whether the type they need is present.
 class ACME_BloodFridgeContents_Dialog {
-    acmeGlassTargets[] = {{93000,"BG","window"},{93001,"Header","panel"},{93002,"BtnClose","button"}};
-
     idd = 87620;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_bfc_dlg', _this select 0]; call ACME_fnc_bloodFridgeContentsFill; [_this select 0,'ACME_BloodFridgeContents_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_bfc_dlg', _this select 0]; call ACME_fnc_bloodFridgeContentsFill;";
     class controlsBackground {
-        #include "ui/glass/ACME_BloodFridgeContents_Dialog.hpp"
-
         class BG: RscText { idc = -1; x = 0.5 - 0.22; y = 0.5 - 0.28; w = 0.44; h = 0.56; colorBackground[] = {0.03,0.03,0.05,0.94}; };
         class Header: RscText { idc = -1; x = 0.5 - 0.22; y = 0.5 - 0.28; w = 0.44; h = 0.045; colorBackground[] = {0.30,0.10,0.10,1}; };
         class Title: RscText { idc = -1; text = "BLOOD FRIDGE"; x = 0.5 - 0.205; y = 0.5 - 0.277; w = 0.30; h = 0.04; sizeEx = 0.032; colorText[] = {0.95,0.90,0.85,1}; };
@@ -6027,27 +5803,16 @@ class ACME_BloodFridgeContents_Dialog {
     class controls {
         class ListC: RscStructuredText { idc = 87622; x = 0.5 - 0.205; y = 0.5 - 0.158; w = 0.41; h = 0.30; size = 0.028; };
         class Foot: RscStructuredText { idc = 87623; x = 0.5 - 0.205; y = 0.5 + 0.152; w = 0.41; h = 0.08; size = 0.024; };
-        class BtnClose: RscButton { idc = -1; text = "Close"; x = 0.5 + 0.025; y = 0.5 + 0.238; w = 0.18; h = 0.038; colorBackground[] = {0.15,0.15,0.15,1}; action = "closeDialog 0";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-        };
+        class BtnClose: RscButton { idc = -1; text = "Close"; x = 0.5 + 0.025; y = 0.5 + 0.238; w = 0.18; h = 0.038; colorBackground[] = {0.15,0.15,0.15,1}; action = "closeDialog 0"; };
     };
 };
 
 class ACME_BloodFridge_Dialog {
-    acmeGlassTargets[] = {{93000,"BG","window"},{93001,"BtnRestock","button"},{93002,"BtnApply","button"},{93003,"BtnCancel","button"}};
-
     idd = 87600;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_bf_dlg', _this select 0]; ((_this select 0) displayCtrl 87604) setVariable ['on', true]; { private _c = (_this select 0) displayCtrl (_x select 0); _c sliderSetRange [(_x select 1), (_x select 2)]; _c sliderSetPosition (_x select 3); } forEach [[87601,0,40,6],[87602,0,40,2],[87603,0,40,0],[87605,0,72,24],[87606,0,59,0]]; [_this select 0,'ACME_BloodFridge_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_bf_dlg', _this select 0]; ((_this select 0) displayCtrl 87604) setVariable ['on', true]; { private _c = (_this select 0) displayCtrl (_x select 0); _c sliderSetRange [(_x select 1), (_x select 2)]; _c sliderSetPosition (_x select 3); } forEach [[87601,0,40,6],[87602,0,40,2],[87603,0,40,0],[87605,0,72,24],[87606,0,59,0]];";
     class controlsBackground {
-        #include "ui/glass/ACME_BloodFridge_Dialog.hpp"
-
         class BG: RscText { idc = -1; x = 0.5 - 0.20; y = 0.5 - 0.24; w = 0.40; h = 0.48; colorBackground[] = {0,0,0,0.90}; };
         class Title: RscText { idc = -1; text = "PLACE BLOOD FRIDGE"; x = 0.5 - 0.19; y = 0.5 - 0.23; w = 0.38; h = 0.035; sizeEx = 0.030; colorText[] = {0.85,0.30,0.30,1}; };
         class LOPos: RscText { idc = -1; text = "O+ units";  x = 0.5 - 0.19; y = 0.5 - 0.185; w = 0.24; h = 0.03; sizeEx = 0.024; };
@@ -6064,34 +5829,13 @@ class ACME_BloodFridge_Dialog {
         class VONeg: RscText { idc = 87612; text = "2"; x = 0.5 + 0.12; y = 0.5 - 0.130; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
         class SOther: RscXSliderH { idc = 87603; x = 0.5 - 0.19; y = 0.5 - 0.050; w = 0.30; h = 0.028; onSliderPosChanged = "((uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87613) ctrlSetText str (round (_this select 1));"; };
         class VOther: RscText { idc = 87613; text = "0"; x = 0.5 + 0.12; y = 0.5 - 0.075; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
-        class BtnRestock: RscButton { idc = 87604; text = "Yes"; x = 0.5 + 0.05; y = 0.5 - 0.020; w = 0.14; h = 0.032; colorBackground[] = {0.15,0.35,0.15,1}; action = "private _c = (uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87604; private _on = !(_c getVariable ['on', true]); _c setVariable ['on', _on]; _c ctrlSetText (['No','Yes'] select _on); _c ctrlSetBackgroundColor ([[0.35,0.15,0.15,1],[0.15,0.35,0.15,1]] select _on);";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-        };
+        class BtnRestock: RscButton { idc = 87604; text = "Yes"; x = 0.5 + 0.05; y = 0.5 - 0.020; w = 0.14; h = 0.032; colorBackground[] = {0.15,0.35,0.15,1}; action = "private _c = (uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87604; private _on = !(_c getVariable ['on', true]); _c setVariable ['on', _on]; _c ctrlSetText (['No','Yes'] select _on); _c ctrlSetBackgroundColor ([[0.35,0.15,0.15,1],[0.15,0.35,0.15,1]] select _on);"; };
         class SHours: RscXSliderH { idc = 87605; x = 0.5 - 0.19; y = 0.5 + 0.060; w = 0.30; h = 0.028; onSliderPosChanged = "((uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87615) ctrlSetText str (round (_this select 1));"; };
         class VHours: RscText { idc = 87615; text = "24"; x = 0.5 + 0.12; y = 0.5 + 0.035; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
         class SMins: RscXSliderH { idc = 87606; x = 0.5 - 0.19; y = 0.5 + 0.115; w = 0.30; h = 0.028; onSliderPosChanged = "((uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87616) ctrlSetText str (round (_this select 1));"; };
         class VMins: RscText { idc = 87616; text = "0"; x = 0.5 + 0.12; y = 0.5 + 0.090; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
-        class BtnApply: RscButton { idc = -1; text = "Place"; x = 0.5 + 0.02; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.30,0.12,0.12,1}; action = "call ACME_fnc_bloodFridgeDialogConfirm";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-        };
-        class BtnCancel: RscButton { idc = -1; text = "Cancel"; x = 0.5 - 0.19; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.15,0.15,0.15,1}; action = "closeDialog 2";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-        };
+        class BtnApply: RscButton { idc = -1; text = "Place"; x = 0.5 + 0.02; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.30,0.12,0.12,1}; action = "call ACME_fnc_bloodFridgeDialogConfirm"; };
+        class BtnCancel: RscButton { idc = -1; text = "Cancel"; x = 0.5 - 0.19; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.15,0.15,0.15,1}; action = "closeDialog 2"; };
     };
 };
 
@@ -6212,16 +5956,12 @@ class ACME_VentStructuredText: RscStructuredText {
 };
 
 class ACME_Ventilator_Dialog {
-    acmeGlassTargets[] = {{93000,"BtnClose","button"}};
-
     idd = 87700;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_vent_dlg', _this select 0]; [] call ACME_fnc_ventPanelInit; [_this select 0,'ACME_Ventilator_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_vent_dlg', _this select 0]; [] call ACME_fnc_ventPanelInit;";
     onUnload = "_this call ACME_fnc_ventPanelClose;";
     class controlsBackground {
-        #include "ui/glass/ACME_Ventilator_Dialog.hpp"
-
         class Dim: ACME_VentText {
             idc = 87709;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
@@ -6422,12 +6162,7 @@ class ACME_Ventilator_Dialog {
         class GraphTitle: ACME_VentText { idc = 87800; text="PRESSURE"; x=0.4;y=0.4;w=0.2;h=0.02; colorText[]={0.05,0.05,0.05,1}; colorBackground[]={0,0,0,0}; style=0; sizeEx=0.02; };
         class GraphField: ACME_VentText { idc = 87801; x=0.4;y=0.4;w=0.2;h=0.1; colorBackground[]={0.02,0.03,0.05,1}; };
         class GraphAxis: ACME_VentText { idc = 87802; x=0.4;y=0.4;w=0.2;h=0.001; colorBackground[]={0.35,0.38,0.42,1}; };  // zero line.
-        class BtnClose: RscButton { shadow = 0; idc = 87775; text="Close"; x="safezoneX + safezoneW - 0.12"; y="safezoneY + 0.02"; w=0.10; h=0.035; colorBackground[] = {0.15,0.15,0.15,0.9}; colorBackgroundActive[] = {0,0,0,0}; colorFocused[] = {0,0,0,0}; soundEnter[]={"",0,1}; soundPush[]={"",0,1}; soundClick[]={"",0,1}; soundEscape[]={"",0,1}; action="closeDialog 0";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-        };
+        class BtnClose: RscButton { shadow = 0; idc = 87775; text="Close"; x="safezoneX + safezoneW - 0.12"; y="safezoneY + 0.02"; w=0.10; h=0.035; colorBackground[]={0.15,0.15,0.15,0.9}; colorBackgroundActive[]={0.15,0.15,0.15,0.9}; colorFocused[]={0.15,0.15,0.15,0.9}; soundEnter[]={"",0,1}; soundPush[]={"",0,1}; soundClick[]={"",0,1}; soundEscape[]={"",0,1}; action="closeDialog 0"; };
     };
 };
 
@@ -6441,15 +6176,11 @@ class ACME_Ventilator_Dialog {
 // middle of the cords to pass it. on target the airway is secured, and off target the tube goes toward the
 // esophagus and fails. the engine is in fn_laryngo*.
 class ACME_Laryngoscopy_Dialog {
-    acmeGlassTargets[] = {{93000,"LG_ScopeBG","panel"},{93001,"LG_TubeBG","panel"},{93002,"LG_SyrBG","panel"},{93003,"LG_ColBG","panel"},{93004,"LG_SucBG","panel"},{93005,"LG_Cancel","button"}};
-
     idd = 87800;
     movingEnable = 0;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_laryngoInit; [_this select 0,'ACME_Laryngoscopy_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; _this call ACME_fnc_laryngoInit";
     onUnload = "[] call ACME_fnc_laryngoClose";
     class ControlsBackground {
-        #include "ui/glass/ACME_Laryngoscopy_Dialog.hpp"
-
         class LG_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
@@ -6891,12 +6622,6 @@ class ACME_Laryngoscopy_Dialog {
             colorBackground[] = {0.30,0.10,0.10,0.85};
             colorText[] = {0.93,0.89,0.80,1};
             action = "closeDialog 0";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
     };
 };
@@ -6924,17 +6649,13 @@ class ACME_MC_MenuBtn: RscButton {
 };
 
 class ACME_Megacode_Panel {
-    acmeGlassTargets[] = {{93000,"MC_Backdrop","window"},{93001,"MC_TitleBar","panel"},{93002,"MC_WaveBG","panel"},{93003,"MC_VitalsBG","panel"},{93004,"MC_ContentBG","panel"},{93005,"MC_BtnVitals","button"},{93006,"MC_BtnRhythm","button"},{93007,"MC_BtnAirway","button"},{93008,"MC_BtnWounds","button"},{93009,"MC_BtnNeuro","button"},{93010,"MC_BtnScenario","button"},{93011,"MC_BtnLog","button"},{93012,"MC_BtnReset","button"},{93013,"MC_BtnDone","button"}};
-
     idd = 87300;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "_this call ACME_fnc_megacodePanelLoad; [_this select 0,'ACME_Megacode_Panel'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "_this call ACME_fnc_megacodePanelLoad";
     onUnload = "_this call ACME_fnc_megacodeClosePanel";
 
     class ControlsBackground {
-        #include "ui/glass/ACME_Megacode_Panel.hpp"
-
         class MC_Backdrop: RscText {
             idc = -1;
             text = "";
@@ -6985,65 +6706,30 @@ class ACME_Megacode_Panel {
             x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(0/9)";
             action = "[87300, 'vitals'] call ACME_fnc_megacodeMenu";
             tooltip = "Heart rate, SpO2, BP, RR, EtCO2, temperature, pulse";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class MC_BtnRhythm: ACME_MC_MenuBtn {
             text = "RHYTHM";
             x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(1/9)";
             action = "[87300, 'rhythm'] call ACME_fnc_megacodeMenu";
             tooltip = "Cardiac rhythm library (sinus through asystole)";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class MC_BtnAirway: ACME_MC_MenuBtn {
             text = "AIRWAY";
             x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(2/9)";
             action = "[87300, 'airway'] call ACME_fnc_megacodeMenu";
             tooltip = "Airway / breathing states and tension pneumothorax";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class MC_BtnWounds: ACME_MC_MenuBtn {
             text = "WOUNDS";
             x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(3/9)";
             action = "[87300, 'wounds'] call ACME_fnc_megacodeMenu";
             tooltip = "Add wounds of any type to any region";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class MC_BtnNeuro: ACME_MC_MenuBtn {
             text = "NEURO/+";
             x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(4/9)";
             action = "[87300, 'neuro'] call ACME_fnc_megacodeMenu";
             tooltip = "ICP, GCS, herniation, seizure, posturing, pupils";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
-            colorBackground[] = {0,0,0,0};
         };
         class MC_BtnScenario: ACME_MC_MenuBtn {
             text = "SCENARIO";
@@ -7051,12 +6737,6 @@ class ACME_Megacode_Panel {
             colorBackground[] = {0.20,0.12,0.28,1};
             action = "[87300, 'scenario'] call ACME_fnc_megacodeMenu";
             tooltip = "Run an evolving clinical scenario that deteriorates toward arrest";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class MC_BtnLog: ACME_MC_MenuBtn {
             text = "LOG";
@@ -7064,12 +6744,6 @@ class ACME_Megacode_Panel {
             colorBackground[] = {0.10,0.20,0.16,1};
             action = "[87300, 'log'] call ACME_fnc_megacodeMenu";
             tooltip = "Activity log of everything applied to the manikin";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class MC_BtnReset: ACME_MC_MenuBtn {
             text = "RESET";
@@ -7077,12 +6751,6 @@ class ACME_Megacode_Panel {
             colorBackground[] = {0.35,0.20,0.10,1};
             action = "call ACME_fnc_megacodeReset";
             tooltip = "Reset the manikin to a clean baseline";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class MC_BtnDone: ACME_MC_MenuBtn {
             text = "DONE";
@@ -7090,12 +6758,6 @@ class ACME_Megacode_Panel {
             colorBackground[] = {0.30,0.10,0.12,1};
             action = "closeDialog 0";
             tooltip = "Close the control panel";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
     };
 };
@@ -7104,15 +6766,11 @@ class ACME_Megacode_Panel {
 // rope slack. ACME_fnc_megacodeCableTunerLoad builds every control, the sliders and the close button, at
 // runtime.
 class ACME_MC_CableTuner {
-    acmeGlassTargets[] = {{93000,"CT_Backdrop","window"},{93001,"CT_TitleBar","panel"}};
-
     idd = 87310;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "_this call ACME_fnc_megacodeCableTunerLoad; [_this select 0,'ACME_MC_CableTuner'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "_this call ACME_fnc_megacodeCableTunerLoad";
     class ControlsBackground {
-        #include "ui/glass/ACME_MC_CableTuner.hpp"
-
         class CT_Backdrop: RscText {
             idc = -1;
             text = "";
@@ -7144,16 +6802,12 @@ class ACME_MC_CableTuner {
 // in and it goes cold. unload moves a unit out and it starts warming. the open function stashes the cooler
 // class being managed in uinamespace ACME_CLR_Class.
 class ACME_CoolerManager_Dialog {
-    acmeGlassTargets[] = {{93000,"ACME_CLR_Backdrop","window"},{93001,"ACME_CLR_CapBadge","panel"},{93002,"ACME_CLR_ListIn","panel"},{93003,"ACME_CLR_ListOut","panel"},{93004,"ACME_CLR_Unload","button"},{93005,"ACME_CLR_Load","button"},{93006,"ACME_CLR_Close","button"}};
-
     idd = 87400;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_CLR_DLG', (_this select 0)]; call ACME_fnc_coolerRefresh; [{ if (!isNull (uiNamespace getVariable ['ACME_CLR_DLG', displayNull])) then { call ACME_fnc_coolerRefresh; }; }, []] call CBA_fnc_execNextFrame; [_this select 0,'ACME_CoolerManager_Dialog'] call ACME_fnc_uiGlassInstall;";
+    onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_CLR_DLG', (_this select 0)]; call ACME_fnc_coolerRefresh; [{ if (!isNull (uiNamespace getVariable ['ACME_CLR_DLG', displayNull])) then { call ACME_fnc_coolerRefresh; }; }, []] call CBA_fnc_execNextFrame;";
     onUnload = "uiNamespace setVariable ['ACME_CLR_DLG', displayNull]; call ACME_fnc_coolerClearSlots;";
     class ControlsBackground {
-        #include "ui/glass/ACME_CoolerManager_Dialog.hpp"
-
         class ACME_CLR_Backdrop: RscText {
             idc = 87401;
             text = "";
@@ -7302,12 +6956,6 @@ class ACME_CoolerManager_Dialog {
             colorText[] = {0.85,0.95,1,1};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH * 0.021";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class ACME_CLR_Load: RscButton {
             idc = 87413;
@@ -7322,12 +6970,6 @@ class ACME_CoolerManager_Dialog {
             colorText[] = {0.85,0.95,1,1};
             font = "RobotoCondensed";
             sizeEx = "safeZoneH * 0.021";
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
         class ACME_CLR_Close: RscButton {
             idc = 87414;
@@ -7342,12 +6984,6 @@ class ACME_CoolerManager_Dialog {
             font = "PuristaBold";
             sizeEx = "safeZoneH * 0.024";
             style = 2;
-            borderSize = 0;
-            colorShadow[] = {0,0,0,0};
-            colorBorder[] = {0,0,0,0};
-            colorFocused[] = {0,0,0,0};
-            colorBackgroundDisabled[] = {0,0,0,0};
-            colorBackgroundActive[] = {0,0,0,0};
         };
     };
 };
@@ -8531,18 +8167,7 @@ class CfgVehicles {
 // condition/callback or replace ACM's continuous-action functions; addon-specific systems only observe their
 // published patient state where needed.
 
-class ACE_Medical_Menu_ActionButton;
-class ACM_MedicalMenu_ActionButton_None: ACE_Medical_Menu_ActionButton {
-    animTextureNormal = "";
-    animTextureDefault = "";
-    animTextureDisabled = "";
-    animTextureOver = "";
-    animTextureFocused = "";
-    animTexturePressed = "";
-    colorBackground[] = {0,0,0,0};
-    colorBackground2[] = {0,0,0,0};
-    colorBackgroundFocused[] = {0,0,0,0};
-};
+class ACM_MedicalMenu_ActionButton_None;
 class ACM_MedicalMenu_ActionButton_ACM_NRBMask: ACM_MedicalMenu_ActionButton_None {
     textureNoShortcut = "\acm_extended\ui\items\nrbmask_ca.paa";
 };

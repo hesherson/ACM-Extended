@@ -281,7 +281,7 @@ private _actionIndex = 0;
         private _ctrl = _actionButtons param [_shownIndex, controlNull];
         if (isNull _ctrl || {(_ctrl getVariable ['ACME_menuButtonClass', '']) isNotEqualTo _buttonClass}) then {
             if (!isNull _ctrl) then { ctrlDelete _ctrl; };
-            _ctrl = [_display,_buttonClass,-1,_group] call ACME_fnc_uiGlassControl;
+            _ctrl = _display ctrlCreate [_buttonClass, -1, _group];
             _ctrl setVariable ['ACME_menuButtonClass', _buttonClass];
             _actionButtons set [_shownIndex, _ctrl];
         };

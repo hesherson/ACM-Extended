@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createMedicalStore,validState} from '../bridge.mjs';
 const hello={version:2,session:'ui:7:1',patientRef:['1:2','mission','patient'],epoch:4};
 const card={slot:0,token:'row:1:0',name:'Saline 750 mL',detail:'Primary',status:'Running',thermal:'LW Quantum / Inline',color:[1,1,1,1],icon:'\\acm\\saline.paa',vial:'',fraction:.75,marks:[[0,0],[1,1000]],selected:true};
-const state=()=>({radiusPx:7,view:'transfusion-cards',patient:{ref:[...hello.patientRef],epoch:4},cards:[structuredClone(card)],canPrevious:false,canNext:true});
+const state=()=>({view:'transfusion-cards',patient:{ref:[...hello.patientRef],epoch:4},cards:[structuredClone(card)],canPrevious:false,canNext:true});
 const packet=(sequence=1)=>({version:2,session:hello.session,sequence,capturedAt:10,state:state()});
 function setup(){let time=10;const sent=[];const store=createMedicalStore(s=>sent.push(JSON.parse(s)),()=>time);store.bootstrap(hello);store.receive(packet());return {store,sent,advance:t=>{time=t;}};}
 test('handshake sends only ready in the new session',()=>{const {sent}=setup();assert.deepEqual(sent,[{version:2,session:hello.session,sequence:1,operation:'ready',route:[]}]);});
@@ -25,5 +25,3 @@ test('new page retires old pending selection and resets sequence',()=>{const {st
 test('an empty native access is represented without a phantom card',()=>{const s=state();s.cards=[];assert.equal(validState(s),true);});
 for(const mutate of [s=>s.cards.push({...card,slot:1,token:'two'},{...card,token:'three'}),s=>s.cards.push({...card}),s=>s.cards[0].name='x'.repeat(513),s=>s.cards[0].fraction=NaN,s=>s.cards[0].marks=Array(12).fill([0,0]),s=>s.cards[0].color=[2,0,0,1]]) test(`reject malformed bounded card ${mutate}`,()=>{const s=state();mutate(s);assert.equal(validState(s),false);});
 test('retired view cannot send or receive',()=>{const {store}=setup();store.retire();assert.equal(store.select(card.token),false);assert.equal(store.receive(packet(2)),false);});
-
-test('surface radius is bounded rendering data',()=>{const s=state();s.radiusPx=NaN;assert.equal(validState(s),false);s.radiusPx=257;assert.equal(validState(s),false);s.radiusPx=7;assert.equal(validState(s),true);});

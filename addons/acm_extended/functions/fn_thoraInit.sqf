@@ -241,7 +241,7 @@ uiNamespace setVariable ["ACME_Thora_SealMode", false];
     if (_isSeal) then {_count = if (_canSeal) then {[_medic, uiNamespace getVariable ["ACME_Thora_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount} else {0};};
     private _toolLocked = (_isTube || {_isSeal}) && {_count <= 0};
 
-    private _bg = [_display,"RscText",-1,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+    private _bg = _display ctrlCreate ["RscText", -1];
     _bg ctrlSetPosition [_colX, _ty, _colW, _slotH];
     _bg ctrlSetBackgroundColor [0, 0, 0, 0.85];
     _bg setVariable ["thoraTool", _tool];

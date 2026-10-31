@@ -28,9 +28,6 @@ def presentation_code(text):
     # Font operations are recorded, not measured by an Arma renderer.
     text = re.sub(r'(_\w+) ctrlSetFontHeight ([^;]+);', r'[_dummyFont, "font", \2] call _controlWrite;', text)
     text = re.sub(r'(_\w+) ctrlSetFont "[^"]+";', '', text)
-    # The glass decorator is an engine presentation boundary; retain the original target constructor here.
-    # B295 separately executes the factory's paint-before-hit ordering and unchanged target arguments.
-    text = text.replace('[_d,"RscText",-1,controlNull,"panel"] call ACME_fnc_uiGlassControl', '_d ctrlCreate ["RscText", -1]')
     text = re.sub(r'_d ctrlCreate (\[[^;]+\])', r'(\1 call _create)', text)
     return ui_code(text)
 

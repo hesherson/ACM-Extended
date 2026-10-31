@@ -41,7 +41,7 @@ if (!isNull _yTarget && {count (_yTarget getVariable ["ACME_YLines", []]) > 0}
 
 // compatible-saline cue, shown only during the mid-y-line "Select Flush Saline" step, where a blood unit is
 // pending its pairing. every valid ACM saline can be the clamped limb, so each saline row in the available-bags
-// list is tinted a soft green whose opacity pulses, as an at-a-glance indicator of which bag to pick to flush
+// list is tinted a steady soft green, as an at-a-glance indicator of which bag to pick to flush
 // or pair. outside that step, with nothing pending, the rows keep their default color. it is re-applied every
 // pass, so it holds through rebuilds.
 private _selectingSalineInventoryB274 = call ACME_fnc_transfusionFilterInventory;
@@ -51,11 +51,10 @@ private _rl = _display displayCtrl 86005;
 if (!isNull _rl) then {
     private _selectingSaline = (missionNamespace getVariable ["ACME_yPending", ""]) != ""
         && {(missionNamespace getVariable ["ACME_yPendingSaline", ""]) == ""};
-    private _p = 0.5 + 0.5 * sin (360 * ((diag_tickTime * 1.1) % 1));
     for "_r" from 0 to ((lbSize _rl) - 1) do {
         ((_rl lbData _r) splitString "|") params [["_rClass", ""], ["_rAction", ""]];
         if (_rClass != "" && {[_rClass, _rAction] call ACME_fnc_isSalineItem}) then {
-            _rl lbSetColor [_r, if (_selectingSaline) then {[0.45,0.95,0.55,0.4 + 0.45 * _p]} else {if (_selectingPiggyback) then {[0.79,0.73,0.89,1]} else {[1,1,1,1]}}];
+            _rl lbSetColor [_r, if (_selectingSaline) then {[0.45,0.95,0.55,0.85]} else {if (_selectingPiggyback) then {[0.79,0.73,0.89,1]} else {[1,1,1,1]}}];
         };
     };
 };

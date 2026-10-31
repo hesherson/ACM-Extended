@@ -32,6 +32,7 @@ After rebuilding, replace the installed mod with the new release output and rest
 
 ## UI development
 
-- [B295 rounded glass surfaces](docs/audits/B295-ui-glass-consistency.md): appearance-only consistency pass preserving the current screens, geometry and actions.
 - [B294 React cards in the existing menu](docs/audits/B294-react-in-place.md): replaces the unnecessary B293 overview with an in-place fluid-card renderer; deployment and native acceptance.
 - [Shared React UI architecture for ACME, BATDOK and Tempus Pro](docs/design/react-medical-ui-architecture.md): device/source associations, waveform rendering and native action boundaries. Device interfaces remain future work.
+
+B296 restores the B294 UI surfaces, removes B295 glass/scene blur and ACE menu styling, and makes ACME action highlights steady. Existing in-place React transfusion cards remain experimental and off by default. See [recovery validation](docs/audits/B296-ui-recovery.md).

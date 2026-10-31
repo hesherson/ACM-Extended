@@ -64,6 +64,9 @@ def test_tag_text_is_lower_larger_and_edit_mode_uses_native_draw_position_withou
 
 def test_done_pulses_green_only_when_tag_has_text_but_is_not_required():
     tick = txt('functions/fn_skUiTick.sqf')
+    # Historical ID retained; B296 replaces pulsing with a steady acknowledgement.
+    assert 'private _a = 0.60;' in tick
+    assert 'sin (' not in tick
     assert 'private _done = _d displayCtrl 84472;' in tick
     assert 'private _typed = false;' in tick
     assert 'findIf {_x > 32}' in tick

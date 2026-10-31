@@ -40,7 +40,7 @@ def tick_body():
     # This complete initial tick section owns repeat, editor hold and collapse.
     # Subsequent stock/plunger/NV work is a distinct scope, not replaced or tested here.
     start = 'disableSerialization;'
-    end = 'private _navPulse = '
+    end = 'private _navColor = '  # B296: identical boundary, steady navigation color.
     assert text.count(start) == text.count(end) == 1
     return text[text.index(start):text.index(end)]
 

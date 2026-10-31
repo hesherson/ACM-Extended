@@ -46,7 +46,7 @@ function App() {
     return ()=>{clearInterval(timer);window.removeEventListener('pagehide',close);};
   },[]);
   const enabled=snapshot.status==='connected';
-  return <main style={{'--acme-radius':`${snapshot.state?.radiusPx ?? 7}px`}} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
+  return <main aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
     onKeyDown={e=>{if(keys[e.key]){e.preventDefault();store.key(keys[e.key]);}}}>
     {snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled}/>)}
     {snapshot.state?.cards.length===0 && <p className="empty">No fluids at this access</p>}

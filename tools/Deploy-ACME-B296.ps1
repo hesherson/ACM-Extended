@@ -29,9 +29,9 @@ try {
         throw 'Source changes or unrelated untracked files found. Nothing was discarded.'
     }
     $Startup = Get-Content -LiteralPath 'addons\acm_extended\functions\fn_initForkStartupRuntime.sqf' -Raw
-    if (-not $Startup.Contains('ACME_buildBatch = "B295";') -or
-        -not $Startup.Contains('ACME_networkAuditRevision = "NA8-B295-1.2.4.1-candidate";')) {
-        throw 'This checkout is not B295.'
+    if (-not $Startup.Contains('ACME_buildBatch = "B296";') -or
+        -not $Startup.Contains('ACME_networkAuditRevision = "NA8-B296-1.2.4.1-candidate";')) {
+        throw 'This checkout is not B296.'
     }
     if ($ServerKeysPath -and -not (Test-Path -LiteralPath $ServerKeysPath -PathType Container)) {
         throw 'The optional server keys folder does not exist.'
@@ -54,8 +54,8 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'Deployment did not succeed. Read the error; an unfinished journal requires -Recover. Do not launch an unverified installation.'
     }
-    Write-Host "B295 deployed and verified in $Repo and its existing .hemttout\build path."
-    Write-Host 'Confirm 1.2.4.1 / B295 in-game. Server and all clients/HCs must use the same complete build.'
+    Write-Host "B296 deployed and verified in $Repo and its existing .hemttout\build path."
+    Write-Host 'Confirm 1.2.4.1 / B296 in-game. Server and all clients/HCs must use the same complete build.'
     Write-Host 'Persistence: retain the server profile and follow docs/maintenance/B288-persistence-adapter.md; native loadouts alone are incomplete.'
     Write-Host 'Nothing was pushed or published by this helper.'
 } finally { Pop-Location }

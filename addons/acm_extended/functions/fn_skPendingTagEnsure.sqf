@@ -33,7 +33,7 @@ for "_line" from 0 to 2 do {
 // by fn_skPendingTagRender, so there is no initial jump or overlap before the first repaint.
 private _button = _d displayCtrl 84610;
 if (isNull _button) then {
-    _button = [_d,"ACME_SK_StyledButton", 84610] call ACME_fnc_uiGlassControl;
+    _button = _d ctrlCreate ["ACME_SK_StyledButton", 84610];
     if (!isNull _button) then {
         private _size0 = uiNamespace getVariable ["ACME_SK_CurSize", 10];
         private _idx0 = ([10,5,3,1] find _size0) max 0;
@@ -84,7 +84,7 @@ if (isNull _button) then {
 // class and both LBSelChanged + MouseButtonUp commit paths so one click always applies a tag.
 private _list = _d displayCtrl 84611;
 if (isNull _list) then {
-    _list = [_d,"ACME_SK_TagList",84611,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+    _list = _d ctrlCreate ["ACME_SK_TagList", 84611];
     if (!isNull _list) then {
         _list ctrlSetPosition [0,0,0,0];
         _list ctrlSetBackgroundColor [0.04,0.04,0.04,0.96];

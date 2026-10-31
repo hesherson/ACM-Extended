@@ -175,5 +175,5 @@ addons/acm_extended/tools/test_b292_ocular_publication.py
 addons/acm_extended/tools/test_b293_react_bridge.py
 tools/test_b293_react_frontend.py
 
-# B295: styling scope, preserved geometry/actions and owned scene blur.
-addons/acm_extended/tools/test_b295_ui_surfaces.py
+# B296: exact rollback and steady ACME controls.
+addons/acm_extended/tools/test_b296_ui_recovery.py

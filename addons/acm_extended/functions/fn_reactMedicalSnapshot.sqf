@@ -41,7 +41,7 @@ private _cards = [];
 } forEach (_window select 1);
 _display setVariable ["ACME_reactRows",_rows];
 createHashMapFromArray [
-    ["radiusPx",floor (safeZoneH * 0.007 / pixelH)],["view","transfusion-cards"],["patient",createHashMapFromArray [
+    ["view","transfusion-cards"],["patient",createHashMapFromArray [
         ["ref",["encode",_context select 1] call ACME_fnc_clinicalObjectRef],["epoch",_context select 4]]],
     ["cards",_cards],["canPrevious",_window select 2],["canNext",_window select 3]
 ]

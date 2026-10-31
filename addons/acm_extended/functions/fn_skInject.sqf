@@ -73,12 +73,12 @@ private _flushTopY = _topY + _sizeListH + (safeZoneH / 12);
 private _flushListH = safeZoneH / 14;
 
 // the syringe size: a label plus an ordered list of 1, 3, 5 and 10 ml.
-private _sizeLabel = [_display,"ACME_SK_StyledLabel",84129,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+private _sizeLabel = _display ctrlCreate ["ACME_SK_StyledLabel", 84129];
 _sizeLabel ctrlSetPosition [_leftX, _topY - _labelH, _listW, _labelH];
 _sizeLabel ctrlSetText "Syringe";
 _sizeLabel ctrlCommit 0;
 
-private _sizeList = [_display,"ACME_SK_StyledList",84130,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+private _sizeList = _display ctrlCreate ["ACME_SK_StyledList", 84130];
 _sizeList ctrlSetPosition [_leftX, _topY, _listW, _sizeListH];
 _sizeList ctrlCommit 0;
 lbClear _sizeList;
@@ -89,12 +89,12 @@ lbClear _sizeList;
 _sizeList ctrlAddEventHandler ["LBSelChanged", {_this call ACME_fnc_skPickSize}];
 
 // flushes: a separate label and list under the sizes.
-private _flushLabel = [_display,"ACME_SK_StyledLabel",84131,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+private _flushLabel = _display ctrlCreate ["ACME_SK_StyledLabel", 84131];
 _flushLabel ctrlSetPosition [_leftX, _flushTopY - _labelH, _listW, _labelH];
 _flushLabel ctrlSetText "Flushes";
 _flushLabel ctrlCommit 0;
 
-private _flushList = [_display,"ACME_SK_StyledList",84132,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+private _flushList = _display ctrlCreate ["ACME_SK_StyledList", 84132];
 _flushList ctrlSetPosition [_leftX, _flushTopY, _listW, _flushListH];
 _flushList ctrlCommit 0;
 lbClear _flushList;
@@ -206,11 +206,11 @@ private _navGap = 4 * pixelW;
 private _navW = _tw * 0.72;
 private _navLeftX = (_uiX + (_uiW/2)) - (_navGap/2) - _navW;
 private _navRightX = (_uiX + (_uiW/2)) + (_navGap/2);
-private _pulseBack = [_display,"RscText",84153,controlNull,"button"] call ACME_fnc_uiGlassControl;
+private _pulseBack = _display ctrlCreate ["RscText", 84153];
 _pulseBack ctrlSetPosition [_navLeftX, _viewY, _navW, _th];
 _pulseBack ctrlSetBackgroundColor (["info", 0.45] call ACME_fnc_a11yColor);
 _pulseBack ctrlCommit 0;
-private _pulseBackR = [_display,"RscText",84157,controlNull,"button"] call ACME_fnc_uiGlassControl;
+private _pulseBackR = _display ctrlCreate ["RscText", 84157];
 _pulseBackR ctrlSetPosition [_navRightX, _viewY, _navW, _th];
 _pulseBackR ctrlSetBackgroundColor (["info", 0.45] call ACME_fnc_a11yColor);
 _pulseBackR ctrlCommit 0;
@@ -231,7 +231,7 @@ _toggleBtnR ctrlCommit 0;
 // B76 contextual action directly above Draw Syringe. The backing owns the blinking red/green color so hover/focus
 // cannot freeze it; the transparent button owns only text/input.
 private _bodyActionY = _viewY - _th - safeZoneH*0.006;
-private _bodyActionBack = [_display,"RscText",84819,controlNull,"button"] call ACME_fnc_uiGlassControl;
+private _bodyActionBack = _display ctrlCreate ["RscText",84819];
 _bodyActionBack ctrlSetPosition [_tx,_bodyActionY,_tw,_th];
 _bodyActionBack ctrlShow false; _bodyActionBack ctrlCommit 0;
 private _bodyAction = _display ctrlCreate ["ACME_SK_PulseButton",84820];
@@ -326,7 +326,7 @@ for "_line" from 0 to 2 do {
     _e ctrlAddEventHandler ["MouseEnter", {[true] call ACME_fnc_skCarouselHover;}];
     _e ctrlAddEventHandler ["MouseExit", {[false] call ACME_fnc_skCarouselHover;}];
 };
-private _colorBtn = [_display,"ACME_SK_StyledButton", 84470] call ACME_fnc_uiGlassControl;
+private _colorBtn = _display ctrlCreate ["ACME_SK_StyledButton", 84470];
 _colorBtn ctrlSetText "Edit Syringe Tag";
 _colorBtn ctrlShow false;
 _colorBtn ctrlAddEventHandler ["ButtonClick", {
@@ -346,7 +346,7 @@ _colorBtn ctrlAddEventHandler ["ButtonClick", {
 }];
 _colorBtn ctrlAddEventHandler ["MouseEnter", {uiNamespace setVariable ["ACME_SK_CarouselZoneHover",true];}];
 _colorBtn ctrlAddEventHandler ["MouseExit", {uiNamespace setVariable ["ACME_SK_CarouselZoneHover",false];}];
-private _colorList = [_display,"ACME_SK_TagList",84471,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+private _colorList = _display ctrlCreate ["ACME_SK_TagList", 84471];
 _colorList ctrlShow false;
 {
     _x params ["_id","_label"];
@@ -378,7 +378,7 @@ _colorList ctrlAddEventHandler ["MouseButtonUp", {
 _colorList ctrlAddEventHandler ["MouseEnter", {uiNamespace setVariable ["ACME_SK_CarouselZoneHover",true];}];
 _colorList ctrlAddEventHandler ["MouseExit", {uiNamespace setVariable ["ACME_SK_CarouselZoneHover",false];}];
 
-private _tagDone = [_display,"ACME_SK_StyledButton", 84472] call ACME_fnc_uiGlassControl;
+private _tagDone = _display ctrlCreate ["ACME_SK_StyledButton", 84472];
 _tagDone ctrlSetText "Done";
 _tagDone ctrlSetTooltip "Save tag edits and return to the Body Map";
 _tagDone ctrlSetPosition [_tx,_viewY,_tw,_th];
@@ -442,11 +442,11 @@ _display displayAddEventHandler ["KeyUp", {
 // Backings precede their buttons so selected colors do not intercept any part of a click.
 private _routeGap = 2 * pixelW;
 private _routeHalf = (_tw - _routeGap) / 2;
-private _routeIVBack = [_display,"RscText",84155,controlNull,"button"] call ACME_fnc_uiGlassControl;
+private _routeIVBack = _display ctrlCreate ["RscText", 84155];
 _routeIVBack ctrlSetPosition [_tx, _routeY, _routeHalf, _th];
 _routeIVBack ctrlShow false;
 _routeIVBack ctrlCommit 0;
-private _routeIMBack = [_display,"RscText",84156,controlNull,"button"] call ACME_fnc_uiGlassControl;
+private _routeIMBack = _display ctrlCreate ["RscText", 84156];
 _routeIMBack ctrlSetPosition [_tx + _routeHalf + _routeGap, _routeY, _routeHalf, _th];
 _routeIMBack ctrlShow false;
 _routeIMBack ctrlCommit 0;

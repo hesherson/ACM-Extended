@@ -52,17 +52,17 @@ if (_body) then {
     if (_tagEditMode) then {
         uiNamespace setVariable ["ACME_SK_CarouselExpanded", true];
         uiNamespace setVariable ["ACME_SK_CarouselCollapseAt", 0];
-        // B68: once any real tag text exists, pulse Done green as a soft acknowledgement. Empty tags remain valid.
+        // B68: once any real tag text exists, show Done green as a soft acknowledgement. Empty tags remain valid.
         private _done = _d displayCtrl 84472;
         if (!isNull _done) then {
             private _typed = false;
             {
-                // Pulse only for actual entered content, not an accidental blank/space in a transparent editor.
+                // Highlight only actual entered content, not an accidental blank/space in a transparent editor.
                 private _chars = toArray (ctrlText (_d displayCtrl _x));
                 if ((_chars findIf {_x > 32}) >= 0) exitWith {_typed = true;};
             } forEach [84460,84461,84462];
             if (_typed) then {
-                private _a = 0.42 + 0.36 * (0.5 + 0.5 * sin (_now * 260));
+                private _a = 0.60; // Steady acknowledgement; never pulse controls.
                 _done ctrlSetBackgroundColor (["success", _a] call ACME_fnc_a11yColor);
             } else {
                 _done ctrlSetBackgroundColor [0.05,0.05,0.05,0.65];
@@ -114,9 +114,9 @@ if (_body) then {
         call ACME_fnc_skBodyActionRender;
     };
 };
-private _navPulse = ["info", 0.30 + 0.45 * (0.5 + 0.5 * sin (_now * 220))] call ACME_fnc_a11yColor;
-(_d displayCtrl 84153) ctrlSetBackgroundColor _navPulse;
-(_d displayCtrl 84157) ctrlSetBackgroundColor _navPulse;
+private _navColor = ["info", 0.52] call ACME_fnc_a11yColor;
+(_d displayCtrl 84153) ctrlSetBackgroundColor _navColor;
+(_d displayCtrl 84157) ctrlSetBackgroundColor _navColor;
 // Native access changes can show Push again; retain the Narc Box's Save action and view.
 (_d displayCtrl 84005) ctrlShow _infusion;
 (_d displayCtrl 84005) ctrlEnable _infusion;
@@ -179,7 +179,7 @@ if (_body && {_now >= (_d getVariable ["ACME_SK_NextBody", 0])}) then {
     call ACME_fnc_skBuildHotspots;
 };
 
-private _alpha = 0.22 + 0.26 * (0.5 + 0.5 * sin (_now * 240));
+private _alpha = 0.35; // Selected stock stays visibly selected without flashing.
 {
     _x params ["_kind", "_nativeID", "_data", "_value", "_back", "_visible", ["_text1", controlNull], ["_text2", controlNull], ["_stock", controlNull], ["_countText", controlNull]];
     if (!_visible) then {continue};
@@ -227,7 +227,7 @@ private _alpha = 0.22 + 0.26 * (0.5 + 0.5 * sin (_now * 240));
 
     private _flash = _back getVariable ["ACME_SK_FlashAt", -1];
     private _elapsed = _now - _flash;
-    private _red = _flash >= 0 && {_elapsed < 0.09 || {_elapsed >= 0.18 && {_elapsed < 0.27}}};
+    private _red = _flash >= 0 && {_elapsed < 0.36}; // One steady rejection cue; no double flash.
     // B54: darker resting rows so the section reads as one dark panel.
     _back ctrlSetBackgroundColor (if (_red) then {[1,0.05,0.05,0.85]} else {if (_selected) then {[0.12,0.75,0.25,_alpha]} else {[0,0,0,0.30]}});
 

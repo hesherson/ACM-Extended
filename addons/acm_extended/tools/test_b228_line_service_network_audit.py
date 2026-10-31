@@ -280,7 +280,7 @@ def test_single_service_button_and_diagnostic_free_stop_label_source_contract():
     paint=read('transfusionServicePaint')
     assert '"Prime Line (25 mL)", "Flush Line"' in paint
     assert '_primed && {_dirty} && {!_blood}' in paint
-    assert 'ctrlSetBackgroundColor' in paint and 'sin (360' in paint
+    assert 'ctrlSetBackgroundColor' in paint and 'sin (360' not in paint
     assert 'playSoundUI' in paint and '"soundClick"' in paint
     assert '"MouseButtonUp"' not in paint  # no second queue cancel or click sound
     assert 'LW Quantum · Warming' in read('transfusionBagPresentation')
@@ -406,19 +406,20 @@ def test_one_control_changes_prime_flush_label_without_recreation(primed,kind,ex
 
 
 def test_required_flush_red_flash_stops_when_service_begins():
+    # Historical ID retained; B296 requires a steady red cue until service begins.
     execute(service_paint_setup()+'''
       _state=[500,0,false,true,true,"","reserve",[]];
       [missionNamespace,_patient,"body",false,0,true] call _paint;
       private _first=+(missionNamespace getVariable ["ACME_txSkinTint",[]]);
       _nowTime=_nowTime+.25;[missionNamespace,_patient,"body",false,0,true] call _paint;
       private _tint=missionNamespace getVariable ["ACME_txSkinTint",[]];
-      [!(_tint isEqualTo _first) && {(_tint select 0)>(_tint select 1)}
-        && {(_tint select 0)>(_tint select 2)},"required flush did not pulse red"] call _check;
-      [_background isEqualTo [0,0,0,0],"flush pulse repainted square native corners"] call _check;
+      [(_tint isEqualTo _first) && {(_tint select 0)>(_tint select 1)}
+        && {(_tint select 0)>(_tint select 2)},"required flush did not stay steadily red"] call _check;
+      [_background isEqualTo [0,0,0,0],"flush cue repainted square native corners"] call _check;
       _state set [5,"flush"];_state set [7,["body",false,0,"reserve",50,10,100,_medic,1,[],"flush",50,0,"one"]];
       [missionNamespace,_patient,"body",false,0,true] call _paint;
       [(missionNamespace getVariable ["ACME_txSkinTint",[]]) isEqualTo [1,1,1,1]
-        && {_background isEqualTo [0,0,0,0]},"in-progress flush still flashes"] call _check;
+        && {_background isEqualTo [0,0,0,0]},"in-progress flush retained the idle warning"] call _check;
     ''')
 
 

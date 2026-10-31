@@ -106,7 +106,7 @@ private _fnStockInfo = {
     if (isNull _group) then {
         // B54: a darker backdrop behind the whole section, created first so it draws under the group. It keeps
         // the original group geometry; only the background is darker.
-        private _backdrop = [_d,"RscText",-1,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+        private _backdrop = _d ctrlCreate ["RscText", -1];
         _backdrop ctrlSetPosition (ctrlPosition _list);
         _backdrop ctrlSetBackgroundColor [0,0,0,0.55];
         _backdrop ctrlCommit 0;
@@ -209,7 +209,7 @@ private _fnStockInfo = {
         private _header = _group getVariable ["ACME_SK_ColumnHeader", []];
         private _headerH = safeZoneH / 32;
         if (_header isEqualTo []) then {
-            private _headerBack = [_d,"RscText",-1,controlNull,"panel"] call ACME_fnc_uiGlassControl;
+            private _headerBack = _d ctrlCreate ["RscText", -1];
             private _headerName = _d ctrlCreate ["RscText", -1];
             private _headerContents = _d ctrlCreate ["RscText", -1];
             private _headerCount = _d ctrlCreate ["ACME_SK_RightText", -1];
@@ -263,7 +263,7 @@ private _fnStockInfo = {
         };
         private _row = _rows param [_forEachIndex, []];
         if (_row isEqualTo []) then {
-            private _back = [_d,"RscText",-1,_group,"panel"] call ACME_fnc_uiGlassControl;
+            private _back = _d ctrlCreate ["RscText", -1, _group];
             private _icon = _d ctrlCreate ["RscPictureKeepAspect", -1, _group];
             private _text1 = _d ctrlCreate ["RscText", -1, _group];
             private _text2 = _d ctrlCreate ["RscText", -1, _group];

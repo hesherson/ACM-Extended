@@ -33,13 +33,13 @@ _flush ctrlSetTooltip _tip;
 // A dirty, empty blood limb needs attention, even if its reserve must be replaced first.
 private _indicated = _primed && {_dirty} && {!_blood} && {_kind == ""};
 private _primeIndicated = !_primed && {_kind == ""};
-private _pulse = 0.5 + 0.5 * sin (360 * ((diag_tickTime * 1.1) % 1));
-_flush ctrlSetTextColor (if (_indicated) then {[1,0.2 + 0.2 * _pulse,0.2 + 0.2 * _pulse,0.65 + 0.35 * _pulse]} else {
-    if (_primeIndicated) then {[0.35,1,0.45,0.65 + 0.35 * _pulse]} else {[1,1,1,1]}
+// Persistent state cues: no time-driven text or surface opacity.
+_flush ctrlSetTextColor (if (_indicated) then {[1,0.3,0.3,1]} else {
+    if (_primeIndicated) then {[0.35,1,0.45,1]} else {[1,1,1,1]}
 });
 // Service cues tint the rounded background surface, never repaint square native corners.
-_flush setVariable ["ACME_txSkinTint",if (_indicated) then {[1,0.25,0.25,0.70 + 0.30 * _pulse]} else {
-    if (_primeIndicated) then {[0.35,1,0.45,0.80 + 0.20 * _pulse]} else {[1,1,1,1]}
+_flush setVariable ["ACME_txSkinTint",if (_indicated) then {[1,0.25,0.25,1]} else {
+    if (_primeIndicated) then {[0.35,1,0.45,1]} else {[1,1,1,1]}
 }];
 _flush ctrlSetBackgroundColor [0,0,0,0];
 if !(_flush getVariable ["ACME_serviceRightClick",false]) then {
