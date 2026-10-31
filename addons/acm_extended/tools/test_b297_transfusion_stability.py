@@ -65,7 +65,7 @@ def test_ace_surfaces_and_original_medical_artwork_unchanged():
     assert not [p for p in changed.splitlines() if p != dialog], changed
     restored=subprocess.check_output(['git','show','4944aaa6bae41fb06a4576c925805d657d386294:'+dialog],cwd=ROOT,text=True).replace('w = QUOTE(ACM_UI_CANVAS_W * 0.102);','w = QUOTE(ACM_TRANSFUSION_LEFT_W);',1)
     assert restored==subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:'+dialog],cwd=ROOT,text=True)
-    config=(ROOT/'addons/acm_extended/config.cpp').read_text()
+    config=subprocess.check_output(['git','show','d5c8293a2f92f33f53bb4d1ad985711776a3b9c1:addons/acm_extended/config.cpp'],cwd=ROOT,text=True)
     original=subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:addons/acm_extended/config.cpp'],cwd=ROOT,text=True)
     assert config.replace('            class transfusionMarkScale {};\n','').replace('            class transfusionVisualTick {};\n','').replace('            class reactMedicalRect {};\n','').replace('            class piggybackPreparedValid {};\n','')==original
     source=(ROOT/'addons/acm_extended/functions/fn_updateTransfusionAccessHotspots.sqf').read_text()

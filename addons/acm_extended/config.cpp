@@ -2607,6 +2607,14 @@ class CfgFunctions {
             class transfusionGraduations {};
             class transfusionMarkScale {};
             class transfusionVisualTick {};
+            class registerMedicalLitterRuntime {};
+            class medicalLitterCanCollect {};
+            class medicalLitterRequest {};
+            class medicalLitterServer {};
+            class medicalLitterReply {};
+            class medicalLitterAnimate {};
+            class medicalLitterTick {};
+            class medicalLitterFinish {};
             class updateTransfusionCards {};
             class transfusionYRows {};
             class paintTransfusionYBracket {};
