@@ -89,7 +89,6 @@ function App() {
   return <main className="acme-medical-surface" style={{...cardLayout(snapshot.state?.layout,{}).root,'--text-inset':`${100*(snapshot.state?.fontProbe?.[2]||0)/(snapshot.state?.layout?.[1]||1)}vh`}} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
     onKeyDown={e=>{if(keys[e.key]){e.preventDefault();store.key(keys[e.key]);}}}>
     {renderCards && snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled} layout={snapshot.state.layout} fontScale={scale ?? previousScale.current}/>)}
-    {snapshot.state?.cards.length===0 && <p className="empty">No fluids at this access</p>}
   </main>;
 }
 createRoot(document.getElementById('root')).render(<App/>);

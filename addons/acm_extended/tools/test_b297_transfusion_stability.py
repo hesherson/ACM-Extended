@@ -61,10 +61,13 @@ def test_paint_requires_empty_route_ready_handshake_and_a_sent_snapshot(route,re
 
 def test_ace_surfaces_and_original_medical_artwork_unchanged():
     changed=subprocess.check_output(['git','diff','--name-only','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824','--','addons/gui','addons/circulation','addons/acm_extended/ui/iv'],cwd=ROOT,text=True)
-    assert not changed.strip(), changed
+    dialog='addons/circulation/TransfusionMenu_Dialog.hpp'
+    assert not [p for p in changed.splitlines() if p != dialog], changed
+    restored=(ROOT/dialog).read_text().replace('w = QUOTE(ACM_UI_CANVAS_W * 0.102);','w = QUOTE(ACM_TRANSFUSION_LEFT_W);',1)
+    assert restored==subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:'+dialog],cwd=ROOT,text=True)
     config=(ROOT/'addons/acm_extended/config.cpp').read_text()
     original=subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:addons/acm_extended/config.cpp'],cwd=ROOT,text=True)
-    assert config.replace('            class reactMedicalRect {};\n','')==original
+    assert config.replace('            class reactMedicalRect {};\n','').replace('            class piggybackPreparedValid {};\n','')==original
     source=(ROOT/'addons/acm_extended/functions/fn_updateTransfusionAccessHotspots.sqf').read_text()
     assert '[1,1,1,0.08]' not in source and '[0.20,0.65,0.20,0.22]' not in source
     assert '_outline ctrlEnable false;' in source

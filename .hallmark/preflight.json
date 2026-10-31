@@ -5,20 +5,20 @@
     "framework": "React 18.3.1, offline single-file bundle: frontend/medical-ui/package.json:10",
     "geometry": "native physical-pixel metrics: frontend/medical-ui/layout.mjs:3",
     "motion": "no animations or layout transitions: frontend/medical-ui/style.css",
-    "authority": "Native clinical model/actions unchanged; B299 adds engine text advance for calibrated React font sizing before first paint."
+    "authority": "B300: native owns all empty captions; React occupies populated fluid cards only. Native clinical handlers and ACE unchanged.",
+    "material": "Original flat pre-Dusk palette restored; no blur, reflection or effect."
   },
   "preserve": [
-    "existing screens and layout",
+    "existing screens",
     "native handlers and clinical model",
     "Roboto Condensed",
-    "original device artwork",
+    "original medical artwork and IV/IO flags",
     "ACE surfaces",
-    "same-display native fallback",
-    "no animations or global postprocess"
+    "native fallback and bounded React updates"
   ],
   "introduce": [
-    "Dusk material on the existing ACME-owned transfusion nine-slice shell and native/React cards",
-    "Engine-measured font calibration and side margins before React handoff",
-    "1.4px access contour, outward hanging label with neck and passive site dot"
+    "Shared larger square bag icons independent of text line count",
+    "Bag Actions beside Stop Transfusion in the existing top row",
+    "Prepared propofol retained in piggyback selector with authenticated owner attachment"
   ]
 }

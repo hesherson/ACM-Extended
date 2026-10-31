@@ -25,7 +25,8 @@ def test_each_authored_pair_has_equal_bounds_and_one_shared_gap(aspect, pair):
     elif pair == "infusion":
         left, right = fixed[86131], fixed[86172]
     elif pair == "service":
-        left, right = authored_place(86170), authored_place(86143)
+        # Retain the published case ID for the requested Stop/Bag Actions pair.
+        left, right = fixed[86006], fixed[86170]
     elif pair == "prepare":
         left, right = authored_place(86141), authored_place(86121)
     else:

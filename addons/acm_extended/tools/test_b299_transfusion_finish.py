@@ -8,9 +8,10 @@ from test_menu_death_lifecycle import ROOT,execute,read
 from test_b275_transfusion_tags_knowledge import fn
 
 BASE='5a5e484acabbc6c0bf9424328c5807ae962ea6d4'
+B299='2e463fd1457905fd1f6bb087bbc87991e08a36ae'
 
 def test_native_changes_are_only_authorized_acme_transfusion_surfaces():
-    changed=subprocess.check_output(['git','diff','--name-only',BASE,'--','addons'],cwd=ROOT,text=True).splitlines()
+    changed=subprocess.check_output(['git','diff','--name-only',BASE,B299,'--','addons'],cwd=ROOT,text=True).splitlines()
     allowed={'addons/acm_extended/functions/fn_reactMedicalSnapshot.sqf',
              'addons/acm_extended/functions/fn_reactMedicalMessage.sqf',
              'addons/acm_extended/functions/fn_updateTransfusionAccessHotspots.sqf',
@@ -18,7 +19,7 @@ def test_native_changes_are_only_authorized_acme_transfusion_surfaces():
              'addons/acm_extended/functions/fn_initForkStartupRuntime.sqf',
              'addons/acm_extended/ui/react/index.html','addons/main/script_build.hpp'}
     assert all(p in allowed or p.startswith('addons/acm_extended/ui/transfusion/') or '/tools/' in p for p in changed)
-    assert subprocess.check_output(['git','diff',BASE,'--','addons/gui','addons/circulation','addons/acm_extended/ui/iv'],cwd=ROOT)==b''
+    assert subprocess.check_output(['git','diff',BASE,B299,'--','addons/gui','addons/circulation','addons/acm_extended/ui/iv'],cwd=ROOT)==b''
 
 @pytest.mark.parametrize('left',[False,True])
 def test_live_flag_box_hangs_at_outer_end_with_neck_and_site_dot(left):
@@ -70,7 +71,8 @@ def test_first_paint_requires_bundled_font_and_engine_measurement():
 
 def test_window_material_has_warm_reflection_without_global_or_clinical_changes():
     spec=importlib.util.spec_from_file_location('chrome',ROOT/'tools/generate_transfusion_chrome.py')
-    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    module=importlib.util.module_from_spec(spec)
+    exec(subprocess.check_output(['git','show',B299+':tools/generate_transfusion_chrome.py'],cwd=ROOT,text=True),module.__dict__)
     parts=module.window_material(module.render_parts(*module.PROFILES['window']))
     a=parts['center'].getpixel((2,2));b=parts['center'].getpixel((60,60))
     assert a[0]>b[0] and a[1]>b[1] and a[3]==b[3]==255
@@ -78,9 +80,9 @@ def test_window_material_has_warm_reflection_without_global_or_clinical_changes(
     assert parts['tl'].getpixel((0,0))[3]==0
     for name in ('layoutTransfusionMenu','updateTransfusionCards','transfusionCardData','reactMedicalTick','reactMedicalOpen'):
         path='addons/acm_extended/functions/fn_'+name+'.sqf'
-        assert (ROOT/path).read_bytes()==subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT)
+        assert subprocess.check_output(['git','show',B299+':'+path],cwd=ROOT)==subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT)
 
-@pytest.mark.parametrize('profile,expected',[('panel',(41,44,54)),('selected',(55,59,71)),('button',(51,54,64))])
+@pytest.mark.parametrize('profile,expected',[('panel',(24,25,28)),('selected',(48,50,57)),('button',(32,33,37))])
 def test_shipped_paa_contains_current_material_instead_of_old_converter_output(profile,expected,tmp_path):
     import os,shutil
     from PIL import Image

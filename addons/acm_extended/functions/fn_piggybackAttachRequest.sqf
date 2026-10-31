@@ -16,9 +16,10 @@ private _medication = if (_mi >= 0) then {+(_prepared select _mi)} else {[]};
 private _action = _set param [2, ""];
 private _fresh = ((_action splitString "_") param [0, ""]) == "FreshBloodBag";
 private _type = if (_fresh) then {"FreshBlood"} else {getText (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type")};
-if ((_set param [8,"yset"]) in ["yset","propofol","bagOnly"] || {_type == ""}
+if ((_set param [8,"yset"]) in ["yset","bagOnly"] || {_type == ""}
+    || {!([_set,_medication,_type,getNumber (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "volume")] call ACME_fnc_piggybackPreparedValid)}
     || {!([_patient,_part,_iv,_site,_type,!(_medication isEqualTo [])] call ACME_fnc_piggybackEligible)}) exitWith {
-    [ACE_player,"Choose a plain fluid bag, or a prepared saline infusion for a saline primary."] call ACME_fnc_clinicalNotice;
+    [ACE_player,"Choose a fluid bag, or a prepared infusion or propofol bottle for a saline primary."] call ACME_fnc_clinicalNotice;
     false
 };
 // Do not reserve a physical set already in a normal Hang/Give transaction.

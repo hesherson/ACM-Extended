@@ -54,7 +54,7 @@ def test_medical_labels_stay_readable_over_black_midgrey_and_white(surface):
 
 
 def test_backdrop_capability_is_explicit_and_not_a_claim_to_blur_the_game_world():
-    css=(FRONT/'style.css').read_text();app=(FRONT/'App.jsx').read_text()
+    css=published('frontend/medical-ui/style.css').decode();app=published('frontend/medical-ui/App.jsx').decode()
     assert '[data-acme-backdrop="internal"] .card' in css
     assert 'data-acme-backdrop' not in app
     assert 'color-scheme: normal' in css

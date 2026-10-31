@@ -85,7 +85,8 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                 if ((_hit getVariable ["ACME_txTooltip",""]) != _tooltip) then {_hit ctrlSetTooltip _tooltip;_hit setVariable ["ACME_txTooltip",_tooltip];};
                 [_hit,"position",[0,0,_w,_rowH]] call ACME_fnc_transfusionUiSet;
                 private _pad = _w * 0.045;
-                private _iconW = safeZoneH * 0.030 * (pixelW / pixelH);
+                private _iconH = (_rowH * 0.62) min (safeZoneH * 0.052);
+                private _iconW = _iconH * (pixelW / pixelH);
                 private _textX = _pad + _iconW + _w * 0.025;
                 private _vialH = (safeZoneH * 0.026) min (_rowH * 0.30);
                 private _vialW = _vialH * 0.55 * (pixelW / pixelH);
@@ -116,7 +117,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                     _x params ["_child","_position"];
                     [(_group controlsGroupCtrl _child),"position",_position] call ACME_fnc_transfusionUiSet;
                 } forEach (_metaPositions + [
-                    [14,[_pad,_captionTop,_iconW,_contentH]],
+                    [14,[_pad,((_captionBottom - _iconH) / 2) max 0,_iconW,_iconH]],
                     [15,[_w - _pad - _vialW,_captionTop,_vialW,_vialH]],
                     [16,[_textX,_trackY,_trackW,safeZoneH * 0.0025]],
                     [17,[_textX,_trackY,_trackW * (_fraction max 0 min 1),safeZoneH * 0.0025]]
@@ -153,9 +154,10 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
         if (isNull _emptyCaption) then {_emptyCaption = _display ctrlCreate ["ACME_TransfusionCaption",86600 + _paneIndex];_emptyCaption ctrlEnable false;};
         private _hasCard = false;
         for "_candidate" from 0 to ((lbSize _list) - 1) do {if (([_list,_candidate] call ACME_fnc_transfusionCardIdentity) isNotEqualTo []) exitWith {_hasCard = true;};};
+        if (_paneIndex == 0) then {_display setVariable ["ACME_txFluidHasCard",_hasCard];};
         [_emptyCaption,"text",["No fluids at this access","No infusions at this access","No available fluids","No prepared IV sets","No prepared infusions"] select _paneIndex] call ACME_fnc_transfusionUiSet;
         [_emptyCaption,"position",[_px + _w * 0.04,_py + safeZoneH * 0.008,_w * 0.92,safeZoneH * 0.028]] call ACME_fnc_transfusionUiSet;
-        [_emptyCaption,"show",_shown && {!_hasCard} && {!_reactPane}] call ACME_fnc_transfusionUiSet;
+        [_emptyCaption,"show",_shown && {!_hasCard}] call ACME_fnc_transfusionUiSet;
         // A quiet thumb communicates overflow; the full card is the wheel hit target.
         for "_piece" from 0 to 1 do {
             private _rail = _display displayCtrl (86610 + _paneIndex * 2 + _piece);
@@ -181,5 +183,5 @@ if (missionNamespace getVariable ["ACME_reactTransfusion",false] || {_display ge
     [_display] call ACME_fnc_reactMedicalOpen;
 };
 if (_display getVariable ["ACME_reactActive",false]) then {
-    {[_display displayCtrl _x,"show",false] call ACME_fnc_transfusionUiSet;} forEach [86500,86501,86600,86178];
+    {[_display displayCtrl _x,"show",false] call ACME_fnc_transfusionUiSet;} forEach [86500,86501,86178];
 };

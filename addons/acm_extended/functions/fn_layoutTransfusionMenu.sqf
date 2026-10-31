@@ -196,7 +196,8 @@ private _place = {
     [86213,0.141,0.441,0.184,0.027],
     [86003,0.673,0.193,0.160,0.030],
     [86037,0.838,0.193,0.033,0.030],
-    [86006,0.125,0.188,0.212,0.029],
+    [86006,0.125,0.188,0.102,0.029],
+    [86170,0.235,0.188,0.102,0.029],
     [86004,0.125,0.228,0.212,0.210],
     [86128,0.125,0.538,0.212,0.029],
     [86129,0.125,0.575,0.212,0.187],
@@ -321,16 +322,10 @@ if (_valid) then {
     };
 } forEach [86128,86130];
 
-// Paired actions use the same 0.008 canvas gap and equal widths. The full-width
-// fallback keeps its outer edges when the selected access has no Prime/Flush action.
-// Stop remains above Fluids. Prime/Flush belongs beside Bag Actions for the selected access.
+// Bag Actions shares the top row with Stop. Keep Prime/Flush in its established lower row.
 private _service = _display displayCtrl 86143;
-private _hasService = !isNull _service && {ctrlShown _service};
-if (_hasService) then {
-    [86170,0.125,0.478,0.102,0.033] call _place;
-    [86143,0.235,0.478,0.102,0.033] call _place;
-} else {
-    [86170,0.125,0.478,0.212,0.033] call _place;
+if (!isNull _service && {ctrlShown _service}) then {
+    [86143,0.125,0.478,0.212,0.033] call _place;
 };
 
 [_ctrlFluids,"show",_menu != "bag"] call ACME_fnc_transfusionUiSet;

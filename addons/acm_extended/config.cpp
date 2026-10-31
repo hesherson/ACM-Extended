@@ -3127,6 +3127,7 @@ class CfgFunctions {
             class transfusionTagLeader {};
             class transfusionFluidShorthand {};
             class piggybackEligible {};
+            class piggybackPreparedValid {};
             class piggybackRole {};
             class piggybackLine {};
             class piggybackLinesCommit {};

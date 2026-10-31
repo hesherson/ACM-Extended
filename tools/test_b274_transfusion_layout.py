@@ -63,7 +63,7 @@ def test_patient_name_restores_original_centered_top_anchor():
 def test_stop_button_initial_and_final_rectangles_match_above_fluids():
     stop = runtime_rect(86006)
     assert native_rect("StopTransfusionButton") == pytest.approx(stop)
-    assert stop == pytest.approx((.125, .188, .212, .029))
+    assert stop == pytest.approx((.125, .188, .102, .029))
     assert stop[1] + stop[3] < runtime_rect(86004)[1]
     assert "call FUNC(TransfusionMenu_ToggleIVFlow)" in class_block(DIALOG, "StopTransfusionButton")
 

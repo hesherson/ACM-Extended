@@ -13,7 +13,7 @@ if (_operation == "cancel") exitWith {
 };
 if (_operation == "start") exitWith {
     if !([_patient, _part, _iv, _site] call ACME_fnc_piggybackEligible) exitWith {
-        [ACE_player, "Select one attached fluid bag on a connected IV line. Any plain fluid can be its secondary; prepared medication infusions still need a saline primary."] call ACME_fnc_clinicalNotice;
+        [ACE_player, "Select one attached fluid bag on a connected IV line. Any plain fluid can be its secondary; prepared medication infusions and propofol bottles need a saline primary."] call ACME_fnc_clinicalNotice;
         false
     };
     private _bags = (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]) getOrDefault [toLowerANSI _part, []];

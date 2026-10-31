@@ -71,7 +71,7 @@ def owner_setup():
       };
     ''' + "".join(owner_function(name) for name in (
         "piggybackLine", "piggybackRole", "piggybackFlow", "piggybackEligible",
-        "piggybackLinesCommit", "piggybackAttachLocal",
+        "piggybackLinesCommit", "piggybackPreparedValid", "piggybackAttachLocal",
     ))
 
 

@@ -401,7 +401,7 @@ class GVAR(TransfusionMenu_Dialog) {
             style = ST_CENTER;
             x = QUOTE(ACM_TRANSFUSION_LEFT_X);
             y = QUOTE(safeZoneY + safeZoneH * 0.188);
-            w = QUOTE(ACM_TRANSFUSION_LEFT_W);
+            w = QUOTE(ACM_UI_CANVAS_W * 0.102);
             h = QUOTE(safeZoneH * 0.029);
             shadow = 0;
             font = "RobotoCondensed";

@@ -98,6 +98,9 @@ def test_secondary_holds_primary_until_depleted_and_roles_remain_distinct(volume
     ("Saline", "ACME_Propofol", True, False), ("ACME_SalineY", "Saline", False, False),
 ])
 def test_candidate_filter_matches_owner_compatibility_rules(primary, candidate, infusion, want):
+    # B300 admits only a prepared dedicated bottle through the infusion path.
+    if infusion and primary == "Saline" and candidate == "ACME_Propofol":
+        want = True
     # Keep historical case IDs while updating the intentionally relaxed B289
     # plain-fluid contract. Medicated saline and special apparatus stay gated.
     if not infusion and (primary, candidate) in {

@@ -23,8 +23,9 @@ private _pi = ACME_infusion_bodyParts find toLowerANSI _part;
 // perfusion must not make an established line physically incompatible.
 if (_pi < 0) exitWith {false};
 if (_candidateType == "") exitWith {true};
-if (_candidateType in ["FBTK", "ACME_Propofol", "ACME_SalineY", "ACME_Empty", "ACME_EmptySaline"]) exitWith {false};
-if (_infusion) exitWith {_type == "Saline" && {_candidateType == "Saline"}};
+if (_candidateType in ["FBTK", "ACME_SalineY", "ACME_Empty", "ACME_EmptySaline"]) exitWith {false};
+if (_infusion) exitWith {_type == "Saline" && {_candidateType in ["Saline","ACME_Propofol"]}};
+if (_candidateType == "ACME_Propofol") exitWith {false};
 // Plain fluids share the established administration line. Their different
 // contents do not require matching carrier classes; secondary flow runs first.
 true

@@ -1,11 +1,4 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Dusk (by request) · redesign: restyle
- * nav: kept native shell · signature: existing fluid cards · states: native loading, empty, stale, pending, connected
- * dusk: no-photo/periwinkle-apricot/glass · axes: dark/condensed-sans/cool · posture: committed · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V3 · weakest: V, preserve the user's existing medical layout rather than invent composition */
-/* Hallmark · copy: verbatim · geometry: native pixel metrics · clinical colours: native authority */
-/* Hallmark · waive 24b · geometry comes from the native card viewport · fluid cards retain native positions and graduation labels required by ACME */
-/* Hallmark · waive 39b · card hit rectangles match the existing native selectors · fluid cards remain full-height selectors rather than toolbar buttons */
-/* Hallmark · answered F24 · inset rules and a restrained shadow express Dusk glass without allocating extra controls */
+/* ACME transfusion only: original flat palette, fixed native geometry, no effects. */
 :root { font-family: var(--font-body); color: var(--color-muted); background: var(--color-clear); font-synthesis: none; color-scheme: normal; }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; width: 100%; height: 100%; overflow-y: hidden; }
@@ -13,16 +6,16 @@ html, body { overflow-x: clip; }
 button { font: inherit; }
 .acme-medical-surface { position: relative; height: 100vh; width: 100%; display: grid; grid-template-rows: repeat(2,minmax(0,1fr)); --space-row: var(--gap); gap: var(--space-row); }
 .acme-medical-surface .card {
-  --card-surface: var(--color-card-glass); --card-rule: var(--color-rule); --card-edge: var(--color-edge);
+  --card-surface: var(--color-card); --card-rule: var(--color-rule);
   position: relative; width: 100%; height: 100%; min-width: 0; border: 0; border-radius: var(--radius);
   background: var(--color-card-opaque); background: var(--card-surface); color: var(--color-muted);
-  box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 1px var(--card-rule), var(--shadow-card);
+  box-shadow: inset 0 0 0 1px var(--card-rule);
   padding: 0; text-align: left; cursor: pointer; overflow: hidden;
 }
 .acme-medical-surface .card:hover { --card-surface: var(--color-card-hover); }
-.acme-medical-surface .card.selected { --card-surface: var(--color-card-selected); --card-rule: var(--color-selected-rule); --card-edge: var(--color-edge-selected); }
+.acme-medical-surface .card.selected { --card-surface: var(--color-card-selected); --card-rule: var(--color-selected-rule); }
 .acme-medical-surface .card.piggyback { --card-surface: var(--color-piggyback-card); --card-rule: var(--color-piggyback-rule); }
-.acme-medical-surface .card.piggyback.selected { --card-surface: var(--color-piggyback-selected); --card-edge: var(--color-edge-selected); }
+.acme-medical-surface .card.piggyback.selected { --card-surface: var(--color-piggyback-selected); --card-rule: var(--color-piggyback-selected-rule); }
 .acme-medical-surface .card:active:not(:disabled) { --card-surface: var(--color-card-pressed); }
 .acme-medical-surface .card:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
 .acme-medical-surface .card:disabled { cursor: not-allowed; }
@@ -38,16 +31,5 @@ button { font: inherit; }
 .acme-medical-surface .volume { font-variant-numeric: tabular-nums; }
 .acme-medical-surface .mark { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .acme-medical-surface .mark i { position: absolute; left: 50%; width: 1px; background: var(--color-muted); }
-.acme-medical-surface .empty { position: absolute; left: 4%; top: calc(var(--u)*.008); width: 92%; height: calc(var(--u)*.028); margin: 0; display: flex; align-items: center; font-size: calc(var(--u)*.020); }
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .acme-medical-surface[data-acme-backdrop="internal"] .card {
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .acme-medical-surface .card { animation: none; transition: none; }
-}
-
 /* Native RscText has 0.008 UI-unit side margins; the browser uses the measured inset. */
 .acme-medical-surface .caption { padding-inline: var(--text-inset,0px); }

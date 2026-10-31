@@ -674,11 +674,12 @@ private _shownPrepared = [];
     if (_selectingPiggyback) then {
         private _carrier = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "type");
         _canShow = [_targetPatient,_targetBodyPart,_flIV,_flSite,_carrier,true] call ACME_fnc_piggybackEligible;
-        // The direct propofol emulsion bottle cannot run as a piggyback carrier.
-        // Field 16 is the numeric carrier volume. The bottle discriminator is
-        // field 17; a numeric/string comparison aborts every refresh after
-        // preparing an ordinary piggyback infusion.
-        if ((_entry param [17,""]) isEqualTo "propofol-bottle" || {(_entry param [1,""]) isEqualTo "ACM_Vial_Propofol"}) then {_canShow = false;};
+        private _setId = _entry param [0,""];
+        private _sets = ACE_player getVariable ["ACME_preparedIVSets",[]];
+        private _at = _sets findIf {(_x param [0,""]) == _setId};
+        private _set = if (_at >= 0) then {_sets select _at} else {[]};
+        private _nominal = getNumber (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "volume");
+        _canShow = _canShow && {_at >= 0} && {[_set,_entry,_carrier,_nominal] call ACME_fnc_piggybackPreparedValid};
     };
     if (_canShow) then {_shownPrepared pushBack [_entry,_forEachIndex];};
 } forEach _preparedEntries;

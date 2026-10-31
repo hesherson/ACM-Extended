@@ -72,8 +72,8 @@ def fluid_owner_setup():
     # Extend the explicit config boundary with real fluid action names exercised
     # by the used-bag catalogue below; native creation/identity logic still runs.
     base = owner_setup().replace(
-        '["SalineIV_100","SalineIV_500","MagnesiumBag"]',
-        '["SalineIV_100","SalineIV_500","MagnesiumBag","PlasmaIV_500","BloodIV_ON_500","PlasmaLyteIV_500"]')
+        '["SalineIV_100","SalineIV_500","MagnesiumBag","ACME_PropofolIV_50"]',
+        '["SalineIV_100","SalineIV_500","MagnesiumBag","ACME_PropofolIV_50","PlasmaIV_500","BloodIV_ON_500","PlasmaLyteIV_500"]')
     return base + r'''
         private _thermal=[];private _warmers=[];private _warmed=false;
         private _bloodCompatible=true;private _bloodChecks=[];private _generatedBloodType=0;
@@ -186,6 +186,7 @@ def request_chain_setup():
     request = read("piggybackAttachRequest").replace("findDisplay 86000", "objNull")
     request = request.replace("serverTime", "_serverTime")
     request = request.replace('getText (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "type")', '_configuredType')
+    request = request.replace('getNumber (configFile >> "ace_medical_treatment" >> "IV" >> _action >> "volume")','_configuredVolume')
     request = re.sub(r'\bvalues (_\w+)', r'(keys \1 apply {\1 get _x})', request)
     retry = read("piggybackRetry").replace("local _provider", "true")
     recover = read("piggybackRecover").replace("private _held = _y;", "private _held = _escrow get _x;").replace("forEach _escrow;", "forEach keys _escrow;")

@@ -35,7 +35,7 @@ def adapted(text):
     text = text.replace('getText (_action >> "type")', '_configuredType')
     text = text.replace('getText (_cfg >> "type")', '_configuredType')
     text = text.replace('getNumber (_cfg >> "volume")', '_configuredVolume')
-    text = text.replace('isClass _cfg', '(_cfg in ["SalineIV_100","SalineIV_500","MagnesiumBag"])')
+    text = text.replace('isClass _cfg', '(_cfg in ["SalineIV_100","SalineIV_500","MagnesiumBag","ACME_PropofolIV_50"])')
     text = re.sub(r'\bfinite (\([^\n;]+?\)|_\w+)', r'(\1 call _finite)', text)
     # Arma's HashMap key/value iteration is absent in this SQF-VM.
     text = text.replace('{private _part = _x; private _idx = _y findIf',

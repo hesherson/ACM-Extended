@@ -46,7 +46,7 @@ if (_patient getVariable ["ACME_persistenceFrozen",false] || {_medic getVariable
 };
 private _sameVehicle = !isNull objectParent _medic && {objectParent _medic isEqualTo objectParent _patient};
 if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)} || {_medic distance _patient > 5 && {!_sameVehicle}}) exitWith {[false,"Provider is unavailable or out of range. The prepared bag was returned."] call _reply};
-if ((_set param [0,""]) != _setId || {(_set param [8,"yset"]) in ["yset","propofol","bagOnly"]}
+if ((_set param [0,""]) != _setId || {(_set param [8,"yset"]) in ["yset","bagOnly"]}
     || {(_set param [5,""]) != "" && {(_set select 5) != netId _patient}}) exitWith {[false,"That set cannot be used as a piggyback."] call _reply};
 private _action = _set param [2,""];
 private _actionParts = _action splitString "_";
@@ -81,13 +81,14 @@ private _components = if (_isInfusion) then {[_prepared] call ACME_fnc_preparedC
 private _exactVolume = if (_isInfusion) then {_prepared param [10,0]} else {_set param [9,0]};
 if (_exactVolume <= 0 && {!_isInfusion}) then {_exactVolume = _normalVolume;};
 if (!finite _exactVolume || {_exactVolume <= 1}) exitWith {[false,"That prepared bag is empty. It was returned."] call _reply};
-if (_isInfusion && {(_prepared param [0,""]) != _setId || {(_prepared param [15,""]) != _setId}
-    || {(_prepared param [2,""]) != _action} || {_type != "Saline"} || {_components isEqualTo []}
-    || {(_components findIf {
-        private _class = (missionNamespace getVariable ["ACME_infusion_deliveryClassOverride",createHashMap]) getOrDefault [_x select 0,format["%1_IV",_x select 0]];
-        (_x select 0) == "Propofol" || {!finite (_x select 1)} || {(_x select 1) <= 0}
-            || {!(isClass(configFile >> "ACM_Medication" >> "Medications" >> _class) || {(_x select 0) in (missionNamespace getVariable ["ACME_infusion_osmoticAgents",[]])})}
-    }) >= 0}}) exitWith {[false,"This medication carrier cannot be piggybacked. The prepared bag was returned."] call _reply};
+if !([_set,_prepared,_type,_normalVolume] call ACME_fnc_piggybackPreparedValid) exitWith {
+    [false,"This medication carrier cannot be piggybacked. The prepared bag was returned."] call _reply
+};
+if (_isInfusion && {(_components findIf {
+    private _class = (missionNamespace getVariable ["ACME_infusion_deliveryClassOverride",createHashMap]) getOrDefault [_x select 0,format["%1_IV",_x select 0]];
+    !finite (_x select 1) || {(_x select 1) <= 0}
+        || {!(isClass(configFile >> "ACM_Medication" >> "Medications" >> _class) || {(_x select 0) in (missionNamespace getVariable ["ACME_infusion_osmoticAgents",[]])})}
+}) >= 0}) exitWith {[false,"This medication definition is unavailable. The prepared bag was returned."] call _reply};
 private _pi = ACME_infusion_bodyParts find _part;
 private _access = [_patient,_iv,_pi,_site] call ACM_circulation_fnc_getAccessType;
 private _beforeMeds = +(_patient getVariable ["ACME_infusion_BagMedications",[]]);

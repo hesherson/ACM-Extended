@@ -26,11 +26,14 @@ def picker(source):
         'getText (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "type")',
         '([_entry param [2,""]] call _carrierType)',
     )
+    code=code.replace('getNumber (configFile >> "ace_medical_treatment" >> "IV" >> (_entry param [2,""]) >> "volume")','100')
     return primitives(adapt(code))
 
 
 def picker_setup():
-    return r'''
+    from test_b230_prepared_infusion_transaction import function
+    return function('preparedComponents')+function('piggybackPreparedValid')+r'''
+        private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
         private _preparedEntries=[];
         private _selectingPiggyback=true;
         private _targetPatient=_patient;private _targetBodyPart="leftarm";
@@ -40,6 +43,7 @@ def picker_setup():
         // Actual prepared-record schema: field 16 is numeric carrier volume;
         // unopened bottle kind, when present, occupies field 17.
         private _prepared=["saline-set","ACM_SalineBag_100","SalineIV_100","CalciumChloride",1000,0,20,60,1,10,110,0,objNull,objNull,[["CalciumChloride",1000,1]],"saline-set",100];
+        ACE_player setVariable ["ACME_preparedIVSets",[["saline-set","ACM_SalineBag_100","SalineIV_100","","","","",false,"saline",100],["bottle-set","ACM_Vial_Propofol","ACME_PropofolIV_50","","","","",false,"propofol",50]]];
         private _bottle=["bottle-set","ACM_Vial_Propofol","PropofolIV_50","Propofol",500,0,20,0,0,0,50,0,objNull,objNull,[["Propofol",500,1]],"bottle-set",50,"propofol-bottle"];
     '''
 
