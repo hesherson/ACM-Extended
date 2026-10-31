@@ -7,12 +7,13 @@ import pytest
 from source_scan import lex, matching, render
 from test_menu_death_lifecycle import ROOT, execute
 from test_historical_syringe_identity import setup, function
+from ui_glass_test_boundary import native_controls
 
 F = ROOT / 'addons/acm_extended/functions'
 
 
 def source(name):
-    return (F / ('fn_' + name + '.sqf')).read_text()
+    return native_controls((F / ('fn_' + name + '.sqf')).read_text())
 
 
 def tokens(text):

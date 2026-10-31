@@ -18,6 +18,7 @@
 // the medical menu opened.
 ["ace_medicalMenuOpened", {
     params ["_medic", "_target", "_display"];
+    [_display,"ACE_Medical_Menu"] call ACME_fnc_uiGlassInstall;
     // ACE's final onLoad may publish its still-stale curator avatar. This
     // actual local display boundary is reliable even when our onMenuOpen
     // override cannot be installed; other display/event payloads keep their actor.

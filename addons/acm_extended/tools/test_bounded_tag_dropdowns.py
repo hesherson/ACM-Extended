@@ -6,7 +6,7 @@ and event order are fixtures; this does not render lists or certify live clicks.
 import pytest
 from source_scan import lex, matching
 from test_menu_death_lifecycle import execute, adapt
-from test_historical_syringe_identity import source
+from test_bounded_tag_contracts import source
 from test_bounded_tag_contracts import require
 
 

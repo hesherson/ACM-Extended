@@ -23,7 +23,7 @@ if (isNull _durLabel) then {
     _durLabel ctrlEnable false;
 };
 if (isNull _durEdit) then {
-    _durEdit = _d ctrlCreate ["ACME_SK_PushDurationEdit",84831];
+    _durEdit = [_d,"ACME_SK_PushDurationEdit",84831,controlNull,"panel"] call ACME_fnc_uiGlassControl;
     _durEdit ctrlShow false; // Lay out the new control before it can receive focus.
     _durEdit ctrlSetText "";
     _durEdit ctrlSetTextColor [1,1,1,1];

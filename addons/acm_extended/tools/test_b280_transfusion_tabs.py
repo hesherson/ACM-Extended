@@ -91,6 +91,11 @@ def test_shipped_tab_slices_are_neutral_grey_with_transparent_corners(profile, t
         # RGB565 compression may separate channels by up to one quantization step.
         visible = rgb[alpha >= 128].astype(np.int16)
         assert np.max(np.ptp(visible, axis=1)) <= 8
-        assert np.any(alpha == 255)
+        # B295 preserves neutral RGB/corner masks, while the glass fill is intentionally translucent.
+        fill_alpha = int(colors['fill'][7:9], 16) if len(colors['fill']) == 9 else 255
+        if asset['part'] == 'center':
+            assert np.all(np.abs(alpha.astype(np.int16) - fill_alpha) <= 2)
+        else:
+            assert np.any(alpha == 255)
         if asset['part'] in ('tl','tr','bl','br'):
             assert np.any(alpha == 0), 'opaque corner recreates the rectangular tab regression'

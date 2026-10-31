@@ -174,3 +174,6 @@ addons/acm_extended/tools/test_b292_ocular_publication.py
 # B294: in-place React cards; no overview or menu handoff.
 addons/acm_extended/tools/test_b293_react_bridge.py
 tools/test_b293_react_frontend.py
+
+# B295: styling scope, preserved geometry/actions and owned scene blur.
+addons/acm_extended/tools/test_b295_ui_surfaces.py

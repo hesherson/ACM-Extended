@@ -6,7 +6,7 @@ private _ctrls=[];
 {
     _x params ["_tool","_label"];
     private _top=_y+_step*_forEachIndex;
-    private _bg=_d ctrlCreate ["RscText",-1];_bg ctrlSetBackgroundColor [0.10,0.13,0.17,0.92];
+    private _bg=[_d,"RscText",-1,controlNull,"panel"] call ACME_fnc_uiGlassControl;_bg ctrlSetBackgroundColor [0.10,0.13,0.17,0.92];
     _bg ctrlSetPosition [_left,_top,_w,_h];_bg ctrlCommit 0;_bg ctrlEnable false;
     private _pic=_d ctrlCreate ["RscPictureKeepAspect",-1];
     _pic ctrlSetText (if (_tool=="lock") then {"\acm_extended\ui\iv\field\icon_lock_ca.paa"} else {if (_tool=="flush") then {"\acm_extended\ui\items\salineFlush_ca.paa"} else {format ["\acm_extended\ui\iv\finish\icon_%1_ca.paa",_tool]}});

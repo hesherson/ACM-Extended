@@ -246,12 +246,12 @@ if (!isNull _display && {!isNil "ACME_fnc_skPageNavigate"}) then {
     private _rx = (_uiX + (_uiW/2)) + (_gap/2);
     // Same pulsing blue backing used by the Narc Box page buttons. The actual buttons remain transparent.
     private _pulse0 = ["info",0.52] call ACME_fnc_a11yColor;
-    private _lbBack = _display ctrlCreate ["RscText",86952];
+    private _lbBack = [_display,"RscText",86952,controlNull,"button"] call ACME_fnc_uiGlassControl;
     _lbBack ctrlSetPosition [_lx,_y,_w,_h];
     _lbBack ctrlSetBackgroundColor _pulse0;
     _lbBack ctrlEnable false;
     _lbBack ctrlCommit 0;
-    private _rbBack = _display ctrlCreate ["RscText",86953];
+    private _rbBack = [_display,"RscText",86953,controlNull,"button"] call ACME_fnc_uiGlassControl;
     _rbBack ctrlSetPosition [_rx,_y,_w,_h];
     _rbBack ctrlSetBackgroundColor _pulse0;
     _rbBack ctrlEnable false;

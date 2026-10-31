@@ -7,7 +7,7 @@ const integer = v => Number.isSafeInteger(v) && v >= 0 && v <= 2_000_000_000;
 const reference = v => Array.isArray(v) && v.length === 3 && v.every(x => text(x, 256));
 const freeze = v => { if (v && typeof v === 'object') { Object.values(v).forEach(freeze); Object.freeze(v); } return v; };
 export function validState(s) {
-  if (!object(s) || s.view !== 'transfusion-cards' || !object(s.patient) || !reference(s.patient.ref)
+  if (!object(s) || !Number.isInteger(s.radiusPx) || s.radiusPx < 0 || s.radiusPx > 256 || s.view !== 'transfusion-cards' || !object(s.patient) || !reference(s.patient.ref)
     || !integer(s.patient.epoch) || !Array.isArray(s.cards) || s.cards.length > 2
     || typeof s.canPrevious !== 'boolean' || typeof s.canNext !== 'boolean') return false;
   const slots = new Set(), tokens = new Set();

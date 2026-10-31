@@ -7,7 +7,7 @@ private _d = findDisplay 84000;
 if (isNull _d) exitWith {};
 private _button = _d displayCtrl 84320;
 if (isNull _button) then {
-    _button = _d ctrlCreate ["ACME_SK_StyledButton", 84320];
+    _button = [_d,"ACME_SK_StyledButton", 84320] call ACME_fnc_uiGlassControl;
     _button ctrlAddEventHandler ["ButtonClick", {[true] call ACME_fnc_skEpinephrineDose;}];
 };
 private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
