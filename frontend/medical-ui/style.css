@@ -1,1 +1,50 @@
-:root{font-family:"Roboto Condensed",sans-serif;color:#a8a8a8;background:transparent;font-synthesis:none;color-scheme:dark}*{box-sizing:border-box}html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}button{font:inherit}main{position:relative;height:100vh;width:100%;display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:var(--gap)}.card{position:relative;width:100%;height:100%;min-width:0;border:0;border-radius:var(--radius);background:#18191c;box-shadow:inset 0 0 0 1px #292b30;color:#a8a8a8;padding:0;text-align:left;cursor:pointer;overflow:hidden}.card:hover{background:#202125}.card:focus-visible{outline:1px solid #a0a0a0;outline-offset:-2px}.card.selected{background:#303239;box-shadow:inset 0 0 0 1px #9498a2}.card.piggyback{background:#28252e;box-shadow:inset 0 0 0 1px #a392bd}.card.piggyback.selected{background:#302a3a;box-shadow:inset 0 0 0 1px #d2c2ec}.card:disabled{cursor:default}.fluid-icon,.vial-icon,.caption,.volume{position:absolute}.fluid-icon img,.vial-icon img{width:100%;height:100%;object-fit:contain}.caption{display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;line-height:1}.thermal{justify-content:flex-end}.warming{color:#ff8c21}.piggyback .status{color:#c9bae3}.track{height:var(--track-height);background:#404040}.fill{height:100%;background:#c2c2c2}.mark{position:absolute;transform:translateX(-50%);white-space:nowrap}.mark i{position:absolute;left:50%;width:1px;background:#a6a6a6}.empty{position:absolute;left:4%;top:calc(var(--u)*.008);width:92%;height:calc(var(--u)*.028);margin:0;display:flex;align-items:center;font-size:calc(var(--u)*.020)}
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Dusk (by request) · redesign: restyle
+ * nav: kept native shell · signature: existing fluid cards · states: native loading, empty, stale, pending, connected
+ * dusk: no-photo/periwinkle-apricot/glass · axes: dark/condensed-sans/cool · posture: committed · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V3 · weakest: V, preserve the user's existing medical layout rather than invent composition */
+/* Hallmark · copy: verbatim · geometry: native pixel metrics · clinical colours: native authority */
+/* Hallmark · waive 24b · geometry comes from the native card viewport · fluid cards retain native positions and graduation labels required by ACME */
+/* Hallmark · waive 39b · card hit rectangles match the existing native selectors · fluid cards remain full-height selectors rather than toolbar buttons */
+/* Hallmark · answered F24 · inset rules and a restrained shadow express Dusk glass without allocating extra controls */
+:root { font-family: var(--font-body); color: var(--color-muted); background: var(--color-clear); font-synthesis: none; color-scheme: normal; }
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; width: 100%; height: 100%; overflow-y: hidden; }
+html, body { overflow-x: clip; }
+button { font: inherit; }
+.acme-medical-surface { position: relative; height: 100vh; width: 100%; display: grid; grid-template-rows: repeat(2,minmax(0,1fr)); --space-row: var(--gap); gap: var(--space-row); }
+.acme-medical-surface .card {
+  --card-surface: var(--color-card-glass); --card-rule: var(--color-rule); --card-edge: var(--color-edge);
+  position: relative; width: 100%; height: 100%; min-width: 0; border: 0; border-radius: var(--radius);
+  background: var(--color-card-opaque); background: var(--card-surface); color: var(--color-muted);
+  box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 1px var(--card-rule), var(--shadow-card);
+  padding: 0; text-align: left; cursor: pointer; overflow: hidden;
+}
+.acme-medical-surface .card:hover { --card-surface: var(--color-card-hover); }
+.acme-medical-surface .card.selected { --card-surface: var(--color-card-selected); --card-rule: var(--color-selected-rule); --card-edge: var(--color-edge-selected); }
+.acme-medical-surface .card.piggyback { --card-surface: var(--color-piggyback-card); --card-rule: var(--color-piggyback-rule); }
+.acme-medical-surface .card.piggyback.selected { --card-surface: var(--color-piggyback-selected); --card-edge: var(--color-edge-selected); }
+.acme-medical-surface .card:active:not(:disabled) { --card-surface: var(--color-card-pressed); }
+.acme-medical-surface .card:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.acme-medical-surface .card:disabled { cursor: not-allowed; }
+.acme-medical-surface .fluid-icon, .acme-medical-surface .vial-icon, .acme-medical-surface .caption, .acme-medical-surface .volume { position: absolute; }
+.acme-medical-surface .fluid-icon img, .acme-medical-surface .vial-icon img { width: 100%; height: 100%; object-fit: contain; }
+.acme-medical-surface .caption { display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; line-height: 1; }
+.acme-medical-surface .name { color: var(--color-clinical,var(--color-native-label)); }
+.acme-medical-surface .thermal { justify-content: flex-end; }
+.acme-medical-surface .warming { color: var(--color-warming); }
+.acme-medical-surface .piggyback .status { color: var(--color-piggyback); }
+.acme-medical-surface .track { height: var(--track-height); background: var(--color-track); }
+.acme-medical-surface .fill { height: 100%; background: var(--color-fill); }
+.acme-medical-surface .volume { font-variant-numeric: tabular-nums; }
+.acme-medical-surface .mark { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.acme-medical-surface .mark i { position: absolute; left: 50%; width: 1px; background: var(--color-muted); }
+.acme-medical-surface .empty { position: absolute; left: 4%; top: calc(var(--u)*.008); width: 92%; height: calc(var(--u)*.028); margin: 0; display: flex; align-items: center; font-size: calc(var(--u)*.020); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .acme-medical-surface[data-acme-backdrop="internal"] .card {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acme-medical-surface .card { animation: none; transition: none; }
+}

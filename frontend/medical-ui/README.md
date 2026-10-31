@@ -26,3 +26,5 @@ upstream glyph coverage; it was losslessly converted from the Google Fonts
 RobotoCondensed[wght].ttf using fontTools and Brotli.
 
 B297 exports native physical-pixel layout metrics to `layout.mjs`, caches the browser rectangle, limits live snapshots to 10 Hz, and requires a committed React tree before replacing native cards. The browser harness is `tools/verify_b297_browser.cjs` (run from the repository root with Playwright/Chromium available).
+
+B298 introduces shared Dusk role tokens for the current cards; see [scoped design rules](design.md). The default pane uses the readable material fallback. CSS backdrop filtering is an explicit same-browser capability, not scenery blur. The native store, actions and geometry remain unchanged.

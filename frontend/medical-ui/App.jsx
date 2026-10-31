@@ -28,7 +28,7 @@ function Card({card,enabled,layout}) {
     style={{...geometry.root,gridRow:card.slot+1}} aria-pressed={card.selected} disabled={!enabled}
     title={[card.name,card.detail,card.status,card.thermal].filter(Boolean).join('\n')} onClick={()=>store.select(card.token)}>
     <div className="fluid-icon" style={geometry.icon}><Texture path={card.icon}/></div>
-    <div className="name caption" style={{...geometry.name,color:`rgba(${card.color.slice(0,3).map(v=>v*255).join(',')},${card.color[3]})`}}>{card.name}</div>
+    <div className="name caption" style={{...geometry.name,'--color-clinical':`rgba(${card.color.slice(0,3).map(v=>v*255).join(',')},${card.color[3]})`}}>{card.name}</div>
     {card.detail && <div className="detail caption" style={geometry.detail}>{card.detail}</div>}
     {card.status && <div className="status caption" style={geometry.status}>{card.status}</div>}
     {card.thermal && <div className={`thermal caption ${card.thermal.includes('Warming')?'warming':''}`} style={geometry.thermal}>{card.thermal}</div>}
@@ -49,7 +49,7 @@ function App() {
   },[]);
   useEffect(()=>{if(snapshot.state) store.painted();},[snapshot.state]);
   const enabled=snapshot.status==='connected';
-  return <main style={cardLayout(snapshot.state?.layout,{}).root} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
+  return <main className="acme-medical-surface" style={cardLayout(snapshot.state?.layout,{}).root} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
     onKeyDown={e=>{if(keys[e.key]){e.preventDefault();store.key(keys[e.key]);}}}>
     {snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled} layout={snapshot.state.layout}/>)}
     {snapshot.state?.cards.length===0 && <p className="empty">No fluids at this access</p>}

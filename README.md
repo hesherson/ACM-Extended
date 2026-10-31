@@ -38,3 +38,5 @@ After rebuilding, replace the installed mod with the new release output and rest
 B296 restores the B294 UI surfaces, removes B295 glass/scene blur and ACE menu styling, and makes ACME action highlights steady. Existing in-place React transfusion cards remain experimental and off by default. See [recovery validation](docs/audits/B296-ui-recovery.md).
 
 [B297 transfusion stability and access markers](docs/audits/B297-transfusion-stability.md): stable browser geometry, native card sizing, first-paint handoff, icon contours and extended flag leaders.
+
+[B298 ACME Dusk material](docs/audits/B298-dusk-acme-material.md): scoped Hallmark tokens and smoked React card surfaces, with explicit browser/world blur limits.

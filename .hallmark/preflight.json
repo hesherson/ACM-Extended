@@ -1,0 +1,27 @@
+{
+  "scanned": "2026-10-31",
+  "findings": {
+    "font": "Roboto Condensed: frontend/medical-ui/build.mjs:12; native card fonts in addons/acm_extended/TransfusionMenu_Styles.hpp:21",
+    "framework": "React 18.3.1, offline single-file bundle: frontend/medical-ui/package.json:10",
+    "geometry": "native physical-pixel metrics: frontend/medical-ui/layout.mjs:3",
+    "motion": "no animations or layout transitions: frontend/medical-ui/style.css",
+    "authority": "clinical values and actions owned by native SQF; no changes to bridge or native presentation"
+  },
+  "preserve": [
+    "layout",
+    "font",
+    "copy",
+    "clinical colours",
+    "callbacks",
+    "native fallback",
+    "ACE files",
+    "opaque native textures"
+  ],
+  "introduce": [
+    "Dusk role tokens",
+    "smoked React surfaces",
+    "lit inner edge",
+    "scoped internal-backdrop capability",
+    "contrast/focus/blur-boundary checks"
+  ]
+}

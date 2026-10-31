@@ -1,0 +1,26 @@
+{
+  "runs": [
+    {
+      "date": "2026-10-31",
+      "mode": "redesign",
+      "depth": "restyle",
+      "scope": "app",
+      "theme": "Dusk",
+      "version": "2.0.0",
+      "screen": "existing ACME React fluid cards",
+      "font": "Roboto Condensed retained",
+      "geometry": "native physical metrics retained",
+      "copy": "verbatim",
+      "dusk": "no-photo/periwinkle-apricot/glass",
+      "productionBlur": "none; separate native/game surface not available as CSS backdrop",
+      "internalBackdrop": "explicit marker only",
+      "waived": [
+        "24b: preserve native geometry",
+        "39b: preserve full-card hit selectors"
+      ],
+      "review": "fresh-context reviewer returned ship; no findings",
+      "lint": "0 FAIL, 0 WARN; one reported waived Reflex",
+      "reference": "https://www.usehallmark.com/themes/dusk/"
+    }
+  ]
+}
