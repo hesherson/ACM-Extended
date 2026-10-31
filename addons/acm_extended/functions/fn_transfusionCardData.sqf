@@ -65,7 +65,7 @@ if (_idc in [86004,86129]) then {
         if (_role != "") then {_name = _name + " [PiB]";};
         if ((_label find "[Y]") >= 0) then {_name = _name + " [Y]";};
         private _doses = _meds apply {format ["%1 %2 added",[_x param [11,""]] call ACME_fnc_infusionName,[_x param [11,""],_x param [13,0]] call ACME_fnc_formatDose]};
-        _detail = format ["%1 mL · %2",round _remaining,_doses joinString " + "];
+        _detail = format ["%1 mL / %2",round _remaining,_doses joinString " + "];
         if (_vial == "") then {_vial = getText (configFile >> "CfgWeapons" >> ([(_meds select 0) param [11,""]] call ACME_fnc_vialClass) >> "picture");};
     };
     private _isY = [_patient,_part,_bag param [4,true],_bag param [3,-1]] call ACME_fnc_isYLineAccess;

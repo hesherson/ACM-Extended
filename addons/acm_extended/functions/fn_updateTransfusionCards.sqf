@@ -9,7 +9,7 @@ private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMen
 private _endpoints = createHashMap;
 private _layout = createHashMap;
 private _uiW = safeZoneW min (safeZoneH * 1.7777778);
-private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,3,!_preparedMode],[86145,3,_preparedMode],[86127,2,true]];
+private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,2,!_preparedMode],[86145,2,_preparedMode],[86127,2,true]];
 {
     _x params ["_idc","_capacity","_shown"];
     private _paneIndex = _forEachIndex;
@@ -23,10 +23,10 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
         // their text/artwork cannot reach the scrollbar, even at a narrow UI scale.
         private _railW = 3 * pixelW;
         private _railGap = (safeZoneH * 0.006 * (pixelW / pixelH)) max (5 * pixelW);
-        // All panes share one physical card/content width. Wider left viewports center the same card.
+        // Both mirrored columns center the same physical card/content width.
         private _cardViewportW = _listW min (_uiW * 0.202);
         private _w = (_cardViewportW - _railW - _railGap) max (10 * pixelW);
-        _px = _px + ((_listW - _cardViewportW) / 2);
+        _px = _px + ((_listW - _w) / 2);
         private _gap = safeZoneH * 0.007;
         private _rowH = (_h - _gap * (_capacity - 1)) / _capacity;
         private _offsetKey = format ["ACME_txCardOffset_%1",_idc];
@@ -62,7 +62,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             private _identity = if (_row >= 0) then {[_list,_row] call ACME_fnc_transfusionCardIdentity} else {[]};
             private _visible = _shown && {_identity isNotEqualTo []};
             [_group,"show",_visible && {!_reactPane}] call ACME_fnc_transfusionUiSet;
-            if (_visible) then {
+            if (_identity isNotEqualTo []) then {
                 private _data = [_list,_row] call ACME_fnc_transfusionCardData;
                 _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction",["_total",0]];
                 if (_name == "") exitWith {
@@ -75,7 +75,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                     if (_group getVariable ["ACME_txFocus",false]) then {"popup"} else {if (_isPib) then {"piggyback"} else {["panel","button"] select (_group getVariable ["ACME_txHover",false])}}
                 };
                 private _cardRect = [_px,_py + _slot * (_rowH + _gap),_w,_rowH];
-                [_group,_cardRect,_profile,0.007,!_reactPane] call ACME_fnc_transfusionRoundedFrame;
+                [_group,_cardRect,_profile,0.007,_visible && {!_reactPane}] call ACME_fnc_transfusionRoundedFrame;
                 private _hit = _group controlsGroupCtrl 9;
                 _hit setVariable ["ACME_txListIDC",_idc];
                 _hit setVariable ["ACME_txCapacity",_capacity];
@@ -167,7 +167,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             if (_overflow) then {
                 private _thumbH = (_h * _capacity / lbSize _list) max (safeZoneH * 0.025);
                 private _thumbY = _py + (_h - _thumbH) * _offset / (((lbSize _list) - _capacity) max 1);
-                [_rail,"position",[_viewportX + _listW - _railW,if (_piece == 0) then {_py} else {_thumbY},_railW,if (_piece == 0) then {_h} else {_thumbH}]] call ACME_fnc_transfusionUiSet;
+                [_rail,"position",[(if (_paneIndex in [0,1]) then {_viewportX} else {_viewportX + _listW - _railW}),if (_piece == 0) then {_py} else {_thumbY},_railW,if (_piece == 0) then {_h} else {_thumbH}]] call ACME_fnc_transfusionUiSet;
             };
         };
         // Preserve lbValue/lbData/handlers. Only the native flat drawing is replaced by the card pool.

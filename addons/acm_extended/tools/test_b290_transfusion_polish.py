@@ -88,4 +88,4 @@ def test_action_labels_keep_zero_pressed_offset_and_obsolete_remove_stays_hidden
         for key in ["offsetX", "offsetY", "offsetPressedX", "offsetPressedY", "borderSize"]:
             assert re.search(rf"\b{key}\s*=\s*0\s*;", base)
     layout = (FUN / "fn_layoutTransfusionMenu.sqf").read_text()
-    assert 'forEach [86008,86091,86180,86181,86182];' in layout
+    assert 'forEach [86008,86091,86180,86181,86182,86003,86037];' in layout

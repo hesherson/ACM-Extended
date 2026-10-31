@@ -55,13 +55,15 @@ GVAR(TransfusionMenu_Selected_Inventory) = _targetInventory;
 
 private _display = uiNamespace getVariable [QGVAR(TransfusionMenu_DLG), displayNull];
 
-private _ctrlInventorySelectText = _display displayCtrl IDC_TRANSFUSIONMENU_SELECTION_INV_TEXT;
+private _inventoryButton = _display displayCtrl 86214;
 
 private _text = [LLSTRING(Common_Self), LLSTRING(Common_Patient), LLSTRING(Common_Vehicle)] select GVAR(TransfusionMenu_Selected_Inventory);
 
 private _target = [_medic, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
 
-_ctrlInventorySelectText ctrlSetText (format [LLSTRING(Common_InventoryTarget), _text]);
+if (!isNull _inventoryButton) then {
+    [_inventoryButton,"text",format ["Inventory (%1)",["Self","Patient","Vehicle"] select _targetInventory]] call ACME_fnc_transfusionUiSet;
+};
 
 private _cachedItems = if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {
     if (isNull _vehicle) then {[]} else {(getItemCargo _vehicle) select 0}

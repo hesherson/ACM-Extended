@@ -33,8 +33,8 @@ if (_partIdx >= 0 && {_remaining > 0.01}) then {
         if ((_entry param [22,-1]) >= 0) then {_drops = [(_entry param [22,0]) max 0 min 1] call ACME_fnc_clampPositionToDrops;};
         _clamp = (_drops / ((_entry param [20,20]) max 1)) / 60;
     };
-    _flowing = _siteOpen && {([_patient,_partIdx,_iv,_site,_clamp,_uid] call ACM_circulation_fnc_getIVFlowRate) > 0};
     ([_patient,_part,_iv,_site,_uid] call ACME_fnc_piggybackFlow) params ["_held","_secondary"];
+    _flowing = _siteOpen && {([_patient,_partIdx,_iv,_site,_clamp,_uid,_secondary] call ACM_circulation_fnc_getIVFlowRate) > 0};
     if (_held) then {_flowing = false;};
     if (_isY) then {
         private _serviceState = [_patient,_part,_iv,_site] call ACME_fnc_yServiceState;
@@ -59,10 +59,10 @@ if (_flowing) then {
 private _color = if (_role != "") then {[0.79,0.73,0.89,1]} else {[1,1,1,1]};
 private _thermal = "";
 if ([_patient,_part,_iv,_site] call ACME_fnc_lineWarmer) then {
-    _thermal = "LW Quantum · Inline";
-    if (_flowing && {_type in ["Blood","FreshBlood","Saline","ACME_SalineY","Plasma"]}) then {
+    _thermal = "LW Quantum / Inline";
+    if (_flowing && {!(_type in ["FBTK","ACME_Empty","ACME_EmptySaline"])}) then {
         _color = [1,0.55,0.13,1];
-        _thermal = "LW Quantum · Warming" + ([".","..","..."] select ((floor diag_tickTime) mod 3));
+        _thermal = "LW Quantum / Warming" + ([".","..","..."] select ((floor diag_tickTime) mod 3));
     };
 } else {
     if (_type in ["Blood","FreshBlood"] && {_patient getVariable ["ACME_coldBlood",false]}) then {_color = [0.45,0.72,1,1];};

@@ -30,7 +30,7 @@ def test_connected_piggyback_rows_keep_role_labels_but_only_the_flowing_branch_i
         [(_a select 0) find "[PiB] · Primary">=0 && {(_b select 0) find "[PiB] · Secondary">=0},"connected roles missing from Fluids"] call _check;
         [(_a select 1) isEqualTo [0.79,0.73,0.89,1] && {!(_a select 4)},"held primary looked as though warming"] call _check;
         [(_b select 1) isEqualTo [1,.55,.13,1] && {_b select 4},"secondary temperature did not override purple fluid text"] call _check;
-        [(_a select 2)=="LW Quantum · Inline" && {(_b select 2) find "LW Quantum · Warming"==0},"shared downstream warmer not shown on both roles"] call _check;
+        [(_a select 2)=="LW Quantum / Inline" && {(_b select 2) find "LW Quantum / Warming"==0},"shared downstream warmer not shown on both roles"] call _check;
         [_before==str (_patient getVariable "ACM_circulation_IV_Bags"),"presentation mutated fluid custody"] call _check;
         _secondary set [1,0];
         _a=[_patient,"leftarm",_primary,"Saline"] call ACME_fnc_transfusionBagPresentation;
@@ -53,7 +53,7 @@ def test_warming_indicator_requires_real_usable_admitted_flow(blocker):
     }[blocker]
     execute(presentation_setup() + change + r'''
         private _row=[_patient,"leftarm",_secondary,"Saline"] call ACME_fnc_transfusionBagPresentation;
-        [!(_row select 4) && {(_row select 2)=="LW Quantum · Inline"},"blocked fluid claimed active warming"] call _check;
+        [!(_row select 4) && {(_row select 2)=="LW Quantum / Inline"},"blocked fluid claimed active warming"] call _check;
         [(_row select 1) isEqualTo [.79,.73,.89,1],"blocked piggyback fluid stayed orange"] call _check;
     ''')
 
@@ -63,7 +63,7 @@ def test_ellipsis_changes_only_on_whole_one_second_boundaries(second, tail):
     execute(presentation_setup() + f'''
         _nowTime={second};
         private _row=[_patient,"leftarm",_secondary,"Saline"] call ACME_fnc_transfusionBagPresentation;
-        [(_row select 2)=="LW Quantum · Warming{tail}","warming dots cadence changed"] call _check;
+        [(_row select 2)=="LW Quantum / Warming{tail}","warming dots cadence changed"] call _check;
     ''')
 
 

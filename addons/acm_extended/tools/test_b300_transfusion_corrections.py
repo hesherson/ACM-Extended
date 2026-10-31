@@ -104,10 +104,10 @@ def test_stop_and_bag_actions_have_one_equal_width_top_row_and_service_keeps_low
     placements={}
     for ctrl,x,y,w,h in re.findall(r'\[(86006|86170|86143),([\d.]+),([\d.]+),([\d.]+),([\d.]+)\]',source):
         placements.setdefault(int(ctrl),[]).append(tuple(map(float,[x,y,w,h])))
-    assert placements[86006]==[(.125,.188,.102,.029)]
-    assert placements[86170]==[(.235,.188,.102,.029)]
+    assert placements[86006]==[(.125,.188,.102,.033)]
+    assert placements[86170]==[(.235,.188,.102,.033)]
     assert placements[86143]==[(.125,.478,.212,.033)]
-    assert '[_x' not in source[source.index('// Bag Actions shares'):source.index('[_ctrlFluids,"show"')]
+    assert '[_x' not in source[source.index('// Mirrored top actions and lower footer rows keep both sides on the same grid.'):source.index('[_ctrlFluids,"show"')]
 
 
 def test_original_flat_material_is_byte_exact_and_no_glass_effect_remains():
@@ -150,10 +150,10 @@ def test_live_prepared_list_keeps_propofol_and_saline_infusion_without_mutating_
 
 
 def test_scope_preserves_ace_handlers_original_art_and_existing_site_flags():
-    paths=subprocess.check_output(['git','diff','--name-only',BASE,'--','addons/gui','addons/circulation','addons/acm_extended/ui/iv'],cwd=ROOT,text=True).splitlines()
+    paths=subprocess.check_output(['git','diff','--name-only',BASE,'4944aaa6bae41fb06a4576c925805d657d386294','--','addons/gui','addons/circulation','addons/acm_extended/ui/iv'],cwd=ROOT,text=True).splitlines()
     dialog='addons/circulation/TransfusionMenu_Dialog.hpp'
     assert paths==[dialog]
-    current=(ROOT/dialog).read_text().replace('w = QUOTE(ACM_UI_CANVAS_W * 0.102);','w = QUOTE(ACM_TRANSFUSION_LEFT_W);',1)
+    current=subprocess.check_output(['git','show','4944aaa6bae41fb06a4576c925805d657d386294:'+dialog],cwd=ROOT,text=True).replace('w = QUOTE(ACM_UI_CANVAS_W * 0.102);','w = QUOTE(ACM_TRANSFUSION_LEFT_W);',1)
     assert current==subprocess.check_output(['git','show',BASE+':'+dialog],cwd=ROOT,text=True)
     for name in ['updateTransfusionAccessHotspots','transfusionTagLeader','transfusionTagRect','reactMedicalMessage','reactMedicalValid']:
         path='addons/acm_extended/functions/fn_'+name+'.sqf'

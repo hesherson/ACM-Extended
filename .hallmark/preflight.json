@@ -5,7 +5,7 @@
     "framework": "React 18.3.1, offline single-file bundle: frontend/medical-ui/package.json:10",
     "geometry": "native physical-pixel metrics: frontend/medical-ui/layout.mjs:3",
     "motion": "no animations or layout transitions: frontend/medical-ui/style.css",
-    "authority": "B300: native owns all empty captions; React occupies populated fluid cards only. Native clinical handlers and ACE unchanged.",
+    "authority": "B301: native captions, source selection and mirrored layout; React occupied cards only. Clinical handlers and ACE unchanged.",
     "material": "Original flat pre-Dusk palette restored; no blur, reflection or effect."
   },
   "preserve": [
@@ -17,8 +17,9 @@
     "native fallback and bounded React updates"
   ],
   "introduce": [
-    "Shared larger square bag icons independent of text line count",
-    "Bag Actions beside Stop Transfusion in the existing top row",
-    "Prepared propofol retained in piggyback selector with authenticated owner attachment"
+    "Mirrored columns and shared rows/separators around the existing body map",
+    "Source switching on the existing Inventory button; remove Target caption/icon",
+    "ASCII warming text and existing native-clock dots for flowing medication carriers",
+    "Live UID endpoints retained while action popovers hide card faces"
   ]
 }

@@ -1,6 +1,19 @@
 {
   "runs": [
     {
+      "batch": "B301",
+      "date": "2026-10-31",
+      "mode": "requested correction",
+      "scope": "existing ACME transfusion UI",
+      "theme": "existing flat charcoal and rounded corners",
+      "composition": "mirrored columns, two-row card lists, shared action rows and centered details footer",
+      "source": "Inventory (Self)/(Patient)/(Vehicle) owns existing source cycling",
+      "warming": "ASCII separator; native clock dots and orange only on flowing carriers",
+      "topology": "live physical UID endpoints independent of hidden card faces",
+      "preserved": "ACE, custody/clinical handlers, original art, IV/IO contours and flags",
+      "method": "project system; no Hallmark redesign run"
+    },
+    {
       "batch": "B300",
       "date": "2026-10-31",
       "mode": "requested correction",

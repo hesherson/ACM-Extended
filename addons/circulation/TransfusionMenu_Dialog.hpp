@@ -95,9 +95,9 @@ class GVAR(TransfusionMenu_Dialog) {
         class InventoryTitle: FluidsTitle {
             idc = 86161;
             text = "Inventory";
-            x = QUOTE(ACM_TRANSFUSION_RIGHT_X + ACM_UI_CANVAS_W * 0.008);
-            y = QUOTE(safeZoneY + safeZoneH * 0.164);
-            w = QUOTE(ACM_TRANSFUSION_RIGHT_W - ACM_UI_CANVAS_W * 0.008);
+            x = QUOTE(ACM_TRANSFUSION_RIGHT_X);
+            y = QUOTE(safeZoneY + safeZoneH * 0.151);
+            w = QUOTE(ACM_TRANSFUSION_RIGHT_W);
         };
         class SelectedAccessCaption: FluidsTitle {
             idc = 86162;
@@ -154,11 +154,11 @@ class GVAR(TransfusionMenu_Dialog) {
         };
         class SelectedInventoryText: SelectedLimbText {
             idc = IDC_TRANSFUSIONMENU_SELECTION_INV_TEXT;
-            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.673);
-            text = __EVAL(call compile QUOTE(format [ARR_2(C_LLSTRING(Common_InventoryTarget),C_LLSTRING(Common_Self))]));
-            y = QUOTE(safeZoneY + safeZoneH * 0.193);
-            w = QUOTE(ACM_UI_CANVAS_W * 0.160);
-            h = QUOTE(safeZoneH * 0.030);
+            x = QUOTE(ACM_UI_CANVAS_X - 1);
+            text = "";
+            y = QUOTE(0);
+            w = QUOTE(0);
+            h = QUOTE(0);
             sizeEx = QUOTE(safeZoneH * 0.019);
             style = 0;
         };
@@ -359,10 +359,10 @@ class GVAR(TransfusionMenu_Dialog) {
         };
         class SwitchTargetInventory: RscButtonMenu {
             idc = IDC_TRANSFUSIONMENU_SWITCHTARGET;
-            x = QUOTE(ACM_UI_CANVAS_X + ACM_UI_CANVAS_W * 0.838);
-            y = QUOTE(safeZoneY + safeZoneH * 0.193);
-            w = QUOTE(ACM_UI_CANVAS_W * 0.033);
-            h = QUOTE(safeZoneH * 0.030);
+            x = QUOTE(ACM_UI_CANVAS_X - 1);
+            y = QUOTE(0);
+            w = QUOTE(0);
+            h = QUOTE(0);
             shadow = 0;
             font = "RobotoCondensed";
             sizeEx = "0";
@@ -402,7 +402,7 @@ class GVAR(TransfusionMenu_Dialog) {
             x = QUOTE(ACM_TRANSFUSION_LEFT_X);
             y = QUOTE(safeZoneY + safeZoneH * 0.188);
             w = QUOTE(ACM_UI_CANVAS_W * 0.102);
-            h = QUOTE(safeZoneH * 0.029);
+            h = QUOTE(safeZoneH * 0.033);
             shadow = 0;
             font = "RobotoCondensed";
             sizeEx = QUOTE(safeZoneH * 0.020);

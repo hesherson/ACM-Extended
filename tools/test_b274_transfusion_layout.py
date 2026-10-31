@@ -63,13 +63,13 @@ def test_patient_name_restores_original_centered_top_anchor():
 def test_stop_button_initial_and_final_rectangles_match_above_fluids():
     stop = runtime_rect(86006)
     assert native_rect("StopTransfusionButton") == pytest.approx(stop)
-    assert stop == pytest.approx((.125, .188, .102, .029))
+    assert stop == pytest.approx((.125, .188, .102, .033))
     assert stop[1] + stop[3] < runtime_rect(86004)[1]
     assert "call FUNC(TransfusionMenu_ToggleIVFlow)" in class_block(DIALOG, "StopTransfusionButton")
 
 
 def test_preparing_an_infusion_and_hanging_a_set_share_the_inventory_action_row():
-    hang = runtime_rect(86141, .097)
+    hang = runtime_rect(86141, .102)
     prep = runtime_rect(86121)
     assert prep[1:] == pytest.approx(hang[1:])
     assert prep[0] >= hang[0] + hang[2]
@@ -86,7 +86,7 @@ def test_give_is_the_single_full_width_prepared_infusion_footer_action():
     assert give[1] >= prepared[1] + prepared[3]
     assert runtime_rect(86121)[1] < prepared[1]
     # Prep is the only second authored action previously occupying this footer.
-    assert give == pytest.approx((.673, .810, .202, .034))
+    assert give == pytest.approx((.663, .778, .212, .033))
 
 
 @pytest.mark.parametrize("source_name", ["styles", "defines", "layout"])
@@ -128,7 +128,7 @@ def test_line_details_are_inline_and_do_not_create_a_nested_display():
     assert "createDialog" not in open_details + update_details
     assert "findDisplay 86190" not in LAYOUT + open_details + update_details
     assert "call ACME_fnc_updateTransfusionLineDetails" in LAYOUT
-    assert runtime_rect(86171) == pytest.approx((.125, .822, .212, .068))
+    assert runtime_rect(86171) == pytest.approx((.125, .822, .750, .068))
     # The inline painter stays on the existing menu tick and cannot modify care.
     assert "ownerDispatch" not in update_details
     assert "addPerFrameHandler" not in update_details

@@ -238,6 +238,8 @@ def test_empty_inventory_is_cleared_before_no_bags_return_and_extras_follow_sele
 
 def switch_ui_setup():
     s=(ROOT/'addons/circulation/functions/fnc_TransfusionMenu_SwitchTargetInventory.sqf').read_text()
+    # Native UI boundary: source labels now belong to the existing inventory button.
+    s=s.replace('_display displayCtrl 86214','objNull')
     s=s.replace('objectParent ACE_player','_vehicleNow').replace('objectParent _medic','_vehicleNow').replace('getItemCargo _vehicle','_vehicleCargo')
     # Engine object equality, represented by namespace identities in this fixture.
     s=s.replace('ACE_player == GVAR(TransfusionMenu_Target)','ACE_player isEqualTo GVAR(TransfusionMenu_Target)')
@@ -336,7 +338,7 @@ def test_actual_thermal_paint_clears_empty_red_and_uses_patient_temperature(warm
       call _paint;
       [(_colors select 0) isEqualTo {color},"refilled blood kept red or wrong thermal color"] call _check;
       [(_labels select 0)=="Blood O- (498ml) [Y]","thermal tag stale/duplicated"] call _check;
-      [(_caption find "LW Quantum · Warming"==0) isEqualTo {str(warmed and not paused).lower()},"caption warming did not follow actual flow"] call _check;
+      [(_caption find "LW Quantum / Warming"==0) isEqualTo {str(warmed and not paused).lower()},"caption warming did not follow actual flow"] call _check;
       [_captionColor isEqualTo [1,.55,.13,1],"warming caption and bag color disagree"] call _check;
       private _before=_writes;call _paint;
       [_writes==_before,"steady repaint churned native row text/color/tooltip"] call _check;

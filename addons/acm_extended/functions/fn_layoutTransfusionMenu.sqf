@@ -15,10 +15,11 @@ if ((_display getVariable ["ACME_txHeaderFontH",0]) != safeZoneH) then {
     private _rule = _display displayCtrl _id;
     [_rule,"position",[_uiX + _uiW * _rx,safeZoneY + safeZoneH * _ry,_uiW * _rw,pixelH max 0.0005]] call ACME_fnc_transfusionUiSet;
     _rule ctrlEnable false;
-} forEach [[86404,0.125,0.147,0.750],[86405,0.125,0.526,0.212],[86406,0.673,0.583,0.202]];
+} forEach [[86404,0.125,0.147,0.750],[86405,0.125,0.526,0.212],[86406,0.663,0.526,0.212]];
 // The authored native window draws first, so its opaque center never covers the body or device overlays.
 [(_display displayCtrl 86400),[_uiX + _uiW * 0.11,safeZoneY + safeZoneH * 0.08,_uiW * 0.78,safeZoneH * 0.84],"window",0.007] call ACME_fnc_transfusionRoundedFrame;
-{[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86008,86091,86180,86181,86182];
+{[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86008,86091,86180,86181,86182,86003,86037];
+{[(_display displayCtrl _x),"enable",false] call ACME_fnc_transfusionUiSet;} forEach [86003,86037];
 private _moveBusy = (missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active", false])
     || {missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Move_Active_Moving", false]};
 
@@ -56,7 +57,10 @@ private _accessKind = [86210,"ACME_TransfusionAccessCaption",""] call _ensure;
 private _accessIcon = [86211,"RscPictureKeepAspect",""] call _ensure;
 private _spikeDropdown = [86212,"ACME_TransfusionActionButton","v"] call _ensure;
 private _warming = [86213,"ACME_TransfusionCaption",""] call _ensure;
-private _inventoryTab = [86214,"ACME_TransfusionTabButton","Inventory"] call _ensure;
+private _sourceIndex = (missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_Inventory",0]) max 0 min 2;
+private _inventoryLabel = format ["Inventory (%1)",["Self","Patient","Vehicle"] select _sourceIndex];
+private _inventoryTab = [86214,"ACME_TransfusionTabButton",_inventoryLabel] call _ensure;
+[_inventoryTab,"text",_inventoryLabel] call ACME_fnc_transfusionUiSet;
 
 if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
     _display setVariable ["ACME_txLayoutHooks", true];
@@ -76,7 +80,14 @@ if !(_display getVariable ["ACME_txLayoutHooks", false]) then {
             [_parent] call ACME_fnc_layoutTransfusionMenu;
         }];
     } forEach [[_bagActions,"bag","transfusion"],[_infActions,"infusion","infusion"]];
-    _inventoryTab ctrlAddEventHandler ["ButtonClick",{[false] call ACME_fnc_togglePreparedSets;}];
+    _inventoryTab ctrlAddEventHandler ["ButtonClick",{
+        if (uiNamespace getVariable ["ACME_preparedListMode",false]) then {
+            [false] call ACME_fnc_togglePreparedSets;
+        } else {
+            [true] call ACM_circulation_fnc_TransfusionMenu_SwitchTargetInventory;
+            call ACME_fnc_updateTransfusionControls;
+        };
+    }];
     _piggyback ctrlAddEventHandler ["ButtonClick", { ["start"] call ACME_fnc_piggybackWorkflow; }];
     {
         _x params ["_button","_operation"];
@@ -194,27 +205,27 @@ private _place = {
     [86210,0.382,0.777,0.236,0.024],
     [86211,0.363,0.777,0.019,0.024],
     [86213,0.141,0.441,0.184,0.027],
-    [86003,0.673,0.193,0.160,0.030],
-    [86037,0.838,0.193,0.033,0.030],
-    [86006,0.125,0.188,0.102,0.029],
-    [86170,0.235,0.188,0.102,0.029],
+    [86160,0.125,0.151,0.212,0.027],
+    [86161,0.663,0.151,0.212,0.027],
+    [86006,0.125,0.188,0.102,0.033],
+    [86170,0.235,0.188,0.102,0.033],
+    [86214,0.663,0.188,0.102,0.033],
+    [86144,0.773,0.188,0.102,0.033],
     [86004,0.125,0.228,0.212,0.210],
+    [86005,0.663,0.228,0.212,0.210],
+    [86145,0.663,0.228,0.212,0.210],
     [86128,0.125,0.538,0.212,0.029],
+    [86130,0.663,0.538,0.212,0.029],
     [86129,0.125,0.575,0.212,0.187],
+    [86127,0.663,0.575,0.212,0.187],
     [86131,0.125,0.778,0.102,0.033],
     [86172,0.235,0.778,0.102,0.033],
-    [86214,0.673,0.232,0.097,0.034],
-    [86144,0.778,0.232,0.097,0.034],
-    [86005,0.673,0.279,0.202,0.235],
-    [86145,0.673,0.279,0.202,0.235],
-    [86130,0.673,0.595,0.202,0.029],
-    [86127,0.673,0.636,0.202,0.149],
-    [86121,0.778,0.526,0.097,0.034],
-    [86122,0.673,0.810,0.202,0.034],
-    [86171,0.125,0.822,0.212,0.068],
+    [86121,0.773,0.478,0.102,0.033],
+    [86122,0.663,0.778,0.212,0.033],
+    [86171,0.125,0.822,0.750,0.068],
     [86176,0.133,0.581,0.196,0.029],
-    [86177,0.681,0.643,0.186,0.029],
-    [86178,0.145,0.235,0.184,0.029],
+    [86177,0.671,0.581,0.196,0.029],
+    [86178,0.133,0.235,0.196,0.029],
     [86126,0.125,0.895,0.750,0.024]
 ];
 private _yButton = _display displayCtrl 86142;
@@ -229,19 +240,20 @@ private _showY = !_preparedMode && {_display getVariable ["ACME_txShowY",false]}
     [_tab,"color",if (_selected) then {[1,1,1,1]} else {[0.75,0.75,0.75,1]}] call ACME_fnc_transfusionUiSet;
 } forEach [[_inventoryTab,!_preparedMode],[_display displayCtrl 86144,_preparedMode]];
 if (_preparedMode) then {
-    [86141,0.673,0.526,0.097,0.034] call _place;
-    [86121,0.778,0.526,0.097,0.034] call _place;
+    [86141,0.663,0.478,0.102,0.033] call _place;
+    [86121,0.773,0.478,0.102,0.033] call _place;
     [_spikeDropdown,"show",false] call ACME_fnc_transfusionUiSet;
 } else {
     if (_showY) then {
         // Blood defaults to the native Y-set action; the native Spike Bag path stays in its dropdown.
-        [86142,0.673,0.526,0.169,0.034] call _place;
-        [86212,0.847,0.526,0.028,0.034] call _place;
-        [86141,0.673,0.564,0.202,0.031] call _place;
+        [86142,0.663,0.478,0.176,0.033] call _place;
+        [86212,0.847,0.478,0.028,0.033] call _place;
+        [86141,0.663,0.478,0.176,0.033] call _place;
+        [_yButton,"show",!(_display getVariable ["ACME_txSpikeDropdown",false])] call ACME_fnc_transfusionUiSet;
         [_spikeDropdown,"show",true] call ACME_fnc_transfusionUiSet;
         [(_display displayCtrl 86141),"show",_display getVariable ["ACME_txSpikeDropdown",false]] call ACME_fnc_transfusionUiSet;
     } else {
-        [86141,0.673,0.526,0.202,0.034] call _place;
+        [86141,0.663,0.478,0.212,0.033] call _place;
         [_spikeDropdown,"show",false] call ACME_fnc_transfusionUiSet;
     };
 };
@@ -322,7 +334,7 @@ if (_valid) then {
     };
 } forEach [86128,86130];
 
-// Bag Actions shares the top row with Stop. Keep Prime/Flush in its established lower row.
+// Mirrored top actions and lower footer rows keep both sides on the same grid.
 private _service = _display displayCtrl 86143;
 if (!isNull _service && {ctrlShown _service}) then {
     [86143,0.125,0.478,0.212,0.033] call _place;
@@ -337,8 +349,8 @@ if (!isNull _rate) then {_rate ctrlSetFontHeight (safeZoneH * 0.017);};
 [_infActions,"text",if (_menu == "infusion") then {"< Infusion Actions"} else {"Infusion Actions >"}] call ACME_fnc_transfusionUiSet;
 _bagBackdrop ctrlSetBackgroundColor [0,0,0,0];
 _infBackdrop ctrlSetBackgroundColor [0,0,0,0];
-[86173,0.128,0.228,0.206,0.249] call _place;
-[86174,0.128,0.593,0.206,0.181] call _place;
+[86173,0.125,0.228,0.212,0.249] call _place;
+[86174,0.125,0.575,0.212,0.199] call _place;
 [_bagBackdrop,"show",_menu == "bag"] call ACME_fnc_transfusionUiSet;
 [_infBackdrop,"show",_menu == "infusion"] call ACME_fnc_transfusionUiSet;
 {
