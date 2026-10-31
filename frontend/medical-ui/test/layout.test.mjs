@@ -11,3 +11,16 @@ for (const [w,h] of [[360,227],[272,171],[210,132],[522,226]]) {
   assert.equal(parseFloat(g.root['--radius'])*h/100,Math.floor(u*.007));
  });
 }
+
+import {nativeFontScale} from '../layout.mjs';
+test('native measured width calibrates independently of nominal sizeEx and viewport scale',()=>{
+ assert.equal(nativeFontScale([100,18],125,522,522),.8);
+ assert.equal(nativeFontScale([100,18],250,1044,522),.8);
+ const layout=[522,226,1080,109,8,7];
+ const card={detail:'712 mL',fraction:.7};
+ const normal=cardLayout(layout,card),calibrated=cardLayout(layout,card,.8);
+ assert.deepEqual(calibrated.icon,normal.icon);
+ assert.deepEqual(calibrated.root,normal.root);
+ assert.ok(Math.abs(parseFloat(calibrated.name.fontSize)/parseFloat(normal.name.fontSize)-.8)<.000001);
+ for (const width of [0,NaN,Infinity,-1]) assert.equal(nativeFontScale([100,18],width,522,522),null);
+});

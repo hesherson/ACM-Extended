@@ -48,3 +48,6 @@ button { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .acme-medical-surface .card { animation: none; transition: none; }
 }
+
+/* Native RscText has 0.008 UI-unit side margins; the browser uses the measured inset. */
+.acme-medical-surface .caption { padding-inline: var(--text-inset,0px); }

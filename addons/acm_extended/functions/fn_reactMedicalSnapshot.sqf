@@ -46,6 +46,7 @@ private _height = (_layout select 2) / pixelH;
 private _width = (_rect select 2) / pixelW;
 private _radius = floor ((_unit * 0.007) min (_height / 2) min (_width / 2));
 createHashMapFromArray [
+    ["fontProbe",[("Hg0123456789" getTextWidth ["RobotoCondensed",safeZoneH * 0.018]) / pixelW,_unit * 0.018,0.008 / pixelW]],
     ["layout",[_width,(_rect select 3) / pixelH,_unit,_height,safeZoneH * 0.007 / pixelH,_radius]],
     ["view","transfusion-cards"],["patient",createHashMapFromArray [
         ["ref",["encode",_context select 1] call ACME_fnc_clinicalObjectRef],["epoch",_context select 4]]],

@@ -1,6 +1,21 @@
 {
   "runs": [
     {
+      "batch": "B299",
+      "date": "2026-10-31",
+      "scope": "app",
+      "mode": "restyle",
+      "theme": "Dusk",
+      "screen": "existing ACME transfusion UI only",
+      "preserved": "layout, handlers, clinical colors, ACE, original art",
+      "material": "opaque smoked slate with baked warm window reflection and lit rim; no claim of scene blur",
+      "font": "Roboto Condensed calibrated against Arma text advance before handoff",
+      "motion": "none",
+      "finishReview": "fix: one post-handoff font unmount/failure finding, resolved with one-time font load, synchronous remeasure, mounted controls and session-bound native fallback; reproduced compiled-browser checks pass",
+      "screenshots": "scratch only; native material compositor is not an Arma capture",
+      "lint": "0 FAIL / 0 WARN / 1 existing full-card-height waiver"
+    },
+    {
       "date": "2026-10-31",
       "mode": "redesign",
       "depth": "restyle",

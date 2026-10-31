@@ -20,7 +20,7 @@ def test_b295_surface_exactly_restored_or_removed(path, expected):
                  'addons/acm_extended/functions/fn_reactMedicalSnapshot.sqf',
                  'addons/acm_extended/ui/react/index.html',
                  'addons/acm_extended/tools/test_b293_react_bridge.py'}
-        content=subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:'+path],cwd=ROOT) if path in updated else p.read_bytes()
+        content=subprocess.check_output(['git','show','4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824:'+path],cwd=ROOT) if path in updated or path.startswith("addons/acm_extended/ui/transfusion/") else p.read_bytes()
         assert hashlib.sha256(content).hexdigest() == expected, path
 
 

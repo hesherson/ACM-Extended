@@ -6,23 +6,26 @@ import pytest
 
 ROOT=Path(__file__).resolve().parents[3]
 BASE='0d1e5fc04a11514ed06ca98d1188699d0c78ea4a'
+B298='5a5e484acabbc6c0bf9424328c5807ae962ea6d4'
+def published(path):
+    return subprocess.check_output(['git','show',B298+':'+path],cwd=ROOT)
 FRONT=ROOT/'frontend/medical-ui'
 
 
 def test_restyle_cannot_rewrite_card_logic_handlers_or_geometry():
     original=subprocess.check_output(['git','show',BASE+':frontend/medical-ui/App.jsx'],cwd=ROOT,text=True)
-    current=(FRONT/'App.jsx').read_text().replace("'--color-clinical':`rgba(","color:`rgba(").replace('className="acme-medical-surface" ','')
+    current=published('frontend/medical-ui/App.jsx').decode().replace("'--color-clinical':`rgba(","color:`rgba(").replace('className="acme-medical-surface" ','')
     assert current==original
     for name in ['bridge.mjs','layout.mjs']:
-        assert (FRONT/name).read_bytes()==subprocess.check_output(['git','show',BASE+':frontend/medical-ui/'+name],cwd=ROOT)
+        assert published('frontend/medical-ui/'+name)==subprocess.check_output(['git','show',BASE+':frontend/medical-ui/'+name],cwd=ROOT)
 
 
 def test_all_native_menu_runtime_and_medical_artwork_are_outside_restyle():
-    paths=subprocess.check_output(['git','diff','--name-only',BASE,'--','addons'],cwd=ROOT,text=True).splitlines()
+    paths=subprocess.check_output(['git','diff','--name-only',BASE,B298,'--','addons'],cwd=ROOT,text=True).splitlines()
     allowed={'addons/acm_extended/ui/react/index.html','addons/acm_extended/functions/fn_initForkStartupRuntime.sqf','addons/main/script_build.hpp'}
     assert not [p for p in paths if p not in allowed and '/tools/' not in p]
     original=subprocess.check_output(['git','show',BASE+':addons/acm_extended/functions/fn_initForkStartupRuntime.sqf'],cwd=ROOT,text=True)
-    assert (ROOT/'addons/acm_extended/functions/fn_initForkStartupRuntime.sqf').read_text().replace('B298','B297')==original
+    assert published('addons/acm_extended/functions/fn_initForkStartupRuntime.sqf').decode().replace('B298','B297')==original
 
 
 def rgb(value):

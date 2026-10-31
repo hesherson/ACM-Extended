@@ -8,8 +8,7 @@ private _context = _display getVariable ["ACME_reactContext",[]];
 if (!([_context] call ACME_fnc_reactMedicalValid)
     || {(missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Medic",objNull]) isNotEqualTo (_context select 0)}
     || {(missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull]) isNotEqualTo (_context select 1)}
-    || {!isNull findDisplay 86200} || {!isNull findDisplay 84000}
-    || {!((_display getVariable ["ACME_txActionMenu",""]) isEqualTo "")}) exitWith {true};
+) exitWith {true};
 private _packet = nil;
 try {_packet = fromJSON _text;} catch {_packet = nil;};
 if (isNil "_packet" || {!(_packet isEqualType createHashMap)} || {count _packet != 5}) exitWith {true};
@@ -24,7 +23,18 @@ if (!(_version isEqualTo 2) || {!(_session isEqualType "")} || {_session == ""}
     || {!(_sequence isEqualType 0)} || {!finite _sequence} || {_sequence != floor _sequence}
     || {_sequence < 1} || {_sequence > 1000000}
     || {_sequence <= (_display getVariable ["ACME_reactRequestSequence",0])}
-    || {!(_operation in ["ready","painted","select","wheel","key"])} || {!(_route isEqualType [])}) exitWith {true};
+    || {!(_operation in ["ready","painted","fallback","select","wheel","key"])} || {!(_route isEqualType [])}) exitWith {true};
+// Presentation failure may retire this bound pane even while a native popup is open.
+// It never invokes a clinical/input action or changes the captured patient.
+if (_operation == "fallback") exitWith {
+    if (count _route == 0) then {
+        _display setVariable ["ACME_reactRequestSequence",_sequence];
+        [_display] call ACME_fnc_reactMedicalFallback;
+    };
+    true
+};
+if (!isNull findDisplay 86200 || {!isNull findDisplay 84000}
+    || {!((_display getVariable ["ACME_txActionMenu",""]) isEqualTo "")}) exitWith {true};
 if (_operation == "ready") exitWith {
     if (count _route == 0) then {
         _display setVariable ["ACME_reactRequestSequence",_sequence];

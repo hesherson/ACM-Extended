@@ -69,7 +69,7 @@ def test_ace_surfaces_and_original_medical_artwork_unchanged():
     assert '[1,1,1,0.08]' not in source and '[0.20,0.65,0.20,0.22]' not in source
     assert '_outline ctrlEnable false;' in source
     assert '87300 + _siteIndex' in source
-    assert '_tw + _flagOverhang' in source
+    assert '_flagRect select 2,pixelH]' in source
     assert '_labelW + _flagOverhang' in source
     assert '_placedLabels pushBack (+_rect)' in source
 

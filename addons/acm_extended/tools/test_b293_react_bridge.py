@@ -15,6 +15,7 @@ def function(name):
         'fromJSON _text':'_decoded','lbSize _list':'count _nativeRows','lbCurSel _list':'_selected',
         'safeZoneW':'1.7777778','safeZoneH':'1','pixelW':'0.001','pixelH':'0.001',
     }.items(): text=text.replace(old,new)
+    text=text.replace('("Hg0123456789" getTextWidth ["RobotoCondensed",1 * 0.018])','0.105')
     variable = {'reactMedicalPage':'_hello','reactMedicalTick':'_packet','reactMedicalMessage':'_reply'}.get(name,'_reply')
     text=re.sub(r'_(?:control|browser) ctrlWebBrowserAction \["ExecJS",format \[[^\n]+;', '_packets pushBack '+variable+';',text)
     text=re.sub(r'_browser ctrlShow ([^;]+);',r'_browserShown=\1;',text)
@@ -145,7 +146,7 @@ def test_snapshot_uses_native_two_card_window_and_graduations():
         [count _cards==2 && {_state get "canNext"},"native viewport/overflow changed"] call _check;
         [((_cards select 0) get "name")=="Saline 750 mL" && {(_cards select 0) get "selected"},"native card presentation/selection lost"] call _check;
         [count ((_cards select 0) get "marks")==11,"native graduation model lost"] call _check;
-        [count _state==6 && {count (_cards select 0)==12},"raw patient state leaked"] call _check;
+        [count _state==7 && {count (_cards select 0)==12},"raw patient state leaked"] call _check;
     ''')
 
 

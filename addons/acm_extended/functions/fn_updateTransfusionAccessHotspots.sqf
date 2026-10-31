@@ -150,6 +150,7 @@ private _placedLabels = [];
         [_label,"enable",false] call ACME_fnc_transfusionUiSet;
     };
     private _leader = _display displayCtrl (87030 + _siteIndex);
+    private _dot = _display displayCtrl (87330 + _siteIndex);
     private _tagHit = _display displayCtrl (87240 + _siteIndex);
     private _borders = [];
     for "_edge" from 0 to 3 do {_borders pushBack (_display displayCtrl (87130 + _siteIndex * 4 + _edge));};
@@ -159,6 +160,11 @@ private _placedLabels = [];
         if (isNull _leader) then {
             _leader = _display ctrlCreate ["RscLine", 87030 + _siteIndex];
             [_leader,"enable",false] call ACME_fnc_transfusionUiSet;
+        };
+        if (isNull _dot) then {
+            _dot = _display ctrlCreate ["RscPictureKeepAspect",87330 + _siteIndex];
+            [_dot,"enable",false] call ACME_fnc_transfusionUiSet;
+            [_dot,"text","\acm_extended\ui\transfusion\access\site_dot_ca.paa"] call ACME_fnc_transfusionUiSet;
         };
         // Indexed loop keeps the site's control range intact across all four edges.
         for "_edge" from 0 to 3 do {
@@ -181,6 +187,7 @@ private _placedLabels = [];
             && {([_patient,_part,!_isIO,_site] call ACME_fnc_piggybackLine) isNotEqualTo []};
         private _tagColor = if (_isPiggyback) then {[0.79,0.73,0.89,1]} else {[0.82,0.82,0.82,1]};
         [_label,"color",_tagColor] call ACME_fnc_transfusionUiSet;
+        [_dot,"color",_tagColor] call ACME_fnc_transfusionUiSet;
         [_leader,"color",_tagColor] call ACME_fnc_transfusionUiSet;
         {if ((_x getVariable ["ACME_TX_BorderColor",[]]) isNotEqualTo _tagColor) then {_x ctrlSetBackgroundColor _tagColor;_x setVariable ["ACME_TX_BorderColor",_tagColor];};} forEach _borders;
         private _labelH = (_drawH * 0.035) max (14 * pixelH);
@@ -190,24 +197,29 @@ private _placedLabels = [];
         _labelW = _labelW min (_drawW * 0.18);
         private _left = (_hx + _hw / 2) < (_drawX + _drawW / 2);
         private _above = _isEJ || {_v < 0.35} || {!_left && {_v < 0.55}};
-        private _anchor = [_hx,_hy,_hw,_hh];
+        private _anchor = [_hx + _padX,_hy + _padY,_hw - 2 * _padX,_hh - 2 * _padY];
         private _flagOverhang = (_drawW * 0.035) max (10 * pixelW);
         private _rect = [_anchor,[_labelW + _flagOverhang,_labelH],[_outerX,_outerY,_outerW,_outerH],_placedLabels,3 * pixelH,_left,_above] call ACME_fnc_transfusionTagRect;
         if (_rect isEqualTo []) then {_showLabel = false;} else {
             _placedLabels pushBack (+_rect); // Reserve the entire flag, including its overhang.
-            if (_left) then {_rect set [0,(_rect select 0) + _flagOverhang];};
+            private _flagRect = +_rect;
+            // Hang the box at the far end, leaving a visible neck after the diagonal.
+            if (!_left) then {_rect set [0,(_rect select 0) + _flagOverhang];};
             _rect set [2,_labelW];
             [_label,"position",_rect] call ACME_fnc_transfusionUiSet;
             [_tagHit,"position",_rect] call ACME_fnc_transfusionUiSet;
-            [_leader,"position",[_anchor,_rect,_left] call ACME_fnc_transfusionTagLeader] call ACME_fnc_transfusionUiSet;
+            [_leader,"position",[_anchor,_flagRect,_left] call ACME_fnc_transfusionTagLeader] call ACME_fnc_transfusionUiSet;
             _rect params ["_tx","_ty","_tw","_th"];
-            // Extend the top edge beyond the outer corner for a flag silhouette.
+            private _dotX = if (_left) then {_anchor select 0} else {(_anchor select 0) + (_anchor select 2)};
+            [_dot,"position",[_dotX - 1.5 * pixelW,(_anchor select 1) - 1.5 * pixelH,3 * pixelW,3 * pixelH]] call ACME_fnc_transfusionUiSet;
+            // One rail runs from the diagonal junction to the outer end of the box.
             {
                 [(_borders select _forEachIndex),"position",_x] call ACME_fnc_transfusionUiSet;
-            } forEach [[_tx - (if (_left) then {_flagOverhang} else {0}),_ty,_tw + _flagOverhang,pixelH],[_tx,_ty,pixelW,_th],[_tx,_ty + _th - pixelH,_tw,pixelH],[_tx + _tw - pixelW,_ty,pixelW,_th]];
+            } forEach [[_flagRect select 0,_ty,_flagRect select 2,pixelH],[_tx,_ty,pixelW,_th],[_tx,_ty + _th - pixelH,_tw,pixelH],[_tx + _tw - pixelW,_ty,pixelW,_th]];
         };
     };
     [_label,"show",_showLabel] call ACME_fnc_transfusionUiSet;
+    [_dot,"show",_showLabel] call ACME_fnc_transfusionUiSet;
     [_leader,"show",_showLabel] call ACME_fnc_transfusionUiSet;
     [_tagHit,"show",_showLabel] call ACME_fnc_transfusionUiSet;
     [_tagHit,"enable",_showLabel] call ACME_fnc_transfusionUiSet;

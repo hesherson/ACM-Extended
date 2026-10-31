@@ -5,23 +5,20 @@
     "framework": "React 18.3.1, offline single-file bundle: frontend/medical-ui/package.json:10",
     "geometry": "native physical-pixel metrics: frontend/medical-ui/layout.mjs:3",
     "motion": "no animations or layout transitions: frontend/medical-ui/style.css",
-    "authority": "clinical values and actions owned by native SQF; no changes to bridge or native presentation"
+    "authority": "Native clinical model/actions unchanged; B299 adds engine text advance for calibrated React font sizing before first paint."
   },
   "preserve": [
-    "layout",
-    "font",
-    "copy",
-    "clinical colours",
-    "callbacks",
-    "native fallback",
-    "ACE files",
-    "opaque native textures"
+    "existing screens and layout",
+    "native handlers and clinical model",
+    "Roboto Condensed",
+    "original device artwork",
+    "ACE surfaces",
+    "same-display native fallback",
+    "no animations or global postprocess"
   ],
   "introduce": [
-    "Dusk role tokens",
-    "smoked React surfaces",
-    "lit inner edge",
-    "scoped internal-backdrop capability",
-    "contrast/focus/blur-boundary checks"
+    "Dusk material on the existing ACME-owned transfusion nine-slice shell and native/React cards",
+    "Engine-measured font calibration and side margins before React handoff",
+    "1.4px access contour, outward hanging label with neck and passive site dot"
   ]
 }

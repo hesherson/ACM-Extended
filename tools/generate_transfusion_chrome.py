@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import tempfile
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageChops
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,13 +26,13 @@ BORDER = 8
 SUPERSAMPLE = 4
 PARTS = ("tl", "top", "tr", "left", "center", "right", "bl", "bottom", "br")
 PROFILES = {
-    "window": ("#111214", "#34363c"),
-    "panel": ("#18191c", "#292b30"),
-    "button": ("#202125", "#34363c"),
-    "selected": ("#303239", "#9498a2"),
+    "window": ("#252731", "#666775"),
+    "panel": ("#292c36", "#494c59"),
+    "button": ("#333640", "#666775"),
+    "selected": ("#373b47", "#a2a8d6"),
     "tab": ("#2e2e2e", "#404040"),
     "tab_selected": ("#4d4d4d", "#949494"),
-    "popup": ("#24262b", "#50545e"),
+    "popup": ("#30333e", "#50545e"),
     "piggyback": ("#28252e", "#a392bd"),
     "piggyback_selected": ("#302a3a", "#d2c2ec"),
 }
@@ -75,6 +75,32 @@ def render_parts(fill: str, stroke: str) -> dict[str, Image.Image]:
     return parts
 
 
+def window_material(parts):
+    """One baked warm reflection across the EXISTING window; no scene sampling.
+
+    Slice at matching boundaries so native nine-slice joins stay continuous.
+    Inner rows remain opaque slate, avoiding glass-on-glass stacking.
+    """
+    size=SIZE*3
+    field=Image.new('RGBA',(size,size))
+    pixels=field.load()
+    for y in range(size):
+        for x in range(size):
+            warmth=max(0,1-x/(size*1.1))*max(0,1-y/(size*.9))
+            base=(37,39,49); high=(82,76,78)
+            pixels[x,y]=tuple(round(a+(b-a)*warmth) for a,b in zip(base,high))+(255,)
+    grid={'tl':(0,0),'top':(1,0),'tr':(2,0),'left':(0,1),'center':(1,1),'right':(2,1),'bl':(0,2),'bottom':(1,2),'br':(2,2)}
+    fill=Image.new('RGBA',(SIZE,SIZE),'#252731')
+    for part,(x,y) in grid.items():
+        material=field.crop((x*SIZE,y*SIZE,(x+1)*SIZE,(y+1)*SIZE))
+        # Preserve the original shape/rim alpha; only fill pixels receive reflection.
+        mask=ImageChops.difference(parts[part],fill).convert('RGB').point(lambda v:255 if v else 0).convert('L')
+        material=Image.composite(parts[part],material,mask)
+        material.putalpha(parts[part].getchannel('A'))
+        parts[part]=material
+    return parts
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hemtt", default=shutil.which("hemtt"), help="HEMTT executable")
@@ -89,6 +115,7 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="acme-transfusion-chrome-") as temporary:
         for profile, (fill, stroke) in PROFILES.items():
             parts = render_parts(fill, stroke)
+            if profile == "window": parts = window_material(parts)
             for part in PARTS:
                 name = f"{profile}_{part}_ca"
                 png = Path(temporary) / f"{name}.png"
@@ -96,8 +123,9 @@ def main() -> None:
                 parts[part].save(png)
                 if args.png_output:
                     parts[part].save(args.png_output / png.name)
-                subprocess.run([args.hemtt, "utils", "paa", "convert", "--no-color", str(png), str(paa)],
+                subprocess.run([args.hemtt, "utils", "paa", "convert", "--no-color", str(png), str(Path(temporary) / paa.name)],
                                check=True, capture_output=True, text=True)
+                (Path(temporary) / paa.name).replace(paa)
                 assets.append({"file": paa.name, "profile": profile, "part": part,
                                "sha256": hashlib.sha256(paa.read_bytes()).hexdigest()})
     manifest = {

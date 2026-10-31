@@ -1,7 +1,7 @@
-import React, {useEffect, useState, useSyncExternalStore} from 'react';
+import React, {useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
 import {createRoot} from 'react-dom/client';
 import {createMedicalStore} from './bridge.mjs';
-import {cardLayout} from './layout.mjs';
+import {cardLayout, nativeFontScale, FONT_PROBE} from './layout.mjs';
 const store = createMedicalStore(message => globalThis.A3API?.SendAlert(message));
 window.ACMEUI = Object.freeze({bootstrap:p=>store.bootstrap(p),receive:p=>store.receive(p),ack:p=>store.ack(p)});
 const textures = new Map();
@@ -21,8 +21,8 @@ function Texture({path,className}) {
   return src ? <img className={className} src={src} alt="" draggable="false"/> : null;
 }
 const keys = {ArrowUp:200,ArrowDown:208,PageUp:201,PageDown:209,Home:199,End:207};
-function Card({card,enabled,layout}) {
-  const geometry=cardLayout(layout,card);
+function Card({card,enabled,layout,fontScale}) {
+  const geometry=cardLayout(layout,card,fontScale);
   const piggyback = card.name.includes('[PiB]');
   return <button type="button" className={`card ${card.selected?'selected':''} ${piggyback?'piggyback':''} ${card.fraction>=0?'with-track':''}`}
     style={{...geometry.root,gridRow:card.slot+1}} aria-pressed={card.selected} disabled={!enabled}
@@ -41,17 +41,54 @@ function Card({card,enabled,layout}) {
 }
 function App() {
   const snapshot=useSyncExternalStore(store.subscribe,store.getSnapshot);
+  const fontKey=JSON.stringify([snapshot.state?.fontProbe,snapshot.state?.layout]);
+  const [fontReady,setFontReady]=useState(false);
+  const needsFont=Boolean(snapshot.state?.fontProbe);
+  useEffect(()=>{
+    if (!needsFont || fontReady) return;
+    let live=true;
+    document.fonts.load('18px "Roboto Condensed"',FONT_PROBE).then(()=>{
+      if (!live) return;
+      if (document.fonts.check('18px "Roboto Condensed"',FONT_PROBE)) setFontReady(true);
+      else store.fallback();
+    }).catch(()=>{if(live) store.fallback();});
+    return ()=>{live=false;};
+  },[needsFont,fontReady]);
+  // Once loaded, measure the same face synchronously on metric changes. Never
+  // unmount a painted card or start another asynchronous font load for layout.
+  const scale=useMemo(()=>{
+    const probe=snapshot.state?.fontProbe,layout=snapshot.state?.layout;
+    if (!probe) return 1;
+    if (!fontReady) return null;
+    try {
+      const context=document.createElement('canvas').getContext('2d');
+      if (!context) return null;
+      context.font=`${probe[1]*document.documentElement.clientHeight/layout[1]}px "Roboto Condensed"`;
+      return nativeFontScale(probe,context.measureText(FONT_PROBE).width,document.documentElement.clientWidth,layout[0]);
+    } catch {return null;}
+  },[fontReady,fontKey]);
+  const previousScale=useRef(1);
+  useEffect(()=>{
+    if (scale !== null) previousScale.current=scale;
+    else if (fontReady && needsFont) store.fallback();
+  },[scale,fontReady,needsFont]);
+  const calibrated=scale !== null;
+  const renderCards=!needsFont || fontReady;
   useEffect(()=>{
     const timer=setInterval(()=>store.checkFreshness(),250);
     const close=()=>{clearInterval(timer);store.retire();};
     window.addEventListener('pagehide',close,{once:true});
     return ()=>{clearInterval(timer);window.removeEventListener('pagehide',close);};
   },[]);
-  useEffect(()=>{if(snapshot.state) store.painted();},[snapshot.state]);
+  useEffect(()=>{
+    if (!snapshot.state || !calibrated) return;
+    const frame=requestAnimationFrame(()=>store.painted());
+    return ()=>cancelAnimationFrame(frame);
+  },[snapshot.state,calibrated]);
   const enabled=snapshot.status==='connected';
-  return <main className="acme-medical-surface" style={cardLayout(snapshot.state?.layout,{}).root} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
+  return <main className="acme-medical-surface" style={{...cardLayout(snapshot.state?.layout,{}).root,'--text-inset':`${100*(snapshot.state?.fontProbe?.[2]||0)/(snapshot.state?.layout?.[1]||1)}vh`}} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
     onKeyDown={e=>{if(keys[e.key]){e.preventDefault();store.key(keys[e.key]);}}}>
-    {snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled} layout={snapshot.state.layout}/>)}
+    {renderCards && snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled} layout={snapshot.state.layout} fontScale={scale ?? previousScale.current}/>)}
     {snapshot.state?.cards.length===0 && <p className="empty">No fluids at this access</p>}
   </main>;
 }

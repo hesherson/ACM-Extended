@@ -15,6 +15,8 @@ export function validState(s) {
   if (s.layout !== undefined && (!Array.isArray(s.layout) || s.layout.length !== 6
     || !s.layout.every(x=>Number.isFinite(x) && x >= 0 && x <= 20000)
     || s.layout.slice(0,4).some(x=>x<=0) || s.layout[3]*2+s.layout[4]>s.layout[1]+1)) return false;
+  if (s.fontProbe !== undefined && (!Array.isArray(s.fontProbe) || s.fontProbe.length !== 3
+    || !s.fontProbe.every(x=>Number.isFinite(x) && x > 0 && x <= 20000) || !s.layout)) return false;
   const slots = new Set(), tokens = new Set();
   return s.cards.every(c => {
     if (!object(c) || ![0,1].includes(c.slot) || slots.has(c.slot) || !text(c.token,64) || !c.token || tokens.has(c.token)
@@ -48,7 +50,7 @@ export function createMedicalStore(send, now = () => performance.now()) {
       update({status:'loading',state:null,receivedAt:null,pending:false}); return emit('ready');
     },
     receive(p) {
-      if (!binding || !object(p) || p.version !== VERSION || p.session !== binding.session || !integer(p.sequence)
+      if (!binding || snapshot.status === 'fallback' || !object(p) || p.version !== VERSION || p.session !== binding.session || !integer(p.sequence)
         || p.sequence <= sequence || !Number.isFinite(p.capturedAt) || !validState(p.state)
         || p.state.patient.epoch !== binding.epoch || !p.state.patient.ref.every((v,i) => v === binding.patientRef[i])) return false;
       sequence = p.sequence;
@@ -57,6 +59,11 @@ export function createMedicalStore(send, now = () => performance.now()) {
     painted() {
       if (!binding || painted || snapshot.status !== 'connected' || !snapshot.state) return false;
       painted = true; return emit('painted');
+    },
+    fallback() {
+      if (!binding || snapshot.status==='fallback') return false;
+      update({...snapshot,status:'fallback',pending:false});
+      return emit('fallback');
     },
     ack(p) {
       if (!binding || !snapshot.pending || !object(p) || p.version !== VERSION || p.session !== binding.session || p.request !== request) return false;
