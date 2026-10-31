@@ -635,7 +635,13 @@ ACME_tbi_activePatients = ACME_tbi_activePatients select {!isNull _x && {local _
         if (_maxStage >= 1) then {
             private _recovered = (!_herniatingNow) && {_stage <= 0} && {_severity <= (_severityFloor + 0.02)};
             if (_recovered) then {
-                if (_patient getVariable ["ACME_requiresEvac", false]) then { [_patient, false, true, true, true] call ACME_fnc_evacuationRequirementCommit; };
+                // TBI recovery cannot clear another latched, field-unresolved injury.
+                private _otherPermanent = _patient getVariable ["ACM_burns_PermanentInjury", false]
+                    || {_patient getVariable ["ACM_infection_Sepsis_Permanent", false]}
+                    || {_patient getVariable ["ACM_ophthalmology_ocularPermanent", false]};
+                if (!_otherPermanent && {_patient getVariable ["ACME_requiresEvac", false]}) then {
+                    [_patient, false, true, true, true] call ACME_fnc_evacuationRequirementCommit;
+                };
             } else {
                 [_patient, true, true, true, false] call ACME_fnc_evacuationRequirementCommit;
             };

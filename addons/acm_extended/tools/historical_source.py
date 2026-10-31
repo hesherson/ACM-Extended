@@ -81,8 +81,12 @@ def assert_release_identity(root: Path = ROOT) -> None:
     fallbacks = re.findall(r'ACME_infusion_version\s*=\s*"([^"]+)"', startup)
     assert fallbacks == [version], (version, fallbacks)
     batches = re.findall(r'ACME_buildBatch\s*=\s*"([^"]+)"', startup)
-    assert len(batches) == 1 and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", batches[0]), batches
+    assert len(batches) == 1 and re.fullmatch(r"B[1-9][0-9]*", batches[0]), batches
 
+
+    if Path(root).resolve() == ROOT.resolve():
+        import runpy
+        runpy.run_path(str(ROOT / "tools/build_contract.py"))["assert_current_build"](ROOT)
 
 def switch_case_body(text: str, name: str) -> str:
     """Extract one actual named switch branch, rejecting missing/ambiguous cases."""

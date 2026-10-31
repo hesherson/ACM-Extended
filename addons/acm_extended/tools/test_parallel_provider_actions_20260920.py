@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 ADDONS = ROOT.parent
@@ -34,8 +35,14 @@ def test_surgical_airway_keeps_only_provider_local_and_same_procedure_locks():
 def test_acme_restatements_do_not_reintroduce_global_busy_gates():
     cfg = read(ROOT / "config.cpp")
     assert "PARALLEL PROVIDER RULE:" in cfg
-    assert "ACM_breathing_BVM_Medic" not in cfg
-    assert "ACM_core_fnc_cprActive" not in cfg
+    # Recovery physically turns the casualty and must yield to active CPR/BVM. This exact positioning
+    # exception must not introduce blanket busy gates on unrelated assessment or treatment actions.
+    recovery = re.findall(r'    class RecoveryPosition: CheckAirway \{.*?\n    \};', cfg, re.S)
+    assert len(recovery) == 1
+    other_actions = cfg.replace(recovery[0], "", 1)
+    for support in ("ACM_breathing_BVM_Medic", "ACM_core_fnc_cprActive"):
+        assert support in recovery[0]
+        assert support not in other_actions
 
 def test_same_role_exclusivity_remains():
     bvm = read(ADDONS / "breathing/functions/fnc_canUseBVM.sqf")

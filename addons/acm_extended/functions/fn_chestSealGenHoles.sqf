@@ -234,7 +234,9 @@ for "_recordIndex" from _processed to ((count _tracked) - 1) do {
     private _curve = _injuryMap getOrDefault [_id, [0.25, 0, 1, 0.3]];
     _curve params ["_minDamage", "_minChance", "_maxDamage", "_maxChance"];
 
-    private _injuryChance = _maxChance;
+    // Historical ACE backfill has no measured impact damage. Use the wound type's midpoint rather than
+    // treating every historical wound as maximum energy; exact live damage still drives the same curve below.
+    private _injuryChance = (_minChance + _maxChance) * 0.5;
     if (_damage isEqualType 0 && {finite _damage} && {_damage >= 0}) then {
         _injuryChance = linearConversion [_minDamage, _maxDamage, _damage, _minChance, _maxChance, true];
     };

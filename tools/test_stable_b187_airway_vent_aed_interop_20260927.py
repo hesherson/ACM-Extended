@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Stable B188: airway removal tears down Ventway custody and Ventway CPR ventilation does not deadlock the AED."""
+from build_contract import assert_current_build as _assert_current_build
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -108,8 +109,8 @@ def test_manual_charge_and_shock_eligibility_are_not_gated_by_ventway_bvm_sentin
 def test_build_identity_is_b187_stable():
     startup = read("addons/acm_extended/functions/fn_initForkStartupRuntime.sqf")
     cfg = read("addons/acm_extended/config.cpp")
-    assert 'version = "1.2.4";' in cfg
-    assert 'ACME_buildBatch = "B190";' in startup
+    _assert_current_build()
+    _assert_current_build()
     assert 'ACME_debugRevision = "";' in startup
 
 

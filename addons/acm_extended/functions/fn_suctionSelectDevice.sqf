@@ -1,5 +1,6 @@
 /* Select from the eligible ACE equipment-sharing sources for this treatment.
-   ACCUVAC takes priority. A consumed manual bag belongs to this local airway session.
+   Explicit standalone actions retain their selected device. Only full intubation auto-prefers ACCUVAC.
+   A consumed manual bag belongs to this local airway session.
    Call with true for an input event; the existing render loop checks at most 4 Hz. */
 disableSerialization;
 params [["_force", false, [false]]];
@@ -18,10 +19,19 @@ private _opened = !isNull _medic && {!isNull _patient} && {
 private _accuN = if (isNull _medic) then {0} else {[_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount};
 private _bagN = if (isNull _medic) then {0} else {[_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount};
 private _type = -1;
+private _requested = if (uiNamespace getVariable ["ACME_suction_standalone", false]) then {
+    uiNamespace getVariable ["ACME_suction_requestedType", -1]
+} else {-1};
 if (!isNull _medic && {!isNull _patient}) then {
+    if (_requested == 0) then {
+        if (_opened || {_bagN > 0}) then {_type = 0;};
+    } else {if (_requested == 1) then {
+        if (_accuN > 0) then {_type = 1;};
+    } else {
     if (_accuN > 0) then {_type = 1;} else {
         if (_opened || {_bagN > 0}) then {_type = 0;};
     };
+    };};
 };
 private _old = uiNamespace getVariable ["ACME_suction_type", -2];
 if (_type != _old) then {

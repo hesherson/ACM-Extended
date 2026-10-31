@@ -40,7 +40,7 @@ _patient setVariable [VAR_IV_COMPLICATIONS_BLOCK, ACM_IV_PLACEMENT_DEFAULT_0, tr
 
 _patient setVariable [QGVAR(IO_Placement), ACM_IO_PLACEMENT_DEFAULT_0, true];
 
-_patient setVariable [QGVAR(IV_Bags), createHashMap, true];
+[_patient, createHashMap, true] call FUNC(setIVBagsState);
 _patient setVariable [QGVAR(IV_Bags_Active), false, true];
 _patient setVariable [QGVAR(IV_Bags_FreshBloodEffect), 0, true];
 

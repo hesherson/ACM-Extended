@@ -29,6 +29,9 @@ private _PFH = [{
     {
         if (HAS_PULSEOX(_patient,_x)) then {
             _pulseOxStatusArray pushBack _x;
+        } else {
+            // A newly applied probe must record its next acquired reading even if unchanged.
+            _patient setVariable [format ["ACME_oxQuickView_%1", _x], nil];
         };
 
     } forEach [0,1];
@@ -63,6 +66,16 @@ private _PFH = [{
                    _displayArray set [_x, [0,0]];
                    _patient setVariable [QGVAR(PulseOximeter_Display), _displayArray, true];
                 };
+            };
+
+            private _shown = _displayArray select _x;
+            private _key = format ["ACME_oxQuickView_%1", _x];
+            if ((_patient getVariable [_key, []]) isNotEqualTo _shown) then {
+                _patient setVariable [_key, +_shown];
+                private _reading = if ((_shown select 0) > 0 && {(_shown select 1) > 0}) then {
+                    format ["SpO2 %1%2, PR %3/min", _shown select 0, "%", _shown select 1]
+                } else {"No reliable reading"};
+                [_patient, "quick_view", "Pulse oximeter (%1): %2", [["left arm", "right arm"] select _x, _reading]] call ACEFUNC(medical_treatment,addToLog);
             };
 
             private _lastSyncArray = _patient getVariable [QGVAR(PulseOximeter_LastSync), [-1,-1]];

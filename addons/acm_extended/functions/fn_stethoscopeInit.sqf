@@ -2,6 +2,12 @@
 disableSerialization;
 params ["_display", ["_patient", objNull, [objNull]], ["_medic", objNull, [objNull]]];
 if (isNull _display) exitWith {};
+// Reinitializing this exact display retires its previous audio generation before replacing any references.
+private _oldTick = _display getVariable ["ACME_stethTickPFH", -1];
+if (_oldTick isEqualType 0 && {_oldTick >= 0}) then {[_oldTick] call CBA_fnc_removePerFrameHandler;};
+[_display getVariable ["ACME_stethChannels",[]]] call ACME_fnc_stethoscopeAudioStop;
+private _generation = (_display getVariable ["ACME_stethAudioGeneration",0]) + 1;
+_display setVariable ["ACME_stethAudioGeneration",_generation];
 _display setVariable ["ACME_stethPatient", _patient];
 _display setVariable ["ACME_stethMedic", _medic];
 [_display,"front"] call ACME_fnc_stethoscopeSetView;
@@ -11,6 +17,7 @@ _display setVariable ["ACME_stethLastFrame",diag_tickTime];
 _display setVariable ["ACME_stethNextBeat",-1];
 _display setVariable ["ACME_stethNextBreath",-1];
 _display setVariable ["ACME_stethHeartVoice",0];
+_display setVariable ["ACME_stethPressed",false];
 _display setVariable ["ACME_stethFlipActive",false];
 _display setVariable ["ACME_stethFlipToken",""];
 _display setVariable ["ACME_stethFlipPFH",-1];
@@ -55,29 +62,30 @@ _display displayAddEventHandler ["MouseButtonUp",_up];
     _x ctrlAddEventHandler ["MouseButtonUp",_up];
 } forEach ((allControls _display) select {!(ctrlIDC _x in [81002,81006])});
 
-// Independent local emitters preserve each playing clip's phase as the bell crosses the chest.
-// say3D follows its emitter. Moving each emitter along the camera's vertical axis changes
-// native distance attenuation continuously, without restarting samples or fading the world mixer.
+// Non-spatial UI voices bypass speech/radio and environmental mixers without changing any global volume.
 private _channels = [];
 // Right/left breath, heart A, right/left basal crackles, then heart B/C/D.
 for "_i" from 0 to 7 do {
-    private _emitter = "#particlesource" createVehicleLocal (positionCameraToWorld [0,22,0]);
-    _channels pushBack [_emitter,objNull,0];
+    _channels pushBack [-1,"",0,1,-1,0,[],-1,0,-1,-1];
 };
 _display setVariable ["ACME_stethChannels",_channels];
 
 // The scope display owns cursor/audio ticking. The generic continuous-action controller is allowed to be
 // superseded without stranding a frozen bell: as long as this exact dialog exists, its bell follows the GUI
 // cursor and its diagnostic audio cadence continues.
-private _oldTick = _display getVariable ["ACME_stethTickPFH", -1];
-if (_oldTick isEqualType 0 && {_oldTick >= 0}) then {[_oldTick] call CBA_fnc_removePerFrameHandler;};
 private _tickPFH = [{
     params ["_args", "_handle"];
-    _args params ["_display", "_patient"];
-    if (isNull _display || {isNull _patient} || {!((findDisplay 81000) isEqualTo _display)}) exitWith {
+    _args params ["_display", "_patient", "_generation", "_channels"];
+    if (isNull _display || {isNull _patient} || {!((findDisplay 81000) isEqualTo _display)}
+        || {(_display getVariable ["ACME_stethAudioGeneration",-1]) != _generation}
+        || {!((_display getVariable ["ACME_stethPatient",objNull]) isEqualTo _patient)}) exitWith {
         [_handle] call CBA_fnc_removePerFrameHandler;
-        if (!isNull _display) then {_display setVariable ["ACME_stethTickPFH", -1];};
+        [_channels] call ACME_fnc_stethoscopeAudioStop;
+        if (!isNull _display && {(_display getVariable ["ACME_stethTickPFH",-1]) == _handle}
+            && {(_display getVariable ["ACME_stethAudioGeneration",-1]) == _generation}) then {
+            _display setVariable ["ACME_stethTickPFH", -1];
+        };
     };
     [_patient] call ACME_fnc_stethoscopeTick;
-}, 0, [_display, _patient]] call CBA_fnc_addPerFrameHandler;
+}, 0, [_display, _patient, _generation, _channels]] call CBA_fnc_addPerFrameHandler;
 _display setVariable ["ACME_stethTickPFH", _tickPFH];

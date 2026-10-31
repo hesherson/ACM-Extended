@@ -22,6 +22,17 @@ if (_epoch >= 0 && {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}) exitWit
 private _marks = +(_patient getVariable ["ACME_IV_Marks", []]);
 if !(_marks isEqualType []) then {_marks = [];};
 private _changed = false;
+private _newHubUid = {
+    private _serial=(_patient getVariable ["ACME_IV_HubSerial",0])+1;
+    private _ce=[_patient] call ACME_fnc_clinicalEpoch;
+    private _uid=format ["ivhub:%1:%2",_ce,_serial];
+    while {(_marks findIf {(_x param [14,""])==_uid})>=0
+        || {((_patient getVariable ["ACME_IV_FinishReceipts",[]]) findIf {(_x param [2,""])==_uid})>=0}} do {
+        _serial=_serial+1;_uid=format ["ivhub:%1:%2",_ce,_serial];
+    };
+    _patient setVariable ["ACME_IV_HubSerial",_serial,true];
+    _uid
+};
 private _matchesSignature = {
     params ["_row", "_sig"];
     if (!(_row isEqualType []) || {count _sig < 6}) exitWith {false};
@@ -35,11 +46,26 @@ private _matchesSignature = {
 };
 
 switch (toLower _op) do {
+    case "finishmigrate": {
+        for "_j" from 0 to ((count _marks)-1) do {
+            private _row=+(_marks select _j);
+            if ((_row param [4,""])=="hub" && {(_row param [14,""])==""}) then {
+                _row set [14,call _newHubUid];
+                private _oldLine=(_row param [5,""]) find "iv_line_connected" >= 0;
+                _row set [15,[_oldLine,_oldLine,_oldLine,_oldLine]];
+                if (_oldLine) then {_row set [5,""];};
+                _row set [16,[]];_marks set [_j,_row];_changed=true;
+            };
+        };
+    };
     case "add": {
         private _mark = +(_data param [0, []]);
         if (count _mark >= 11) then {
             private _kind = toLower (_mark param [4, ""]);
             if (_kind == "hub") then {
+                _mark set [14,call _newHubUid];
+                _mark set [15,[false,false,false,false]];
+                _mark set [16,[]];
                 private _bp = toLower (_mark param [0, ""]);
                 private _site = toLower (_mark param [10, ""]);
                 private _existing = _marks findIf {
@@ -61,7 +87,7 @@ switch (toLower _op) do {
                 && {toLower (_x param [4, ""]) == "hub"}
                 && {(_x param [5, ""]) == ""}
         };
-        if (_i >= 0 && {_texture != ""}) then {
+        if (_i >= 0 && {_texture != ""} && {((_marks select _i) param [14,""])==""}) then {
             private _row = +(_marks select _i);
             _row set [5, _texture];
             _marks set [_i, _row];
@@ -73,7 +99,7 @@ switch (toLower _op) do {
         private _i = _marks findIf {[_x, _sig] call _matchesSignature && {toLower (_x param [4, ""]) == "hub"}};
         if (_i >= 0) then {
             private _row = +(_marks select _i);
-            _row set [4, "removed"];
+            _row set [15,[false,false,false,false]]; _row set [16,[]]; _row set [4, "removed"];
             _row set [5, _hole];
             _marks set [_i, _row];
             _changed = true;
@@ -92,7 +118,7 @@ switch (toLower _op) do {
         };
         if (_i >= 0) then {
             private _row = +(_marks select _i);
-            _row set [4, "removed"]; _row set [5, _hole]; _marks set [_i, _row]; _changed = true;
+            _row set [15,[false,false,false,false]]; _row set [16,[]]; _row set [4, "removed"]; _row set [5, _hole]; _marks set [_i, _row]; _changed = true;
         };
         // Defensive cleanup of legacy stale hubs only when the native circulation state confirms the whole part is empty.
         private _stillHas = false;
@@ -103,7 +129,7 @@ switch (toLower _op) do {
             for "_j" from 0 to ((count _marks) - 1) do {
                 private _row = +(_marks select _j);
                 if (toLower (_row param [0, ""]) == toLower _bp && {toLower (_row param [4, ""]) == "hub"}) then {
-                    _row set [4, "removed"]; _row set [5, _hole]; _marks set [_j, _row]; _changed = true;
+                    _row set [15,[false,false,false,false]]; _row set [16,[]]; _row set [4, "removed"]; _row set [5, _hole]; _marks set [_j, _row]; _changed = true;
                 };
             };
         };

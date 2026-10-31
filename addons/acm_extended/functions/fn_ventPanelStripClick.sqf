@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // a bottom button-strip click, on the live screen: 0 is alarm, 1 is graph, 2 is manual breath and 3 is menu.
 params ["_which"];
 playSound "ACME_VentClick";

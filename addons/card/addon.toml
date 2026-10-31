@@ -1,0 +1,3 @@
+# Public DD1380 resource paths are retained for existing missions and fonts.
+# HEMTT 1.22 supports this addon-scoped prefix exception; all other checks stay enabled.
+ignore_pboprefix = true

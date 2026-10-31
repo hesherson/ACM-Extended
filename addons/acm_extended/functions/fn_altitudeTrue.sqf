@@ -12,4 +12,8 @@ params ["_obj"];
 if (isNil "_obj" || {isNull _obj}) exitWith { 0 };
 
 private _datum = call ACME_fnc_altitudeDatum;
-(((getPosASL _obj) select 2) - _datum) max 0
+if !(_datum isEqualType 0 && {finite _datum}) then {_datum = 0;};
+private _position = getPosASL _obj;
+private _height = _position param [2, 0];
+if !(_height isEqualType 0 && {finite _height}) exitWith {0};
+(_height - _datum) max 0

@@ -190,11 +190,17 @@ if (EGVAR(CBRN,enable)) then {
     } forEach EGVAR(CBRN,HazardType_Array);
 };
 
+private _nativeSnapshotOK = true;
 {
     _x params ["_var"];
-
-    _state setVariable [_var, _unit getVariable _x];
+    private _value = _unit getVariable _x;
+    if (_var == "ACM_circulation_IV_Bags" && {!isNil "_value"}) then {
+        _value = [_value, "snapshot"] call ACME_fnc_clinicalFreshBlood;
+        if !(_value isEqualType createHashMap) then {_nativeSnapshotOK = false;};
+    };
+    _state setVariable [_var, _value];
 } forEach _variableList;
+if (!_nativeSnapshotOK) exitWith {_state call CBA_fnc_deleteNamespace; ""};
 
 // Versioned timestamp metadata. Native JSON values remain backward-compatible.
 private _clockRows = [];
@@ -214,7 +220,9 @@ _state setVariable [VAR_MEDICATIONS, _medications];
 private _currentState = [_unit, ACEGVAR(medical,STATE_MACHINE)] call CBA_statemachine_fnc_getCurrentState;
 _state setVariable [QACEGVAR(medical,statemachineState), _currentState];
 
-_state setVariable ["ACME_Clinical_v3", [_unit] call ACME_fnc_clinicalSnapshot];
+private _clinicalSnapshot = [_unit] call ACME_fnc_clinicalSnapshot;
+if (_clinicalSnapshot isEqualTo []) exitWith {_state call CBA_fnc_deleteNamespace; ""};
+_state setVariable ["ACME_Clinical_v3", _clinicalSnapshot];
 
 // Serialize & return
 private _json = [_state] call CBA_fnc_encodeJSON;

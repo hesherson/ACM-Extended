@@ -8,14 +8,20 @@ _delta params [["_drugMl",0,[0]],["_nsMl",0,[0]],["_comp",[],[[]]]];
 private _batchMl = _drugMl + _nsMl;
 if (_batchMl <= 0.000001) exitWith {true};
 private _elapsed = (_job getOrDefault ["batchElapsed",0]) max 0.05;
-if (!_force && {_elapsed < (missionNamespace getVariable ["ACME_hcMed_pushBatchSec",5])}) exitWith {true};
+// Long normal pushes must become systemic WHILE the plunger is moving, not
+// only after the final frame. One acknowledged 1-second aliquot is the upper
+// delay; Hardcore's existing 5-second batch tuning remains unchanged.
+private _batchSec = if (_job getOrDefault ["standardTimed",false]) then {1} else {
+    missionNamespace getVariable ["ACME_hcMed_pushBatchSec",5]
+};
+if (!_force && {_elapsed < _batchSec}) exitWith {true};
 private _medic = _job getOrDefault ["medic",objNull];
 private _patient = _job getOrDefault ["patient",objNull];
 if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
 // B123: keep the provider-facing one-handed plunger transaction usable on a corpse, but once the casualty is
 // engine-dead there is no physiology to update. Consume the already-moved syringe volume locally and discard the
 // physiology delta instead of generating medication requests, receipts, sedation/rate queues and ACK traffic.
-if (!alive _patient) exitWith {
+if (!alive _patient && {!(_job getOrDefault ["syringeDelivery",false])}) exitWith {
     _job set ["unsentDelta", [0,0,[]]];
     _job set ["batchElapsed", 0];
     _job set ["lastSend", diag_tickTime];
@@ -56,6 +62,18 @@ _job set ["batchElapsed",0];
 _job set ["lastSend",diag_tickTime];
 _job set ["pendingAcks",(_job getOrDefault ["pendingAcks",0]) + 1];
 missionNamespace setVariable ["ACME_HCMedPushJob",_job];
+// The broker records the immutable aliquot before dispatching it to the patient.
+// These batches have no provider-local medication escrow or refund authority.
+if (_job getOrDefault ["syringeDelivery",false]) exitWith {
+    private _serial = (_job getOrDefault ["journalBatchSerial",0]) + 1;
+    _job set ["journalBatchSerial",_serial];
+    missionNamespace setVariable ["ACME_HCMedPushJob",_job];
+    private _request = _job getOrDefault ["inventoryRequest",""];
+    private _session = _job getOrDefault ["session",""];
+    private _batch = format ["%1:batch:%2",_session,_serial];
+    private _wire = [_patient,_medic,_job getOrDefault ["clinicalEpoch",[_patient] call ACME_fnc_clinicalEpoch],_batch,"administer",_body,_doses,_site,_job getOrDefault ["identity",[]],_meta];
+    ["batch",_medic,_request,[_session,_batch,_wire,_delta]] call ACME_fnc_syringeDeliveryRequest
+};
 private _ok = [_medic,_patient,_body,_doses,"administer",_site,[],_meta] call ACME_fnc_medicationRequest;
 // medicationRequest's local failure path feeds the same ACK helper, so do not restore here.
 _ok

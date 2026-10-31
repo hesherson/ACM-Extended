@@ -27,7 +27,8 @@ def code(text):
     text = text.replace('focusedCtrl _d', '_focused')
     text = re.sub(r"\bsafeZoneH\b", "_screenHeight", text)
     text = re.sub(r"\bctrlType (_\w+)", r"([\1] call _controlType)", text)
-    text = text.replace('ctrlIDC _focus', '_focus')
+    # Focus handles are integer control IDs in this fixture, including the newer action editor.
+    text = re.sub(r'\bctrlIDC (_\w+)\b', r'\1', text)
     text = text.replace('ctrlShown (_d displayCtrl 84471)', '_colorOpen')
     text = text.replace('ctrlText (_d displayCtrl _x)', '([_x] call _readText)')
     text = text.replace('_colorList lbSetCurSel -1;', '_listReset = -1;')
@@ -39,7 +40,7 @@ def tick_body():
     # This complete initial tick section owns repeat, editor hold and collapse.
     # Subsequent stock/plunger/NV work is a distinct scope, not replaced or tested here.
     start = 'disableSerialization;'
-    end = 'private _navPulse = '
+    end = 'private _navColor = '  # B296: identical boundary, steady navigation color.
     assert text.count(start) == text.count(end) == 1
     return text[text.index(start):text.index(end)]
 

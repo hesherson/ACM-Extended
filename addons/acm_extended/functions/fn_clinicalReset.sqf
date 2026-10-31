@@ -2,6 +2,23 @@
 params ["_patient", ["_phase", "finish"], ["_preserveJunctional", false]];
 if (isNull _patient || {!local _patient}) exitWith {};
 if (_phase == "begin") exitWith {
+    // Retire the exact local floor lease before its handler/context fields are cleared by a full heal.
+    if (!isNil "ACME_fnc_flightContainmentStop") then {[_patient] call ACME_fnc_flightContainmentStop;};
+    [_patient] call ACME_fnc_ventOxygenClear;
+    // A reusable downstream warmer keeps physical custody when a full heal
+    // detaches the patient's lines. Each exact assembly returns once.
+    private _warmerRestore = _patient getVariable ["ACME_lineWarmerRestorePlan", []];
+    if (!(_patient getVariable ["ACME_clinicalRestoring", false]) || {count _warmerRestore != 2}) then {
+        {
+            private _parts = _x splitString "#";
+            if (count _parts == 3) then {
+                [_patient,_parts select 0,(_parts select 1) == "true",parseNumber (_parts select 2)] call ACME_fnc_lineWarmerDetach;
+            };
+        } forEach keys (_patient getVariable ["ACME_lineWarmers",createHashMap]);
+    };
+    [_patient, "reset"] call ACME_fnc_aiProtectionSync;
+    // A pre-roll placement can be pending before headElevated is set. A full heal ends that episode too.
+    _patient setVariable ["ACME_headElev_startEpoch", (_patient getVariable ["ACME_headElev_startEpoch", 0]) + 1, false];
     // B156 native treatment rate cleanup: invalidate delayed completion before patient/provider reuse.
     if ((_patient getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []) then {
         _patient setVariable ["ACME_nativeTreatmentRate", [], true];
@@ -44,6 +61,8 @@ if (_phase == "begin") exitWith {
     _patient setVariable ["ACME_juncWorker", [], false];
     _patient setVariable ["ACME_nativeVomitWorker", [], false];
     _patient setVariable ["ACME_alt_ptxSample", nil, false];
+    _patient setVariable ["ACME_alt_tickStamp", nil, false];
+    _patient setVariable ["ACME_flight_tickActive", nil, false];
     _patient setVariable ["ACME_nativeVomitActive", false, true];
     _patient setVariable ["ACME_JuncBleedActive", false, false];
     _patient setVariable ["ACME_junctionalBleedLPS", 0, false];
@@ -52,7 +71,12 @@ if (_phase == "begin") exitWith {
     _patient setVariable ["ACME_nrb_session", "", true];
     _patient setVariable ["ACME_nrb_o2Pending", 0, true];
     {private _k = toLowerANSI _x; if ((_k find "acme_clock_") == 0 || {(_k find "acme_clamprate_") == 0}) then {_patient setVariable [_x, nil, false];};} forEach allVariables _patient;
-    {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_coag_activePatients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
+    // Native components retire their own local registries; durable anatomy is
+    // cleared later through the existing full-heal field/reset contract.
+    if (!isNil "ACM_burns_fnc_reconcile") then {[_patient, false, true] call ACM_burns_fnc_reconcile;};
+    if (!isNil "ACM_infection_fnc_reconcile") then {[_patient, false, true] call ACM_infection_fnc_reconcile;};
+    if (!isNil "ACM_ophthalmology_fnc_reconcile") then {[_patient, false, true] call ACM_ophthalmology_fnc_reconcile;};
+    {missionNamespace setVariable [_x, (missionNamespace getVariable [_x, []]) - [_patient]];} forEach ["ACME_flight_activePatients", "ACME_coag_activePatients", "ACME_clinical_activePatients", "ACME_infusion_activePatients", "ACME_circ_activePatients", "ACME_tbi_activePatients", "ACME_cs_activePatients", "ACME_nrb_activePatients", "ACME_hpmk_activePatients", "ACME_autoBP_patients"];
 };
 // Physical equipment is detached, not converted into inventory by a medical full heal.
 if ((_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient) then {
@@ -132,7 +156,9 @@ _patient forceWalk _preservedLegXStat;
 {_patient setVariable [_x, 0, true];} forEach ["ACME_resp_neuralRR", "ACME_resp_deliveredRR", "ACME_rhythm_painContribution"];
 _patient setVariable ["ACME_yFlushJobs", createHashMap, true];
 _patient setVariable ["ACME_bagMoves", createHashMap, true];
+[_patient,"ACME_PiggybackLines",createHashMap] call ACME_fnc_setVarNet;
 [_patient, []] call ACME_fnc_detachedBagsCommit;
+[_patient,"ACME_IV_DisconnectedBagUIDs",[]] call ACME_fnc_setVarNet;
 [_patient, []] call ACME_fnc_infusionMedicationStateCommit;
 [_patient, createHashMap] call ACME_fnc_circStateCommit;
 [_patient, createHashMap] call ACME_fnc_tbiStateCommit;

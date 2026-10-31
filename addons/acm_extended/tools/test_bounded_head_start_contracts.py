@@ -15,7 +15,8 @@ def start_contract(text=None):
     for fragment in (
         'if !([_patient, _medic] call ACME_fnc_headElevateCanStart) exitWith {};',
         'private _actualBeforeElevate = [_patient, _patient getVariable ["ACME_CS_facing","front"]] call ACME_fnc_chestSealActualSide;',
-        'private _needFrontFirst = !_afterProneRoll && {_actualBeforeElevate != "front"};',
+        'private _animationsEnabled = missionNamespace getVariable ["ACME_interventionAnimations", true];',
+        'private _needFrontFirst = _animationsEnabled && {!_afterProneRoll} && {_actualBeforeElevate != "front"};',
         'if (_needFrontFirst) exitWith {',
         'if ([_patient] call ACME_fnc_chestSealCanPhysicalRoll) then {',
         '[_medic,"chestAccessFrontRoll",[_medic,_patient]] call ACME_fnc_ownerDispatch;',
@@ -44,6 +45,8 @@ def start_setup():
         private _canStart=true; private _canRoll=true;
         private _tilts=[]; private _starts=[]; private _watches=[];
         ACME_fnc_headElevateCanStart={_canStart};
+        ace_common_fnc_isAwake={_alive && {!_unconscious}};
+        ACME_fnc_patientInteractionDistance={_distance};
         ACME_fnc_chestSealCanPhysicalRoll={_canRoll};
         private _providerRolls=[]; private _untils=[]; private _rollCancels=[];
         // Generic chestAccessFrontRoll is presentation-only. The patient roll owns one explicit token.
@@ -170,5 +173,13 @@ def test_provider_theatre_and_patient_normalization_remain_separate_single_reque
     ('if !([_patient, _medic] call ACME_fnc_headElevateCanStart) exitWith {};',''),
 ])
 def test_start_contract_rejects_reversed_or_missing_guards_despite_comment_decoys(old,new):
-    s=source('headElevateStart');assert old in s
-    with pytest.raises(AssertionError):start_contract(s.replace(old,new,1)+'\n/* '+old+' */\n')
+    s=source('headElevateStart')
+    start_contract(s)  # The current production source must pass before a mutant can prove the guard is enforced.
+    # Keep the historical parametrized identity while targeting the same negated retry guard in its modern lazy
+    # conjunction. The animation toggle now precedes this guard, so its operand has an explicit code-block wrapper.
+    mutation_old,mutation_new=old,new
+    if old=='!_afterProneRoll &&':
+        mutation_old,mutation_new='{!_afterProneRoll}','{_afterProneRoll}'
+    assert contains(s,mutation_old)
+    with pytest.raises(AssertionError):
+        start_contract(s.replace(mutation_old,mutation_new,1)+'\n/* '+mutation_old+' */\n')

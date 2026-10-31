@@ -17,19 +17,22 @@ CHECKER = ROOT / "addons/acm_extended/functions/fn_compatCheck.sqf"
 
 
 def marker_pairs():
-    return re.findall(r'\["((?:ACM|ace)_\w+_fnc_\w+)",\s*"([^"]+)"\]', CHECKER.read_text())
+    return re.findall(r'\["((?:ACM|ace|DD1380)_\w+_fnc_\w+)",\s*"([^"]+)"\]', CHECKER.read_text())
 
 
 def test_expected_fork_markers_exist_in_executable_sources():
     pairs = marker_pairs()
-    assert len(pairs) == 13
+    assert len(pairs) == 16
+    assert ("ace_medical_treatment_fnc_treatment", "ACME-B263-modal-route") in pairs
     for name, marker in pairs:
         owner, function = name.split("_fnc_")
         if owner.startswith("ACM_"):
             source = ROOT / "addons" / owner[4:] / "functions" / f"fnc_{function}.sqf"
+        elif owner.startswith("DD1380_"):
+            source = ROOT / "addons" / owner[7:] / "functions" / f"fnc_{function}.sqf"
         else:
             source = ROOT / "addons/core/overrides" / f"fnc_{function}.sqf"
-        assert marker in [t.value for t in lex(source.read_text()) if t.kind == "string"], name
+        assert any(marker in t.value for t in lex(source.read_text()) if t.kind == "string"), name
 
 
 def test_wrap_marker_tracks_current_physical_dressing_reconciliation():
@@ -40,11 +43,10 @@ def test_wrap_marker_tracks_current_physical_dressing_reconciliation():
 
 
 @pytest.mark.parametrize("state", ["current", "upstream", "missing", "wrong_type"])
-def test_checker_preserves_real_failures_and_never_replaces_a_binding(state):
+def test_checker_preserves_real_failures_and_never_replaces_a_binding(state, chosen="ACM_circulation_fnc_getBloodVolumeChange"):
     source = CHECKER.read_text()
     pairs = marker_pairs()
-    chosen = "ACM_circulation_fnc_getBloodVolumeChange"
-    required = re.findall(r'"((?:ACM|ace)_\w+_fnc_\w+)"', source)
+    required = re.findall(r'"((?:ACM|ace|DD1380)_\w+_fnc_\w+)"', source)
     setup = "".join(f'missionNamespace setVariable [{json.dumps(name)}, {{true}}];'
                     for name in sorted(set(required)) if not (state == "missing" and name == chosen))
     for name, marker in pairs:
@@ -67,7 +69,7 @@ def test_checker_preserves_real_failures_and_never_replaces_a_binding(state):
             private _job=_waits select 0; (_job select 1) call (_job select 0);
             [count _messages==1,"warning was not displayed"] call _check;
             [((_messages select 0) find "complete ACM Extended fork")>=0,"warning lost install guidance"] call _check;
-            [((_messages select 0) find "ACM_circulation_fnc_getBloodVolumeChange")>=0,"warning lost failed binding"] call _check;
+            [((_messages select 0) find ''' + json.dumps(chosen) + ''')>=0,"warning lost failed binding"] call _check;
         };
         call _checkCompat;
         ''' + f'[count _waits == {int(bool(expected))}, "checker scheduled duplicate warnings"] call _check;')

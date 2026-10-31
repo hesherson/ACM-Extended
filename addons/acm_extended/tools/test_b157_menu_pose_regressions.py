@@ -120,32 +120,30 @@ def test_actual_gui_close_releases_before_runtime_unload_even_if_other_handler_i
 
 
 def ace_dispatch_fixture():
-    # Execute supplied ACE's exact priority switch; engine animationState intentionally
-    # stays unchanged while targetEvent is queued, reproducing priority-2's switchMove.
-    paths=list((ROOT.parent/'references').glob('ACE3-master/**/addons/common/functions/fnc_doAnimation.sqf'))
-    if len(paths)!=1:
-        pytest.skip("supplied ACE3 source reference required for exact dependency dispatch")
-    source=paths[0].read_text()
-    source=re.sub(r'^\s*TRACE_\d.*$', '', source, flags=re.M)
-    source=source.replace('objectParent _unit','objNull').replace('animationState _unit','"AmovPknlMstpSnonWnonDnon"')
-    source=adapt(source,'common').replace('ACM_common_', 'ace_common_')
-    return 'ace_common_fnc_doAnimation={'+source+'}; ACME_fnc_doAnim=ace_common_fnc_doAnimation;'
+    # The integration boundary we own is the priority handed to ACE. Keep the
+    # dependency itself as an engine stand-in so CI does not depend on a bundled
+    # ACE source checkout.
+    return '''
+        ace_common_fnc_doAnimation={
+            _moves pushBack (_this select 1);
+            _priorities pushBack (_this select 2);
+        };
+        ACME_fnc_doAnim=ace_common_fnc_doAnimation;
+    '''
 
 
 def test_generic_entry_dispatch_never_requests_switchmove_on_delayed_owner_event():
     execute(setup()+ace_dispatch_fixture()+'''
         [_medic,_patient,_display] call ACME_fnc_menuPoseStart;
         0 call _runWait; 1 call _runWait;
-        private _animationEvents=_events select {(_x select 0) in ["ace_common_playMoveNow","ace_common_switchMove"]};
-        [count _animationEvents==1 && {((_animationEvents select 0) select 0)=="ace_common_playMoveNow"},"generic menu entry fell back to an instantaneous switchMove"] call _check;
+        [count _priorities>0 && {(_priorities findIf {_x != 1})<0},"generic menu entry requested non-interpolated priority"] call _check;
     ''')
 
 
 def test_native_continuous_entry_uses_interpolated_owner_dispatch():
     execute(setup()+ace_dispatch_fixture()+'ACM_core_fnc_beginContinuousAction={'+core('beginContinuousAction')+'};'+'''
         [[_medic,_patient,"head"],{},{},{}] call ACM_core_fnc_beginContinuousAction;
-        private _animationEvents=_events select {(_x select 0) in ["ace_common_playMoveNow","ace_common_switchMove"]};
-        [count _animationEvents==1 && {((_animationEvents select 0) select 0)=="ace_common_playMoveNow"},"continuous action snapped generic entry"] call _check;
+        [count _priorities>0 && {(_priorities findIf {_x != 1})<0},"continuous action requested non-interpolated priority"] call _check;
         [(_medic getVariable "ACME_menuPoseAfterTreatment") isEqualTo _patient,"accepted continuous care did not enable reopen eligibility"] call _check;
     ''')
 

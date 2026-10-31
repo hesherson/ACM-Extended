@@ -6,6 +6,11 @@ if (isNull _d || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"
 private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
 private _idx = [_store] call ACME_fnc_skSelectedIndex;
 if (_idx < 0) exitWith {false};
+private _editRow = _store select _idx;
+if (!isNil "ACME_fnc_inventoryLedgerCommit" && {!([ACE_player,_editRow] call ACME_fnc_skInventoryEditable)}) exitWith {false};
+_d setVariable ["ACME_SK_TagEditSyringeId",_editRow param [11,"",[""]]];
+_d setVariable ["ACME_SK_TagEditSignature",_editRow select [7,4]];
+_d setVariable ["ACME_SK_TagEditRetired",false];
 
 // Each editor opening owns its deferred focus request, even on the same display/record.
 private _editEpoch = (_d getVariable ["ACME_SK_TagEditEpoch", 0]) + 1;
@@ -29,6 +34,7 @@ call ACME_fnc_skBuildHotspots;
         || {!(ACE_player isEqualTo _medic)}
         || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}
         || {!(uiNamespace getVariable ["ACME_SK_TagEditMode",false])}
+        || {(_d getVariable ["ACME_SK_TagEditSyringeId",""]) != _syringeId}
         || {(_d getVariable ["ACME_SK_TagEditEpoch", -1]) != _editEpoch}) exitWith {};
     private _store = [ACE_player] call ACME_fnc_skStoreEnsureIds;
     private _idx = [_store,false] call ACME_fnc_skSelectedIndex;

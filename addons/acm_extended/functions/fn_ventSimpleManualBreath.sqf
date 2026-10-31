@@ -1,28 +1,30 @@
 /* SIMPLE manual breaths execute on the captured patient owner. Advanced manual
    delivery remains in fn_ventManualBreath. No UI state or device settings are written here. */
-params [["_patient", objNull, [objNull]], ["_medic", objNull, [objNull]], ["_custody", "", [""]], ["_epoch", -1], ["_issued", -999], ["_id", "", [""]], ["_episodeId", -1], ["_hops", 0]];
+params [["_patient", objNull, [objNull]], ["_medic", objNull, [objNull]], ["_custody", "", [""]], ["_epoch", -1], ["_issued", -999], ["_id", "", [""]], ["_episodeId", -1], ["_hops", 0],["_sequence",0,[0]]];
 if (isNull _patient || {isNull _medic}) exitWith {};
 if (!local _patient) exitWith {
     if (_hops < 4) then {
-        ["ACME_ventSimpleManualBreath", [_patient, _medic, _custody, _epoch, _issued, _id, _episodeId, _hops + 1], _patient] call CBA_fnc_targetEvent;
+        ["ACME_ventSimpleManualBreath", [_patient, _medic, _custody, _epoch, _issued, _id, _episodeId, _hops + 1, _sequence], _patient] call CBA_fnc_targetEvent;
     };
 };
 private _episode = _patient getVariable ["ACME_vent_simpleEpisode", [false, 0]];
 if (_id == "" || {_epoch != ([_patient] call ACME_fnc_clinicalEpoch)}
     || {_episodeId != (_episode select 1)}
     || {!(_episode select 0)}) exitWith {};
+if !([_patient,_medic,_custody,_epoch,_episodeId,_sequence,_id,true] call ACME_fnc_ventManualClaim) exitWith {};
 private _receipts = +(_patient getVariable ["ACME_vent_simpleManualReceipts", []]);
 if (_id in _receipts) exitWith {};
 _receipts pushBack _id;
 if (count _receipts > 64) then {_receipts deleteAt 0;};
-_patient setVariable ["ACME_vent_simpleManualReceipts", _receipts, false];
+_patient setVariable ["ACME_vent_simpleManualReceipts", _receipts, true];
 if (!(missionNamespace getVariable ["ACME_sys_vent", true])
     || {!(missionNamespace getVariable ["ACME_vent_simpleMode", false])}
-    || {!alive _patient} || {!alive _medic}
+    || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
     || {!([_medic, "ventilator", true] call ACME_fnc_procedureAllowed)}
     || {!([_medic, _patient] call ACME_fnc_ventRecoveryNear)}
     || {_custody == ""} || {_custody != (_patient getVariable ["ACME_vent_custodyId", ""])}
     || {_patient getVariable ["ACME_vent_recovering", false]}
+    || {(_patient getVariable ["ACME_vent_nivMask", false] || {[_patient] call ACME_fnc_ventMaskSelected})}
     || {!(_patient getVariable ["ACME_vent_circuit", false])}
     || {!(_patient getVariable ["ACME_vent_powerOn", false])}
     || {!(_patient getVariable ["ACME_vent_configured", false])}
@@ -54,6 +56,9 @@ private _leak = 0.03 + (0.10 * linearConversion [0, 3, _ptx, 0, 1, true]);
 if ((_patient getVariable ["ACME_thora_tube_left", false]) || {_patient getVariable ["ACME_thora_tube_right", false]}) then {_leak = _leak + 0.08;};
 if (!_ett) then {_leak = _leak + (if (_cric) then {0.06} else {0.12});};
 private _vte = _vt * (1 - (_leak min 0.75));
+[_patient] call ACME_fnc_ventOxygenTick;
+private _fio2 = [_patient,_vt/1000,_patient getVariable ["ACME_vent_fio2",21]] call ACME_fnc_ventOxygenUse;
+[_patient,"ACME_vent_effectiveFiO2",_fio2] call ACME_fnc_setVarNet;
 [_patient, "ACME_vent_vti", round _vt] call ACME_fnc_setVarNet;
 [_patient, "ACME_vent_vte", round _vte] call ACME_fnc_setVarNet;
 [_patient, "ACME_vent_pip", round (_pip max _peep)] call ACME_fnc_setVarNet;
@@ -70,11 +75,15 @@ _volumes pushBack [_now, _vte];
 if (count _volumes > 128) then {_volumes deleteAt 0;};
 _patient setVariable ["ACME_vent_simpleManualVolumes", _volumes, false];
 ["ACME_ventSimpleManualAccepted", [_patient, _medic, _custody], _medic] call CBA_fnc_targetEvent;
+// Mechanical breaths remain possible after death, but cannot restart physiology.
 // A completely ineffective breath cannot establish an oxygenation provider.
-if (_vte > 150) then {
+if (alive _patient && {_vte > 150}) then {
     private _provider = _patient getVariable ["ACM_breathing_BVM_provider", objNull];
     if (isNull _provider || {_provider isEqualTo _patient}) then {
-        [_patient, [["bvmProvider", _patient], ["bvmLastBreath", _now], ["bvmConnectedOxygen", true], ["bvmLastBreathOxygen", _now]], true] call ACM_breathing_fnc_setRuntimeState;
+        private _o2 = _fio2 > 21;
+        private _bvmState = [["bvmProvider",_patient],["bvmLastBreath",_now],["bvmConnectedOxygen",_o2]];
+        if (_o2) then {_bvmState pushBack ["bvmLastBreathOxygen",_now];};
+        [_patient,_bvmState,true] call ACM_breathing_fnc_setRuntimeState;
         _patient setVariable ["ACME_bvm_lastBreathServer", serverTime, true];
     };
 };

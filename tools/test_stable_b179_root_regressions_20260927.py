@@ -96,15 +96,18 @@ def test_same_vehicle_treatment_is_clinical_without_forcing_animation():
     bridge = read("addons/core/overrides/fnc_treatment.sqf")
     blocked = read("addons/acm_extended/functions/fn_animBlocked.sqf")
 
-    assert "private _sameVehicleTreatment" in native
-    assert '[["isNotInside", "isNotSwimming", "isNotInZeus"], ["isNotSwimming", "isNotInZeus"]] select _sameVehicleTreatment' in native
+    assert "private _sameVehicleTreatment" not in native
     assert 'if (isNull objectParent _medic && {_medicAnim != ""})' in native
     assert "if (!_isSelf && {isNull objectParent _patient})" in native
 
     assert "private _sameVehicleTreatment" in bridge
     assert "private _interactionChecks" in bridge
     assert "private _rangeOkay = _sameVehicleTreatment" in bridge
-    assert "isNull objectParent _m && {(_m distance _p) > ace_medical_gui_maxDistance}" in bridge
+    from current_source_contracts import _has
+    contact = read("addons/acm_extended/functions/fn_patientInteractionContact.sqf")
+    assert _has(bridge, "[_m,_p] call ACME_fnc_patientInteractionContact")
+    assert _has(contact, "[_medic,_patient] call ACME_fnc_patientInteractionDistance")
+    assert 'if (!isNull _medicVehicle && {_medicVehicle isEqualTo _patientVehicle}) exitWith {true};' in contact
 
     assert "!((vehicle _unit) isEqualTo _unit)" in blocked
 
@@ -121,7 +124,7 @@ def test_chest_and_thoracostomy_workspaces_accept_same_vehicle_without_body_thea
     assert "doAnim" not in vehicle
 
     assert "objectParent _m isNotEqualTo objectParent _p" in seal
-    assert "isNull objectParent _m && {_m distance _p" in seal
+    assert "call ACME_fnc_patientInteractionDistance" in seal
     assert "objectParent _m isNotEqualTo objectParent _p" in thora
     assert "isNull objectParent _m && {(_m distance _p)" in thora
     assert "objectParent _thMedic isNotEqualTo objectParent _thPatient" in thora_tick

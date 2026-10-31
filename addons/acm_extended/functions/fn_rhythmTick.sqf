@@ -156,4 +156,9 @@ private _fnc_release = {params ["_u"]; [_u] call ACME_fnc_rhythmRelease;};
 
 
     };
-} forEach ((missionNamespace getVariable ["ACME_clinical_ownedUnits", []]) select {alive _x && {(_x getVariable ["ACME_rhythm_active", 0]) >= 100}});
+} forEach ((missionNamespace getVariable ["ACME_rhythm_activePatients", []]) select {
+    !isNull _x && {local _x} && {alive _x} && {(_x getVariable ["ACME_rhythm_active", 0]) >= 100}
+});
+ACME_rhythm_activePatients = (missionNamespace getVariable ["ACME_rhythm_activePatients", []]) select {
+    !isNull _x && {local _x} && {alive _x} && {(_x getVariable ["ACME_rhythm_active", 0]) >= 100}
+};

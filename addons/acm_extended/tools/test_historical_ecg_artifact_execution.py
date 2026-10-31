@@ -16,6 +16,7 @@ C=ROOT/'addons/circulation/functions'
 
 
 def engine_code(text):
+    text=text.replace('gestureState _patient','_patientGesture').replace('animationState _patient','_patientAnimation').replace('_patient getUnitMovesInfo 3','_patientBlend').replace('getAnimSpeedCoef _patient','_patientRate').replace('vectorMagnitude velocity _patient','_patientSpeed')
     text=text.replace('serverTime','_serverTime').replace('netId _medic','"provider"')
     # SQF-VM lacks resize [size,fill] and triangular random. Preserve every
     # production argument; mock only these engine primitive boundaries.
@@ -37,7 +38,8 @@ def function(name):return 'ACME_fnc_'+name+'={'+engine_code((F/('fn_'+name+'.sqf
 
 def setup():
     return cardiac_setup()+'''
-        private _serverTime=10;
+        private _serverTime=10; private _patientGesture="";
+        private _patientAnimation="acm_lyingstate"; private _patientBlend=1; private _patientRate=1; private _patientSpeed=0;
         private _resizeFill={params ["_a","_args"];_args params ["_size","_fill"];
             private _old=count _a; _a resize _size;
             for "_n" from _old to (_size-1) do {_a set [_n,_fill];};
@@ -48,7 +50,8 @@ def setup():
             if ((_this select 1)=="ecgJostle") then {(_this select 2) call ACME_fnc_ecgJostleLocal;};};
         ACME_fnc_ownerRegister={};
         ace_common_fnc_getCountOfItem={1};
-    '''+''.join(function(n) for n in ('ecgJostleLocal','ecgJostleRequest','ecgArtifactStrength','ecgArtifactApply','suctionStateLocal'))
+        ACME_fnc_treatmentSupplyCount={1}; // supply availability is external to the artifact reader
+    '''+''.join(function(n) for n in ('seizureMotorMode','ecgJostleLocal','ecgJostleRequest','ecgMotionStrength','ecgArtifactStrength','ecgArtifactApply','suctionStateLocal'))
 
 
 @pytest.mark.parametrize('epoch',[1,9,20])

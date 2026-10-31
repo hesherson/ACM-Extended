@@ -8,7 +8,12 @@ _pending params ["_request", "_receipt"];
 // A rejected intention returns the exact patient's/provider's item or original vehicle cargo.
 // Successful/wasted placements commit once. Missing ACK never authorizes a refund.
 if !(_receipt isEqualTo []) then {[_receipt, !_ok] call ACME_fnc_treatmentSupplyRefund;};
-if (_message != "") then { [_message, 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured; };
+// The patient owner reports the measured blood output for a successful peel.
+// Its effect and this server ACK can arrive in either order; generic success
+// text must not overwrite that result. Rejections still explain the failure.
+if (_message != "" && {!_ok || {(_request param [6, ""]) != "peel"}}) then {
+    [_message, 2.5, ACE_player, 13] call ace_common_fnc_displayTextStructured;
+};
 [_patient, _snapshot, true] call ACME_fnc_chestSealSyncUI;
 if ((uiNamespace getVariable ["ACME_CS_Patient", objNull]) == _patient && {!isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])}) then {
     private _currentMedic = uiNamespace getVariable ["ACME_CS_Medic", objNull];

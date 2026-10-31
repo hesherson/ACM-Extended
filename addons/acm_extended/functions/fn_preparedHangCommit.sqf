@@ -13,41 +13,64 @@ params [
     ["_site", -1, [0]],
     ["_epoch", -1, [0]],
     ["_warmer", false, [false]],
-    ["_freshEntryNet", [], [[]]]
+    ["_freshEntryNet", [], [[]]],
+    ["_lineUID", "", [""]]
 ];
 if (isNull _patient || {_requestId == ""} || {_setId == ""}) exitWith {};
 if (!local _patient) exitWith {[_patient, "preparedHang", _this] call ACME_fnc_ownerDispatch;};
 
+private _fingerprint = +_this;
 private _results = _patient getVariable ["ACME_preparedHangResults", createHashMap];
 private _old = _results getOrDefault [_requestId, []];
 if !(_old isEqualTo []) exitWith {
+    if ((_old param [2,[]]) isNotEqualTo _fingerprint) exitWith {};
     ["ACME_preparedHangResult", [_requestId, _old param [0, false], _old param [1, ""]], _medic] call CBA_fnc_targetEvent;
 };
 
 private _finish = {
     params ["_ok", "_message"];
-    _results set [_requestId, [_ok, _message]];
+    _results set [_requestId, [_ok, _message, _fingerprint]];
     if (count _results > 128) then {_results deleteAt ((keys _results) select 0);};
     _patient setVariable ["ACME_preparedHangResults", _results, true];
     if (!isNull _medic) then {["ACME_preparedHangResult", [_requestId, _ok, _message], _medic] call CBA_fnc_targetEvent;};
 };
 
-if (isNull _medic || {!alive _medic}) exitWith {[false, "Provider is no longer available. The prepared set was not consumed."] call _finish;};
+if (_patient getVariable ["ACME_persistenceFrozen", false]
+    || {!isNull _medic && {_medic getVariable ["ACME_persistenceFrozen", false]}}) exitWith {
+    [false, "Equipment is being saved. The fluid remains in Prepared IV Sets."] call _finish;
+};
+if (isNull _medic || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}) exitWith {[false, "Provider is no longer available. The prepared set was not consumed."] call _finish;};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false, "Patient state changed. The prepared set was not consumed."] call _finish;};
 private _sameVehicle = !isNull objectParent _medic && {(objectParent _medic) isEqualTo (objectParent _patient)};
 if ((_medic distance _patient) > 5 && {!_sameVehicle}) exitWith {[false, "Move back within treatment range. The prepared set was not consumed."] call _finish;};
 if !([_patient, _part, _iv, _site] call ACME_fnc_transfusionAccessValid) exitWith {[false, "The selected IV/IO is no longer available. The prepared set was not consumed."] call _finish;};
+if (_lineUID != "" && {([_patient, _part, _iv, _site, _lineUID] call ACME_fnc_ivLineSlot) isEqualTo []}) exitWith {
+    [false, "The installed line changed or is no longer empty. The bag remains in Prepared IV Sets."] call _finish;
+};
 
 private _sets = +(_medic getVariable ["ACME_preparedIVSets", []]);
 private _setIdx = _sets findIf {(_x param [0, ""]) isEqualTo _setId};
 if (_setIdx < 0) exitWith {[false, "That prepared set is no longer available."] call _finish;};
 private _rec = +(_sets select _setIdx);
+private _certificate = [_medic,"prepared",_setId,_requestId] call ACME_fnc_inventoryLedgerCertificate;
+if (_certificate isEqualTo [] || {(_certificate param [1,[]]) isNotEqualTo _rec}) exitWith {[false,"Prepared set inventory custody changed. The set was not attached."] call _finish;};
 _rec params [
     ["_id", ""], ["_bloodClass", ""], ["_bloodAction", ""], ["_salineClass", ""], ["_salineAction", ""],
     ["_tied", ""], ["_label", ""], ["_bloodCold", false], ["_kind", "yset"],
     ["_bloodExactVol", 0], ["_salineExactVol", 0]
 ];
 private _isSingle = _kind != "yset";
+if (_kind == "bagOnly") then {
+    private _slot = [_patient, _part, _iv, _site, _lineUID] call ACME_fnc_ivLineSlot;
+    _lineUID = _slot param [0, ""];
+};
+if (_kind == "bagOnly" && {_lineUID == ""}) exitWith {
+    [false, "This fluid bag has no tubing. An attached, empty IV line is required."] call _finish;
+};
+private _portableFresh = _rec param [11,[]];
+if (_portableFresh isNotEqualTo [] && {([0,_portableFresh] call ACME_fnc_freshBloodResolve) isEqualTo []}) exitWith {
+    [false,"Donor blood data is unavailable. Restore its saved metadata before hanging this set."] call _finish;
+};
 if (_tied != "" && {_tied != netId _patient}) exitWith {[false, "This set is tied to a different casualty."] call _finish;};
 
 // Re-resolve treatment actions on the owner so a stale UI row cannot force an obsolete action string.
@@ -60,37 +83,57 @@ if (!_isSingle) then {
     if (_si >= 0) then {_salineAction = _fad param [_si, _salineAction];};
 };
 if (_bloodAction == "" || {!_isSingle && {_salineAction == ""}}) exitWith {[false, "The staged fluid definition is no longer valid. Rebuild the set."] call _finish;};
+private _carrierType = if ((_bloodAction find "FreshBloodBag_") == 0) then {"FreshBlood"}
+    else {getText (configFile >> "ace_medical_treatment" >> "IV" >> _bloodAction >> "type")};
+if (_kind == "bagOnly" && {_carrierType in ["", "FBTK", "ACME_Propofol", "ACME_SalineY", "ACME_Empty", "ACME_EmptySaline"]
+    || {toLowerANSI _carrierType in keys (missionNamespace getVariable ["ACME_infusion_premixedByType", createHashMap])}}) exitWith {
+    [false, "This fluid requires its own prepared administration set."] call _finish;
+};
+// A direct bottle must use the medicated prepared-attach transaction. A missing
+// or late PreparedBags replica must never fall back to a plain, running carrier.
+if (_kind == "propofol" || {_bloodClass == "ACM_Vial_Propofol"}
+    || {_carrierType == "ACME_Propofol"}) exitWith {
+    [false, "Select the propofol bottle in Prepared Infusions and use Give Infusion. The bottle was not consumed."] call _finish;
+};
 
 private _lineKey = format ["%1#%2#%3", _part, _iv, _site];
 private _lineKeyLower = toLowerANSI _lineKey;
 private _lineYd = _lineKeyLower in ((_patient getVariable ["ACME_YLines", []]) apply {toLowerANSI _x});
 private _map = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
 private _arr = +(_map getOrDefault [_part, []]);
-private _activeBlood = (_arr findIf {
+private _occupancy = _arr;
+if (_lineUID != "") then {
+    private _detached = (_patient getVariable ["ACME_detachedBags", []]) + (_patient getVariable ["ACME_IV_DisconnectedBagUIDs", []]);
+    _occupancy = _arr select {!((_x param [8, ""]) in _detached)};
+};
+private _activeBlood = (_occupancy findIf {
     ((_x param [3, -1]) isEqualTo _site) && {(_x param [4, true]) isEqualTo _iv}
         && {(_x param [0, ""]) in ["Blood", "FreshBlood"]} && {(_x param [1, 0]) > 0.01}
 }) >= 0;
-private _activeOther = (_arr findIf {
+private _activeOther = (_occupancy findIf {
     ((_x param [3, -1]) isEqualTo _site) && {(_x param [4, true]) isEqualTo _iv}
         && {!((_x param [0, ""]) in ["ACME_SalineY", "ACME_Empty", "ACME_EmptySaline"])} && {(_x param [1, 0]) > 0.01}
 }) >= 0;
 private _dirty = (_patient getVariable ["ACME_YLineDirty", createHashMap]) getOrDefault [_lineKeyLower, false];
 private _refuse = "";
+if ((_patient getVariable ["ACME_yFlushJobs",createHashMap]) getOrDefault [_lineKeyLower,[]] isNotEqualTo []) exitWith {
+    [false, "Finish priming/flushing before replacing a bag on this line."] call _finish;
+};
 if (!_isSingle) then {
     if (_lineYd) then {_refuse = "This IV spot already has a Y line.";};
-    if (_refuse == "" && {_activeOther}) then {_refuse = "This IV/IO already has a line running.";};
+    if (_refuse == "" && {_activeOther}) then {_refuse = "There is already a bag on this line.";};
 } else {
     if (_lineYd) then {
         if (_kind != "blood") then {_refuse = "This IV spot already has a Y line.";}
         else {
-            if (_activeBlood) then {_refuse = "A unit is still running on this Y line.";};
+            if (_activeBlood) then {_refuse = "There is already a bag on this line.";};
             if (_refuse == "" && {_dirty}) then {_refuse = "Flush the Y line before hanging the next unit.";};
         };
     } else {
-        if (_activeOther) then {_refuse = "This IV/IO already has a line running.";};
+        if (_activeOther) then {_refuse = "There is already a bag on this line.";};
     };
 };
-if (_refuse != "") exitWith {[false, _refuse + " The prepared set was not consumed."] call _finish;};
+if (_refuse != "") exitWith {[false, _refuse] call _finish;};
 
 private _pi = ACME_infusion_bodyParts find toLowerANSI _part;
 private _access = if (_pi >= 0) then {[_patient, _iv, _pi, _site] call ACM_circulation_fnc_getAccessType} else {0};
@@ -106,7 +149,7 @@ private _attach = {
         if (_freshNet isEqualType [] && {count _freshNet >= 3}) then {_entry = +_freshNet;}
         else {if (_fid >= 0) then {_entry = [_fid] call ACM_circulation_fnc_getFreshBloodEntry;};};
     };
-    [_patient, _part, _action, _access, _iv, _site, _fresh, false, _entry] call ace_medical_treatment_fnc_ivBagLocal
+    [_patient, _part, _action, _access, _iv, _site, _fresh, false, _entry,if (_fresh) then {_portableFresh} else {[]}] call ace_medical_treatment_fnc_ivBagLocal
 };
 
 private _created = [];
@@ -147,6 +190,13 @@ if (_isSingle) then {
         if ((_e param [1, 0]) > _bloodExactVol) then {_e set [1, _bloodExactVol];};
         _arr set [_forEachIndex, _e];
     };
+    if (_uid == _bloodUid && {_kind == "bagOnly"}) then {
+        private _e = +(_arr select _forEachIndex);
+        if (count _e < 10) then {_e set [9, _e param [6, 0]];};
+        if (count _e < 11) then {_e set [10, []];};
+        _e set [11, "bagOnly"];
+        _arr set [_forEachIndex, _e];
+    };
     if (!_isSingle && {_uid == _salineUid}) then {
         private _e = +(_arr select _forEachIndex);
         _e set [0, "ACME_SalineY"];
@@ -159,12 +209,13 @@ _map set [_part, _arr];
 
 if (!_isSingle) then {
     private _yl = +(_patient getVariable ["ACME_YLines", []]);
-    if !(_lineKey in _yl) then {_yl pushBack _lineKey;};
+    _yl pushBackUnique _lineKey;
     [_patient, _yl, true] call ACME_fnc_yLinesCommit;
 };
 [_patient, _part, _iv, _site] call ACME_fnc_resumeSiteFlow;
 
-if (_kind == "blood" || {!_isSingle}) then {
+if (_kind == "blood" || {!_isSingle} || {_kind == "bagOnly" && {_carrierType in ["Blood", "FreshBlood"]}}) then {
+    _warmer = [_patient, _part, _iv, _site, _warmer, _medic] call ACME_fnc_lineWarmer;
     if (_warmer) then {
         [_patient, true, false, objNull, CBA_missionTime + 15, true] call ACME_fnc_bloodThermalStateCommit;
     } else {

@@ -62,7 +62,10 @@ private _sao2   = ((_unit getVariable ["ace_medical_spo2", 97]) / 100) max 0 min
 // tachycardia multiplied through faster than the volume loss divided. real ventricles do not work that way.
 // losing preload costs stroke volume super-linearly, because the frank-starling curve is steep in that region,
 // so the exponent below is what stops compensation outrunning the injury.
-private _volFrac = (_total / _normal) min (missionNamespace getVariable ["ACME_do2_preloadCeiling", 1.1]);
+private _burnDeficit = (_unit getVariable ["ACM_burns_EffectiveVolumeDeficitL",0]) max 0;
+private _sepsisDeficit = (_unit getVariable ["ACM_infection_EffectiveVolumeDeficitL",0]) max 0;
+private _preloadTotal = (_total - _burnDeficit - _sepsisDeficit) max 0.1;
+private _volFrac = (_preloadTotal / _normal) min (missionNamespace getVariable ["ACME_do2_preloadCeiling", 1.1]);
 private _svFrac = _volFrac ^ (missionNamespace getVariable ["ACME_do2_preloadExponent", 1.6]);
 
 // positive pressure ventilation against preload.

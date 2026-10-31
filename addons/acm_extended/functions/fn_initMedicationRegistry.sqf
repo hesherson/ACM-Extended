@@ -14,7 +14,9 @@ _acmVials = _acmVials - ["ACM_Vial_EpinephrineCardiac"];
 _acmVials pushBackUnique "ACME_Vial_EpinephrineCardiac";
 [[["medicationVialList", +_acmVials]]] call ACM_circulation_fnc_setLocalUiState;
 missionNamespace setVariable ["ACME_medicationVialRegistryFull", +_acmVials];
-ACME_infusion_allowedMedications = ["Amiodarone", "Epinephrine", "Norepinephrine", "Lidocaine", "Ketamine", "TXA", "Fentanyl", "Morphine", "Midazolam", "Ondansetron", "CalciumChloride", "CalciumGluconate", "Ceftriaxone", "Propofol"];
+// Propofol remains available in the Narc Box for syringe boluses. Its emulsion
+// bottle is spiked directly; it is not one of the medications mixed into saline.
+ACME_infusion_allowedMedications = ["Amiodarone", "Epinephrine", "Norepinephrine", "Lidocaine", "Ketamine", "TXA", "Fentanyl", "Morphine", "Midazolam", "Ondansetron", "CalciumChloride", "CalciumGluconate", "Ceftriaxone"];
 ACME_syringe_pushSecPerMl = 1.0;  // modeled manual IV push duration per mL for rate-sensitive adverse effects.
 ACME_syringe_pushMinSec = 1.5;
 ACME_syringe_pushMaxSec = 10;

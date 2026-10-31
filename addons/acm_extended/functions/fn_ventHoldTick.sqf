@@ -1,3 +1,5 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
 // the 4-second power-off hold: measure it, show it, and fire it.
 // the bar is not decoration, it is the safety. a timer alone would mean an accidental middle-click-and-drag could
 // silently kill a ventilated patient four seconds later with no warning whatsoever.

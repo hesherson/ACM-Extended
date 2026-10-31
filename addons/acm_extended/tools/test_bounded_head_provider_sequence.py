@@ -16,14 +16,14 @@ SECOND='AinvPknlMstpSnonWnonDnon_Putdown_'+REST
 def provider_contract(text=None):
     s=source('headElevMedicSeq') if text is None else text
     for frag in (
-        'private _rest = "'+REST+'";',
+        'private _rest = [_medic, "'+REST+'", _prone] call ACME_fnc_providerAnimation;',
         'private _forcePose = _rest;',
-        'private _first = "'+FIRST+'";',
-        'private _second = "'+SECOND+'";',
-        'if !(_mode in ["elevate", "lower"]) exitWith {};',
-        'private _prepDelay = [_medic] call ACME_fnc_medicAnimationPrep;',
+        'private _first = [_medic, "'+FIRST+'", _prone] call ACME_fnc_providerAnimation;',
+        'private _second = if (_prone) then {_rest} else {"'+SECOND+'"};',
+        'if !(_mode in ["elevate", "lower", "contactexit", "chestsealexit", "mask"]) exitWith {};',
+        '} else {[_medic] call ACME_fnc_medicAnimationPrep};',
         'if ((_u getVariable ["ACME_headElev_medicAnimToken", -1]) != _token) exitWith {',
-        'private _nextAlreadyRunning = _state == _secondLC;',
+        'private _nextAlreadyRunning = _state == _secondLC && {!_prone || {_seen && {_now - _stageAt >= _proneWorkTime}}};',
         'if (!_nextAlreadyRunning) then {[_u, _second, 2] call ACME_fnc_doAnim;};',
         'if (!_finished) exitWith {};',
         '[_u, _rest, 2] call ACME_fnc_doAnim;',
@@ -49,23 +49,30 @@ def setup():
         for old,new in (
             ('local '+name,'_local'),('alive '+name,'_alive'),
             ('objectParent '+name,'_parent'),('currentWeapon '+name,'_weapon'),
-            ('animationState '+name,'_anim'),
+            ('animationState '+name,'_anim'), ('stance '+name,'_providerStance'),
             (name+' selectWeapon "";', '_weapon="";'),
         ):
             s=re.sub(re.escape(old)+(r'\b' if old[-1].isalnum() else ''),lambda _:new,s)
+        s=re.sub(re.escape(name)+r' setUnitPos ([^;]+);',r'_stances pushBack (\1);',s)
         s=s.replace(name+' setUnitPos "MIDDLE";', '_stances pushBack "MIDDLE";')
         s=s.replace(name+' setUnitPos "AUTO";', '_stances pushBack "AUTO";')
     s=s.replace('hasInterface', '_interfacePresent').replace('inputAction _x', '(_input getVariable [_x,0])')
+    # Native RTM time/config are engine boundaries even when this fixture exercises an ordinary Putdown mode.
+    s=s.replace('_u getUnitMovesInfo 1','_nativeElapsed').replace('_u getUnitMovesInfo 2','_nativeDuration')
+    s=s.replace('getNumber (configFile >> "CfgMovesMaleSdr" >> "States" >> _end >> "speed")','_endSpeed')
+    s=s.replace('finite _nativeElapsed','true').replace('finite _nativeDuration','true')
     return r'''
         private _interfacePresent=true; private _input=missionNamespace;
         private _local=true; private _parent=objNull; private _blocked=false;
-        private _weapon="rifle"; private _anim="idle"; private _stances=[];
+        private _weapon="rifle"; private _anim="idle"; private _stances=[]; private _providerStance="CROUCH";
         private _jobs=[]; private _prep=0; private _stanceOwned=false;
+        private _nativeElapsed=0; private _nativeDuration=2; private _endSpeed=-2;
         ACME_fnc_treatmentPoseStop={};
         ACME_fnc_menuPoseStop={};
         ACME_fnc_animBlocked={_blocked};
         ACME_fnc_medicAnimationPrep={_prep=_prep+1;0.1};
         ACME_fnc_providerStanceOwned={_stanceOwned};
+        ace_common_fnc_isPlayer={(_this select 0) isEqualTo ACE_player};
         ACME_fnc_doAnim={_moves pushBack _this;};
         CBA_fnc_globalEvent={_events pushBack _this;};
         CBA_fnc_addPerFrameHandler={_jobs pushBack _this; 73};
@@ -73,7 +80,8 @@ def setup():
         CBA_fnc_waitAndExecute={_waits pushBack _this;};
         private _tick={params ["_job"]; [_job select 2,73] call (_job select 0);};
         private _deliver={params ["_job"]; (_job select 1) call (_job select 0);};
-    '''+'ACME_fnc_headElevMedicSeq={'+adapt(s)+'};\n'
+    '''+'ACME_fnc_providerAnimation={'+adapt(source('providerAnimation').replace('stance _medic','_providerStance').replace('animationState _medic','_anim'))+'};\n'+'ACME_fnc_providerAnimSpeedOwned={'+adapt(source('providerAnimSpeedOwned'))+'};\n'+\
+        'ACME_fnc_headElevMedicSeq={'+adapt(s)+'};\n'
 
 
 def begin(mode='elevate'):

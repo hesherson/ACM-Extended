@@ -12,7 +12,7 @@
  * 2: Public provider fields <BOOL> (default true)
  *
  * Supported mission fields:
- *   active, epoch, isDialog, shouldReopen, pfh, openMedicalMenuID, cancelEscapeID
+ *   active, epoch, isDialog, shouldReopen, pfh, openMedicalMenuID, cancelEscapeID, controller
  * Supported provider fields:
  *   session, lastSeen
  */
@@ -32,6 +32,7 @@ private _applied = 0;
         case "isDialog": { missionNamespace setVariable [QGVAR(ContinuousAction_IsDialog), _value]; _applied = _applied + 1; };
         case "shouldReopen": { missionNamespace setVariable [QGVAR(ContinuousAction_ShouldReopen), _value]; _applied = _applied + 1; };
         case "pfh": { missionNamespace setVariable [QGVAR(ContinuousAction_PFH), _value]; _applied = _applied + 1; };
+        case "controller": { missionNamespace setVariable [QGVAR(ContinuousAction_Controller), _value]; _applied = _applied + 1; };
         case "openMedicalMenuID": { missionNamespace setVariable [QGVAR(ContinuousAction_OpenMedicalMenu_ID), _value]; _applied = _applied + 1; };
         case "cancelEscapeID": { missionNamespace setVariable [QGVAR(ContinuousAction_Cancel_EscapeID), _value]; _applied = _applied + 1; };
         case "session": {

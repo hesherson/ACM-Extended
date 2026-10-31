@@ -65,7 +65,11 @@ def test_thoracostomy_accepts_locally_controlled_npc_medic():
     close = read("addons/acm_extended/functions/fn_thoraClose.sqf")
 
     assert "uiNamespace getVariable ['ACME_Thora_Medic',objNull]" in open_fn
-    assert '[_m] call ace_common_fnc_isPlayer' in open_fn
+    # B263 moved all entry failures to the shared full close procedure.
+    # Controlled-NPC menu return is checked there, not in the removed
+    # partial per-entry _abort code.
+    assert '[] call ACME_fnc_thoraClose;' in open_fn
+    assert '[_medic] call ace_common_fnc_isPlayer' in close
     assert '!([_thMedic] call ace_common_fnc_isPlayer)' in tick
     assert '[_medic] call ace_common_fnc_isPlayer' in close
     assert "ACE_player" not in open_fn

@@ -67,7 +67,24 @@ if (_counting) then {
     missionNamespace setVariable ["ACME_net_sent", _m];
 };
 
-if (local _obj) then {_cache set [_cacheKey, _fingerprint];};
+if (local _obj) then {
+    _cache set [_cacheKey, _fingerprint];
+    _obj setVariable ["ACME_net_scalarCache", _cache, false];
+    // Exact resets and approximate physiology can write the same field. Keep the approximate baseline at
+    // the value actually sent, otherwise it can suppress the first update after a reset using an older packet.
+    private _approx = _obj getVariable ["ACME_net_approxCache", createHashMap];
+    if !(_approx isEqualType createHashMap) then {_approx = createHashMap;};
+    if !((_obj getVariable ["ACME_net_approxOwner", []]) isEqualTo _ownerStamp) then {
+        _approx = createHashMap;
+        _obj setVariable ["ACME_net_approxOwner", _ownerStamp, false];
+    };
+    if (_type == "SCALAR") then {
+        _approx set [_cacheKey, [_value, diag_tickTime]];
+    } else {
+        _approx deleteAt _cacheKey;
+    };
+    _obj setVariable ["ACME_net_approxCache", _approx, false];
+};
 
 if (!_hasValue) exitWith {_obj setVariable [_name, nil, true];};
 _obj setVariable [_name, _value, true];

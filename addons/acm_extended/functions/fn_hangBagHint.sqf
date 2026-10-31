@@ -16,6 +16,7 @@ if (isNull _disp) exitWith {};
 private _old = uiNamespace getVariable ["ACME_hang_HintCtrl", controlNull];
 if (!isNull _old) then { ctrlDelete _old; };
 uiNamespace setVariable ["ACME_hang_HintCtrl", controlNull];
+uiNamespace setVariable ["ACME_hang_HintMedic", objNull];
 
 if (!_show) exitWith {};
 
@@ -34,3 +35,4 @@ _ctrl ctrlSetStructuredText parseText (
 );
 _ctrl ctrlCommit 0;
 uiNamespace setVariable ["ACME_hang_HintCtrl", _ctrl];
+uiNamespace setVariable ["ACME_hang_HintMedic", call ACME_fnc_controlledProvider];

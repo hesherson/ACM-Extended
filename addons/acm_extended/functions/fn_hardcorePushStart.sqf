@@ -1,11 +1,27 @@
 /* B121: convert the selected vascular syringe into a persistent Hardcore Medication push transaction. The
    physical magazine is reserved once; the stable Narc Box row remains as the authoritative live plunger state. */
 disableSerialization;
+// B259: normal-mode timed vascular pushes (>3 seconds) reuse the exact same
+// incremental escrow/controller as Hardcore. The legacy short push and IM
+// injection retain their existing immediate-completion choreography.
+params [["_standardTimed",false,[false]],["_inventoryRequest","",[""]],["_journalReady",false,[false]],["_journalBinding",[]]];
+if (isNull ACE_player || {!local ACE_player}) exitWith {false};
 private _d = findDisplay 84000;
 if (isNull _d || {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) exitWith {false};
-if !(missionNamespace getVariable ["ACME_hcEff_medications",false]) exitWith {false};
+if (!_standardTimed && {!(missionNamespace getVariable ["ACME_hcEff_medications",false])}) exitWith {false};
 private _existing = missionNamespace getVariable ["ACME_HCMedPushJob",createHashMap];
 if (_existing isEqualType createHashMap && {count _existing > 0}) exitWith {false};
+// Reconcile only stopped jobs from this same provider ownership period. Flow never resumes.
+[ACE_player] call ACME_fnc_hardcorePushRecover;
+// Keep unresolved evidence bounded. A malformed historical archive cannot prove
+// which syringe remains reserved, so its provider still fails closed.
+private _retired = missionNamespace getVariable ["ACME_HCMedPushRetiredJobs",[]];
+if (count _retired >= 32 || {(_retired findIf {(_x param [0,objNull]) isEqualTo ACE_player
+    && {count _x < 3 || {!((_x select 2) isEqualType createHashMap)}
+        || {((_x select 2) getOrDefault ["stableId",""]) == ""}}}) >= 0}) exitWith {
+    ["An unsettled syringe push was retained after a provider change. Reset the affected provider's kit before reusing it.",5,ACE_player,13] call ace_common_fnc_displayTextStructured;
+    false
+};
 private _pending = uiNamespace getVariable ["ACME_SK_PendingInjection",[]];
 if !(_pending isEqualType [] && {count _pending >= 3}) exitWith {false};
 _pending params ["_body","_site","_route"];
@@ -15,6 +31,7 @@ if (isNull _patient) then {_patient = _d getVariable ["ACME_SK_ReturnPatient",ob
 if (isNull _patient) exitWith {false};
 private _identity = [_patient,_body,_site] call ACME_fnc_medicationLineIdentity;
 if (_identity isEqualTo []) exitWith {false};
+if (_journalReady && {_journalBinding isNotEqualTo [_identity,[_patient] call ACME_fnc_clinicalEpoch]}) exitWith {false};
 if ([_patient,_body,_site] call ACME_fnc_medicationLineBloodBusy) exitWith {
     ["Blood is present in that line. Finish or remove the blood bag before pushing medication.",3,ACE_player,13] call ace_common_fnc_displayTextStructured;
     false
@@ -28,11 +45,20 @@ if (_idx < 0 || {_idx >= count _store}) exitWith {false};
 private _row = +(_store select _idx);
 private _stable = _row param [11,"",[""]];
 if (_stable == "") exitWith {false};
+// One unresolved syringe cannot prevent treatment with another funded syringe.
+// Its exact stable identity remains blocked until its receipts settle.
+if ((_retired findIf {(_x param [0,objNull]) isEqualTo ACE_player
+    && {((_x select 2) getOrDefault ["stableId",""]) == _stable}}) >= 0) exitWith {
+    ["That syringe has an unsettled push. Use another prepared syringe while its receipt is pending.",5,ACE_player,13]
+        call ace_common_fnc_displayTextStructured;
+    false
+};
 private _med = _row param [0,"",[""]];
 private _size = _row param [1,10,[0]];
 private _drug = _row param [2,0,[0]];
 private _ns = _row param [4,0,[0]];
 private _kind = _row param [6,"",[""]];
+private _inventoryBacked = (_row param [13,"",[""]]) == "inventoryB279";
 private _virtual = _kind in ["compoundB13","dilutionB13","epiMixB12"];
 private _components = +(_row param [5,[],[[]]]);
 if (!(_size isEqualType 0) || {!finite _size} || {!(_size in [1,3,5,10])}
@@ -43,7 +69,7 @@ if (!(_size isEqualType 0) || {!finite _size} || {!(_size in [1,3,5,10])}
 if (!_virtual && {(_ns > 0.0005) || {!(_components isEqualTo [])}}) exitWith {false};
 // Physical syringe magazines are stored in hundredths of a milliliter. Quantize the live row up front so every
 // later stop/restart and the returned magazine agree on the exact same plunger volume.
-if (!_virtual) then {_drug = (round (_drug*100))/100; _row set [2,_drug]; _store set [_idx,_row]; ACE_player setVariable ["ACME_narcStore",_store,false];};
+if (!_virtual) then {_drug = (round (_drug*100))/100; _row set [2,_drug]; _store set [_idx,_row]; [ACE_player,_store,false] call ACME_fnc_narcStoreCommit;};
 private _total = (_drug + _ns) max 0;
 if (_total <= 0 || {_total > _size + 0.001}) exitWith {false};
 // Prevalidate every medication component and route before reserving the physical syringe or moving the plunger.
@@ -113,8 +139,56 @@ if (!_durValid) exitWith {
     ["Push duration must be 1-300 seconds. Leave it blank to use 3 seconds.",2.5,ACE_player,13] call ace_common_fnc_displayTextStructured;
     false
 };
+// Reserve before the worker begins. The server certifies the exact token claim;
+// a moved syringe cannot start a second plunger on another client.
+if (_inventoryBacked && {_inventoryRequest == ""}) exitWith {
+    private _request = [ACE_player,_row] call ACME_fnc_skInventoryReserve;
+    if (_request == "") exitWith {false};
+    [ACE_player,_request,{
+        params ["_accepted","_args"];
+        _args params ["_medic","_standardTimed","_request","_stable","_display","_patient","_pending"];
+        private _rows = _medic getVariable ["ACME_narcStore",[]];
+        private _at = _rows findIf {(_x param [11,"",[""]]) == _stable};
+        private _valid = _accepted && {ACE_player isEqualTo _medic} && {local _medic} && {alive _medic}
+            && {!isNull _display} && {_display isEqualTo findDisplay 84000}
+            && {(uiNamespace getVariable ["ACME_SK_Patient",objNull]) isEqualTo _patient}
+            && {(uiNamespace getVariable ["ACME_SK_PendingInjection",[]]) isEqualTo _pending}
+            && {_at >= 0} && {([_rows] call ACME_fnc_skSelectedIndex) == _at};
+        if (_valid) then {_valid = [_standardTimed,_request] call ACME_fnc_hardcorePushStart;};
+        if (!_valid) then {
+            private _payload = if (_at >= 0) then {[_stable,+(_rows select _at)]} else {[]};
+            if (_accepted) then {["recover",_medic,_request,[]] call ACME_fnc_syringeDeliveryRequest;}
+            else {[_medic,_request,false,_payload] call ACME_fnc_inventoryLedgerSettle;};
+        };
+    },[ACE_player,_standardTimed,_request,_stable,_d,_patient,+_pending],true] call ACME_fnc_inventoryLedgerClaim;
+    true
+};
+if (_inventoryBacked) then {
+    private _escrow = (ACE_player getVariable ["ACME_inventoryEscrow",createHashMap]) getOrDefault [_inventoryRequest,[]];
+    if (count _escrow < 6 || {!(_escrow select 5)} || {((_escrow select 1) param [0,""]) != _stable}) then {_inventoryRequest = "";};
+};
+if (_inventoryBacked && {_inventoryRequest == ""}) exitWith {false};
+// BEGIN is acknowledged by the server before the first private plunger debit.
+// A lost UI continuation leaves the server's funded initial row recoverable.
+if (_inventoryBacked && {!_journalReady}) exitWith {
+    private _epoch = ACE_player getVariable ["ACME_providerLocalityEpoch",0];
+    private _binding = [+_identity,[_patient] call ACME_fnc_clinicalEpoch];
+    ["begin",ACE_player,_inventoryRequest,[_inventoryRequest,"push",_patient,toLowerANSI _body,_site,_identity,_binding select 1],{
+        params ["_accepted","_args"];
+        _args params ["_medic","_standardTimed","_request","_display","_patient","_pending","_epoch","_binding"];
+        private _valid = _accepted && {local _medic} && {ACE_player isEqualTo _medic}
+            && {(_medic getVariable ["ACME_providerLocalityEpoch",0]) == _epoch}
+            && {!isNull _display} && {_display isEqualTo findDisplay 84000}
+            && {(uiNamespace getVariable ["ACME_SK_Patient",objNull]) isEqualTo _patient}
+            && {(uiNamespace getVariable ["ACME_SK_PendingInjection",[]]) isEqualTo _pending};
+        if (_valid) then {_valid = [_standardTimed,_request,true,_binding] call ACME_fnc_hardcorePushStart;};
+        if (!_valid) then {["stop",_medic,_request,[_request,"begin-continuation-retired"]] call ACME_fnc_syringeDeliveryRequest;};
+        _valid
+    },[ACE_player,_standardTimed,_inventoryRequest,_d,_patient,+_pending,_epoch,_binding]] call ACME_fnc_syringeDeliveryRequest;
+    true
+};
 private _magClass = ""; private _magContainer = objNull;
-if (!_virtual) then {
+if (!_virtual && {!_inventoryBacked}) then {
     _magClass = format ["ACM_Syringe_%1_%2",_size,_med];
     private _ammo = round (_drug*100);
     {
@@ -123,16 +197,19 @@ if (!_virtual) then {
     if (isNull _magContainer || {_ammo <= 0}) exitWith {};
     _magContainer addMagazineAmmoCargo [_magClass,-1,_ammo];
 };
-if (!_virtual && {isNull _magContainer}) exitWith {false};
+if (!_virtual && {!_inventoryBacked} && {isNull _magContainer}) exitWith {false};
 private _serial = (missionNamespace getVariable ["ACME_HCMedPushSerial",0]) + 1;
 missionNamespace setVariable ["ACME_HCMedPushSerial",_serial];
-private _session = format ["hcpush:%1:%2:%3",clientOwner,floor(diag_tickTime*1000),_serial];
+private _session = if (_inventoryBacked) then {_inventoryRequest} else {format ["hcpush:%1:%2:%3",clientOwner,floor(diag_tickTime*1000),_serial]};
 private _job = createHashMapFromArray [
     ["medic",ACE_player],["patient",_patient],["bodyPart",toLowerANSI _body],["site",_site],["route","vascular"],
-    ["identity",_identity],["stableId",_stable],["size",_size],["med",_med],["kind",_kind],["virtual",_virtual],
+    ["providerLocalityEpoch",ACE_player getVariable ["ACME_providerLocalityEpoch",0]],
+    ["kitEpoch",ACE_player getVariable ["ACME_equipmentKitEpoch",0]],["providerOwner",clientOwner],
+    ["identity",_identity],["clinicalEpoch",if (_inventoryBacked) then {_journalBinding select 1} else {[_patient] call ACME_fnc_clinicalEpoch}],["stableId",_stable],["size",_size],["med",_med],["kind",_kind],["virtual",_virtual],
+    ["inventoryBacked",_inventoryBacked],["inventoryRequest",_inventoryRequest],["syringeDelivery",_inventoryBacked],["journalBatchSerial",0],
     ["label",_row param [3,"",[""]]],["pushLabel",_pushLabel],["barrelMarker",_row param [12,"",[""]]],
     ["overlayAspect",_overlayAspect],["overlayTravelNorm",_overlayTravelNorm],["magClass",_magClass],["magContainer",_magContainer],
-    ["duration",_dur],["targetMl",_target],["rateMlSec",_target/(_dur max 0.01)],["pushedMl",0],["carryMl",0],
+    ["duration",_dur],["standardTimed",_standardTimed],["targetMl",_target],["rateMlSec",_target/(_dur max 0.01)],["pushedMl",0],["carryMl",0],
     ["unsentDelta",[0,0,[]]],["batchElapsed",0],["pendingAcks",0],["session",_session],["lastTick",diag_tickTime],
     ["lastSend",diag_tickTime],["nextUi",0],["flowing",true],["stopRequested",false],["finishRequested",false]
 ];
@@ -144,7 +221,11 @@ uiNamespace setVariable ["ACME_SK_CarouselCollapseAt",0];
 {private _c=_d displayCtrl _x; if (!isNull _c) then {_c ctrlEnable false;};} forEach [84150,84151,84154,84470,84831];
 private _old = missionNamespace getVariable ["ACME_HCMedPushPFH",-1];
 if (_old >= 0) then {[_old] call CBA_fnc_removePerFrameHandler;};
-private _h = [{call ACME_fnc_hardcorePushTick;},0.05] call CBA_fnc_addPerFrameHandler;
+private _h = [{
+    params ["_args","_handle"];
+    _args params ["_session"];
+    [_session,_handle] call ACME_fnc_hardcorePushTick;
+},0.05,[_session]] call CBA_fnc_addPerFrameHandler;
 missionNamespace setVariable ["ACME_HCMedPushPFH",_h];
 playSound "ACME_SyringePush";
 [0] call ACME_fnc_skCarouselRender;

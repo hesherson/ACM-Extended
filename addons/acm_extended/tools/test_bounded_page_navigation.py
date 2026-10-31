@@ -68,7 +68,9 @@ def setup():
     base=carousel_setup().replace('["_owner", ACE_player, [objNull]]',
                                   '["_owner", ACE_player, [missionNamespace]]')
     text=source('skPageNavigate').replace('findDisplay 84000','_drawDisplay').replace('findDisplay 86000','_txDisplay')
-    text=text.replace('closeDialog 0;', '_closes=_closes+1;')
+    # A native close destroys the source handle before the queued page opens.
+    text=text.replace('closeDialog 0;', '_closes=_closes+1;_drawDisplay=objNull;_txDisplay=objNull;')
+    text=text.replace('isNull (_drawDisplay)', '(_drawDisplay isEqualTo objNull)').replace('isNull (_txDisplay)', '(_txDisplay isEqualTo objNull)')
     return base + '''
         private _txDisplay=objNull; private _closes=0; private _transfuse=[];
         ACME_fnc_skOpenDraw={_opens pushBack _this;};

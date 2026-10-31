@@ -8,7 +8,8 @@ def read(rel):
 def test_visual_debug_is_client_local_and_spawn_clean():
     cyc = read('functions/fn_visualFxDebugCycle.sqf')
     tick = read('functions/fn_visualFxTick.sqf')
-    post = read('functions/fn_postInit.sqf')
+    post = read('functions/fn_registerVisualEffectsRuntime.sqf')
+    assert 'call ACME_fnc_registerVisualEffectsRuntime;' in read('functions/fn_postInit.sqf')
     assert 'uiNamespace setVariable [_key,_next]' in cyc
     assert '_patient setVariable [_key' not in cyc
     assert 'ACME_VFX_PhysReadyAt",diag_tickTime + 5.0' in tick

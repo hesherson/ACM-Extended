@@ -11,7 +11,14 @@
 // because we set the actual ACM_breathing_RespirationRate rather than only a display number, the check breathing
 // of the medic reads the live rate and ACM's getetco2 turns the rising and falling rate into capnography that
 // swings deep, then shallow, then flat.
-if !(missionNamespace getVariable ["ACME_sys_cheyneStokes", true]) exitWith {};
+if !(missionNamespace getVariable ["ACME_sys_cheyneStokes", true]) exitWith {
+    // Preserve enrollment for re-enable, but release the active respiratory drive.
+    {
+        if (!isNull _x && {local _x} && {(_x getVariable ["ACME_cs_rrDrive", -1]) >= 0}) then {
+            [_x, "ACME_cs_rrDrive", -1] call ACME_fnc_setVarNet;
+        };
+    } forEach (missionNamespace getVariable ["ACME_cs_activePatients", []]);
+};
 
 private _list = missionNamespace getVariable ["ACME_cs_activePatients", []];
 if (_list isEqualTo []) exitWith {};
@@ -34,7 +41,7 @@ private _alive = [];
     if (isNull _p || {!local _p}) then { continue; };
     if (!alive _p || {!(_p getVariable ["ACME_cs_active", false])}) then {
         // being pruned from the demo: release the rr drive, so the override stops pinning the rate of this unit.
-        if (!isNull _p && {(_p getVariable ["ACME_cs_rrDrive", -1]) >= 0}) then { _p setVariable ["ACME_cs_rrDrive", -1, true]; };
+        if (!isNull _p && {local _p} && {(_p getVariable ["ACME_cs_rrDrive", -1]) >= 0}) then { [_p, "ACME_cs_rrDrive", -1] call ACME_fnc_setVarNet; };
         continue;
     };
     // audible cheyne-stokes respirations ride along with the rr pattern, in crescendo and decrescendo cycles with a
@@ -62,7 +69,9 @@ private _alive = [];
     // ACM_breathing_RespirationRate to it and is the single writer of that value. the full pattern, including the
     // apneic drop to 0, still carries, because check breathing reads it and ACM's capnography follows, and nothing
     // here writes the live rate directly any more, so this debug demo can never fight the sole-writer.
-    [_p, "ACME_cs_rrDrive", _rr] call ACME_fnc_setVarNet;
+    if ((_p getVariable ["ACME_cs_rrDrive", -1]) != _rr) then {
+        [_p, "ACME_cs_rrDrive", _rr] call ACME_fnc_setVarNet;
+    };
     // the target, or desired, rate must never be 0, because ACM's updateoxygen divides by
     // ACM_core_TargetVitals_RespirationRate, at around line 191 of fnc_updateoxygen, so a 0 target throws a zero
     // divisor. keep the target at a safe nonzero floor, because it represents the central drive the body is aiming

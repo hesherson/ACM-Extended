@@ -6,30 +6,40 @@ if (!(missionNamespace getVariable ["ACME_sys_flight", true])
     || {!(missionNamespace getVariable ["ACME_altitude_enable", true])}) exitWith {
     // Re-enabling starts at current cabin pressure, without replaying travel while off.
     _patient setVariable ["ACME_alt_ptxSample", nil, false];
+    _patient setVariable ["ACME_alt_tickStamp", nil, false];
     [_patient, "ACME_alt_expanding", false] call ACME_fnc_setVarNet;
+    [_patient, "ACME_alt_pRatio", 1] call ACME_fnc_setVarNet;
+    [_patient, "ACME_alt_ambientRatio", 1] call ACME_fnc_setVarNet;
+    [_patient, "ACME_alt_hypoxia", 0] call ACME_fnc_setVarNet;
+    [_patient, "ACME_flightG_stress", 0] call ACME_fnc_setVarNet;
+    [_patient, "ACME_flightG_resistAdd", 0] call ACME_fnc_setVarNet;
 };
 
-private _alt = [_patient] call ACME_fnc_altitudeTrue;
+private _exposure = [_patient] call ACME_fnc_flightExposure;
+private _alt = _exposure select 0;
 if (!finite _alt) exitWith {_patient setVariable ["ACME_alt_ptxSample", nil, false];};
 _alt = _alt max 0;
+private _pRatio = _exposure select 2;
+private _now = CBA_missionTime;
+private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
+// Process a given owner/epoch/pressure sample once. A teleport that changes
+// pressure at the same clock instant still gets its new observation.
+private _stamp = [clientOwner, _epoch, _now, _pRatio];
+if ((_patient getVariable ["ACME_alt_tickStamp", []]) isEqualTo _stamp) exitWith {};
+_patient setVariable ["ACME_alt_tickStamp", _stamp, false];
 [_patient, "ACME_alt_m", round _alt, 10, 2] call ACME_fnc_setVarNetApprox;
-// Clamp the tropospheric approximation before exponentiation, avoiding invalid
-// fractional powers on extreme terrain/teleport positions.
-private _pressureAlt = _alt min 11000;
-private _pRatio = (((1 - (0.0000225577 * _pressureAlt)) ^ 5.25588) max 0.2) min 1;
+[_patient, "ACME_alt_ambientRatio", _exposure select 1, 0.002, 2] call ACME_fnc_setVarNetApprox;
 [_patient, "ACME_alt_pRatio", _pRatio, 0.002, 2] call ACME_fnc_setVarNetApprox;
 
 // Owner-local history is cleared by ownerInit on locality transfer. The epoch
 // and short sample age also exclude reset/load/stall catch-up. The first valid
 // observation establishes a baseline; it cannot create or worsen an injury.
-private _now = CBA_missionTime;
-private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 private _sample = _patient getVariable ["ACME_alt_ptxSample", []];
 private _sampleValid = _sample isEqualType [] && {count _sample == 4};
 if (_sampleValid) then {
     _sample params ["_lastPressure", "_lastOwner", "_lastEpoch", "_lastTime"];
     _sampleValid = _lastPressure isEqualType 0 && {finite _lastPressure}
-        && {_lastPressure >= 0.2} && {_lastPressure <= 1}
+        && {_lastPressure >= 0.000000001} && {_lastPressure <= 1}
         && {_lastOwner isEqualTo clientOwner} && {_lastEpoch isEqualTo _epoch}
         && {_lastTime isEqualType 0} && {finite _lastTime}
         && {_now >= _lastTime} && {_now - _lastTime <= 5};
@@ -48,7 +58,7 @@ if (_sampleValid) then {
 };
 [_patient, "ACME_alt_expanding", _expanding] call ACME_fnc_setVarNet;
 
-private _dt = [_patient, "altitude", 0.25, 5] call ACME_fnc_clinicalTickDelta;  // the circ tick period. it is defined here because the flight-g block below runs before the altitude cutoff.
+private _dt = [_patient, "altitude", 0.25, 5] call ACME_fnc_clinicalTickDelta;  // independent flight worker cadence
 
 // flight stress: g-loading on a hypovolemic casualty.
 // it runs at every altitude, before the altitude cutoff below, because the hardest g in casevac is
@@ -63,8 +73,8 @@ private _dt = [_patient, "altitude", 0.25, 5] call ACME_fnc_clinicalTickDelta;  
 // composes with pressors, the TBI and ACM's hardcore offsets rather than fighting them.
 private _gDrop = 0;
 if (missionNamespace getVariable ["ACME_flightG_enable", true]) then {
-    private _veh = vehicle _patient;
-    if (_veh != _patient && {_veh isKindOf "Air"} && {isEngineOn _veh}) then {
+    private _veh = _exposure select 4;
+    if (!isNull _veh && {isEngineOn _veh}) then {
         // the maneuver magnitude: the climb rate and the bank angle, whichever is loading them harder.
         private _climb = ((velocity _veh) select 2) max 0;
         private _climbFrac = linearConversion [1, (missionNamespace getVariable ["ACME_flightG_climbRateFull", 8]), _climb, 0, 1, true];
@@ -86,44 +96,16 @@ if (missionNamespace getVariable ["ACME_flightG_enable", true]) then {
     } else {
         [_patient, "ACME_flightG_stress", 0] call ACME_fnc_setVarNet;
     };
+} else {
+    [_patient, "ACME_flightG_stress", 0] call ACME_fnc_setVarNet;
 };
 // ease it, so the pressure sags into the turn and recovers out of it rather than stepping.
 private _curG = _patient getVariable ["ACME_flightG_resistAdd", 0];
 private _gStep = (missionNamespace getVariable ["ACME_flightG_stepPerSec", 18]) * _dt;
 [_patient, "ACME_flightG_resistAdd", (_curG + (((_gDrop - _curG) max (-_gStep)) min _gStep)), 0.10, 1] call ACME_fnc_setVarNetApprox;
 
-private _minAlt = missionNamespace getVariable ["ACME_altitude_minMetres", 500];
-if (_alt < _minAlt) exitWith {
-    [_patient, "ACME_alt_hypoxia", 0] call ACME_fnc_setVarNet;
-};
-
-// 2. hypobaric hypoxia: the thin air.
-// the effective alveolar oxygen scales with the pressure rather than the percentage. supplemental o2 buys it
-// straight back, which is the whole reason it is given: at 8000 ft on room air the alveolar oxygen is only about
-// 74 percent of sea level, and at an FiO2 of 60 percent it is far above it and the altitude stops mattering.
-private _fio2 = 21;
-if (_patient getVariable ["ACME_vent_driving", false]) then {
-    _fio2 = ([_patient] call ACME_fnc_ventEffectiveSettings) select 4;
-} else {
-    if (_patient in (missionNamespace getVariable ["ACME_nrb_activePatients", []])) then { _fio2 = 70; };
-};
-private _alveolarRatio = (_fio2 * _pRatio) / 21;  // 1.0 is sea level room air.
-
-private _targetSat = 99;
-if (_alveolarRatio < 1) then {
-    _targetSat = linearConversion [0.55, 1.0, _alveolarRatio, 78, 99, true];
-};
+// Oxygen is a ceiling on the native clinical writer, never a replacement for
+// its target. Descent and live disabling therefore remove only this exposure;
+// they cannot erase a medication, ventilation or scenario target.
+private _targetSat = [_patient, _exposure] call ACME_fnc_altitudeOxygenCeiling;
 [_patient, "ACME_alt_hypoxia", (99 - _targetSat), 0.20, 2] call ACME_fnc_setVarNetApprox;
-
-// only one function can own the saturation.
-// if a ventilator is driving this patient, the shunt model of the vent, fn_ventoxygenation, owns it, and it
-// already folds the altitude in through the pressure ratio we published above. writing here as well would
-// overwrite the shunt model every tick and quietly delete the entire effect of PEEP on anyone above 500 m. two
-// writers is not a tuning problem, it is a bug, and it is invisible from the outside.
-if (_patient getVariable ["ACME_vent_driving", false]) exitWith {};
-// fold in the suction drain. a yankauer left running past its limit is pulling gas out of the airway, and this
-// is the only place saturation is allowed to be written, so it is subtracted here rather than fought over.
-_targetSat = (_targetSat
-    - (_patient getVariable ["ACME_o2Drain_mainstem", 0])
-    - (_patient getVariable ["ACME_o2Drain_vili", 0])) max 0;
-[_patient, [["oxygenSaturation", _targetSat]], true] call ACM_core_fnc_setTargetVitalsState;

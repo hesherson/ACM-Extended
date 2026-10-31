@@ -10,6 +10,8 @@ uiNamespace setVariable ["ACME_RollerClamp_DLG", _display];
 uiNamespace setVariable ["ACME_RollerClamp_Dragging", false];
 uiNamespace setVariable ["ACME_RollerClamp_ReleaseOnUp", false];
 uiNamespace setVariable ["ACME_RollerClamp_NextCommit", 0];
+uiNamespace setVariable ["ACME_RollerClamp_Edit", []];
+uiNamespace setVariable ["ACME_RollerClamp_Session", [_display,ACE_player,0,0]];
 uiNamespace setVariable ["ACME_RollerClamp_Track", []];
 
 // Vision is owned by the clamp runtime, not by one-shot dialog redraws.

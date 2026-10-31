@@ -84,7 +84,7 @@ def test_current_settled_site_still_stages_or_flushes_at_layout_deadline(flush,s
         _ctrl setVariable ["ACME_SK_Target",["rightleg",{site},9000,true]];
         [_ctrl] call ACME_fnc_skSiteClick;
     ''' + (f'''
-        [_requests isEqualTo [[_medic,_patient,"rightleg",[],"flush",{site}]],"current flush rejected or wrong site"] call _check;
+        [(_requests apply {{_x select [0,6]}}) isEqualTo [[_medic,_patient,"rightleg",[],"flush",{site}]],"current flush rejected or wrong site"] call _check;
         [_stock==1 && {{count _removedItems==1}},"current flush debit changed"] call _check;
     ''' if flush else f'''
         [(uiNamespace getVariable ["ACME_SK_PendingInjection",[]]) isEqualTo ["rightleg",{site},"vascular"],"current stage rejected"] call _check;

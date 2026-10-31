@@ -9,7 +9,6 @@ if (isNull _medic || {isNull _patient} || {!(_patient isKindOf "CAManBase")}) ex
 if (_medic isEqualTo _patient) exitWith {false};
 if (!(alive _medic)) exitWith {false};
 if (!([_medic] call ace_common_fnc_isAwake)) exitWith {false};
-if (!(alive _patient)) exitWith {false};
 
 private _state = _patient getVariable ["ACME_manualPlateCarrierState", ""];
 private _manualLease = _patient getVariable ["ACME_manualPlateCarrierLease", ""];
@@ -42,7 +41,7 @@ if (_state != "" || {_manualLease != ""} || {_worn == ""}) exitWith {false};
 if (!isNull objectParent _patient || {!isNull attachedTo _patient}) exitWith {false};
 if (_patient call ace_common_fnc_isBeingDragged || {_patient call ace_common_fnc_isBeingCarried}) exitWith {false};
 
-private _awake = !(_patient getVariable ["ACE_isUnconscious", false])
+private _awake = alive _patient && {!(_patient getVariable ["ACE_isUnconscious", false])}
     && {!(_patient getVariable ["ace_medical_unconscious", false])};
 
 // If the casualty is already awake, persistent manual exposure is invalid by definition: the runtime would

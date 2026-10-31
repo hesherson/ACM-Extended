@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "sources": {
+    "App.jsx": "9905df092b48c1b2bf90dd34faf05e91b18d74b62c36591688dccf585b090e41",
+    "layout.mjs": "2fa95134fd3fa67007d2611b4a1a0c155db1a534ca5fe86aec0a0574f3a0a871",
+    "bridge.mjs": "5074e369eda626c249cce874a84d8c7b0e64dad2f63a465ee37c83d428b00e00",
+    "style.css": "61cb62c593b34136171ea182f0f6e5b1e65d53ba13aea86e0ceebd2e7cd05161",
+    "build.mjs": "33d8df338b895c9479c399e495120b41327b39dc2e3cf8798b372b9ad26625bd",
+    "package.json": "c2170cf6ed378e20ce685d8f8be1039ae886e069bb97d8216b46366ef39d5ea2",
+    "package-lock.json": "53c5fac594d07c41e4fbd6cf715391359a600b9b05b64c736cda2f7e82537f46",
+    "assets/RobotoCondensed.woff2": "231573d5444afbbf7e9bc17bb04dea95eb14225abe7877a1d86c36edbed52bf3",
+    "assets/OFL.txt": "0b3098464626138c0e2b29b95239e9f27ffbe322c6256305852018d8a9587ede"
+  },
+  "htmlSha256": "5259c333045cc8563be0275db44bf484149c1a8cb225494039f47eedd23c0aab",
+  "licensesSha256": "ae9db7f9fa10382202b823d68cf94fa34c22a3dd26e8fc391b3ef012636dcf37"
+}

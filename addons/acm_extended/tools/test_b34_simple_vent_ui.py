@@ -7,6 +7,8 @@ settings after the server switches Simple mode on.
 from pathlib import Path
 import re
 import unittest
+import pytest
+from test_b241_current_ui_expectations import has
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -22,7 +24,11 @@ class SimpleVentUIContracts(unittest.TestCase):
                      "ventPanelNavClick", "ventPanelListClick"):
             with self.subTest(entry=name):
                 text = source(name)
-                gate = text.index('[ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed')
+                self.assertTrue(has(text, 'private _viewer = call ACME_fnc_controlledProvider;'))
+                self.assertTrue(has(text, 'if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};'))
+                if name != 'ventPanelOpen':
+                    self.assertTrue(has(text, 'if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};'))
+                gate = text.index('[_viewer, "ventilator", true] call ACME_fnc_procedureAllowed')
                 writes = list(re.finditer(r'_[A-Za-z0-9]+ setVariable \[', text))
                 self.assertTrue(writes)
                 self.assertLess(gate, writes[0].start())
@@ -32,8 +38,12 @@ class SimpleVentUIContracts(unittest.TestCase):
         text = source("ventPanelKnob")
         guard = text[text.index('if (_simple) then {'):text.index('// an open alarm window')]
         for flag, reset in (("editingParam", "-1"), ("editingPeep", "false"),
-                            ("editingIE", "false"), ("editingFio2", "false")):
+                            ("editingIE", "false")):
             self.assertIn(f'setVariable ["ACME_vent_{flag}", {reset}]', guard)
+        # Oxygen is the sole manual addition to Simple mode. Stale advanced
+        # editors still clear, but an authorized O2 editor must survive the dial.
+        self.assertNotIn('setVariable ["ACME_vent_editingFio2", false]', guard)
+        self.assertIn('call ACME_fnc_ventOxygenRequest', text)
         self.assertIn('_screen == "alerts"', guard)
         self.assertIn('"ACME_vent_editingAlert", -1]) == 2', guard)
         self.assertIn('setVariable ["ACME_vent_editingAlert", -1]', guard)
@@ -44,7 +54,9 @@ class SimpleVentUIContracts(unittest.TestCase):
 
     def test_direct_live_edit_keeps_rr_and_blocks_vt_and_pinsp(self):
         text = source("ventPanelLiveEdit")
-        guard = text.index('getVariable ["ACME_vent_simpleMode", false] && {_selIdx != 0}')
+        guard = text.index('getVariable ["ACME_vent_simpleMode", false]')
+        self.assertIn('ACME_vent_nivMask', text[guard:text.index('switch (_selIdx)')])
+        self.assertIn('&& {_selIdx != 0}', text[guard:text.index('switch (_selIdx)')])
         self.assertLess(guard, text.index('switch (_selIdx)'))
         self.assertIn('case 0:', text)
         self.assertIn('_vTgt setVariable ["ACME_vent_bpm", _v, true]', text)
@@ -57,7 +69,8 @@ class SimpleVentUIContracts(unittest.TestCase):
         early = router[:router.index('uiNamespace setVariable ["ACME_vent_screen"')]
         self.assertIn('_screen in ["weight", "mode", "interface"]', early)
         self.assertIn('then {"params"} else {"connect"}', early)
-        self.assertIn('_screen in ["o2", "ie", "peep"]', early)
+        self.assertIn('_screen in ["ie", "peep"]', early)
+        self.assertNotIn('_screen in ["o2", "ie", "peep"]', early)
         self.assertNotRegex(early, r'_target setVariable')
         nav = source("ventPanelNavClick")
         guard = nav.index('getVariable ["ACME_vent_simpleMode", false]')
@@ -69,10 +82,12 @@ class SimpleVentUIContracts(unittest.TestCase):
         connect = nav[nav.index('case "connect":'):nav.index('case "menu":')]
         restart = nav[nav.index('// START VENT.'):nav.index('case 1: {  // NEW PATIENT.')]
         for text in (connect, restart):
-            self.assertIn('[ACE_player, "ventilator"] call ACME_fnc_procedureAllowed', text)
-            self.assertIn('(objectParent ACE_player) isNotEqualTo (objectParent _vTgt)', text)
-            self.assertIn('(ACE_player distance _vTgt) > _leash', text)
+            self.assertTrue(has(text, 'if !([_viewer, "ventilator"] call ACME_fnc_procedureAllowed) exitWith {};'))
+            self.assertTrue(has(text, '(objectParent _viewer) isNotEqualTo (objectParent _vTgt)'))
+            self.assertTrue(has(text, '(_viewer distance _vTgt) > _leash'))
             self.assertLess(text.index('ACME_fnc_procedureAllowed'),
+                            text.index('setVariable ["ACME_vent_connected", true'))
+            self.assertLess(text.index('(_viewer distance _vTgt)'),
                             text.index('setVariable ["ACME_vent_connected", true'))
         self.assertIn('setVariable ["ACME_vent_connected", false', nav)
 
@@ -94,11 +109,40 @@ class SimpleVentUIContracts(unittest.TestCase):
         self.assertIn('call ACME_fnc_ventMinuteVolume', refresh)
         self.assertIn('_selIdx == 1 && {!_simple}', source("ventPanelLiveRefresh"))
         self.assertIn('_target ctrlEnable (!_automatic)', source("ventPanelListRefresh"))
+        self.assertIn('_screen == "params" && {_i == 0}', source("ventPanelListRefresh"))
+        self.assertIn('_screen == "params" && {!_oxygenRow}', source("ventPanelListRefresh"))
         self.assertIn('exitWith { "SIMPLE" }', source("ventModeTitle"))
         tick = source("ventPanelTick")
         self.assertIn('_peepC = _effectiveFrame select 5', tick)
         self.assertIn('_ieR = _effectiveFrame select 9', tick)
         self.assertIn('[] call ACME_fnc_ventManualBreath', source("ventPanelStripClick"))
+
+
+@pytest.mark.parametrize('name', ['ventPanelOpen', 'ventPanelKnob', 'ventPanelLiveEdit', 'ventPanelNavClick', 'ventPanelListClick'])
+def test_writer_contract_rejects_retired_global_provider_permission(monkeypatch, name):
+    real = source
+    current = real(name)
+    old = '[_viewer, "ventilator", true] call ACME_fnc_procedureAllowed'
+    assert old in current
+    broken = current.replace(old, '[ACE_player, "ventilator", true] call ACME_fnc_procedureAllowed')
+    monkeypatch.setitem(globals(), 'source', lambda entry: broken if entry == name else real(entry))
+    with pytest.raises(AssertionError):
+        SimpleVentUIContracts().test_all_patient_setting_writers_recheck_procedure_tier()
+
+
+@pytest.mark.parametrize('old,new', [
+    ('[_viewer, "ventilator"] call ACME_fnc_procedureAllowed', '[ACE_player, "ventilator"] call ACME_fnc_procedureAllowed'),
+    ('(objectParent _viewer) isNotEqualTo (objectParent _vTgt)', 'false'),
+    ('(_viewer distance _vTgt) > _leash', 'false'),
+])
+def test_connect_contract_rejects_wrong_provider_or_missing_reach(monkeypatch, old, new):
+    real = source
+    current = real('ventPanelNavClick')
+    assert old in current
+    broken = current.replace(old, new)
+    monkeypatch.setitem(globals(), 'source', lambda entry: broken if entry == 'ventPanelNavClick' else real(entry))
+    with pytest.raises(AssertionError):
+        SimpleVentUIContracts().test_connect_and_restart_honor_enable_gate_and_physical_reach()
 
 
 if __name__ == "__main__":

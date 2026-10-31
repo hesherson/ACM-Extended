@@ -1,3 +1,11 @@
+// Input cannot outlive its captured patient/device panel.
+if !([] call ACME_fnc_ventPanelContext) exitWith {};
+// Bind interaction to the clinician who owns this exact panel, including the frame before its PFH closes.
+private _viewer = call ACME_fnc_controlledProvider;
+if (isNull _viewer) exitWith {};
+private _providerPanel = uiNamespace getVariable ["ACME_vent_dlg", displayNull];
+private _boundViewer = if (isNull _providerPanel) then {objNull} else {_providerPanel getVariable ["ACME_vent_viewer", objNull]};
+if (!isNull _boundViewer && {_boundViewer isNotEqualTo _viewer}) exitWith {};
 // activate whatever the unified selection index, selidx, currently points at, on a list or menu screen. if the
 // index is within the row range it activates that row, through ventPanelListClick, and if it is in the strip
 // range it activates that strip button, through ventPanelStripClick. this is what middle-click calls, as the
@@ -85,18 +93,30 @@ if (_screen in ["weight","mode","interface","connect","menu","params","advset","
 };
 
 if (_screen == "o2") exitWith {
-    if (missionNamespace getVariable ["ACME_vent_simpleMode", false]) exitWith {
-        ["params"] call ACME_fnc_ventPanelShowScreen;
-    };
-    // the dial map: 0 is the OXYGEN value, where a middle-click toggles edit, and 1 is BACK. while editing, the dial
-    // changes the value, which the knob handles, and a middle-click commits by toggling edit off.
+    if !([_viewer, "ventilator", true] call ACME_fnc_procedureAllowed) exitWith {};
+    // The source action stays available in Simple delivery. Oxygen supply is
+    // independent of rate, volume, pressure, trigger and mode controls.
     playSound "ACME_VentClick";
     private _editing = uiNamespace getVariable ["ACME_vent_editingFio2", false];
-    if (_editing || {_selIdx == 0}) then {
-        uiNamespace setVariable ["ACME_vent_editingFio2", !_editing];
-        ["o2"] call ACME_fnc_ventPanelShowScreen;  // rebuild with the new edit highlight.
-    } else {
-        ["back"] call ACME_fnc_ventPanelNavClick;
+    private _target = uiNamespace getVariable ["ACME_vent_target", objNull];
+    private _supply = [_target] call ACME_fnc_ventOxygenState;
+    if (_editing) exitWith {
+        uiNamespace setVariable ["ACME_vent_editingFio2", false];
+        [] call ACME_fnc_ventPanelOxygenRefresh;
+    };
+    switch (_selIdx) do {
+        case 0: {
+            if (_supply select 1) then {
+                uiNamespace setVariable ["ACME_vent_fio2", (_target getVariable ["ACME_vent_fio2", 21]) max 21 min 95];
+                uiNamespace setVariable ["ACME_vent_editingFio2", true];
+            };
+            [] call ACME_fnc_ventPanelOxygenRefresh;
+        };
+        case 1: {
+            [_target, (if (_supply select 0) then {"detach"} else {"attach"}), _viewer] call ACME_fnc_ventOxygenRequest;
+            [] call ACME_fnc_ventPanelOxygenRefresh;
+        };
+        default { ["back"] call ACME_fnc_ventPanelNavClick; };
     };
 };
 

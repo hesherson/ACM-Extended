@@ -1,75 +1,49 @@
-// a local per-player pass, a pfh, over the cooler container store. it runs on each client for its ACE_player.
-// a newly-acquired cooler starts its coolant clock and gets pre-filled with its rated units of o-, the fill type.
-// while the coolant lasts, the contents are frozen, meaning cold, and nothing ages.
-// once the coolant expires, the contents warm and eventually spoil into spoiled blood in the inventory.
-// if a cooler is no longer carried, its contents are left in place, preserved in the store and never dumped to
-// inventory, so the blood stays inside the cooler and reappears when it is carried again.
-// the container contents are virtual rather than real inventory items, so the server cold-chain never
-// double-handles them.
-if !(missionNamespace getVariable ["ACME_sys_bloodChain", true]) exitWith {};  // the system toggle. fully off means this stops.
-if (!hasInterface) exitWith {};
-private _p = ACE_player;
-if (isNull _p || {!alive _p}) exitWith {};
-
-private _dt      = missionNamespace getVariable ["ACME_coolerContentsDt", 5];
-private _spoilT  = missionNamespace getVariable ["ACME_bloodLooseSpoilTime", 1200];
-private _thawIn  = missionNamespace getVariable ["ACME_coolerThawRateInside", 0.2];  // the post-coolant thaw rate inside the box, against 1.0 loose.
-private _fill    = missionNamespace getVariable ["ACME_coolerFillType", "ON"];
-private _store   = _p getVariable ["ACME_coolerStore", createHashMap];
-private _coolant = _p getVariable ["ACME_coolerCoolant", createHashMap];
-private _changed = false;
-
-private _held = (uniformItems _p) + (vestItems _p) + (backpackItems _p);
-private _heldCoolers = _held select { (_x find "ACME_BloodCooler_") == 0 };
-
-// new coolers: start the clock and the initial fill.
+/* No periodic metadata writes: timestamps age every physical carrier even in cargo.
+ * This pass only imports legacy issue items and settles actual spoilage. */
+if (!hasInterface || {!(missionNamespace getVariable ["ACME_sys_bloodChain",true])}) exitWith {};
+private _p=ACE_player;
+if (isNull _p || {!local _p}) exitWith {};
+private _seeds=_p getVariable ["ACME_bloodSeedPending",createHashMap];
 {
-    private _cc = _x;
-    if (isNil { _coolant get _cc }) then {
-        _coolant set [_cc, time];
-        private _cap = floor ((getNumber (configFile >> "CfgWeapons" >> _cc >> "ACME_coolerCapacityMl")) / 500);
-        private _contents = _store getOrDefault [_cc, []];
-        if ((count _contents) == 0 && {_cap > 0}) then {
-            for "_i" from 1 to _cap do { _contents pushBack [format ["ACM_BloodBag_%1_500", _fill], 0]; };
-            _store set [_cc, _contents];
-        };
-        _changed = true;
+    private _seed=_seeds get _x;
+    if (serverTime-(_seed select 4)>=2) then {
+        _seed set [4,serverTime];
+        ["ACME_bloodExposureRequest",["seed",_p,_seed select 0,_seed select 1,_seed select 2,_seed select 3,_seed select 5]] call CBA_fnc_serverEvent;
     };
-} forEach _heldCoolers;
-
-// age and spoil. coolers the medic is not carrying are left completely untouched: their virtual contents stay in
-// the store, so the blood stays in the cooler and is never dumped into inventory, and they are preserved until
-// the cooler is carried again, when the cold chain resumes. only a carried cooler ages and can spoil.
+} forEach (keys _seeds);
+private _pending=missionNamespace getVariable ["ACME_bloodExposurePending",createHashMap];
 {
-    private _cc = _x;
-    if (_cc in _heldCoolers) then {
-        private _contents = _store get _cc;
-        private _start = _coolant getOrDefault [_cc, time];
-        private _chain = getNumber (configFile >> "CfgWeapons" >> _cc >> "ACME_coolerColdChainTime");
-        private _cold  = (_chain <= 0) || {(time - _start) < _chain};
-        if (!_cold) then {
-            private _kept = [];
-            private _spoiled = 0;
-            {
-                _x params ["_bc", "_wt"];
-                // the coolant is gone, and the insulated box still slows the thaw. blood kept inside warms a fraction of real
-                // time, so it lasts far longer than a loose bag, which warms 1:1 outside and expires in the normal shelf life. it
-                // is a slow thaw rather than instant spoilage.
-                private _nw = _wt + (_dt * _thawIn);
-                if (_nw >= _spoilT && {missionNamespace getVariable ["ACME_bloodSpoilEnabled", true]}) then {
-                    if (_p canAdd "ACME_SpoiledBlood") then { _p addItem "ACME_SpoiledBlood"; };
-                    _spoiled = _spoiled + 1;
-                } else { _kept pushBack [_bc, _nw]; };
-            } forEach _contents;
-            _store set [_cc, _kept];
-            _changed = true;
-            if (_spoiled > 0) then { [format ["%1 unit(s) in your %2 spoiled.", _spoiled, getText (configFile >> "CfgWeapons" >> _cc >> "displayName")], 3] call ace_common_fnc_displayTextStructured; };
+    private _row=_pending get _x;
+    if ((_row select 0) isNotEqualTo _p || {serverTime-(_row select 3)>30} || {(_row select 4)!=(_p getVariable ["ACME_equipmentKitEpoch",0])} || {(_row select 5)!=(_p getVariable ["ACME_providerLocalityEpoch",0])}) then {
+        _pending deleteAt _x;
+    } else {
+        if (serverTime-(_row select 7)>=2) then {
+            _row set [7,serverTime];
+            ["ACME_bloodExposureRequest",["read",_p,_row select 2,_row select 6]] call CBA_fnc_serverEvent;
         };
     };
-} forEach (keys _store);
-
-if (_changed) then {
-    [_p, "store", _store, false] call ACME_fnc_coolerStateCommit;
-    [_p, "coolant", _coolant, false] call ACME_fnc_coolerStateCommit;
-    if (!isNull (uiNamespace getVariable ["ACME_CLR_DLG", displayNull])) then { call ACME_fnc_coolerRefresh; };
+} forEach (keys _pending);
+missionNamespace setVariable ["ACME_bloodExposurePending",_pending];
+private _base=["ACME_BloodCooler_CSWB1U","ACME_BloodCooler_CSWB2U","ACME_BloodCooler_CSWB4U"];
+{
+    if (_x in _base) then {[_p,_x] call ACME_fnc_coolerIssue;};
+} forEach ((uniformItems _p)+(vestItems _p)+(backpackItems _p));
+call ACME_fnc_coolerAutoStore;
+if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]) then {
+    private _limit=missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800];
+    {
+        _x params ["_sid","_raw"];
+        private _state=[_raw] call ACME_fnc_coolerAdvance;
+        if (((_state select 2) findIf {(_x select 1)>=_limit})>=0) then {
+            [_p,_sid,{
+                params ["_owner","_sid","_state"];
+                private _kept=[];
+                {
+                    if ((_x select 1)<(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800]) || {!([_owner,_x,false] call ACME_fnc_coolerGiveBag)}) then {_kept pushBack _x;};
+                } forEach (_state select 2);
+                _state set [2,_kept];[false,_state]
+            }] call ACME_fnc_coolerMutate;
+        };
+    } forEach ([_p] call ACME_fnc_coolerRows);
 };
+if (!isNull (uiNamespace getVariable ["ACME_CLR_DLG",displayNull])) then {call ACME_fnc_coolerRefresh;};

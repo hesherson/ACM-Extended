@@ -5,6 +5,8 @@ private _total = 0;
 private _vehicles = [];
 {
     _total = _total + ([_x, _item] call ACME_fnc_itemCount);
+    private _carrier = [_x] call ACME_fnc_carrierInventoryGet;
+    if (!isNull _carrier) then {_total = _total + ({_x == _item} count itemCargo _carrier);};
     private _vehicle = objectParent _x;
     if (!isNull _vehicle && {!(_vehicle in _vehicles)}) then {
         _vehicles pushBack _vehicle;

@@ -1,11 +1,33 @@
-params ["_patient", "_payload", ["_epoch", -1]];
+params ["_patient", "_payload", ["_epoch", -1], ["_legacyObjectSession", ""]];
 if (!local _patient) exitWith {[_patient, "restore", _this] call ACME_fnc_ownerDispatch;};
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {};
-if (_payload isEqualTo []) exitWith {[_patient] call ACME_fnc_ownerRegister;};
-private _validation = [_payload] call ACME_fnc_clinicalValidate;
+if (_payload isEqualTo []) exitWith {
+    if (count (_patient getVariable ["ACME_lineWarmerRestorePlan", []]) == 2) then {
+        [_patient, createHashMap, createHashMap, _epoch, "apply"] call ACME_fnc_lineWarmerRestore;
+    };
+    [_patient] call ACME_fnc_ownerRegister;
+};
+private _validation = [_payload, _legacyObjectSession] call ACME_fnc_clinicalValidate;
 if !(_validation select 0) exitWith {};
+private _restoreWarmers = createHashMap;
+private _restoreWarmerCustody = createHashMap;
+{
+    if ((_x select 0) == "ACME_lineWarmers") then {_restoreWarmers = [_x select 1, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;};
+    if ((_x select 0) == "ACME_lineWarmerCustody") then {_restoreWarmerCustody = [_x select 1, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;};
+} forEach (_payload select 1);
+if (count (_patient getVariable ["ACME_lineWarmerRestorePlan", []]) != 2) then {
+    [_patient, _restoreWarmers, _restoreWarmerCustody, _epoch, "prepare"] call ACME_fnc_lineWarmerRestore;
+};
 private _allowed = ((call ACME_fnc_clinicalFields) select {_x param [3, true]}) apply {_x select 0};
+// Restoring a pre-B271 episode onto an existing casualty must not borrow the
+// current casualty's marker and turn an old quiet timer into closure readiness.
+private _restoredPtx = ((_payload select 1) findIf {(_x select 0) == "ACME_ptx_state"}) >= 0;
+private _restoredObservation = ((_payload select 1) findIf {(_x select 0) == "ACME_ptx_observationRevision"}) >= 0;
+if (_restoredPtx && {!_restoredObservation}) then {
+    _patient setVariable ["ACME_ptx_observationRevision", nil, true];
+};
 private _chest = [];
+private _cardRestore = createHashMap;
 private _ettRestore = createHashMap;
 private _rocRestoreSet = false;
 private _rocRestore = false;
@@ -36,8 +58,20 @@ private _toxicityFiredRestore = createHashMap;
 {
     _x params ["_name", "_encoded"];
     if !(_name in _allowed) then {continue;};
-    private _value = [_encoded, false] call ACME_fnc_clinicalCodec;
+    // These physical identities were reconciled before native teardown. An old
+    // snapshot must not overwrite retirement evidence or create a second device.
+    if (_name in ["ACME_lineWarmers", "ACME_lineWarmerCustody"]) then {continue;};
+    private _value = [_encoded, false, "", 0, _legacyObjectSession] call ACME_fnc_clinicalCodec;
     if (isNil "_value") then {continue;};
+    // A real rebased timeline can land exactly on the legacy -1 "unset" sentinel.
+    // Tagged timestamps are known to be real clocks; retain their age with a
+    // sub-millisecond displacement instead of silently restarting disease.
+    if (_name in ["ACM_infection_Infection_EligibleTime", "ACM_infection_Infection_NextStageTime", "ACM_infection_Sepsis_Onset"]
+        && {(_encoded select 0) == "T"} && {_value == -1}) then {_value = -1.000001;};
+    if (_name in ["DD1380_Document", "DD1380_Priority", "DD1380_Checkboxes", "DD1380_Text", "DD1380_Back_Checkboxes", "DD1380_Back_Text", "DD1380_Revision"]) then {
+        _cardRestore set [_name, _value];
+        continue;
+    };
     if (_name in ["ACME_nrb_on", "ACME_nrb_hasO2", "ACME_nrb_delivering"]) then {
         _nrbRestore set [_name, _value];
         continue;
@@ -243,10 +277,34 @@ if (_calciumRestoreSet) then {
 if (_toxicityFiredRestoreSet && {_toxicityFiredRestore isEqualType createHashMap}) then {
     [_patient, "set", "", -1, _toxicityFiredRestore, true] call ACME_fnc_medicationToxicityFiredCommit;
 };
+// Restore one card generation, then rebuild all legacy mirrors from it. Incoming
+// legacy-only saves explicitly retire any pre-existing canonical document first.
+if (count _cardRestore > 0) then {
+    if ("DD1380_Document" in _cardRestore) then {
+        _patient setVariable ["DD1380_Document", _cardRestore get "DD1380_Document", true];
+    } else {
+        _patient setVariable ["DD1380_Document", nil, true];
+        {
+            _patient setVariable [_x, _cardRestore getOrDefault [_x, createHashMap], true];
+        } forEach ["DD1380_Priority", "DD1380_Checkboxes", "DD1380_Text", "DD1380_Back_Checkboxes", "DD1380_Back_Text"];
+        _patient setVariable ["DD1380_Revision", _cardRestore getOrDefault ["DD1380_Revision", 0], true];
+    };
+    if (!isNil "DD1380_card_fnc_getDocument") then {[_patient, true] call DD1380_card_fnc_getDocument;};
+};
+
 // Work resumes with fresh ownership, epochs and clocks; no old network request is replayed.
 private _jobs = _patient getVariable ["ACME_yFlushJobs", createHashMap];
-{private _j = _jobs get _x; _j set [6, CBA_missionTime]; _j set [8, _epoch];} forEach keys _jobs;
+{private _j = _jobs get _x; _j set [6, if (count _j >= 13) then {serverTime} else {CBA_missionTime}]; _j set [8, _epoch];} forEach keys _jobs;
 _patient setVariable ["ACME_yFlushJobs", _jobs, true];
+// B275 downstream equipment and priority roles resume on the restored clinical
+// episode, while their physical bag/device identities remain unchanged.
+{
+    private _field = _x;
+    private _map = _patient getVariable [_field,createHashMap];
+    {private _row = +(_map get _x); _row set [2,_epoch]; _map set [_x,_row];} forEach keys _map;
+    [_patient,_field,_map] call ACME_fnc_setVarNet;
+} forEach ["ACME_PiggybackLines"];
+[_patient, _restoreWarmers, _restoreWarmerCustody, _epoch, "apply"] call ACME_fnc_lineWarmerRestore;
 private _moves = _patient getVariable ["ACME_bagMoves", createHashMap];
 {private _m = _moves get _x; _m set [3, CBA_missionTime - 121]; _m set [4, _epoch];} forEach keys _moves;
 _patient setVariable ["ACME_bagMoves", _moves, true];
@@ -257,6 +315,11 @@ _patient setVariable ["ACME_bagMoves", _moves, true];
         if (_x isEqualTo "ACME_tbi_State") then {
             [_patient, _m] call ACME_fnc_tbiStateCommit;
         } else {
+            // The acid integrator is a maintenance clock, not accrued disease.
+            // Reset it even for older snapshots that stored the previous
+            // mission's absolute timestamp, and discard the old derived delta.
+            _m set ["acidLastTick", CBA_missionTime];
+            _m set ["acidTickDt", 0];
             [_patient, _m] call ACME_fnc_circStateCommit;
         };
     };
@@ -270,10 +333,12 @@ if (_patient getVariable ["ACME_nrb_on", false]) then {
 [_patient, -1, -1, false, true, false] call ACME_fnc_nrbStateCommit;
 _patient setVariable ["ACME_nrb_lastDrawSend", -1, false];
 _patient setVariable ["ACME_nrb_sfxWanted", nil, false];
+[_patient] call ACME_fnc_ventOxygenClear;
 _patient setVariable ["ACME_vent_driving", false, true];
 _patient setVariable ["ACME_vent_effectiveRR", 0, true];
 _patient setVariable ["ACME_clinicalLastOwner", -1, false];
 // Ordered after the reset event, from the same sender. Server owns the chest edit epoch and snapshot.
 ["ACME_clinicalChestRestore", [_patient, _chest, _epoch]] call CBA_fnc_serverEvent;
+[_patient,_payload] call ACME_fnc_aspirationRestore;
 [_patient] call ACME_fnc_ownerRegister;
 [_patient] call ace_medical_status_fnc_updateWoundBloodLoss;

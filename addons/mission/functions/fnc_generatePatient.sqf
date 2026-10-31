@@ -20,7 +20,11 @@
  * Public: No
  */
 
-params ["_object", "_location", "_initiator", "_severity", "_type", ["_singlePatient", true]];
+params ["_object", "_location", "_initiator", "_severity", "_type", ["_singlePatient", true], ["_faction", "BLUFOR"], ["_presetID", ""]];
+
+private _preset = [_presetID] call FUNC(patientPreset);
+if (_presetID == "") then {_preset = [];};
+if (_preset isNotEqualTo []) then {_severity = _preset select 2;};
 
 private _acmeRequestedSeverity = _severity;
 missionNamespace setVariable ["ACME_pendingSpawnSeverity", _acmeRequestedSeverity];
@@ -73,12 +77,35 @@ private _fnc_generateWounds = {
     [_targetPart,_mechanism,_damageAmount];
 };
 
-private _patient = GVAR(TrainingCasualtyGroup) createUnit [QGVAR(TrainingPatient), position _location, [], 0, "FORM"];
+private _patient = objNull;
+if (_faction == "Civilian") then {
+    _patient = GVAR(TrainingCasualtyGroup) createUnit [QGVAR(TrainingCivilian), position _location, [], 0, "FORM"];
+} else {
+    // Keep the legacy group contract for mission scripts; explicit UI requests
+    // use the server's west-side group and the same carrier-equipped unit class.
+    private _group = missionNamespace getVariable [QGVAR(TrainingBluforGroup), GVAR(TrainingCasualtyGroup)];
+    _patient = _group createUnit [QGVAR(TrainingPatient), position _location, [], 0, "FORM"];
+};
+if (isNull _patient || {!local _patient}) exitWith {
+    missionNamespace setVariable ["ACME_pendingSpawnSeverity", -1];
+    objNull
+};
 
 // The unit class supplies its carrier during creation. Mark the legacy armor
 // watcher complete before any treatment can remove the carrier intentionally.
 _patient setVariable ["ACME_acmSpawnerPlateCarrierDone", true, true];
 _patient setVariable ["ACME_patientSpawnerVestClass", vest _patient, true];
+_patient setVariable ["ACME_trainingCrouchOnly",true,true];
+[_patient] call FUNC(trainingPatientHold);
+_patient setVariable [QGVAR(PatientFaction), _faction, true];
+
+if (_preset isNotEqualTo []) exitWith {
+    [_patient, _preset, _location] call FUNC(applyPatientPreset);
+    if (_singlePatient) then {_object setVariable [QGVAR(ActivePatients), [_patient], true];};
+    missionNamespace setVariable ["ACME_pendingSpawnSeverity", -1];
+    _patient setVariable ["ACME_spawnSeverity", _severity, true];
+    _patient
+};
 
 _patient disableAI "MOVE";
 
@@ -94,10 +121,13 @@ _patient setVariable [QACEGVAR(medical_statemachine,AIUnconsciousness), true, tr
 _patient setVariable [QEGVAR(damage,InstantDeathImmune), true, true];
 
 private _injuryArray = [];
+_patient setVariable ["ACME_trainingSpawnInProgress", true, false];
 
 if (_severity == 0) then { // Random
     _severity =  1 + (round (random 3));
 };
+// Stamp the resolved triage tier before synchronous wound hooks, including random Priority.
+_patient setVariable ["ACME_spawnSeverity", _severity, true];
 
 private _damageMultiplier = 1;
 
@@ -132,10 +162,18 @@ for "_i" from 1 to _woundCount do {
     [_patient, _damageAmount, _targetPart, _mechanism, objNull] call ACEFUNC(medical,addDamageToUnit);
 } forEach _injuryArray;
 
+// Evaluate Priority only after ALL random hits have settled, not at the first hit.
+_patient setVariable ["ACME_trainingSpawnFinalize", true, false];
+if (_severity == 2) then {
+    [_patient, _patient getVariable ["ace_medical_openWounds", createHashMap]] call ACME_fnc_junctionalRollSpawn;
+};
+_patient setVariable ["ACME_trainingSpawnInProgress", false, false];
+_patient setVariable ["ACME_trainingSpawnFinalize", false, false];
+
 if (_singlePatient) then {
     _object setVariable [QGVAR(ActivePatients), [_patient], true];
 };
 
 missionNamespace setVariable ["ACME_pendingSpawnSeverity", -1];
-_patient setVariable ["ACME_spawnSeverity", _acmeRequestedSeverity, true];
+_patient setVariable ["ACME_spawnSeverity", _severity, true];
 _patient;

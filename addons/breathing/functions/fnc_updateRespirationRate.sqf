@@ -6,8 +6,16 @@ if (!local _unit) exitWith {_unit getVariable ["ACM_breathing_RespirationRate", 
 // Native target remains authoritative; no separate rest-baseline writer exists.
 private _base = _unit getVariable ["ACM_core_TargetVitals_RespirationRate", 18];
 private _desired = _base max 1;
+// Atomic aspiration burden composes here, once, before central-command overrides. Reading is silent.
+private _aspiration = [_unit] call ACME_fnc_aspirationState;
+if !(_aspiration isEqualTo []) then {
+    private _injury = (_aspiration select 2) max (0.85 * (_aspiration select 3));
+    _desired = _desired + ((14 * _injury) min ((45 - _desired) max 0));
+};
 private _blast = if (missionNamespace getVariable ["ACME_sys_blastLung", true]) then {_unit getVariable ["ACME_blastLung_rrDrive", -1]} else {-1};
 if (_blast > 0) then {_desired = _desired max _blast;};
+// Infection composes once with existing aspiration/blast drives; central apnea/TBI commands still outrank it.
+_desired = _desired + (_unit getVariable ["ACM_infection_RR_Adjust", 0]);
 private _overload = _unit getVariable ["ACM_circulation_Overload_Volume", 0];
 private _edemaThreshold = missionNamespace getVariable ["ACME_edema_threshold", 0.5];
 if (_overload > _edemaThreshold) then {

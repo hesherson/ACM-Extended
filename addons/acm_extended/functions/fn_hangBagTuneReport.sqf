@@ -10,4 +10,4 @@ private _text = format [
     _lineEnd,
     _lineRot
 ];
-[_text, 12, ACE_player] call ace_common_fnc_displayTextStructured;
+[_text, 12, (call ACME_fnc_controlledProvider)] call ace_common_fnc_displayTextStructured;

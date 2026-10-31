@@ -1,5 +1,6 @@
 from historical_source import read_source
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[3]
 F = ROOT / "addons/acm_extended/functions"
@@ -14,43 +15,32 @@ def fn(name: str) -> str:
     return read(F / f"fn_{name}.sqf")
 
 
+def action(name):
+    source=read(ROOT / "addons/acm_extended/config.cpp")
+    match=re.search(r'class '+re.escape(name)+r'(?:\s*:[^{;]+)?\s*\{([\s\S]*?)\n    \};',source)
+    assert match is not None, name
+    return match[1].replace("'", '\"')
+
+
 def test_dead_equipment_menu_keeps_state_driven_recovery_actions():
-    src = read(CORE / "fnc_canTreatCached.sqf")
-    start = src.index("private _deadEquipmentActions")
-    end = src.index("private _deadThoracicActions", start)
-    block = src[start:end]
-
-    for action in (
-        "ACME_VentOpenPatient",
-        "ACME_DisconnectETVent",
-        "ACME_SwapVentBattery",
-        "ACME_RemoveNRB",
-        "ACME_UnwrapHPMK",
-        "ACME_ExposeChestHPMK",
-        "ACME_CoverChestHPMK",
-        "ACME_RemoveHPMK",
-    ):
-        assert action in block
-
-    # Access is based on equipment state, not a second live-patient requirement.
-    assert '"ACME_vent_onPatient"' in block
-    assert '"ACME_vent_recovering"' in block
-    assert '"ACME_nrb_on"' in block
-    assert '"ACME_hpmk_state"' in block
-    assert "alive _target" not in block.replace("!alive _target", "")
+    policy = read(CORE / "fnc_canTreatCached.sqf")
+    assert 'toLowerANSI _bodyPart, _className] call ace_medical_treatment_fnc_canTreat' in policy
+    for name in ("ACME_VentOpenPatient", "ACME_DisconnectETVent", "ACME_SwapVentBattery",
+                 "ACME_RemoveNRB", "ACME_UnwrapHPMK", "ACME_ExposeChestHPMK",
+                 "ACME_CoverChestHPMK", "ACME_RemoveHPMK"):
+        block=action(name)
+        assert 'condition = ' in block
+        # The native condition now owns both visibility and execution; corpse access is not a separate table.
+        assert 'alive _patient &&' not in block
 
 
 def test_dead_vent_actions_only_manage_an_existing_device():
-    src = read(CORE / "fnc_canTreatCached.sqf")
-    start = src.index('case "ACME_VentOpenPatient"')
-    end = src.index('case "ACME_RemoveNRB"', start)
-    block = src[start:end]
-
+    block=action("ACME_VentOpenPatient")
     assert '"ACME_vent_onPatient", false' in block
     assert '"ACME_vent_recovering", false' in block
     assert '"ACME_vent_circuit", false' in block or '"ACME_vent_configured", false' in block
-    # Never turn corpse access into a way to deploy a new spare ventilator.
-    assert '"ACME_Ventilator"' not in block
+    # The corpse panel opens only its mounted device; the explicit connect action acquires a new device.
+    assert 'alive _patient || {_patient getVariable ["ACME_vent_onPatient", false]}' in block
 
     disconnect = fn("ventDisconnectPatient")
     custody = fn("ventCustodyRequest")
@@ -78,18 +68,11 @@ def test_dead_nrb_stops_flow_without_deleting_the_mask():
 
 
 def test_dead_hpmk_state_can_be_exposed_unwrapped_and_recovered():
-    cached = read(CORE / "fnc_canTreatCached.sqf")
-    start = cached.index("private _deadEquipmentActions")
-    end = cached.index("private _deadThoracicActions", start)
-    block = cached[start:end]
-    for state, action in (
-        ('_hpmkState in ["wrapped", "exposed"]', "ACME_UnwrapHPMK"),
-        ('_hpmkState == "wrapped"', "ACME_ExposeChestHPMK"),
-        ('_hpmkState == "exposed"', "ACME_CoverChestHPMK"),
-        ('_hpmkState == "prepped"', "ACME_RemoveHPMK"),
-    ):
-        assert action in block
-        assert state in block
+    for name, state in (("ACME_UnwrapHPMK", "wrapped"), ("ACME_ExposeChestHPMK", "wrapped"),
+                        ("ACME_CoverChestHPMK", "exposed"), ("ACME_RemoveHPMK", "prepped")):
+        block=action(name)
+        assert state in block and 'ACME_hpmk_state' in block
+        assert 'alive _patient' not in block
 
     for name in ("hpmkUnwrap", "hpmkExposeChest", "hpmkCoverChest", "hpmkRemove"):
         src = fn(name)

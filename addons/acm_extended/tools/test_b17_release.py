@@ -33,11 +33,13 @@ class B17Release(unittest.TestCase):
         io=read('functions/fn_ioPainResponse.sqf'); th=read('functions/fn_thoraMouseUp.sqf')
         # IO placement/medication pain itself never hard-drops consciousness. Fluid through an IO
         # deliberately schedules one delayed owner-local syncope episode under the later B115 contract.
-        placement=io[io.index('if (_mode == "placement") exitWith'):io.index('// Actual IO flow')]
+        placement=io[io.index('if (_mode == "placement") exitWith'):io.index('// Actual admitted IO fluid')]
         self.assertNotIn('setUnconscious',placement)
         self.assertIn('adjustPainLevel',placement)
-        self.assertIn('if (_mode == "fluid" && {!_isUncon}) then {',io)
-        self.assertIn('ACME_ioSyncopeToken',io)
+        self.assertIn('if (_mode != "fluid") exitWith {};',io)
+        self.assertIn('_episode = [_lineGeneration, !_isUncon, false];',io)
+        self.assertIn('if (!_eligible || {_consumed}) exitWith {};',io)
+        self.assertIn('_episode set [2, true];',io)
         self.assertIn('ace_medical_fnc_setUnconscious',io)
         # Thoracostomy incision pain remains pain-only.
         block=th[th.index('// Incision pain is real'):th.index('// the score:')]

@@ -20,6 +20,8 @@ params ["_patient", "_active"];
 private _acmeBinding = "NA4:onCardiacArrest";
 if (_patient getVariable ["ACME_clinicalRestoring", false]) exitWith {};
 
+[_patient, _active] call ACME_fnc_seizureArrestTrack;
+
 if ((_patient getVariable [QEGVAR(circulation,Cardiac_RhythmState), ACM_Rhythm_Sinus]) == ACM_Rhythm_Asystole || !_active) exitWith {};
 
 [_patient] call EFUNC(circulation,updateCirculationState);

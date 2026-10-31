@@ -5,6 +5,20 @@
  * sequencing and CBA registration order are preserved.
  */
 
+["ACME_bloodExposureRequest", {_this call ACME_fnc_bloodExposureBroker;}] call CBA_fnc_addEventHandler;
+["ACME_bloodExposureReply", {_this call ACME_fnc_bloodExposureReply;}] call CBA_fnc_addEventHandler;
+["ACME_coolerTake4U", {_this call ACME_fnc_coolerTake4UBroker;}] call CBA_fnc_addEventHandler;
+["ACME_coolerTake4UDone", {
+    params ["_owner","_request","_ok",["_reason",""],["_terminal",true]];
+    if (isNull _owner || {!local _owner}) exitWith {};
+    private _pending=_owner getVariable ["ACME_coolerTake4UPending",[]];
+    if (count _pending<5 || {(_pending select 4)!=_request}) exitWith {};
+    if (_terminal) then {_owner setVariable ["ACME_coolerTake4UPending",[],true];};
+    if (_ok) then {[_owner,"cooler"] call ACME_fnc_inventoryLedgerMarkIncoming;[_owner] call ACME_fnc_inventoryLedgerReconcile;};
+    if (hasInterface && {_owner isEqualTo ACE_player} && {_reason!=""}) then {[_reason,3] call ace_common_fnc_displayTextStructured;};
+}] call CBA_fnc_addEventHandler;
+call ACME_fnc_coolerPersistenceInit;
+
 // blood fridge.
 // the server tick drives the auto open and close of every fridge, from the viewer pings, and the daily
 // restock.
@@ -17,49 +31,61 @@ if (isServer) then {
 // most once.
 ["ACME_bfViewPing", {
     params ["_anchor", "_player"];
-    if (isNull _anchor || isNull _player) exitWith {};
+    if (!isServer || {isNull _anchor} || {isNull _player} || {!alive _player}
+        || {_player distance _anchor > 4.5} || {!(_anchor getVariable ["ACME_bloodFridge", false])}) exitWith {};
     private _v = _anchor getVariable ["ACME_bf_viewers", createHashMap];
     _v set [netId _player, diag_tickTime];
     _anchor setVariable ["ACME_bf_viewers", _v];
 }] call CBA_fnc_addEventHandler;
 ["ACME_bfViewStop", {
     params ["_anchor", "_player"];
-    if (isNull _anchor || isNull _player) exitWith {};
+    if (!isServer || {isNull _anchor} || {isNull _player}) exitWith {};
     private _v = _anchor getVariable ["ACME_bf_viewers", createHashMap];
     _v deleteAt (netId _player);
     _anchor setVariable ["ACME_bf_viewers", _v];
 }] call CBA_fnc_addEventHandler;
 
-// take. the owner is authoritative over the count, so decrement here, then hand the unit to the machine of the
-// taker. if the taker carries a cooler, the existing cold-chain ledger covers the taken unit by volume
-// automatically, at no spoilage cost.
-["ACME_bfTake", {
-    params ["_anchor", "_class", "_player"];
-    if (isNull _anchor || isNull _player) exitWith {};
-    private _stock = _anchor getVariable ["ACME_bf_stock", []];
-    private _i = _stock findIf { (_x # 0) == _class };
-    if (_i < 0 || {(_stock # _i # 1) <= 0}) exitWith {
-        ["The fridge is out of that blood type.", 2] remoteExec ["ace_common_fnc_displayTextStructured", _player];
+// Stock authority stays on the server even if engine ownership of a furniture object changes.
+["ACME_bfTake", {_this call ACME_fnc_bloodFridgeTakeOwner;}] call CBA_fnc_addEventHandler;
+["ACME_bfGive", {_this call ACME_fnc_bloodFridgeReceive;}] call CBA_fnc_addEventHandler;
+["ACME_bfDeliveryAck", {
+    params ["_anchor","_player","_token","_class","_sender"];
+    if (!isServer || {isNull _player} || {count _token!=2}) exitWith {};
+    private _key=format ["%1:%2:%3",netId _player,_token select 0,_token select 1];
+    private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+    private _grant=_serverGrants getOrDefault [_key,[]];
+    if (count _grant<7 || {(_grant select 0) isNotEqualTo _player} || {(_grant select 1) isNotEqualTo _token}
+        || {(_grant select 2)!=_class} || {(_grant select 5) isNotEqualTo _anchor}) exitWith {};
+    // Cosmetic/public fridge receipts never authorize delivery. Only the exact
+    // generic journal's terminal native-placement proof can retire this stock.
+    private _journal=(missionNamespace getVariable ["ACME_resourceReturns",createHashMap]) getOrDefault [_grant select 6,[]];
+    if (count _journal<11 || {(_journal select 4)!="delivered"}) exitWith {};
+    _grant set [3,"delivered"];_serverGrants set [_key,_grant];missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
+    if (!isNull _anchor) then {
+        private _grants=_anchor getVariable ["ACME_bf_grants",createHashMap];_grants set [_key,_grant];_anchor setVariable ["ACME_bf_grants",_grants];
     };
-    private _e = +(_stock # _i);
-    _e set [1, (_e # 1) - 1];
-    _stock set [_i, _e];
-    _anchor setVariable ["ACME_bf_stock", _stock, true];
-    ["ACME_bfGive", [_class], _player] call CBA_fnc_targetEvent;
+    private _pending=_player getVariable ["ACME_bf_pendingGrants",createHashMap];
+    _pending deleteAt _key;_player setVariable ["ACME_bf_pendingGrants",_pending,true];
 }] call CBA_fnc_addEventHandler;
-["ACME_bfGive", {
-    params ["_class"];
-    // addtoinventory returns [addedtounit, weaponholder] and drops to a ground holder itself when there is no
-    // room.
-    [ACE_player, _class] call ace_common_fnc_addToInventory;
-    [format ["Took %1 from the blood fridge.", getText (configFile >> "CfgWeapons" >> _class >> "displayName")], 2] call ace_common_fnc_displayTextStructured;
+["ACME_bfTakeStop", {
+    params ["_anchor", "_player", "_token"];
+    if (!isServer || {isNull _anchor} || {isNull _player}) exitWith {};
+    private _takers = _anchor getVariable ["ACME_bf_takers", createHashMap];
+    private _key = netId _player;
+    if !(((_takers getOrDefault [_key, []]) param [1, []]) isEqualTo _token) exitWith {};
+    _takers deleteAt _key;
+    // Only retire this taker's browse entry. Another viewer/taker keeps the door open.
+    private _viewers = _anchor getVariable ["ACME_bf_viewers", createHashMap];
+    _viewers deleteAt _key;
+    call ACME_fnc_bloodFridgeTick;
 }] call CBA_fnc_addEventHandler;
 
 // client. while the world interaction menu is open, poll the selected target and ping any fridge it lands
 // on.
 ["ace_interactMenuOpened", {
     params ["_menuType"];
-    if (_menuType != 1) exitWith {};
+    // ACE world interaction is 0; 1 is self-interaction and never selects the fridge.
+    if (_menuType != 0) exitWith {};
     if (!isNil "ACME_bf_pollPFH") exitWith {};
     ACME_bf_pollPFH = [{ call ACME_fnc_bloodFridgeMenuPoll }, 0.2, []] call CBA_fnc_addPerFrameHandler;
 }] call CBA_fnc_addEventHandler;
@@ -69,7 +95,7 @@ if (isServer) then {
     ACME_bf_pollPFH = nil;
     private _lf = ACE_player getVariable ["ACME_bf_lastFridge", objNull];
     if (!isNull _lf) then {
-        ["ACME_bfViewStop", [_lf, ACE_player], _lf] call CBA_fnc_targetEvent;
+        ["ACME_bfViewStop", [_lf, ACE_player]] call CBA_fnc_serverEvent;
         ACE_player setVariable ["ACME_bf_lastFridge", objNull];
     };
 }] call CBA_fnc_addEventHandler;
@@ -132,11 +158,7 @@ if (isServer) then {
 // react the instant the kit of a player changes, on an arsenal close, a pickup or a hand-off. this nudges a
 // no-age server pass, so a new cooler fills and new blood is stamped promptly. it needs remoteexec of ACME
 // functions to be permitted.
-// when a wholesale loadout is applied, an arsenal load or a setUnitLoadout on the same unit rather than a
-// single item pickup, a cooler in that loadout is a fresh unit. so this clears the per-player coolant clock and
-// virtual store and lets the contents tick re-stock it with full coolant. respawn already makes a fresh unit
-// with no clock, so that path is fine on its own. it tells a full load from looting by counting how many
-// top-level loadout slots change at once. a single pickup touches one and a full load touches several.
+// Physical cooler tokens, rather than loadout-shape heuristics, own contents and clocks.
 ["loadout", {
     // Loadout can fire several times during one arsenal/loadout transaction. Coalesce the client->server cold-chain
     // nudge before it enters the network; the server already performs its own second-stage coalescing.
@@ -146,20 +168,9 @@ if (isServer) then {
         uiNamespace setVariable ["ACME_ccNudgeSentAt", _nudgeNow];
         remoteExecCall ["ACME_fnc_bloodColdChainNudge", 2];
     };
-    [] call ACME_fnc_coolerAutoStore;
+    [{call ACME_fnc_coolerContentsTick;call ACME_fnc_coolerAutoStore;},[]] call CBA_fnc_execNextFrame;
     private _p = ACE_player;
     if (!isNull _p) then {
-        private _new = getUnitLoadout _p;
-        private _old = _p getVariable ["ACME_lastLoadoutSig", []];
-        _p setVariable ["ACME_lastLoadoutSig", _new];
-        if (_old isNotEqualTo []) then {
-            private _diffs = 0;
-            { if !((_new param [_x, []]) isEqualTo (_old param [_x, []])) then { _diffs = _diffs + 1; }; } forEach [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            if (_diffs >= 3) then {
-                [_p, "coolant", createHashMap, true] call ACME_fnc_coolerStateCommit;
-                [_p, "store", createHashMap, true] call ACME_fnc_coolerStateCommit;
-            };
-        };
         // ventilator boot re-arm. if the ventilator was reloaded, transferred or moved, and any loadout change is
         // signal enough that the device left and re-entered the kit, this re-arms the startup sequence so the next open
         // plays boot again. a preset self-open would otherwise skip boot, and this is what makes it replay.

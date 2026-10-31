@@ -14,9 +14,9 @@ def test_seal_placement_is_exact_unarmed_medic3_for_265_seconds():
     assert 'case "chestSeal": {"AinvPknlMstpSnonWnonDnon_medic3"};' in pose
     assert '[_medic, "chestSeal", _duration, _patient] call ACME_fnc_treatmentPoseStart' in apply
     assert 'private _endsAt = diag_tickTime + _duration;' in apply
-    assert '[_m, "AinvPknlMstpSnonWnonDnon_medic3", 1] call ACME_fnc_doAnim;' in apply
-    assert '_asserts < 3' in apply
-    assert '[_m, "chestSeal", _epoch, true] call ACME_fnc_treatmentPoseStop;' in apply
+    assert 'call ACME_fnc_doAnim' not in apply
+    assert 'uiNamespace setVariable ["ACME_CS_ApplyPFH", -1];' in apply
+    assert '[_m, "chestSeal", _epoch, _restoreWorkspace] call ACME_fnc_treatmentPoseStop;' in apply
     assert '}, [_medic, _patient, _placeEpoch, _serial], _duration] call CBA_fnc_waitAndExecute;' in apply
     assert '[_m, _p] call ACME_fnc_chestSealProviderHoldStart' in apply
 
@@ -25,7 +25,7 @@ def test_medic1_is_ncd_only_not_chest_seal_apply():
     apply = read("fn_chestSealApply.sqf")
     ncd = read("fn_chestSealApplyNCD.sqf")
     assert 'case "ncdSeat": {"AinvPknlMstpSnonWnonDnon_medic1"};' in pose
-    assert '[_medic,"ncdSeat",2.0] call ACME_fnc_treatmentGesture' in ncd
+    assert '[_medic,"ncdSeat",2.0,_patient] call ACME_fnc_treatmentGesture' in ncd
     assert 'call ACME_fnc_treatmentGesture' not in apply
     assert '[_medic,"ncdSeat"' not in apply
     assert '[_medic, "ncdSeat"' not in apply

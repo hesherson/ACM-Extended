@@ -17,4 +17,5 @@
 
 params ["_patient"];
 
-alive (_patient getVariable [QACEGVAR(medical,CPR_provider), objNull])
+private _provider = _patient getVariable [QACEGVAR(medical,CPR_provider),objNull];
+alive _provider && {!(_provider getVariable ["ACE_isUnconscious",false])}

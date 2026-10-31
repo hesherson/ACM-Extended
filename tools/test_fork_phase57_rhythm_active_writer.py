@@ -18,9 +18,13 @@ for rel in (
  'addons/acm_extended/functions/fn_megacodeScenarioTick.sqf',
  'addons/acm_extended/functions/fn_megacodeResetUnit.sqf',
  'addons/acm_extended/functions/fn_megacodeSpawn.sqf',
- 'addons/acm_extended/functions/fn_registerRhythmLifecycleRuntime.sqf',
+ 'addons/acm_extended/functions/fn_respawnClinicalReset.sqf',
 ):
     assert 'ACME_fnc_rhythmActiveCommit' in read(rel), rel
+from current_source_contracts import _has
+respawn=read('addons/acm_extended/functions/fn_registerRhythmLifecycleRuntime.sqf')
+assert _has(respawn, '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;')
+assert _has(respawn, '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;')
 viol=[]
 for p in (EXT/'functions').rglob('*.sqf'):
     if p.name=='fn_rhythmActiveCommit.sqf': continue

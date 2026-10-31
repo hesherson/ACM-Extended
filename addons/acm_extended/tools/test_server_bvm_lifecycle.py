@@ -13,6 +13,7 @@ F = ROOT / 'addons/breathing/functions'
 def source(name):
     s = (F / f'fnc_{name}.sqf').read_text()
     s = re.sub(r'^#include.*$', '', s, flags=re.M)
+    s = s.replace("isMultiplayer", "false")  # Explicit single-player engine boundary.
     for macro, prefix, quote in [('QEGVAR', 'ACM', True), ('EGVAR', 'ACM', False), ('ACEGVAR', 'ace', False)]:
         s = re.sub(r'\b' + macro + r'\((\w+),\s*(\w+)\)', lambda m: ('"' if quote else '') + f'{prefix}_{m[1]}_{m[2]}' + ('"' if quote else ''), s)
     for macro, prefix, quote in [('QGVAR', 'ACM_breathing_', True), ('GVAR', 'ACM_breathing_', False), ('FUNC', 'ACM_breathing_fnc_', False)]:
@@ -35,10 +36,20 @@ def source(name):
         'addMissionEventHandler ["HandleDisconnect",': '_disconnectHandler = (["HandleDisconnect",',
     }.items():
         s = s.replace(a, b)
+    s = s.replace('isNull _medicVehicle', '(_medicVehicle isEqualTo objNull)')
     if name == 'registerBVMRuntime':
         s = s.replace('    }];\n    _disconnectHandler', '    }] select 1);\n    _disconnectHandler')
         s = s.replace('        false\n    }];', '        false\n    }] select 1);')
     return s
+
+
+def contact_source():
+    from test_menu_death_lifecycle import adapt
+    text=(ROOT/'addons/acm_extended/functions/fn_patientInteractionContact.sqf').read_text()
+    text=text.replace('objectParent _medic','_medicVehicle').replace('objectParent _patient','_patientVehicle')
+    text=text.replace('_medic distance _patient','_distance')
+    text=re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',text)
+    return 'ACME_fnc_patientInteractionDistance={_distance};ACME_fnc_flightAirframe={objNull};ACME_fnc_patientInteractionContact={'+adapt(text)+'};'
 
 
 def execute(scenario, runtime=False):
@@ -94,6 +105,7 @@ def execute(scenario, runtime=False):
         CBA_fnc_addPlayerEventHandler = {_unitHandler = _this select 1;};
         private _check = {if !(_this select 0) then {_ok = false; diag_log ("SERVER_FIX_FAIL " + (_this select 1));};};
     '''
+    code += contact_source()
     for name in ('bvmSessionValid', 'bvmRelease', 'bvmCleanupLocal', 'registerBVMRuntime'):
         code += f'ACM_breathing_fnc_{name} = {{' + source(name) + '};\n'
     if runtime:
@@ -190,7 +202,50 @@ def test_native_reservation_does_not_depend_on_clock_or_cleanup_token():
         _medic setVariable ["ACM_breathing_BVM_epoch", -1];
         CBA_missionTime = 100000;
         [[_medic,_patient] call ACM_breathing_fnc_bvmSessionValid,"native reservation depended on extra replicated state"] call _check;
-        [count _handlers == 0,"server installed an expiry watchdog"] call _check;
+        // The single server worker only checks owner changes; time cannot expire paused BVM.
+        [count _handlers == 1,"server must install exactly one tracked-owner check"] call _check;
+        private _watch = (_handlers select 0) select 0;
+        call _watch;
+        [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo _medic,
+            "paused session expired solely because time advanced"] call _check;
+    ''', runtime=True)
+
+
+def test_owner_transfer_releases_original_bvm_episode_without_provider_callback():
+    execute('''
+        _testOwner = 8;
+        private _watch = (_handlers select 0) select 0;
+        call _watch;
+        [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo objNull,
+            "old owner retained BVM patient claim"] call _check;
+        [(_patient getVariable ["ACM_breathing_BVM_session",[]]) isEqualTo [],
+            "old owner retained BVM episode token"] call _check;
+        [count ACM_breathing_BVM_Sessions == 0,
+            "retired BVM session remained in server owner registry"] call _check;
+    ''', runtime=True)
+
+
+def test_owner_check_cannot_release_replacement_bvm_session():
+    execute('''
+        _patient setVariable ["ACM_breathing_BVM_session", [_medic,5]];
+        _testOwner = 8;
+        private _watch = (_handlers select 0) select 0;
+        call _watch;
+        [(_patient getVariable ["ACM_breathing_BVM_session",[]]) isEqualTo [_medic,5],
+            "old ownership record cleared new BVM episode"] call _check;
+        [(_patient getVariable ["ACM_breathing_BVM_Medic",objNull]) isEqualTo _medic,
+            "old record cleared replacement provider"] call _check;
+    ''', runtime=True)
+
+
+def test_normal_bvm_completion_prunes_server_tracking_record():
+    execute('''
+        [_medic,_patient,4] call ACM_breathing_fnc_bvmRelease;
+        CBA_missionTime=24;
+        private _watch = (_handlers select 0) select 0;
+        call _watch;
+        [count ACM_breathing_BVM_Sessions == 0,
+            "finished session stranded an owner watcher entry"] call _check;
     ''', runtime=True)
 
 

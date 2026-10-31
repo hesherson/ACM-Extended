@@ -11,9 +11,13 @@
  * 4: Is IV? <BOOL>
  * 5: Access Site <NUMBER>
  * 6: Is Fresh Blood? <BOOL>
+ * 7: Stage prepared carrier without publishing/activating it? <BOOL>
+ * 8: Optional fresh-blood registry entry <ARRAY>
+ * 9: Optional immutable fresh-blood metadata <ARRAY>
  *
  * Return Value:
- * None
+ * Stable bag UID <STRING> on the owner; remote calls dispatch an event.
+ * A staged carrier must be completed or rolled back by its prepared-attach caller.
  *
  * Example:
  * [player, "RightArm", "BloodIV", 1, true, 0, false] call ace_medical_treatment_fnc_ivBagLocal
@@ -21,7 +25,7 @@
  * Public: No
  */
 
-params ["_patient", "_bodyPart", "_classname", "_accessType", ["_iv", true], "_accessSite", ["_freshBlood", false], ["_deferPremixed", false], ["_freshBloodEntryNet", []]];
+params ["_patient", "_bodyPart", "_classname", "_accessType", ["_iv", true], "_accessSite", ["_freshBlood", false], ["_deferPremixed", false], ["_freshBloodEntryNet", []], ["_freshMetadata", []]];
 
 if (!local _patient) exitWith {["ace_medical_treatment_ivBagLocal", _this, _patient] call CBA_fnc_targetEvent;};
 private _partIndex = ALL_BODY_PARTS find toLowerANSI _bodyPart;
@@ -32,24 +36,36 @@ private _IVBagsBodyPart = _IVBags getOrDefault [_bodyPart, []];
 
 private _donorBloodType = -1;
 private _isFBTK = false;
+private _freshFailed = false;
 
 switch (true) do {
     case (_freshBlood): {
-        (_classname splitString "_") params ["", "_volume", "_id"];
+        private _parts = _classname splitString "_";
+        if (count _parts != 3 || {(_parts select 0) != "FreshBloodBag"}
+            || {!((_parts select 1) in ["250","500"])}) exitWith {_freshFailed = true;};
+        _parts params ["", "_volume", "_id"];
         private _idNum = parseNumber _id;
-        private _freshEntry = [_idNum] call EFUNC(circulation,getFreshBloodEntry);
+        if (_idNum < 0 || {_idNum > 512} || {_idNum != floor _idNum}
+            || {str _idNum != _id}) exitWith {_freshFailed = true;};
+        private _freshEntry = [_idNum,_freshMetadata] call ACME_fnc_freshBloodResolve;
 
         // MP/JIP robustness: the target event can beat the public registry update to the patient owner. The medic
         // includes the exact donor entry with the treatment event; use it immediately and repair the local/public
         // registry so later metabolism, labels and locality migrations all see the same donor metadata.
-        if !(_freshEntry isEqualType [] && {count _freshEntry >= 3}) then {
-            if (_freshBloodEntryNet isEqualType [] && {count _freshBloodEntryNet >= 3}) then {
+        if (_freshMetadata isEqualTo [] && {_freshEntry isEqualTo []}) then {
+            if (_freshBloodEntryNet isEqualType [] && {count _freshBloodEntryNet >= 5}
+                && {(_freshBloodEntryNet select 3) isEqualType true}
+                && {(_freshBloodEntryNet select 4) isEqualType 0} && {finite (_freshBloodEntryNet select 4)}
+                && {([-1,["freshV1",_freshBloodEntryNet select 3,_freshBloodEntryNet select 4,_freshBloodEntryNet select 2]] call ACME_fnc_freshBloodResolve) isNotEqualTo []}) then {
                 _freshEntry = +_freshBloodEntryNet;
                 private _freshList = missionNamespace getVariable [QEGVAR(circulation,FreshBloodList), createHashMap];
                 _freshList set [_idNum, _freshEntry];
                 missionNamespace setVariable [QEGVAR(circulation,FreshBloodList), _freshList, true];
             };
         };
+        if (_freshEntry isEqualTo []) exitWith {_freshFailed = true;};
+        // Capture donor provenance on this bag; never consult a later reused ID.
+        _freshMetadata = ["freshV1",_freshEntry select 3,_freshEntry select 4,_freshEntry select 2];
 
         private _bloodType = _freshEntry param [2, -1];
         _donorBloodType = _bloodType;
@@ -76,6 +92,7 @@ switch (true) do {
         _IVBagsBodyPart pushBack [_type, _volume, _accessType, _accessSite, _iv, _bloodType, _volume]; // ["Saline", 1000, ACM_IV_16G_M, 0, false, -1, 1000]
     };
 };
+if (_freshFailed) exitWith {""};
 
 // NA3: assign identity before publishing this new bag, preserving all native tuple fields.
 private _newBag = _IVBagsBodyPart select ((count _IVBagsBodyPart) - 1);
@@ -83,9 +100,17 @@ if (count _newBag < 8) then {_newBag set [7, -1];};
 private _sequence = (_patient getVariable ["ACME_bagSequence", 0]) + 1;
 _patient setVariable ["ACME_bagSequence", _sequence, true];
 _newBag set [8, format ["%1:%2:%3:%4", netId _patient, [_patient] call ACME_fnc_clinicalEpoch, clientOwner, _sequence]];
+// Manufacturer capacity remains fixed when a later medication injection adds diluent.
+_newBag set [9,_newBag param [6,0]];
+if (_freshBlood) then {_newBag set [10,+_freshMetadata];};
+// Replace the physical empty limb before publishing, including native Add Bag paths that bypass yRefill.
+_IVBagsBodyPart = [_IVBagsBodyPart, (count _IVBagsBodyPart) - 1] call ACME_fnc_yBagReplaceEmpty;
 _IVBags set [_bodyPart, _IVBagsBodyPart];
 
-_patient setVariable [QEGVAR(circulation,IV_Bags), _IVBags, true];
+// Prepared medication attachment stages the carrier owner-locally. It must not
+// publish or activate a plain saline bag before its medication records exist.
+[_patient, _IVBags, !_deferPremixed] call EFUNC(circulation,setIVBagsState);
+if (_deferPremixed) exitWith {_newBag select 8};
 _patient setVariable [QEGVAR(circulation,IV_Bags_Active), true, true];
 
 [_patient, _bodyPart] call EFUNC(circulation,updateActiveFluidBags);

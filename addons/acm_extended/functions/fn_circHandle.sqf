@@ -41,40 +41,8 @@ private _patients = ACME_circ_activePatients + ACME_tbi_activePatients + (missio
     if (!isNull _x && {alive _x} && {local _x}) then {_patients pushBackUnique _x};
 } forEach (ACME_infusion_activePatients select {!isNull _x});
 
-// keep acidosis and PaCO2 ticking even when the casualty falls out of an ACME active array. cardiac arrest,
-// unconscious airway failure, severe hypoventilation, existing acidosis, TBI, active iv fluids and saline
-// reservoir changes all need a continuous physiology tick.
-{
-    private _u = _x;
-    if (isNull _u || {!alive _u} || {!local _u}) then { continue };
-
-    private _circState = _u getVariable ["ACME_circ_State", createHashMap];
-    private _arrest = _u getVariable ["ace_medical_inCardiacArrest", false];
-    private _uncon = _u getVariable ["ACE_isUnconscious", false];
-    private _rr = _u getVariable ["ACM_breathing_RespirationRate", 18];
-    private _rrTarget = _u getVariable ["ACM_core_TargetVitals_RespirationRate", 16];
-    if (_rrTarget <= 6) then { _rrTarget = 16 };
-
-    private _needsAcidTick =
-        _arrest ||
-        {_u getVariable ["ACME_vent_connected", false]} ||
-        {_u getVariable ["ACME_ETT_Inserted", false]} ||
-        {_u getVariable ["ACME_nrb_on", false]} ||
-        {(_u getVariable ["ACME_blastLung_State", 0]) > 0} ||
-        {count (_u getVariable ["ace_medical_medications", []]) > 0} ||
-        {count (_u getVariable ["ACME_yFlushJobs", createHashMap]) > 0} ||
-        {_uncon} ||
-        {[_circState] call _circStateNeedsTick} ||
-        {_u getVariable ["ACME_tbi_HasTBI", false]} ||
-        {_rr < (_rrTarget * 0.85)} ||
-        {(_u getVariable ["ACME_circ_salineGivenMl", 0]) > 0} ||
-        {(_u getVariable ["ACM_circulation_Saline_Volume", 0]) > 0} ||
-        {(_u getVariable ["ACME_lido_serumLevel", 0]) > 0.05} ||
-        {(_u getVariable ["ACME_lido_seizureState", ""]) != ""} ||
-        {count (_u getVariable ["ACM_circulation_IV_Bags", createHashMap]) > 0};
-
-    if (_needsAcidTick) then { _patients pushBackUnique _u };
-} forEach (missionNamespace getVariable ["ACME_clinical_ownedUnits", []]);
+// B246: missed-transition discovery is centralized in ACME_fnc_idlePhysDiscovery.
+ // This 4 Hz clinical worker never scans the complete owner registry.
 
 _patients = _patients arrayIntersect _patients;
 
@@ -107,10 +75,36 @@ private _getMedEffect = {
     _v
 };
 
+// Observe actual worker membership rather than relying on every treatment
+// producer to call ownerRegister. A stopped infusion can retire between passes.
+private _previous = missionNamespace getVariable ["ACME_clinicalMaintenancePatients", []];
+private _completed = [];
 {
     private _patient = _x;
     if (isNull _patient || {!alive _patient} || {!local _patient}) then {continue};
 
+    if ((_patient getVariable ["ACME_clinicalMaintenanceDormant", false])
+        || {!(_patient in _previous) && {!isNil {_patient getVariable "ACME_clock_clinicalMaintenance"}}}) then {
+        // No dormant interval belongs to a newly admitted dose or reattached
+        // device. First re-entry has zero elapsed time; ordinary active passes
+        // retain their original bounded clocks and active registration is inert.
+        {
+            _patient setVariable ["ACME_clock_" + _x, CBA_missionTime, false];
+            _patient setVariable ["ACME_clock_" + _x + "_owner", clientOwner, false];
+        } forEach ["clinicalMaintenance", "rocuronium", "ventDrive", "blastLung", "hcCirc", "hcVent", "sealOcclusion", "ptx", "ettMainstem", "ncdLeak"];
+        _patient setVariable ["ACME_clock_ncdLeakPending", 0, false];
+        if (!isNil {_patient getVariable "ACME_vent_battLastT"}
+            || {_patient getVariable ["ACME_vent_connected", false]}) then {
+            _patient setVariable ["ACME_vent_battLastT", CBA_missionTime, false];
+        };
+        private _resumeState = _patient getVariable ["ACME_circ_State", createHashMap];
+        if (_resumeState isEqualType createHashMap && {count _resumeState > 0}) then {
+            _resumeState set ["acidLastTick", CBA_missionTime];
+            [_patient, _resumeState, false] call ACME_fnc_circStateCommit;
+        };
+        _patient setVariable ["ACME_clinicalMaintenanceDormant", false, false];
+    };
+    _completed pushBack _patient;
     private _dt = [_patient, "clinicalMaintenance", 0.25, 5] call ACME_fnc_clinicalTickDelta;
     // Consume only newly admitted mass even when custom circulation is disabled: never replay old doses.
     private _deliveredRates = [_patient,_dt] call ACME_fnc_medicationDriveTick;
@@ -132,9 +126,8 @@ private _getMedEffect = {
     // running ventilator. if this patient is intubated, configured and connected to a running vent, the vent
     // breathes for them and keeps ACM's BVM oxygenation alive at the set rate and FiO2. that matters most for a
     // paralyzed, apneic casualty.
-    // order matters. altitude runs first, because it publishes the ambient pressure ratio the oxygenation model of
-    // the ventilator needs. run it the other way round and the vent computes a saturation that altitude then
-    // overwrites a few lines later, which silently throws away the whole shunt model on any terrain above 500 m.
+    // The independent flight worker samples pressure before this worker. Oxygen writers also resolve exposure
+    // directly, so healthy players and a teleport between scheduler passes use the same current pressure.
     // the tick delta is resolved before any sub-tick runs. it used to be computed further down, after the
     // ventilator ticks below were called. because call runs in the caller's scope, fn_ventdrivetick reads _dt
     // straight out of here. with the definition below the calls it was reading an undefined variable, erroring out
@@ -164,7 +157,6 @@ private _getMedEffect = {
     _state set ["acidTickDt", _acidDt];
 
     [_patient] call ACME_fnc_vomitDislodgeOPA;
-    [_patient] call ACME_fnc_altitudeTick;
     [_patient] call ACME_fnc_ventLeashTick;
     // slow air accumulation from repeated needle decompressions. see fn_ncdairleaktick.
     [_patient] call ACME_fnc_ncdAirLeakTick;
@@ -778,6 +770,22 @@ private _getMedEffect = {
         _acidMAPBase = 0;
     };
     private _effMAPpre = (_acidMAPBase + _rawSupport - _shockDrop - _caMAPdrop);
+
+    // The legacy acid baseline intentionally strips most ACME modifiers and rebuilds known support/shock
+    // terms. Burns and sepsis are new source-separated physiology, so their preload/SVR effects would be
+    // invisible to that baseline. When either is active, allow the patient's actual composed MAP to LOWER
+    // the acid perfusion value. Using min() means this cannot manufacture recovery or double-count pressors;
+    // it only exposes disease hypotension the old native-only baseline could not see.
+    private _newDiseaseShock = (_patient getVariable ["ACM_infection_Sepsis_Severity",0]) > 0.001
+        || {(_patient getVariable ["ACM_burns_ShockSeverity",0]) > 0.001};
+    if (_newDiseaseShock && {!_inCardiacArrest}) then {
+        private _bpDisease = [_patient] call ace_medical_status_fnc_getBloodPressure;
+        _bpDisease params [["_dDisease",0],["_sDisease",0]];
+        private _mapDisease = _dDisease + ((_sDisease - _dDisease) / 3);
+        if (_mapDisease > 0) then {_effMAPpre = _effMAPpre min _mapDisease;};
+    };
+
+
     _state set ["acidMAPBase", _acidMAPBase];
     _state set ["acidEffMAP", _effMAPpre];
     _state set ["acidArrestDriver", _inCardiacArrest];
@@ -840,6 +848,11 @@ private _getMedEffect = {
     if (missionNamespace getVariable ["ACME_sys_do2", true]) then {
         private _do2v = [_patient] call ACME_fnc_oxygenDelivery;
         _state set ["do2", _do2v];
+        // DO2 remains oxygen supply. Infection raises demand, so anaerobic debt keys on supply/demand adequacy.
+        private _metabolicDemand = (_patient getVariable ["ACM_infection_Metabolic_Demand", 1]) max 1;
+        private _do2Adequacy = _do2v / _metabolicDemand;
+        _state set ["do2Adequacy", _do2Adequacy];
+
 
         // guard 1. a casualty who is awake and saturating is winning. if they are conscious and their SpO2 meets what
         // ACM needs to keep them up, they are perfusing their brain by definition, whatever the delivery arithmetic
@@ -878,12 +891,12 @@ private _getMedEffect = {
         private _clear = missionNamespace getVariable ["ACME_do2_clearFrac", 0.58];
         private _inDeficit = _state getOrDefault ["do2Deficit", false];
         if (_inDeficit) then {
-            if (_do2v >= _clear) then {
+            if (_do2Adequacy >= _clear) then {
                 _inDeficit = false;
                 _state set ["do2RecoveredAt", _now];  // start the reperfusion window.
             };
         } else {
-            if (_do2v < _crit) then { _inDeficit = true; };
+            if (_do2Adequacy < _crit) then { _inDeficit = true; };
         };
         _state set ["do2Deficit", _inDeficit];
         // on ROSC, open the reperfusion window. delivery is climbing back and the tissue is repaying, so the moments
@@ -900,7 +913,7 @@ private _getMedEffect = {
         private _inReperf = (_now - (_state getOrDefault ["do2RecoveredAt", -1e9])) < _reperfWin;
 
         if (_inDeficit && {!_awakeOK} && {!_inReperf} && {!_arrestNow}) then {
-            private _deficit = linearConversion [_crit, (missionNamespace getVariable ["ACME_do2_lethalFrac", 0.2]), _do2v, 0, 1, true];
+            private _deficit = linearConversion [_crit, (missionNamespace getVariable ["ACME_do2_lethalFrac", 0.2]), _do2Adequacy, 0, 1, true];
             _metabolicAcidosis = (_metabolicAcidosis
                 + ((missionNamespace getVariable ["ACME_do2_acidosisPerSec", 0.0009]) * _deficit * _acidDt)) min 1;
         };
@@ -1035,14 +1048,29 @@ private _getMedEffect = {
     // see apnea during arrest. a BVM provides partial effective ventilation and can clear CO2.
     if (_inCardiacArrest && {missionNamespace getVariable ["ACME_circ_arrestForcesAcidosis", true]}) then {
         if (_bvmActive) then {
-            // Simple mode's actual alveolar delivery remains authoritative in
-            // arrest. The generic hand-bagging floor would otherwise make a very
-            // low ventilator rate clear CO2 as if it supplied adequate breaths.
-            private _simpleVentArrest = (missionNamespace getVariable ["ACME_vent_simpleMode", false])
-                && {_patient getVariable ["ACME_vent_driving", false]}
+            // B259: the generic hand-bagging floor applies ONLY to manual
+            // BVM. Advanced SIMV (as well as Simple) already publishes its
+            // measured alveolar volume; assigning 0.75 anyway invents breaths
+            // when the connected ventilator is ineffective.
+            private _ventOwnsArrest = (_patient getVariable ["ACME_vent_driving", false])
                 && {(_patient getVariable ["ACM_breathing_BVM_provider", objNull]) isEqualTo _patient};
-            if (!_simpleVentArrest) then {
+            if (!_ventOwnsArrest) then {
                 _ventFrac = (_ventFrac max (missionNamespace getVariable ["ACME_circ_bvmVentFrac", 0.75])) min 1.5;
+            } else {
+                // A 40 BPM SIMV mode is not CPR-optimized. Overlapping positive
+                // pressure and compressions impair effective gas transport;
+                // high machine rate must not cure severe CO2 retention at once.
+                private _compressing = !isNull (_patient getVariable ["ace_medical_CPR_provider", objNull]);
+                private _cprMode = (_patient getVariable ["ACME_vent_mode", "SIMV VC PS"]) == "IMV VC (CPR)";
+                if (_compressing && {!_cprMode}) then {
+                    private _actualRR = _patient getVariable ["ACME_vent_effectiveRR", 0];
+                    private _cprEfficiency = linearConversion [12, 40, _actualRR, 1, 0.45, true];
+                    _ventFrac = _ventFrac * _cprEfficiency;
+                    // B260: apply this real gas-exchange penalty to both CO2
+                    // kinetics AND the respiratory acid deficit for this tick.
+                    _effVent = _targetRR * _ventFrac;
+                    _respDeficit = (1 - (_ventFrac min 1)) max 0 min 1;
+                };
             };
             _effVent = _targetRR * _ventFrac;
             _respDeficit = (1 - (_ventFrac min 1)) max 0 min 1;
@@ -1388,6 +1416,7 @@ private _getMedEffect = {
         || {_offset != 0}
         || {_hyperSpike > 0}
         || {[_state] call _circStateNeedsTick}
+        || {(_patient getVariable ["ACME_circ_salineGivenMl", 0]) > 0}
         || {_effMAPpre < _acidThresh};
     if (_keepCirc) then {
         ACME_circ_activePatients pushBackUnique _patient;
@@ -1442,4 +1471,27 @@ private _getMedEffect = {
     // debt since, so this ran every tick on every casualty and read a variable that is never written.
 
 
+    // Retire only after every medication/device/airway cleanup above has run.
+    // A late replicated indication is re-enrolled by the bounded owner audit.
+    private _clinical = missionNamespace getVariable ["ACME_clinical_activePatients", []];
+    if ([_patient] call ACME_fnc_clinicalNeedsTick) then {
+        // Direct circulation/treatment producers can enter without ownerRegister.
+        // Preserve their remaining broad work when the narrow circ registry retires.
+        if !(_patient in _clinical) then {
+            _clinical pushBackUnique _patient;
+            missionNamespace setVariable ["ACME_clinical_activePatients", _clinical];
+        };
+    } else {
+        if (_patient in _clinical) then {
+            missionNamespace setVariable ["ACME_clinical_activePatients", _clinical - [_patient]];
+        };
+    };
+    if (!(_patient in ACME_circ_activePatients)
+        && {!(_patient in ACME_tbi_activePatients)}
+        && {!(_patient in ACME_infusion_activePatients)}
+        && {!(_patient in (missionNamespace getVariable ["ACME_clinical_activePatients", []]))}) then {
+        _patient setVariable ["ACME_clinicalMaintenanceDormant", true, false];
+    };
+
 } forEach _patients;
+missionNamespace setVariable ["ACME_clinicalMaintenancePatients", _completed select {!isNull _x && {local _x} && {alive _x}}];

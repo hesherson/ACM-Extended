@@ -16,6 +16,16 @@ params ["_unit", ["_woundData", []], ["_ammo", ""]];
 if (isNull _unit || {!local _unit} || {!alive _unit}) exitWith {};
 if !(missionNamespace getVariable ["ACME_sys_junc", true]) exitWith {};
 
+private _prioritySpawn = (_unit getVariable ["ACME_spawnSeverity", -1]) == 2
+    && {_unit getVariable ["ACME_trainingSpawnInProgress", false]};
+if (_prioritySpawn && {!(_unit getVariable ["ACME_trainingSpawnFinalize", false])}) exitWith {};
+private _isolated = [];
+if (_prioritySpawn) then {
+    _isolated = [_unit getVariable ["ace_medical_openWounds", createHashMap],
+        _unit getVariable ["ACM_damage_InternalWounds", createHashMap],
+        (_unit getVariable ["ACM_breathing_Hemothorax_Fluid", 0]) max (_unit getVariable ["ACM_breathing_Hemothorax_State", 0])] call ACME_fnc_priorityJunctionalCandidate;
+};
+if (_prioritySpawn && {_isolated isEqualTo []}) exitWith {};
 private _names = missionNamespace getVariable ["ace_medical_damage_woundClassNames", []];
 if (_names isEqualTo []) exitWith {};
 
@@ -45,18 +55,19 @@ if (_candidateParts isEqualTo []) exitWith {};
 private _pVel = missionNamespace getVariable ["ACME_junctionalChanceVelocity", 0.6];  // high.
 private _pAvl = missionNamespace getVariable ["ACME_junctionalChanceAvulsion", 0.15];  // low.
 
-// a per-casualty junctional cap for ACM training-spawner casualties. immediate, priority and routine, plus the
-// unknown or random tier, get at most 2 junctionals, and only expectant, at severity 4, may reach 3 or more, up
-// to all four limbs. players and normal ai are uncapped, at a _cap of -1, which is the original behavior.
-// the severity comes from the generatepatient shim: the patient stamp if present, and otherwise the pending global
-// during the initial spawn wound loop, because the rolls fire synchronously inside generatepatient, before the
-// patient stamp lands.
+// Ordinary training tiers retain the legacy two-site cap, Expectant permits four.
+// Priority generation is stricter: only one isolated source wound may be junctional,
+// evaluated once after the full spawn injury batch. Later combat damage is not sanitized.
 private _allParts = ["leftarm", "rightarm", "leftleg", "rightleg"];
 private _cap = -1;
-if ((group _unit) isEqualTo (missionNamespace getVariable ["ACM_mission_TrainingCasualtyGroup", grpNull])) then {
+if ((group _unit) in [
+    missionNamespace getVariable ["ACM_mission_TrainingCasualtyGroup", grpNull],
+    missionNamespace getVariable ["ACM_mission_TrainingBluforGroup", grpNull]
+]) then {
     private _sev = _unit getVariable ["ACME_spawnSeverity", (missionNamespace getVariable ["ACME_pendingSpawnSeverity", -1])];
     _cap = [2, 4] select (_sev >= 4);
 };
+if (_prioritySpawn) then {_cap = 1; _candidateParts = [_isolated select 0];};
 private _curJunc = { (_unit getVariable [format ["ACME_Junc_%1", _x], ""]) != "" } count _allParts;
 
 {

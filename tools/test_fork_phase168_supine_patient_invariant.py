@@ -20,9 +20,17 @@ def test_chest_restore_normalizes_front_even_with_no_carrier():
     assert normalize < no_custody
     assert '[_patient,"front"] call ACME_fnc_patientRollCancel;' in s
     assert '[_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;' in s
-    # The final hold remains, but a denied roll must not force a conscious patient down.
-    hold = s.index('["ace_common_switchMove",[_p,_faceUp]]')
-    assert s.index('if (alive _p && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {') < hold
+    assert 'private _actualBeforeRestore = [_patient, _patient getVariable ["ACME_CS_facing","front"]]' in s
+    assert 'private _needFrontNormalize = !_frontNormalized' in s
+    assert 'private _canRollFront = [_patient] call ACME_fnc_chestSealCanPhysicalRoll;' in s
+    assert '[_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;' in s
+    # B267 preserves the original kit generation across BOTH deferred
+    # front-normalization paths; a newer kit must not inherit this return.
+    assert s.count('[_p,_force,_medic,_ctx,true,_kitEpoch] call ACME_fnc_chestAccessVestRestore;') == 2
+    # A denied physical roll defers restoration; it does not force a rest animation.
+    normalize_block = s[s.index('if (_needFrontNormalize) exitWith {'):s.index('_patient setVariable ["ACME_CS_facing","front",true];', s.index('if (_needFrontNormalize) exitWith {'))]
+    assert 'ace_common_switchMove' not in normalize_block
+    assert normalize_block.count('(_p getVariable ["ACME_equipmentKitEpoch", 0]) == _kitEpoch') == 2
     assert '["_frontNormalized", false, [false]]' in s
 
 def test_chest_seal_never_restores_original_posterior_or_recovery_pose():
@@ -55,13 +63,22 @@ def test_semifowler_suspend_resume_and_lower_all_normalize_front_first():
     resume = read("addons/acm_extended/functions/fn_headElevResume.sqf")
     lower = read("addons/acm_extended/functions/fn_headElevateStop.sqf")
 
-    assert '[_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;' in suspend
-    assert '[_patient,"front",false,objNull,true] call ACME_fnc_chestSealRoll;' in resume
-    assert '[_patient,"front",false,_medic,true] call ACME_fnc_chestSealRoll;' in lower
+    # A live Semi-Fowler episode is constructed face-up. These transitions must not
+    # reclassify transient authored geometry and inject a redundant body roll.
+    assert "// A live Semi-Fowler placement is already face-up." in suspend
+    assert 'setVariable ["ACME_CS_facing","front",true]' in suspend
+    assert 'call ACME_fnc_chestSealRoll' not in suspend
 
-    assert suspend.index("private _needFrontFirst") < suspend.index('"ACME_HeadElevPatientRelease"')
-    assert resume.index("private _needFrontFirst") < resume.index("ACME_fnc_headElevApplyTilt")
-    assert lower.index("private _needFrontFirst") < lower.index('"ACME_HeadElevPatientRelease"')
+    assert "// Suspension ends in the stable face-up rest by construction." in resume
+    assert 'setVariable ["ACME_CS_facing","front",true]' in resume
+    assert 'call ACME_fnc_chestSealRoll' not in resume
+    assert resume.index('setVariable ["ACME_CS_facing","front",true]') < resume.index("ACME_fnc_headElevApplyTilt")
+
+    assert "// An active Semi-Fowler placement is already anterior-up by construction." in lower
+    assert 'setVariable ["ACME_CS_facing","front",true]' in lower
+    assert 'call ACME_fnc_chestSealRoll' not in lower
+    assert lower.index('setVariable ["ACME_CS_facing","front",true]') < lower.index('"ACME_HeadElevPatientRelease"')
+
 
 def test_semifowler_rest_animation_can_never_replay_face_down_base_pose():
     s = read("addons/acm_extended/functions/fn_headElevRestAnim.sqf")

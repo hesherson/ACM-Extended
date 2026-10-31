@@ -42,22 +42,49 @@ def gauge_reference(entries, types, labels=('Upper','Middle','Lower')):
 
 class QuietOutput(unittest.TestCase):
     def test_no_unapproved_rpt_emitters_in_shipped_sqf_or_callbacks(self):
+        self.maxDiff = None
         # B22 restores the pre-B20 quiet debug overlay. No shipped runtime SQF or config callback may
         # emit RPT traffic; diagnostic dumping/tracing was explicitly reverted with the tabbed overlay.
         # Later reliability work added a small, explicit set of event/error diagnostics.
         # Keep the whitelist exact by file and emitter count so new runtime chatter still fails closed.
         approved={
-            'functions/fn_chestSealOpen.sqf':1,
+            # Reviewed failure/compatibility diagnostics. Keep this exact: adding
+            # an emitter anywhere else still fails the suite.
+            'functions/fn_assessmentTime.sqf':1,
+            'functions/fn_carrierInventoryCreate.sqf':1,
+            'functions/fn_carrierInventoryRestore.sqf':2,
+            'functions/fn_chestSealOpen.sqf':2,
+            'functions/fn_hangBagRestoreWeapons.sqf':1,
+            # Persistent allocator: invalid profile high-water mark at initialization,
+            # one near-budget warning, and one terminal exhaustion report. Runtime
+            # replay/ordinary-issue guards remain covered by inventory diagnostics.
+            'functions/fn_inventoryLedgerNextToken.sqf':3,
+            # An unverifiable native fridge placement is retained for recovery.
+            # Exact receipt replay must remain quiet; execute that guard below.
+            'functions/fn_bloodFridgeReceive.sqf':1,
+            # Startup build identity plus capped changed-state native input observation.
+            'functions/fn_initForkStartupRuntime.sqf':1,
+            'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
+            'functions/fn_manualPlateCarrierAutoReturn.sqf':1,
             'functions/fn_compatCheck.sqf':2,
+            'functions/fn_cprAfterChestPrep.sqf':1,
             'functions/fn_debugDumpToClipboard.sqf':1,
+            'functions/fn_directPressureClaimAck.sqf':1,
             'functions/fn_expansionRegisterRuntime.sqf':1,
             'functions/fn_megacodeMenu.sqf':1,
             'functions/fn_megacodeModuleInit.sqf':2,
             'functions/fn_megacodeOpenPanel.sqf':2,
             'functions/fn_megacodePanelLoad.sqf':2,
-            'functions/fn_providerStateReconcile.sqf':2,
-            'functions/fn_thoraOpen.sqf':1,
+            'functions/fn_networkCompatNotice.sqf':1,
+            # historical_source expands the startup callee here as well; one native startup line.
+            'functions/fn_postInit.sqf':6,
+            'functions/fn_preparedAttachLocal.sqf':1,
+            'functions/fn_providerStateReconcile.sqf':3,
+            'functions/fn_registerChestAccessVestRuntime.sqf':1,
+            'functions/fn_registerMedicalMenuOpenRuntime.sqf':4,
+            'functions/fn_thoraOpen.sqf':3,
             'functions/fn_transientStateReconcile.sqf':1,
+            'functions/fn_updateTransfusionControls.sqf':1,
         }
         emitters={}
         for p in source_files(R):
@@ -65,6 +92,13 @@ class QuietOutput(unittest.TestCase):
             if found:
                 emitters[p.relative_to(R).as_posix()]=len(found)
         self.assertEqual(emitters,approved)
+        from test_b279_inventory_diagnostics import assert_inventory_failure_diagnostics_bounded
+        assert_inventory_failure_diagnostics_bounded()
+        from test_b288_network_admission import assert_fridge_failure_diagnostics_bounded
+        assert_fridge_failure_diagnostics_bounded()
+        from test_b280_transfusion_native_input import assert_native_input_diagnostics_bounded, assert_startup_identity_log_is_outside_callbacks
+        assert_native_input_diagnostics_bounded()
+        assert_startup_identity_log_is_outside_callbacks()
     def test_scan_finds_quoted_config_callback(self):
         self.assertEqual(logs('onLoad = "diag_log \'message\';";',True),['diag_log'])
     def test_scan_ignores_comments_and_messages(self):

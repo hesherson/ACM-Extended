@@ -76,6 +76,16 @@ if (!_publish) exitWith {
 _obj setVariable [_name, _value, true];
 _cache set [_key, [_value, _now]];
 _obj setVariable ["ACME_net_approxCache", _cache, false];
+// Share the last-publication fingerprint with the exact helper. A caller may update its local value before
+// requesting an exact reset; the exact helper must not mistake its own older packet for the current one.
+private _exact = _obj getVariable ["ACME_net_scalarCache", createHashMap];
+if !(_exact isEqualType createHashMap) then {_exact = createHashMap;};
+if !((_obj getVariable ["ACME_net_cacheOwner", []]) isEqualTo _stamp) then {
+    _exact = createHashMap;
+    _obj setVariable ["ACME_net_cacheOwner", _stamp, false];
+};
+_exact set [_key, ["SCALAR", _value]];
+_obj setVariable ["ACME_net_scalarCache", _exact, false];
 if (_counting) then {
     private _sent = missionNamespace getVariable ["ACME_net_sent", createHashMap];
     _sent set [_name, (_sent getOrDefault [_name, 0]) + 1];

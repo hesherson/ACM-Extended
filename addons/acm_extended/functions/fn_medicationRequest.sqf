@@ -5,6 +5,9 @@ private _hcPush = _meta isEqualType [] && {(_meta param [0,""]) == "hcPush"};
 private _fail = {
     if (!isNull _medic && {local _medic}) then {
         [_medic,_refund,false] call ACME_fnc_medicationRefund;
+        if (_meta isEqualType [] && {(_meta param [0,""]) == "syringeB279"}) then {
+            [_medic,_meta param [1,""],_meta param [2,""]] call ACME_fnc_skInventorySettle;
+        };
         if (_hcPush) then {[_medic,_meta,false,"local validation failed"] call ACME_fnc_hardcorePushAck;};
     };
     false

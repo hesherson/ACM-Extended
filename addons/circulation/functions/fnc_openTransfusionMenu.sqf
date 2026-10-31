@@ -8,6 +8,7 @@
  * 0: Medic <OBJECT>
  * 1: Patient <OBJECT>
  * 2: Body Part <STRING>
+ * 3: Exact return route [IV, site] <ARRAY> (optional)
  *
  * Return Value:
  * None
@@ -18,11 +19,16 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart"];
+params ["_medic", "_patient", "_bodyPart", ["_returnAccess", [], [[]]]];
+_bodyPart = toLowerANSI _bodyPart;
+// The existing native screen remains the entry point for either card renderer.
+ACEGVAR(medical_gui,pendingReopen) = false;
+// Reopening presentation does not abandon inventory already reserved for an
+// owner transaction. Reconcile the same durable request identities first.
+[_medic] call ACME_fnc_piggybackRecover;
+[_medic] call ACME_fnc_lineWarmerRecover;
 
 if !(isNull findDisplay IDC_TRANSFUSIONMENU) exitWith {};
-
-ACEGVAR(medical_gui,pendingReopen) = false; // Prevent medical menu from reopening
 
 if (dialog) then { // If another dialog is open (medical menu) close it
     closeDialog 0;
@@ -38,13 +44,13 @@ if (!(_previousCloseID isEqualTo -1) && {!(_previousCloseID isEqualTo "")}) then
 
 private _medicalMenuKeybind = (["ACE3 Common", QACEGVAR(medical_gui,openMedicalMenuKey)] call CBA_FUNC(getKeybind) select 5) select 0;
 
-private _closeID = [_medicalMenuKeybind, [false, false, false], { // H to close and open medical menu
-    closeDialog 0;
-    [ACEFUNC(medical_gui,openMenu), GVAR(TransfusionMenu_Target)] call CBA_fnc_execNextFrame;
-}, "keydown", "", false, 0] call CBA_fnc_addKeyHandler;
+// Mouse wheel bindings must never become a close-menu shortcut. Only real keyboard
+// KeyDown from this display may close it; no global CBA virtual-mouse handler is installed.
+private _closeID = -1;
 GVAR(TransfusionMenu_CloseID) = _closeID;
 
 GVAR(TransfusionMenu_Target) = _patient;
+GVAR(TransfusionMenu_Medic) = _medic;
 
 GVAR(TransfusionMenu_Selection_IVBags_LastUpdate) = CBA_missionTime;
 GVAR(TransfusionMenu_Selection_IVBags) = [];
@@ -52,6 +58,25 @@ GVAR(TransfusionMenu_Selection_IVBags) = [];
 GVAR(TransfusionMenu_Selected_AccessSite) = -1;
 GVAR(TransfusionMenu_Selected_BodyPart) = toLowerANSI _bodyPart;
 GVAR(TransfusionMenu_Selected_Inventory) = -1;
+
+// Every dialog owns fresh selection handles. A previous patient's true index is
+// not a bag identity and must never select a different infusion after reopening.
+missionNamespace setVariable ["ACME_infusion_SelectedActiveInfusionSelectionIndex", -1];
+missionNamespace setVariable ["ACME_infusion_SelectedActiveInfusionTrueIndex", -1];
+missionNamespace setVariable ["ACME_pull_selTrueIndex", -1];
+
+// Restore the precise return route before creating controls or running a single picker refresh.
+// This preserves a piggyback intent on lower/middle IVs, IO and either EJ through the existing prep workspace.
+if (count _returnAccess == 2) then {
+    _returnAccess params [["_returnIV",true,[true]],["_returnSite",-1,[0]]];
+    private _validReturn = if (_returnIV) then {
+        _returnSite >= 0 && {[_patient,_bodyPart,0,_returnSite] call FUNC(hasIV)}
+    } else {[_patient,_bodyPart,0] call FUNC(hasIO)};
+    if (_validReturn) then {
+        GVAR(TransfusionMenu_SelectIV) = _returnIV;
+        GVAR(TransfusionMenu_Selected_AccessSite) = if (_returnIV) then {_returnSite} else {0};
+    };
+};
 
 GVAR(TransfusionMenu_Move_Active) = false;
 GVAR(TransfusionMenu_Move_Active_Moving) = false;
@@ -112,6 +137,33 @@ if (isNull _display) exitWith {
     };
 };
 
+// Layout anchors and selector signatures are display-scoped, including native
+// platforms that recycle a dialog handle after closing it.
+uiNamespace setVariable ["ACME_infusion_LayoutDisplay", displayNull];
+uiNamespace setVariable ["ACME_infusion_PreparedListSignature", ""];
+uiNamespace setVariable ["ACME_infusion_ActiveInfusionListSignature", ""];
+uiNamespace setVariable ["ACME_preparedRowSig", "__force__"];
+_display setVariable ["ACME_txInputTraceCount",0];
+_display setVariable ["ACME_txInputTraceLast",[]];
+
+// The foreground menu consumes RMB without cancelling background holds. The hold's own
+// input guard also checks this display, so it does not depend on engine EH ordering.
+{_display displayAddEventHandler [_x, {(_this param [1, -1]) == 1}];} forEach ["MouseButtonDown", "MouseButtonUp"];
+_display setVariable ["ACME_TX_CloseKey", _medicalMenuKeybind];
+_display setVariable ["ACME_TX_CloseTarget", _patient];
+_display displayAddEventHandler ["KeyDown", {
+    params ["_dialog", "_key", "_shift", "_ctrl", "_alt"];
+    private _bound = _dialog getVariable ["ACME_TX_CloseKey", -1];
+    if !(_bound isEqualType 0 && {_bound >= 0} && {_bound < 0xF0}
+        && {_key == _bound} && {!_shift && {!_ctrl && {!_alt}}}) exitWith {false};
+    private _target = _dialog getVariable ["ACME_TX_CloseTarget", objNull];
+    uiNamespace setVariable ["ACME_lineWarmerConfirm",[]];
+    ["cancel"] call ACME_fnc_piggybackWorkflow;
+    _dialog closeDisplay 0;
+    if (!isNull _target) then {[ace_medical_gui_fnc_openMenu, _target] call CBA_fnc_execNextFrame;};
+    true
+}];
+_display displayAddEventHandler ["MouseZChanged", {true}];
 _display setVariable ["ACM_TX_Generation", _menuGeneration];
 _display setVariable ["ACM_TX_CloseID", _closeID];
 
@@ -121,11 +173,15 @@ _display setVariable ["ACM_TX_CloseID", _closeID];
 // list/button anchors that are resized. Fade preserves ctrlShow/ctrlEnable state, unlike ctrlShow false, so controls
 // which are intentionally visible-by-config (Prep Infusion, Give Infusion, Hang Bag, etc.) are not stranded hidden.
 private _initialLayoutControls = [
-    86004, 86005, 86006, 86007, 86008,
+    86002, 86003, 86004, 86005, 86006, 86007, 86008, 86037,
     86120, 86121, 86122, 86123, 86124, 86125, 86126, 86127, 86128, 86129, 86130,
     86131, 86132, 86133, 86134, 86140, 86141, 86142, 86143, 86144, 86145, 86146,
-    86147, 86148, 86149
+    86147, 86148, 86149, 86160, 86161, 86162, 86163, 86173, 86174, 86175, 86180, 86181, 86182
 ];
+// Keep the reveal pending on this exact dialog. The existing UI worker can
+// finish it after a delayed native build or workspace teardown.
+_display setVariable ["ACME_txInitialLayoutControls", +_initialLayoutControls];
+_display setVariable ["ACME_txInitialLayoutRevealed", false];
 {
     private _ctrl = _display displayCtrl _x;
     if (!isNull _ctrl) then {
@@ -138,6 +194,7 @@ private _revealInitialLayout = {
     params ["_d", "_controls"];
     if (isNull _d) exitWith {false};
     if ((uiNamespace getVariable ["ACME_infusion_LayoutDisplay", displayNull]) isNotEqualTo _d) exitWith {false};
+    if (_d getVariable ["ACME_txInitialLayoutRevealed", false]) exitWith {true};
     {
         private _ctrl = _d displayCtrl _x;
         if (!isNull _ctrl) then {
@@ -146,6 +203,7 @@ private _revealInitialLayout = {
         };
     } forEach _controls;
     _d setVariable ["ACME_txInitialLayoutRevealed", true];
+    _d setVariable ["ACME_txInitialLayoutControls", []];
     true
 };
 
@@ -186,16 +244,16 @@ if (!isNull _display && {!isNil "ACME_fnc_skPageNavigate"}) then {
     private _y = safeZoneY + (safeZoneH / 1.08);
     private _lx = (_uiX + (_uiW/2)) - (_gap/2) - _w;
     private _rx = (_uiX + (_uiW/2)) + (_gap/2);
-    // Same pulsing blue backing used by the Narc Box page buttons. The actual buttons remain transparent.
-    private _pulse0 = ["info",0.52] call ACME_fnc_a11yColor;
+    // Same steady blue backing used by the Narc Box page buttons. The actual buttons remain transparent.
+    private _navInitial = ["info",0.52] call ACME_fnc_a11yColor;
     private _lbBack = _display ctrlCreate ["RscText",86952];
     _lbBack ctrlSetPosition [_lx,_y,_w,_h];
-    _lbBack ctrlSetBackgroundColor _pulse0;
+    _lbBack ctrlSetBackgroundColor _navInitial;
     _lbBack ctrlEnable false;
     _lbBack ctrlCommit 0;
     private _rbBack = _display ctrlCreate ["RscText",86953];
     _rbBack ctrlSetPosition [_rx,_y,_w,_h];
-    _rbBack ctrlSetBackgroundColor _pulse0;
+    _rbBack ctrlSetBackgroundColor _navInitial;
     _rbBack ctrlEnable false;
     _rbBack ctrlCommit 0;
 
@@ -203,18 +261,20 @@ if (!isNull _display && {!isNil "ACME_fnc_skPageNavigate"}) then {
     _lb ctrlSetPosition [_lx,_y,_w,_h];
     _lb ctrlSetText "< Body Map";
     _lb ctrlSetTooltip "Previous page";
-    _lb ctrlAddEventHandler ["ButtonClick",{["left"] call ACME_fnc_skPageNavigate;}];
+    _lb ctrlEnable true;
+    _lb buttonSetAction "['left'] call ACME_fnc_skPageNavigate";
     _lb ctrlCommit 0;
     private _rb = _display ctrlCreate ["ACME_TX_PageButton",86951];
     _rb ctrlSetPosition [_rx,_y,_w,_h];
     _rb ctrlSetText "Narc Box >";
     _rb ctrlSetTooltip "Next page";
-    _rb ctrlAddEventHandler ["ButtonClick",{["right"] call ACME_fnc_skPageNavigate;}];
+    _rb ctrlEnable true;
+    _rb buttonSetAction "['right'] call ACME_fnc_skPageNavigate";
     _rb ctrlCommit 0;
 };
 
 call FUNC(TransfusionMenu_UpdateSelection);
-call FUNC(TransfusionMenu_SwitchTargetInventory);
+[] call FUNC(TransfusionMenu_SwitchTargetInventory);
 [false] call FUNC(TransfusionMenu_UpdateBagList);
 
 private _ctrlPatientName = _display displayCtrl IDC_TRANSFUSIONMENU_PATIENTNAME;
@@ -251,7 +311,8 @@ private _pfh = [{
 
     private _dialogCondition = isNull _display;
     private _patientCondition = isNull _patient;
-    private _medicCondition = isNull _medic || {!alive _medic} || {IS_UNCONSCIOUS(_medic)};
+    private _medicCondition = isNull _medic || {!alive _medic} || {IS_UNCONSCIOUS(_medic)}
+        || {hasInterface && {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}};
     private _vehicleCondition = false;
     private _distanceCondition = false;
     if (!_patientCondition && {!_medicCondition}) then {
@@ -287,11 +348,11 @@ private _pfh = [{
     };
 
     // Keep the Transfuse page buttons visually identical to Narc Box / Body Map: same accessibility blue and
-    // same live pulse. Backings own the color so focused/pressed button states cannot darken it.
-    private _navPulse = ["info", 0.30 + 0.45 * (0.5 + 0.5 * sin (diag_tickTime * 220))] call ACME_fnc_a11yColor;
+    // steady highlight. Backings own the color so focused/pressed button states cannot darken it.
+    private _navColor = ["info", 0.52] call ACME_fnc_a11yColor;
     {
         private _pc = _display displayCtrl _x;
-        if (!isNull _pc) then {_pc ctrlSetBackgroundColor _navPulse;};
+        if (!isNull _pc) then {_pc ctrlSetBackgroundColor _navColor;};
     } forEach [86952,86953];
 
     private _ctrlTourniquetLeftArm = _display displayCtrl IDC_TRANSFUSIONMENU_BG_TOURNIQUET_LEFTARM;
@@ -353,29 +414,8 @@ private _pfh = [{
         _xMiddle ctrlShow (_IVMiddle > 0);
         _xLower ctrlShow (_IVLower > 0);
 
-        if (GVAR(TransfusionMenu_SelectIV) && (_forEachIndex + 2) == _partIndex) then {
-            switch (GVAR(TransfusionMenu_Selected_AccessSite)) do {
-                case 0: {
-                    _xUpper ctrlSetTextColor [0.20,0.65,0.20,1];
-                    _xMiddle ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xLower ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                };
-                case 1: {
-                    _xUpper ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xMiddle ctrlSetTextColor [0.20,0.65,0.20,1];
-                    _xLower ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                };
-                case 2: {
-                    _xUpper ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xMiddle ctrlSetTextColor [0.20,0.65,0.20,0.42];
-                    _xLower ctrlSetTextColor [0.20,0.65,0.20,1];
-                };
-            };
-        } else {
-            _xUpper ctrlSetTextColor [0.20,0.65,0.20,0.42];
-            _xMiddle ctrlSetTextColor [0.20,0.65,0.20,0.42];
-            _xLower ctrlSetTextColor [0.20,0.65,0.20,0.42];
-        };
+        // The shared access-hotspot painter owns hover/selected color. A second
+        // native painter must not dim a hovered access again on every tick.
     } forEach _IVCtrlArray;
 
     private _ctrlIOLeftArm = _display displayCtrl IDC_TRANSFUSIONMENU_BG_IO_LEFTARM;
@@ -395,11 +435,7 @@ private _pfh = [{
         if !(_value isEqualType 0 && {finite _value}) then {_value = 0;};
         _x ctrlShow (_value > 0);
 
-        if (!(GVAR(TransfusionMenu_SelectIV)) && (_forEachIndex + 1) == _partIndex) then {
-            _x ctrlSetTextColor [0.20,0.65,0.20,1];
-        } else {
-            _x ctrlSetTextColor [0.20,0.65,0.20,0.42];
-        };
+        // Color is owned by the same IV/IO hotspot renderer.
     } forEach _IOCtrlArray;
 
     private _ctrlStopTransfusionButton = _display displayCtrl IDC_TRANSFUSIONMENU_BUTTON_STOPIV;
@@ -416,22 +452,6 @@ private _pfh = [{
         _siteFlowRate = [(GET_IO_FLOW_X(_patient,_partIndex)), (GET_IV_FLOW_X(_patient,_partIndex,_selectedSite))] select GVAR(TransfusionMenu_SelectIV);
     };
     private _typeString = [LLSTRING(Intraosseous_Short), LLSTRING(Intravenous_Short)] select GVAR(TransfusionMenu_SelectIV);
-    private _physicalBlock = "";
-    if (_hasSelectedAccess && {_partIndex >= 0}) then {
-        if (GVAR(TransfusionMenu_SelectIV)
-            && {_patient getVariable [format ["ACME_IV_BandOnPart_%1", _partIndex], false]}) then {
-            _physicalBlock = "IV placement band is still applied. Remove the band before this IV can flow.";
-        };
-        if (_physicalBlock == "" && {!isNil "ACME_fnc_aajtOccludes"}
-            && {[_patient, _partIndex] call ACME_fnc_aajtOccludes}) then {
-            _physicalBlock = "AAJT-S compression is physically occluding this vascular territory.";
-        };
-        if (_physicalBlock == "" && {_patient getVariable ["ace_medical_inCardiacArrest", false]}
-            && {!([_patient] call ACM_core_fnc_cprActive)}) then {
-            _physicalBlock = "No forward perfusion during cardiac arrest. Start CPR for IV/IO flow.";
-        };
-    };
-
     if (!_hasSelectedAccess) then {
         _ctrlStopTransfusionButton ctrlSetText "No IV / IO access";
         _ctrlStopTransfusionButton ctrlSetTooltip "Establish and select an IV or IO before starting a transfusion";
@@ -439,19 +459,15 @@ private _pfh = [{
         if (!isNull _ctrlAddBagButton) then {_ctrlAddBagButton ctrlEnable false;};
     } else {
         if (!isNull _ctrlAddBagButton) then {_ctrlAddBagButton ctrlEnable true;};
-        if (_physicalBlock != "") then {
-            _ctrlStopTransfusionButton ctrlSetText "Flow physically blocked";
-            _ctrlStopTransfusionButton ctrlSetTooltip _physicalBlock;
-            _ctrlStopTransfusionButton ctrlEnable false;
+        // This button is the user's clamp switch, not an unearned diagnosis. Physical
+        // occlusion and perfusion still gate the owner-side drainer, never this label.
+        _ctrlStopTransfusionButton ctrlEnable true;
+        if (_siteFlowRate > 0) then {
+            _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StopTransfusion_Display), _typeString]);
+            _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StopTransfusion_ToolTip), _typeString]);
         } else {
-            _ctrlStopTransfusionButton ctrlEnable true;
-            if (_siteFlowRate > 0) then {
-                _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StopTransfusion_Display), _typeString]);
-                _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StopTransfusion_ToolTip), _typeString]);
-            } else {
-                _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StartTransfusion_Display), _typeString]);
-                _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StartTransfusion_ToolTip), _typeString]);
-            };
+            _ctrlStopTransfusionButton ctrlSetText (format [LLSTRING(TransfusionMenu_StartTransfusion_Display), _typeString]);
+            _ctrlStopTransfusionButton ctrlSetTooltip (format [LLSTRING(TransfusionMenu_StartTransfusion_ToolTip), _typeString]);
         };
     };
 

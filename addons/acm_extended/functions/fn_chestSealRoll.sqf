@@ -28,7 +28,12 @@ if !(_patient getVariable ["ACME_CS_ProcedureActive", false]) then {
 
 private _actual = [_patient, _patient getVariable ["ACME_CS_facing", "front"]] call ACME_fnc_chestSealActualSide;
 _patient setVariable ["ACME_CS_facing", _actual, true];
-if (!_force && {_actual isEqualTo _target}) exitWith {};
+// A side-lying recovery pose can classify as front. It still needs a physical
+// roll to supine; a matching diagram side is not proof that the body is flat.
+private _recovery = _patient getVariable ["ACM_airway_RecoveryPosition_State", false]
+    || {(_patient getVariable ["ACM_airway_RecoveryPosition_Pending", []]) isNotEqualTo []}
+    || {(toLowerANSI animationState _patient) == "acm_recoveryposition"};
+if (!_force && {_actual isEqualTo _target} && {!_recovery}) exitWith {};
 
 // Never invent a different diagram side when the body itself cannot be animated.
 if ((!alive _patient) || {(lifeState _patient) isEqualTo "DEAD"} || {!isNull objectParent _patient}) exitWith {};
@@ -66,7 +71,8 @@ if (!_immediate) then {
         private _lock = _p getVariable ["ACME_patientAnimLock", []];
         if ((_lock param [0, ""]) != _tok) exitWith {};
         if !([_p] call ACME_fnc_chestSealCanPhysicalRoll) exitWith {};
-        if ((toLower animationState _p) != (toLower _trans)) then {
+        if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
+            && {(toLower animationState _p) != (toLower _trans)}) then {
             [_p, _trans, 2] call ACME_fnc_doAnim;
         };
     }, [_patient, _token, _trans], 0.15] call CBA_fnc_waitAndExecute;
@@ -84,7 +90,9 @@ if (!_immediate) then {
     if (!alive _p || {!isNull objectParent _p}) exitWith {};
     private _stillRollable = [_p] call ACME_fnc_chestSealCanPhysicalRoll;
     if (_needsHold && {_stillRollable}) then {
-        ["ace_common_switchMove", [_p, _hold]] call CBA_fnc_globalEvent;
+        if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
+            ["ace_common_switchMove", [_p, _hold]] call CBA_fnc_globalEvent;
+        };
         // Cache only while the patient is still legitimately under the authored lying/unconscious pose.
         _p setVariable ["ACME_CS_facing", _target, true];
     };

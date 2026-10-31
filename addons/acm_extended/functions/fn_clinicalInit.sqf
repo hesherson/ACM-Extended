@@ -1,8 +1,10 @@
 /* Install named protocol handlers once. Binding results remain machine-local diagnostic data. */
 if (missionNamespace getVariable ["ACME_NA3_clinicalInstalled", false]) exitWith {};
 ACME_NA3_clinicalInstalled = true;
+call ACME_fnc_clinicalPersistenceInit;
 ACME_clinical_ownedUnits = allUnits select {local _x && {alive _x}};
 ACME_clinical_activePatients = [];
+ACME_rhythm_activePatients = [];
 ["ACME_infusionAck", {[{ _this call ACME_fnc_infusionAck; }, _this] call CBA_fnc_execNextFrame;}] call CBA_fnc_addEventHandler;
 ["ACME_piAck", {_this call ACME_fnc_pressureInfuserAck;}] call CBA_fnc_addEventHandler;
 ["ACME_preparedAck", {_this call ACME_fnc_preparedAttachAck;}] call CBA_fnc_addEventHandler;

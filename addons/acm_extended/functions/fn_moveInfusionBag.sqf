@@ -4,7 +4,8 @@ private _display = findDisplay 86000;
 if (isNull _display) exitWith {false};
 
 private _ctrlInf = _display displayCtrl 86129;
-if (isNull _ctrlInf || {!ctrlShown _ctrlInf}) exitWith {false};
+private _ownsPopover = (_display getVariable ["ACME_txActionMenu", ""]) == "infusion";
+if (isNull _ctrlInf || {!ctrlShown _ctrlInf && {!_ownsPopover}}) exitWith {false};
 
 private _row = lbCurSel _ctrlInf;
 if (_row < 0) exitWith {
@@ -33,8 +34,7 @@ if (_trueIndex < 0) exitWith {
     false
 };
 
-// the native list is 1:1 with selection_ivbags, where row i maps to entry i, so the entry carrying our trueindex is
-// the row the move of ACM reads through lbCurSel.
+// Resolve the selection index independently of the filtered native Fluids list.
 private _nativeRow = _selection findIf { (_x param [8, -1]) == _trueIndex };
 if (_nativeRow < 0) exitWith {
     ["Could not resolve that infusion. Reopen the transfusion menu and try again.", 2.5, ACE_player] call ace_common_fnc_displayTextStructured;
@@ -54,8 +54,7 @@ if (!isNull _patient && {_nativeRow < count _selection}) then {
     } forEach (_patient getVariable ["ACME_infusion_BagMedications", []]);
 };
 
-_ctrlNative lbSetCurSel _nativeRow;
-call ACM_circulation_fnc_TransfusionMenu_MoveBag;
+[_nativeRow] call ACM_circulation_fnc_TransfusionMenu_MoveBag;
 
 // once the move flow of ACM settles, completed or canceled, re-link the entry to wherever the bag ended up. the
 // condition stays false while the flow is armed.

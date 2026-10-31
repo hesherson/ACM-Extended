@@ -94,9 +94,11 @@ if (_epoch < 0 || {_rollToken == ""}
 
 // Exactly the same chest-flip provider state used by auscultation and entry normalization.
 private _work = toLowerANSI (_pose param [2,""]);
+private _presentationReady = (_pose param [21, false])
+    || {(_work == "ainvpknlmstpsnonwnondnon_medic4" || {(_pose param [20, false]) && {_work == "acm_pronecontinuous"}})
+        && {(toLowerANSI animationState _provider) == _work}};
 if ((_pose param [3,-2]) >= 1
-    && {_work == "ainvpknlmstpsnonwnondnon_medic4"}
-    && {(toLowerANSI animationState _provider) == _work}) then {
+    && {_presentationReady}) then {
     _args set [9,diag_tickTime];
     uiNamespace setVariable ["ACME_CS_Side",_side];
     uiNamespace setVariable ["ACME_CS_FlipTarget",_side];

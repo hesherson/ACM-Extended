@@ -105,7 +105,7 @@ def test_narc_box_return_uses_normal_medical_menu_open_lifecycle():
 
     # Narc Box does not own or repair action controls itself. Its close handler returns through ACE's normal
     # openMenu entry point, so B168's display-generation renderer ownership is the single shared fix.
-    assert '[_patient, "medication"] call ACME_fnc_reopenMedicalMenu;' in sk_close
+    assert '[_patient, "medication", -1, [], _provider] call ACME_fnc_reopenMedicalMenu;' in sk_close
     assert '[_patient] call ace_medical_gui_fnc_openMenu;' in reopen
     assert 'updateActions' not in sk_close
     assert 'menuPFH' not in sk_close

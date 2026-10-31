@@ -55,10 +55,12 @@ def test_whole_limb_physiology_uses_single_occlusion_authority():
     hooks={'addons/core/overrides/fnc_updateWoundBloodLoss.sqf',
            'addons/circulation/functions/fnc_getIVFlowRate.sqf',
            'addons/circulation/functions/fnc_getBloodVolumeChange.sqf',
-           'addons/core/overrides/fnc_medicationLocal.sqf',
-           'addons/acm_extended/functions/fn_yFlushTick.sqf'}
+           'addons/core/overrides/fnc_medicationLocal.sqf'}
     for path in hooks:
         assert 'ACME_fnc_aajtOccludes' in text(path),path
+    # Y-line service consumes the same authoritative IV-flow gate rather than
+    # duplicating the AAJT predicate locally.
+    assert 'ACM_circulation_fnc_getIVFlowRate' in text('addons/acm_extended/functions/fn_yFlushTick.sqf')
     assert '[_unit, _deltaT, _syncValues] call ACM_circulation_fnc_getBloodVolumeChange' in text('addons/core/overrides/fnc_getBloodVolumeChange.sqf')
     assert 'ACME_fnc_pulsePerfusionProfile' in text('addons/core/overrides/fnc_checkPulseLocal.sqf')
     from test_historical_cardiac_execution import test_aajt_pulse_occlusion_is_site_specific
@@ -106,11 +108,15 @@ def test_old_bilateral_inguinal_state_migrates_to_one_side():
 def test_dead_patient_freezes_workers_but_keeps_interventions_and_old_corpse():
     life = acme("registerClinicalLifecycleRuntime")
     resp = acme("registerRhythmLifecycleRuntime")
+    reset = acme("respawnClinicalReset")
     death = acme("deathFreeze")
     assert 'EntityKilled' in life and 'ACME_fnc_deathFreeze' in life
     assert '["ace_medical_FullHeal", {_this call ACME_fnc_clearAllAilments}]' in life
     assert '[_oldUnit] call ACME_fnc_deathFreeze' in resp
-    assert '[_newUnit] call ACME_fnc_clearAllAilments' in resp
+    assert '[_newUnit, _issuedAt] call ACME_fnc_respawnClinicalReset;' in resp
+    assert '[_u, _issuedAt] call ACME_fnc_respawnClinicalReset;' in resp
+    assert '[_newUnit] call ACME_fnc_clearAllAilments;' in reset
+    assert 'ACME_fnc_clearAllAilments' not in resp
     assert 'forEach [_oldUnit, _newUnit]' not in resp
     assert '[_patient, "begin", true] call ACME_fnc_clinicalReset' in death
     assert 'ACME_fnc_clearAllAilments' not in death

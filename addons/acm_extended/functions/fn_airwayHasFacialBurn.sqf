@@ -17,7 +17,7 @@ private _burn = false;
         if !(_id isEqualType 0 && {_amount isEqualType 0} && {_amount > 0}) then { continue; };
         private _index = floor (_id / 10);
         if (_index < 0 || {_index >= count _names}) then { continue; };
-        if ((_names select _index) in ["ThermalBurn", "ChemicalBurn"]) exitWith { _burn = true; };
+        if ((_names select _index) in ["ThermalBurn", "ChemicalBurn", "Burn1", "Burn2", "Burn3"]) exitWith { _burn = true; };
     } forEach (_wounds getOrDefault ["head", []]);
     if (_burn) exitWith {};
 } forEach ["ace_medical_openWounds", "ace_medical_bandagedWounds", "ace_medical_stitchedWounds"];

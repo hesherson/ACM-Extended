@@ -1,0 +1,9 @@
+{
+  "version": "1.2.4.1",
+  "batch": "B297",
+  "network_revision": "NA8-B297-1.2.4.1-candidate",
+  "network_protocol": 2,
+  "debug_revision": "",
+  "status": "candidate",
+  "baseline": "4ef4d3fdcdd4cb6c49bdb27a3b46fcc0641bb824"
+}

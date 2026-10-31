@@ -89,6 +89,12 @@ class CfgFunctions {
     class overwrite_medical_treatment {
         tag = "ace_medical_treatment";
         class ace_medical_treatment {
+            class useItem { // Live removed-carrier supplies, preserving ACE policy and magazine semantics
+                file = QPATHTOF(overrides\fnc_useItem.sqf);
+            };
+            class hasItem {
+                file = QPATHTOF(overrides\fnc_hasItem.sqf);
+            };
             class treatment { // Add fixes and patient animations
                 file = QPATHTOF(overrides\fnc_treatment.sqf); //ace/addons/medical_treatment/functions/fnc_treatment.sqf
             };

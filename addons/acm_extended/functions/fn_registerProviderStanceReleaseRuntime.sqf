@@ -1,6 +1,8 @@
 // Atomic patient-owner Direct Pressure claim replies are provider-local. Register once with the other treatment
 // lifecycle handlers so same-site multiplayer starts can never race a replicated marker.
 ["ACME_directPressureClaimAck", {_this call ACME_fnc_directPressureClaimAck}] call CBA_fnc_addEventHandler;
+["ACME_directPressureRetire", {_this call ACME_fnc_directPressureRetire}] call CBA_fnc_addEventHandler;
+["ACME_directPressurePoseExitSync", {_this call ACME_fnc_directPressurePoseExitSync}] call CBA_fnc_addEventHandler;
 
 // B72 provider stance release. ACME starts ordinary on-foot treatments from empty-hands crouch, but setUnitPos is
 // only an entry guard, never a permanent player lock. Once ACE reports success/failure, release AUTO after the
@@ -12,6 +14,13 @@
 // simply yields its pose to movement/treatments; torso DP is the exclusive maneuver and movement hard-releases it.
 ["ace_treatmentStarted", {
     params ["_medic", "_patient", "_bodyPart", ["_classname", ""]];
+    if (!isNull _medic && {local _medic}) then {
+        _medic setVariable ["ACME_providerTreatmentEpoch", (_medic getVariable ["ACME_providerTreatmentEpoch", 0]) + 1, false];
+    };
+    // B213 observation is an active maneuver; a new treatment replaces its watch and exact pose token.
+    if (hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}) then {
+        [false, false, -1, true] call ACME_fnc_respirationStop;
+    };
     if (hasInterface && {!isNil "ACE_player"} && {_medic isEqualTo ACE_player}
         && {uiNamespace getVariable ["ACME_PulseCheckActive", false]}) then {
         uiNamespace setVariable ["ACME_PulseCheckCancel", true];
@@ -54,6 +63,10 @@
             && {uiNamespace getVariable ["ACME_PulseCheckActive", false]}
             && {(uiNamespace getVariable ["ACME_PulseCheckMedic", objNull]) isEqualTo _medic}
             && {(uiNamespace getVariable ["ACME_PulseCheckPatient", objNull]) isEqualTo _patient};
+        private _respiration = uiNamespace getVariable ["ACME_RespirationSession", []];
+        private _respirationStillOwnsProvider = (_classKey == "acme_measurerespirations")
+            && {(_respiration param [1, objNull]) isEqualTo _medic}
+            && {(_respiration param [2, objNull]) isEqualTo _patient};
 
         // A completed/failed treatment gets a fresh quiet window before Direct Pressure is allowed to visibly resume.
         // Head positioning is the exception: its provider sequence continues after the ACE event, so a successful
@@ -66,7 +79,7 @@
                 _medic setVariable ["ACME_DP_Paused", false, false];
                 _medic setVariable ["ACME_DP_PauseTreatmentClass", "", false];
             };
-            if (!_headStillActive && {!_pulseStillOwnsProvider}) then {
+            if (!_headStillActive && {!_pulseStillOwnsProvider} && {!_respirationStillOwnsProvider}) then {
                 _medic setVariable ["ACME_DP_TreatmentBusy", false, false];
                 _medic setVariable ["ACME_dah_gen", (_medic getVariable ["ACME_dah_gen", 0]) + 1, false];
                 _medic setVariable ["ACME_DP_InPose", false];
@@ -99,6 +112,8 @@
                         || {[_p] call ACM_core_fnc_cprActive}
                         || {[_p] call ACM_core_fnc_bvmActive}
                     }) exitWith {};
+                    private _observation = uiNamespace getVariable ["ACME_RespirationSession", []];
+                    if ((_observation param [1, objNull]) isEqualTo _m) exitWith {};
                     private _menu = uiNamespace getVariable ["ace_medical_gui_menuDisplay", displayNull];
                     private _progress = uiNamespace getVariable ["ace_common_dlgProgress", displayNull];
                     // Do not replace a purpose-built minigame/dialog which a treatment callback intentionally opened.

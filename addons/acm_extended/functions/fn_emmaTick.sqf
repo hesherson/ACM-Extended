@@ -178,7 +178,8 @@ if (_capBreathing) then {
         if (!isNull _bvmPatient) then {
             // TBI/manual-ventilation telemetry is casualty-owned. The owner publishes a serverTime freshness stamp,
             // so a medic's local clock can never make bagging appear stale/future on another machine.
-            [_bvmPatient, "bvmTelemetry", [_rr]] call ACME_fnc_ownerDispatch;
+            private _state = _player getVariable ["ACME_resusToken_bvm",[]];
+            [_bvmPatient, "bvmTelemetry", [_rr,_player,_state,serverTime]] call ACME_fnc_ownerDispatch;
         };    };
 };
 _player setVariable ["ACME_emma_breaths", _breaths];

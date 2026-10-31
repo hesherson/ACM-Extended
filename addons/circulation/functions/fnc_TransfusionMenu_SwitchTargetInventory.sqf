@@ -5,7 +5,7 @@
  * Handle switching inventory target.
  *
  * Arguments:
- * None
+ * 0: Advance the inventory source <BOOL> (optional, default true)
  *
  * Return Value:
  * None
@@ -16,15 +16,22 @@
  * Public: No
  */
 
+// Native button callbacks and a bare call inherit their caller's _this. Only an
+// explicit Boolean changes this policy; provider/control payloads mean advance.
+private _medic = missionNamespace getVariable [QGVAR(TransfusionMenu_Medic), objNull];
+if (isNull _medic) then {_medic = call ACME_fnc_controlledProvider;};
+if (isNull _medic || {!local _medic} || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)}) exitWith {};
+private _advance = if (!isNil "_this" && {_this isEqualType []}) then {_this param [0,true]} else {true};
+if !(_advance isEqualType true) then {_advance = true;};
 private _targetInventory = GVAR(TransfusionMenu_Selected_Inventory);
 
-_targetInventory = _targetInventory + 1;
+if (_advance) then {_targetInventory = _targetInventory + 1;};
 
-private _vehicle = objectParent ACE_player;
+private _vehicle = objectParent _medic;
 
 switch (_targetInventory) do {
     case 1: {
-        if (ACE_player == GVAR(TransfusionMenu_Target)) then {
+        if (_medic == GVAR(TransfusionMenu_Target)) then {
             if !(isNull _vehicle) then {
                 _targetInventory = 2;
             } else {
@@ -52,7 +59,7 @@ private _ctrlInventorySelectText = _display displayCtrl IDC_TRANSFUSIONMENU_SELE
 
 private _text = [LLSTRING(Common_Self), LLSTRING(Common_Patient), LLSTRING(Common_Vehicle)] select GVAR(TransfusionMenu_Selected_Inventory);
 
-private _target = [ACE_player, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
+private _target = [_medic, GVAR(TransfusionMenu_Target), _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
 
 _ctrlInventorySelectText ctrlSetText (format [LLSTRING(Common_InventoryTarget), _text]);
 
@@ -78,7 +85,8 @@ private _extendedFluids = [
     ["ACME_PlasmaLyteBag_250", "PlasmaLyteIV_250"],
     ["ACME_PlasmaLyteBag_100", "PlasmaLyteIV_100"],
     ["ACME_SalineBag_50", "SalineIV_50"],
-    ["ACME_SalineBag_100", "SalineIV_100"]
+    ["ACME_SalineBag_100", "SalineIV_100"],
+    ["ACM_Vial_Propofol", "ACME_PropofolIV_50"]
 ];
 {
     _x params ["_item", "_fluidData"];
@@ -141,16 +149,37 @@ if (count _activeFreshBloodList > 0) then {
     };
 } forEach _cachedItems;
 
+private _ctrlInventoryPanel = _display displayCtrl IDC_TRANSFUSIONMENU_RIGHTLISTPANEL;
+// The empty-target branch must clear the previous inventory too. Never leave selectable stale bags behind.
+lbClear _ctrlInventoryPanel;
+_ctrlInventoryPanel lbSetCurSel -1;
+_display setVariable ["ACME_txCoolerNextScan", 0];
+uiNamespace setVariable ["ACME_coolerRowSig", "__force__"];
+uiNamespace setVariable ["ACME_usedRowSig", "__force__"];
+if (_advance) then {
+    // Changing inventory means viewing that inventory, not a provider-only prepared-set overlay.
+    uiNamespace setVariable ["ACME_preparedListMode", false];
+    {missionNamespace setVariable [_x, ""];} forEach ["ACME_yPending", "ACME_yPendingData", "ACME_yPendingSaline", "ACME_yPendingSalineData"];
+};
+// While pairing the Y set, offer only compatible saline. Advancing the source
+// cancels the pairing above and therefore restores the ordinary inventory list.
+private _selectingSaline = !(uiNamespace getVariable ["ACME_preparedListMode", false])
+    && {(missionNamespace getVariable ["ACME_yPending", ""]) != ""}
+    && {(missionNamespace getVariable ["ACME_yPendingSaline", ""]) == ""};
 private _index = _fluidsArray findIf {_x in _cachedItems};
-
 if (_index < 0) exitWith {};
 
-private _ctrlInventoryPanel = _display displayCtrl IDC_TRANSFUSIONMENU_RIGHTLISTPANEL;
-
-lbClear _ctrlInventoryPanel;
 
 private _fnc_addToInventoryPanel = {
     params ["_ctrlInventoryPanel", "_fluidsArrayData", "_count", "_entry", "_index"];
+    if (_selectingSaline && {!([_entry, _fluidsArrayData select _index] call ACME_fnc_isSalineItem)}) exitWith {};
+    private _piggyback = missionNamespace getVariable ["ACME_piggybackPending",[]];
+    private _piggybackEligible = true;
+    if (_piggyback isNotEqualTo []) then {
+        private _type = getText (configFile >> "ace_medical_treatment" >> "IV" >> (_fluidsArrayData select _index) >> "type");
+        _piggybackEligible = count _piggyback >= 6 && {[_piggyback select 0,_piggyback select 1,_piggyback select 2,_piggyback select 3,_type,false] call ACME_fnc_piggybackEligible};
+    };
+    if (!_piggybackEligible) exitWith {};
 
     private _config = (configFile >> "CfgWeapons" >> _entry);
     private _name = "";
@@ -179,6 +208,7 @@ private _fnc_addToInventoryPanel = {
     _ctrlInventoryPanel lbSetPicture [_i, getText (_config >> "picture")];
     _ctrlInventoryPanel lbSetData [_i, (format ["%1|%2",_entry,_fluidsArrayData select _index])];
     _ctrlInventoryPanel lbSetTooltip [_i, (format [LLSTRING(Common_Available), _count])];
+    if (_piggyback isNotEqualTo []) then {_ctrlInventoryPanel lbSetColor [_i,[0.79,0.73,0.89,1]];};
 };
 
 if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {

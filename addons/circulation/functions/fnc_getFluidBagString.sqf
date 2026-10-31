@@ -15,13 +15,13 @@
  * Public: No
  */
 
-params ["_classname"];
+params ["_classname", ["_inline", [], [[]]], ["_expectedBloodType", -1, [0]], ["_knownID", -1, [0]]];
 
 private _classnameSplit = _classname splitString "_";
-private _freshBloodID = -1;
+private _freshBloodID = _knownID;
 
 if ((_classnameSplit select 0) == "FreshBloodBag") then {
-    _freshBloodID = parseNumber (_classnameSplit select 2);
+    _freshBloodID = parseNumber (_classnameSplit param [2, str _knownID]);
     _classname = format ["%1_%2", (_classnameSplit select 0), (_classnameSplit select 1)];
 };
 
@@ -34,11 +34,12 @@ switch (_fluidType) do {
         _fluidType = format ["%1 %2 %3ml", LLSTRING(Blood), ([GET_NUMBER(_config >> _classname >> "bloodtype",0), 1] call FUNC(convertBloodType)), _fluidAmount];
     };
     case "FreshBlood": {
-        private _freshEntry = [_freshBloodID] call FUNC(getFreshBloodEntry);
-        if (_freshEntry isEqualType [] && {count _freshEntry >= 3}) then {
-            _fluidType = format ["%1 %2ml %3 [ID:%4]", LLSTRING(FreshBlood), _fluidAmount, [(_freshEntry param [2, -1]), 1] call FUNC(convertBloodType), _freshBloodID];
+        private _freshEntry = [_freshBloodID, _inline, _expectedBloodType] call ACME_fnc_freshBloodResolve;
+        if (_freshEntry isNotEqualTo []) then {
+            _fluidType = format ["%1 %2ml %3", LLSTRING(FreshBlood), _fluidAmount, [(_freshEntry select 2), 1] call FUNC(convertBloodType)];
+            if (_freshBloodID >= 0) then {_fluidType = _fluidType + format [" [ID:%1]", _freshBloodID];};
         } else {
-            _fluidType = format ["%1 %2ml [ID:%3]", LLSTRING(FreshBlood), _fluidAmount, _freshBloodID];
+            _fluidType = format ["%1 %2ml (donor information unavailable)", LLSTRING(FreshBlood), _fluidAmount];
         };
     };
     default {

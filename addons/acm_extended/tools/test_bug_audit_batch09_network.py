@@ -48,9 +48,17 @@ def test_shock_tick_dedupes_scalar_and_hashmap_publication():
 def test_aspiration_and_preoxygenation_preserve_owner_exact_values():
     asp = source("aspirationTick")
     pre = source("preoxygenationTick")
-    assert asp.count('call ACME_fnc_setVarNetApprox') >= 7
+    # Atomic authority replaces the duplicate early load write; mirrors still retain exact owner values.
+    assert '[_u,"ACME_aspiration_State",_state] call ACME_fnc_setVarNet;' in asp
+    for field in ("load", "edema", "injury", "SpO2Penalty", "RRDrive", "shunt"):
+        rows = [row for row in asp.splitlines() if f'"ACME_aspiration_{field}"' in row and 'call ACME_fnc_setVarNetApprox' in row]
+        assert len(rows) == 1 and ',0] call ACME_fnc_setVarNetApprox' in rows[0]
     assert '_u setVariable ["ACME_aspiration_lastAt",_now,false];' in asp
-    assert 'ACM_core_TargetVitals_RespirationRate' in asp
+    assert 'ACM_core_TargetVitals_RespirationRate' not in asp
+    assert 'call ACM_core_fnc_setTargetVitalsState' not in asp
+    endpoint = (ROOT.parent / "breathing/functions/fnc_updateRespirationRate.sqf").read_text(encoding="utf-8-sig")
+    assert '[_unit] call ACME_fnc_aspirationState' in endpoint
+    assert '14 * _injury' in endpoint
     assert 'call ACME_fnc_setVarNetApprox' in pre
     assert 'call ACME_fnc_setVarNet;' in pre
 

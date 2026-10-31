@@ -26,7 +26,7 @@ def primitives(text):
 
 def supply_setup():
     functions=''
-    for name in ('treatmentSupplyOrder','treatmentSupplyCount','treatmentSupplyTake','treatmentSupplyRefund'):
+    for name in ('itemCount','treatmentSupplyOrder','treatmentSupplyCount','treatmentSupplyTake','treatmentSupplyRefund'):
         text=source(name).replace('objectParent _x','(_x getVariable ["fixtureParent",objNull])')
         text=text.replace('itemCargo _vehicle','(_vehicle call _cargoFor)')
         text=text.replace('_vehicle addItemCargoGlobal [_item, 1]','[_vehicle,_item] call _addCargo')
@@ -208,7 +208,9 @@ def suction_setup():
     bulb=re.sub(r'\[_pat, \(_dev getOrDefault \["sfxSqueeze"[^;]+ remoteExec \["ACME_fnc_remoteSay3D", 0\];','_sounds pushBack "squeeze";',bulb)
     state=source('suctionStateLocal').replace('(_proof param [0, objNull]) == _patient','(_proof param [0, objNull]) isEqualTo _patient')
     return laryngo_setup()+supply_setup()+'''
-        private _drained=[];private _published=[];
+        private _drained=[];private _published=[];private _manualSounds=[];
+        // Discrete sound output is an engine boundary; B226 executes its emitter/cleanup separately.
+        ACME_fnc_manualSuctionSound={_manualSounds pushBack _this;};
         ACME_fnc_suctionSfxStop={};ACME_fnc_traySlotState={};ACME_fnc_ownerRegister={};
         ACME_fnc_zeroPad={str (_this select 0)};
         ACME_fnc_laryngoFluidDrain={_drained pushBack _this;};

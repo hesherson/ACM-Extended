@@ -76,7 +76,7 @@ def registry_setup():
         private _holderPerson=true;private _cargo=[[],[]];
         _medic setVariable ["ACME_infusion_openVials",createHashMap];
         _patient setVariable ["ACME_infusion_openVials",createHashMap];
-    '''+'ACM_circulation_fnc_setLocalUiState={'+adapt(native,'circulation')+'};'+fn('vialClass')+fn('vialMedication')+fn('initMedicationRegistry')+fn('restoreMedicationList')+fn('medicationSourceRows')+\
+    '''+'ACM_circulation_fnc_setLocalUiState={'+adapt(native,'circulation')+'};'+fn('itemCount')+fn('vialClass')+fn('vialMedication')+fn('initMedicationRegistry')+fn('restoreMedicationList')+fn('medicationSourceRows')+\
         'ACME_fnc_vialItemCount={'+config_code((F/'fn_vialItemCount.sqf').read_text().replace('_holder isKindOf "CAManBase"','_holderPerson').replace('getItemCargo _holder','_cargo'))+'};'
 
 
@@ -232,6 +232,7 @@ def test_native_sort_delegation_is_retained_without_an_index_remap():
 
 def listbox_code(text):
     """Represent only the listbox/control engine primitives for one real control."""
+    text=text.replace('focusedCtrl _display','_focusedCtrl').replace('ctrlIDC _durationFocus','_focusedId')
     text=text.replace('_display displayCtrl 84006','_listCtrl')
     text=text.replace('lbSize _list','(count _listRecords)').replace('lbCurSel _list','_selected')
     text=text.replace('lbClear _list;', '_listRecords=[]; _selected=-1; _clears=_clears+1;')
@@ -256,6 +257,7 @@ def ui_setup():
     sync=(F/'fn_skMedicationSync.sqf').read_text()
     return row_setup()+'''
         private _display=missionNamespace;private _d=_display;private _listCtrl=_patient;
+        private _focusedCtrl=objNull;private _focusedId=-1;
         private _listRecords=[];private _selected=-1;private _clears=0;private _shown=true;private _stockCalls=0;
         private _lbGet={params ["_i","_field"];if (_i<0 || {_i>=count _listRecords}) exitWith {""};(_listRecords select _i) param [_field,""]};
         private _lbSet={params ["_args","_field"];_args params ["_i","_value"];(_listRecords select _i) set [_field,_value];};

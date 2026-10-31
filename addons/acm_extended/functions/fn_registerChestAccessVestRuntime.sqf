@@ -2,7 +2,10 @@
 // This is deliberately class-exact. CPR and every explicit BVM treatment variant now share the same carrier custody
 // so middle-mouse CPR <-> BVM handoffs cannot re-dress the casualty between maneuvers.
 private _maneuverClasses = ["cpr", "usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen"];
-private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest"] + _maneuverClasses;
+// Pad placement needs exposed skin. Match only the pad action: oximeter/cuff/capnograph actions inherit
+// AED_ApplyPads in config, but must never acquire chest custody merely because of that inheritance.
+// B229: BVM does not require chest exposure. Keep the maneuver family for an existing CPR lease only.
+private _classes = ["usestethoscope", "checkbreathing", "acme_inspectchest", "aed_applypads", "cpr"];
 missionNamespace setVariable ["ACME_chestAccess_classes", _classes];
 missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClasses];
 
@@ -89,6 +92,14 @@ missionNamespace setVariable ["ACME_chestAccess_maneuverClasses", _maneuverClass
 
             private _preparing = (_m getVariable ["ACME_chestAccessPreflightActive", false])
                 && {((_m getVariable ["ACME_chestAccess_treatment", []]) param [0,objNull]) isEqualTo _p};
+
+            // MP admission may still be in flight after the short native launcher completed.
+            // Keep the exact existing lease while that bounded provider intent awaits its ACK.
+            private _pending = _m getVariable ["ACME_resusPending",[]];
+            _preparing = _preparing || {count _pending == 9
+                && {(_pending select 0) in ["cpr","bvm"]}
+                && {(_pending select 1) isEqualTo _p}
+                && {serverTime < (_pending select 8)}};
 
             private _maneuverActive = [_p] call ACME_fnc_chestAccessManeuverActive;
 

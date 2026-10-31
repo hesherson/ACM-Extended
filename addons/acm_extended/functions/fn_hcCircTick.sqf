@@ -10,16 +10,17 @@
 // fill the tank first and none of this happens. that is the entire lesson, and it is not written down anywhere in
 // the interface because in real life it is not written down anywhere either.
 params ["_patient"];
-if (isNull _patient) exitWith {};
+if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
+// Use the same bounded owner-local elapsed clock as other clinical effects;
+// the 4 Hz maintenance worker is independent of rendering/server frame rate.
+private _dt = [_patient, "hcCirc", 0.25, 5] call ACME_fnc_clinicalTickDelta;
 if (!(missionNamespace getVariable ["ACME_hcEff_circ", false])) exitWith {
     [_patient, "ACME_hc_pressorDebt", 0] call ACME_fnc_setVarNet;
 };
-if (!alive _patient) exitWith {};
-
 private _pressor = (_patient getVariable ["ACME_pressorResistAdd", 0]) max 0;
 if (_pressor <= 0.5) exitWith {
     // off pressors: the debt clears slowly, because the tissue that was starved takes time to recover.
-    private _d = (_patient getVariable ["ACME_hc_pressorDebt", 0]) - (0.15 * diag_deltaTime);
+    private _d = (_patient getVariable ["ACME_hc_pressorDebt", 0]) - (0.15 * _dt);
     [_patient, "ACME_hc_pressorDebt", (_d max 0), 0.05, 2] call ACME_fnc_setVarNetApprox;
 };
 if (_pressor <= 0.5) exitWith {};
@@ -34,7 +35,7 @@ private _deficit = ((6 - _vol) / 6) max 0;
 if (_deficit < (missionNamespace getVariable ["ACME_hcCirc_safeDeficit", 0.15])) exitWith {};
 
 private _rate = (missionNamespace getVariable ["ACME_hcCirc_debtRate", 0.9]) * _deficit;
-private _debt = ((_patient getVariable ["ACME_hc_pressorDebt", 0]) + (_rate * diag_deltaTime))
+private _debt = ((_patient getVariable ["ACME_hc_pressorDebt", 0]) + (_rate * _dt))
     min (missionNamespace getVariable ["ACME_hcCirc_debtMax", 100]);
 [_patient, "ACME_hc_pressorDebt", _debt, 0.05, 2] call ACME_fnc_setVarNetApprox;
 

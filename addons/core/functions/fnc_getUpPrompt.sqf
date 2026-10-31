@@ -18,12 +18,12 @@
 params ["_unit"];
 private _acmeReconcile = "B106:getUpLifecycle";
 
-if (ACE_player != _unit) exitWith {};
+if ((call ACME_fnc_controlledProvider) != _unit) exitWith {};
 
 [LLSTRING(LyingState_GetUp), "", ""] call ACEFUNC(interaction,showMouseHint);
 
 _unit setVariable [QGVAR(GetUpActionID), [0xF0, [false, false, false], {
-    ACE_player call FUNC(getUp);
+    (call ACME_fnc_controlledProvider) call FUNC(getUp);
 }, "keyup", "", false, 0] call CBA_fnc_addKeyHandler];
 
 private _inVehicle = !(isNull (objectParent _unit));
@@ -42,6 +42,7 @@ private _inVehicle = !(isNull (objectParent _unit));
 
         if (alive _unit && (animationState _unit != "AinjPfalMstpSnonWnonDf_carried_dead") && !(IS_UNCONSCIOUS(_unit))) then {
             _unit setVariable [QGVAR(Lying_State), false, true];
+            if (!isNil "ACME_fnc_aiProtectionSync") then {[_unit] call ACME_fnc_aiProtectionSync;};
         };
     };
 

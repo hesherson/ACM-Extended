@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,7 +40,9 @@ def test_prepared_hang_runtime_is_complete_and_owner_authoritative():
     assert 'case "preparedHang": {_args call ACME_fnc_preparedHangCommit;};' in owner
     assert '["ACME_preparedHangResult", {_this call ACME_fnc_preparedHangResult;}] call CBA_fnc_addEventHandler;' in init
     assert 'ACME_preparedHangPending' in init
-    assert '[_target, "preparedHang", _args] call ACME_fnc_ownerDispatch;' in hang
+    assert re.search(r'\[_target,\s*"preparedHang",\s*_args\] call ACME_fnc_ownerDispatch;', hang)
+    assert hang.index('call ACME_fnc_inventoryLedgerReserve') < hang.index('call ACME_fnc_ownerDispatch')
+    assert 'if (_accepted) then {' in hang
     assert '_sets deleteAt _setIdx;' not in hang
     assert 'if (!local _patient) exitWith {[_patient, "preparedHang", _this] call ACME_fnc_ownerDispatch;};' in commit
     assert '_medic setVariable ["ACME_preparedIVSets", _sets, true];' in commit

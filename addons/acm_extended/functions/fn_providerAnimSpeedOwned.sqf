@@ -11,6 +11,11 @@ params [
 ];
 
 if (isNull _unit) exitWith {false};
+// B213: the finite pressure release owns speed/stance only on its originating locality.
+private _pressureExit = _unit getVariable ["ACME_DP_Exit", []];
+if ((count _pressureExit) >= 7
+    && {(_pressureExit param [2, -1]) == (_unit getVariable ["ACME_providerLocalityEpoch", 0])}
+    && {(CBA_missionTime - (_pressureExit param [4, -1e6])) < ((_pressureExit param [6, 0]) + 2)}) exitWith {true};
 
 if ((_unit getVariable ["ACME_nativeTreatmentRate", []]) isNotEqualTo []) exitWith {true};
 if ((_unit getVariable ["ACME_treatmentPoseState", []]) isNotEqualTo []) exitWith {true};

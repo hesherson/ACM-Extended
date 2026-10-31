@@ -52,6 +52,7 @@ def code(text):
     text=text.replace('_holder getVariable ["ACME_vialLease",[objNull,"",0]]',
                       '([_holder,"ACME_vialLease",[objNull,"",0]] call _namespaceDefault)')
     text=text.replace('_holder removeItem _consumeClass;', '[_holder,_consumeClass] call _removeItem;')
+    text=text.replace('_unit removeItem _item;', '[_unit,_item] call _removeItem;')
     text=text.replace('_holder addItemCargoGlobal [_consumeClass, -1];','[_holder,_consumeClass] call _removeItem;')
     text=re.sub(r'configFile >> "ACM_Medication" >> "Concentration" >> (_\w+)',r'\1',text)
     text=text.replace('getNumber (_cfg >> "volume")','([_cfg,"volume"] call _configNumber)')
@@ -80,11 +81,12 @@ def setup():
         private _removeItem={params ["_holder","_item"]; _inventoryCounts set [_item,(_inventoryCounts get _item)-1]; _inventoryDebits=_inventoryDebits+1;};
         ACME_fnc_vialCapacity={[_this select 0,"volume"] call _configNumber};
         ACME_fnc_vialItemCount={[_inventoryCounts,[_this select 1,0]] call _mapDefault};
+        ace_common_fnc_getCountOfItem=ACME_fnc_vialItemCount;
         ACME_fnc_openVialStoreCommit={params ["_h","_map"]; _h setVariable ["ACME_infusion_openVials",_map]; _stockWrites=_stockWrites+1;};
         ACME_fnc_ownerDispatch={_events pushBack _this;};
         _patient setVariable ["ACME_infusion_openVials",createHashMap];
         _medic setVariable ["ACME_infusion_openVials",createHashMap];
-    ''' + ''.join(function(n) for n in ('vialClass','infusionVialVolume','vialTake','vialRefund','vialRefundLocal','vialLeaseEnsure','vialLeaseResult','vialLeaseCommit','vialLeaseRelease'))
+    ''' + ''.join(function(n) for n in ('itemCount','itemTake','vialClass','infusionVialVolume','vialTake','vialRefund','vialRefundLocal','vialLeaseEnsure','vialLeaseResult','vialLeaseCommit','vialLeaseRelease'))
 
 
 @pytest.mark.parametrize('refresh',[0.0,0.016,0.2,1.49])

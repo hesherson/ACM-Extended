@@ -4,6 +4,9 @@
  * entering must wait on it, never issue another put-away animation. Weapons are never automatically restored.
  */
 params [["_medic", objNull, [objNull]]];
+// No RTM will follow in presentation-disabled mode. Report immediate readiness without starting a holster or
+// changing the existing one-shot reservation; the caller still owns clinical timing and treatment callbacks.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {0};
 if (isNull _medic || {!local _medic} || {!alive _medic} || {[_medic] call ACME_fnc_animBlocked}) exitWith {0};
 
 // Empty hands are not ready until BOTH Arma's logical weapon selection and the visible animation agree.
@@ -16,10 +19,19 @@ private _ownedEmptyState = _state in [
     "acme_stethoscopework",
     "acme_directpressurehold",
     "acm_genericcontinuous",
+    "acme_junctionalwork",
     "acm_pronecontinuous"
 ];
-private _visuallyEmpty = (((_state find "wnon") >= 0) && {((_state find "snon") >= 0)}) || {_ownedEmptyState};
+// A Wpst/Wrfl -> Wnon transition names both endpoints while the weapon is still visible.
+private _visuallyEmpty = (((_state find "wnon") >= 0) && {((_state find "snon") >= 0)}
+    && {(["wpst","wrfl","wlnr","wbin"] findIf {(_state find _x) >= 0}) < 0}) || {_ownedEmptyState};
 private _weapon = currentWeapon _medic;
+if (_ownedEmptyState) exitWith {
+    // These are exact stable medical states, never a partial handgun-holstering transition.
+    if (_weapon != "") then {_medic selectWeapon "";};
+    _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_ready", CBA_missionTime, ""], false];
+    0
+};
 if (_weapon == "" && {_visuallyEmpty}) exitWith {
     _medic setVariable ["ACME_medicAnimationPrep", ["empty_hands_ready", CBA_missionTime, ""], false];
     0

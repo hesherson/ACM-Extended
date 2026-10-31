@@ -3,8 +3,26 @@
 // ACM_GenericContinuous phase is played here explicitly instead of through animationmedic.
 params ["_medic"];
 if (isNull _medic || {!local _medic}) exitWith {};
+// B265: a duplicate preparation is not another equipment transaction. An
+// unresolved earlier snapshot must be recovered BEFORE touching new weapons.
+if (_medic getVariable ["ACME_hang_Raising", false]) exitWith {};
+if ((_medic getVariable ["ACME_hang_savedWeaponSlots", []]) isNotEqualTo []
+    || {(_medic getVariable ["ACME_hang_weaponRestoreCargo", [[], []]]) isNotEqualTo [[], []]}
+    || {(_medic getVariable ["ACME_hang_weaponRestoreCargoAnomaly", false]) isNotEqualTo false}) exitWith {
+    ["Hang Bag: previous weapon return is incomplete. Resolve it before starting again.", 4, _medic]
+        call ace_common_fnc_displayTextStructured;
+};
 
+_medic setVariable ["ACME_hang_weaponKitEpoch", _medic getVariable ["ACME_equipmentKitEpoch", 0], true];
+
+private _prone = ([_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon";
+private _prepToken = (_medic getVariable ["ACME_hang_PrepToken", 0]) + 1;
+private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
+_medic setVariable ["ACME_hang_PrepToken", _prepToken];
+_medic setVariable ["ACME_hang_Prone", _prone];
 _medic setVariable ["ACME_hang_Raising", true];
+_medic setVariable ["ACME_hang_PrepPoseEntered", false];
+_medic setVariable ["ACME_hang_PrepComplete", false];
 
 // Raising and holding an IV bag uses both provider arms. If Direct Pressure is active, keep the DP session alive
 // but suspend its clinical marker and looping pose until this Hang Bag maneuver is cancelled or fully lowered.
@@ -16,45 +34,86 @@ if (_medic getVariable ["ACME_DP_Active", false]) then {
     _medic setVariable ["ACME_DP_IdleStart", CBA_missionTime, false];
     _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
 };
-[_medic] call ACME_fnc_medicAnimationPrep;
-_medic setUnitPos "MIDDLE";
+// Clinical preparation and DP yield above remain active without animation/temporary weapon custody.
+if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
+private _prepDelay = [_medic] call ACME_fnc_medicAnimationPrep;
+if !(_prepDelay isEqualType 0) then {_prepDelay = 0;};
 
-// some weapon mods make a back-slung weapon clip the ground in the crouched hold pose and loop a rapid
-// collision-audio smacking sound. fully removing the back weapons, the primary and the launcher, for the duration
-// kills that collider, and they are restored with their full state in fn_hangbagstop, which the watchdog of the
-// hold also calls on death, unconsciousness, a leash break or lowering.
-// it falls back to the old on-back stow if removal is disabled. Publish the two removed slots once so death,
-// disconnect or a locality transfer can restore the corpse/provider on whichever machine owns it afterward.
-if ((missionNamespace getVariable ["ACME_hang_removeWeapon", true]) && {(primaryWeapon _medic != "") || {secondaryWeapon _medic != ""}}) then {
-    // save the full state of the primary and launcher slots (weapon, attachments, magazines, bipod) first
-    private _ld = getUnitLoadout _medic;
-    _medic setVariable ["ACME_hang_savedWeaponSlots", [_ld select 0, _ld select 1], true];
-
-    // remove only the weapons. no setUnitLoadout, so uniforms and their hidden selections are never rebuilt
-    if (primaryWeapon _medic != "") then {_medic removeWeapon (primaryWeapon _medic);};
-    if (secondaryWeapon _medic != "") then {_medic removeWeapon (secondaryWeapon _medic);};
-} else {
-    // The single entry preflight above already selected empty hands. Do not issue another stow request.
-};
-
+private _pose = [_medic, "ACM_GenericContinuous", _prone] call ACME_fnc_providerAnimation;
 private _enterGeneric = {
-    params ["_medic"];
-    if (!isNull _medic && {_medic getVariable ["ACME_hang_Raising", false]} && {!(_medic getVariable ["ACME_hang_Active", false])}) then {
-        [_medic, "ACM_GenericContinuous", 1.4] call ACME_fnc_doAnimHeld;
+    params ["_medic", "_pose", "_prepToken", "_localityEpoch"];
+    if (isNull _medic || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
+        || {(_medic getVariable ["ACME_hang_PrepToken", -1]) != _prepToken}
+        || {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}
+        || {(_medic getVariable ["ACME_hang_weaponKitEpoch", 0]) != (_medic getVariable ["ACME_equipmentKitEpoch", 0])}
+        || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
+        || {[_medic] call ACME_fnc_animBlocked}) exitWith {};
+    if (_medic getVariable ["ACME_hang_Raising", false]) then {
+        _pose = [_medic, _pose] call ACME_fnc_providerAnimation;
+        if (stance _medic == "PRONE" || {_pose == "ACM_ProneContinuous"}) then {_medic setVariable ["ACME_hang_Prone", true];};
+        [_medic, _pose, 1.4, 1, true] call ACME_fnc_doAnimHeld;
+        _medic setVariable ["ACME_hang_PrepComplete", true];
     };
 };
 
-// use the stock kneel transitions before entering ACM_GenericContinuous, so the beginning does not snap.
-switch (stance _medic) do {
-    case "STAND": {
-        [_medic, "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1.4, 1] call ACME_fnc_doAnimHeld;
-        [_enterGeneric, [_medic], 0.65] call CBA_fnc_waitAndExecute;
+// Let the one weapon stow finish before a stance/medical move can replace it. Starting the crouch immediately
+// interrupted the handgun holster and could replay its movement/audio underneath the bag preparation.
+private _enter = {
+    params ["_medic", "_pose", "_prepToken", "_localityEpoch", "_enterGeneric", "_deadline", "_retry"];
+    if (isNull _medic || {!local _medic} || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious", false]}
+        || {(_medic getVariable ["ACME_hang_PrepToken", -1]) != _prepToken}
+        || {(_medic getVariable ["ACME_providerLocalityEpoch", 0]) != _localityEpoch}
+        || {(_medic getVariable ["ACME_hang_weaponKitEpoch", 0]) != (_medic getVariable ["ACME_equipmentKitEpoch", 0])}
+        || {!(_medic getVariable ["ACME_hang_Raising", false])}
+        || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}
+        || {[_medic] call ACME_fnc_animBlocked}) exitWith {};
+    // The preflight delay is a minimum, not evidence that a slow/modded weapon has visibly left the hands.
+    // Poll readiness without issuing another stow, and bound the worker to this exact preparation episode.
+    if !([_medic] call ACME_fnc_medicAnimationReady) exitWith {
+        if (CBA_missionTime < _deadline) then {
+            [_retry, _this, 0.05] call CBA_fnc_waitAndExecute;
+        } else {
+            if (_medic getVariable ["ACME_hang_Active", false]) then {
+                [true, _medic] call ACME_fnc_hangBagStop;
+            } else {[_medic] call ACME_fnc_hangBagPrepStop;};
+        };
     };
-    case "PRONE": {
-        [_medic, "AmovPpneMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1.4, 1] call ACME_fnc_doAnimHeld;
-        [_enterGeneric, [_medic], 1.116] call CBA_fnc_waitAndExecute;
+    // some weapon mods make a back-slung weapon clip the ground in the crouched hold pose and loop a rapid
+    // collision-audio smacking sound. fully removing the back weapons, the primary and the launcher, for the duration
+    // kills that collider, and they are restored with their full state in fn_hangbagstop, which the watchdog of the
+    // hold also calls on death, unconsciousness, a leash break or lowering.
+    // it falls back to the old on-back stow if removal is disabled. Publish the two removed slots once so death,
+    // disconnect or a locality transfer can restore the corpse/provider on whichever machine owns it afterward.
+    if ((missionNamespace getVariable ["ACME_hang_removeWeapon", true]) && {(primaryWeapon _medic != "") || {secondaryWeapon _medic != ""}}) then {
+        // Preserve the exact original weapon slots, including magazines with
+        // their partial ammo, before changing any gear. Only remove the two
+        // weapons, never rebuild the unit's uniform/hidden selection meshes.
+        private _ld = getUnitLoadout _medic;
+        private _slots = [_ld select 0, _ld select 1];
+        _medic setVariable ["ACME_hang_savedWeaponSlots", _slots, true];
+        _medic setVariable ["ACME_hang_weaponRestoreOwned", [[], []], true];
+        if (primaryWeapon _medic != "") then {_medic removeWeapon (primaryWeapon _medic);};
+        if (secondaryWeapon _medic != "") then {_medic removeWeapon (secondaryWeapon _medic);};
+    } else {
+        // The single entry preflight above already selected empty hands. Do not issue another stow request.
     };
-    default {
-        [_medic, "ACM_GenericContinuous", 1.4] call ACME_fnc_doAnimHeld;
+
+    _pose = [_medic, _pose] call ACME_fnc_providerAnimation;
+    private _prone = _pose == "ACM_ProneContinuous";
+    _medic setVariable ["ACME_hang_Prone", _prone];
+    _medic setVariable ["ACME_hang_PrepPoseEntered", true];
+    _medic setUnitPos (["MIDDLE", "DOWN"] select _prone);
+    // Preserve a prone provider, including a posture chosen during holstering.
+    if (!_prone && {stance _medic == "STAND"}) then {
+        [_medic, "AmovPercMstpSnonWnonDnon_AmovPknlMstpSnonWnonDnon", 1.4, 1, true] call ACME_fnc_doAnimHeld;
+        [_enterGeneric, [_medic, _pose, _prepToken, _localityEpoch], 0.65] call CBA_fnc_waitAndExecute;
+    } else {
+        [_medic, _pose, _prepToken, _localityEpoch] call _enterGeneric;
     };
+};
+private _entryArgs = [_medic, _pose, _prepToken, _localityEpoch, _enterGeneric, CBA_missionTime + 3, _enter];
+if (_prepDelay > 0) then {
+    [_enter, _entryArgs, _prepDelay] call CBA_fnc_waitAndExecute;
+} else {
+    _entryArgs call _enter;
 };
