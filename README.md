@@ -29,3 +29,7 @@ After rebuilding, replace the installed mod with the new release output and rest
 
 - [Cumulative 1.2.2 patch notes](CHANGELOG.md)
 - [Discord posts and detailed patch records](docs/patch-notes/README.md)
+
+## UI development
+
+- [Shared React UI architecture for ACME, BATDOK and Tempus Pro](docs/design/react-medical-ui-architecture.md): future presentation contract, device/source associations, waveform rendering and native action boundaries. Preparation only; the game UI remains native.
