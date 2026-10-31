@@ -13,6 +13,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
 {
     _x params ["_idc","_capacity","_shown"];
     private _paneIndex = _forEachIndex;
+    private _reactPane = _paneIndex == 0 && {_display getVariable ["ACME_reactActive",false]};
     private _list = _display displayCtrl _idc;
     if (!isNull _list) then {
         private _rect = ctrlPosition _list;
@@ -60,7 +61,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
             private _row = (_window select 1) select _slot;
             private _identity = if (_row >= 0) then {[_list,_row] call ACME_fnc_transfusionCardIdentity} else {[]};
             private _visible = _shown && {_identity isNotEqualTo []};
-            [_group,"show",_visible] call ACME_fnc_transfusionUiSet;
+            [_group,"show",_visible && {!_reactPane}] call ACME_fnc_transfusionUiSet;
             if (_visible) then {
                 private _data = [_list,_row] call ACME_fnc_transfusionCardData;
                 _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction",["_total",0]];
@@ -74,7 +75,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
                     if (_group getVariable ["ACME_txFocus",false]) then {"popup"} else {if (_isPib) then {"piggyback"} else {["panel","button"] select (_group getVariable ["ACME_txHover",false])}}
                 };
                 private _cardRect = [_px,_py + _slot * (_rowH + _gap),_w,_rowH];
-                [_group,_cardRect,_profile,0.007,true] call ACME_fnc_transfusionRoundedFrame;
+                [_group,_cardRect,_profile,0.007,!_reactPane] call ACME_fnc_transfusionRoundedFrame;
                 private _hit = _group controlsGroupCtrl 9;
                 _hit setVariable ["ACME_txListIDC",_idc];
                 _hit setVariable ["ACME_txCapacity",_capacity];
@@ -154,7 +155,7 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
         for "_candidate" from 0 to ((lbSize _list) - 1) do {if (([_list,_candidate] call ACME_fnc_transfusionCardIdentity) isNotEqualTo []) exitWith {_hasCard = true;};};
         [_emptyCaption,"text",["No fluids at this access","No infusions at this access","No available fluids","No prepared IV sets","No prepared infusions"] select _paneIndex] call ACME_fnc_transfusionUiSet;
         [_emptyCaption,"position",[_px + _w * 0.04,_py + safeZoneH * 0.008,_w * 0.92,safeZoneH * 0.028]] call ACME_fnc_transfusionUiSet;
-        [_emptyCaption,"show",_shown && {!_hasCard}] call ACME_fnc_transfusionUiSet;
+        [_emptyCaption,"show",_shown && {!_hasCard} && {!_reactPane}] call ACME_fnc_transfusionUiSet;
         // A quiet thumb communicates overflow; the full card is the wheel hit target.
         for "_piece" from 0 to 1 do {
             private _rail = _display displayCtrl (86610 + _paneIndex * 2 + _piece);
@@ -174,3 +175,11 @@ private _panes = [[86004,2,_menu != "bag"],[86129,2,_menu != "infusion"],[86005,
 _display setVariable ["ACME_txCardsReady",true];
 _display setVariable ["ACME_txCardEndpoints",_endpoints];
 _display setVariable ["ACME_txCardLayout",_layout];
+// B294: the optional React renderer occupies this existing pane only. Keep native data,
+// endpoints, rails and handlers current so fallback never reconstructs a workflow.
+if (missionNamespace getVariable ["ACME_reactTransfusion",false] || {_display getVariable ["ACME_reactActive",false]}) then {
+    [_display] call ACME_fnc_reactMedicalOpen;
+};
+if (_display getVariable ["ACME_reactActive",false]) then {
+    {[_display displayCtrl _x,"show",false] call ACME_fnc_transfusionUiSet;} forEach [86500,86501,86600,86178];
+};

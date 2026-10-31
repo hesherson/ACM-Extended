@@ -171,6 +171,6 @@ tools/test_b291_offline_prefix_contract.py
 # B292: suppress unchanged ocular state without losing recovery/escrow transitions.
 addons/acm_extended/tools/test_b292_ocular_publication.py
 
-# B293: local React panel and captured native handoff.
+# B294: in-place React cards; no overview or menu handoff.
 addons/acm_extended/tools/test_b293_react_bridge.py
 tools/test_b293_react_frontend.py

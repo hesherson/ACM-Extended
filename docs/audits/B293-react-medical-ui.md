@@ -1,5 +1,8 @@
 # B293: first local React medical panel
 
+> Superseded by [B294](B294-react-in-place.md). The separate overview and
+> Manage access handoff below were removed after user feedback.
+
 Candidate: **1.2.4.1 / B293**, multiplayer protocol **2**, **19 addons**,
 based on `a2a34fa990f0b8382ec61678e039a904ba82feeb`.
 Browser presentation protocol: **1**, independent of the multiplayer protocol.

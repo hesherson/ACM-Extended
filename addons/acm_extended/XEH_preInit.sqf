@@ -24,7 +24,7 @@ if (hasInterface) then {
 
 private _settings = [
     ["ACME_reactTransfusion", "CHECKBOX",
-        ["React fluid overview (experimental)", "Open the local React IV/IO overview before native transfusion controls. Falls back to the native menu if the browser cannot initialize."],
+        ["React transfusion cards (experimental)", "Render the existing fluid cards in React inside the normal transfusion menu. The original cards remain available if the browser cannot initialize."],
         [_cSys, "Interface"], false, 2, {}],
     ["ACME_menuPoseEnabled", "CHECKBOX",
         ["Crouch when opening the medical menu", "Automatically kneel when opening another casualty's medical menu while standing. Prone medics keep their posture. Disabling this stops automatic menu posture changes; treatment animations keep their own posture requirements."],

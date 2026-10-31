@@ -1,51 +1,55 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
-import { createRoot } from 'react-dom/client';
-import { createMedicalStore } from './bridge.mjs';
-
-const store = createMedicalStore(message => {
-  if (typeof globalThis.A3API?.SendAlert !== 'function') throw new Error('Game interface unavailable');
-  globalThis.A3API.SendAlert(message);
-});
-window.ACMEUI = Object.freeze({ bootstrap: packet => store.bootstrap(packet), receive: packet => store.receive(packet), reject: packet => store.reject(packet) });
-
-function App() {
-  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const [selection, setSelection] = useState(null);
+import React, {useEffect, useState, useSyncExternalStore} from 'react';
+import {createRoot} from 'react-dom/client';
+import {createMedicalStore} from './bridge.mjs';
+const store = createMedicalStore(message => globalThis.A3API?.SendAlert(message));
+window.ACMEUI = Object.freeze({bootstrap:p=>store.bootstrap(p),receive:p=>store.receive(p),ack:p=>store.ack(p)});
+const textures = new Map();
+function Texture({path,className}) {
+  const [src,setSrc] = useState(null);
   useEffect(() => {
-    const timer = setInterval(() => store.checkFreshness(), 500);
-    const close = () => { clearInterval(timer); store.retire(); };
-    window.addEventListener('pagehide', close, { once: true });
-    return () => { clearInterval(timer); window.removeEventListener('pagehide', close); };
-  }, []);
-  const state = snapshot.state;
-  const key = row => `${row.part}:${row.iv}:${row.site}`;
-  const current = state?.accesses.find(row => key(row) === selection) ?? state?.accesses[0];
-  const enabled = snapshot.status === 'connected' && !snapshot.pending;
-  return <main>
-    <header><div><span className="eyebrow">CIRCULATION</span><h1>{state?.patient.name || 'Loading patient…'}</h1></div>
-      <span className={`connection ${snapshot.status}`}>{snapshot.status === 'connected' ? 'Connected' : snapshot.status === 'stale' ? 'Connection lost' : 'Connecting'}</span></header>
-    <div className="workspace">
-      <nav aria-label="Established vascular access"><div className="section-label">ESTABLISHED ACCESS <span>{state?.accesses.length ?? '—'}</span></div>
-        {state?.accesses.map(row => <button className={`access ${current === row ? 'selected' : ''}`} key={key(row)} onClick={() => setSelection(key(row))}>
-          <span className="access-kind">{row.iv ? 'IV' : 'IO'}</span><span><strong>{row.label}</strong><small>{row.bags.length ? `${row.bags.length} connected ${row.bags.length === 1 ? 'bag' : 'bags'}` : 'No bag connected'}</small></span><span className="chevron">›</span></button>)}
-        {state && !state.accesses.length && <p className="empty">No established IV/IO access.</p>}
-      </nav>
-      <section className="detail" aria-label="Connected fluid bags">
-        <div className="detail-heading"><div><span className="eyebrow">SELECTED ACCESS</span><h2>{current?.label || 'Vascular access'}</h2></div>
-          <button className="primary" disabled={!enabled || !current} onClick={() => store.manage(current)}>{snapshot.pending ? 'Opening…' : 'Manage access'}</button></div>
-        <div className="bags">{current?.bags.map((bag, index) => <article className="bag" key={index}>
-          <div className="bag-top"><div><span className="eyebrow">{bag.role || 'CONNECTED FLUID'}</span><h3>{bag.label}</h3></div><span className={`flow ${bag.flowing ? 'running' : ''}`}>{bag.flowing ? 'Running' : 'Not running'}</span></div>
-          <div className="volume"><strong>{bag.remainingMl.toLocaleString()}<small> mL</small></strong><span>{bag.capacityMl.toLocaleString()} mL capacity</span></div>
-          <div className="progress" role="progressbar" aria-label={`${bag.label} remaining volume`} aria-valuenow={bag.remainingMl} aria-valuemin={0} aria-valuemax={bag.capacityMl || 1}><div style={{ width: `${bag.capacityMl ? 100 * bag.remainingMl / bag.capacityMl : 0}%` }} /></div>
-          <div className="graduations" aria-hidden="true">{bag.marks.map(([fraction, ml]) => <span key={ml} style={{ left: `${fraction * 100}%`, transform: fraction === 0 ? 'none' : fraction === 1 ? 'translateX(-100%)' : 'translateX(-50%)' }}>{ml}</span>)}</div>
-          {bag.thermal && <p className="thermal">{bag.thermal}</p>}
-        </article>)}</div>
-        {current && !current.bags.length && <div className="empty-panel"><span className="empty-symbol">＋</span><h3>No bag connected</h3></div>}
-        {state?.truncated && <p className="notice">Additional bags are available in Native controls.</p>}
-        {snapshot.error && <p className="notice" role="alert">{snapshot.error}</p>}
-      </section>
-    </div>
+    let live = true; setSrc(null);
+    if (!path || typeof globalThis.A3API?.RequestTexture !== 'function') return;
+    if (!textures.has(path)) {
+      if (textures.size >= 32) textures.delete(textures.keys().next().value);
+      textures.set(path,Promise.resolve().then(()=>globalThis.A3API.RequestTexture(path.replace(/^\\+/,''),128))
+        .then(value => typeof value === 'string' && value.startsWith('data:image/') ? value : null).catch(()=>null));
+    }
+    textures.get(path).then(value => {if (live) setSrc(value);});
+    return () => {live=false;};
+  },[path]);
+  return src ? <img className={className} src={src} alt="" draggable="false"/> : null;
+}
+const keys = {ArrowUp:200,ArrowDown:208,PageUp:201,PageDown:209,Home:199,End:207};
+function Card({card,enabled}) {
+  const piggyback = card.name.includes('[PiB]');
+  return <button type="button" className={`card ${card.selected?'selected':''} ${piggyback?'piggyback':''} ${card.fraction>=0?'with-track':''}`}
+    style={{gridRow:card.slot+1}} aria-pressed={card.selected} disabled={!enabled}
+    title={[card.name,card.detail,card.status,card.thermal].filter(Boolean).join('\n')} onClick={()=>store.select(card.token)}>
+    <Texture path={card.icon} className="fluid-icon"/>
+    <div className="captions"><div className="name" style={{color:`rgba(${card.color.slice(0,3).map(v=>v*255).join(',')},${card.color[3]})`}}>{card.name}</div>
+      {card.detail && <div className="detail">{card.detail}</div>}
+      {card.status && <div className="status">{card.status}</div>}
+      {card.thermal && <div className={`thermal ${card.thermal.includes('Warming')?'warming':''}`}>{card.thermal}</div>}</div>
+    <Texture path={card.vial} className="vial-icon"/>
+    {card.fraction>=0 && <div className="volume" role="progressbar" aria-label={`${card.name} remaining volume`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={card.fraction*100}>
+      <div className="track"><div className="fill" style={{width:`${card.fraction*100}%`}}/></div>
+      {card.marks.map(([fraction,ml])=><span className="mark" key={ml} style={{left:`${fraction*100}%`}}><i/>{ml}</span>)}
+    </div>}
+  </button>;
+}
+function App() {
+  const snapshot=useSyncExternalStore(store.subscribe,store.getSnapshot);
+  useEffect(()=>{
+    const timer=setInterval(()=>store.checkFreshness(),250);
+    const close=()=>{clearInterval(timer);store.retire();};
+    window.addEventListener('pagehide',close,{once:true});
+    return ()=>{clearInterval(timer);window.removeEventListener('pagehide',close);};
+  },[]);
+  const enabled=snapshot.status==='connected';
+  return <main aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
+    onKeyDown={e=>{if(keys[e.key]){e.preventDefault();store.key(keys[e.key]);}}}>
+    {snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled}/>)}
+    {snapshot.state?.cards.length===0 && <p className="empty">No fluids at this access</p>}
   </main>;
 }
-
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(<App/>);

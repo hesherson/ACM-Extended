@@ -1,23 +1,20 @@
-/* Browser commands navigate to the real native workflow; never debit items or toggle flow here. */
-params ["_display",["_route",[],[[]]]];
-if (isNull _display || {!(_display isEqualTo findDisplay 89300)}) exitWith {false};
-private _context = _display getVariable ["ACME_reactContext",[]];
-if !([_context] call ACME_fnc_reactMedicalValid) exitWith {_display closeDisplay 0;false};
-private _serial = _display getVariable ["ACME_reactSerial",-1];
-private _part = _context select 2;
-private _returnAccess = +(_context select 3);
-if (count _route == 3) then {
-    _part = _route select 0;
-    _returnAccess = [_route select 1,_route select 2];
+/* Restore the original card pool in this display; never navigate, reopen or close a menu. */
+params ["_display"];
+if (isNull _display) exitWith {false};
+_display setVariable ["ACME_reactActive",false];
+_display setVariable ["ACME_reactReady",false];
+_display setVariable ["ACME_reactFailed",true];
+_display setVariable ["ACME_reactSession",""];
+_display setVariable ["ACME_reactRows",createHashMap];
+private _browser = _display displayCtrl 89301;
+if (!isNull _browser) then {_browser ctrlShow false;_browser ctrlEnable false;};
+// The normal card refresh paints these again immediately on its next pass.
+private _shown = ((_display getVariable ["ACME_txCardLayout",createHashMap]) getOrDefault [86004,[]]) param [4,false];
+for "_slot" from 0 to 1 do {
+    private _group = _display displayCtrl (86500 + _slot);
+    if (!isNull _group) then {
+        private _hit = _group controlsGroupCtrl 9;
+        [_group,"show",_shown && {(_hit getVariable ["ACME_txIdentity",[]]) isNotEqualTo []}] call ACME_fnc_transfusionUiSet;
+    };
 };
-_display closeDisplay 0;
-[{
-    params ["_context","_serial","_part","_returnAccess"];
-    // A newer browser or unrelated dialog must never be closed by this old handoff.
-    if (dialog || {_serial != (missionNamespace getVariable ["ACME_reactSerial",-2])}
-        || {!([_context] call ACME_fnc_reactMedicalValid)}) exitWith {};
-    private _patient = _context select 1;
-    if (count _returnAccess == 2 && {!([_patient,_part,_returnAccess select 0,_returnAccess select 1] call ACME_fnc_transfusionAccessValid)}) exitWith {};
-    [_context select 0,_patient,_part,_returnAccess,true] call ACM_circulation_fnc_openTransfusionMenu;
-},[_context,_serial,_part,_returnAccess],0] call CBA_fnc_waitAndExecute;
 true

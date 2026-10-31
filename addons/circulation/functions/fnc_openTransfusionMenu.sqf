@@ -19,12 +19,10 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart", ["_returnAccess", [], [[]]], ["_nativeOnly",false,[true]]];
+params ["_medic", "_patient", "_bodyPart", ["_returnAccess", [], [[]]]];
 _bodyPart = toLowerANSI _bodyPart;
-// Native menu owner controls ACE's reopen flag before either presentation opens.
+// The existing native screen remains the entry point for either card renderer.
 ACEGVAR(medical_gui,pendingReopen) = false;
-if (!_nativeOnly && {missionNamespace getVariable ["ACME_reactTransfusion",false]}
-    && {[_medic,_patient,_bodyPart,_returnAccess] call ACME_fnc_reactMedicalOpen}) exitWith {};
 // Reopening presentation does not abandon inventory already reserved for an
 // owner transaction. Reconcile the same durable request identities first.
 [_medic] call ACME_fnc_piggybackRecover;

@@ -3691,7 +3691,7 @@ class RscXSliderH;
 class RscEdit;
 
 #include "TransfusionMenu_Styles.hpp"
-#include "ReactMedical_Dialog.hpp"
+#include "ReactMedical_Controls.hpp"
 
 // add chest-tube markers to ACE's medical-menu body image. they inherit the torso chest-seal position, use our
 // textures and airway blue, and are hidden by default. the ace_medical_gui_updateBodyImage event toggles them

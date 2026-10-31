@@ -32,5 +32,5 @@ After rebuilding, replace the installed mod with the new release output and rest
 
 ## UI development
 
-- [B293 React fluid overview](docs/audits/B293-react-medical-ui.md): opt-in local React panel, captured IV/IO handoff, build instructions and remaining native acceptance.
+- [B294 React cards in the existing menu](docs/audits/B294-react-in-place.md): replaces the unnecessary B293 overview with an in-place fluid-card renderer; deployment and native acceptance.
 - [Shared React UI architecture for ACME, BATDOK and Tempus Pro](docs/design/react-medical-ui-architecture.md): device/source associations, waveform rendering and native action boundaries. Device interfaces remain future work.

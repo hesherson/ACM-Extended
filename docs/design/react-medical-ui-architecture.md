@@ -1,8 +1,9 @@
 # Shared React medical UI: ACME, BATDOK and Tempus Pro
 
 Status: architecture with a limited first implementation, 2026-10-31.
-[B293](../audits/B293-react-medical-ui.md) implements an opt-in local React
-fluid overview and captured native-access handoff. The clinical command,
+[B294](../audits/B294-react-in-place.md) renders the existing transfusion fluid
+cards in place. The B293 overview and access handoff were removed at the user's
+request; migration must convert existing screens without inserting new screens. The clinical command,
 measured-data, waveform and BATDOK/Tempus Pro device portions below remain
 future work; this document distinguishes the target design from that first slice.
 
@@ -200,7 +201,7 @@ must stop drawing and unsubscribe. History and waveform buffers must stay bounde
 - [CT_WEBBROWSER local-content sandbox and JavaScript API](https://community.bistudio.com/wiki/CT_WEBBROWSER)
 - [ctrlWebBrowserAction](https://community.bistudio.com/wiki/ctrlWebBrowserAction)
 
-B293 retains the 19-addon installation, public version 1.2.4.1 and multiplayer
-protocol 2. Its browser presentation protocol is independently versioned at 1.
+B294 retains the 19-addon installation, public version 1.2.4.1 and multiplayer
+protocol 2. Its browser presentation protocol is independently versioned at 2.
 Complete native acceptance, clinical command migration, measured-device feeds,
 waveform rendering and the BATDOK/Tempus Pro applications remain future work.

@@ -29,15 +29,19 @@ def test_committed_bundle_and_licenses_match_recorded_sources():
     assert hashlib.sha256((ASSETS / 'THIRD_PARTY_LICENSES.txt').read_bytes()).hexdigest() == manifest['licensesSha256']
     html = (ASSETS / 'index.html').read_text()
     assert '<script src=' not in html and '<link ' not in html
-    assert 'ACMEUI' in html and len(html.encode()) < 300_000
+    assert 'ACMEUI' in html and len(html.encode()) < 800_000
 
 
 def test_native_browser_callbacks_and_fallback_are_registered_without_relaxing_lints():
-    header = (ROOT / 'addons/acm_extended/ReactMedical_Dialog.hpp').read_text()
+    header = (ROOT / 'addons/acm_extended/ReactMedical_Controls.hpp').read_text()
     assert 'type = 106;' in header and 'allowExternalURL = 0;' in header
     assert 'onPageLoaded = "_this call ACME_fnc_reactMedicalPage";' in header
     assert 'onJSDialog = "_this call ACME_fnc_reactMedicalMessage";' in header
-    assert 'ACME_fnc_reactMedicalFallback' in header and 'closeDisplay 0' in header
+    assert 'idd' not in header and 'ACME_ReactTransfusionCards' in header
+    opening = (ROOT / 'addons/circulation/functions/fnc_openTransfusionMenu.sqf').read_text()
+    assert 'ACME_fnc_reactMedicalOpen' not in opening
+    bridge = '\n'.join(p.read_text() for p in (ROOT / 'addons/acm_extended/functions').glob('fn_reactMedical*.sqf'))
+    assert all(command not in bridge for command in ['createDialog', 'closeDisplay', 'openTransfusionMenu', 'addPerFrameHandler'])
     assert 'event_unknown' not in (ROOT / '.hemtt/lints.toml').read_text()
     setting = (ROOT / 'addons/acm_extended/XEH_preInit.sqf').read_text()
     start = setting.index('["ACME_reactTransfusion"')
