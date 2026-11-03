@@ -18,6 +18,8 @@ class CfgFunctions {
     class ACME {
         class tempusls {
             file = "\acme_tempusls\functions";
+            class tempusLsCharge {};
+            class tempusLsChargeClear {};
             class tempusLsCanUse {
 
             };

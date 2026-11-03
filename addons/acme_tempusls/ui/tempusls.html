@@ -54,4 +54,22 @@ api.waveforms=function(packets,reset=false){
  timers=timers.slice(-128);
 };
 },{once:true});
-</script></body></html>
+</script>
+<script>
+// Native patient/power lifetimes own therapy authorization; React only presents it.
+(()=>{
+ let previous=null;
+ window.tls.therapy=(session,authorized)=>{
+  const view=window.TLS_VIEW;
+  if(!view)return;
+  const changed=previous!==null&&previous!==session;
+  previous=session;
+  const staleCharge=!authorized&&view.s.phase==="charged";
+  if(!changed&&!staleCharge)return;
+  const state={...view.s,phase:"idle",charge:0,chargedAt:null,chargeStarted:null,analysisStarted:null,syncPending:false,message:"SELECT THE ENERGY"};
+  if(changed){state.pacing=false;state.current=0;}
+  window.dispatchEvent(new CustomEvent("tempusLS:host",{detail:{raw:{type:"LOAD",state}}}));
+ };
+})();
+</script>
+</body></html>

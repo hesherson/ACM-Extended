@@ -1,6 +1,11 @@
 params ["_o", "_u"];
 if (isNull _o) exitWith {};
 private _old = _o getVariable ["acme_tempusls_pat", objNull];
+if (_old isNotEqualTo _u) then {
+    [_o] call ACME_fnc_tempusLsChargeClear;
+    _o setVariable ["acme_tempusls_st", "", true];
+    _o setVariable ["acme_tempusls_pace", [false, 70, 0, false], true];
+};
 if (!isNull _old && {_old isNotEqualTo _u}) then { [_o, _old, false] remoteExecCall ["ACME_fnc_tempusLsPace", _old] };
 _o setVariable ["acme_tempusls_pat", _u, true];
 _o setVariable ["acme_tempusls_v", [], true];

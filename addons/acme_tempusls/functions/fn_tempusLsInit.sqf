@@ -42,7 +42,7 @@ private _self = ["ACME_tempusls_self", "Tempus LS", _icon, {}, {[_player, "ACME_
 		_unit setVariable ["acme_tempusls_pw", [false, 0], true];
 		_unit setVariable ["acme_tempusls_pat", objNull, true];
 		_unit setVariable ["acme_tempusls_v", [], true];
-		_unit setVariable ["acme_tempusls_armed", false, true];
+		[_unit] call ACME_fnc_tempusLsChargeClear;
 		_unit setVariable ["acme_tempusls_metro", [false, ""], true];
 		_unit setVariable ["acme_tempusls_pace", [false, 70, 0, false], true];
 	};

@@ -40,7 +40,13 @@ switch (_p param [1, ""]) do {
 		if (_dlg) then { [_o, parseNumber (_p param [2, "0"]), (_p param [3, "0"]) isEqualTo "1", _p param [5, "Adult"]] call ACME_fnc_tempusLsDischarge };
 	};
 	case "ev": {
-		if (_dlg) then { [_o, _p param [2, ""], _p param [3, ""]] call ACME_fnc_tempusLsSound };
+		if (_dlg) then {
+            private _event = _p param [2, ""];
+            private _context = _c getVariable ["ACME_chargeContext", []];
+            private _result = [_o, _event, _p param [3, ""], _context] call ACME_fnc_tempusLsSound;
+            if (_event == "charge") then {_c setVariable ["ACME_chargeContext", _result];};
+            if (_event in ["ready", "disarm"]) then {_c setVariable ["ACME_chargeContext", []];};
+        };
 	};
 	case "pace": {
 		if (_dlg) then {

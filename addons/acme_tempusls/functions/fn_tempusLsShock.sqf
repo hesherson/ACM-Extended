@@ -1,5 +1,5 @@
 /* One identified patient-owner transaction, using ACME's native shock outcome. */
-params ["_o", "_medic", "_patient", "_energy", "_sync", "_ptype", "_id", "_epoch", "_sentAt"];
+params ["_o", "_medic", "_patient", "_energy", "_sync", "_ptype", "_id", "_epoch", "_sentAt", ["_chargeId", ""]];
 if (isNull _o || {isNull _patient} || {isNull _medic} || {!local _patient}) exitWith {};
 if (isRemoteExecuted && {remoteExecutedOwner != owner _medic}) exitWith {};
 if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}
@@ -13,12 +13,17 @@ if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}
 private _deviceValid = _o isKindOf "ACME_TempusLS"
     || {_o isEqualTo _medic && {[_medic, "ACME_TempusLS_Item"] call ace_common_fnc_hasItem}};
 if (!_deviceValid || {!finite _energy} || {_energy < 1} || {_energy > 200}) exitWith {};
+private _charge = _o getVariable ["acme_tempusls_charge", []];
+if (count _charge != 6 || {_chargeId == ""} || {(_charge select 0) != _chargeId}
+    || {(_charge select 1) isNotEqualTo _patient} || {(_charge select 2) != _epoch}
+    || {(_charge select 3) isNotEqualTo (_o getVariable ["acme_tempusls_pw", [false]])}
+    || {abs ((_charge select 4) - _energy) > 0.01} || {serverTime > (_charge select 5)}) exitWith {};
 private _history = _o getVariable ["acme_tempusls_shocks", []];
 if (_id in _history) exitWith {};
 _history pushBack _id;
 if (count _history > 64) then {_history deleteRange [0, count _history - 64];};
 _o setVariable ["acme_tempusls_shocks", _history, true];
-_o setVariable ["acme_tempusls_armed", false, true];
+[_o] call ACME_fnc_tempusLsChargeClear;
 private _rh = [_patient] call ACME_fnc_rhythmGet;
 private _defib = _rh in [2, 3, 102];
 private _organized = _rh in [4, 100, 101, 103, 104];

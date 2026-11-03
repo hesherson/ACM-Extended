@@ -24,6 +24,12 @@ if (_force || {_v isNotEqualTo (_c getVariable ["acme_tempusls_sV", -1])} || {di
 	};
 	_c ctrlWebBrowserAction ["ExecJS", _js];
 };
+// Native pad/clinical identity invalidates stale browser charge and pacer presentation.
+private _episode = if (isNull _pat) then {-1} else {[_pat] call ACME_fnc_clinicalEpoch};
+private _session = format ["%1:%2", netId _pat, _episode];
+private _authorized = (count (_o getVariable ["acme_tempusls_charging", []]) == 6)
+    || {count (_o getVariable ["acme_tempusls_charge", []]) == 6};
+_c ctrlWebBrowserAction ["ExecJS", format ["tls.therapy('%1',%2)", _session, _authorized]];
 private _link = !isNull (_o getVariable ["acme_tempusls_link", objNull]);
 if (_force || {_link isNotEqualTo (_c getVariable ["acme_tempusls_sLink", -1])}) then {
 	_c setVariable ["acme_tempusls_sLink", _link];

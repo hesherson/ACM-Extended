@@ -62,6 +62,8 @@ def shock_setup():
       _o setVariable ["acme_tempusls_pat",_patient];
       _o setVariable ["acme_tempusls_pw",[true]];
       _o setVariable ["acme_tempusls_armed",true];
+      _o setVariable ["acme_tempusls_charge",["charge-1",_patient,4,[true],150,30]];
+      ACME_fnc_tempusLsChargeClear={params ["_device"];_device setVariable ["acme_tempusls_armed",false];_device setVariable ["acme_tempusls_charge",[]];};
       _o setVariable ["acme_tempusls_shocks",[]];
       _patient setVariable ["ACM_circulation_AED_Placement_Pads",false];
       _patient setVariable ["ACM_circulation_AED_InUse",false];
@@ -72,7 +74,7 @@ def shock_setup():
       ace_medical_treatment_fnc_addToLog={};
       ACME_fnc_shockLocal={_calls pushBack _this;};
       ACME_fnc_tempusLsShock={'''+adapt(source)+'''};
-      private _request=[_o,_medic,_patient,150,false,"Adult","tx:7:1",4,10];
+      private _request=[_o,_medic,_patient,150,false,"Adult","tx:7:1",4,10,"charge-1"];
     '''
 
 
