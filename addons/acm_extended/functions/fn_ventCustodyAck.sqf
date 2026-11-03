@@ -53,6 +53,7 @@ if (_op == "take") exitWith {
     };
     ["ACME_ventCustodyNotice", [_medic, _patient, true], _medic] call CBA_fnc_targetEvent;
     if (!isNull _patient) then {["ACME_ventPatientEnroll", [_patient], _patient] call CBA_fnc_targetEvent;};
+    if (!isNil "ACME_fnc_equipmentVent" && {!isNull _patient}) then {[_patient] call ACME_fnc_equipmentVent;};
     [] call ACME_fnc_ventCustodyTick;
 };
 if (_op == "give" && {_ok}) then {

@@ -268,7 +268,7 @@ def test_contents_tick_retries_unacknowledged_seed_without_materializing_a_secon
 def test_spoiled_withdrawal_materializes_inert_item_without_age_seed():
     execute(fixture() + r'''
         [[_holder,[_bag,1800],false] call ACME_fnc_coolerGiveBag,"spoiled placement failed"] call _check;
-        [(_holder getVariable "fixtureCargo") isEqualTo ["ACME_SpoiledBlood"],"spoiled blood became transfusable"] call _check;
+        [(_holder getVariable "fixtureCargo") isEqualTo ["ACME_SpoiledBlood_500"],"spoiled blood became transfusable"] call _check;
         [count _events==0,"spoiled item seeded a fresh blood clock"] call _check;
     ''')
 
@@ -372,10 +372,7 @@ def test_contents_spoilage_never_loses_a_unit_when_native_placement_is_unavailab
     execute(fixture() + f'_nativeCanAdd={str(place).lower()};' + r'''
         _stateFixture=[_class,0,[[_bag,1800]],0];
         call ACME_fnc_coolerContentsTick;
-    ''' + (r'''
-        [(_stateFixture # 2) isEqualTo [],"spoiled bag remained twice"] call _check;
-        [(_holder getVariable "fixtureCargo") isEqualTo ["ACME_SpoiledBlood"],"spoiled bag not materialized inert"] call _check;
-    ''' if place else r'''
-        [(_stateFixture # 2) isEqualTo [[_bag,1800]],"failed placement discarded expired bag"] call _check;
-        [(_holder getVariable "fixtureCargo") isEqualTo [],"failed placement created another bag"] call _check;
-    '''))
+    ''' + r'''
+        [(_stateFixture # 2) isEqualTo [["ACME_SpoiledBlood_500",1800]],"spoiled unit did not remain in its cooler slot"] call _check;
+        [(_holder getVariable "fixtureCargo") isEqualTo [],"spoilage ejected a unit into loose inventory"] call _check;
+    ''')

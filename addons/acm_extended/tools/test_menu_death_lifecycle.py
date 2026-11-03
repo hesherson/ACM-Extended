@@ -207,6 +207,8 @@ PREAMBLE += "\nACME_fnc_isTorsoBandage={" + adapt(read("isTorsoBandage")) + "};"
 PREAMBLE += "\nACME_fnc_yBagReplaceEmpty={" + adapt(read("yBagReplaceEmpty")) + "};"
 
 
+PREAMBLE += "\nACME_fnc_bloodSpoiledClass={" + adapt(read("bloodSpoiledClass")) + "};"
+
 GROUND_CONTACT_SOURCE = adapt(read('patientInteractionContact'))
 GROUND_CONTACT_SOURCE = re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',GROUND_CONTACT_SOURCE)
 PREAMBLE += 'ACME_fnc_patientInteractionDistance={'+adapt(read('patientInteractionDistance'))+'};'

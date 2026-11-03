@@ -9,6 +9,7 @@ private _aim = {
 	private _up = vectorNormalized ((([_o, 0, 186] call ACME_fnc_tempusLsFront) select 0) vectorDiff _c);
 	_cam setPosASL (_c vectorAdd (_n vectorMultiply (_d getVariable ["acme_tempusls_dist", 0.5])));
 	_cam setVectorDirAndUp [_n vectorMultiply -1, _up];
+    _cam camSetFocus [_d getVariable ["acme_tempusls_dist",0.5],1];
 	private _l = missionNamespace getVariable ["ACME_tempusls_light", objNull];
 	if (!isNull _l) then { _l setPosASL (_c vectorAdd (_n vectorMultiply 0.7)) };
 };

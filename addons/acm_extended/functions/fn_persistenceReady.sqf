@@ -8,6 +8,7 @@ if (!isNil "ACM_ophthalmology_fnc_shieldSource" && {local _unit}) then {
     ["cleanup", [_unit]] call ACM_ophthalmology_fnc_shieldSource;
 };
 // An eye-shield reservation remains live until the original supply owner settles it.
+if ((_unit getVariable ["ACME_equipmentWorldPending",""])!="") exitWith {false};
 private _shieldPending = missionNamespace getVariable ["ACM_ophthalmology_shieldPending", createHashMap];
 if (!(_shieldPending isEqualType createHashMap) || {count _shieldPending > 0}) exitWith {false};
 if (count (_unit getVariable ["ACM_ophthalmology_shieldBindings",[]]) > 0) exitWith {false};

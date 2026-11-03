@@ -4,7 +4,7 @@ params ["_o", "_operation", ["_energy", 0], ["_context", []]];
 if (isNull _o) exitWith {[]};
 private _patient = _o getVariable ["acme_tempusls_pat", objNull];
 private _power = _o getVariable ["acme_tempusls_pw", [false]];
-if (isNull _patient || {!(_power select 0)}) exitWith {[]};
+if (isNull _patient || {!(_power select 0)} || {!(_o getVariable ["acme_tempusls_pads",true])}) exitWith {[]};
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 if (_operation == "begin") exitWith {
     if (!finite _energy || {_energy < 1} || {_energy > 200}) exitWith {[]};

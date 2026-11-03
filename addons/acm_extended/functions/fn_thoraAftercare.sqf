@@ -8,7 +8,7 @@ switch (_operation) do {
             private _used = [_medic, _patient, ["ACM_SuctionBag"]] call ace_medical_treatment_fnc_useItem;
             if ((_used param [1, ""]) != "ACM_SuctionBag") then {_device = -1;};
         } else {
-            if !([_medic, _patient, ["ACM_ACCUVAC"]] call ace_medical_treatment_fnc_hasItem) then {_device = -1;};
+            if (([_medic,_patient,"ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount)<1) then {_device = -1;};
         };
         if (_device < 0) exitWith {};
         [_medic, _patient, _device] call ACM_breathing_fnc_Thoracostomy_drain;

@@ -16,7 +16,9 @@ def function(name):
     text=text.replace('serverTime','CBA_missionTime')
     text=text.replace('alive _owner','true').replace('_owner distance _box','_distance')
     text=text.replace('createVehicle [_boxClass,_owner getRelPos [1.1,0],[],0,"CAN_COLLIDE"]','_boxFixture')
+    text=text.replace('createVehicle [_boxClass,_placementPos,[],0,\"CAN_COLLIDE\"]','_boxFixture')
     text=text.replace('_box setDir getDir _owner','_box setVariable ["dir",0]')
+    text=text.replace('_owner getRelPos [1.1,0]','[0,0,0]')
     text=text.replace('netId _box','"box"')
     for prefix,field in [('Weapon','weapons'),('Magazine','magazines'),('Item','cargo'),('Backpack','backpacks')]:
         text=text.replace(f'clear{prefix}CargoGlobal _box',f'_box setVariable ["{field}",[]]')
@@ -35,6 +37,7 @@ def function(name):
     text=text.replace('_box addItemCargoGlobal [_x select 0,-1]','[_box,_x select 0] call _removeCargo')
     text=text.replace('_box addItemCargoGlobal ["ACME_SpoiledBlood",1]','[_box,"ACME_SpoiledBlood"] call _addCargo')
     text=text.replace('forEach _requests;','forEach (keys _requests);').replace('private _args=+_y;','private _args=+(_requests get _x);')
+    text = text.replace('_box addItemCargoGlobal [[_bagClass] call ACME_fnc_bloodSpoiledClass,1];','[_box,[_bagClass] call ACME_fnc_bloodSpoiledClass] call _addCargo;')
     return f'ACME_fnc_{name}={{'+adapted(iteration_scopes(text))+'};'
 
 
@@ -219,7 +222,7 @@ def test_draw_after_expiry_converts_source_to_spoiled_without_transfusion_callba
     ["deploy",_medic,_sid] call ACME_fnc_coolerBoxRequest;call _flushBoxes;
     _boxFixture setVariable ["ACME_boxCoolerState",[_base,20,[["ACM_BloodBag_ON_500",1800]],100]];
     ["draw",_medic,"ACM_BloodBag_ON_500",_boxFixture] call ACME_fnc_coolerBoxRequest;call _flushBoxes;
-    [count _given==0 && {(_boxFixture getVariable "cargo") isEqualTo ["ACME_SpoiledBlood"]},"expired blood was issued as a transfusable bag"] call _check;
+    [count _given==0 && {(_boxFixture getVariable "cargo") isEqualTo ["ACME_SpoiledBlood_500"]},"expired blood was issued as a transfusable bag"] call _check;
     ''')
 
 

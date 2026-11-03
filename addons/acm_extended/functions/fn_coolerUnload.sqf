@@ -9,6 +9,10 @@ private _rendered=_dlg getVariable ["ACME_CLR_RenderState",[]];
 if (count _rendered!=2 || {(_rendered select 0)!=_sid}) exitWith {};
 private _renderState=_rendered select 1;
 if (_index<0 || {_index>=count (_renderState select 2)}) exitWith {};
+private _box=uiNamespace getVariable ["ACME_CLR_Box",objNull];
+if (!isNull _box) exitWith {
+    ["draw",ACE_player,((_renderState select 2) select _index) select 0,_box] call ACME_fnc_coolerBoxRequest;
+};
 [ACE_player,_sid,{
     params ["_owner","_sid","_state","_args"];
     _args params ["_index","_renderState"];

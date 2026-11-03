@@ -25,6 +25,7 @@ def code(name):
     text = text.replace('isClass (configFile >> "CfgWeapons" >> _bag)', '(_bag in _bags)')
     # VM does not implement finite. Retain scalar validation/ranges, adapt only that engine primitive.
     text = re.sub(r'\bfinite (\([^\n]*?\)|_\w+)', r'(\1 call _finite)', text)
+    text = text.replace('getNumber(configFile >> "CfgWeapons" >> _class >> "ACME_coolerColdChainTime")','([_class] call _chain)')
     return adapt(map_defaults(text))
 
 
@@ -61,7 +62,7 @@ def setup():
     ACME_fnc_coolerBoxReconcile={params ["_o","_now"];[_o getVariable ["ACME_boxCoolerState",[]],_now] call ACME_fnc_coolerAdvance};
     private _saved=[1,"holder",[["save1",37,"ACME_BloodCooler_CSWB1U",8000,[["ACM_BloodBag_ON_500",33]]]]];
     ''' + '\n'.join('ACME_fnc_' + n + '={' + code(n) + '};' for n in [
-        'coolerBagVolume', 'coolerAdvance', 'coolerSnapshotValid', 'coolerSnapshot', 'coolerRestore', 'coolerPersistenceInit'])
+        'coolerBagVolume', 'coolerColdChainTime', 'coolerAdvance', 'coolerSnapshotValid', 'coolerSnapshot', 'coolerRestore', 'coolerPersistenceInit'])
 
 
 def test_snapshot_advances_exposure_without_mutating_live_rows_and_has_no_absolute_clock():

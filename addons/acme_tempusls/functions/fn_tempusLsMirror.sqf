@@ -102,5 +102,5 @@ if (!isNull _dlg) then {
 		_b setVariable ["acme_tempusls_pushAt", _now];
 		[_b, _o] call ACME_fnc_tempusLsPush;
 	};
-	if (isNull _o || {!alive player} || {player distance _o > 4} || {!((_o getVariable ["acme_tempusls_pw", [false]]) select 0)}) then { closeDialog 2 };
+	if (isNull _o || {!alive player} || {player distance _o > 4}) then { closeDialog 2 };
 };

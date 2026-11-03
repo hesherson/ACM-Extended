@@ -686,3 +686,11 @@
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_laryngo_attemptLimit", _v, false]; }
 ] call CBA_fnc_addSetting;
+
+["ACME_persistentCampaignTiming","CHECKBOX",
+ ["Persistent campaign: real-time blood storage","Use real-time cooler durations (1U 48 h, 2U 24 h, 4U 72 h by default), followed by a 4-hour warm-use limit. Existing persistence adapters preserve elapsed clocks; this does not install an autosave backend. Whole blood is refrigerated, not frozen. Restart the mission after changing."],
+ ["ACM Extended: Persistence","Blood storage"],false,1,{if (!isNil "ACME_fnc_bloodTimingApply") then {call ACME_fnc_bloodTimingApply;};},true] call CBA_fnc_addSetting;
+{
+    _x params ["_name","_title","_hours"];
+    [_name,"SLIDER",[_title,"Validated cooling duration depends on the carrier, conditioning and environment. Hours of cooling in the real-time campaign preset."],["ACM Extended: Persistence","Blood storage"],[1,120,_hours,0],1,{},true] call CBA_fnc_addSetting;
+} forEach [["ACME_persistentCooler1Hours","1U cooler cooling hours",48],["ACME_persistentCooler2Hours","2U cooler cooling hours",24],["ACME_persistentCooler4Hours","4U cooler cooling hours",72]];

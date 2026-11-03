@@ -2,8 +2,8 @@
 params ["_owner","_entry",["_manual",true]];
 _entry params ["_class","_warm"];
 if (isNull _owner || {!local _owner}) exitWith {false};
-if (_warm >= (missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800]) && {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]}) then {_class="ACME_SpoiledBlood";};
-if (_class!="ACME_SpoiledBlood" && {count (_owner getVariable ["ACME_bloodSeedPending",createHashMap])>=128}) exitWith {false};
+if (_warm >= (missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800]) && {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]}) then {_class=[_class] call ACME_fnc_bloodSpoiledClass;};
+if ((_class find "ACME_SpoiledBlood")!=0 && {count (_owner getVariable ["ACME_bloodSeedPending",createHashMap])>=128}) exitWith {false};
 private _before = { _x == _class } count ((uniformItems _owner)+(vestItems _owner)+(backpackItems _owner));
 if !(_owner canAdd _class) exitWith {false};
 missionNamespace setVariable ["ACME_coolerAutoStoreSuppressUntil",diag_tickTime+5];
@@ -12,7 +12,7 @@ _owner addItem _class;
 missionNamespace setVariable ["ACME_coolerAutoStoreBusy",false];
 private _after = { _x == _class } count ((uniformItems _owner)+(vestItems _owner)+(backpackItems _owner));
 if (_after != _before+1) exitWith {false};
-if (_class != "ACME_SpoiledBlood") then {
+if ((_class find "ACME_SpoiledBlood")!=0) then {
     private _serial=(missionNamespace getVariable ["ACME_bloodExposureSerial",0])+1;
     missionNamespace setVariable ["ACME_bloodExposureSerial",_serial];
     private _request=[clientOwner,_serial];

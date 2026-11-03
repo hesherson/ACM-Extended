@@ -9,6 +9,7 @@ if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)}
     || {serverTime - _sentAt > 15} || {_sentAt - serverTime > 2}
     || {(_o getVariable ["acme_tempusls_pat", objNull]) isNotEqualTo _patient}
     || {!((_o getVariable ["acme_tempusls_pw", [false]]) select 0)}
+    || {!(_o getVariable ["acme_tempusls_pads",true])}
     || {!(_o getVariable ["acme_tempusls_armed", false])}) exitWith {};
 private _deviceValid = _o isKindOf "ACME_TempusLS"
     || {_o isEqualTo _medic && {[_medic, "ACME_TempusLS_Item"] call ace_common_fnc_hasItem}};

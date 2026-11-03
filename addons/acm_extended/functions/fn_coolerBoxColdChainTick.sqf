@@ -18,13 +18,16 @@ private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
             private _kept = [];
             private _spoiled = [];
             {
-                if (_spoilEnabled && {(_x # 1) >= _spoilT}) then {_spoiled pushBack (_x # 0);}
+                if (_spoilEnabled && {(_x # 1) >= _spoilT} && {((_x # 0) find "ACME_SpoiledBlood")!=0}) then {_spoiled pushBack (_x # 0);}
                 else {_kept pushBack +_x;};
             } forEach (_state # 2);
             if !(_spoiled isEqualTo []) then {
                 // Remove only expired blood; preserve every other cargo entry.
                 {_box addItemCargoGlobal [_x, -1];} forEach _spoiled;
-                _box addItemCargoGlobal ["ACME_SpoiledBlood", count _spoiled];
+                {
+                    private _class=[_x] call ACME_fnc_bloodSpoiledClass;
+                    _box addItemCargoGlobal [_class,1];_kept pushBack [_class,_spoilT];
+                } forEach _spoiled;
                 _state set [2, _kept];
                 _box setVariable ["ACME_boxCoolerState", _state, true];
                 {

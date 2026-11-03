@@ -541,7 +541,7 @@ class CfgPatches {
             "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100",
             "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_Spray_Esketamine",
             "ACM_Vial_Phentolamine", "ACM_Vial_Hyaluronidase", "ACM_Vial_CalciumGluconate", "ACM_Vial_Propofol", "ACM_Vial_Midazolam", "ACM_Vial_Fentanyl",
-            "ACME_IVLine", "ACME_IVExtension", "ACME_Tegaderm", "ACME_SalineLock", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood",
+            "ACME_IVLine", "ACME_IVExtension", "ACME_Tegaderm", "ACME_SalineLock", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood", "ACME_SpoiledBlood_250", "ACME_SpoiledBlood_500", "ACME_SpoiledBlood_1000",
             "ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U"
         };
         requiredVersion = 2.20;
@@ -1930,6 +1930,10 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         };
     };
 
+    class ACME_SpoiledBlood_250: ACME_SpoiledBlood { displayName="Spoiled Blood (250 mL)"; };
+    class ACME_SpoiledBlood_500: ACME_SpoiledBlood { displayName="Spoiled Blood (500 mL)"; };
+    class ACME_SpoiledBlood_1000: ACME_SpoiledBlood { displayName="Spoiled Blood (1000 mL)"; };
+
     // blood coolers, for cold-chain storage.
     // these carry blood cold so it does not spoil. the cold-chain mechanic, fn_bloodcoldchaintick, reads the two
     // custom numbers below. ACME_coolerCapacityMl is how much blood, by volume, the unit keeps cold, and
@@ -1940,8 +1944,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // Mass values follow the contributed carrier weights; native inventory capacity
     // decides which uniform, vest, pack or vehicle can contain a given carrier.
 
-    // pelican golden hour one-v. it holds 1 unit, a single 500 ml bag, weighs about 2 lb and is the smallest. it
-    // has the longest validated cold chain.
+    // Small 1U carrier: one 500 mL unit. The campaign preset has independently tunable cooling hours.
     class ACME_BloodCooler_CSWB1U: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
@@ -2662,6 +2665,9 @@ class CfgFunctions {
             class coolerBoxReply {};
             class coolerRecover {};
             class coolerAdvance {};
+            class coolerColdChainTime {};
+            class bloodTimingApply {};
+            class bloodSpoiledClass {};
             class coolerBagVolume {};
             class coolerBoxReconcile {};
             class bloodExposureBroker {};
@@ -6819,7 +6825,7 @@ class ACME_CoolerManager_Dialog {
     movingEnable = 0;
     enableSimulation = 1;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_CLR_DLG', (_this select 0)]; call ACME_fnc_coolerRefresh; [{ if (!isNull (uiNamespace getVariable ['ACME_CLR_DLG', displayNull])) then { call ACME_fnc_coolerRefresh; }; }, []] call CBA_fnc_execNextFrame;";
-    onUnload = "uiNamespace setVariable ['ACME_CLR_DLG', displayNull]; call ACME_fnc_coolerClearSlots;";
+    onUnload = "uiNamespace setVariable ['ACME_CLR_DLG', displayNull]; if (!isNil 'ACME_fnc_equipmentCoolerClose') then {call ACME_fnc_equipmentCoolerClose;}; call ACME_fnc_coolerClearSlots;";
     class ControlsBackground {
         class ACME_CLR_Backdrop: RscText {
             idc = 87401;
@@ -7825,10 +7831,11 @@ class CfgVehicles {
                     // prototype. set the carried cooler down as a real, openable container box. the blood becomes real bags in the
                     // box cargo and travels with the box when a player drags, drops, stashes or hands it off.
                     class ACME_BloodCooler_SetDown {
-                        displayName = "Set Down as Box";
+                        displayName = "Set Down Blood Cooler";
                         icon = "\acm_extended\ui\items\goldenhour_cswb4u_ca.paa";
                         condition = "count ([_player] call ACME_fnc_coolerRows) > 0";
-                        statement = "call ACME_fnc_coolerBoxDeploy";
+                        statement = "";
+                        insertChildren = "_this call ACME_fnc_equipmentCoolerMenu";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 0;
                     };

@@ -32,6 +32,6 @@ _o setVariable ["acme_tempusls_feeding", [_u, _generation]];
         _o setVariable ["acme_tempusls_v", [], true];
     };
     if !((_o getVariable ["acme_tempusls_pw", [false]]) select 0) exitWith {};
-    private _v = [_u] call ACME_fnc_tempusLsVitals;
+    private _v = if ((_o getVariable ["acme_tempusls_pads",true]) || {_o getVariable ["acme_tempusls_ecg",false]}) then {[_u] call ACME_fnc_tempusLsVitals} else {[]};
     if (_v isNotEqualTo (_o getVariable ["acme_tempusls_v", []])) then { _o setVariable ["acme_tempusls_v", _v, true] };
 }, 1, [_o, _u, _generation]] call CBA_fnc_addPerFrameHandler;

@@ -206,7 +206,7 @@ private _autofill = [];
         _h setVariable ["ACME_bloodExposureSeedTokens", _tokens];
     };
     private _coverMl = 0;
-    { _x params ["_kc","_at"]; private _chain = getNumber (configFile >> "CfgWeapons" >> _kc >> "ACME_coolerColdChainTime"); if (_chain <= 0 || {(_now - _at) < _chain}) then { _coverMl = _coverMl + getNumber (configFile >> "CfgWeapons" >> _kc >> "ACME_coolerCapacityMl"); }; } forEach _coolLedger;
+    { _x params ["_kc","_at"]; private _chain = ([_kc] call ACME_fnc_coolerColdChainTime); if (_chain <= 0 || {(_now - _at) < _chain}) then { _coverMl = _coverMl + getNumber (configFile >> "CfgWeapons" >> _kc >> "ACME_coolerCapacityMl"); }; } forEach _coolLedger;
     // the true-container model: a cooler keeps cold only what is inside it, which is handled client-side, so loose
     // blood warms.
     if (!(missionNamespace getVariable ["ACME_coolerAutoCover", false])) then { _coverMl = 0; };
@@ -218,8 +218,8 @@ private _autofill = [];
         else { private _nw = _bw + ((_now - _at) max 0); if (_nw >= _loose && {missionNamespace getVariable ["ACME_bloodSpoilEnabled", true]}) then { _spoil pushBack _bc; } else { _kept pushBack [_bc, _bv, _nw, _now]; }; };
     } forEach _byVol;
     if !(_spoil isEqualTo []) then {
-        if (_h isKindOf "CAManBase") then { private _add = []; { _add pushBack "ACME_SpoiledBlood"; } forEach _spoil; [_h, _spoil, _add] remoteExec ["ACME_fnc_ccApply", _h]; }
-        else { { _h addItemCargoGlobal [_x, -1]; _h addItemCargoGlobal ["ACME_SpoiledBlood", 1]; } forEach _spoil; };
+        if (_h isKindOf "CAManBase") then { private _add = []; { _add pushBack ([_x] call ACME_fnc_bloodSpoiledClass); } forEach _spoil; [_h, _spoil, _add] remoteExec ["ACME_fnc_ccApply", _h]; }
+        else { { _h addItemCargoGlobal [_x, -1]; _h addItemCargoGlobal [[_x] call ACME_fnc_bloodSpoiledClass, 1]; } forEach _spoil; };
     };
     _store set [_nid, [_kept, _coolLedger]];
     private _snapshot = [_kept apply {[_x # 0, _x # 1, _x # 2]}, _now];

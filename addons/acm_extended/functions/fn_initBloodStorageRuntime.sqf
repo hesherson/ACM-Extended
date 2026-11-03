@@ -133,6 +133,7 @@ if (hasInterface) then {
     [{ call ACME_fnc_coolerContentsTick }, ACME_coolerContentsDt, []] call CBA_fnc_addPerFrameHandler;
 };
 ACME_coolerThawRateInside = 0.2;  // once the coolant is gone, blood inside the box thaws at this fraction of real time.
+call ACME_fnc_bloodTimingApply;
 ACME_coolerBoxScale      = 0.65;  // visual and geometry scale applied to a deployed cooler box. 1 is the vanilla box size.
 // fluid-overload clot pop. crystalloid into a hemodynamically unstable, hypovolemic, patient tears clots
 // loose.

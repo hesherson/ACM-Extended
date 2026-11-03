@@ -13,6 +13,7 @@ private _valid = _on && {!isNull _device} && {alive _patient}
     && {(_device getVariable ["acme_tempusls_pat", objNull]) isEqualTo _patient}
     && {(_device getVariable ["acme_tempusls_pw", [false]]) select 0}
     && {_device distance _patient <= 6}
+    && {_device getVariable ["acme_tempusls_pads",true]}
     && {!(_patient getVariable ["ace_medical_inCardiacArrest", false])}
     && {[_patient] call ACM_circulation_fnc_hasPulse};
 private _capture = _valid && {_ma >= (_patient getVariable ["acme_tempusls_thr", 60])}

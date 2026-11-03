@@ -1,18 +1,25 @@
-// the owner-local inventory edit for the blood cold-chain. the cold-chain ledger is server-authoritative, and
-// adding or removing items on a person must run where that person is local, so the server remoteexecs this to the
-// owner.
-// _this is [_unit, _removeclasses, _addclasses]. the removes run first, freeing room for the adds.
-params ["_unit", ["_rem", []], ["_add", []]];
+/* Spoilage replaces each bag in its existing native container, even when the kit is full.
+   It never creates a ground holder, and a failed removal never authorizes a replacement. */
+params ["_unit",["_rem",[]],["_add",[]]];
 if (isNull _unit || {!local _unit}) exitWith {};
-{ [_unit, _x] call ACME_fnc_itemTake; } forEach _rem;
+private _spoiled=0;
 {
-    if (_unit canAdd _x) then { _unit addItem _x; }
-    else {
-        // never silently lose an item: drop it at the feet of the unit.
-        private _wh = createVehicle ["GroundWeaponHolder", getPosATL _unit, [], 0.5, "CAN_COLLIDE"];
-        _wh addItemCargoGlobal [_x, 1];
+    private _new=_x;
+    private _old=_rem param [_forEachIndex,""];
+    if ((_new find "ACME_SpoiledBlood")==0) then {
+        private _containers=[uniformContainer _unit,vestContainer _unit,backpackContainer _unit] select {!isNull _x};
+        private _destination=(_containers select {_old in itemCargo _x}) param [0,_containers param [0,objNull]];
+        if (!isNull _destination && {[_unit,_old] call ACME_fnc_itemTake}) then {
+            _destination addItemCargoGlobal [_new,1];_spoiled=_spoiled+1;
+        };
+    } else {
+        if (_old!="") then {[_unit,_old] call ACME_fnc_itemTake;};
+        if (_unit canAdd _new) then {_unit addItem _new;} else {
+            private _holder=createVehicle ["GroundWeaponHolder",getPosATL _unit,[],0.5,"CAN_COLLIDE"];
+            _holder addItemCargoGlobal [_new,1];
+        };
     };
 } forEach _add;
-if (("ACME_SpoiledBlood" in _add) && {_unit isEqualTo ACE_player}) then {
-    [format ["%1 blood bag(s) lost the cold chain and spoiled.", {_x == "ACME_SpoiledBlood"} count _add], 3] call ace_common_fnc_displayTextStructured;
+if (_spoiled>0 && {_unit isEqualTo ACE_player}) then {
+    [format ["%1 blood bag(s) lost the cold chain and spoiled. Spoiled bags remain in your kit.",_spoiled],3] call ace_common_fnc_displayTextStructured;
 };

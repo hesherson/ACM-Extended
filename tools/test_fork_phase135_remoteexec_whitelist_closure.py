@@ -3,9 +3,9 @@
 import re
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
-config=(R/'addons/acm_extended/config.cpp').read_text()
-start=config.index('class CfgRemoteExec')
-remote_cfg=config[start:]
+configs=[p.read_text() for p in (R/'addons').rglob('config.cpp')]
+# Config contributions merge across addons, including BATDOK and equipment.
+remote_cfg='\n'.join(c[c.index('class CfgRemoteExec'):] for c in configs if 'class CfgRemoteExec' in c)
 # Do not seize mission-wide policy; only contribute named entries.
 assert not re.search(r'\bmode\s*=', remote_cfg)
 refs=set()

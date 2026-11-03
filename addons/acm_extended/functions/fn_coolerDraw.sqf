@@ -1,5 +1,6 @@
 /* Source claims serialize carried and shared-box draws before spiking. */
 params ["_owner","_bag",["_continuation",[]]];
+if ((_bag find "ACME_SpoiledBlood")==0) exitWith {false};
 private _rows=[_owner] call ACME_fnc_coolerRows;
 private _sid="";private _index=-1;private _oldest=-1;
 {

@@ -8,7 +8,9 @@
 // mirror row.
 private _dlg = uiNamespace getVariable ["ACME_CLR_DLG", displayNull];
 if (isNull _dlg) exitWith {};
-private _rows=[ACE_player] call ACME_fnc_coolerRows;
+private _world=uiNamespace getVariable ["ACME_CLR_Box",objNull];
+private _rows=if (isNull _world) then {[ACE_player] call ACME_fnc_coolerRows} else {[["world",_world getVariable ["ACME_boxCoolerState",[]]]]};
+if (!isNull _world && {count ((_rows select 0) select 1)!=4}) exitWith {};
 private _sid=uiNamespace getVariable ["ACME_CLR_Id",""];
 private _hit=_rows findIf {(_x select 0)==_sid};
 private _ready=_hit>=0;
@@ -24,6 +26,7 @@ private _capacity=getNumber(configFile >> "CfgWeapons" >> _class >> "ACME_cooler
 private _used=0;{_used=_used+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach _contents;
 private _cap=(ceil (_capacity/500)) max count _contents;
 private _selector=_dlg displayCtrl 87422;
+_selector ctrlEnable (isNull _world);
 _selector setVariable ["ACME_filling",true];
 lbClear _selector;
 {
@@ -35,10 +38,12 @@ _selector setVariable ["ACME_filling",false];
 (_dlg displayCtrl 87402) ctrlSetText getText(configFile >> "CfgWeapons" >> _class >> "displayName");
 (_dlg displayCtrl 87421) ctrlSetText format ["%1 mL",_capacity];
 private _start=_state select 1;
-private _chain=getNumber(configFile >> "CfgWeapons" >> _class >> "ACME_coolerColdChainTime");
+private _chain=([_class] call ACME_fnc_coolerColdChainTime);
 private _remaining=if (_chain<=0) then {-1} else {(_chain-(serverTime-_start)) max 0};
 private _coldStr=if (_remaining<0) then {"coolant: stable"} else {
-    if (_remaining>0) then {format ["coolant: %1 min left",ceil(_remaining/60)]} else {"COOLANT EXPIRED - contents warming"}
+    if (_remaining>0) then {
+        if (missionNamespace getVariable ["ACME_persistentCampaignTiming",false]) then {format ["cooling: %1 h %2 min",floor(_remaining/3600),floor((_remaining mod 3600)/60)]} else {format ["coolant: %1 min left",ceil(_remaining/60)]}
+    } else {"COOLANT EXPIRED - contents warming"}
 };
 (_dlg displayCtrl 87403) ctrlSetText format ["%1 / %2 mL   -   %3",_used,_capacity,_coldStr];
 

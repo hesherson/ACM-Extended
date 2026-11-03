@@ -12,15 +12,18 @@ if (_st isNotEqualTo "" && {_force || {_mode isEqualTo "mirror" && {_st isNotEqu
 	_c ctrlWebBrowserAction ["ExecJS", "tls.load(" + _st + ")"];
 };
 private _pat = _o getVariable ["acme_tempusls_pat", objNull];
-private _v = [_o getVariable ["acme_tempusls_v", []], []] select (isNull _pat);
-if (_force || {_v isNotEqualTo (_c getVariable ["acme_tempusls_sV", -1])} || {diag_tickTime - (_c getVariable ["acme_tempusls_vAt", 0]) > 5}) then {
+private _pads=_o getVariable ["acme_tempusls_pads",true];
+private _ecg=_pads || {_o getVariable ["acme_tempusls_ecg",false]};
+private _v = [_o getVariable ["acme_tempusls_v", []], []] select (isNull _pat || {!_ecg});
+if (_force || {[_pads,_ecg] isNotEqualTo (_c getVariable ["ACME_eq_sSignals",[]])} || {_v isNotEqualTo (_c getVariable ["acme_tempusls_sV", -1])} || {diag_tickTime - (_c getVariable ["acme_tempusls_vAt", 0]) > 5}) then {
+	_c setVariable ["ACME_eq_sSignals",[_pads,_ecg]];
 	_c setVariable ["acme_tempusls_sV", _v];
 	_c setVariable ["acme_tempusls_vAt", diag_tickTime];
 	private _js = if (_v isEqualTo []) then {
 		"tls.vitals({hr:0,rhythm:'asystole',pads:false,ecg:false,shockable:false,cpr:false,capture:false})"
 	} else {
 		_v params ["_hr", "_rh", "_shock", "_cpr", "_cap"];
-		format ["tls.vitals({hr:%1,rhythm:'%2',pads:true,ecg:true,shockable:%3,cpr:%4,capture:%5})", _hr, _rh, _shock, _cpr, _cap]
+		format ["tls.vitals({hr:%1,rhythm:'%2',pads:%6,ecg:%7,shockable:%3,cpr:%4,capture:%5})", _hr, _rh, _shock && _pads, _cpr, _cap && _pads,_pads,_ecg]
 	};
 	_c ctrlWebBrowserAction ["ExecJS", _js];
 };

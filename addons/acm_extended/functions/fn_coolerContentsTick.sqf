@@ -34,12 +34,14 @@ if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]) then {
     {
         _x params ["_sid","_raw"];
         private _state=[_raw] call ACME_fnc_coolerAdvance;
-        if (((_state select 2) findIf {(_x select 1)>=_limit})>=0) then {
+        if (((_state select 2) findIf {(_x select 1)>=_limit && {((_x select 0) find "ACME_SpoiledBlood")!=0}})>=0) then {
             [_p,_sid,{
                 params ["_owner","_sid","_state"];
                 private _kept=[];
                 {
-                    if ((_x select 1)<(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800]) || {!([_owner,_x,false] call ACME_fnc_coolerGiveBag)}) then {_kept pushBack _x;};
+                    private _entry=+_x;
+                    if ((_entry select 1)>=(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])) then {_entry set [0,[_entry select 0] call ACME_fnc_bloodSpoiledClass];};
+                    _kept pushBack _entry;
                 } forEach (_state select 2);
                 _state set [2,_kept];[false,_state]
             }] call ACME_fnc_coolerMutate;

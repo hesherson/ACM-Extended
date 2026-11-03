@@ -11,7 +11,7 @@ private _requestsChanged=false;
     if (serverTime >= (_args param [5,0])) then {
         _args set [5,serverTime+1]; _requests set [_x,_args];
         _requestsChanged=true;
-        ["ACME_coolerBoxBroker",(_args select [0,5])+[_args param [6,-1],_args param [7,-1]]] call CBA_fnc_serverEvent;
+        ["ACME_coolerBoxBroker",(_args select [0,5])+[_args param [6,-1],_args param [7,-1],_args param [8,objNull]]] call CBA_fnc_serverEvent;
     };
 } forEach _requests;
 if (_requestsChanged) then {_owner setVariable ["ACME_coolerBoxRequests",_requests,true];};

@@ -22,7 +22,7 @@ def source(name):
     # These production rows have a numeric primary key; the shim supplies that
     # native ordering without changing any caller's selection logic.
     raw = re.sub(r'(_\w+) sort (true|false);', r'[\1,\2] call _nativeSort;', raw)
-    raw = re.sub(r'getNumber \(configFile >> "CfgWeapons" >> (_\w+) >> "(\w+)"\)',
+    raw = re.sub(r'getNumber\s*\(configFile >> "CfgWeapons" >> (_\w+) >> "(\w+)"\)',
                  r'([\1,"\2"] call _config)', raw)
     raw = raw.replace('itemCargo _box', '(_box getVariable ["fixtureCargo",[]])')
     raw = raw.replace('typeOf _box', '(_box getVariable ["fixtureType",""])')
@@ -53,6 +53,7 @@ def source(name):
                       '_box setVariable ["ACME_boxCoolerClass",_base];_boxPublic pushBack "class";')
     raw = raw.replace('_box setVariable ["ACME_boxCoolantStart", _advanced # 1, true];',
                       '_box setVariable ["ACME_boxCoolantStart",_advanced # 1];_boxPublic pushBack "start";')
+    raw = re.sub(r'(_box|_h) addItemCargoGlobal \[([^;]+),\s*(-?\d+)\];',r'[\1,\2,\3] call _cargoAdjust;',raw)
     return adapt(map_defaults(raw))
 
 
@@ -146,7 +147,7 @@ def fixture():
         CBA_fnc_targetEvent={_events pushBack _this;};
         CBA_fnc_execNextFrame={_nextFrames pushBack +_this;};
     '''
-    for name in ['coolerBagVolume', 'coolerAdvance', 'coolerBoxReconcile',
+    for name in ['coolerBagVolume', 'coolerColdChainTime', 'bloodSpoiledClass', 'coolerAdvance', 'coolerBoxReconcile',
                  'coolerBoxColdChainTick', 'bloodColdChainTick', 'bloodExposureBroker']:
         code += f'ACME_fnc_{name}={{' + source(name) + '};'
     return map_defaults(code)
@@ -154,7 +155,7 @@ def fixture():
 
 @pytest.mark.parametrize('bag,ml', [
     ('ACM_BloodBag_ON_1000', 1000), ('ACM_BloodBag_AB_500', 500),
-    pytest.param('ACM_FreshBloodBag_250_7', 250, id='ACM_FreshBloodBag_A_250-250'), ('ACME_SpoiledBlood', 0),
+    pytest.param('ACM_FreshBloodBag_250_7', 250, id='ACM_FreshBloodBag_A_250-250'), ('ACME_SpoiledBlood', 500),
     ('ACM_BloodBag_ON_500_bad', 0), ('SalineIV_1000', 0),
 ])
 def test_bag_volume_uses_supported_terminal_size(bag, ml):
@@ -222,8 +223,9 @@ def test_box_tick_spoils_individual_bags_and_preserves_other_cargo():
         call ACME_fnc_coolerBoxColdChainTick;
         private _cargo=_box getVariable "fixtureCargo";
         [!(_bag in _cargo) && {_fresh in _cargo} && {"bandage" in _cargo},"wrong cargo spoiled or lost"] call _check;
-        [({_x=="ACME_SpoiledBlood"} count _cargo)==2,"spoiled count changed"] call _check;
-        [((_box getVariable "ACME_boxCoolerState") # 2) isEqualTo [[_fresh,1]],"spoiled ledger survives"] call _check;
+        [("ACME_SpoiledBlood" in _cargo) && {"ACME_SpoiledBlood_500" in _cargo},"spoiled count changed"] call _check;
+        [[_fresh,1] in ((_box getVariable "ACME_boxCoolerState") # 2),"fresh blood exposure changed"] call _check;
+        [["ACME_SpoiledBlood_500",1800] in ((_box getVariable "ACME_boxCoolerState") # 2),"spoiled unit was ejected from cooler metadata"] call _check;
     ''')
 
 
@@ -254,7 +256,7 @@ def test_generic_loose_age_catches_up_once_includes_corpses_and_excludes_cooler_
         [((_holder getVariable "ACME_bloodExposure") # 0) isEqualTo (_exposure # 0),"same-time nudge aged twice"] call _check;
         [!("box" in keys (missionNamespace getVariable "ACME_ccByHolder")),"generic tick ages deployed cooler"] call _check;
         _clock=1800;call ACME_fnc_bloodColdChainTick;
-        [(_holder getVariable "fixtureCargo") isEqualTo ["ACME_SpoiledBlood"],"elapsed loose expiry failed"] call _check;
+        [(_holder getVariable "fixtureCargo") isEqualTo ["ACME_SpoiledBlood_500"],"elapsed loose expiry failed"] call _check;
         [(_box getVariable "fixtureCargo") isEqualTo [_bag],"box blood was spoiled as loose"] call _check;
     ''')
 

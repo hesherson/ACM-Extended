@@ -3,7 +3,7 @@
  * been reconciled. No timeout refreshes coolant or manufactures contents. */
 if (!isServer) exitWith {};
 if (canSuspend) exitWith {isNil {_this call ACME_fnc_coolerBoxBroker;};};
-params ["_mode","_owner","_sid","_box","_request",["_kit",-1],["_locality",-1]];
+params ["_mode","_owner","_sid","_box","_request",["_kit",-1],["_locality",-1],["_placementPatient",objNull]];
 if (isNull _owner || {_request == ""}) exitWith {};
 private _receipts=missionNamespace getVariable ["ACME_coolerBoxReceipts",createHashMap];
 private _past=_receipts getOrDefault [_request,[]];
@@ -62,8 +62,8 @@ if (_mode == "draw") exitWith {
     private _nativeIndex=_cargo find _bagClass;
     if (_selected < 0 || {_nativeIndex < 0}) exitWith {[false,"That blood unit is no longer available."] call _reply;};
     private _entry=_entries deleteAt _selected;
-    if ((_entry select 1) >= (missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800]) && {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]}) exitWith {
-        _box addItemCargoGlobal [_bagClass,-1]; _box addItemCargoGlobal ["ACME_SpoiledBlood",1];
+    if (((_entry select 0) find "ACME_SpoiledBlood")!=0 && {(_entry select 1) >= (missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])} && {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]}) exitWith {
+        _box addItemCargoGlobal [_bagClass,-1]; _box addItemCargoGlobal [[_bagClass] call ACME_fnc_bloodSpoiledClass,1];
         _state set [2,_entries]; _box setVariable ["ACME_boxCoolerState",_state,true];
         [false,"That blood unit has spoiled."] call _reply;
     };
@@ -92,9 +92,30 @@ if (_mode == "deploy") exitWith {
         default {""};
     };
     if (_boxClass == "") exitWith {[false,"Unknown blood cooler."] call _reply;};
-    _box=createVehicle [_boxClass,_owner getRelPos [1.1,0],[],0,"CAN_COLLIDE"];
+        private _placementPos=_owner getRelPos [1.1,0];
+    private _pose=[];private _slot=0;
+    if (!isNull _placementPatient) then {
+        if (_owner distance _placementPatient>4.5 || {!isNull objectParent _placementPatient}) exitWith {};
+        _pose=[_placementPatient,"cooler"] call ACME_fnc_equipmentPose;
+        if (_pose isNotEqualTo []) then {
+            private _coolers=(_placementPatient getVariable ["ACME_eqCoolers",[]]) select {!isNull _x};
+            private _used=_coolers apply {_x getVariable ["ACME_eqCoolerSlot",0]};
+            while {_slot in _used} do {_slot=_slot+1;};
+            private _dir=_pose select 1;
+            _pose set [0,(_pose select 0) vectorAdd ([(_dir select 1),-(_dir select 0),0] vectorMultiply (_slot*0.6))];
+            _placementPos=ASLToAGL (_pose select 0);
+        };
+    };
+    if (!isNull _placementPatient && {_pose isEqualTo []}) exitWith {[false,"No safe surface is available beside the patient."] call _reply;};
+    _box=createVehicle [_boxClass,_placementPos,[],0,"CAN_COLLIDE"];
     if (isNull _box) exitWith {[false,"The cooler box could not be created."] call _reply;};
     _box setDir getDir _owner;
+    if (_pose isNotEqualTo []) then {
+        [_box,_pose] call ACME_fnc_equipmentSeat;
+        _box setVariable ["ACME_eqCoolerSlot",_slot,true];
+        private _coolers=(_placementPatient getVariable ["ACME_eqCoolers",[]]) select {!isNull _x};
+        _coolers pushBack _box;_placementPatient setVariable ["ACME_eqCoolers",_coolers,true];
+    };
     clearWeaponCargoGlobal _box; clearMagazineCargoGlobal _box; clearItemCargoGlobal _box; clearBackpackCargoGlobal _box;
     _box setVariable ["ACME_boxCoolerClass",_base,true];
     _box setVariable ["ACME_boxCoolerState",_state,true];
@@ -204,6 +225,7 @@ if (_mode == "pack") exitWith {
     if (!alive _owner || {_owner distance _box > 4.5}) exitWith {[false,"Move closer to the cooler."] call _reply;};
     if (_box getVariable ["ACME_coolerRetired",false]) exitWith {[false,"This cooler has already been picked up."] call _reply;};
     if (isNull (uniformContainer _owner) && {isNull (vestContainer _owner)} && {isNull (backpackContainer _owner)}) exitWith {[false,"Wear a container before picking up the cooler."] call _reply;};
+    if ((_box getVariable ["ACME_eqCoolerUsers",[]]) isNotEqualTo []) exitWith {[false,"Close the cooler before picking it up."] call _reply;};
     private _packing=_box getVariable ["ACME_coolerPacking",false];
     if (_packing) exitWith {
         if (count _record >= 9 && {(_record select 4) == _request} && {(_record select 3) isEqualTo _owner}) then {
@@ -214,9 +236,9 @@ if (_mode == "pack") exitWith {
     if ((_kit>=0 && {_kit != (_owner getVariable ["ACME_equipmentKitEpoch",0])})
         || {_locality>=0 && {_locality != (_owner getVariable ["ACME_providerLocalityEpoch",0])}}) exitWith {[false,"The cooler pickup was cancelled because control or equipment changed."] call _reply;};
     // Leave unrelated cargo untouched. Packing is available after it is removed.
-    private _other=(itemCargo _box) select {((_x find "ACM_BloodBag_") != 0) && {(_x find "ACM_FreshBloodBag_") != 0}};
+    private _other=(itemCargo _box) select {((_x find "ACM_BloodBag_") != 0) && {(_x find "ACM_FreshBloodBag_") != 0} && {(_x find "ACME_SpoiledBlood")!=0}};
     if (_other isNotEqualTo [] || {weaponCargo _box isNotEqualTo []} || {magazineCargo _box isNotEqualTo []} || {backpackCargo _box isNotEqualTo []}) exitWith {
-        [false,"Remove spoiled blood and other cargo before picking up the cooler."] call _reply;
+        [false,"Remove unrelated cargo before picking up the cooler."] call _reply;
     };
     private _state=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
     if (_state isEqualTo []) exitWith {[false,"The cooler state is unavailable."] call _reply;};
@@ -224,7 +246,7 @@ if (_mode == "pack") exitWith {
     private _capacity=getNumber (configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl");
     if (_capacity <= 0 || {_usedMl > _capacity}) exitWith {[false,"This cooler contains more blood than its rated capacity. Remove the excess before picking it up."] call _reply;};
     private _limit=missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800];
-    if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {((_state select 2) findIf {(_x select 1) >= _limit}) >= 0}) exitWith {
+    if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {((_state select 2) findIf {(_x select 1) >= _limit && {((_x select 0) find "ACME_SpoiledBlood")!=0}}) >= 0}) exitWith {
         [false,"Some blood has spoiled. Remove it before picking up the cooler."] call _reply;
     };
     if (_token == 0) then {
@@ -261,11 +283,11 @@ if (_state isEqualTo []) exitWith {["The cooler state changed during pickup. Its
 private _usedMl=0; {_usedMl=_usedMl+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);
 private _capacity=getNumber (configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl");
 private _limit=missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800];
-if (_capacity<=0 || {_usedMl>_capacity} || {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {((_state select 2) findIf {(_x select 1)>=_limit})>=0}}) exitWith {
+if (_capacity<=0 || {_usedMl>_capacity} || {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {((_state select 2) findIf {(_x select 1)>=_limit && {((_x select 0) find "ACME_SpoiledBlood")!=0}})>=0}}) exitWith {
     ["The cooler contents changed during pickup. Remove excess or spoiled blood before trying again."] call _abort;
 };
 private _cargo=itemCargo _box;
-private _other=_cargo select {((_x find "ACM_BloodBag_") != 0) && {(_x find "ACM_FreshBloodBag_") != 0}};
+private _other=_cargo select {((_x find "ACM_BloodBag_") != 0) && {(_x find "ACM_FreshBloodBag_") != 0} && {(_x find "ACME_SpoiledBlood")!=0}};
 // If external code inserted unrelated cargo during the handshake, retain that
 // real container. Its cooler shell is retired and cannot issue another token.
 {_box addItemCargoGlobal [_x select 0,-1];} forEach (_state select 2);

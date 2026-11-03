@@ -1,5 +1,7 @@
 params ["_o", "_u"];
-if (isNull _o) exitWith {};
+if (isNull _o || {_o getVariable ["ACME_eq_busy",false]}) exitWith {};
+if (_o isEqualTo player && {!isNull _u} && {!isNil "ACME_fnc_equipmentSetup"}) exitWith {[_u,"ls"] call ACME_fnc_equipmentSetup;};
+
 private _old = _o getVariable ["acme_tempusls_pat", objNull];
 if (_old isNotEqualTo _u) then {
     [_o] call ACME_fnc_tempusLsChargeClear;
@@ -8,6 +10,8 @@ if (_old isNotEqualTo _u) then {
 };
 if (!isNull _old && {_old isNotEqualTo _u}) then { [_o, _old, false] remoteExecCall ["ACME_fnc_tempusLsPace", _old] };
 _o setVariable ["acme_tempusls_pat", _u, true];
+_o setVariable ["acme_tempusls_pads",!isNull _u,true];
+_o setVariable ["acme_tempusls_ecg",false,true];
 _o setVariable ["acme_tempusls_v", [], true];
 private _me = [player, false, true] call ace_common_fnc_getName;
 if (isNull _u) exitWith {

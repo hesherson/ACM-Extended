@@ -12,12 +12,26 @@ if (_st isNotEqualTo "" && {_force || {(_c getVariable ["acme_tempus_mode", ""])
 	_c setVariable ["acme_tempus_sSt", _st];
 	_c ctrlWebBrowserAction ["ExecJS", "tp.load(JSON.stringify(" + _st + "))"];
 };
+private _request=_o getVariable ["ACME_eq_nibpRequest",-1];
+if (_request>=0 && {_request isNotEqualTo (_c getVariable ["ACME_eq_nibpSeen",-1])}) then {
+    _c setVariable ["ACME_eq_nibpSeen",_request];
+    _c ctrlWebBrowserAction ["ExecJS","tp.key('nibp')"];
+};
 private _nb = _o getVariable ["acme_tempus_nibp", -1];
 if ((_c getVariable ["acme_tempus_mode", ""]) isEqualTo "mirror" && {_nb isNotEqualTo (_c getVariable ["acme_tempus_sNb", -1])}) then {
 	_c setVariable ["acme_tempus_sNb", _nb];
 	if (_nb >= 0) then { _c ctrlWebBrowserAction ["ExecJS", "tp.nibp()"] };
 };
-private _v = _o getVariable ["acme_tempus_v", []];
+private _v = +(_o getVariable ["acme_tempus_v", []]);
+private _sensors=_o getVariable ["acme_tempus_sensors",[true,false,false,false,false]];
+if (count _v==9) then {
+    if !(_sensors select 0) then {_v set [1,-1];if !(_sensors select 1) then {_v set [0,-1];};};
+    if (!(_sensors select 0) && {!(_sensors select 3)}) then {_v set [6,-1];};
+    if !(_sensors select 1) then {_v set [5,-1];};
+    if !(_sensors select 2) then {{_v set [_x,-1];} forEach [3,4];};
+    if !(_sensors select 3) then {_v set [7,-1];};
+    if !(_sensors select 4) then {_v set [8,-1];};
+};
 private _pat = _o getVariable ["acme_tempus_pat", objNull];
 if (isNull _pat) then { _v = [] };
 if (_force || {_v isNotEqualTo (_c getVariable ["acme_tempus_sV", []])} || {diag_tickTime - (_c getVariable ["acme_tempus_vAt", 0]) > 5}) then {
@@ -37,7 +51,7 @@ if (_force || {_v isNotEqualTo (_c getVariable ["acme_tempus_sV", []])} || {diag
 		private _pi = if (_spo2 > 0) then { (round (linearConversion [60, 120, _sys, 4, 60, true])) / 10 } else { 0 };
 		private _t = if (_tc < 0) then {"null"} else { str ((round ((_tc * 9 / 5 + 32) * 10)) / 10) };
 		format ["tp.vitals({hr:%1,electricalHR:%2,rhythm:%3,spo2:%4,resp:%5,etco2:%6,sys:%7,dia:%8,mean:%9,t1:%10,t2:null,pi:%11})",
-			_hr, _ehr, _r, _spo2, _rr call _n, _co2 call _n, _sys, _dia, _mean, _t, _pi]
+			_hr call _n, _ehr call _n, _r, _spo2 call _n, _rr call _n, _co2 call _n, _sys call _n, _dia call _n, _mean call _n, _t, _pi]
 	};
 	_c ctrlWebBrowserAction ["ExecJS", _js];
 };

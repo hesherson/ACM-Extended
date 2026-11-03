@@ -1,5 +1,6 @@
 /* Select an actual carrier; the selector exposes separate identical coolers. */
 params [["_sid",""]];
+uiNamespace setVariable ["ACME_CLR_Box",objNull];
 private _rows=[ACE_player] call ACME_fnc_coolerRows;
 private _hit=_rows findIf {(_x select 0)==_sid || {((_x select 1) select 0)==_sid}};
 if (_hit<0) exitWith {};

@@ -11,6 +11,7 @@ if (!_on) exitWith {
     };
 };
 if (isNull _actor || {!alive _actor} || {_actor distance _o > 3}
+    || {!(_o getVariable ["acme_tempusls_pads",true])}
     || {_o distance _u > 6} || {(_o getVariable ["acme_tempusls_pat", objNull]) isNotEqualTo _u}
     || {!((_o getVariable ["acme_tempusls_pw", [false]]) select 0)}) exitWith {};
 if (!finite _rate || {!finite _ma}) exitWith {};

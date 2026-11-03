@@ -15,7 +15,7 @@ private _valid = true;
 } forEach _entries;
 if (!_valid) exitWith {[]};
 private _sample = _now max _last;
-private _chain = getNumber (configFile >> "CfgWeapons" >> _base >> "ACME_coolerColdChainTime");
+private _chain = ([_base] call ACME_fnc_coolerColdChainTime);
 private _rate = missionNamespace getVariable ["ACME_coolerThawRateInside", 0.2];
 if !(_rate isEqualType 0 && {finite _rate} && {_rate >= 0}) then {_rate = 0.2;};
 private _increment = 0;

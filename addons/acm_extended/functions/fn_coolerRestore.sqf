@@ -31,7 +31,7 @@ if (_scope == "box") exitWith {
     private _state = [_row] call _decode;
     if (count _state != 4) exitWith {false};
     private _oldCargo = itemCargo _holder;
-    private _kept = _oldCargo select {(_x find "ACM_BloodBag_") != 0 && {(_x find "ACM_FreshBloodBag_") != 0}};
+    private _kept = _oldCargo select {(_x find "ACM_BloodBag_") != 0 && {(_x find "ACM_FreshBloodBag_") != 0} && {!(_x in ((_state select 2) apply {_x select 0}))}};
     clearItemCargoGlobal _holder;
     {_holder addItemCargoGlobal [_x,1];} forEach _kept;
     {_holder addItemCargoGlobal [_x select 0,1];} forEach (_state select 2);

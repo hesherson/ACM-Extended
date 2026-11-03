@@ -3,7 +3,7 @@ if (!hasInterface || {!(missionNamespace getVariable ["ACME_coolerAutoStore",tru
     || {diag_tickTime<(missionNamespace getVariable ["ACME_coolerAutoStoreSuppressUntil",0])}) exitWith {};
 private _p=ACE_player;
 if (isNull _p || {!alive _p} || {!local _p}) exitWith {};
-private _loose=((uniformItems _p)+(vestItems _p)+(backpackItems _p)) select {([_x] call ACME_fnc_coolerBagVolume)>0};
+private _loose=((uniformItems _p)+(vestItems _p)+(backpackItems _p)) select {([_x] call ACME_fnc_coolerBagVolume)>0 && {(_x find "ACME_SpoiledBlood")!=0}};
 private _reserved=(missionNamespace getVariable ["ACME_coolerManualOut",0]) min count _loose;
 missionNamespace setVariable ["ACME_coolerManualOut",_reserved];
 if (count _loose<=_reserved) exitWith {};

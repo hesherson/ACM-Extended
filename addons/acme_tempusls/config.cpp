@@ -109,14 +109,15 @@ class CfgFunctions {
     };
 };
 class CfgWeapons {
-    class CBA_MiscItem;
+    class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
-    class ACME_TempusLS_Item : CBA_MiscItem {
+    class ACME_TempusLS_Item : ACE_ItemCore {
         scope = 2;
         scopeArsenal = 2;
         scopeCurator = 2;
         author = "ACME";
         displayName = "Tempus LS Defibrillator";
+        ACE_isMedicalItem = 1;
         descriptionShort = "Defibrillator, pacer and ECG monitor";
         picture = "\acme_tempusls\data\tempusls_icon_ca.paa";
         model = "\acme_tempusls\data\tempus_ls.p3d";
@@ -183,7 +184,11 @@ class ACME_TempusLS_Key : RscButton {
     colorDisabled[] = {0, 0, 0, 0};
     colorBackground[] = {0, 0, 0, 0};
     colorBackgroundDisabled[] = {0, 0, 0, 0};
-    colorBackgroundActive[] = {1, 1, 1, 0.14};
+    colorBackgroundActive[] = {0, 0, 0, 0};
+    colorBackgroundFocused[] = {0, 0, 0, 0};
+    period = 0;
+    periodFocus = 0;
+    periodOver = 0;
     colorFocused[] = {0, 0, 0, 0};
     colorShadow[] = {0, 0, 0, 0};
     colorBorder[] = {0, 0, 0, 0};

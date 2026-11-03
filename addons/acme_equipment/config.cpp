@@ -6,7 +6,7 @@ class CfgPatches {
         name = "ACME medical equipment integration";
         author = "mavis";
         requiredVersion = 2.20;
-        requiredAddons[] = {"ACM_Extended", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway"};
+        requiredAddons[] = {"ACM_Extended", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway", "acme_tempus", "acme_tempusls"};
         units[] = {};
         weapons[] = {};
     };
@@ -93,4 +93,41 @@ class Extended_PostInit_EventHandlers {
     class acme_equipment {
         init = "ACME_hpmk_blanketClass = 'ACME_HPMK_Open';";
     };
+};
+
+class CfgFunctions { class ACME { class equipment { file="\acme_equipment\functions";
+class equipmentLayout {};
+class equipmentPose {};
+class equipmentSeat {};
+class equipmentSetup {};
+class equipmentInventory {};
+class equipmentRequest {};
+class equipmentAck {};
+class equipmentVent {};
+class equipmentTick {};
+class equipmentAvailable {};
+class equipmentCoolerLease {};
+class equipmentCoolerOpen {};
+class equipmentCoolerClose {};
+class equipmentCoolerTrack {};
+class equipmentCoolerVisualTick {};
+class equipmentCoolerMenu {};
+class equipmentSensorMenu {};
+class equipmentCoolerLoad {};
+class equipmentVentScreen {};
+class equipmentLsConnections {};
+class equipmentInit {postInit=1;};
+}; }; };
+class CfgRemoteExec { class Functions {
+class ACME_fnc_equipmentCoolerLease {allowedTargets=2;};
+class ACME_fnc_equipmentCoolerLoad {allowedTargets=2;};
+class ACME_fnc_equipmentRequest {allowedTargets=2;};
+class ACME_fnc_equipmentAck {allowedTargets=2;};
+class ACME_fnc_equipmentInventory {allowedTargets=0;};
+};};
+
+class Extended_InitPost_EventHandlers {
+ class ACME_BloodCoolerBox_CSWB1U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
+ class ACME_BloodCoolerBox_CSWB2U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
+ class ACME_BloodCoolerBox_CSWB4U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
 };
