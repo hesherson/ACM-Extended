@@ -2,6 +2,8 @@ params ["_actor","_patient","_kind",["_operation","setup"],["_manual",false],["_
 if (!isServer || {isNull _actor} || {!alive _actor}) exitWith {};
 if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor}) exitWith {};
 if (_actor getVariable ["ACE_isUnconscious",false] || {_actor getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
+if (!isNull _patient && {_patient getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
+if (!isNull _device && {(_device getVariable ["ACME_eq_patient",objNull]) getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
 private _types=createHashMapFromArray [["pro",["ACME_TempusPro_Item","ACME_TempusPro"]],["ls",["ACME_TempusLS_Item","ACME_TempusLS"]],["accu",["ACM_ACCUVAC","ACME_AccuvacRescue"]]];
 if !(_kind in _types) exitWith {};
 private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
@@ -36,6 +38,7 @@ if (_kind in ["pro","ls"]) then {
     {if (!isNil {_source getVariable (_prefix+_x)}) then {_state pushBack [_prefix+_x,_source getVariable (_prefix+_x)];};} forEach ["_pw","_st","_v","_nibp","_sensors","_link","_metro","_pads","_ecg"];
 };
 private _serial=(missionNamespace getVariable ["ACME_eqSerial",0])+1;
+if (!isNull _patient && {_patient getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
 missionNamespace setVariable ["ACME_eqSerial",_serial];
 private _id=format ["equipment:%1:%2:%3",clientOwner,_serial,random 1e9];
 private _record=createHashMapFromArray [["actor",_actor],["patient",_patient],["kind",_kind],["operation",_operation],["manual",_manual],["spot",_spot],["device",_device],["item",_item],["class",(_types get _kind) select 1],["sent",serverTime],["state",_state],["phase",["take","give"] select (_operation=="pickup")]];

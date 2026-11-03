@@ -2,6 +2,8 @@
  * were deleted. Owner-local captures/proofs are still required independently.
  * No unknown outcome is interpreted as a delivered or canceled resource. */
 if (!isServer) exitWith {false};
+private _equipment = missionNamespace getVariable ["ACME_eqPending",createHashMap];
+if (!(_equipment isEqualType createHashMap) || {count _equipment > 0}) exitWith {false};
 private _shieldPending = missionNamespace getVariable ["ACM_ophthalmology_shieldPending", createHashMap];
 if (!(_shieldPending isEqualType createHashMap) || {count _shieldPending > 0}) exitWith {false};
 private _ok = true;
