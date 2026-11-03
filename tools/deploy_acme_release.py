@@ -23,7 +23,9 @@ import uuid
 PBO_NAMES = {f'ACM_{n}.pbo'.casefold() for n in (
     'acm_extended','airway','breathing','cbrn','circulation','core','damage',
     'disability','evacuation','gui','itemtext','main','mission','zeus',
-    'burns','infection','ophthalmology','card','card_main')}
+    'burns','infection','ophthalmology','card','card_main',
+    'acme_accuvac','acme_bloodcooler','acme_hpmk','acme_ventway',
+    'acme_tempus','acme_tempusls','acme_atak','acme_equipment')}
 
 class DeployError(RuntimeError):
     pass

@@ -1,4 +1,4 @@
-#include "../main/script_build.hpp"
+#include "..\main\script_build.hpp"
 // Late-loaded, low-risk config corrections owned by ACM Extended.
 // Requiring ACM_Extended guarantees the base item and treatment-action classes already exist before these patches.
 class CfgPatches {

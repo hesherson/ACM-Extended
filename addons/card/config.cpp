@@ -1,4 +1,4 @@
-#include "../main/script_build.hpp"
+#include "..\main\script_build.hpp"
 #include "script_component.hpp"
 
 // Lynx's DD1380 classes and virtual paths remain compatible with existing cards.
@@ -16,4 +16,4 @@ class CfgPatches {
 };
 #include "CfgEventHandlers.hpp"
 #include "ACE_Medical_Treatment_Actions.hpp"
-#include "ui/DD1380_dlg.hpp"
+#include "ui\DD1380_dlg.hpp"

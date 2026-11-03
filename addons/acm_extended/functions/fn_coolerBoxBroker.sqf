@@ -107,8 +107,13 @@ if (_mode == "deploy") exitWith {
     private _observed=itemCargo _box; _observed sort true;
     if (_expected isNotEqualTo _observed) exitWith {deleteVehicle _box; _box=objNull; [false,"The cooler contents could not be placed. The carried cooler is retained."] call _reply;};
     [_box,true,true,true] call ACM_core_fnc_setDraggingCapability;
-    { _box setObjectTextureGlobal [_x,"#(argb,8,8,3)color(0.62,0.10,0.10,1.0,co)"]; } forEach [0,1,2];
-    private _scale=missionNamespace getVariable ["ACME_coolerBoxScale",0.65];
+    // Purpose-built cooler models retain their fabric textures and real dimensions.
+    private _modelCfg = configFile >> "CfgVehicles" >> _boxClass;
+    if (getNumber (_modelCfg >> "ACME_preserveModelTextures") != 1) then {
+        { _box setObjectTextureGlobal [_x,"#(argb,8,8,3)color(0.62,0.10,0.10,1.0,co)"]; } forEach [0,1,2];
+    };
+    private _scale = getNumber (_modelCfg >> "ACME_modelScale");
+    if (_scale <= 0) then {_scale=missionNamespace getVariable ["ACME_coolerBoxScale",0.65];};
     if (_scale != 1) then {
         [{params ["_box","_scale"]; if (isNull _box) exitWith {}; _box enableSimulation false; _box setObjectScale _scale;
             [_box, _scale] remoteExec ["ACME_fnc_coolerBoxApplyScale", 0, _box];},[_box,_scale],0.5] call CBA_fnc_waitAndExecute;

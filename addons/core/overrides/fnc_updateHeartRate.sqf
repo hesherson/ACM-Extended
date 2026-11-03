@@ -132,6 +132,11 @@ if (!(alive _unit) || !(HAS_PULSE(_unit)) || alive (_unit getVariable [QACEGVAR(
     };
 };
 
+// The LS contributes only at the native HR endpoint, after intrinsic physiology.
+if (!isNil "ACME_fnc_tempusLsPacingRate") then {
+    private _paced = [_unit, _heartRate] call ACME_fnc_tempusLsPacingRate;
+    if (_unit getVariable ["acme_tempusls_capture", false]) then {_heartRate = _paced;};
+};
 _unit setVariable [VAR_HEART_RATE, _heartRate, _syncValue];
 
 _heartRate

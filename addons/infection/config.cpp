@@ -1,4 +1,4 @@
-#include "../main/script_build.hpp"
+#include "..\main\script_build.hpp"
 #include "script_component.hpp"
 
 class CfgPatches {

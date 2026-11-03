@@ -18,6 +18,9 @@ if (alive (_patient getVariable [QACEGVAR(medical,CPR_provider), objNull])) exit
 
 if ([_patient] call FUNC(recentAEDShock) || {!(alive _patient)}) exitWith {0};
 
+// Captured LS pacing is integrated by the native HR writer, not a second vital setter.
+if (_patient getVariable ["acme_tempusls_capture", false]) exitWith {GET_HEART_RATE(_patient) max 0};
+
 private _rhythm = _patient getVariable [QGVAR(Cardiac_RhythmState), ACM_Rhythm_Sinus];
 private _effective = [_patient] call ACME_fnc_rhythmGet;
 

@@ -1,0 +1,10 @@
+// Screens: main display (hidden selection screen) and FiO2 mixer display (screen_fio2).
+// Self lit: the texture shows at its own brightness, day or night.
+ambient[] = {0, 0, 0, 1};
+diffuse[] = {0, 0, 0, 1};
+forcedDiffuse[] = {0, 0, 0, 0};
+emmisive[] = {1, 1, 1, 1};
+specular[] = {0.3, 0.3, 0.3, 1};
+specularPower = 120;
+PixelShaderID = "Normal";
+VertexShaderID = "Basic";

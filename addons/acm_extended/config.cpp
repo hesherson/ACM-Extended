@@ -1,4 +1,4 @@
-#include "../main/script_build.hpp"
+#include "..\main\script_build.hpp"
 // extended event handlers, matching the ACM and ACE convention. these are inlined from the former
 // cfgeventhandlers.hpp, so the build has no #include to drop in.
 // preinit registers the CBA settings. postinit starts the runtime of the addon.

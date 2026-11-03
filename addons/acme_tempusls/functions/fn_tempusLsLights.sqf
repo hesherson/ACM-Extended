@@ -1,0 +1,13 @@
+params ["_o", ["_s", objNull]];
+if (isNull _o) exitWith {};
+if (isNull _s) then { _s = _o };
+private _on = (_s getVariable ["acme_tempusls_pw", [false]]) select 0;
+private _st = _s getVariable ["acme_tempusls_st", ""];
+private _manual = _on && {_st isEqualTo "" || {(_st find """mode"":""Manual""") >= 0}};
+private _armed = _on && {_s getVariable ["acme_tempusls_armed", false]} && {(floor (diag_tickTime * 2)) % 2 == 0};
+private _key = [_on, _manual, _armed];
+if (_key isEqualTo (_o getVariable ["acme_tempusls_lit", []])) exitWith {};
+_o setVariable ["acme_tempusls_lit", _key];
+_o setObjectMaterial [1, ["\acme_tempusls\data\ring_off.rvmat", "\acme_tempusls\data\ring_on.rvmat"] select _manual];
+_o setObjectMaterial [2, ["\acme_tempusls\data\led_off.rvmat", "\acme_tempusls\data\led_on.rvmat"] select _on];
+_o setObjectMaterial [3, ["\acme_tempusls\data\tempusls.rvmat", "\acme_tempusls\data\shock_on.rvmat"] select _armed];

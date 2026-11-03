@@ -47,7 +47,7 @@ private _partIndex = GET_BODYPART_INDEX(_bodyPart);
 
 if (_type == 0) then { // Try to remove
     {
-        params ["_complicationArray", "_complicationTypeVar"];
+        _x params ["_complicationArray", "_complicationTypeVar"];
 
         private _placement = _complicationArray;
         if (_placement isNotEqualTo ACM_IV_PLACEMENT_DEFAULT_0) then {

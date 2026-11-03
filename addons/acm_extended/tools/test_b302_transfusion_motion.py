@@ -91,7 +91,14 @@ def test_new_motion_is_read_only_cached_and_keeps_native_pause_action():
     normalized=normalized.replace(', ["_navigation", [], [[]]]];','];').replace('\n[_display,_navigation] call ACME_fnc_restorePageCursor;\n','')
     assert normalized==old
     for path in ['addons/gui','addons/acm_extended/ui/iv','addons/circulation/functions/fnc_TransfusionMenu_ToggleIVFlow.sqf']:
-        assert not subprocess.check_output(['git','diff','--name-only',BASE,'--',path],cwd=ROOT).strip()
+        changed=subprocess.check_output(['git','diff','--name-only',BASE,'--',path],cwd=ROOT,text=True).splitlines()
+        # B306 normalizes the build include separator; native menu behavior is protected.
+        assert set(changed) <= {'addons/gui/config.cpp'}
+        for item in changed:
+            before=subprocess.check_output(['git','show',BASE+':'+item],cwd=ROOT,text=True)
+            after=(ROOT/item).read_text()
+            normalize=lambda s: ''.join(line.replace(chr(92),'/') if line.lstrip().startswith('#include') else line for line in s.splitlines(keepends=True))
+            assert normalize(before)==normalize(after)
 
 
 def test_shared_ui_worker_keeps_expensive_refresh_at_four_hz_and_registration_idempotent():
