@@ -42,7 +42,7 @@ private _valid = true;
     if (_cache isNotEqualTo [] && {(_cache select 1) > (_record select 6)}) exitWith {_valid = false;};
     private _tie = [];
     if (_kind == "prepared") then {
-        private _set = +(_payload select 1);
+        private _set = [_payload select 1,"prepared","snapshot"] call ACME_fnc_bloodUseRow;
         if ((_set param [5,""]) != "") then {
             _tie = _savedTies getOrDefault [_payload select 0,[]];
             if (_tie isEqualTo []) then {

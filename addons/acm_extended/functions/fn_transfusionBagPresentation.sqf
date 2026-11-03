@@ -2,6 +2,7 @@
  * A fitted downstream warmer colors only the bag currently delivering fluid.
  * No inventory discovery, state mutation, list rebuild or additional UI worker. */
 params ["_patient","_part","_bag",["_label",""]];
+private _expired=[_bag,"native","expired"] call ACME_fnc_bloodUseRow;
 _bag params [["_type",""],["_remaining",0],"",["_site",-1],["_iv",true],["_bloodType",-1],["_volume",0],"",["_uid",""]];
 if (_label == "") then {
     private _class = [_type,_volume,_bloodType] call ACM_circulation_fnc_formatFluidBagName;
@@ -67,4 +68,5 @@ if ([_patient,_part,_iv,_site] call ACME_fnc_lineWarmer) then {
 } else {
     if (_type in ["Blood","FreshBlood"] && {_patient getVariable ["ACME_coldBlood",false]}) then {_color = [0.45,0.72,1,1];};
 };
+if (_expired) then {_label=_label+" [SPOILED]";_color=[0.7,0.45,0.45,1];_thermal="Expired blood — remove for disposal";_flowing=false;};
 [_label,_color,_thermal,_role,_flowing]

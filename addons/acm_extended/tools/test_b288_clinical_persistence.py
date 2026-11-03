@@ -23,7 +23,11 @@ def ref_function(name):
     text = re.sub(r'(\b_\w+) isEqualType objNull',
                   r'(\1 isEqualTo objNull || {\1 isEqualType profileNamespace})', text)
     text = re.sub(r'\bfinite (\([^\n]*?\)|_\w+)', r'(\1 call _finiteRef)', text)
-    return 'ACME_fnc_' + name + '={' + adapt(map_defaults(iteration_scopes(text))) + '};\n'
+    dependencies=''
+    if name=='clinicalFreshBlood':
+        dependencies=ref_function('bloodUseClock')+ref_function('bloodUseRow')
+    text=text.replace('_out select [12]', '_out select [12,count _out]')
+    return dependencies+'ACME_fnc_' + name + '={' + adapt(map_defaults(iteration_scopes(text))) + '};\n'
 
 
 def ref_setup():
@@ -289,6 +293,7 @@ def test_native_serializer_and_restore_write_plans_call_fresh_normalizer_before_
         private _unit=_patient;
         private _state=_medic;
         private _variableList=[["ACM_circulation_IV_Bags",createHashMap]];
+        private _offlineSeconds=0;
         _unit setVariable ["ACM_circulation_IV_Bags",_map];
     ''' + adapt(map_defaults(iteration_scopes(snapshot))) + r'''
         private _stored=_state getVariable "ACM_circulation_IV_Bags";

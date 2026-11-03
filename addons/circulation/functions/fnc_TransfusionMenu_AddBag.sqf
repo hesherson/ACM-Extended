@@ -56,6 +56,8 @@ if (!_validAccess) exitWith {
 private _vehicle = objectParent _medic;
 
 private _target = [_medic, _patient, _vehicle] select GVAR(TransfusionMenu_Selected_Inventory);
+private _clockRow=[["native-add",_itemClassname,_actionClassname,"","","","",false,""],_target,_itemClassname] call ACME_fnc_bloodUseSeed;
+private _useClock=[_clockRow,"prepared","get"] call ACME_fnc_bloodUseRow;
 
 // A fresh whole-blood item is only safe to consume once its donor metadata is present locally. JIP/MP registry
 // synchronization can trail the physical inventory item briefly. Never remove the bag first and discover that its
@@ -81,8 +83,8 @@ if (GVAR(TransfusionMenu_Selected_Inventory) == 2) then {
 
 private _itemClassNameString = getText (configFile >> "CfgWeapons" >> _itemClassname >> "displayName");
 
-[[_medic, _patient, _target, _itemClassname, _actionClassname, _vehicle, _yRefill], {
-    params ["_medic", "_patient", "_target", "_itemClassname", "_actionClassname", "_vehicle", "_yRefill"];
+[[_medic, _patient, _target, _itemClassname, _actionClassname, _vehicle, _yRefill,_useClock], {
+    params ["_medic", "_patient", "_target", "_itemClassname", "_actionClassname", "_vehicle", "_yRefill",["_useClock",[]]];
 
     private _bodyPart = GVAR(TransfusionMenu_Selected_BodyPart);
     private _iv = GVAR(TransfusionMenu_SelectIV);
@@ -96,7 +98,7 @@ private _itemClassNameString = getText (configFile >> "CfgWeapons" >> _itemClass
         _site = _ySite;
     };
 
-    [_medic, _patient, _bodyPart, _actionClassname, objNull, _itemClassname, _iv, _site] call ACEFUNC(medical_treatment,ivBag);
+    [_medic, _patient, _bodyPart, _actionClassname, objNull, _itemClassname, _iv, _site,_useClock] call ACEFUNC(medical_treatment,ivBag);
     if (_yRequest != "") then {
         [_patient,"yRefill",[_patient,_medic,"finalize",_yRequest,_yMode,_bodyPart,_iv,_site,_yEpoch,_yCooler,_yWarmer]] call ACME_fnc_ownerDispatch;
         private _active = uiNamespace getVariable ["ACME_yRefillActive",[]];

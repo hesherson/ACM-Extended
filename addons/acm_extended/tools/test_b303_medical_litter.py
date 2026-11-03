@@ -213,6 +213,8 @@ def test_scope_uses_the_same_animation_names_and_only_registered_litter_deletion
         # plus build-only include separators. Litter still cannot touch unrelated surfaces.
         permitted={'addons/gui/config.cpp','addons/circulation/config.cpp',
                    'addons/circulation/functions/fnc_getEKGHeartRate.sqf',
+                   'addons/circulation/functions/fnc_getBloodVolumeChange.sqf',  # B309 use-expiry gate, separately executed.
+                   'addons/circulation/functions/fnc_TransfusionMenu_AddBag.sqf',  # B309 native use-clock handoff.
                    'addons/circulation/functions/fnc_setIVComplication.sqf'}
         assert changed <= permitted
         for item in changed:

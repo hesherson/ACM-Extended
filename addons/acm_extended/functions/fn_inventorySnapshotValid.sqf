@@ -51,12 +51,13 @@ private _rowValid = {
         _tokens pushBack _token; _sids pushBack _sid;
         true
     } else {
-        if (count _body < 9 || {count _body > 12} || {(_body select 0) isNotEqualTo _sid}) exitWith {false};
+        if (count _body < 9 || {count _body > 13} || {(_body select 0) isNotEqualTo _sid}) exitWith {false};
+        if (count _body==13 && {!([_body select 12,"validSaved"] call ACME_fnc_bloodUseClock)}) exitWith {false};
         if (([1,2,3,4,5,6,8] findIf {!((_body select _x) isEqualType "")}) >= 0
             || {(_body select 5) != ""} || {!((_body select 7) isEqualType true)}) exitWith {false};
         if (([9,10] findIf {_x < count _body && {!((_body select _x) isEqualType 0) || {(_body select _x) < 0}}}) >= 0) exitWith {false};
         private _fresh = ((_body select 1) find "ACM_FreshBloodBag_") == 0 || {((_body select 2) find "FreshBloodBag_") == 0};
-        if (_fresh && {count _body != 12}) exitWith {false};
+        if (_fresh && {count _body < 12}) exitWith {false};
         private _meta = _body param [11,[]];
         private _validFresh = {
             params ["_meta"];

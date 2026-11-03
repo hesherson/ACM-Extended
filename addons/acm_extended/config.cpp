@@ -2668,6 +2668,9 @@ class CfgFunctions {
             class coolerColdChainTime {};
             class bloodTimingApply {};
             class bloodSpoiledClass {};
+            class bloodUseClock {};
+            class bloodUseRow {};
+            class bloodUseSeed {};
             class coolerBagVolume {};
             class coolerBoxReconcile {};
             class bloodExposureBroker {};

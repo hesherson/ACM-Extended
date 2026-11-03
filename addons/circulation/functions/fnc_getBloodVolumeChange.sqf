@@ -236,6 +236,7 @@ if (_hasFluidBags) then {
         private _fluidBagsBodyPart = _y;
 
         _fluidBagsBodyPart = _fluidBagsBodyPart apply {
+            _x=[_x] call ACME_fnc_bloodUseRow;
             private _acmeBagIndex = _forEachIndex;
             _x params ["_type", "_bagVolumeRemaining", "_accessType", "_accessSite", "_iv", ["_bloodType", -1], "_originalVolume", ["_freshBloodID", -1], ["_bagUid", ""]];
             // y-line membership at the body-part level, ignoring iv, io and the site. this is the loosest and most robust
@@ -250,6 +251,7 @@ if (_hasFluidBags) then {
             private _needsPrime = _onYLine && {!((_unit getVariable ["ACME_YLinePrimed", createHashMap]) getOrDefault [_serviceKey, true])};
             private _servicing = _serviceKey in (_unit getVariable ["ACME_yFlushJobs", createHashMap]);
             if (_bagUid == "") then {_bagUid = [_unit, _targetBodyPart, _acmeBagIndex] call ACME_fnc_bagIdentity;};
+            _x set [8,_bagUid];
             private _acmeOriginalBag = +_x; _acmeOriginalBag set [8, _bagUid];
             // Preserve manufacturer capacity and immutable donor metadata on every tick.
             private _acmeBagTail = _x select [9];
@@ -276,7 +278,7 @@ if (_hasFluidBags) then {
                 _heldDetached = false;
                 [_unit, "ACME_detachedBags", _detached - [_bagUid]] call ACME_fnc_setVarNet;
             };
-            if (!_acmeFreshKnown || {_heldDetached} || {_piggybackHeld} || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
+            if (([_x,"native","expired"] call ACME_fnc_bloodUseRow) || {!_acmeFreshKnown} || {_heldDetached} || {_piggybackHeld} || {_type in ["ACME_Empty", "ACME_EmptySaline"]} || {_isYSaline} || {_needsPrime} || {_servicing}) then {
                 if (_isYSaline && {_type == "Saline"}) then {
                     // self-heal a missed or late menu retag. a plain saline on a y line is the reserve, so it is returned
                     // permanently re-typed as ACME_SalineY. from the next tick the type-based clamp holds it with no dependence on

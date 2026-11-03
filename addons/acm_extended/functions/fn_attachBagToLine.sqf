@@ -63,6 +63,9 @@ if (_receipt isEqualTo []) exitWith {
     [_medic, "The selected bag is no longer in that inventory."] call ACME_fnc_clinicalNotice;
     false
 };
+private _bloodSource=_receipt select 2;
+if (isNull _bloodSource) then {_bloodSource=_receipt select 0;};
+_set=[_set,_bloodSource,_class] call ACME_fnc_bloodUseSeed;
 private _sets = +(_medic getVariable ["ACME_preparedIVSets", []]);
 _sets pushBack _set;
 _medic setVariable ["ACME_preparedIVSets", _sets, true];

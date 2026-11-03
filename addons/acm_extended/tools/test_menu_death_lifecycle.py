@@ -208,6 +208,13 @@ PREAMBLE += "\nACME_fnc_yBagReplaceEmpty={" + adapt(read("yBagReplaceEmpty")) + 
 
 
 PREAMBLE += "\nACME_fnc_bloodSpoiledClass={" + adapt(read("bloodSpoiledClass")) + "};"
+for _blood_dependency in ("bloodUseClock", "bloodUseRow", "bloodUseSeed"):
+    _blood_source = adapt(read(_blood_dependency)).replace('serverTime','_nowTime')
+    # VM has no finite command; its fixture scalars are ordinary finite values.
+    _blood_source = re.sub(r'\bfinite (_\w+)', r'(\1 isEqualType 0)', _blood_source)
+    _blood_source = re.sub(r'\bfinite (\([^()]*\))', r'(\1 isEqualType 0)', _blood_source)
+    _blood_source = _blood_source.replace('_out select [12]', '_out select [12,count _out]')
+    PREAMBLE += f'\nACME_fnc_{_blood_dependency}={{' + _blood_source + '};'
 
 GROUND_CONTACT_SOURCE = adapt(read('patientInteractionContact'))
 GROUND_CONTACT_SOURCE = re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',GROUND_CONTACT_SOURCE)

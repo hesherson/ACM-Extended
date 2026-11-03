@@ -59,6 +59,7 @@ private _uncertain = false;
     private _unplaced = false;
     private _evidence = [];
     if (_kind == "used") then {
+        private _tracked=missionNamespace getVariable ["ACME_inventoryTracked",[]];_tracked pushBackUnique _provider;missionNamespace setVariable ["ACME_inventoryTracked",_tracked];
         private _used = _provider getVariable ["ACME_usedBags",[]];
         private _id = _value select 0;
         private _found = _used findIf {(_x param [0,""]) == _id};

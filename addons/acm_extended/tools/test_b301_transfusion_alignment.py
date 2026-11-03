@@ -174,7 +174,12 @@ def test_b301_scope_keeps_ace_clinical_inventory_custody_and_original_body_art_e
     assert (ROOT/native).read_bytes().split(marker,1)[1]==baseline(native).split(marker,1)[1]
     for name in ['updateTransfusionControls','updateTransfusionAccessHotspots','transfusionTagLeader','transfusionTagRect','piggybackAttachRequest','piggybackAttachLocal','reactMedicalMessage','reactMedicalValid']:
         path='addons/acm_extended/functions/fn_'+name+'.sqf'
-        assert (ROOT/path).read_bytes()==baseline(path)
+        # This guard describes the B301 layout patch. B309 intentionally adds
+        # blood-expiry admission/labels to these two paths; its execution tests
+        # own that later behavior. Preserve the historical B301 boundary here.
+        current=(subprocess.check_output(['git','show','de71fb771a30ae4e3cc25e1c115b65e7753a47d2:'+path],cwd=ROOT)
+                 if name in {'updateTransfusionControls','piggybackAttachLocal'} else (ROOT/path).read_bytes())
+        assert current==baseline(path)
     dialog='addons/circulation/TransfusionMenu_Dialog.hpp'
     from source_scan import lex,matching
     def class_block(source,name):

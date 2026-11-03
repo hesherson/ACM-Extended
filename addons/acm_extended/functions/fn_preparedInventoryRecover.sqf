@@ -1,6 +1,19 @@
 /* Provider locality may change after the carrier leaves native inventory. Recover from serializable intent. */
 params ["_provider"];
 if (isNull _provider || {!local _provider}) exitWith {};
+// Latch expiry in the existing one-second inventory pass. No new polling worker.
+// Prepared metadata edits wait for ordinary custody to settle and use its ledger.
+if !(_provider getVariable ["ACME_persistenceFrozen",false]) then {
+    private _used=_provider getVariable ["ACME_usedBags",[]];
+    private _aged=_used apply {[_x,"used"] call ACME_fnc_bloodUseRow};
+    if (_aged isNotEqualTo _used) then {_provider setVariable ["ACME_usedBags",_aged,true];};
+    private _idle=(["ACME_inventoryEscrow","ACME_inventoryPending","ACME_inventoryMutations","ACME_inventoryIncoming"] findIf {count (_provider getVariable [_x,createHashMap])>0})<0;
+    if (_idle) then {
+        private _sets=_provider getVariable ["ACME_preparedIVSets",[]];
+        private _agedSets=_sets apply {[_x,"prepared"] call ACME_fnc_bloodUseRow};
+        if (_agedSets isNotEqualTo _sets) then {[_provider] call ACME_fnc_preparedInventoryCommit;};
+    };
+};
 private _intents = _provider getVariable ["ACME_inventoryActionIntents",createHashMap];
 private _escrow = _provider getVariable ["ACME_inventoryEscrow",createHashMap];
 {

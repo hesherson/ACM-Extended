@@ -13,10 +13,13 @@ private _ok = true;
         if !(_value isEqualType "" && {count _value > 0} && {count _value <= 256}
             && {isClass (configFile >> "CfgWeapons" >> _value)}) exitWith {_ok = false;};
     } else {
-        if !(_value isEqualType [] && {count _value in [8,9,10]}) exitWith {_ok = false;};
+        if !(_value isEqualType [] && {count _value in [8,9,10,11]}) exitWith {_ok = false;};
         if (([0,1,2,3,4,5,6,7] findIf {isNil {_value select _x}}) >= 0) exitWith {_ok = false;};
+        if (([8,9,10] findIf {_x<count _value && {isNil {_value select _x}}})>=0) exitWith {_ok=false;};
         _value params ["_id","_type","_remaining","_access","_blood","_volume","_name","_freshId"];
-        private _bagOnly = count _value == 10;
+        private _bagOnly = (_value param [9,""]) isEqualTo "bagOnly";
+        private _timed=count _value==11;
+        if (_timed && {!([_value select 10,"validLive"] call ACME_fnc_bloodUseClock) || {!((_value select 9) in ["","bagOnly"])}}) exitWith {_ok=false;};
         if (_bagOnly && {isNil {_value select 9} || {(_value select 9) isNotEqualTo "bagOnly"}}) exitWith {_ok = false;};
         if !(_id isEqualType "" && {count _id > 0} && {count _id <= 256} && {!(_id in _seen)}
             && {_type isEqualType ""} && {count _type > 0} && {count _type <= 128}
@@ -27,7 +30,7 @@ private _ok = true;
             && {_blood isEqualType 0} && {finite _blood} && {_blood == floor _blood} && {_blood >= -1} && {_blood <= 7}
             && {_name isEqualType ""} && {count _name <= 256} && {_freshId isEqualTo -1}) exitWith {_ok = false;};
         if (_type == "FreshBlood") then {
-            if !(count _value in [9,10]) exitWith {_ok = false;};
+            if !(count _value in [9,10,11]) exitWith {_ok = false;};
             private _meta = _value select 8;
             if (isNil "_meta") exitWith {_ok = false;};
             if (_meta isNotEqualTo ["freshMissingV1"]) then {
@@ -39,7 +42,7 @@ private _ok = true;
                     || {(_meta select 3) isNotEqualTo _blood}) exitWith {_ok = false;};
             };
         } else {
-            if (_bagOnly) then {
+            if (_bagOnly || {_timed}) then {
                 if (isNil {_value select 8} || {(_value select 8) isNotEqualTo []}) then {_ok = false;};
             } else {if (count _value != 8) then {_ok = false;};};
         };

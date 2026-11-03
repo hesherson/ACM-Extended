@@ -14,6 +14,7 @@
  * 7: Stage prepared carrier without publishing/activating it? <BOOL>
  * 8: Optional fresh-blood registry entry <ARRAY>
  * 9: Optional immutable fresh-blood metadata <ARRAY>
+ * 10: Optional portable blood-use clock <ARRAY>
  *
  * Return Value:
  * Stable bag UID <STRING> on the owner; remote calls dispatch an event.
@@ -25,7 +26,7 @@
  * Public: No
  */
 
-params ["_patient", "_bodyPart", "_classname", "_accessType", ["_iv", true], "_accessSite", ["_freshBlood", false], ["_deferPremixed", false], ["_freshBloodEntryNet", []], ["_freshMetadata", []]];
+params ["_patient", "_bodyPart", "_classname", "_accessType", ["_iv", true], "_accessSite", ["_freshBlood", false], ["_deferPremixed", false], ["_freshBloodEntryNet", []], ["_freshMetadata", []],["_useClock",[]]];
 
 if (!local _patient) exitWith {["ace_medical_treatment_ivBagLocal", _this, _patient] call CBA_fnc_targetEvent;};
 private _partIndex = ALL_BODY_PARTS find toLowerANSI _bodyPart;
@@ -103,6 +104,9 @@ _newBag set [8, format ["%1:%2:%3:%4", netId _patient, [_patient] call ACME_fnc_
 // Manufacturer capacity remains fixed when a later medication injection adds diluent.
 _newBag set [9,_newBag param [6,0]];
 if (_freshBlood) then {_newBag set [10,+_freshMetadata];};
+_newBag=[_newBag] call ACME_fnc_bloodUseRow;
+if (_useClock isNotEqualTo []) then {_newBag=[_newBag,"native","set",0,_useClock] call ACME_fnc_bloodUseRow;};
+_IVBagsBodyPart set [(count _IVBagsBodyPart)-1,_newBag];
 // Replace the physical empty limb before publishing, including native Add Bag paths that bypass yRefill.
 _IVBagsBodyPart = [_IVBagsBodyPart, (count _IVBagsBodyPart) - 1] call ACME_fnc_yBagReplaceEmpty;
 _IVBags set [_bodyPart, _IVBagsBodyPart];

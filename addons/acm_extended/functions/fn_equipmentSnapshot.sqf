@@ -60,7 +60,7 @@ if !(_map isEqualType createHashMap) exitWith {[]};
 private _vials = (keys _map) apply {[_x,_map get _x]};
 private _bagStore = _holder getVariable ["ACME_usedBags",[]];
 if !(_bagStore isEqualType [] && {count _bagStore <= 1024} && {_bagStore isEqualTo [] || {_bagStore isEqualTypeAll []}}) exitWith {[]};
-private _bags = _bagStore apply {+_x};
+private _bags = _bagStore apply {[_x,"used","snapshot"] call ACME_fnc_bloodUseRow};
 {
     if ((_x param [1,""]) == "FreshBlood") then {
         private _meta = _x param [8,[]];

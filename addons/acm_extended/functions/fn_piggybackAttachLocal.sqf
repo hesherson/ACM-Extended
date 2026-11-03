@@ -48,6 +48,7 @@ private _sameVehicle = !isNull objectParent _medic && {objectParent _medic isEqu
 if (!alive _medic || {!([_medic] call ace_common_fnc_isAwake)} || {_medic distance _patient > 5 && {!_sameVehicle}}) exitWith {[false,"Provider is unavailable or out of range. The prepared bag was returned."] call _reply};
 if ((_set param [0,""]) != _setId || {(_set param [8,"yset"]) in ["yset","bagOnly"]}
     || {(_set param [5,""]) != "" && {(_set select 5) != netId _patient}}) exitWith {[false,"That set cannot be used as a piggyback."] call _reply};
+if ([_set,"prepared","expired"] call ACME_fnc_bloodUseRow) exitWith {[false,"This spiked blood has expired. The exact prepared bag was returned."] call _reply};
 private _action = _set param [2,""];
 private _actionParts = _action splitString "_";
 private _fresh = (_actionParts param [0, ""]) == "FreshBloodBag";
@@ -104,6 +105,8 @@ if (_ok) then {
     private _map = _patient getVariable ["ACM_circulation_IV_Bags",createHashMap];
     private _bags = +(_map getOrDefault [_part,[]]);
     private _bag = +(_bags select _index);
+    private _clock=[_set,"prepared","get"] call ACME_fnc_bloodUseRow;
+    if (_clock isNotEqualTo []) then {_bag=[_bag,"native","set",0,_clock] call ACME_fnc_bloodUseRow;};
     _bag set [1,_exactVolume]; _bag set [6,_exactVolume];
     _bags set [_index,_bag]; _map set [_part,_bags];
     [_patient,_map,false] call ACME_fnc_ivBagsCommit;

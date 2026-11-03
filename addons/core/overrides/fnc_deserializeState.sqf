@@ -15,7 +15,8 @@
  *
  * Public: Yes
  */
-params [["_unit", objNull, [objNull]], ["_json", "{}", [""]]];
+params [["_unit", objNull, [objNull]], ["_json", "{}", [""]],["_offlineSeconds",0,[0]]];
+if (!finite _offlineSeconds || {_offlineSeconds<0} || {_offlineSeconds>1e9}) exitWith {};
 
 // Don't run in scheduled environment
 if (canSuspend) exitWith {
@@ -258,7 +259,7 @@ private _invalid = "";
     if (!isNil "_default" && {!(_value isEqualType _default)}) exitWith {_invalid = _var;};
     if (_value isEqualType 0 && {!finite _value}) exitWith {_invalid = _var;};
     if (_var == "ACM_circulation_IV_Bags") then {
-        _value = [_value, "restore"] call ACME_fnc_clinicalFreshBlood;
+        _value = [_value, "restore",_offlineSeconds] call ACME_fnc_clinicalFreshBlood;
         if !(_value isEqualType createHashMap) then {_invalid = _var;};
     };
     _writes pushBack [_var, _value];

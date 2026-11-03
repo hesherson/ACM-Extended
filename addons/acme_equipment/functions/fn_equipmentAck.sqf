@@ -49,7 +49,11 @@ if (_kind=="blood") exitWith {
     _pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];
 };
 private _manual=_r get "manual";
-private _invalid=!_manual && {isNull _patient || {_actor distance _patient>4.5} || {!isNull (_patient getVariable ["ACME_eq_"+_kind,objNull])}};
+private _invalid=!alive _actor || {_actor getVariable ["ACE_isUnconscious",false]} || {!isNull objectParent _actor}
+    || {if (_manual) then {_actor distance (ASLToAGL (_r get "spot"))>3.5} else {
+        isNull _patient || {_actor distance _patient>4.5} || {!isNull objectParent _patient}
+            || {!isNull (_patient getVariable ["ACME_eq_"+_kind,objNull])}
+    }};
 private _o=objNull;
 if (!_invalid) then {
     private _pose=if (_manual) then {[_r get "spot",vectorDir _actor vectorMultiply -1]} else {[_patient,_kind] call ACME_fnc_equipmentPose};

@@ -88,6 +88,7 @@ if (_fromUsed) exitWith {
     if (_target2 getVariable ["ACME_persistenceFrozen",false]) exitWith {};
     private _used=ACE_player getVariable ["ACME_usedBags",[]]; private _ui=_used findIf {(_x param [0,""])==_usedId}; if (_ui<0) exitWith {};
     private _record=+(_used select _ui);
+    if ([_record,"used","expired"] call ACME_fnc_bloodUseRow) exitWith {[ACE_player,"This blood has expired and remains in your used-bag inventory for disposal."] call ACME_fnc_clinicalNotice;};
     if ((_record param [9, ""]) isEqualTo "bagOnly" && {_lineContext isEqualTo []}) exitWith {
         [ACE_player,"Select an installed empty IV line for this bag. It has no tubing of its own."] call ACME_fnc_clinicalNotice;
     };
@@ -259,6 +260,10 @@ call ACME_fnc_updateTransfusionControls;
 missionNamespace setVariable ["ACME_preparedItemSerial",_serial];
 private _id = format ["set:%1:%2:%3",clientOwner,netId _medic,_serial];
     private _rec = [_id, _class, _action, "", "", "", _label, _cold, _kind];
+    private _bloodReceipt=_receipts select 0;
+    private _bloodSource=_bloodReceipt select 2;
+    if (isNull _bloodSource) then {_bloodSource=_bloodReceipt select 0;};
+    _rec=[_rec,_bloodSource,_class] call ACME_fnc_bloodUseSeed;
     private _setsBefore = +(_medic getVariable ["ACME_preparedIVSets", []]);
     private _sets = +_setsBefore;
     _sets pushBack _rec;

@@ -17,6 +17,8 @@ FUNCTIONS = ['inventoryLedgerNextToken','inventoryLedgerClass','inventoryLedgerM
 
 
 def adapted(text):
+    # Native server time is a deterministic clock in this transport fixture.
+    text = text.replace('serverTime','_nowTime')
     text = text.replace('canSuspend','false').replace('local _owner','true')
     text = text.replace('isServer','true').replace('saveProfileNamespace;', 'if (!isNil "_profileWrites") then {_profileWrites=_profileWrites+1;};').replace('finite _highWater', 'true').replace('finite _x', 'true')
     text = text.replace('_owner isKindOf "CAManBase"', 'true')

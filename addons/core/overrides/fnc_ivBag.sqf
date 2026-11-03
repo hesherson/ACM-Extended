@@ -12,6 +12,7 @@
  * 5: Used Item <STRING>
  * 6: Is IV? <BOOL>
  * 7: Access Site <NUMBER>
+ * 8: Optional portable blood-use clock <ARRAY>
  *
  * Return Value:
  * None
@@ -22,7 +23,12 @@
  * Public: No
  */
 
-params ["_medic", "_patient", "_bodyPart", "_classname", "", "_usedItem", ["_iv", true], ["_accessSite", -1]];
+params ["_medic", "_patient", "_bodyPart", "_classname", ["_itemUser",objNull], "_usedItem", ["_iv", true], ["_accessSite", -1],["_useClock",[]]];
+if (_useClock isEqualTo []) then {
+    if (isNull _itemUser) then {_itemUser=_medic;};
+    private _row=[["native-iv",_usedItem,_classname,"","","","",false,""],_itemUser,_usedItem] call ACME_fnc_bloodUseSeed;
+    _useClock=[_row,"prepared","get"] call ACME_fnc_bloodUseRow;
+};
 
 private _isFreshBlood = false;
 private _freshBloodEntry = [];
@@ -50,4 +56,4 @@ private _accessType = [_patient, _iv, _partIndex, _accessSite] call EFUNC(circul
 
 // Carry the donor metadata with the owner-targeted event. missionNamespace replication and CBA target events are
 // separate network paths; without this, the patient owner could receive the bag before the fresh-blood registry.
-[QACEGVAR(medical_treatment,ivBagLocal), [_patient, _bodyPart, _classname, _accessType, _iv, _accessSite, _isFreshBlood, false, _freshBloodEntry], _patient] call CBA_fnc_targetEvent;
+[QACEGVAR(medical_treatment,ivBagLocal), [_patient, _bodyPart, _classname, _accessType, _iv, _accessSite, _isFreshBlood, false, _freshBloodEntry,[],_useClock], _patient] call CBA_fnc_targetEvent;

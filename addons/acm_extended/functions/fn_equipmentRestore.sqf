@@ -2,7 +2,8 @@
  * A repeat in one kit never refills already spent virtual contents. Native restored cargo is
  * staged/read back once; a failed ledger enqueue retries its retained source-funding journal. */
 if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_equipmentRestore;}; _ok};
-params ["_holder","_snapshot"];
+params ["_holder","_snapshot",["_offlineSeconds",0]];
+if (!(_offlineSeconds isEqualType 0) || {!finite _offlineSeconds} || {_offlineSeconds<0} || {_offlineSeconds>1e9}) exitWith {false};
 if (isNull _holder || {!local _holder} || {!([_snapshot] call ACME_fnc_equipmentSnapshotValid)}) exitWith {false};
 private _key = str _snapshot;
 private _kit = _holder getVariable ["ACME_equipmentKitEpoch",0];
@@ -107,7 +108,7 @@ if (!_returned) exitWith {false};
 private _map = createHashMapFromArray (_vials apply {+_x});
 [_holder,_map] call ACME_fnc_openVialStoreCommit;
 private _liveBags = _bags apply {
-    private _row = +_x;
+    private _row = [_x,"used","restore",_offlineSeconds] call ACME_fnc_bloodUseRow;
     if ((_row select 1) == "FreshBlood") then {
         private _meta = _row select 8;
         _row set [7,-1];

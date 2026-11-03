@@ -319,6 +319,7 @@ missionNamespace setVariable ["ACME_yBuildingActive", diag_tickTime + 2.5];
             };
         } forEach [_bloodUsedRow,_salineUsedRow];
         if (!_usedOK) exitWith {_notice = "A selected used bag changed. Build canceled; remaining bags are kept.";};
+        if (_bloodUsedRow isNotEqualTo [] && {[_bloodUsedRow,"used","expired"] call ACME_fnc_bloodUseRow}) exitWith {_notice="This blood has expired. It remains in the used-bag inventory for disposal.";};
         private _requirements = ["ACME_YTubing"];
         if (_bloodUsedRow isEqualTo []) then {_requirements pushBack [_blood,_bloodPersonal];};
         if (_salineUsedRow isEqualTo []) then {_requirements pushBack [_saline,_salinePersonal];};
@@ -360,6 +361,14 @@ private _serial = (missionNamespace getVariable ["ACME_preparedItemSerial",0])+1
 missionNamespace setVariable ["ACME_preparedItemSerial",_serial];
 private _id = format ["yset:%1:%2:%3",clientOwner,netId _medic,_serial];
 private _rec = [_id, _blood, _bloodAction, _saline, _salineAction, "", _label, _bloodFromCooler, "yset", _bloodExactVol, _salineExactVol];
+private _useClock=[_bloodUsedRow,"used","get"] call ACME_fnc_bloodUseRow;
+if (_useClock isNotEqualTo []) then {_rec=[_rec,"prepared","set",0,_useClock] call ACME_fnc_bloodUseRow;};
+private _bloodReceipt=(_receipts select {(_x param [1,""])==_blood}) param [0,[]];
+if (_bloodReceipt isNotEqualTo []) then {
+    private _bloodSource=_bloodReceipt select 2;
+    if (isNull _bloodSource) then {_bloodSource=_bloodReceipt select 0;};
+    _rec=[_rec,_bloodSource,_blood] call ACME_fnc_bloodUseSeed;
+};
 private _setsBefore = +(_medic getVariable ["ACME_preparedIVSets", []]);
 private _sets = +_setsBefore;
 _sets pushBack _rec;

@@ -52,6 +52,7 @@ private _sets = +(_medic getVariable ["ACME_preparedIVSets", []]);
 private _setIdx = _sets findIf {(_x param [0, ""]) isEqualTo _setId};
 if (_setIdx < 0) exitWith {[false, "That prepared set is no longer available."] call _finish;};
 private _rec = +(_sets select _setIdx);
+if ([_rec,"prepared","expired"] call ACME_fnc_bloodUseRow) exitWith {[false,"This spiked blood has expired. It remains in your prepared inventory for disposal."] call _finish;};
 private _certificate = [_medic,"prepared",_setId,_requestId] call ACME_fnc_inventoryLedgerCertificate;
 if (_certificate isEqualTo [] || {(_certificate param [1,[]]) isNotEqualTo _rec}) exitWith {[false,"Prepared set inventory custody changed. The set was not attached."] call _finish;};
 _rec params [
@@ -185,8 +186,12 @@ if (_isSingle) then {
 };
 {
     private _uid = _x param [8, ""];
+    if (_uid==_bloodUid) then {
+        private _clock=[_rec,"prepared","get"] call ACME_fnc_bloodUseRow;
+        if (_clock isNotEqualTo []) then {_arr set [_forEachIndex,[_arr select _forEachIndex,"native","set",0,_clock] call ACME_fnc_bloodUseRow];};
+    };
     if (_uid == _bloodUid && {_bloodExactVol > 0}) then {
-        private _e = +_x;
+        private _e = +(_arr select _forEachIndex);
         if ((_e param [1, 0]) > _bloodExactVol) then {_e set [1, _bloodExactVol];};
         _arr set [_forEachIndex, _e];
     };

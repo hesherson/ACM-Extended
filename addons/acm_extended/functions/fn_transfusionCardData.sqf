@@ -75,6 +75,10 @@ if (_idc in [86004,86129]) then {
         _status = "Reserve";
         if (_thermal == "") then {_thermal = "Reserve Flush Saline";};
     };
+    if ([_bag,"native","expired"] call ACME_fnc_bloodUseRow) then {
+        if ((_name find "[SPOILED]")<0) then {_name=_name+" [SPOILED]";};
+        _status="Spoiled";_flowing=false;
+    };
 } else {
     private _cut = _name find " | ";
     if (_cut >= 0) then {_detail = _name select [_cut + 3];_name = _name select [0,_cut];};
@@ -90,6 +94,7 @@ if (_idc in [86004,86129]) then {
             };
             _detail = if (_detail == "") then {_line} else {_detail + " · " + _line};
             _status = "Prepared";
+            if ([_set,"prepared","expired"] call ACME_fnc_bloodUseRow) then {_status="Spoiled";};
         };
     };
     if (_idc == 86127) then {

@@ -2,7 +2,7 @@
  * Hung fresh-blood metadata lives at index 10; index 9 remains capacity.
  * Numeric FreshBloodList IDs never cross a restart without inline evidence.
  * Returns a copied HashMap, or [] for malformed native bag collections. */
-params ["_bags", ["_mode", "snapshot"]];
+params ["_bags", ["_mode", "snapshot"],["_offlineSeconds",0]];
 if !(_bags isEqualType createHashMap && {_mode in ["snapshot", "restore"]}) exitWith {[]};
 private _out = createHashMap;
 private _invalid = false;
@@ -64,6 +64,7 @@ private _registry = missionNamespace getVariable ["ACM_circulation_FreshBloodLis
             _bag set [10, _next];
             if (_mode == "restore") then {_bag set [7, -1];};
         };
+        _bag=[_bag,"native",_mode,_offlineSeconds] call ACME_fnc_bloodUseRow;
         _copied pushBack _bag;
     } forEach _rows;
     if (_invalid) exitWith {};

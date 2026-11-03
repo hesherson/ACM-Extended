@@ -22,7 +22,10 @@ private _ok = true;
     private _capacity = _bag param [9,_volume];
     if !(_capacity isEqualType 0 && {finite _capacity} && {_capacity > 0}
         && {_capacity >= _remaining} && {_capacity <= 1e6}) then {_capacity = _volume;};
+    private _useClock=[_bag,"native","get"] call ACME_fnc_bloodUseRow;
+    private _timedBlood=_type in ["Blood","FreshBlood"] && {_useClock isNotEqualTo []};
     private _returned = if (_mode == "remove") then {[_remaining] call ACM_circulation_fnc_getReturnVolume} else {_remaining};
+    if (_timedBlood) then {_returned=_remaining;};
     if (_mode == "remove" && {_type == "FBTK"}) then {
         private _tol = missionNamespace getVariable ["ACME_fbtk_fullToleranceMl",1];
         if (!(_tol isEqualType 0) || {!finite _tol}) then {_tol = 1;};
@@ -44,7 +47,7 @@ private _ok = true;
         _type = "FreshBlood";
     };
     if (_returned > 0 && {_type != "FBTK"}) then {
-        if (_mode != "remove" || {_type == "FreshBlood"}) then {
+        if (_mode != "remove" || {_type == "FreshBlood"} || {_timedBlood}) then {
             private _id = format ["used_%1:%2:%3",_mode,_request,_forEachIndex];
             private _name = switch (_type) do {
                 case "ACME_SalineY": {"Saline"}; case "PlasmaLyte": {"Plasma-Lyte A"};
@@ -56,6 +59,7 @@ private _ok = true;
                 if (count _row == 8) then {_row pushBack [];};
                 _row pushBack "bagOnly";
             };
+            if (_timedBlood) then {_row=[_row,"used","set",0,_useClock] call ACME_fnc_bloodUseRow;};
             _products pushBack ["used",_row];
         } else {
             private _class = [_type,_returned,_blood] call ACM_circulation_fnc_formatFluidBagName;

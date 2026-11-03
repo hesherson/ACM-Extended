@@ -17,6 +17,7 @@ if (_patient getVariable ["ACME_persistenceFrozen",false] || {_medic getVariable
 if (_epoch != ([_patient] call ACME_fnc_clinicalEpoch)) exitWith {[false,"Patient state changed. Reopen the transfusion menu."] call _reply};
 if (isNull _medic || {!alive _medic} || {!([_medic] call ace_common_fnc_isAwake)} || {(_medic distance _patient)>ace_medical_gui_maxDistance}) exitWith {[false,"Provider can no longer hang that used bag."] call _reply};
 if (count _record < 7 || {(_record param [0,""]) != _usedId} || {!(_site in (if (_iv) then {[0,1,2]} else {[0]}))}) exitWith {[false,"Used-bag record is invalid."] call _reply};
+if ([_record,"used","expired"] call ACME_fnc_bloodUseRow) exitWith {[false,"This blood has expired. It remains in your used-bag inventory for disposal."] call _reply};
 private _hasAccess=if (_iv) then {[_patient,_part,0,_site] call ACM_circulation_fnc_hasIV}else{[_patient,_part,0] call ACM_circulation_fnc_hasIO};
 if (!_hasAccess) exitWith {[false,"That access is no longer available."] call _reply};
 private _bagOnly = (_record param [9, ""]) isEqualTo "bagOnly";
@@ -85,6 +86,8 @@ if (_bagOnly) then {
     _entry set [11, "bagOnly"];
 };
 private _map=_patient getVariable ["ACM_circulation_IV_Bags",createHashMap]; private _arr=+(_map getOrDefault [_part,[]]);
+private _useClock=[_record,"used","get"] call ACME_fnc_bloodUseRow;
+if (_useClock isNotEqualTo []) then {_entry=[_entry,"native","set",0,_useClock] call ACME_fnc_bloodUseRow;};
 private _wantMarker=["ACME_EmptySaline","ACME_Empty"] select (_type in ["Blood","FreshBlood","FBTK"]);
 private _slot=_arr findIf {(_x param [0,""])==_wantMarker && {(_x param [3,-1])==_site} && {(_x param [4,true])==_iv}};
 if (_slot>=0) then {_arr set [_slot,_entry]} else {_arr pushBack _entry};

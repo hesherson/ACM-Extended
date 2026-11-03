@@ -2,7 +2,8 @@
  * funds ONE fresh identity; a replay cannot mint another. Explicit old-netId to
  * object bindings are optional; otherwise patient ties use stable object IDs. */
 if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_inventoryRestore;}; _ok};
-params ["_holder","_snapshot",["_rebind",createHashMap]];
+params ["_holder","_snapshot",["_rebind",createHashMap],["_offlineSeconds",0]];
+if (!(_offlineSeconds isEqualType 0) || {!finite _offlineSeconds} || {_offlineSeconds<0} || {_offlineSeconds>1e9}) exitWith {false};
 if (isNull _holder || {!local _holder} || {!([_snapshot] call ACME_fnc_inventorySnapshotValid)}
     || {!(_rebind isEqualType createHashMap)}) exitWith {false};
 private _records = _snapshot select 1;
@@ -66,6 +67,7 @@ private _complete = true;
             _payload set [0,_sid];
             private _body = +(_raw select 1);
             if (_kind == "syringe") then {_body set [11,_sid];} else {
+                _body=[_body,"prepared","restore",_offlineSeconds] call ACME_fnc_bloodUseRow;
                 _body set [0,_sid];
                 private _fresh = _body param [11,[]];
                 if (_fresh isNotEqualTo [] && {_fresh isNotEqualTo ["freshMissingV1"]}) then {

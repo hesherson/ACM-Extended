@@ -1157,7 +1157,7 @@ if (!isNull _ctrlRightList) then {
         _usedBags = _usedBags select {[_targetPatient,_targetBodyPart,_flIV,_flSite,_x param [1,""],false] call ACME_fnc_piggybackEligible};
     };
     private _usedSig = "";
-    { _usedSig = _usedSig + format ["%1:%2;", (_x param [0, ""]), round (_x param [2, 0])]; } forEach _usedBags;
+    { _usedSig = _usedSig + format ["%1:%2:%3;", (_x param [0, ""]), round (_x param [2, 0]),[_x,"used","expired"] call ACME_fnc_bloodUseRow]; } forEach _usedBags;
     private _ourUsedRows = [];
     for "_r" from 0 to ((lbSize _ctrlRightList) - 1) do {
         if ((((_ctrlRightList lbData _r) splitString "|") param [2, ""]) == "USED") then { _ourUsedRows pushBack _r; };
@@ -1167,10 +1167,12 @@ if (!isNull _ctrlRightList) then {
         for "_i" from ((count _ourUsedRows) - 1) to 0 step -1 do { _ctrlRightList lbDelete (_ourUsedRows select _i); };
         {
             _x params [["_id", ""], ["_type", ""], ["_remVol", 0], ["_accessType", 0], ["_bloodType", -1], ["_origVol", 1000], ["_name", ""]];
-            private _row = _ctrlRightList lbAdd (format ["%1 %2 mL [Used]", _name, round _remVol]);
+            private _expired=[_x,"used","expired"] call ACME_fnc_bloodUseRow;
+            private _row = _ctrlRightList lbAdd (format ["%1 %2 mL %3", _name, round _remVol,["[Used]","[SPOILED]"] select _expired]);
             _ctrlRightList lbSetData [_row, format ["%1|usedbag|USED|%2", _type, _id]];
             _ctrlRightList lbSetColor [_row, if (_selectingPiggyback) then {[0.79,0.73,0.89,1]} else {[1,1,1,1]}];  // Purple identifies an eligible piggyback candidate; ordinary used stock stays neutral.
-            _ctrlRightList lbSetTooltip [_row, format ["Used bag: %1 mL remaining of %2 mL. Hang to re-use.", round _remVol, round _origVol]];
+            private _tooltip=if (_expired) then {"Expired blood. Retained for disposal. Cannot be transfused."} else {format ["Used bag: %1 mL remaining of %2 mL. Hang to re-use.", round _remVol, round _origVol]};
+            _ctrlRightList lbSetTooltip [_row,_tooltip];
         } forEach _usedBags;
         uiNamespace setVariable ["ACME_usedRowSig", _usedSig];
     };
@@ -1199,6 +1201,7 @@ if (!isNull _ctrlSetsList) then {
         };
         if (_canShow) then {
             private _label = _x param [6,""];
+            if ([_x,"prepared","expired"] call ACME_fnc_bloodUseRow) then {_label=_label+" [SPOILED]";};
             if (_selectingPiggyback) then {_label = _label + " [PiB]";};
             _shown pushBack [_x param [0,""],_label];
         };

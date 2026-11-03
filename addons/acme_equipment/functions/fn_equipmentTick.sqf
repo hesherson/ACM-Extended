@@ -2,9 +2,13 @@ if (!isServer) exitWith {};
 private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
 {
     private _r=_pending get _x;private _actor=_r get "actor";
-    if (!isNull _actor && {serverTime-(_r get "sent")>=2}) then {
+    if (isNull _actor) then {
+        private _device=_r getOrDefault ["device",objNull];
+        if (!isNull _device && {(_r get "phase")=="give"}) then {_device setVariable ["ACME_eq_busy",false,true];};
+        _pending deleteAt _x;
+    } else {if (serverTime-(_r get "sent")>=2) then {
         _r set ["sent",serverTime];[_actor,_x,_r get "phase",_r get "item",if ((_r get "kind")=="blood" && {(_r get "phase")=="refund"}) then {(_r get "warm")+((serverTime-(_r get "sample")) max 0)} else {-1}] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
-    };
+    };};
 } forEach keys _pending;
 private _devices=missionNamespace getVariable ["ACME_eqDevices",[]];
 {

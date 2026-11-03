@@ -18,6 +18,7 @@ private _usedBefore = +(_medic getVariable ["ACME_usedBags", []]);
 private _matches = _usedBefore select {(_x param [0, ""]) == _usedId};
 if (count _matches != 1 || {count (_matches select 0) < 7}) exitWith {false};
 private _row = +(_matches select 0);
+if ([_row,"used","expired"] call ACME_fnc_bloodUseRow) exitWith {[_medic,"This blood has expired. It remains in the used-bag inventory for disposal."] call ACME_fnc_clinicalNotice;false};
 private _needsLine = (_row param [9, ""]) isEqualTo "bagOnly";
 _row params ["", ["_type", ""], ["_remaining", 0], "", ["_bloodType", -1], ["_original", 0], ["_name", ""], ["_freshId", -1]];
 if (!(_remaining isEqualType 0) || {!(_original isEqualType 0)} || {!finite _remaining} || {!finite _original}
@@ -83,6 +84,8 @@ missionNamespace setVariable ["ACME_preparedItemSerial", _serial];
 private _id = format ["used-pib:%1:%2:%3", clientOwner, netId _medic, _serial];
 private _kind = if (_type in ["Blood", "FreshBlood"]) then {"blood"} else {if (_type == "Saline") then {"saline"} else {"premixed"}};
 private _set = [_id, _class, _action, "", "", "", format ["%1 (%2 mL) [Used]", _name, round _remaining], false, _kind, _remaining, 0, _freshMetadata];
+private _clock=[_row,"used","get"] call ACME_fnc_bloodUseRow;
+if (_clock isNotEqualTo []) then {_set=[_set,"prepared","set",0,_clock] call ACME_fnc_bloodUseRow;};
 private _setsAfter = +_setsBefore; _setsAfter pushBack _set;
 private _usedAfter = _usedBefore select {(_x param [0, ""]) != _usedId};
 _medic setVariable ["ACME_preparedIVSets", _setsAfter, true];
