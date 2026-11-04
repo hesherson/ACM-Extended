@@ -7,7 +7,7 @@ class CfgPatches {
         author = "mavis";
         requiredVersion = 2.20;
         requiredAddons[] = {"ACM_Extended", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway", "acme_tempus", "acme_tempusls"};
-        units[] = {};
+        units[] = {"ACME_TempusPro_Mount","ACME_TempusLS_Mount"};
         weapons[] = {};
     };
 };
@@ -65,6 +65,23 @@ class CfgMagazines {
     };
 };
 class CfgVehicles {
+    class Items_base_F;
+    class ACME_TempusPro_Mount: Items_base_F {
+        scope = 2;
+        scopeCurator = 2;
+        displayName = "Tempus Pro Field Mount";
+        destrType = "DestructNo";
+        author = "mavis";
+        model = "\acme_equipment\models\tempus_pro_mount.p3d";
+        editorCategory = "EdCat_Things";
+        editorSubcategory = "EdSubcat_Storage";
+        ACME_eq_mountKind = "pro";
+    };
+    class ACME_TempusLS_Mount: ACME_TempusPro_Mount {
+        displayName = "Tempus LS Field Mount";
+        model = "\acme_equipment\models\tempus_ls_mount.p3d";
+        ACME_eq_mountKind = "ls";
+    };
     class Box_NATO_Ammo_F;
     class Box_NATO_Wps_F;
     class ACME_BloodCoolerBox_CSWB1U: Box_NATO_Ammo_F {
@@ -104,6 +121,19 @@ class equipmentInventory {};
 class equipmentRequest {};
 class equipmentAck {};
 class equipmentVent {};
+class equipmentPreInit {preInit=1;};
+class equipmentMountApply {};
+class equipmentMountRelease {};
+class equipmentMountInit {};
+class equipmentMountRequest {};
+class equipmentMountMenu {};
+class equipmentUsbMenu {};
+class equipmentLinkRequest {};
+class equipmentMonitorTick {};
+class equipmentCableAnchor {};
+class equipmentCableSpecs {};
+class equipmentCablePose {};
+class equipmentCableVisualTick {};
 class equipmentWorldSchema {};
 class equipmentWorldSnapshot {};
 class equipmentWorldCaptureValid {};
@@ -123,6 +153,8 @@ class equipmentLsConnections {};
 class equipmentInit {postInit=1;};
 }; }; };
 class CfgRemoteExec { class Functions {
+class ACME_fnc_equipmentMountRequest {allowedTargets=2;};
+class ACME_fnc_equipmentLinkRequest {allowedTargets=2;};
 class ACME_fnc_equipmentCoolerLease {allowedTargets=2;};
 class ACME_fnc_equipmentCoolerLoad {allowedTargets=2;};
 class ACME_fnc_equipmentRequest {allowedTargets=2;};
@@ -131,6 +163,8 @@ class ACME_fnc_equipmentInventory {allowedTargets=0;};
 };};
 
 class Extended_InitPost_EventHandlers {
+ class ACME_TempusPro_Mount {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentMountInit";};};
+ class ACME_TempusLS_Mount {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentMountInit";};};
  class ACME_BloodCoolerBox_CSWB1U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
  class ACME_BloodCoolerBox_CSWB2U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
  class ACME_BloodCoolerBox_CSWB4U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};

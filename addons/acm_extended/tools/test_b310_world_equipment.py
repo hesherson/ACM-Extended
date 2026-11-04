@@ -11,6 +11,7 @@ E = ROOT / 'addons/acme_equipment/functions'
 def source(name):
     s = (E / f'fn_{name}.sqf').read_text()
     s = s.replace('isRemoteExecuted', '_remote').replace('canSuspend','false')
+    s = s.replace('isNull attachedTo _o','((_o getVariable ["fixtureAttached",objNull]) isEqualTo objNull)')
     s = s.replace('isNull (_bindings getOrDefault [_id,objNull])', '((_bindings getOrDefault [_id,objNull]) isEqualTo objNull)')
     s = s.replace('isNull (_patient getVariable ["ACME_eq_"+_kind,objNull])', '((_patient getVariable ["ACME_eq_"+_kind,objNull]) isEqualTo objNull)')
     s = re.sub(r'!finite (_\w+)', r'!(\1 isEqualType 0)', s)
@@ -173,7 +174,7 @@ def test_world_capture_and_final_validation_detect_movement_or_busy_transfer():
 
 def test_empty_world_is_valid_but_unbound_device_is_failed_capture():
     execute(setup() + '''
-      [(call ACME_fnc_equipmentWorldSnapshot) isEqualTo [1,[]],"empty world confused with failure"] call _check;
+      [(call ACME_fnc_equipmentWorldSnapshot) isEqualTo [2,[]],"empty world confused with failure"] call _check;
       missionNamespace setVariable ["ACME_eqDevices",[parsingNamespace]];
       parsingNamespace setVariable ["ACME_eq_kind","pro"];
       [(call ACME_fnc_equipmentWorldSnapshot) isEqualTo [],"unbound device silently omitted"] call _check;

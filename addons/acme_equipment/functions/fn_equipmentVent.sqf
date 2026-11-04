@@ -11,6 +11,16 @@ private _class=["ACME_VentwaySparrow_Circuit","ACME_VentwaySparrow_O2Circuit"] s
 private _o=createVehicle [_class,ASLToAGL (_pose select 0),[],0,"CAN_COLLIDE"];
 if (isNull _o) exitWith {};
 // Retain the existing representation if allocation/surface lookup fails.
+// deleteVehicle becomes objNull on the next frame. Transfer our own binding
+// explicitly before deletion so the old object cannot block the replacement.
+if (_durable!="") then {
+    private _bindings=missionNamespace getVariable ["ACME_clinicalObjectBindings",createHashMap];
+    if ((_bindings getOrDefault [_durable,objNull]) isEqualTo _old) then {
+        _bindings set [_durable,objNull];
+        missionNamespace setVariable ["ACME_clinicalObjectBindings",_bindings];
+        _old setVariable ["ACME_persistenceId","",true];
+    };
+};
 if (!isNull _old) then {deleteVehicle _old;};
 if (_durable!="") then {
     ["bind",_o,_durable] call ACME_fnc_clinicalObjectRef;

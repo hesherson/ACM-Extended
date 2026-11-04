@@ -49,8 +49,25 @@ private _bindings = missionNamespace getVariable ["ACME_clinicalObjectBindings",
             || {((_custody select 2) select 2) != "" && {isNull _origin}}
             || {((_custody select 3) select 2) != "" && {isNull _recovery}}) then {_ok = false;};
     };
+    private _mountRef=_x param [10,["0:0","",""]];private _usbRef=_x param [11,["0:0","",""]];
+    private _mount=objNull;private _usb=objNull;private _usbIndex=-1;
+    if ((_mountRef select 2)!="") then {
+        _mount=["decode",_mountRef] call ACME_fnc_clinicalObjectRef;
+        if (isNull _mount) then {_ok=false;} else {
+            if (getText(configOf _mount >> "ACME_eq_mountKind")!=_kind || {!isNull (_mount getVariable ["ACME_eq_device",objNull])}) then {_ok=false;};
+        };
+    };
+    if ((_usbRef select 2)!="") then {
+        _usbIndex=_rows findIf {(_x select 0)==(_usbRef select 2) && {(_x select 1)=="pro"}};
+        if (_usbIndex<0) then {
+            _usb=["decode",_usbRef] call ACME_fnc_clinicalObjectRef;
+            if (isNull _usb) then {_ok=false;} else {
+                if (!(_usb isKindOf "ACME_TempusPro") || {!isNull (_usb getVariable ["ACME_eq_usbLs",objNull])}) then {_ok=false;};
+            };
+        };
+    };
     if (!_ok) exitWith {};
-    _resolved pushBack [_patient,_link,_linkIndex,_supplier,_origin,_recovery];
+    _resolved pushBack [_patient,_link,_linkIndex,_supplier,_origin,_recovery,_mount,_usb,_usbIndex];
 } forEach _rows;
 if (!_ok) exitWith {[false,[]]};
 private _objects = [];
@@ -62,10 +79,20 @@ private _objects = [];
     };
     private _o = createVehicle [_class,ASLToAGL _pos,[],0,"CAN_COLLIDE"];
     if (isNull _o) exitWith {_ok = false;};
+    _o setVariable ["ACME_eq_restoreStaged",true,true];
     _objects pushBack _o;
     _o setVectorDirAndUp [_dir,_up]; _o setPosASL _pos;
 } forEach _rows;
 if (!_ok) exitWith {{deleteVehicle _x;} forEach _objects;[false,[]]};
+// Attach staged devices before publishing any durable IDs or patient slots.
+{
+    private _mount=(_resolved select _forEachIndex) select 6;
+    if (!isNull _mount && {!([_x,_mount,(_rows select _forEachIndex) select 1] call ACME_fnc_equipmentMountApply)}) exitWith {_ok=false;};
+} forEach _objects;
+if (!_ok) exitWith {
+    {[_x] call ACME_fnc_equipmentMountRelease;deleteVehicle _x;} forEach _objects;
+    [false,[]]
+};
 // All allocation succeeded. Publish bindings and restart only observation feeds.
 {
     _x params ["_id","_kind","","","","_manual","","_state"];
@@ -118,6 +145,14 @@ missionNamespace setVariable ["ACME_eqWorldImport",[_save,+_objects]];
     private _kind = (_rows select _forEachIndex) select 1;
     (_resolved select _forEachIndex) params ["_patient","_link","_linkIndex"];
     if (_kind == "ls") then {
+        private _usb=(_resolved select _forEachIndex) select 7;
+        private _usbIndex=(_resolved select _forEachIndex) select 8;
+        if (_usbIndex>=0) then {_usb=_objects select _usbIndex;};
+        if (!isNull _usb && {_x distance _usb <= 2.5}
+            && {isNull _patient || {isNull (_usb getVariable ["acme_tempus_pat",objNull])} || {(_usb getVariable ["acme_tempus_pat",objNull]) isEqualTo _patient}}) then {
+            _x setVariable ["ACME_eq_usb",_usb,true];_usb setVariable ["ACME_eq_usbLs",_x,true];
+            _x setVariable ["ACME_eq_usbEpoch",(_x getVariable ["ACME_eq_usbEpoch",0])+1,true];
+        };
         if (_linkIndex >= 0) then {_link = _objects select _linkIndex;};
         if (!isNull _link && {_x distance _link <= 10}
             && {isNull _patient || {(_link getVariable ["acme_tempus_pat",objNull]) isEqualTo _patient}}) then {
@@ -128,4 +163,5 @@ missionNamespace setVariable ["ACME_eqWorldImport",[_save,+_objects]];
         [_x,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind == "ls"),_patient];
     };
 } forEach _objects;
+{_x setVariable ["ACME_eq_restoreStaged",false,true];} forEach _objects;
 [true,+_objects]

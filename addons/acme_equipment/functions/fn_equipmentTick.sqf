@@ -14,6 +14,7 @@ private _devices=missionNamespace getVariable ["ACME_eqDevices",[]];
 {
     private _o=_x;if (isNull _o) then {continue;};
     private _patient=_o getVariable ["ACME_eq_patient",objNull];
+    if ((_o getVariable ["ACME_eq_kind",""]) in ["pro","ls"]) then {[_o] call ACME_fnc_equipmentMonitorTick;};
     if ((_o getVariable ["ACME_eq_kind",""])=="vent") then {
         if (isNull _patient || {!(_patient getVariable ["ACME_vent_onPatient",false])}) then {deleteVehicle _o;} else {
             private _oxygen=(_patient getVariable ["ACME_vent_o2Session",""])!="";

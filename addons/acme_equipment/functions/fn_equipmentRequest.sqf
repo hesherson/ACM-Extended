@@ -28,6 +28,8 @@ if (_operation=="setup") then {
     if (_operation!="pickup" || {isNull _device} || {_actor distance _device>4}
         || {!(_device isKindOf ((_types get _kind) select 1))}
         || {_device getVariable ["ACME_eq_busy",false]}) exitWith {_item="";};
+    if (_device getVariable ["ACME_eq_restoreStaged",false]) exitWith {_item="";};
+    if (!(_device getVariable ["ACME_eq_mounted",false]) && {!isNull attachedTo _device}) exitWith {_item="";};
 };
 if (_item=="") exitWith {};
 private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
@@ -45,4 +47,5 @@ private _record=createHashMapFromArray [["actor",_actor],["patient",_patient],["
 _actor setVariable ["ACME_equipmentWorldPending",_id,true];
 _pending set [_id,_record];missionNamespace setVariable ["ACME_eqPending",_pending];
 if (_operation=="pickup") then {_device setVariable ["ACME_eq_busy",true,true];if (_kind=="ls") then {[_device] call ACME_fnc_tempusLsChargeClear;};};
+if (_operation=="pickup" && {_device getVariable ["ACME_eq_mounted",false]}) then {[_device] call ACME_fnc_equipmentMountRelease;};
 [_actor,_id,_record get "phase",_item] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];

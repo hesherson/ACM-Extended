@@ -26,6 +26,9 @@ def converted(name):
     s=s.replace('isNull objectParent _actor','true').replace('objectParent _patient','objNull')
     s=s.replace('_actor getVariable ["ACE_isUnconscious",false]','false')
     s=s.replace('_device isKindOf ((_types get _kind) select 1)','true')
+    # Retained fixtures represent unparented field devices; B312 separately
+    # executes the external-carry admission guard with an actual attachment boundary.
+    s=s.replace('isNull attachedTo _device','true')
     s=s.replace('vectorDir _actor','[0,1,0]').replace('ASLToAGL (_pose select 0)','(_pose select 0)')
     s=s.replace('_o=createVehicle [_r get "class",(_pose select 0),[],0,"CAN_COLLIDE"]','_spawnCount=_spawnCount+1;_o=_deviceFixture')
     s=s.replace('deleteVehicle _device','_deleted=_deleted+1')
