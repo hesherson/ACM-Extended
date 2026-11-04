@@ -1,8 +1,8 @@
 # B312 source validation
 
-551 distinct selected tests passed in one finished-source regression run:
+553 distinct selected tests passed across the full regression and final admission runs:
 
-- 90 new B312 execution/contract cases cover mount/release, ownership/class/range/freeze guards, USB pairing and unplugging, per-episode replay fencing, patient slot reconciliation, native sensor cable selection, ASL curve geometry, bounded visual reuse/cleanup/backoff, mount deletion, external carry takeover, staged pickup refusal, schema-2 references/preflight/rollback, mounted inventory pickup and delayed Ventway binding handoff.
+- 92 new B312 execution/contract cases cover mount/release, ownership, human-operator/class/range/freeze guards, USB pairing and unplugging, per-episode replay fencing, patient slot reconciliation, native sensor cable selection, ASL curve geometry, bounded visual reuse/cleanup/backoff, mount deletion, external carry takeover, staged pickup refusal, schema-2 references/preflight/rollback, mounted inventory pickup and delayed Ventway binding handoff.
 - Three new tests use HEMTT's native P3D reader to inspect the two original tray meshes and cable segment: finite geometry, small face counts, closed primitives, outward normals, procedural materials and autocenter metadata.
 - 444 retained clinical/equipment/world persistence, transaction journal, B306–B310 monitoring/blood lifetime, build identity and journalled deployment cases passed.
 - 14 retained B311 texture/visual gates passed, including all non-colour Tempus model/material/browser/function bytes remaining unchanged.

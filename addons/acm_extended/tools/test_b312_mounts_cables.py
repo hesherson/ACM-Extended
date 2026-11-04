@@ -48,6 +48,7 @@ def convert(s):
     s=s.replace('_x distance _usb','_linkDistance')
     s=s.replace('_o distance _usb','_linkRange')
     s=s.replace('_device isKindOf (["ACME_TempusPro","ACME_TempusLS"] select (_kind=="ls"))','_classMatches')
+    s=s.replace('_actor isKindOf "CAManBase"','_actorIsHuman')
     s=s.replace('_device isKindOf ((_types get _kind) select 1)','_classMatches')
     s=s.replace('_ls isKindOf "ACME_TempusLS"','_classMatches').replace('_pro isKindOf "ACME_TempusPro"','_classMatches').replace('_usb isKindOf "ACME_TempusPro"','_classMatches')
     s=re.sub(r'(_\w+) isEqualType objNull',r'(\1 isEqualTo objNull || {\1 isEqualType profileNamespace})',s)
@@ -62,7 +63,7 @@ def setup():
     return world_setup()+'''
       private _server=true;private _caller=7;private _actorAlive=true;private _mountedActor=false;private _mountedPatient=false;
       private _actorRange=1;private _mountRange=1;private _linkRange=1;private _patientRange=1;
-      private _allowAttach=true;private _classMatches=true;
+      private _allowAttach=true;private _classMatches=true;private _actorIsHuman=true;
       private _device=missionNamespace;private _mount=parsingNamespace;private _actor=_medic;
       private _ls=missionNamespace;private _pro=parsingNamespace;
       _device setVariable ["ACME_eq_kind","pro"];
@@ -530,4 +531,13 @@ def test_tiny_idle_cable_motion_does_not_retransform_every_segment():
       _toPoint=_toPoint vectorAdd [0.003,0,0];call ACME_fnc_equipmentCableVisualTick;
       [count _commands==_count+24,"visible endpoint motion did not update existing segments"] call _check;
       [_visualSpawns==8,"endpoint motion recreated cable objects"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('endpoint',['mount','usb'])
+def test_owned_vehicle_or_nonhuman_actor_cannot_impersonate_an_on_foot_operator(endpoint):
+    execute((setup() if endpoint=='mount' else usb_setup())+'''
+      _actorIsHuman=false;
+    '''+('[_actor,_mount,_device,true] call ACME_fnc_equipmentMountRequest;' if endpoint=='mount' else '[_actor,_ls,_pro,true] call ACME_fnc_equipmentLinkRequest;')+'''
+      [!(_device getVariable ["ACME_eq_mounted",false]) && {_connections==0},"nonhuman actor admitted physical interaction"] call _check;
     ''')

@@ -3,6 +3,7 @@ if (canSuspend) exitWith {isNil {[_actor,_mount,_device,_on,_expectedEpoch] call
 if !(_actor isEqualType objNull && {_mount isEqualType objNull} && {_device isEqualType objNull}) exitWith {};
 if (!isServer || {isNull _actor} || {isNull _mount} || {isNull _device} || {!(_on isEqualType false)}) exitWith {};
 if (isRemoteExecuted && {remoteExecutedOwner != owner _actor}) exitWith {};
+if !(_actor isKindOf "CAManBase") exitWith {};
 if !(_expectedEpoch isEqualType 0) exitWith {};
 if (_expectedEpoch<0 && {!isRemoteExecuted}) then {_expectedEpoch=if (_on) then {_mount getVariable ["ACME_eq_mountEpoch",0]} else {_device getVariable ["ACME_eq_mountEpoch",0]};};
 if (!finite _expectedEpoch || {_expectedEpoch<0} || {_expectedEpoch!=floor _expectedEpoch}

@@ -4,6 +4,7 @@ if (canSuspend) exitWith {isNil {[_actor,_ls,_pro,_on,_expectedEpoch] call ACME_
 if !(_actor isEqualType objNull && {_ls isEqualType objNull} && {_pro isEqualType objNull}) exitWith {};
 if (!isServer || {isNull _actor} || {isNull _ls} || {!(_on isEqualType false)}) exitWith {};
 if (isRemoteExecuted && {remoteExecutedOwner != owner _actor}) exitWith {};
+if !(_actor isKindOf "CAManBase") exitWith {};
 if !(_expectedEpoch isEqualType 0) exitWith {};
 if (_expectedEpoch<0 && {!isRemoteExecuted}) then {_expectedEpoch=_ls getVariable ["ACME_eq_usbEpoch",0];};
 if (!finite _expectedEpoch || {_expectedEpoch<0} || {_expectedEpoch!=floor _expectedEpoch}
