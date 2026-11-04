@@ -1,4 +1,5 @@
 params ["_actor","_id","_phase","_ok"];
+if (canSuspend) exitWith {isNil {[_actor,_id,_phase,_ok] call ACME_fnc_equipmentAck;};};
 if (!isServer || {isNull _actor}) exitWith {};
 if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor}) exitWith {};
 private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
@@ -11,7 +12,12 @@ if (!_ok) exitWith {
 private _patient=_r get "patient";private _kind=_r get "kind";
 if (_phase=="give") exitWith {
     private _device=_r get "device";
+    // An external system can acquire the object while the owner-side credit is in flight.
+    // Keep the device reserved and retry the same receipt after release; never credit twice or delete its carrier's object.
+    if (!isNull _device && {!([_device] call ACME_fnc_equipmentPickupReady)}) exitWith {};
     if (!isNull _device) then {
+        if (_device getVariable ["ACME_eq_mounted",false]) then {[_device] call ACME_fnc_equipmentMountRelease;};
+        [_device] call ACME_fnc_equipmentUsbRelease;
         if (_kind in ["pro","ls"]) then {
             private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
             {_actor setVariable [_x select 0,_x select 1,true];} forEach (_r getOrDefault ["state",[]]);

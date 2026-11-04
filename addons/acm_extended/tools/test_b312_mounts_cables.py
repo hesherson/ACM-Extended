@@ -71,7 +71,7 @@ def setup():
       _device setVariable ["ACME_eq_patient",_patient];
       private _connections=0;
       ACME_fnc_tempusConnect={params ["_o","_p"];_connections=_connections+1;_o setVariable ["acme_tempus_pat",_p]};
-    '''+defs(['equipmentMountApply','equipmentMountRelease','equipmentMountRequest','equipmentLinkRequest','equipmentMonitorTick','equipmentCableSpecs','equipmentCablePose'])
+    '''+defs(['equipmentPickupReady','equipmentUsbRelease','equipmentMountApply','equipmentMountRelease','equipmentMountRequest','equipmentLinkRequest','equipmentMonitorTick','equipmentCableSpecs','equipmentCablePose'])
 
 
 def usb_setup():

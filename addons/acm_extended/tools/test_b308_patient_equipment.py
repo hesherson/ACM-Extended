@@ -18,7 +18,7 @@ def raw(name):
     return (E/f'fn_{name}.sqf').read_text()
 
 def converted(name):
-    s=raw(name).replace('serverTime','_clock')
+    s=raw(name).replace('serverTime','_clock').replace('canSuspend','false')
     s=s.replace('nearestObjects [_patient,[(_types get _kind) select 1],8]','_nearby')
     s=s.replace('isRemoteExecuted','_remote').replace('remoteExecutedOwner','_caller').replace('owner _actor','7')
     s=s.replace('alive _actor','_actorAlive').replace('local _actor','true')
@@ -26,9 +26,8 @@ def converted(name):
     s=s.replace('isNull objectParent _actor','true').replace('objectParent _patient','objNull')
     s=s.replace('_actor getVariable ["ACE_isUnconscious",false]','false')
     s=s.replace('_device isKindOf ((_types get _kind) select 1)','true')
-    # Retained fixtures represent unparented field devices; B312 separately
-    # executes the external-carry admission guard with an actual attachment boundary.
-    s=s.replace('isNull attachedTo _device','true')
+    # Native attachment is an explicit boundary; the production custody predicate still runs.
+    s=s.replace('attachedTo _device','(_device getVariable ["fixtureAttached",objNull])')
     s=s.replace('vectorDir _actor','[0,1,0]').replace('ASLToAGL (_pose select 0)','(_pose select 0)')
     s=s.replace('_o=createVehicle [_r get "class",(_pose select 0),[],0,"CAN_COLLIDE"]','_spawnCount=_spawnCount+1;_o=_deviceFixture')
     s=s.replace('deleteVehicle _device','_deleted=_deleted+1')
@@ -54,7 +53,7 @@ def setup():
       ACME_fnc_equipmentPose={[[100,200,1000],[0,1,0]]};
       ACME_fnc_equipmentSeat={};ACME_fnc_tempusLsChargeClear={};
       private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
-    '''+''.join(f'ACME_fnc_{n}={{'+converted(n)+'};' for n in ['equipmentRequest','equipmentInventory','equipmentAck'])
+    '''+''.join(f'ACME_fnc_{n}={{'+converted(n)+'};' for n in ['equipmentPickupReady','equipmentUsbRelease','equipmentRequest','equipmentInventory','equipmentAck'])
 
 
 @pytest.mark.parametrize('kind',['pro','ls','accu'])

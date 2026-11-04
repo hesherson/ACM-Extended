@@ -119,6 +119,8 @@ class equipmentSeat {};
 class equipmentSetup {};
 class equipmentInventory {};
 class equipmentRequest {};
+class equipmentPickupReady {};
+class equipmentUsbRelease {};
 class equipmentAck {};
 class equipmentVent {};
 class equipmentPreInit {preInit=1;};

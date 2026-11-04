@@ -1,0 +1,10 @@
+# B313 source validation
+
+- Reproduced the B312 stale-mount pickup defect by executing its original request code with an external attachment before the reconciler runs. The failing assertion was an admitted inventory grant, with no native-boundary execution error.
+- 358 targeted pytest cases passed, including 26 new B313 cases and 332 retained Tempus clinical/lifetime, equipment transfer, blood-use lifetime, world persistence/model swap, mounts/cables/model parsing, build identity and journalled deployment cases. Native objects, transforms, inventory and RPC are explicit mocked boundaries in SQF-VM.
+- New cases cover three equipment kinds, stale/missing/nonreciprocal mount claims, external takeover while the inventory credit is in flight, retry/repeated acknowledgement after release, staged-object refusal, assigned/unassigned monitors, both USB pickup ends, stale reverse claims and connection episode replay. Scheduled-entry sections and local-only helper registration are checked structurally.
+- A separate remote-endpoint pytest gate passed. The retained three remote-call scripts passed: 35 literal fork targets remain covered and 22 core remote entries resolve. The two new private helpers are registered locally and are not remote-whitelisted.
+- HEMTT 1.23.1 check --error-on-all passed: 64 addon configs, 2,273 SQF files, 15 stringtables and 28 files validated for binarization. The optional online wiki lookup used its bundled database fallback.
+- The equipment asset gate resolves 157 references across eight runtime addons. Current build identity and whitespace checks pass.
+
+Release signatures, packaged source bytes and archive checksums are recorded separately with the delivered artifacts. These checks do not execute Arma rendering, native attachment replication, actual server scheduling/network delivery, a mission save backend or Windows PowerShell. Dedicated-server carry handoff before admission and during pickup, normal tray pickup, USB unplug/pickup, low FPS, JIP and save/restart acceptance remain required.
