@@ -1,5 +1,6 @@
 /* Reserve capacity on the server before asking the provider to debit one physical bag. */
 params ["_actor","_box","_bag"];
+if (canSuspend) exitWith {isNil {[_actor,_box,_bag] call ACME_fnc_equipmentCoolerLoad;};};
 if (!isServer || {isNull _actor} || {isNull _box} || {!alive _actor} || {_actor distance _box>4.5}) exitWith {};
 if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor}) exitWith {};
 if (_actor getVariable ["ACME_persistenceFrozen",false] || {_box getVariable ["ACME_coolerPacking",false]}) exitWith {};
@@ -8,6 +9,8 @@ private _volume=[_bag] call ACME_fnc_coolerBagVolume;
 if (_volume<=0) exitWith {};
 private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
 if ((values _pending findIf {(_x get "actor") isEqualTo _actor})>=0) exitWith {};
+private _stamp=[_actor] call ACME_fnc_equipmentTransferStamp;
+if (_stamp isEqualTo []) exitWith {};
 [0] call ACME_fnc_bloodColdChainTick;
 private _snapshot=_actor getVariable ["ACME_bloodExposure",[[],serverTime]];
 private _entries=(_snapshot select 0) select {(_x select 0)==_bag};
@@ -23,7 +26,8 @@ private _capacity=getNumber(configFile >> "CfgWeapons" >> (_state select 0) >> "
 if (_used+_volume>_capacity) exitWith {};
 private _serial=(missionNamespace getVariable ["ACME_eqSerial",0])+1;missionNamespace setVariable ["ACME_eqSerial",_serial];
 private _id=format ["cooler-load:%1:%2",_serial,random 1e9];
-private _r=createHashMapFromArray [["actor",_actor],["patient",objNull],["kind","blood"],["device",_box],["item",_bag],["warm",_warm],["sample",serverTime],["phase","take"],["sent",serverTime]];
+private _r=createHashMapFromArray [["actor",_actor],["patient",objNull],["kind","blood"],["device",_box],["item",_bag],["warm",_warm],["sample",serverTime],["phase","take"],["sent",serverTime],["stamp",_stamp]];
+_actor setVariable ["ACME_eqAdmission",[_id,_stamp],true];
 _actor setVariable ["ACME_equipmentWorldPending",_id,true];
 _pending set [_id,_r];missionNamespace setVariable ["ACME_eqPending",_pending];
 [_actor,_id,"take",_bag] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];

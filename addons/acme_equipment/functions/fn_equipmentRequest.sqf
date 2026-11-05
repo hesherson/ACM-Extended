@@ -33,6 +33,8 @@ if (_operation=="setup") then {
     if !([_device] call ACME_fnc_equipmentPickupReady) exitWith {_item="";};
 };
 if (_item=="") exitWith {};
+private _stamp=[_actor] call ACME_fnc_equipmentTransferStamp;
+if (_stamp isEqualTo []) exitWith {};
 private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
 private _state=[];
 if (_kind in ["pro","ls"]) then {
@@ -44,7 +46,8 @@ private _serial=(missionNamespace getVariable ["ACME_eqSerial",0])+1;
 if (!isNull _patient && {_patient getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
 missionNamespace setVariable ["ACME_eqSerial",_serial];
 private _id=format ["equipment:%1:%2:%3",clientOwner,_serial,random 1e9];
-private _record=createHashMapFromArray [["actor",_actor],["patient",_patient],["kind",_kind],["operation",_operation],["manual",_manual],["spot",_spot],["device",_device],["item",_item],["class",(_types get _kind) select 1],["sent",serverTime],["state",_state],["phase",["take","give"] select (_operation=="pickup")]];
+private _record=createHashMapFromArray [["actor",_actor],["patient",_patient],["kind",_kind],["operation",_operation],["manual",_manual],["spot",_spot],["device",_device],["item",_item],["class",(_types get _kind) select 1],["sent",serverTime],["state",_state],["stamp",_stamp],["phase",["take","give"] select (_operation=="pickup")]];
+_actor setVariable ["ACME_eqAdmission",[_id,_stamp],true];
 _actor setVariable ["ACME_equipmentWorldPending",_id,true];
 _pending set [_id,_record];missionNamespace setVariable ["ACME_eqPending",_pending];
 if (_operation=="pickup") then {_device setVariable ["ACME_eq_busy",true,true];if (_kind=="ls") then {[_device] call ACME_fnc_tempusLsChargeClear;};};

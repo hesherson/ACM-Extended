@@ -7,7 +7,14 @@ private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
         if (!isNull _device && {(_r get "phase")=="give"}) then {_device setVariable ["ACME_eq_busy",false,true];};
         _pending deleteAt _x;
     } else {if (serverTime-(_r get "sent")>=2) then {
-        _r set ["sent",serverTime];[_actor,_x,_r get "phase",_r get "item",if ((_r get "kind")=="blood" && {(_r get "phase")=="refund"}) then {(_r get "warm")+((serverTime-(_r get "sample")) max 0)} else {-1}] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
+        _r set ["sent",serverTime];[_actor,_x,_r get "phase",_r get "item",if ((_r get "kind")=="blood" && {(_r get "phase")=="refund"}) then {(_r get "warm")+((serverTime-(_r get "sample")) max 0)} else {-1},serverTime] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
+        private _stamp=_r getOrDefault ["stamp",[]];
+        if (count _stamp==2 && {(_r get "phase") in ["take","give","refund"]}) then {
+            private _origin=(_stamp select 1) select 0;
+            if (_origin>1 && {_origin!=owner _actor}) then {
+                [_actor,_x,_r get "phase",_r get "item",-1,-1,true] remoteExecCall ["ACME_fnc_equipmentInventory",_origin];
+            };
+        };
     };};
 } forEach keys _pending;
 private _devices=missionNamespace getVariable ["ACME_eqDevices",[]];

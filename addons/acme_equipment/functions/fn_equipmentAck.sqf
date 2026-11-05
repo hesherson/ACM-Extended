@@ -1,15 +1,28 @@
-params ["_actor","_id","_phase","_ok"];
-if (canSuspend) exitWith {isNil {[_actor,_id,_phase,_ok] call ACME_fnc_equipmentAck;};};
+params ["_actor","_id","_phase","_ok",["_retired",false],["_contextCurrent",true]];
+if (canSuspend) exitWith {isNil {[_actor,_id,_phase,_ok,_retired,_contextCurrent] call ACME_fnc_equipmentAck;};};
+if !(_ok isEqualType false && {_retired isEqualType false} && {_contextCurrent isEqualType false}) exitWith {};
 if (!isServer || {isNull _actor}) exitWith {};
-if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor}) exitWith {};
 private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
 private _r=_pending getOrDefault [_id,createHashMap];
 if (count _r==0 || {(_r get "actor") isNotEqualTo _actor} || {_phase!=(_r get "phase")}) exitWith {};
-if (_ok && {!((_actor getVariable ["ACME_eqReceipts",createHashMap]) getOrDefault [_id+":"+_phase,false])}) exitWith {};
+private _stamp=_r getOrDefault ["stamp",[]];
+private _origin=if (count _stamp==2) then {(_stamp select 1) select 0} else {-1};
+if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor} && {remoteExecutedOwner!=_origin}) exitWith {};
+private _receipts=_actor getVariable ["ACME_eqReceipts",createHashMap];
+if !((_id+":"+_phase) in _receipts) exitWith {};
+private _proved=_receipts get (_id+":"+_phase);
+if (_ok isNotEqualTo _proved) exitWith {};
 if (!_ok) exitWith {
-    if (_phase=="take") then {_pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];};
+    if (_retired && {_contextCurrent}) exitWith {};
+    if (_phase=="take" || {_phase=="give" && {_retired}}) then {
+        private _device=_r getOrDefault ["device",objNull];
+        if (_phase=="give" && {!isNull _device}) then {_device setVariable ["ACME_eq_busy",false,true];};
+        _pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];
+    };
 };
 private _patient=_r get "patient";private _kind=_r get "kind";
+// The owner's context result also fences a late public epoch update at the server.
+private _current=_contextCurrent && {(_r getOrDefault ["stamp",[]]) isEqualTo ([_actor] call ACME_fnc_equipmentTransferStamp)};
 if (_phase=="give") exitWith {
     private _device=_r get "device";
     // An external system can acquire the object while the owner-side credit is in flight.
@@ -20,16 +33,21 @@ if (_phase=="give") exitWith {
         [_device] call ACME_fnc_equipmentUsbRelease;
         if (_kind in ["pro","ls"]) then {
             private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
-            {_actor setVariable [_x select 0,_x select 1,true];} forEach (_r getOrDefault ["state",[]]);
             _device setVariable [_prefix+"_pat",objNull,true];
-            _actor setVariable [_prefix+"_pat",_patient,true];
-            if (_kind=="ls") then {
-                [_device] call ACME_fnc_tempusLsChargeClear;[_actor] call ACME_fnc_tempusLsChargeClear;
-                _actor setVariable ["acme_tempusls_operator",_actor,true];
-                _actor setVariable ["acme_tempusls_pace",[false,70,0,false],true];
-                _actor setVariable ["acme_tempusls_st","",true];
+            if (_current) then {
+                {_actor setVariable [_x select 0,_x select 1,true];} forEach (_r getOrDefault ["state",[]]);
+                _actor setVariable [_prefix+"_pat",_patient,true];
             };
-            if (!isNull _patient) then {[_actor,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind=="ls"),_patient];};
+            if (_kind=="ls") then {
+                [_device] call ACME_fnc_tempusLsChargeClear;
+                if (_current) then {
+                    [_actor] call ACME_fnc_tempusLsChargeClear;
+                    _actor setVariable ["acme_tempusls_operator",_actor,true];
+                    _actor setVariable ["acme_tempusls_pace",[false,70,0,false],true];
+                    _actor setVariable ["acme_tempusls_st","",true];
+                };
+            };
+            if (_current && {!isNull _patient}) then {[_actor,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind=="ls"),_patient];};
         };
         if (!isNull _patient && {(_patient getVariable ["ACME_eq_"+_kind,objNull]) isEqualTo _device}) then {_patient setVariable ["ACME_eq_"+_kind,objNull,true];};
         deleteVehicle _device;
@@ -44,7 +62,7 @@ if (_kind=="blood") exitWith {
     private _capacity=if (_state isEqualTo []) then {0} else {getNumber(configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl")};
     if (_state isEqualTo [] || {_used+([_r get "item"] call ACME_fnc_coolerBagVolume)>_capacity} || {_actor distance _box>4.5} || {_box getVariable ["ACME_coolerPacking",false]}) exitWith {
         _r set ["phase","refund"];_r set ["sent",serverTime];
-        [_actor,_id,"refund",_r get "item",(_r get "warm")+((serverTime-(_r get "sample")) max 0)] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
+        [_actor,_id,"refund",_r get "item",(_r get "warm")+((serverTime-(_r get "sample")) max 0),serverTime] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
     };
     private _bag=_r get "item";private _before={_x==_bag} count itemCargo _box;
     _box addItemCargoGlobal [_bag,1];
@@ -71,7 +89,7 @@ if (isNull _o) exitWith {
     [_actor,_id,"refund",_r get "item"] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
 };
 {_o setVariable [_x select 0,_x select 1,true];} forEach (_r getOrDefault ["state",[]]);
-if (_kind in ["pro","ls"]) then {
+if (_kind in ["pro","ls"] && {_current}) then {
     private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
     _actor setVariable [_prefix+"_pat",objNull,true];
     {_actor setVariable [_x select 0,nil,true];} forEach (_r getOrDefault ["state",[]]);

@@ -118,6 +118,7 @@ class equipmentPose {};
 class equipmentSeat {};
 class equipmentSetup {};
 class equipmentInventory {};
+class equipmentTransferStamp {};
 class equipmentRequest {};
 class equipmentPickupReady {};
 class equipmentUsbRelease {};
