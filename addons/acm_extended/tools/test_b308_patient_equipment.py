@@ -35,6 +35,9 @@ def converted(name, source=None):
     s=re.sub(r'values (_\w+)',r'((keys \1) apply {\1 get _x})',s)
     # Fixed transport endpoints. Invocations are delivered explicitly by each test.
     s=s.replace('[_actor,_id,_record get "phase",_item] remoteExecCall ["ACME_fnc_equipmentInventory",_actor]', '_inventoryMessages pushBack [_actor,_id,_record get "phase",_item]')
+    s=s.replace('[_actor,_id,"refund",_ok,_retired,_current,_lease] remoteExecCall ["ACME_fnc_equipmentAck",2]', '_acks pushBack [_actor,_id,"refund",_ok,_retired,_current,+_lease]')
+    s=s.replace('[_actor,_id,"refund",_r get "item",_warm,_clock,false,_lease] remoteExecCall ["ACME_fnc_equipmentInventory",_actor]', '_refundMessages pushBack [_actor,_id,"refund",_r get "item",_warm,_clock,false,+_lease]')
+    s=s.replace('[_actor,_id,"refund",_r get "item",-1,-1,true,_lease] remoteExecCall ["ACME_fnc_equipmentInventory",_executor]', '_refundQueries pushBack [[_actor,_id,"refund",_r get "item",-1,-1,true,+_lease],_executor]')
     s=s.replace('[_actor,_id,_operation,_ok,_retired,_current] remoteExecCall ["ACME_fnc_equipmentAck",2]', '_acks pushBack [_actor,_id,_operation,_ok,_retired,_current]')
     s=s.replace('[_o,_patient] remoteExecCall ["ACME_fnc_tempusFeed",_patient]', '_feeds=_feeds+1')
     s=s.replace('[_o,_patient] remoteExecCall ["ACME_fnc_tempusLsFeed",_patient]', '_feeds=_feeds+1')
@@ -46,14 +49,14 @@ def setup():
     return '''
       private _clock=10;private _remote=true;private _caller=7;private _actorAlive=true;private _distance=1;
       private _stock=1;private _spawnCount=0;private _deleted=0;private _feeds=0;
-      private _inventoryMessages=[];private _acks=[];private _refundMessages=[];private _nearby=[];
+      private _inventoryMessages=[];private _acks=[];private _refundMessages=[];private _refundQueries=[];private _nearby=[];
       private _deviceFixture=missionNamespace;
       ACME_fnc_itemCount={_stock};
       ACME_fnc_itemTake={if (_stock<1) exitWith {false};_stock=_stock-1;true};
       ACME_fnc_equipmentPose={[[100,200,1000],[0,1,0]]};
       ACME_fnc_equipmentSeat={};ACME_fnc_tempusLsChargeClear={};
       private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
-    '''+''.join(f'ACME_fnc_{n}={{'+converted(n)+'};' for n in ['equipmentTransferStamp','equipmentPickupReady','equipmentUsbRelease','equipmentRequest','equipmentInventory','equipmentAck'])
+    '''+''.join(f'ACME_fnc_{n}={{'+converted(n)+'};' for n in ['equipmentTransferStamp','equipmentRefundRequest','equipmentRefundInventory','equipmentPickupReady','equipmentUsbRelease','equipmentRequest','equipmentInventory','equipmentAck'])
 
 
 @pytest.mark.parametrize('kind',['pro','ls','accu'])

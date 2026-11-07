@@ -209,7 +209,7 @@ def contextual(name):
 def handoff_setup():
     return setup()+'''
       private _fixtureMachine=7;private _fixtureOwner=7;private _fixtureLocal=true;
-    '''+''.join('ACME_fnc_'+name+'={'+contextual(name)+'};' for name in ['equipmentTransferStamp','equipmentInventory','equipmentAck'])
+    '''+''.join('ACME_fnc_'+name+'={'+contextual(name)+'};' for name in ['equipmentTransferStamp','equipmentRefundRequest','equipmentRefundInventory','equipmentInventory','equipmentAck'])
 
 
 @pytest.mark.parametrize('operation',['setup','pickup'])
@@ -305,14 +305,14 @@ def test_delivered_refund_receipt_recovers_from_original_machine_after_handoff()
       (_refundMessages select 0) call ACME_fnc_equipmentInventory;
       [_stock==1 && {count _acks==2},"new owner issued a duplicate refund without proof"] call _check;
       _fixtureMachine=7;_fixtureLocal=false;_medic setVariable ["ACME_eqLocalReceipts",_originLocal];
-      private _query=+(_refundMessages select 0);_query append [-1,-1,true];
+      private _query=+(_refundMessages select 0);_query set [4,-1];_query set [5,-1];_query set [6,true];
       _query call ACME_fnc_equipmentInventory;
       _caller=7;(_acks select 2) call ACME_fnc_equipmentAck;
       [_stock==1 && {count (missionNamespace getVariable ["ACME_eqPending",createHashMap])==0},"original refund proof could not settle"] call _check;
     ''')
 
 
-def test_unexecuted_refund_waits_for_original_machine_to_regain_inventory_locality():
+def test_unexecuted_refund_hands_off_only_after_its_old_lease_is_sealed():
     execute(handoff_setup()+'''
       [_medic,_patient,"accu"] call ACME_fnc_equipmentRequest;
       _caller=2;(_inventoryMessages select 0) call ACME_fnc_equipmentInventory;
@@ -322,12 +322,14 @@ def test_unexecuted_refund_waits_for_original_machine_to_regain_inventory_locali
       _fixtureMachine=8;_fixtureOwner=8;_fixtureLocal=true;_caller=2;
       (_refundMessages select 0) call ACME_fnc_equipmentInventory;
       _fixtureMachine=7;_fixtureLocal=false;_medic setVariable ["ACME_eqLocalReceipts",_originLocal];
-      private _query=+(_refundMessages select 0);_query append [-1,-1,true];_query call ACME_fnc_equipmentInventory;
-      [_stock==0 && {count _acks==1} && {count (missionNamespace getVariable ["ACME_eqPending",createHashMap])==1},"unexecuted refund guessed delivery or cancellation"] call _check;
-      _fixtureOwner=7;_fixtureLocal=true;_medic setVariable ["ACME_providerLocalityEpoch",2];
-      (_refundMessages select 0) call ACME_fnc_equipmentInventory;
+      private _query=+(_refundMessages select 0);_query set [4,-1];_query set [5,-1];_query set [6,true];_query call ACME_fnc_equipmentInventory;
+      [_stock==0 && {count _acks==2} && {count _refundMessages==1},"unexecuted refund moved before closure proof"] call _check;
       _caller=7;(_acks select 1) call ACME_fnc_equipmentAck;
-      [_stock==1 && {count (missionNamespace getVariable ["ACME_eqPending",createHashMap])==0},"original owner could not place its still-owed refund"] call _check;
+      [((_refundMessages select 1) select 7) isEqualTo [1,8],"closed refund did not hand off to current owner"] call _check;
+      _fixtureMachine=8;_fixtureLocal=true;_caller=2;
+      (_refundMessages select 1) call ACME_fnc_equipmentInventory;
+      _caller=8;(_acks select 2) call ACME_fnc_equipmentAck;
+      [_stock==1 && {count (missionNamespace getVariable ["ACME_eqPending",createHashMap])==0},"current owner could not finish the proved refund handoff"] call _check;
     ''')
 
 

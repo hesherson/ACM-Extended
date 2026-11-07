@@ -1,6 +1,6 @@
 /* Server-authorized movement. Terminal local receipts survive delayed public replication and handoff. */
-params ["_actor","_id","_operation","_item",["_warm",-1],["_sampled",-1],["_query",false]];
-if (canSuspend) exitWith {isNil {[_actor,_id,_operation,_item,_warm,_sampled,_query] call ACME_fnc_equipmentInventory;};};
+params ["_actor","_id","_operation","_item",["_warm",-1],["_sampled",-1],["_query",false],["_refundLease",[]]];
+if (canSuspend) exitWith {isNil {[_actor,_id,_operation,_item,_warm,_sampled,_query,_refundLease] call ACME_fnc_equipmentInventory;};};
 if (isRemoteExecuted && {remoteExecutedOwner != 2}) exitWith {};
 if (isNull _actor || {!(_operation in ["take","give","refund"])}) exitWith {};
 if ((_actor getVariable ["ACME_equipmentWorldPending",""])!=_id) exitWith {};
@@ -11,7 +11,7 @@ private _stamp=_admission select 1;
 if !(_stamp isEqualType [] && {count _stamp==2} && {(_stamp select 0) isEqualType 0}
     && {(_stamp select 1) isEqualType []} && {count (_stamp select 1)==2}) exitWith {};
 private _origin=(_stamp select 1) select 0;
-if ((_query && {clientOwner!=_origin})
+if ((_query && {_operation!="refund"} && {clientOwner!=_origin})
     || {!_query && {!local _actor}}) exitWith {};
 if ((_actor getVariable ["ACME_eqReceiptRequest",""])!=_id) then {
     _actor setVariable ["ACME_eqReceiptRequest",_id,true];
@@ -25,6 +25,9 @@ if ((_actor getVariable ["ACME_eqLocalReceiptRequest",""])!=_id) then {
 };
 private _localReceipts=_actor getVariable ["ACME_eqLocalReceipts",createHashMap];
 private _receipts=_actor getVariable ["ACME_eqReceipts",createHashMap];
+if (_operation=="refund") exitWith {
+    [_actor,_id,_item,_warm,_sampled,_query,_refundLease,_stamp] call ACME_fnc_equipmentRefundInventory;
+};
 private _key=_id+":"+_operation;
 private _decision=_localReceipts getOrDefault [_key,[]];
 if (_decision isEqualTo [] && {_key in _receipts}) then {
@@ -33,20 +36,13 @@ if (_decision isEqualTo [] && {_key in _receipts}) then {
 // The new machine cannot infer the previous outcome from absent replication.
 // The server also queries the original machine for its terminal local receipt.
 if (_decision isEqualTo [] && {!_query} && {clientOwner!=_origin}) exitWith {};
-// A still-owed refund cannot be reassigned on absence of a receipt. It waits for
-// the original machine to prove delivery, or to regain locality and place it.
-if (_decision isEqualTo [] && {_query} && {_operation=="refund"}) exitWith {};
-private _paid=(_receipts getOrDefault [_id+":take",false])
-    || {((_localReceipts getOrDefault [_id+":take",[]]) param [0,false]) isEqualTo true};
-if (_decision isEqualTo [] && {_operation=="refund"} && {!_paid}) exitWith {};
 private _current=!_query && {_stamp isEqualTo ([_actor] call ACME_fnc_equipmentTransferStamp)};
 private _ok=false;private _retired=false;
 if (_decision isNotEqualTo []) then {
     _ok=_decision select 0;_retired=_decision select 1;
 } else {
     // A query seals an unexecuted old command without touching nonlocal inventory.
-    // A paid refund remains owed after a kit/control change.
-    if (_query || {!_current && {_operation!="refund"}}) then {
+    if (_query || {!_current}) then {
         _retired=true;
     } else {
         private _before=[_actor,_item] call ACME_fnc_itemCount;

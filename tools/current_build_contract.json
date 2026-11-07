@@ -1,9 +1,9 @@
 {
   "version": "1.2.4.1",
-  "batch": "B314",
-  "network_revision": "NA8-B314-1.2.4.1-candidate",
-  "network_protocol": 7,
+  "batch": "B315",
+  "network_revision": "NA8-B315-1.2.4.1-candidate",
+  "network_protocol": 8,
   "debug_revision": "",
   "status": "candidate",
-  "baseline": "6088440beb52c73969d18f9cc83e77a8664a58c6"
+  "baseline": "3c58241820ec1ea7668e262567f04a25887cc93a"
 }

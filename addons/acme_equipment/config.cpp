@@ -119,6 +119,8 @@ class equipmentSeat {};
 class equipmentSetup {};
 class equipmentInventory {};
 class equipmentTransferStamp {};
+class equipmentRefundRequest {};
+class equipmentRefundInventory {};
 class equipmentRequest {};
 class equipmentPickupReady {};
 class equipmentUsbRelease {};

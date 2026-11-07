@@ -1,0 +1,11 @@
+# B315 source validation
+
+- Final regression: 445 targeted pytest cases passed, including 33 new B315 cases and 412 retained monitoring/clinical, equipment, blood-use lifetime, world persistence, mount/cable/model parsing, identity and journalled deployment cases. The historical B314 refund-pinning expectation now asserts confirmed closure followed by current-owner completion; its no-duplicate/funding assertions are retained.
+- New execution cases cover initial grants on a changed owner, sealed unissued handoff, duplicate closure, delivered/negative witnesses, bad grants/senders/acknowledgements, admission/grant/proof publication lag, private receipt recovery, metadata regression on owner return, same-executor generation changes, owner-zero intervals, retryable capacity/readback failure, uncertain/interrupted native attempts, missing context, absent debit funding, offline-executor timeout and blood exposure across handoff/transport.
+- HEMTT 1.23.1 check --error-on-all passed: 64 addon configs, 2,276 SQF files, 15 stringtables and 28 files validated for binarization. Optional online wiki loading used the bundled database fallback.
+- A separate remote-endpoint pytest gate passed. Retained named-call scripts passed with 35 literal fork targets covered and 22 core remote entries resolving. The two new helpers are registered locally with no new remote endpoint.
+- Equipment resource validation resolves 157 references across eight runtime addons. Current build identity (B315 / protocol 8) and whitespace checks pass. World schema remains 2 with schema 1 import support.
+
+The production admission, grant, terminal proof and settlement decisions execute in SQF-VM. Native objects, replica-local variables, locality/owner IDs, cargo/inventory, callbacks and transport are explicit boundaries, not a real Arma server. Signature, packaged-source and archive verification are recorded separately with the deliverables.
+
+Windows deployment and native Arma/ACE/HC/JIP/low-FPS/replication ordering remain unexecuted. Unconfirmed native attempts or an unavailable executor without proof remain pending and block checkpoints; actor deletion and client loss plus lost proof are not a newly added durable recovery backend. See B315-equipment-refund-handoffs.md for native acceptance and limits.

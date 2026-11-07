@@ -1,10 +1,28 @@
-params ["_actor","_id","_phase","_ok",["_retired",false],["_contextCurrent",true]];
-if (canSuspend) exitWith {isNil {[_actor,_id,_phase,_ok,_retired,_contextCurrent] call ACME_fnc_equipmentAck;};};
+params ["_actor","_id","_phase","_ok",["_retired",false],["_contextCurrent",true],["_refundLease",[]]];
+if (canSuspend) exitWith {isNil {[_actor,_id,_phase,_ok,_retired,_contextCurrent,_refundLease] call ACME_fnc_equipmentAck;};};
 if !(_ok isEqualType false && {_retired isEqualType false} && {_contextCurrent isEqualType false}) exitWith {};
 if (!isServer || {isNull _actor}) exitWith {};
 private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
 private _r=_pending getOrDefault [_id,createHashMap];
 if (count _r==0 || {(_r get "actor") isNotEqualTo _actor} || {_phase!=(_r get "phase")}) exitWith {};
+if (_phase=="refund") exitWith {
+    private _lease=_r getOrDefault ["refundLease",[]];
+    if (!(_r getOrDefault ["debited",false]) || {count _lease!=2} || {_refundLease isNotEqualTo _lease}
+        || {_r getOrDefault ["refundClosed",false]} || {_ok && {_retired}}) exitWith {};
+    if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor} && {remoteExecutedOwner!=(_lease select 1)}) exitWith {};
+    private _key=_id+":refund:"+str (_lease select 0);
+    private _proof=(_actor getVariable ["ACME_eqReceipts",createHashMap]) getOrDefault [_key,[]];
+    if (_proof isNotEqualTo [_ok,_retired]) exitWith {};
+    if (_ok) then {
+        _pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];
+        _actor setVariable ["ACME_eqRefundLease",[],true];
+    } else {
+        if (_retired) then {
+            _r set ["refundClosed",true];
+            [_actor,_id] call ACME_fnc_equipmentRefundRequest;
+        };
+    };
+};
 private _stamp=_r getOrDefault ["stamp",[]];
 private _origin=if (count _stamp==2) then {(_stamp select 1) select 0} else {-1};
 if (isRemoteExecuted && {remoteExecutedOwner!=owner _actor} && {remoteExecutedOwner!=_origin}) exitWith {};
@@ -54,7 +72,7 @@ if (_phase=="give") exitWith {
     };
     _pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];
 };
-if (_phase=="refund") exitWith {_pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];};
+if (_phase=="take") then {_r set ["debited",true];};
 if (_kind=="blood") exitWith {
     private _box=_r get "device";
     private _state=if (isNull _box) then {[]} else {[_box,serverTime] call ACME_fnc_coolerBoxReconcile};
@@ -62,11 +80,13 @@ if (_kind=="blood") exitWith {
     private _capacity=if (_state isEqualTo []) then {0} else {getNumber(configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl")};
     if (_state isEqualTo [] || {_used+([_r get "item"] call ACME_fnc_coolerBagVolume)>_capacity} || {_actor distance _box>4.5} || {_box getVariable ["ACME_coolerPacking",false]}) exitWith {
         _r set ["phase","refund"];_r set ["sent",serverTime];
-        [_actor,_id,"refund",_r get "item",(_r get "warm")+((serverTime-(_r get "sample")) max 0),serverTime] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
+        [_actor,_id] call ACME_fnc_equipmentRefundRequest;
     };
     private _bag=_r get "item";private _before={_x==_bag} count itemCargo _box;
     _box addItemCargoGlobal [_bag,1];
-    if (({_x==_bag} count itemCargo _box)!=_before+1) exitWith {_r set ["phase","refund"];};
+    if (({_x==_bag} count itemCargo _box)!=_before+1) exitWith {
+        _r set ["phase","refund"];_r set ["sent",serverTime];[_actor,_id] call ACME_fnc_equipmentRefundRequest;
+    };
     private _entries=+(_state select 2);
     _entries pushBack [_bag,(_r get "warm")+((serverTime-(_r get "sample")) max 0)];
     _state set [2,_entries];_box setVariable ["ACME_boxCoolerState",_state,true];
@@ -86,7 +106,7 @@ if (!_invalid) then {
 };
 if (isNull _o) exitWith {
     _r set ["phase","refund"];_r set ["sent",serverTime];
-    [_actor,_id,"refund",_r get "item"] remoteExecCall ["ACME_fnc_equipmentInventory",_actor];
+    [_actor,_id] call ACME_fnc_equipmentRefundRequest;
 };
 {_o setVariable [_x select 0,_x select 1,true];} forEach (_r getOrDefault ["state",[]]);
 if (_kind in ["pro","ls"] && {_current}) then {
