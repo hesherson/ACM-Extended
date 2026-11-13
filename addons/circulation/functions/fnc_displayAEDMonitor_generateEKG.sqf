@@ -5,9 +5,9 @@
 // jumping a complex. Here every screen sample is evaluated against the exact 60/HR clock, so the R wave remains
 // phase-locked to the audible AED beep without cumulative drift. Mid-sweep refreshes therefore regenerate the same
 // timeline instead of inventing a second competing rhythm.
-params ["_rhythm", "_spacing", "_arrayOffset"];
+params ["_rhythm", "_spacing", "_arrayOffset", ["_sampleContext",[]]];
 
-private _target = missionNamespace getVariable ["ACM_circulation_AED_Monitor_Target", objNull];
+private _target = _sampleContext param [0,missionNamespace getVariable ["ACM_circulation_AED_Monitor_Target",objNull]];
 if (!isNull _target) then {
     private _effective = [_target] call ACME_fnc_rhythmGet;
     // Native CPR/post-shock visual states retain precedence over an ACME proxy rhythm.
@@ -16,13 +16,15 @@ if (!isNull _target) then {
 
 // ACME custom rhythms keep their dedicated morphology generator. It uses the same sweep/beep anchoring contract.
 if (_rhythm >= 100) exitWith {
-    private _g = [_rhythm, _spacing, _arrayOffset] call ACME_fnc_genRhythmEKG;
-    [_target, _g select 0, _g select 1] call ACME_fnc_ecgArtifactApply
+    private _g = [_rhythm, _spacing, _arrayOffset, _sampleContext] call ACME_fnc_genRhythmEKG;
+    private _result = [_target, _g select 0, _g select 1] call ACME_fnc_ecgArtifactApply;
+    if (_sampleContext isNotEqualTo []) then {_result append [_g param [2,[]],_g param [3,[]]];};
+    _result
 };
 
 // A morphology subtype, not a new rhythm code. CPR and post-shock visual states keep precedence.
 private _widePEA = _rhythm == 5 && {[_target] call ACME_fnc_peaIsWide};
-private _W = 176;
+private _W = _sampleContext param [3,176];
 private _lastIndex = _W - 1;
 private _dt = 0.03;
 private _now = CBA_missionTime;
@@ -63,6 +65,12 @@ if (!(_previousRR isEqualType 0) || {!finite _previousRR} || {_previousRR <= 0})
 if (!(_nextRR isEqualType 0) || {!finite _nextRR} || {_nextRR <= 0}) then {_nextRR = _rr;};
 if (_lastBeat < 0 && {_rr > 0}) then {_lastBeat = _cursorEpoch;};
 private _beatSerialBase = if (!isNull _target) then {_target getVariable ["ACME_AED_BeatSerial", 0]} else {0};
+if (_sampleContext isNotEqualTo []) then {
+    _sampleContext params ["","_start","_rate"];
+    _cursorEpoch = _start;
+    _anchor = 0;
+    _rr = if (_rate > 0) then {60 / _rate} else {0};
+};
 
 // Stable, time-derived monitor noise. Regenerating a buffer produces the same local baseline rather than a fresh
 // random trace, which removes refresh seams while retaining a live-looking signal.
@@ -76,6 +84,11 @@ private _arr = [];
 private _safe = [];
 _arr resize [_W, 0];
 _safe resize [_W, true];
+private _peaks = [];
+private _phases = [];
+private _beats = _sampleContext param [4,[]];
+private _beatIndex = 0;
+_phases resize [_W,99];
 
 for "_i" from 0 to _lastIndex do {
     private _sampleTime = _cursorEpoch + ((_i - _anchor) * _dt);
@@ -136,9 +149,22 @@ for "_i" from 0 to _lastIndex do {
                 // BeatSerial increments on the exact audible beat. Adding the relative beat number means a beat that
                 // was predicted as +1 before the beep keeps the SAME morphology after it becomes beat 0 on the next
                 // refresh. Without this, PEA/custom beat variation could visibly change shape at the beep boundary.
+                if (_beats isNotEqualTo []) then {
+                    while {_beatIndex+1 < count _beats
+                        && {abs (_sampleTime-((_beats select (_beatIndex+1)) select 0)) < abs (_sampleTime-((_beats select _beatIndex) select 0))}} do {
+                        _beatIndex = _beatIndex+1;
+                    };
+                    (_beats select _beatIndex) params ["_plannedAt","_plannedSerial"];
+                    _beatTime = _plannedAt;
+                    _beatNumber = _plannedSerial - _beatSerialBase;
+                };
                 private _beatOrdinal = _beatSerialBase + _beatNumber;
                 private _deltaSec = _sampleTime - _beatTime;
                 private _offset = round (_deltaSec / _dt);
+                if (_sampleContext isNotEqualTo []) then {
+                    _phases set [_i,_offset];
+                    if (_rhythm != -1 && {_deltaSec >= -_dt/2} && {_deltaSec < _dt/2}) then {_peaks pushBack _i;};
+                };
 
                 // Default PEA uses the same P-QRS-T morphology as sinus. Electrical organization
                 // never implies a pulse: native rhythm 5 remains authoritative for physiology.
@@ -204,4 +230,6 @@ for "_i" from 0 to _lastIndex do {
     _safe set [_i, _isSafe];
 };
 
-[_target, _arr, _safe] call ACME_fnc_ecgArtifactApply
+private _result = [_target,_arr,_safe] call ACME_fnc_ecgArtifactApply;
+if (_sampleContext isNotEqualTo []) then {_result append [_peaks,_phases];};
+_result

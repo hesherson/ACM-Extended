@@ -152,5 +152,5 @@ def test_forced_browser_refresh_reseeds_waveforms_even_with_unchanged_vitals():
       [count _js==2,"fresh browser received no host waveform"] call _check;
       _nowTime=16;
       [_control,_device,false,false] call ACME_fnc_tempusWaveforms;
-      [count _js==3,"expired waveform window was not replenished"] call _check;
+      [count _js==2,"powered-off monitor continued streaming"] call _check;
     ''')

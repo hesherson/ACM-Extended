@@ -9,7 +9,9 @@ from test_historical_vial_execution import map_defaults
 def setup():
     s=raw('equipmentVent')
     s=s.replace('createVehicle [_class,ASLToAGL (_pose select 0),[],0,"CAN_COLLIDE"]','[_class] call _spawn')
-    s=s.replace('deleteVehicle _old','_deleted pushBack _old;(missionNamespace getVariable "ACME_clinicalObjectBindings") set [_durable,objNull]')
+    s=s.replace('deleteVehicle _old','_deleted pushBack _old')
+    s=s.replace('_o setVectorDirAndUp [vectorDir _old,vectorUp _old]', '_o setVariable ["fixtureOrientation",_old getVariable "fixtureOrientation"]')
+    s=s.replace('_o setPosWorld getPosWorld _old', '_o setVariable ["fixturePosition",_old getVariable "fixturePosition"]')
     s=s.replace('_o hideObjectGlobal (!isNull objectParent _patient)','_o setVariable ["fixtureHidden",_mounted]')
     return ref_setup()+'''
       private _old=parsingNamespace;private _new=missionNamespace;
@@ -18,6 +20,8 @@ def setup():
       ACME_fnc_equipmentPose={if (_poseFail) then {[]} else {[[1,2,3],[0,1,0]]}};
       ACME_fnc_equipmentSeat={};
       ["bind",_old,"vent-A"] call ACME_fnc_clinicalObjectRef;
+      _old setVariable ["fixtureOrientation",[[1,0,0],[0,0,1]]];
+      _old setVariable ["fixturePosition",[123,456,850]];
       _patient setVariable ["ACME_eq_vent",_old];
       missionNamespace setVariable ["ACME_eqWorldImport",[[1,[["vent-A"]]],[_old]]];
     '''+'ACME_fnc_equipmentVent={'+adapt(map_defaults(s))+'};'
@@ -44,6 +48,8 @@ def test_successful_swap_moves_binding_and_replay_journal_to_correct_model(oxyge
       [((missionNamespace getVariable "ACME_clinicalObjectBindings") get "vent-A") isEqualTo _new,"durable ID stayed on retired prop"] call _check;
       [((missionNamespace getVariable "ACME_eqWorldImport") select 1) isEqualTo [_new],"replay journal lost replacement"] call _check;
       [(_patient getVariable "ACME_eq_vent") isEqualTo _new,"patient slot did not move"] call _check;
+      [(_new getVariable "fixturePosition") isEqualTo [123,456,850],"swap moved deployed device"] call _check;
+      [(_new getVariable "fixtureOrientation") isEqualTo [[1,0,0],[0,0,1]],"swap discarded player rotation"] call _check;
     ''')
 
 

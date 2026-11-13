@@ -12,15 +12,15 @@ if (_st isNotEqualTo "" && {_force || {(_c getVariable ["acme_tempus_mode", ""])
 	_c setVariable ["acme_tempus_sSt", _st];
 	_c ctrlWebBrowserAction ["ExecJS", "tp.load(JSON.stringify(" + _st + "))"];
 };
-private _request=_o getVariable ["ACME_eq_nibpRequest",-1];
-if (_request>=0 && {_request isNotEqualTo (_c getVariable ["ACME_eq_nibpSeen",-1])}) then {
-    _c setVariable ["ACME_eq_nibpSeen",_request];
-    _c ctrlWebBrowserAction ["ExecJS","tp.key('nibp')"];
-};
+private _request = _o getVariable ["ACME_eq_nibpRequest",-1];
 private _nb = _o getVariable ["acme_tempus_nibp", -1];
-if ((_c getVariable ["acme_tempus_mode", ""]) isEqualTo "mirror" && {_nb isNotEqualTo (_c getVariable ["acme_tempus_sNb", -1])}) then {
+if ((_c getVariable ["acme_tempus_mode",""]) == "mirror" && {_nb isNotEqualTo (_c getVariable ["acme_tempus_sNb", -1])}) then {
 	_c setVariable ["acme_tempus_sNb", _nb];
-	if (_nb >= 0) then { _c ctrlWebBrowserAction ["ExecJS", "tp.nibp()"] };
+	if (_nb >= 0 && {CBA_missionTime-_nb < 6}) then { _c ctrlWebBrowserAction ["ExecJS", "tp.nibp()"] };
+};
+if (_request isNotEqualTo (_c getVariable ["ACME_eq_nibpSeen",-1])) then {
+    _c setVariable ["ACME_eq_nibpSeen",_request];
+    if (_request >= 0 && {CBA_missionTime-_request < 6}) then {_c ctrlWebBrowserAction ["ExecJS","tp.key('nibp')"];};
 };
 private _v = +(_o getVariable ["acme_tempus_v", []]);
 private _sensors=_o getVariable ["acme_tempus_sensors",[true,false,false,false,false]];

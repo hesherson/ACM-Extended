@@ -458,4 +458,5 @@ _display setVariable ["ACME_txPulseFrames",_pulseFrames];
 // Dose/temperature information belongs to its card and the selected-line panel; the roller-clamp bottom stats are untouched.
 {[(_display displayCtrl _x),"show",false] call ACME_fnc_transfusionUiSet;} forEach [86126,86213,86176,86177,86178];
 [_display] call ACME_fnc_updateTransfusionCards;
+[_display] call ACME_fnc_paintTransfusionYBracket;
 _display setVariable ["ACME_txLayoutWriting", false];

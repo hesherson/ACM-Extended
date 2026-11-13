@@ -20,7 +20,7 @@ private _conn = ["ACME_tempusls_conn", "Apply Pads", "", {}, {isNull (_target ge
 		[["ACME_tempusls_conn_" + netId _x, _name, "", {[_target, _this select 2] call ACME_fnc_tempusLsConnect}, {true}, {}, _x] call ace_interact_menu_fnc_createAction, [], _target]
 	}
 }] call ace_interact_menu_fnc_createAction;
-private _disc = ["ACME_tempusls_disc", "Remove Pads", "", {[_target, objNull] call ACME_fnc_tempusLsConnect}, {!isNull (_target getVariable ["acme_tempusls_pat", objNull])}] call ace_interact_menu_fnc_createAction;
+private _disc = ["ACME_tempusls_disc", "Disconnect Patient", "", {[_target, objNull] call ACME_fnc_tempusLsConnect}, {!isNull (_target getVariable ["acme_tempusls_pat", objNull])}] call ace_interact_menu_fnc_createAction;
 private _pick = ["ACME_tempusls_pick", "Pick Up", "", {[_target] call ACME_fnc_tempusLsPick}, _free] call ace_interact_menu_fnc_createAction;
 private _place = ["ACME_tempusls_place", "Place", "", {call ACME_fnc_tempusLsPlace}, {isNull objectParent _player && {isNull (uiNamespace getVariable ["ACME_TempusLS_dlg", displayNull])}}] call ace_interact_menu_fnc_createAction;
 private _root = ["ACME_tempusls_root", "Tempus LS", "", {}, {alive player}, {}, [], [0, 0, 0.1], 2.5] call ace_interact_menu_fnc_createAction;

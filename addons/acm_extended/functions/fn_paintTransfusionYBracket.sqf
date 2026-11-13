@@ -2,14 +2,8 @@
 params ["_display"];
 private _list = _display displayCtrl 86004;
 if (isNull _list) exitWith {};
-private _ensure = {
-    params ["_idc","_color"];
-    private _c = _display displayCtrl _idc;
-    if (isNull _c) then {_c = _display ctrlCreate ["RscText",_idc];_c ctrlEnable false;_c ctrlSetBackgroundColor _color;};
-    _c
-};
-private _controls = [86184,86185,86186] apply {[_x,[0.63,0.68,0.75,0.7]] call _ensure};
-private _pibControls = [86220,86221,86222,86223,86224,86225,86226,86227] apply {[_x,[0.79,0.73,0.89,0.85]] call _ensure};
+private _controls = [86184,86185,86186] apply {_display displayCtrl _x};
+private _pibControls = [86220,86221,86222,86223,86224,86225,86226,86227] apply {_display displayCtrl _x};
 private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target", objNull];
 private _part = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""];
 private _iv = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV", true];

@@ -3,10 +3,10 @@
  * Random gunshot/blast damage is deliberately not added to a selected case.
  */
 params ["_patient", "_preset", "_location"];
-if (isNull _patient || {!local _patient} || {!alive _patient} || {count _preset != 11}) exitWith {false};
+if (isNull _patient || {!local _patient} || {!alive _patient} || {!(count _preset in [11,12])}) exitWith {false};
 if (_patient getVariable [QGVAR(PresetApplied), false]) exitWith {false};
 _patient setVariable [QGVAR(PresetApplied), true, true];
-_preset params ["_id", "_title", "_severity", "_wounds", "_fractures", "_blood", "_airway", "_chest", "_tbi", "_blast", "_cbrn"];
+_preset params ["_id", "_title", "_severity", "_wounds", "_fractures", "_blood", "_airway", "_chest", "_tbi", "_blast", "_cbrn", ["_extra",[]]];
 
 // Reuse native ACM wound, blood and fracture construction on this same unit.
 [_location, _wounds, _fractures, _blood, [0,0], [0,0,0], _patient, _severity >= 3] call FUNC(spawnCustomPatient);
@@ -43,5 +43,29 @@ if (_blast > 0) then {[_patient, _blast] call ACME_fnc_blastLungInflict;};
 if (_cbrn isNotEqualTo []) then {
     _patient addGoggles "G_AirPurifyingRespirator_01_F";
     [_patient, _cbrn select 0, _cbrn select 1] call EFUNC(CBRN,seedTrainingExposure);
+};
+// The explicit training seed enters the same native component workers as live injuries.
+switch (_extra param [0,""]) do {
+    case "burn": {
+        if (_extra param [1,false]) then {
+            _patient setVariable ["ACM_burns_AirwayBurned",true,true];
+            _patient setVariable ["ACM_burns_AirwayBurnOnset",CBA_missionTime,true];
+            _patient setVariable ["ACM_burns_AirwayInflammation",28,true];
+        };
+        {
+            ["ACM_burns_burnApplied",[_patient,_x select 4,_x select 0,0.65]] call CBA_fnc_localEvent;
+        } forEach _wounds;
+    };
+    case "eyes": {
+        private _eyes = +(_extra select 1);
+        _patient setVariable ["ACM_ophthalmology_eyeInjuries",_eyes,true];
+        _patient setVariable ["ACM_ophthalmology_eyeInjurySevere",({ _x < 0.25 } count _eyes) >= 2,true];
+        _patient setVariable ["ACM_ophthalmology_dustInjuryHeavy",_extra select 2,true];
+        [_patient,true] call ACM_ophthalmology_fnc_reconcile;
+    };
+    case "infection": {
+        [_patient,_extra select 1] call ACM_infection_fnc_applyInfectionStage;
+        [_patient] call ACM_infection_fnc_reconcile;
+    };
 };
 true

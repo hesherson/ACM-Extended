@@ -151,26 +151,12 @@ def test_spoiled_class_preserves_original_volume(volume):
     ''')
 
 
-def test_accuvac_rotation_updates_every_point_and_normal_without_other_mesh_changes():
+def test_accuvac_restores_original_model_including_all_ten_lods():
     path=ROOT/'addons/acme_accuvac/accuvac_rescue.p3d'
-    previous=subprocess.check_output(['git','show','3cc73d55:addons/acme_accuvac/accuvac_rescue.p3d'],cwd=ROOT)
-    current=path.read_bytes();expected=bytearray(previous)
-    assert len(current)==len(previous)
-    cursor=12;lod_count=struct.unpack_from('<I',previous,8)[0]
-    for _ in range(lod_count):
-        off=previous.find(b'P3DM',cursor);assert off>=0
-        _,_,points,normals,_,_=struct.unpack_from('<6I',previous,off+4)
-        start=off+28
-        for i in range(points):
-            x,y,z=struct.unpack_from('<3f',previous,start+16*i)
-            struct.pack_into('<3f',expected,start+16*i,x,-y,-z)
-        start+=points*16
-        for i in range(normals):
-            x,y,z=struct.unpack_from('<3f',previous,start+12*i)
-            struct.pack_into('<3f',expected,start+12*i,x,-y,-z)
-        cursor=start+normals*12
-    assert current==bytes(expected)
-    assert lod_count==10
+    original=subprocess.check_output(['git','show','3cc73d55:addons/acme_accuvac/accuvac_rescue.p3d'],cwd=ROOT)
+    current=path.read_bytes()
+    assert current == original
+    assert struct.unpack_from('<I',current,8)[0] == 10
 
 
 @pytest.mark.parametrize('kind,prefix',[('pro','acme_tempus'),('ls','acme_tempusls')])

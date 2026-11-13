@@ -2,6 +2,10 @@
 params ["_device"];
 if (isNull _device || {_device getVariable ["ACME_eq_busy",false]}) exitWith {[]};
 private _kind=_device getVariable ["ACME_eq_kind",""];
+if (_kind=="") then {
+    if (_device isKindOf "ACME_TempusPro") then {_kind="pro";};
+    if (_device isKindOf "ACME_TempusLS") then {_kind="ls";};
+};
 if !(_kind in ["pro","ls"]) exitWith {[]};
 private _out=[];private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
 private _patient=_device getVariable [_prefix+"_pat",objNull];

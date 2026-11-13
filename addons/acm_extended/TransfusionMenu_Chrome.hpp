@@ -1,5 +1,27 @@
 // B276 background layer: every surface stays behind native action labels and the shared body map.
 class ACME_TxDetails: ACME_TransfusionRoundedFrame { idc = 86403; };
+// Fixed draw order: tubing under the opaque popovers, with buttons above both.
+class ACME_TxYRail: RscText {
+    idc = 86184;
+    x = "safeZoneX - 1";
+    y = "safeZoneY - 1";
+    w = 0;
+    h = 0;
+    colorBackground[] = {0.63,0.68,0.75,0.7};
+};
+class ACME_TxYTop: ACME_TxYRail { idc = 86185; };
+class ACME_TxYBottom: ACME_TxYRail { idc = 86186; };
+class ACME_TxPiggybackRail: ACME_TxYRail {
+    idc = 86220;
+    colorBackground[] = {0.79,0.73,0.89,0.85};
+};
+class ACME_TxPiggyback1: ACME_TxPiggybackRail { idc = 86221; };
+class ACME_TxPiggyback2: ACME_TxPiggybackRail { idc = 86222; };
+class ACME_TxPiggyback3: ACME_TxPiggybackRail { idc = 86223; };
+class ACME_TxPiggyback4: ACME_TxPiggybackRail { idc = 86224; };
+class ACME_TxPiggyback5: ACME_TxPiggybackRail { idc = 86225; };
+class ACME_TxPiggyback6: ACME_TxPiggybackRail { idc = 86226; };
+class ACME_TxPiggyback7: ACME_TxPiggybackRail { idc = 86227; };
 class ACME_TxBagPopup: ACME_TransfusionRoundedFrame { idc = 86401; };
 class ACME_TxInfusionPopup: ACME_TransfusionRoundedFrame { idc = 86402; };
 class ACME_TxButton_86006: ACME_TransfusionRoundedFrame { idc = 86410; };

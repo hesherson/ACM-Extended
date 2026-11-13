@@ -1256,7 +1256,6 @@ if (_initialLayoutControls isNotEqualTo []) then {
     _display setVariable ["ACME_txInitialLayoutControls", []];
     _display setVariable ["ACME_txInitialLayoutRevealed", true];
 };
-[_display] call ACME_fnc_paintTransfusionYBracket;
 [_display,(_display displayCtrl 86148),["transfusion"] call ACME_fnc_getSelectedActiveBagContext,86151] call ACME_fnc_pressureInfuserPaint;
 [_display,(_display displayCtrl 86149),["infusion"] call ACME_fnc_getSelectedActiveBagContext,86152] call ACME_fnc_pressureInfuserPaint;
 

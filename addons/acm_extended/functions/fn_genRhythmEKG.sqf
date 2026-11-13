@@ -5,16 +5,16 @@
 // but rhythm codes 100-104 return from the direct sampler before reaching them.
 // On the ACM screen convention, negative y is an upward deflection.
 // _this is [_rhythm, _spacing, _arrayOffset].
-params ["_rhythm", "_spacing", "_arrayOffset"];
+params ["_rhythm", "_spacing", "_arrayOffset", ["_sampleContext",[]]];
 
-private _W = 176;  // aed_monitor_width.
+private _W = _sampleContext param [3,176];  // aed_monitor_width.
 
 // stock ACM passes an _arrayOffset of 0 and never advances it. the time-anchored phase below is what drives the
 // scroll, so we no longer fold in the old constant half-spacing offset.
 
 // the true beat period, in samples. prefer the monitor or display hr from the target patient, so the QRS spacing
 // is not limited by ACM's rounded spacing argument. fall back to the _spacing conversion.
-private _tgtForRate = missionNamespace getVariable ["ACM_circulation_AED_Monitor_Target", objNull];
+private _tgtForRate = _sampleContext param [0,missionNamespace getVariable ["ACM_circulation_AED_Monitor_Target",objNull]];
 private _rateHR = 0;
 if (!isNull _tgtForRate) then {
     _rateHR = [_tgtForRate] call ACM_circulation_fnc_getEKGHeartRate;
@@ -63,7 +63,18 @@ if (_rhythm in [100,101,102,103,104]) exitWith {
     _out resize [_W, 0];
     _outSafe resize [_W, true];
     private _isAFib = _rhythm in [100,103];
+    private _peaks = [];
+    private _phases = [];
+    private _beats = _sampleContext param [4,[]];
+    private _beatIndex = 0;
+    _phases resize [_W,99];
     private _beatSerialBase = if (!isNull _tgtForRate) then {_tgtForRate getVariable ["ACME_AED_BeatSerial", 0]} else {0};
+    if (_sampleContext isNotEqualTo []) then {
+        _sampleContext params ["","_start","_rate"];
+        _cursorEpoch = _start;
+        _anchor = 0;
+        _rrNominal = 60 / (_rate max 1);
+    };
 
     // Torsades has no normal QRS beep while the AED arrest alarm owns the audio, so its clock is absolute time rather
     // than LastBeep. Sampling it directly at each SCREEN index is still essential: index _anchor is "now", which means
@@ -156,8 +167,22 @@ if (_rhythm in [100,101,102,103,104]) exitWith {
             };
         };
 
+        if (_beats isNotEqualTo []) then {
+            while {_beatIndex+1 < count _beats
+                && {abs (_sampleTime-((_beats select (_beatIndex+1)) select 0)) < abs (_sampleTime-((_beats select _beatIndex) select 0))}} do {
+                _beatIndex = _beatIndex+1;
+            };
+            (_beats select _beatIndex) params ["_plannedAt","_plannedSerial"];
+            _beatTime = _plannedAt;
+            _beatNumber = _plannedSerial - _beatSerialBase;
+        };
         private _beatOrdinal = _beatSerialBase + _beatNumber;
-        private _offset = round ((_sampleTime - _beatTime) / _dt);
+        private _delta = _sampleTime - _beatTime;
+        private _offset = round (_delta / _dt);
+        if (_sampleContext isNotEqualTo []) then {
+            _phases set [_i,_offset];
+            if (_delta >= -_dt/2 && {_delta < _dt/2}) then {_peaks pushBack _i;};
+        };
         private _template = [];
         private _rIndex = 0;
         private _baseline = 0;
@@ -197,7 +222,7 @@ if (_rhythm in [100,101,102,103,104]) exitWith {
         _outSafe set [_i, _isSafe];
     };
 
-    [_out, _outSafe]
+    if (_sampleContext isNotEqualTo []) then {[_out,_outSafe,_peaks,_phases]} else {[_out,_outSafe]}
 };
 
 private _noisy = {

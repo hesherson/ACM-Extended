@@ -24,12 +24,12 @@ def catalog():
     return 'ACM_mission_fnc_patientPreset = {' + compiled('patientPreset') + '};\n'
 
 
-@pytest.mark.parametrize('triage,minimum', [(1,2),(2,4),(3,6),(4,3)])
+@pytest.mark.parametrize('triage,minimum', [(1,4),(2,9),(3,9),(4,3)])
 def test_each_triage_has_concrete_cases_and_routine_stays_simple(triage, minimum):
     execute(catalog() + f'''
         private _cases = ([] call ACM_mission_fnc_patientPreset) select {{(_x select 2) == {triage} && {{(_x select 10) isEqualTo []}}}};
         [count _cases == {minimum}, "wrong number of triage cases"] call _check;
-        {{[count _x == 11, "malformed clinical case"] call _check;}} forEach _cases;
+        {{[count _x in [11,12], "malformed clinical case"] call _check;}} forEach _cases;
     ''')
 
 

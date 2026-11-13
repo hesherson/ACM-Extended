@@ -77,6 +77,8 @@ class CfgFunctions {
 
             };
             class tempusWaveforms {};
+            class tempusProjectLead {};
+            class tempusBeatPlan {};
             class tempusVitals {
 
             };

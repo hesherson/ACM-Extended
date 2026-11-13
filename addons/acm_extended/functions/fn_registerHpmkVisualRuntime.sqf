@@ -63,14 +63,19 @@ if (hasInterface) then {
                 private _anchor = _x;
                 private _id = netId _anchor;
                 _seenDrop pushBack _id;
-                if (isNil { ACME_hpmk_visuals get _id }) then {
+                private _vis = ACME_hpmk_visuals getOrDefault [_id,objNull];
+                if (isNull _vis) then {
                     private _model = _anchor getVariable ["ACME_hpmk_visualClass", _class];
                     if (_model != "") then {
-                        private _vis = createSimpleObject [_model, [0,0,0], true];
-                        _vis setPosWorld (getPosWorldVisual _anchor);
-                        _vis setVectorDirAndUp [vectorDirVisual _anchor, vectorUpVisual _anchor];
+                        _vis = createSimpleObject [_model, [0,0,0], true];
                         ACME_hpmk_visuals set [_id, _vis];
                     };
+                };
+                if (!isNull _vis) then {
+                    private _dir = vectorDirVisual _anchor;
+                    if (vectorDirVisual _vis distance _dir > 0.005) then {_vis setVectorDirAndUp [_dir,vectorUpVisual _anchor];};
+                    private _position = getPosWorldVisual _anchor;
+                    if (getPosWorldVisual _vis distance _position > 0.005) then {_vis setPosWorld _position;};
                 };
             } forEach ((ACE_player nearObjects ["Land_HelipadEmpty_F", 120]) select {_x getVariable ["ACME_hpmk_isBlanket", false]});
         };

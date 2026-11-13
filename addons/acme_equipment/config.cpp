@@ -6,7 +6,7 @@ class CfgPatches {
         name = "ACME medical equipment integration";
         author = "mavis";
         requiredVersion = 2.20;
-        requiredAddons[] = {"ACM_Extended", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway", "acme_tempus", "acme_tempusls"};
+        requiredAddons[] = {"ACM_Extended", "ace_refuel", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway", "acme_tempus", "acme_tempusls"};
         units[] = {"ACME_TempusPro_Mount","ACME_TempusLS_Mount"};
         weapons[] = {};
     };
@@ -116,6 +116,9 @@ class CfgFunctions { class ACME { class equipment { file="\acme_equipment\functi
 class equipmentLayout {};
 class equipmentPose {};
 class equipmentSeat {};
+class equipmentFacing {};
+class equipmentRotateReady {};
+class equipmentRotate {};
 class equipmentSetup {};
 class equipmentInventory {};
 class equipmentTransferStamp {};
@@ -152,6 +155,7 @@ class equipmentCoolerTrack {};
 class equipmentCoolerVisualTick {};
 class equipmentCoolerMenu {};
 class equipmentSensorMenu {};
+class equipmentMonitorAction {};
 class equipmentCoolerLoad {};
 class equipmentVentScreen {};
 class equipmentLsConnections {};
@@ -163,6 +167,8 @@ class ACME_fnc_equipmentLinkRequest {allowedTargets=2;};
 class ACME_fnc_equipmentCoolerLease {allowedTargets=2;};
 class ACME_fnc_equipmentCoolerLoad {allowedTargets=2;};
 class ACME_fnc_equipmentRequest {allowedTargets=2;};
+class ACME_fnc_equipmentRotate {allowedTargets=0;};
+class ACME_fnc_equipmentMonitorAction {allowedTargets=2;};
 class ACME_fnc_equipmentAck {allowedTargets=2;};
 class ACME_fnc_equipmentInventory {allowedTargets=0;};
 };};
@@ -174,3 +180,5 @@ class Extended_InitPost_EventHandlers {
  class ACME_BloodCoolerBox_CSWB2U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
  class ACME_BloodCoolerBox_CSWB4U {class acme_equipment {init="[_this select 0] call ACME_fnc_equipmentCoolerTrack";};};
 };
+
+#include "TempusTreatmentActions.hpp"

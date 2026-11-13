@@ -24,6 +24,7 @@ params ["_object", "_location", "_initiator", "_severity", "_type", ["_singlePat
 
 private _preset = [_presetID] call FUNC(patientPreset);
 if (_presetID == "") then {_preset = [];};
+if (_presetID != "" && {_preset isEqualTo []}) exitWith {objNull};
 if (_preset isNotEqualTo []) then {_severity = _preset select 2;};
 
 private _acmeRequestedSeverity = _severity;

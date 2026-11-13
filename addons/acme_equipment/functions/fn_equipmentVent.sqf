@@ -21,7 +21,6 @@ if (_durable!="") then {
         _old setVariable ["ACME_persistenceId","",true];
     };
 };
-if (!isNull _old) then {deleteVehicle _old;};
 if (_durable!="") then {
     ["bind",_o,_durable] call ACME_fnc_clinicalObjectRef;
     private _import=missionNamespace getVariable ["ACME_eqWorldImport",[]];
@@ -31,7 +30,13 @@ if (_durable!="") then {
         missionNamespace setVariable ["ACME_eqWorldImport",_import];
     };
 };
-[_o,_pose] call ACME_fnc_equipmentSeat;
+if (isNull _old) then {
+    [_o,_pose,_patient getVariable ["ACME_vent_operator",objNull]] call ACME_fnc_equipmentSeat;
+} else {
+    _o setVectorDirAndUp [vectorDir _old,vectorUp _old];
+    _o setPosWorld getPosWorld _old;
+    deleteVehicle _old;
+};
 _o setVariable ["ACME_eq_oxygen",_oxygen,true];
 _o setVariable ["ACME_eq_kind","vent",true];_o setVariable ["ACME_eq_patient",_patient,true];
 _patient setVariable ["ACME_eq_vent",_o,true];

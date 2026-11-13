@@ -102,7 +102,7 @@ private _o=objNull;
 if (!_invalid) then {
     private _pose=if (_manual) then {[_r get "spot",vectorDir _actor vectorMultiply -1]} else {[_patient,_kind] call ACME_fnc_equipmentPose};
     if (_pose isNotEqualTo []) then {_o=createVehicle [_r get "class",ASLToAGL (_pose select 0),[],0,"CAN_COLLIDE"];};
-    if (!isNull _o) then {[_o,_pose] call ACME_fnc_equipmentSeat;};
+    if (!isNull _o) then {[_o,_pose,_actor] call ACME_fnc_equipmentSeat;};
 };
 if (isNull _o) exitWith {
     _r set ["phase","refund"];_r set ["sent",serverTime];

@@ -30,11 +30,12 @@ private _devices=missionNamespace getVariable ["ACME_eqDevices",[]];
         if (isNull _patient || {!(_patient getVariable ["ACME_vent_onPatient",false])}) then {deleteVehicle _o;} else {
             private _oxygen=(_patient getVariable ["ACME_vent_o2Session",""])!="";
             if (_oxygen isNotEqualTo (_o getVariable ["ACME_eq_oxygen",false])) then {[_patient,true] call ACME_fnc_equipmentVent;};
+            if ((_patient getVariable ["ACME_eq_vent",objNull]) isNotEqualTo _o) then {continue;};
             private _mounted=!isNull objectParent _patient;
             _o hideObjectGlobal _mounted;
             if (!_mounted && {_o distance2D _patient>2}) then {
                 private _pose=[_patient,"vent"] call ACME_fnc_equipmentPose;
-                if (_pose isNotEqualTo []) then {[_o,_pose] call ACME_fnc_equipmentSeat;};
+                if (_pose isNotEqualTo []) then {[_o,[_pose select 0,vectorDir _o]] call ACME_fnc_equipmentSeat;};
             };
         };
     };

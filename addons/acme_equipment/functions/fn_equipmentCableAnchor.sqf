@@ -3,7 +3,7 @@ params ["_object","_kind",["_patient",false]];
 if (isNull _object) exitWith {[]};
 if (_patient) exitWith {
     private _selection=switch (_kind) do {
-        case "spo2": {"lefthand"};case "nibp": {"leftarm"};case "capno": {"head"};case "temp": {"spine2"};default {"spine3"};
+        case "spo2": {"righthand"};case "nibp": {"rightarm"};case "capno": {"head"};case "temp": {"spine2"};default {"spine3"};
     };
     private _point=_object selectionPosition _selection;
     if (_point isEqualTo [0,0,0]) then {_point=_object selectionPosition "pelvis";};

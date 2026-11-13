@@ -1,65 +1,106 @@
-/* Feed the existing browser sweeper from the ACM/ACME LifePak generators.
-   Generated samples stay client-local; only ordinary device vitals use network replication. */
-params ["_control", "_device", ["_ls", false], ["_force", false]];
-private _prefix = ["acme_tempus", "acme_tempusls"] select _ls;
-private _patient = _device getVariable [_prefix + "_pat", objNull];
-private _powered = (_device getVariable [_prefix + "_pw", [false]]) select 0;
-if (_ls) then {_powered=_powered && {(_device getVariable ["acme_tempusls_pads",true]) || {_device getVariable ["acme_tempusls_ecg",false]}};};
-private _vitals = _device getVariable [_prefix + "_v", []];
+/* Continuous sample blocks on a control-local clock. Only a changed patient/device episode resets the strip. */
+params ["_control","_device",["_ls",false],["_force",false]];
+private _prefix = ["acme_tempus","acme_tempusls"] select _ls;
+private _api = ["tp","tls"] select _ls;
+private _patient = _device getVariable [_prefix+"_pat",objNull];
+private _power = _device getVariable [_prefix+"_pw",[false]];
+private _vitals = _device getVariable [_prefix+"_v",[]];
 private _episode = if (isNull _patient) then {-1} else {[_patient] call ACME_fnc_clinicalEpoch};
-private _sensors=if (_ls) then {[true,true,true,true,true]} else {_device getVariable ["acme_tempus_sensors",[true,false,false,false,false]]};
-private _signature = str [_patient, _powered, _vitals, _episode,_sensors];
-private _changed = _force || {_signature isNotEqualTo (_control getVariable ["ACME_wave_signature", ""])};
-if (!_changed && {diag_tickTime < (_control getVariable ["ACME_wave_next", 0])}) exitWith {};
-_control setVariable ["ACME_wave_signature", _signature];
-_control setVariable ["ACME_wave_next", diag_tickTime + 5.28];
-private _ecg = []; _ecg resize [176, 0];
+private _session = [_device,_patient,_power param [0,false],_power param [1,0],_episode];
+private _newSession = _session isNotEqualTo (_control getVariable ["ACME_wave_session",[]]);
+private _now = diag_tickTime;
+if (_newSession || _force) then {
+    _control setVariable ["ACME_wave_session",_session];
+    _control setVariable ["ACME_wave_cursor",0];
+    _control setVariable ["ACME_wave_origin",_now];
+    _control setVariable ["ACME_wave_missionOrigin",CBA_missionTime];
+    _control setVariable ["ACME_wave_beat",[]];
+    _control setVariable ["ACME_wave_resp",[]];
+    _control ctrlWebBrowserAction ["ExecJS",_api+".resetWaveforms()"];
+};
+if (!(_power select 0) || {isNull _patient}) exitWith {};
+private _step = 0.03;
+private _count = 40;
+private _origin = _control getVariable ["ACME_wave_origin",_now];
+private _elapsed = (_now - _origin) max 0;
+private _column = _control getVariable ["ACME_wave_cursor",0];
+if (_column * _step > _elapsed + 0.65) exitWith {};
+// After a real stall skip expired sample time, never replay it as new beats.
+_column = _column max (floor (_elapsed / _step) - 3);
+private _offset = _column * _step;
+private _at = (_control getVariable ["ACME_wave_missionOrigin",CBA_missionTime]) + _offset;
+_control setVariable ["ACME_wave_cursor",_column+_count];
+private _sensors = _device getVariable ["acme_tempus_sensors",[true,false,false,false,false]];
+private _ecgOn = if (_ls) then {(_device getVariable ["acme_tempusls_pads",true]) || {_device getVariable ["acme_tempusls_ecg",false]}} else {_sensors select 0};
+private _cpr = alive (_patient getVariable ["ace_medical_CPR_provider",objNull]);
+private _rhythm = if (alive _patient) then {[_patient] call ACME_fnc_rhythmGet} else {1};
+if (_cpr) then {_rhythm = -1;};
+private _hr = [_patient] call ACM_circulation_fnc_getEKGHeartRate;
+if (_cpr) then {_hr = 110;};
+if (!_cpr && {alive _patient} && {[_patient] call ACM_circulation_fnc_recentAEDShock}) then {_rhythm = 1;_hr = 0;};
+private _rr = 60 / (_hr max 1);
+private _clock = _control getVariable ["ACME_wave_beat",[]];
+private _plan = [_at,_at+_step*_count,_rr,_rhythm,_clock] call ACME_fnc_tempusBeatPlan;
+_plan params ["_carry","_beats"];
+_control setVariable ["ACME_wave_beat",_carry];
+private _pulseIndex = 1;
+private _ready = _vitals isNotEqualTo [];
+private _ecg = []; _ecg resize [_count,0];
 private _pleth = +_ecg;
 private _capno = +_ecg;
-if (_powered && {!isNull _patient} && {!(_vitals isEqualTo [])}) then {
-    // The LifePak generator uses a selected target and cursor context. Restore both immediately,
-    // so a Tempus view cannot redirect another monitor or mutate its beat/cursor state.
-    private _oldTarget = missionNamespace getVariable ["ACM_circulation_AED_Monitor_Target", objNull];
-    private _oldCursor = _patient getVariable "ACME_AED_MonitorCursorTime";
-    private _oldStep = _patient getVariable "ACM_circulation_AED_UpdateStep";
-    missionNamespace setVariable ["ACM_circulation_AED_Monitor_Target", _patient];
-    _patient setVariable ["ACME_AED_MonitorCursorTime", CBA_missionTime];
-    _patient setVariable ["ACM_circulation_AED_UpdateStep", 0];
-    private _hr = [_patient] call ACM_circulation_fnc_getEKGHeartRate;
-    private _rhythm = [_patient] call ACME_fnc_rhythmGet;
-    private _cpr = alive (_patient getVariable ["ace_medical_CPR_provider", objNull]);
-    private _argument = [_rhythm, -1] select _cpr;
-    private _spacing = if (_hr > 0) then {60 / _hr * 15} else {0};
-    _ecg = ([_argument, _spacing, 0] call ACM_circulation_fnc_displayAEDMonitor_generateEKG) select 0;
-    private _perfusing = [_patient] call ACM_circulation_fnc_hasPulse;
-    if (!_ls) then {
-        private _saturation = _vitals param [5, 0];
-        private _rr = _vitals param [6, 0];
-        private _co2 = _vitals param [7, 0];
-        private _pulseRhythm = [1, _argument] select (_perfusing || {_cpr});
-        _pleth = ([_pulseRhythm, _spacing, 0, _saturation] call ACM_circulation_fnc_displayAEDMonitor_generatePO) select 0;
-        _capno = ([_argument, _spacing, 0, _co2 max 0, _rr max 0] call ACM_circulation_fnc_displayAEDMonitor_generateCO) select 0;
+private _markers = [];
+private _phases = [];
+if (_ready && {_ecgOn}) then {
+    private _sample = [_rhythm,0,0,[_patient,_at,_hr,_count,_beats]] call ACM_circulation_fnc_displayAEDMonitor_generateEKG;
+    _ecg = (_sample select 0) select [0,_count];
+    _phases = (_sample param [3,[]]) select [0,_count];
+    if (_ls && {(_device getVariable ["acme_tempusls_pads",true])}
+        && {_rhythm in [0,4,5,100,101,103,104]} && {(_sample param [2,[]]) isNotEqualTo []}
+        && {([_patient] call ACME_fnc_ecgArtifactStrength) < 0.8}) then {
+        _markers = (_sample param [2,[]]) select {_x < _count};
     };
-    missionNamespace setVariable ["ACM_circulation_AED_Monitor_Target", _oldTarget];
-    _patient setVariable ["ACME_AED_MonitorCursorTime", if (isNil "_oldCursor") then {nil} else {_oldCursor}];
-    _patient setVariable ["ACM_circulation_AED_UpdateStep", if (isNil "_oldStep") then {nil} else {_oldStep}];
 };
-if (!_ls) then {
-    if !(_sensors select 0) then {_ecg=_ecg apply {0};};
-    if !(_sensors select 1) then {_pleth=_pleth apply {0};};
-    if !(_sensors select 3) then {_capno=_capno apply {0};};
+if (_ready && {!_ls}) then {
+    private _saturation = _vitals param [5,0];
+    private _respRate = _vitals param [6,0];
+    private _co2 = _vitals param [7,-1];
+    private _perfusing = [_patient] call ACM_circulation_fnc_hasPulse;
+    private _breathPeriod = 60 / (_respRate max 1);
+    private _breath = _control getVariable ["ACME_wave_resp",[_at,_breathPeriod]];
+    _breath params ["_breathAt","_oldPeriod"];
+    if (_at - _breathAt > 12 || {_at < _breathAt}) then {_breathAt = _at;};
+    private _phase = ((_at - _breathAt) / _oldPeriod) mod 1;
+    _breathAt = _at - _phase * _breathPeriod;
+    _control setVariable ["ACME_wave_resp",[_breathAt,_breathPeriod]];
+    for "_i" from 0 to (_count-1) do {
+        private _time = _at+_i*_step;
+        if ((_sensors select 1) && {_saturation>0} && {_perfusing || {_cpr}} && {_hr>0}) then {
+            private _pulseTime = _time - 0.10;
+            while {_pulseIndex+1 < count _beats && {((_beats select (_pulseIndex+1)) select 0) <= _pulseTime}} do {
+                _pulseIndex = _pulseIndex+1;
+            };
+            private _pulseBeat = (_beats select _pulseIndex) select 0;
+            private _pulseRR = ((_beats param [_pulseIndex+1,[_pulseBeat+_rr]]) select 0) - _pulseBeat;
+            private _pulse = ((_pulseTime-_pulseBeat)/_pulseRR) max 0 min 1;
+            private _height = if (_pulse < 0.22) then {_pulse/0.22} else {(1-_pulse)/0.78};
+            _pleth set [_i,round (-50*_height*_height*_saturation/100)];
+        };
+        if ((_sensors select 3) && {_respRate>0} && {_co2>0}) then {
+            private _point = ((_time-_breathAt)/_breathPeriod) mod 1;
+            private _height = (linearConversion [0.26,0.38,_point,0,1,true]) * (linearConversion [0.83,0.90,_point,1,0,true]);
+            _capno set [_i,round (-3*_co2*_height)];
+        };
+    };
 };
-// Lead profiles are simulated projections of ACME's ECG, not independently measured electrodes.
-private _leads = ["I", "II", "III", "AVR", "AVL", "AVF", "V1", "V2", "V3", "V4", "V5", "V6"];
-private _factors = [0.56, 1, 0.44, -0.78, 0.06, 0.72, -0.35, -0.15, 0.55, 1.10, 0.95, 0.80];
-private _packets = [format ['{"channel":"ecg","units":"acme","sampleRateHz":33.3333333333,"samples":%1}', _ecg apply {(round (_x * 100)) / 100}]];
+private _leads = if (_ls) then {["I","II","III"]} else {["I","II","III","AVR","AVL","AVF","V1","V2","V3","V4","V5","V6"]};
+private _packets = [];
 {
-    private _factor = _factors select _forEachIndex;
-    private _samples = _ecg apply {(round (_x * _factor * 100)) / 100};
-    _packets pushBack format ['{"channel":"ecg","lead":"%1","units":"acme","sampleRateHz":33.3333333333,"samples":%2}', _x, _samples];
+    private _lead = _x;
+    private _trace = [_lead,_ecg,_phases] call ACME_fnc_tempusProjectLead;
+    _packets pushBack format ['{"channel":"ecg","lead":"%1","units":"acme","sampleRateHz":33.3333333333,"samples":%2}',_lead,_trace];
 } forEach _leads;
 if (!_ls) then {
-    _packets pushBack format ['{"channel":"pleth","units":"acme","sampleRateHz":33.3333333333,"samples":%1}', _pleth apply {(round (_x * 100)) / 100}];
-    _packets pushBack format ['{"channel":"capno","units":"acme","sampleRateHz":33.3333333333,"samples":%1}', _capno apply {(round (_x * 100)) / 100}];
+    _packets pushBack format ['{"channel":"pleth","units":"acme","sampleRateHz":33.3333333333,"samples":%1}',_pleth];
+    _packets pushBack format ['{"channel":"capno","units":"acme","sampleRateHz":33.3333333333,"samples":%1}',_capno];
 };
-_control ctrlWebBrowserAction ["ExecJS", format ["%1.waveforms([%2],%3)", ["tp", "tls"] select _ls, _packets joinString ",", _changed]];
+_control ctrlWebBrowserAction ["ExecJS",format ["%1.waveforms([%2],false,%3,%4,%5)",_api,_packets joinString ",",_offset,_elapsed,_markers]];

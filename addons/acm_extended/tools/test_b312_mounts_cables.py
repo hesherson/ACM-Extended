@@ -269,45 +269,50 @@ def test_v2_mount_restore_stages_attachment_before_publishing_or_rolls_back(fail
 def visual_setup():
     s=(E/'fn_equipmentCableVisualTick.sqf').read_text().replace('diag_tickTime','_clock')
     s=s.replace('nearestObjects [positionCameraToWorld [0,0,0],["ACME_TempusPro","ACME_TempusLS"],20]','_visualDevices')
-    s=s.replace('isObjectHidden _device','_hidden').replace('netId _device','"fixture-device"')
-    s=s.replace('createSimpleObject ["\\acme_equipment\\models\\monitor_cable.p3d",_from,true]','call _createSegment')
-    s=s.replace('deleteVehicle _x','_deletes=_deletes+1')
-    s=s.replace('_segment setPosWorld _pos','_commands pushBack "position"')
-    s=s.replace('_segment setVectorDirAndUp [_dir,_up]','_commands pushBack "direction"')
-    s=s.replace('_segment setObjectScale _length','_commands pushBack "scale"')
+    s=s.replace('isObjectHidden _device','_hidden').replace('netId _device','"fixture-device"').replace('netId _target','"fixture-target"')
+    s=re.sub(r'"ace_fastroping_helper" createVehicleLocal \(ASLToAGL _(?:from|to)\)', 'call _createHelper', s)
+    s=re.sub(r'ropeCreate \[[^;]+', 'call _createRope', s)
+    s=s.replace('ropeDestroy _rope','_ropeDeletes=_ropeDeletes+1')
+    s=re.sub(r'deleteVehicle _(?:from|to)Helper','_deletes=_deletes+1',s)
+    s=re.sub(r'_(?:from|to)Helper setPosWorld _(?:from|to)','_moves=_moves+1',s)
+    s=re.sub(r'ropeUnwind \[[^;]+','_unwinds=_unwinds+1',s)
+    s=re.sub(r'_x (?:allowDamage false|hideObject true|enableRopeAttach true);','',s)
+    s=s.replace('_fromHelper disableCollisionWith _toHelper;','')
     return setup()+'''
-      private _clock=10;private _hidden=false;private _deletes=0;private _visualSpawns=0;private _commands=[];
-      private _failSegments=false;private _visualDevices=[_device];private _visualSpecs=[];
+      private _clock=10;private _hidden=false;private _deletes=0;private _ropeDeletes=0;
+      private _visualSpawns=0;private _ropeSpawns=0;private _moves=0;private _unwinds=0;
+      private _failRope=false;private _visualDevices=[_device];private _visualSpecs=[];
       private _fromPoint=[100,200,1000];private _toPoint=[101,200,1000.2];
-      private _createSegment={_visualSpawns=_visualSpawns+1;if (_failSegments) then {objNull} else {parsingNamespace}};
+      private _createHelper={_visualSpawns=_visualSpawns+1;parsingNamespace};
+      private _createRope={_ropeSpawns=_ropeSpawns+1;if (_failRope) exitWith {objNull};parsingNamespace};
       ACME_fnc_equipmentCableSpecs={_visualSpecs};
       ACME_fnc_equipmentCableAnchor={params ["","","_patient"];if (isNil "_patient") then {+_fromPoint} else {+_toPoint}};
     '''+'ACME_fnc_equipmentCableVisualTick={'+convert(s)+'};'
 
 
-def test_visual_worker_caps_objects_reuses_stationary_segments_and_scales_last():
+def test_visual_worker_caps_local_rope_objects_and_reuses_stationary_anchors():
     execute(visual_setup()+'''
       for "_i" from 1 to 30 do {_visualSpecs pushBack [str _i,_patient,true];};
       call ACME_fnc_equipmentCableVisualTick;
-      [_visualSpawns==128 && {count (missionNamespace getVariable "ACME_eqCableCache")==16},"visual object budget exceeded"] call _check;
-      private _first=count _commands;
+      [_visualSpawns==32 && {_ropeSpawns==16} && {count (missionNamespace getVariable "ACME_eqCableCache")==16},"local rope budget exceeded"] call _check;
+      private _first=_moves;
       call ACME_fnc_equipmentCableVisualTick;
-      [_visualSpawns==128 && {count _commands==_first},"stationary cables rebuilt or retransformed"] call _check;
-      [(_commands select [0,3]) isEqualTo ["position","direction","scale"],"direction reset scale after sizing"] call _check;
-      missionNamespace setVariable ["ACME_equipmentCableVisuals",false];call ACME_fnc_equipmentCableVisualTick;
-      [_deletes==128 && {count (missionNamespace getVariable "ACME_eqCableCache")==0},"disabled visuals leaked segments"] call _check;
+      [_visualSpawns==32 && {_moves==_first},"stationary cables rebuilt or retransformed"] call _check;
+      missionNamespace setVariable ["ACME_equipmentCableVisuals",false];
+      call ACME_fnc_equipmentCableVisualTick;
+      [_deletes==32 && {_ropeDeletes==16} && {count (missionNamespace getVariable "ACME_eqCableCache")==0},"disabled visuals leaked rope or helpers"] call _check;
     ''')
 
 
 def test_visual_allocation_failure_backs_off_then_recovers_without_extending_timer():
     execute(visual_setup()+'''
-      _visualSpecs=[["ecg",_patient,true]];_failSegments=true;
+      _visualSpecs=[["ecg",_patient,true]];_failRope=true;
       call ACME_fnc_equipmentCableVisualTick;
-      [_visualSpawns==8,"failed allocation loop was unbounded"] call _check;
+      [_visualSpawns==2 && {_deletes==2},"failed allocation leaked helpers"] call _check;
       _clock=11;call ACME_fnc_equipmentCableVisualTick;
-      [_visualSpawns==8 && {(missionNamespace getVariable "ACME_eqCableRetryAt")==12},"backoff retried early or perpetually extended"] call _check;
-      _clock=12.1;_failSegments=false;call ACME_fnc_equipmentCableVisualTick;
-      [_visualSpawns==16 && {count (missionNamespace getVariable "ACME_eqCableCache")==1},"visuals could not recover after failure"] call _check;
+      [_visualSpawns==2 && {(missionNamespace getVariable "ACME_eqCableRetryAt")==12},"backoff retried early or perpetually extended"] call _check;
+      _clock=12.1;_failRope=false;call ACME_fnc_equipmentCableVisualTick;
+      [_visualSpawns==4 && {count (missionNamespace getVariable "ACME_eqCableCache")==1},"visuals could not recover after failure"] call _check;
     ''')
 
 
@@ -317,7 +322,7 @@ def test_visual_cleanup_on_disconnect_hidden_device_or_camera_scan_change(change
       _visualSpecs=[["ecg",_patient,true]];call ACME_fnc_equipmentCableVisualTick;
     '''+change+'''
       call ACME_fnc_equipmentCableVisualTick;
-      [_deletes==8 && {count (missionNamespace getVariable "ACME_eqCableCache")==0},"retired cable leaked segments"] call _check;
+      [_deletes==2 && {_ropeDeletes==1} && {count (missionNamespace getVariable "ACME_eqCableCache")==0},"retired hose leaked rope or helpers"] call _check;
     ''')
 
 
@@ -449,8 +454,8 @@ def test_mount_and_usb_helpers_have_no_inventory_grant_or_server_visual_rpc():
         assert not re.search(r'\b(addItem|addItemCargoGlobal|createVehicle|removeItem|deleteVehicle|execVM|compile)\b',s)
         assert 'if (canSuspend)' in s
     s=(E/'fn_equipmentCableVisualTick.sqf').read_text()
-    assert 'ropeCreate' not in s and 'remoteExec' not in s
-    assert 'if (!hasInterface)' in s and 'true]' in s
+    assert 'ace_refuel_fuelHose' in s and 'remoteExec' not in s
+    assert 'if (!hasInterface)' in s and 'createVehicleLocal' in s
 
 
 def test_old_release_packet_cannot_undock_a_new_mount_episode():
@@ -522,15 +527,15 @@ def test_mounted_inventory_pickup_releases_mount_and_grants_exactly_once():
     ''')
 
 
-def test_tiny_idle_cable_motion_does_not_retransform_every_segment():
+def test_tiny_idle_cable_motion_does_not_reposition_rope_anchors():
     execute(visual_setup()+'''
       _visualSpecs=[["ecg",_patient,true]];call ACME_fnc_equipmentCableVisualTick;
-      private _count=count _commands;
+      private _count=_moves;
       _toPoint=_toPoint vectorAdd [0.001,0,0];call ACME_fnc_equipmentCableVisualTick;
-      [count _commands==_count,"submillimetre idle motion retransformed all cable segments"] call _check;
+      [_moves==_count,"submillimetre idle motion retransformed all cable segments"] call _check;
       _toPoint=_toPoint vectorAdd [0.003,0,0];call ACME_fnc_equipmentCableVisualTick;
-      [count _commands==_count+24,"visible endpoint motion did not update existing segments"] call _check;
-      [_visualSpawns==8,"endpoint motion recreated cable objects"] call _check;
+      [_moves==_count+1,"visible endpoint motion did not update existing segments"] call _check;
+      [_visualSpawns==2,"endpoint motion recreated cable objects"] call _check;
     ''')
 
 

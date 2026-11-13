@@ -31,7 +31,7 @@ private _id = [{
     _settings params ["_device", "_on", "_rate", "_ma", "_demand", "_epoch", "_actor"];
     if (isNull _device || {_epoch != ([_u] call ACME_fnc_clinicalEpoch)}
         || {(_device getVariable ["acme_tempusls_pat", objNull]) isNotEqualTo _u}
-        || {!((_device getVariable ["acme_tempusls_pw", [false]]) select 0)} || {_device distance _u > 6}) exitWith {
+        || {!(_device getVariable ["acme_tempusls_pads",true])} || {!((_device getVariable ["acme_tempusls_pw", [false]]) select 0)} || {_device distance _u > 6}) exitWith {
         _u setVariable ["acme_tempusls_paceSet", []];
         [_u, "acme_tempusls_capture", false] call ACME_fnc_setVarNet;
     };

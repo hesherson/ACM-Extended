@@ -109,9 +109,9 @@ if (_mode == "deploy") exitWith {
     if (!isNull _placementPatient && {_pose isEqualTo []}) exitWith {[false,"No safe surface is available beside the patient."] call _reply;};
     _box=createVehicle [_boxClass,_placementPos,[],0,"CAN_COLLIDE"];
     if (isNull _box) exitWith {[false,"The cooler box could not be created."] call _reply;};
-    _box setDir getDir _owner;
+    if (_pose isEqualTo []) then {_box setDir ((getDir _owner) + 180);};
     if (_pose isNotEqualTo []) then {
-        [_box,_pose] call ACME_fnc_equipmentSeat;
+        [_box,_pose,_owner] call ACME_fnc_equipmentSeat;
         _box setVariable ["ACME_eqCoolerSlot",_slot,true];
         private _coolers=(_placementPatient getVariable ["ACME_eqCoolers",[]]) select {!isNull _x};
         _coolers pushBack _box;_placementPatient setVariable ["ACME_eqCoolers",_coolers,true];
