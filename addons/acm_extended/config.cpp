@@ -6993,6 +6993,18 @@ class ACME_CoolerManager_Dialog {
             font = "RobotoCondensed";
             sizeEx = "safeZoneH * 0.021";
         };
+        class ACME_CLR_Deploy: RscButton {
+            idc = 87423;
+            text = "Set Down Selected Cooler";
+            action = "call ACME_fnc_coolerBoxDeploy;";
+            x = "safeZoneX + safeZoneW * 0.312";
+            y = "safeZoneY + safeZoneH * 0.765";
+            w = "safeZoneW * 0.376";
+            h = "safeZoneH / 28";
+            colorBackground[] = {0.16,0.20,0.24,1};
+            colorText[] = {0.85,0.95,1,1};
+            sizeEx = "safeZoneH * 0.021";
+        };
         class ACME_CLR_Close: RscButton {
             idc = 87414;
             text = "Close";
@@ -8967,8 +8979,9 @@ class ace_medical_treatment_actions {
     class ACME_DrainFluid_ACCUVAC: ACME_PerformThoracostomy {
         displayName = "Drain Fluid (ACCUVAC)";
         displayNameProgress = "Draining fluid...";
-        items[] = {"ACM_ACCUVAC"};
-        condition = "([_medic, 'ACME_DrainFluid_ACCUVAC'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) in [2,3]}}";
+        items[] = {};
+        consumeItem = 0;
+        condition = "([_medic, 'ACME_DrainFluid_ACCUVAC'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) in [2,3]}} && {[_medic,_patient] call ACME_fnc_equipmentUseAccuvac}";
         callbackSuccess = "[_this select 0, _this select 1, 'drain', 1] call ACME_fnc_thoraAftercare";
         ACM_menuIcon = "ACM_ACCUVAC";
             medicRequired = "ACM_breathing_allowThoracostomy";
@@ -9562,11 +9575,7 @@ class ace_medical_treatment_actions {
         treatmentTime = 0.1;
         allowedSelections[] = {"Head"};  // head only. the ventilator connects at the airway, so it belongs on the head and nowhere else.
         items[] = {};
-        // the machine is on the patient once connected, so requiring the medic to carry one would make the panel
-        // unreachable the moment it was hooked up. carrying a spare still works for a patient who has been configured
-        // and not yet connected. Pre-attachment presets belong to the medic's carried device;
-        // use Connect ET > Ventilator to acquire patient/vehicle equipment before editing it.
-        condition = "([_medic, 'ACME_VentOpenPatient'] call ACME_fnc_procedureActionAllowed) && {!(_patient getVariable ['ACME_vent_recovering', false])} && {alive _patient || {_patient getVariable ['ACME_vent_onPatient', false]}} && {((_patient getVariable ['ACME_vent_circuit', false]) || {_patient getVariable ['ACME_vent_configured', false]}) && {(_patient getVariable ['ACME_vent_onPatient', false]) || {([_medic, 'ACME_Ventilator'] call ace_common_fnc_getCountOfItem) > 0}}}";
+        condition = "([_medic, 'ACME_VentOpenPatient'] call ACME_fnc_procedureActionAllowed) && {_patient getVariable ['ACME_vent_onPatient', false]} && {!(_patient getVariable ['ACME_vent_recovering', false])}";
         callbackSuccess = "[_patient, true] call ACME_fnc_ventPanelOpen";
         ACM_menuIcon = "ACME_Ventilator";
         callbackFailure = "";
@@ -10087,11 +10096,15 @@ class ace_medical_treatment_actions {
     // rather than with a bar that has already finished.
     // UseSuctionBag above takes the same path. both devices are on the screen now.
     class UseAccuvac: UseSuctionBag {
-        // the same 0.1 as the parent, restated so the value is visible on the class that uses it.
-
+        displayName = "Use ACCUVAC";
+        displayNameProgress = "Setting up ACCUVAC...";
+        ACM_menuIcon = "ACM_ACCUVAC";
+        medicRequired = "ACM_airway_allowACCUVAC";
         treatmentTime = 0.1;
+        items[] = {};
+        condition = "ACM_airway_enable && {!(_patient call ace_common_fnc_isAwake) || {(_patient getVariable ['ACM_airway_AirwayObstructionVomit_State',0]) > 0} || {(_patient getVariable ['ACM_airway_AirwayObstructionBlood_State',0]) > 0}} && {[_medic,_patient] call ACME_fnc_equipmentUseAccuvac}";
         callbackStart = "";
-        callbackSuccess = "[_medic, _patient, 1] call ACME_fnc_suctionOpen";
+        callbackSuccess = "[_medic,_patient,ACME_fnc_suctionOpen,[_medic,_patient,1]] call ACME_fnc_equipmentUseAccuvac";
         callbackFailure = "";
     };
 

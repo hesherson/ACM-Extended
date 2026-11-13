@@ -6,7 +6,7 @@ class CfgPatches {
         name = "ACME medical equipment integration";
         author = "mavis";
         requiredVersion = 2.20;
-        requiredAddons[] = {"ACM_Extended", "ace_refuel", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway", "acme_tempus", "acme_tempusls"};
+        requiredAddons[] = {"ACM_Extended", "ace_fastroping", "acme_accuvac", "acme_bloodcooler", "acme_hpmk", "acme_ventway", "acme_tempus", "acme_tempusls"};
         units[] = {"ACME_TempusPro_Mount","ACME_TempusLS_Mount"};
         weapons[] = {};
     };
@@ -65,6 +65,10 @@ class CfgMagazines {
     };
 };
 class CfgVehicles {
+    class ACME_IVLine_Rope;
+    class ACME_TempusCable: ACME_IVLine_Rope {
+        hiddenSelectionsTextures[] = {"#(argb,8,8,3)color(0.16,0.16,0.16,1,co)"};
+    };
     class Items_base_F;
     class ACME_TempusPro_Mount: Items_base_F {
         scope = 2;
@@ -148,6 +152,7 @@ class equipmentWorldCaptureValid {};
 class equipmentWorldRestore {};
 class equipmentTick {};
 class equipmentAvailable {};
+class equipmentUseAccuvac {};
 class equipmentCoolerLease {};
 class equipmentCoolerOpen {};
 class equipmentCoolerClose {};
@@ -156,6 +161,7 @@ class equipmentCoolerVisualTick {};
 class equipmentCoolerMenu {};
 class equipmentSensorMenu {};
 class equipmentMonitorAction {};
+class equipmentBindMonitor {};
 class equipmentCoolerLoad {};
 class equipmentVentScreen {};
 class equipmentLsConnections {};

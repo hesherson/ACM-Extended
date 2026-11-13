@@ -212,6 +212,15 @@ def suction_setup():
         // Discrete sound output is an engine boundary; B226 executes its emitter/cleanup separately.
         ACME_fnc_manualSuctionSound={_manualSounds pushBack _this;};
         ACME_fnc_suctionSfxStop={};ACME_fnc_traySlotState={};ACME_fnc_ownerRegister={};
+        ACME_fnc_equipmentAvailable={
+            params ["","_patient"];
+            _patient getVariable ["fixtureAccuvacDeployed",false]
+        };
+        ACME_fnc_equipmentUseAccuvac={
+            params ["_medic","_patient"];
+            ([_medic,_patient] call ACME_fnc_equipmentAvailable)
+                || {([_medic,_patient,"ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount) > 0}
+        };
         ACME_fnc_zeroPad={str (_this select 0)};
         ACME_fnc_laryngoFluidDrain={_drained pushBack _this;};
         ACME_fnc_suctionPublish={_published pushBack _this;};
@@ -241,16 +250,20 @@ def test_manual_suction_spends_one_patient_bag_only_at_first_squeeze(sharing):
     ''')
 
 
-def test_accuvac_patient_stock_has_priority_and_stays_reusable():
+def test_accuvac_patient_stock_has_priority_and_active_suction_requires_placement():
     execute(suction_setup()+'''
         _medic setVariable ["fixtureStock",["ACM_SuctionBag"]];
         _patient setVariable ["fixtureStock",["ACM_ACCUVAC"]];
         [([true] call ACME_fnc_suctionSelectDevice)==1,"shared ACCUVAC did not take priority"] call _check;
         [_patient,_medic,1,"pump-session",1,"hand",[0.1,0.2],1] call ACME_fnc_suctionStateLocal;
-        [_patient] call ACME_fnc_suctionPhysiologyTick;
-        [count (_patient getVariable ["ACME_suctionSessions",[]])==1,"patient-stock ACCUVAC session rejected by owner"] call _check;
-        [count _debits==0 && {([_patient,"ACM_ACCUVAC"] call ace_common_fnc_getCountOfItem)==1},"ACCUVAC consumed or moved"] call _check;
+        [count (_patient getVariable ["ACME_suctionSessions",[]])==0,"carried pump activated before placement"] call _check;
         _patient setVariable ["fixtureStock",[]];
+        _patient setVariable ["fixtureAccuvacDeployed",true];
+        [_patient,_medic,1,"pump-session",2,"hand",[0.1,0.2],1] call ACME_fnc_suctionStateLocal;
+        [_patient] call ACME_fnc_suctionPhysiologyTick;
+        [count (_patient getVariable ["ACME_suctionSessions",[]])==1,"deployed pump session rejected by owner"] call _check;
+        [count _debits==0,"suction spent a second device"] call _check;
+        _patient setVariable ["fixtureAccuvacDeployed",false];
         [_patient] call ACME_fnc_suctionPhysiologyTick;
         [count (_patient getVariable ["ACME_suctionSessions",[]])==0,"lost shared device retained suction session"] call _check;
     ''')

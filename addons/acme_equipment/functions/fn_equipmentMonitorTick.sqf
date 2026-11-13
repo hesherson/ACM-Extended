@@ -9,8 +9,14 @@ private _old=_device getVariable ["ACME_eq_patient",objNull];
 if (_old isNotEqualTo _patient) then {
     if (!isNull _old && {(_old getVariable ["ACME_eq_"+_kind,objNull]) isEqualTo _device}) then {_old setVariable ["ACME_eq_"+_kind,objNull,true];};
     _device setVariable ["ACME_eq_patient",_patient,true];
+    if (isNull _patient) then {_device setVariable ["ACME_eq_feedOwner",[],true];};
 };
 if (!isNull _patient && {isNull (_patient getVariable ["ACME_eq_"+_kind,objNull])}) then {_patient setVariable ["ACME_eq_"+_kind,_device,true];};
+if (!isNull _patient && {(_device getVariable ["ACME_eq_feedOwner",[]]) isNotEqualTo [_patient,owner _patient]}
+    && {serverTime >= (_device getVariable ["ACME_eq_feedRetryAt",0])}) then {
+    _device setVariable ["ACME_eq_feedRetryAt",serverTime+2];
+    [_device,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind=="ls"),_patient];
+};
 private _mount=_device getVariable ["ACME_eq_mount",objNull];
 if (_device getVariable ["ACME_eq_mounted",false] && {isNull _mount || {attachedTo _device isNotEqualTo _mount}}) then {[_device] call ACME_fnc_equipmentMountRelease;};
 if (_kind != "ls") exitWith {};

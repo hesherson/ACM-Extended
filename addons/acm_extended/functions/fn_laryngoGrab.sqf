@@ -51,6 +51,20 @@ if (_which == "suction" && {([true] call ACME_fnc_suctionSelectDevice) < 0}) exi
     ["No suction device carried.", 2] call ace_common_fnc_displayTextStructured;
 };
 
+if (_which == "suction" && {(uiNamespace getVariable ["ACME_suction_type",-1]) == 1}
+    && {!([uiNamespace getVariable ["ACME_laryngo_medic",objNull],_tubePatient] call ACME_fnc_equipmentAvailable)}) exitWith {
+    private _medic = uiNamespace getVariable ["ACME_laryngo_medic",objNull];
+    private _dialog = uiNamespace getVariable ["ACME_laryngo_dlg",displayNull];
+    [_medic,_tubePatient,{
+        params ["_dialog","_patient"];
+        if (!isNull _dialog && {_dialog isEqualTo (uiNamespace getVariable ["ACME_laryngo_dlg",displayNull])}
+            && {_patient isEqualTo (uiNamespace getVariable ["ACME_laryngo_patient",objNull])}
+            && {(uiNamespace getVariable ["ACME_laryngo_held",""]) != "suction"}) then {
+            ["suction"] call ACME_fnc_laryngoGrab;
+        };
+    },[_dialog,_tubePatient]] call ACME_fnc_equipmentUseAccuvac;
+};
+
 // taking the collar back. if one is already fastened, clicking its tray slot removes it rather than refusing. the
 // collar is a strap, so putting it on and taking it off are the same act in reverse and it costs nothing.
 if (_which == "collar"

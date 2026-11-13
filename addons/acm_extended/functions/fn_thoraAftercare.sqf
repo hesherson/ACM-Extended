@@ -8,7 +8,14 @@ switch (_operation) do {
             private _used = [_medic, _patient, ["ACM_SuctionBag"]] call ace_medical_treatment_fnc_useItem;
             if ((_used param [1, ""]) != "ACM_SuctionBag") then {_device = -1;};
         } else {
-            if (([_medic,_patient,"ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount)<1) then {_device = -1;};
+            [_medic,_patient,{
+                params ["_medic","_patient"];
+                if ([_medic,"thoracostomy",true] call ACME_fnc_procedureAllowed
+                    && {(_patient getVariable ["ACM_breathing_Thoracostomy_State",0]) in [2,3]}) then {
+                    [_medic,_patient,1] call ACM_breathing_fnc_Thoracostomy_drain;
+                };
+            },[_medic,_patient]] call ACME_fnc_equipmentUseAccuvac;
+            _device = -1;
         };
         if (_device < 0) exitWith {};
         [_medic, _patient, _device] call ACM_breathing_fnc_Thoracostomy_drain;

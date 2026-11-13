@@ -188,7 +188,11 @@ def suction_setup():
     return setup()+fluid_setup()+function('suctionStateLocal')+function('suctionPublish')+'''
         ACME_fnc_suctionSfxStop={};
         _patientAlive=false;
-        _medic setVariable ["fixtureStock",["ACM_ACCUVAC"]];
+        _patient setVariable ["fixtureAccuvacDeployed",true];
+        ACME_fnc_equipmentAvailable={
+            params ["","_patient"];
+            _patient getVariable ["fixtureAccuvacDeployed",false]
+        };
         uiNamespace setVariable ["ACME_laryngo_dlg",missionNamespace];
         uiNamespace setVariable ["ACME_laryngo_patient",_patient];
         uiNamespace setVariable ["ACME_laryngo_medic",_medic];
@@ -233,7 +237,7 @@ def test_corpse_suction_publish_session_and_bounded_fluid_debit_then_close(mode,
 @pytest.mark.parametrize('blocker', [
     '_alive=false;', '_medic setVariable ["ACE_isUnconscious",true];',
     '_distance=6;', '_patient setVariable ["ACME_clinicalEpoch",2];',
-    '_medic setVariable ["fixtureStock",[]];',
+    '_patient setVariable ["fixtureAccuvacDeployed",false];',
 ])
 def test_corpse_suction_preserves_provider_epoch_range_and_supply_guards(blocker):
     execute(suction_setup()+blocker+'''

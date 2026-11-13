@@ -57,7 +57,9 @@ window.addEventListener("DOMContentLoaded", () => {
         return value;
     };
     api.waveformSession = 0;
+    let frame = null;
     api.resetWaveforms = () => {
+        frame = null;
         api.waveformSession++;
         for (const timer of timers) clearTimeout(timer);
         timers = [];
@@ -67,6 +69,16 @@ window.addEventListener("DOMContentLoaded", () => {
         for (const channel of channels) {
             send({...channel,active:false});
             send({...channel,units:"acme",sampleRateHz:1,samples:[0],startTime:-1e9,holdFlat:true});
+        }
+    };
+    api.waveformPart = (offset, elapsed, first, packets, total, peaks) => {
+        if (first === 0) frame = {offset, packets: []};
+        if (!frame || frame.offset !== offset || frame.packets.length !== first) return;
+        frame.packets.push(...packets);
+        if (frame.packets.length === total) {
+            const complete = frame.packets;
+            frame = null;
+            api.waveforms(complete, false, offset, elapsed, peaks);
         }
     };
     api.waveforms = (packets,reset=false,offset,elapsed,peaks=[]) => {

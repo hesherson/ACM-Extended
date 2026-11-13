@@ -31,6 +31,21 @@ private _c = _dlg displayCtrl 87916;
 if ((uiNamespace getVariable ["ACME_suction_type", -1]) < 0) exitWith {
     _c ctrlSetTextColor [1,1,1,0];
 };
+if ((uiNamespace getVariable ["ACME_suction_type",-1]) == 1
+    && {!([uiNamespace getVariable ["ACME_laryngo_medic",objNull],uiNamespace getVariable ["ACME_laryngo_patient",objNull]]
+        call ACME_fnc_equipmentAvailable)}) exitWith {
+    _c ctrlSetTextColor [1,1,1,0];
+    uiNamespace setVariable ["ACME_laryngo_sucPinned",false];
+    if (uiNamespace getVariable ["ACME_laryngo_sucOn",false]) then {
+        uiNamespace setVariable ["ACME_laryngo_sucOn",false];
+        [uiNamespace getVariable ["ACME_laryngo_medic",objNull]] call ACME_fnc_suctionSfxStop;
+        [true] call ACME_fnc_suctionPublish;
+    };
+    if ((uiNamespace getVariable ["ACME_laryngo_held",""]) == "suction") then {
+        uiNamespace setVariable ["ACME_laryngo_held",""];
+    };
+};
+
 private _pinned = uiNamespace getVariable ["ACME_laryngo_sucPinned", false];
 private _inHandSuc = (uiNamespace getVariable ["ACME_laryngo_held", ""]) == "suction";
 if (!_pinned && {!_inHandSuc}) exitWith {

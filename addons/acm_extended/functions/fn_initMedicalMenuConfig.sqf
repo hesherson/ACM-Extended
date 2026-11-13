@@ -59,6 +59,20 @@ ACME_menuGroups = [
         "Connect AED Pressure Cuff", "Disconnect AED Pressure Cuff",
         "Connect AED Capnograph", "Disconnect AED Capnograph"
     ], {true}, [0.85, 0.40, 0.18, 1]],
+    ["tempuspro", "Tempus Pro", "advanced", [
+        "Set Up Tempus Pro", "View Tempus Pro", "Disconnect Tempus Pro", "Measure NIBP (Tempus Pro)",
+        "Attach ECG leads (Tempus Pro)", "Remove ECG leads (Tempus Pro)",
+        "Attach SpO2 sensor (Tempus Pro)", "Remove SpO2 sensor (Tempus Pro)",
+        "Attach NIBP cuff (Tempus Pro)", "Remove NIBP cuff (Tempus Pro)",
+        "Attach EtCO2 line (Tempus Pro)", "Remove EtCO2 line (Tempus Pro)",
+        "Attach temperature probe (Tempus Pro)", "Remove temperature probe (Tempus Pro)"
+    ], {true}, [0.85, 0.40, 0.18, 1]],
+    ["tempusls", "Tempus LS", "advanced", [
+        "Set Up Tempus LS", "View Tempus LS", "Disconnect Tempus LS",
+        "Attach ECG leads (Tempus LS)", "Remove ECG leads (Tempus LS)",
+        "Attach defibrillator pads (Tempus LS)", "Remove defibrillator pads (Tempus LS)",
+        "Pair Tempus LS with Pro", "Connect Tempus USB cable", "Disconnect Tempus USB cable"
+    ], {true}, [0.85, 0.40, 0.18, 1]],
     // debug is hidden outright unless the setting is on. no empty submenu is shown. with the setting
     // off the group header does not render at all, so a normal session never sees it.
     ["debug", "Debug", "advanced", [

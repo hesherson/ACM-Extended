@@ -5,32 +5,6 @@ if (!hasInterface) exitWith {};
 [{call ACME_fnc_equipmentCableVisualTick;},0.1,[]] call CBA_fnc_addPerFrameHandler;
 [{call ACME_fnc_equipmentCoolerVisualTick;},0.5,[]] call CBA_fnc_addPerFrameHandler;
 [{
-    private _root=["ACME_PatientEquipment","Medical Equipment","",{},{true}] call ace_interact_menu_fnc_createAction;
-    ["CAManBase",0,["ACE_MainActions"],_root,true] call ace_interact_menu_fnc_addActionToClass;
-    {
-        _x params ["_kind","_label","_item"];
-        private _a=["ACME_Setup_"+_kind,_label,"",{
-            params ["_target","","_data"];[_target,_data select 0] call ACME_fnc_equipmentSetup;
-        },{
-            params ["_target","_player","_data"];
-            alive _player && {([_player,_data select 1] call ACME_fnc_itemCount)>0} && {isNull (_target getVariable ["ACME_eq_"+(_data select 0),objNull])}
-        },{},[_kind,_item]] call ace_interact_menu_fnc_createAction;
-        ["CAManBase",0,["ACE_MainActions","ACME_PatientEquipment"],_a,true] call ace_interact_menu_fnc_addActionToClass;
-    } forEach [["pro","Set Up Tempus Pro","ACME_TempusPro_Item"],["ls","Set Up Tempus LS","ACME_TempusLS_Item"],["accu","Set Up ACCUVAC","ACM_ACCUVAC"]];
-    private _cooler=["ACME_PatientCoolers","Set Down Blood Cooler","",{},{count ([_player] call ACME_fnc_coolerRows)>0},{_this call ACME_fnc_equipmentCoolerMenu;}] call ace_interact_menu_fnc_createAction;
-    ["CAManBase",0,["ACE_MainActions","ACME_PatientEquipment"],_cooler,true] call ace_interact_menu_fnc_addActionToClass;
-    private _vent=["ACME_Setup_Vent","Connect Ventway","",{[_player,_target] call ACME_fnc_ventConnectPatient;},{([_player,"ACME_Ventilator"] call ACME_fnc_itemCount)>0 && {!(_target getVariable ["ACME_vent_onPatient",false])}}] call ace_interact_menu_fnc_createAction;
-    ["CAManBase",0,["ACE_MainActions","ACME_PatientEquipment"],_vent,true] call ace_interact_menu_fnc_addActionToClass;
-    private _sensors=["ACME_TempusSensors","Patient Connections","",{},{!isNull (_target getVariable ["acme_tempus_pat",objNull])},{_this call ACME_fnc_equipmentSensorMenu;}] call ace_interact_menu_fnc_createAction;
-    ["ACME_TempusPro",0,["ACME_tempus_root"],_sensors,true] call ace_interact_menu_fnc_addActionToClass;
-    private _lsConnections=["ACME_LSConnections","Patient Connections","",{},{!isNull (_target getVariable ["acme_tempusls_pat",objNull])},{_this call ACME_fnc_equipmentLsConnections;}] call ace_interact_menu_fnc_createAction;
-    ["ACME_TempusLS",0,["ACME_tempusls_root"],_lsConnections,true] call ace_interact_menu_fnc_addActionToClass;
-    private _pair=["ACME_LSPair","Pair with Tempus Pro","",{[_target] call ACME_fnc_tempusLsPair;},{true}] call ace_interact_menu_fnc_createAction;
-    ["ACME_TempusLS",0,["ACME_tempusls_root"],_pair,true] call ace_interact_menu_fnc_addActionToClass;
-    private _usb=["ACME_LS_USB","Connect USB Data Cable","",{},{(_target getVariable ["ACME_eq_kind",""])=="ls" && {isNull (_target getVariable ["ACME_eq_usb",objNull])}},{_this call ACME_fnc_equipmentUsbMenu;}] call ace_interact_menu_fnc_createAction;
-    ["ACME_TempusLS",0,["ACME_tempusls_root"],_usb,true] call ace_interact_menu_fnc_addActionToClass;
-    private _unplug=["ACME_LS_UnplugUSB","Disconnect USB Data Cable","",{[_player,_target,objNull,false,_target getVariable ["ACME_eq_usbEpoch",0]] remoteExecCall ["ACME_fnc_equipmentLinkRequest",2];},{!isNull (_target getVariable ["ACME_eq_usb",objNull])}] call ace_interact_menu_fnc_createAction;
-    ["ACME_TempusLS",0,["ACME_tempusls_root"],_unplug,true] call ace_interact_menu_fnc_addActionToClass;
     private _mount=["ACME_MountEquipment","Mount Monitor","",{},{isNull (_target getVariable ["ACME_eq_device",objNull])},{_this call ACME_fnc_equipmentMountMenu;}] call ace_interact_menu_fnc_createAction;
     private _unmount=["ACME_ReleaseEquipment","Release Monitor","",{[_player,_target,_target getVariable ["ACME_eq_device",objNull],false,_target getVariable ["ACME_eq_mountEpoch",0]] remoteExecCall ["ACME_fnc_equipmentMountRequest",2];},{!isNull (_target getVariable ["ACME_eq_device",objNull])}] call ace_interact_menu_fnc_createAction;
     {[_x,0,[],_mount,true] call ace_interact_menu_fnc_addActionToClass;[_x,0,[],_unmount,true] call ace_interact_menu_fnc_addActionToClass;} forEach ["ACME_TempusPro_Mount","ACME_TempusLS_Mount"];
@@ -38,18 +12,11 @@ if (!hasInterface) exitWith {};
     {[_x select 0,0,[_x select 1],_releaseMount,true] call ace_interact_menu_fnc_addActionToClass;} forEach [["ACME_TempusPro","ACME_tempus_root"],["ACME_TempusLS","ACME_tempusls_root"]];
     private _accuRoot = ["ACME_AccuvacRoot","ACCUVAC Rescue","",{},{true},{},[],[0,0,0.08],3.5] call ace_interact_menu_fnc_createAction;
     ["ACME_AccuvacRescue",0,[],_accuRoot,true] call ace_interact_menu_fnc_addActionToClass;
-    private _ventRoot = ["ACME_VentwayRoot","Ventway Sparrow","",{},{true},{},[],[0,0,0.10],3.5] call ace_interact_menu_fnc_createAction;
-    ["ACME_VentwaySparrow_Bare",0,[],_ventRoot,true] call ace_interact_menu_fnc_addActionToClass;
-    private _suction=["ACME_UseAccuvac","Use ACCUVAC","",{[_player,_target getVariable ["ACME_eq_patient",objNull],1] call ACME_fnc_suctionOpen;},{!isNull (_target getVariable ["ACME_eq_patient",objNull])}] call ace_interact_menu_fnc_createAction;
-    ["ACME_AccuvacRescue",0,["ACME_AccuvacRoot"],_suction,true] call ace_interact_menu_fnc_addActionToClass;
+
     private _pickup=["ACME_PickAccuvac","Pick Up ACCUVAC","",{
         [_player,_target getVariable ["ACME_eq_patient",objNull],"accu","pickup",false,[],_target] remoteExecCall ["ACME_fnc_equipmentRequest",2];
     },{(_target getVariable ["ACME_eq_kind",""])=="accu" && {!(_target getVariable ["ACME_eq_busy",false])}}] call ace_interact_menu_fnc_createAction;
     ["ACME_AccuvacRescue",0,["ACME_AccuvacRoot"],_pickup,true] call ace_interact_menu_fnc_addActionToClass;
-    private _panel=["ACME_VentwayPanel","Open Ventway","",{[_target getVariable ["ACME_eq_patient",objNull]] call ACME_fnc_ventPanelOpen;},{!isNull (_target getVariable ["ACME_eq_patient",objNull])}] call ace_interact_menu_fnc_createAction;
-    private _disconnect=["ACME_VentwayRecover","Disconnect and Recover Ventway","",{[_player,_target getVariable ["ACME_eq_patient",objNull]] call ACME_fnc_ventDisconnectPatient;},{!isNull (_target getVariable ["ACME_eq_patient",objNull])}] call ace_interact_menu_fnc_createAction;
-    ["ACME_VentwaySparrow_Bare",0,["ACME_VentwayRoot"],_panel,true] call ace_interact_menu_fnc_addActionToClass;
-    ["ACME_VentwaySparrow_Bare",0,["ACME_VentwayRoot"],_disconnect,true] call ace_interact_menu_fnc_addActionToClass;
     private _open=["ACME_OpenWorldCooler","Open Blood Cooler","",{[_target] call ACME_fnc_equipmentCoolerOpen;},{!(_target getVariable ["ACME_coolerRetired",false]) && {!(_target getVariable ["ACME_coolerPacking",false])}}] call ace_interact_menu_fnc_createAction;
     {[_x,0,["ACE_MainActions"],_open,true] call ace_interact_menu_fnc_addActionToClass;} forEach ["ACME_BloodCoolerBox_CSWB1U","ACME_BloodCoolerBox_CSWB2U","ACME_BloodCoolerBox_CSWB4U"];
     private _rotate = ["ACME_RotateEquipment","Rotate towards me","",{
@@ -62,7 +29,7 @@ if (!hasInterface) exitWith {};
         ["ACME_TempusPro",["ACME_tempus_root"]],
         ["ACME_TempusLS",["ACME_tempusls_root"]],
         ["ACME_AccuvacRescue",["ACME_AccuvacRoot"]],
-        ["ACME_VentwaySparrow_Bare",["ACME_VentwayRoot"]],
+        ["ACME_VentwaySparrow_Bare",[]],
         ["ACME_TempusPro_Mount",[]],["ACME_HPMK_Pouch",[]],
         ["ACME_BloodCoolerBox_CSWB1U",["ACE_MainActions"]],
         ["ACME_BloodCoolerBox_CSWB2U",["ACE_MainActions"]],

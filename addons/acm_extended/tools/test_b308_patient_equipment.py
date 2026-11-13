@@ -22,6 +22,11 @@ def converted(name, source=None):
     s=s.replace('nearestObjects [_patient,[(_types get _kind) select 1],8]','_nearby')
     s=s.replace('isRemoteExecuted','_remote').replace('remoteExecutedOwner','_caller').replace('owner _actor','7')
     s=s.replace('alive _actor','_actorAlive').replace('local _actor','true')
+    s=s.replace('alive _provider','_actorAlive').replace('owner _provider','7')
+    s=s.replace('isNull objectParent _provider','true').replace('_provider distance _patient','_distance')
+    s=s.replace('_provider getVariable ["ACE_isUnconscious",false]','false')
+    s=s.replace('[_device,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select _ls,_patient]','_feeds=_feeds+1')
+    s=s.replace('[_o,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind=="ls"),_patient]','_feeds=_feeds+1')
     s=s.replace('_actor distance _patient','_distance').replace('_actor distance _box','_distance').replace('_actor distance _device','_distance')
     s=s.replace('isNull objectParent _actor','true').replace('objectParent _patient','objNull')
     s=s.replace('_actor getVariable ["ACE_isUnconscious",false]','false')
@@ -43,6 +48,7 @@ def converted(name, source=None):
     s=s.replace('[_o,_patient] remoteExecCall ["ACME_fnc_tempusLsFeed",_patient]', '_feeds=_feeds+1')
     s=s.replace('[_actor,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind=="ls"),_patient]', '_feeds=_feeds+1')
     s=s.replace('[_actor,_id,"refund",_r get "item"] remoteExecCall ["ACME_fnc_equipmentInventory",_actor]','_refundMessages pushBack [_actor,_id,"refund",_r get "item"]')
+    s=re.sub(r'(_\w+) isEqualType objNull',r'(\1 isEqualTo objNull || {\1 isEqualType profileNamespace})',s)
     return adapt(map_defaults(s))
 
 def setup():
@@ -56,7 +62,7 @@ def setup():
       ACME_fnc_equipmentPose={[[100,200,1000],[0,1,0]]};
       ACME_fnc_equipmentSeat={};ACME_fnc_tempusLsChargeClear={};
       private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
-    '''+''.join(f'ACME_fnc_{n}={{'+converted(n)+'};' for n in ['equipmentTransferStamp','equipmentRefundRequest','equipmentRefundInventory','equipmentPickupReady','equipmentUsbRelease','equipmentRequest','equipmentInventory','equipmentAck'])
+    '''+''.join(f'ACME_fnc_{n}={{'+converted(n)+'};' for n in ['equipmentTransferStamp','equipmentRefundRequest','equipmentRefundInventory','equipmentPickupReady','equipmentUsbRelease','equipmentRequest','equipmentInventory','equipmentAck','equipmentBindMonitor'])
 
 
 @pytest.mark.parametrize('kind',['pro','ls','accu'])
@@ -151,11 +157,30 @@ def test_spoiled_class_preserves_original_volume(volume):
     ''')
 
 
-def test_accuvac_restores_original_model_including_all_ten_lods():
+def test_accuvac_updates_only_the_wand_in_all_three_visual_lods():
     path=ROOT/'addons/acme_accuvac/accuvac_rescue.p3d'
-    original=subprocess.check_output(['git','show','3cc73d55:addons/acme_accuvac/accuvac_rescue.p3d'],cwd=ROOT)
+    original=subprocess.check_output(['git','show','cdd2cea1:addons/acme_accuvac/accuvac_rescue.p3d'],cwd=ROOT)
     current=path.read_bytes()
-    assert current == original
+    import importlib.util
+    from math import dist
+    spec = importlib.util.spec_from_file_location("wand_model", ROOT / "tools/straighten_accuvac_tip.py")
+    model = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(model)
+    assert current == model.straighten(bytearray(original))
+    direction = (-0.922, 0, -0.387)
+    for i, (points, _, _, _) in enumerate(model.lods(current)):
+        if i not in model.WAND_RINGS:
+            continue
+        first, last, sides = model.WAND_RINGS[i]
+        def center(index):
+            ring = [struct.unpack_from("<3f",current,points + vertex * 16)
+                    for vertex in range(index, min(index + sides, last))]
+            return tuple(sum(axis) / len(axis) for axis in zip(*ring))
+        base = center(first)
+        for index in range(first, last, sides):
+            tip = center(index)
+            run = dist(base,tip)
+            assert dist(tip,tuple(a + b * run for a,b in zip(base,direction))) < 0.0006
     assert struct.unpack_from('<I',current,8)[0] == 10
 
 

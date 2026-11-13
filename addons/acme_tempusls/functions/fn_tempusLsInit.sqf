@@ -12,15 +12,6 @@ private _on = { (_target getVariable ["acme_tempusls_pw", [false]]) select 0 };
 private _use = ["ACME_tempusls_use", "Use Screen", "", {[_target] call ACME_fnc_tempusLsUse}, {[_target] call ACME_fnc_tempusLsCanUse}] call ace_interact_menu_fnc_createAction;
 private _pwOn = ["ACME_tempusls_on", "Turn On", "", {[_target, true] call ACME_fnc_tempusLsPower}, {!((_target getVariable ["acme_tempusls_pw", [false]]) select 0)}] call ace_interact_menu_fnc_createAction;
 private _pwOff = ["ACME_tempusls_off", "Turn Off", "", {[_target, false] call ACME_fnc_tempusLsPower}, _on] call ace_interact_menu_fnc_createAction;
-private _conn = ["ACME_tempusls_conn", "Apply Pads", "", {}, {isNull (_target getVariable ["acme_tempusls_pat", objNull])}, {
-	params ["_target"];
-	private _list = (nearestObjects [_target, ["CAManBase"], 3]) select { !(_x isKindOf "VirtualMan_F") };
-	_list apply {
-		private _name = if (_x isEqualTo player) then { "Yourself" } else { [_x, false, true] call ace_common_fnc_getName };
-		[["ACME_tempusls_conn_" + netId _x, _name, "", {[_target, _this select 2] call ACME_fnc_tempusLsConnect}, {true}, {}, _x] call ace_interact_menu_fnc_createAction, [], _target]
-	}
-}] call ace_interact_menu_fnc_createAction;
-private _disc = ["ACME_tempusls_disc", "Disconnect Patient", "", {[_target, objNull] call ACME_fnc_tempusLsConnect}, {!isNull (_target getVariable ["acme_tempusls_pat", objNull])}] call ace_interact_menu_fnc_createAction;
 private _pick = ["ACME_tempusls_pick", "Pick Up", "", {[_target] call ACME_fnc_tempusLsPick}, _free] call ace_interact_menu_fnc_createAction;
 private _place = ["ACME_tempusls_place", "Place", "", {call ACME_fnc_tempusLsPlace}, {isNull objectParent _player && {isNull (uiNamespace getVariable ["ACME_TempusLS_dlg", displayNull])}}] call ace_interact_menu_fnc_createAction;
 private _root = ["ACME_tempusls_root", "Tempus LS", "", {}, {alive player}, {}, [], [0, 0, 0.1], 2.5] call ace_interact_menu_fnc_createAction;
@@ -28,11 +19,11 @@ private _self = ["ACME_tempusls_self", "Tempus LS", _icon, {}, {[_player, "ACME_
 ["ACME_TempusLS", 0, [], _root, true] call ace_interact_menu_fnc_addActionToClass;
 {
 	["ACME_TempusLS", 0, ["ACME_tempusls_root"], _x, true] call ace_interact_menu_fnc_addActionToClass;
-} forEach [_use, _pwOn, _pwOff, _conn, _disc, _pick];
+} forEach [_use, _pwOn, _pwOff, _pick];
 ["CAManBase", 1, ["ACE_SelfActions", "ACE_Equipment"], _self, true] call ace_interact_menu_fnc_addActionToClass;
 {
 	["CAManBase", 1, ["ACE_SelfActions", "ACE_Equipment", "ACME_tempusls_self"], _x, true] call ace_interact_menu_fnc_addActionToClass;
-} forEach [_use, _pwOn, _pwOff, _conn, _disc, _place];
+} forEach [_pwOn, _pwOff, _place];
 ["loadout", {
 	params ["_unit"];
 	if ([_unit, "ACME_TempusLS_Item"] call ace_common_fnc_hasItem) exitWith {};

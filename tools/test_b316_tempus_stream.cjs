@@ -47,14 +47,22 @@ for (const [suffix, stow, sample, event] of [
         channel:'ecg',lead,units:'acme',sampleRateHz:100,samples:Array.from({length:100},(_,x)=>base+i+x)
     }));
     api.resetWaveforms();
-    api.waveforms(packets(0),false,0,0.06,[30,80]);
+    const deliver = (samples, offset, elapsed, peaks) => {
+        for (let first = 0; first < samples.length; first += 3) {
+            api.waveformPart(offset, elapsed, first, samples.slice(first, first + 3), samples.length, peaks);
+        }
+    };
+    const firstPackets = packets(0);
+    api.waveformPart(0, 0.06, 0, firstPackets.slice(0, 3), firstPackets.length, [30,80]);
+    assert.equal(context[sample]('ecg','II',100.1).value, 0);
+    deliver(firstPackets, 0, 0.06, [30,80]);
     advance(100.29);
-    api.waveforms(packets(100),false,1,0.29,[10]);
+    deliver(packets(100), 1, 0.29, [10]);
     assert.equal(context[sample]('ecg','II',100.5).value,51);
     assert.equal(context[sample]('ecg','II',101).value,101);
     assert.equal(context[sample]('ecg','V6',101).value,111);
     // Duplicated or delayed blocks cannot replace already queued samples or arm extra markers.
-    api.waveforms(packets(400),false,0,0.29,[30]);
+    deliver(packets(400), 0, 0.29, [30]);
     assert.equal(context[sample]('ecg','II',100.5).value,51);
     advance(100.30);
     assert.equal(emitted.length,pro?0:1);
@@ -64,7 +72,11 @@ for (const [suffix, stow, sample, event] of [
     advance(101.1);
     assert.equal(emitted.length,pro?0:2);
     assert.equal(context[sample]('ecg','V6',101.1).value,0);
-    api.waveforms(packets(500),false,0,0.06,[]);
+    api.waveformPart(0, 0.06, 0, firstPackets.slice(0, 3), firstPackets.length, []);
+    api.resetWaveforms();
+    api.waveformPart(0, 0.06, 3, firstPackets.slice(3), firstPackets.length, []);
+    assert.equal(context[sample]('ecg','III',101.1).value, 0);
+    deliver(packets(500), 0, 0.06, []);
     assert.equal(context[sample]('ecg','III',101.1).value,502);
     console.log(`PASS ${suffix} syntax, all lead channels, contiguous timing, replay and episode reset`);
 }

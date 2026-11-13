@@ -3,6 +3,7 @@ params ["_o", "_u"];
 if (isNull _o || {isNull _u}
     || {(_o getVariable ["acme_tempusls_pat", objNull]) isNotEqualTo _u}) exitWith {};
 if (!local _u) exitWith { [_o, _u] remoteExecCall ["ACME_fnc_tempusLsFeed", _u] };
+_o setVariable ["ACME_eq_feedOwner", [_u, clientOwner], true];
 private _current = _o getVariable ["acme_tempusls_feeding", []];
 if (count _current == 2 && {(_current select 0) isEqualTo _u}) exitWith {};
 private _generation = (_o getVariable ["acme_tempusls_feedGeneration", 0]) + 1;

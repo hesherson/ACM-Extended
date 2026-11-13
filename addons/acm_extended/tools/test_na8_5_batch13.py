@@ -274,7 +274,7 @@ class SuctionAndSALAD(unittest.TestCase):
     def test_closed_packet_tombstone_blocks_reactivation(self):self.assertIn('param [2, false]',src('suctionStateLocal'));self.assertIn('_mode == "closed"',src('suctionStateLocal'))
     def test_saved_ui_cannot_adopt_new_life_epoch(self):self.assertIn('uiNamespace getVariable ["ACME_suctionEpoch", -1]',src('suctionPublish'))
     def test_owner_rechecks_equipment_and_consciousness(self):
-        t=src('suctionPhysiologyTick');self.assertIn('ACM_ACCUVAC',t);self.assertIn('ACE_isUnconscious',t);self.assertIn('!local _patient',t)
+        t=src('suctionPhysiologyTick');self.assertIn('ACME_fnc_equipmentAvailable',t);self.assertIn('ACE_isUnconscious',t);self.assertIn('!local _patient',t)
     def test_no_penalty_double_application(self):
         from test_historical_medication_retirement import test_native_target_is_the_only_suction_penalty_consumer_in_reviewed_paths, test_suction_debt_is_computed_before_one_native_target_deduction
         test_native_target_is_the_only_suction_penalty_consumer_in_reviewed_paths()

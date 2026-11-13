@@ -1,6 +1,6 @@
 /* Pure logical selection. A disabled sensor has no cosmetic line; no physiology is changed. */
 params ["_device"];
-if (isNull _device || {_device getVariable ["ACME_eq_busy",false]}) exitWith {[]};
+if (isNull _device || {_device getVariable ["ACME_eq_busy",false]} || {_device getVariable ["ACME_eq_restoreStaged",false]}) exitWith {[]};
 private _kind=_device getVariable ["ACME_eq_kind",""];
 if (_kind=="") then {
     if (_device isKindOf "ACME_TempusPro") then {_kind="pro";};

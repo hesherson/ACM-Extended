@@ -93,16 +93,19 @@ if (_kind=="blood") exitWith {
     _pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];
 };
 private _manual=_r get "manual";
-private _invalid=!alive _actor || {_actor getVariable ["ACE_isUnconscious",false]} || {!isNull objectParent _actor}
+private _provider = _r getOrDefault ["provider",_actor];
+private _invalid = !alive _provider || {_provider getVariable ["ACE_isUnconscious",false]} || {!isNull objectParent _provider}
+    || {_provider getVariable ["ACME_persistenceFrozen",false]}
     || {if (_manual) then {_actor distance (ASLToAGL (_r get "spot"))>3.5} else {
-        isNull _patient || {_actor distance _patient>4.5} || {!isNull objectParent _patient}
+        isNull _patient || {_provider distance _patient>4.5} || {!isNull objectParent _patient}
+            || {_patient getVariable ["ACME_persistenceFrozen",false]}
             || {!isNull (_patient getVariable ["ACME_eq_"+_kind,objNull])}
     }};
 private _o=objNull;
 if (!_invalid) then {
     private _pose=if (_manual) then {[_r get "spot",vectorDir _actor vectorMultiply -1]} else {[_patient,_kind] call ACME_fnc_equipmentPose};
     if (_pose isNotEqualTo []) then {_o=createVehicle [_r get "class",ASLToAGL (_pose select 0),[],0,"CAN_COLLIDE"];};
-    if (!isNull _o) then {[_o,_pose,_actor] call ACME_fnc_equipmentSeat;};
+    if (!isNull _o) then {[_o,_pose,_provider] call ACME_fnc_equipmentSeat;};
 };
 if (isNull _o) exitWith {
     _r set ["phase","refund"];_r set ["sent",serverTime];
@@ -122,15 +125,12 @@ if (_kind=="ls") then {[_o] call ACME_fnc_tempusLsChargeClear;_o setVariable ["a
 _o setVariable ["ACME_eq_kind",_kind,true];_o setVariable ["ACME_eq_patient",_patient,true];_o setVariable ["ACME_eq_manual",_manual,true];
 if (!isNull _patient) then {_patient setVariable ["ACME_eq_"+_kind,_o,true];};
 if (_kind in ["pro","ls"] && {!isNull _patient}) then {
-    private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
-    _o setVariable [_prefix+"_pat",_patient,true];
-    if (_kind=="pro") then {
-        if (!_manual || {isNil {_o getVariable "acme_tempus_sensors"}}) then {_o setVariable ["acme_tempus_sensors",[true,false,false,false,false],true];};
-        [_o,_patient] remoteExecCall ["ACME_fnc_tempusFeed",_patient];
+    if (_manual) then {
+        private _prefix=["acme_tempus","acme_tempusls"] select (_kind=="ls");
+        _o setVariable [_prefix+"_pat",_patient,true];
+        [_o,_patient] remoteExecCall [["ACME_fnc_tempusFeed","ACME_fnc_tempusLsFeed"] select (_kind=="ls"),_patient];
     } else {
-        if (!_manual || {isNil {_o getVariable "acme_tempusls_pads"}}) then {_o setVariable ["acme_tempusls_pads",true,true];};
-        if (!_manual || {isNil {_o getVariable "acme_tempusls_ecg"}}) then {_o setVariable ["acme_tempusls_ecg",false,true];};
-        [_o,_patient] remoteExecCall ["ACME_fnc_tempusLsFeed",_patient];
+        [_o,_patient,_kind,_r getOrDefault ["firstSensor",-1]] call ACME_fnc_equipmentBindMonitor;
     };
 };
 private _devices=missionNamespace getVariable ["ACME_eqDevices",[]];_devices pushBackUnique _o;missionNamespace setVariable ["ACME_eqDevices",_devices];

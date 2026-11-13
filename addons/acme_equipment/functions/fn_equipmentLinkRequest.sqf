@@ -35,4 +35,3 @@ if (!isNull _patient && {!isNull _proPatient} && {_patient isNotEqualTo _proPati
 _ls setVariable ["ACME_eq_usb",_pro,true];_pro setVariable ["ACME_eq_usbLs",_ls,true];
 _ls setVariable ["ACME_eq_usbEpoch",_expectedEpoch+1,true];
 _ls setVariable ["acme_tempusls_link",_pro,true];
-if (!isNull _patient && {isNull _proPatient}) then {[_pro,_patient] call ACME_fnc_tempusConnect;};

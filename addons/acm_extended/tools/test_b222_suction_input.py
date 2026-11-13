@@ -61,7 +61,7 @@ def test_park_and_unpark_once_despite_duplicate_handlers_and_remapped_mmb(efak,g
     generic='[[_display,2],"down"] call ACME_fnc_minigameInputMouse;'
     click='[_display,2] call ACME_fnc_laryngoClick;'
     down=generic+click if generic_first else click+generic
-    execute(input_setup(efak)+f'_medic setVariable ["{field}",["ACM_ACCUVAC"]];'+down+down+'''
+    execute(input_setup(efak)+f'_medic setVariable ["{field}",["ACM_ACCUVAC"]];_patient setVariable ["fixtureAccuvacDeployed",true];'+down+down+'''
         [uiNamespace getVariable ["ACME_laryngo_sucPinned",false],"MMB did not park"] call _check;
         [(uiNamespace getVariable ["ACME_laryngo_held","bad"])=="","parking did not free hands"] call _check;
         [_pumpStarts==1 && {_generic==0},"duplicate toggle or generic MMB stole suction"] call _check;
@@ -79,7 +79,7 @@ def test_parking_never_invents_a_device_or_bypasses_anatomy_and_sharing(reason):
     setup={
         'empty-kit':'',
         'manual-bag':'_medic setVariable ["fixtureKitStock",["ACM_SuctionBag"]];',
-        'outside-mouth':'_medic setVariable ["fixtureKitStock",["ACM_ACCUVAC"]];uiNamespace setVariable ["ACME_laryngo_cur",[0,0]];',
+        'outside-mouth':'_medic setVariable ["fixtureKitStock",["ACM_ACCUVAC"]];_patient setVariable ["fixtureAccuvacDeployed",true];uiNamespace setVariable ["ACME_laryngo_cur",[0,0]];',
         'sharing-disabled':'_patient setVariable ["fixtureKitStock",["ACM_ACCUVAC"]];ace_medical_treatment_allowSharedEquipment=2;',
     }[reason]
     execute(input_setup()+setup+'''
@@ -93,6 +93,7 @@ def test_parking_never_invents_a_device_or_bypasses_anatomy_and_sharing(reason):
 def test_lost_mouseup_does_not_latch_parking_forever():
     execute(input_setup()+'''
         _medic setVariable ["fixtureKitStock",["ACM_ACCUVAC"]];
+        _patient setVariable ["fixtureAccuvacDeployed",true];
         [_display,2] call ACME_fnc_laryngoClick;
         _nowTime=_nowTime+2;
         [_display,2] call ACME_fnc_laryngoClick;

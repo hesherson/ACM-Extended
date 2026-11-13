@@ -1,4 +1,4 @@
-/* Close-range presentation uses Kelly's ACE refuel hose with two client-local PhysX helpers. */
+/* Client-local thin ropes follow each model's rear ports and the patient's animated anchor. */
 if (!hasInterface) exitWith {};
 private _cache = missionNamespace getVariable ["ACME_eqCableCache",createHashMap];
 private _desired = [];
@@ -16,9 +16,9 @@ if (missionNamespace getVariable ["ACME_equipmentCableVisuals",true]) then {
             _x params ["_kind","_target","_patient"];
             private _from = [_device,_kind] call ACME_fnc_equipmentCableAnchor;
             private _to = [_target,_kind,_patient] call ACME_fnc_equipmentCableAnchor;
-            private _span = _from distance _to;
+            private _span = (_device modelToWorldVisualWorld _from) distance (_target modelToWorldVisualWorld _to);
             if (_span > 0.05 && {_span < 8}) then {
-                _desired pushBack [format ["%1:%2:%3",netId _device,_kind,netId _target],_from,_to,_span];
+                _desired pushBack [format ["%1:%2:%3",netId _device,_kind,netId _target],_device,_from,_target,_to,_span];
             };
         } forEach ([_device] call ACME_fnc_equipmentCableSpecs);
     } forEach (missionNamespace getVariable ["ACME_eqCableDevices",[]]);
@@ -37,14 +37,16 @@ private _want = _desired apply {_x select 0};
     };
 } forEach keys _cache;
 {
-    _x params ["_key","_from","_to","_span"];
+    _x params ["_key","_device","_from","_target","_to","_span"];
+    private _length = _span + 0.45 + _span*0.16;
     private _record = _cache getOrDefault [_key,[objNull,objNull,objNull,0]];
-    _record params ["_fromHelper","_toHelper","_rope","_length",["_oldFrom",[]],["_oldTo",[]]];
+    _record params ["_fromHelper","_toHelper","_rope","_oldLength",["_oldTo",[]]];
     if (!isNull _fromHelper && {!isNull _toHelper} && {!isNull _rope}) then {
-        if (_oldFrom distance _from > 0.002) then {_fromHelper setPosWorld _from;_record set [4,_from];};
-        if (_oldTo distance _to > 0.002) then {_toHelper setPosWorld _to;_record set [5,_to];};
-        if (_length < _span || {_length > _span+0.8}) then {
-            _length = _span + 0.2;
+        if (_oldTo distance _to > 0.015) then {
+            _toHelper attachTo [_target,_to];
+            _record set [4,_to];
+        };
+        if (_oldLength < _span + 0.2 || {abs (_oldLength-_length) > 0.25}) then {
             ropeUnwind [_rope,3,_length];
             _record set [3,_length];
         };
@@ -52,21 +54,22 @@ private _want = _desired apply {_x select 0};
     };
     if (diag_tickTime < (missionNamespace getVariable ["ACME_eqCableRetryAt",0])) then {continue;};
     _record call _destroy;
-    _fromHelper = "ace_fastroping_helper" createVehicleLocal (ASLToAGL _from);
-    _toHelper = "ace_fastroping_helper" createVehicleLocal (ASLToAGL _to);
+    _fromHelper = "ace_fastroping_helper" createVehicleLocal (_device modelToWorld _from);
+    _toHelper = "ace_fastroping_helper" createVehicleLocal (_target modelToWorld _to);
     if (!isNull _fromHelper && {!isNull _toHelper}) then {
         {
             _x allowDamage false;
             _x hideObject true;
             _x enableRopeAttach true;
+            _x disableCollisionWith _device;
+            _x disableCollisionWith _target;
         } forEach [_fromHelper,_toHelper];
         _fromHelper disableCollisionWith _toHelper;
-        _fromHelper setPosWorld _from;
-        _toHelper setPosWorld _to;
-        _length = _span + 0.2;
-        _rope = ropeCreate [_fromHelper,[0,0,0],_toHelper,[0,0,0],_length,[],[],"ace_refuel_fuelHose"];
+        _fromHelper attachTo [_device,_from];
+        _toHelper attachTo [_target,_to];
+        _rope = ropeCreate [_fromHelper,[0,0,0],_toHelper,[0,0,0],_length,[],[],"ACME_TempusCable",40];
     };
-    _record = [_fromHelper,_toHelper,_rope,_length,_from,_to];
+    _record = [_fromHelper,_toHelper,_rope,_length,_to];
     if (isNull _rope) then {
         _record call _destroy;
         _cache deleteAt _key;

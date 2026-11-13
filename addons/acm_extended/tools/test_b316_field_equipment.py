@@ -90,9 +90,16 @@ def monitor_source():
     text=text.replace('_device distance _patient','_distance')
     text=text.replace('isRemoteExecuted','_remote').replace('remoteExecutedOwner','_sender').replace('owner _medic','7')
     text=text.replace('isNull objectParent _patient','true').replace('isNull objectParent _medic','true')
-    text=text.replace('isObjectHidden _device','false').replace('_device isKindOf _class','true')
+    text=text.replace('isObjectHidden _candidate','false').replace('_candidate isKindOf _class','true')
+    text=text.replace('attachedTo _candidate','objNull')
+    text=text.replace('_candidate distance _medic','_distance').replace('_candidate distance _patient','_distance')
+    text=text.replace('_pro distance _medic','_distance').replace('_device distance _pro','_distance')
+    text=text.replace('nearestObjects [_patient,[_class],6]','_nearby')
+    text=re.sub(r'values (_\w+)',r'((keys \1) apply {\1 get _x})',text)
+    text=text.replace('isObjectHidden _pro','false').replace('isNull (objNull)','true')
     text=text.replace('_medic isKindOf "CAManBase"','true').replace('_patient isKindOf "CAManBase"','true')
     text=re.sub(r'\[[^;]+?\] remoteExecCall \["ACME_fnc_[A-Za-z]+",2\]', '_calls pushBack _action',text)
+    text=re.sub(r'\[[^;]+?\] remoteExecCall \["ACME_fnc_tempusLsPace",_patient\]', '_calls pushBack "pace"',text)
     return adapt(text)
 
 

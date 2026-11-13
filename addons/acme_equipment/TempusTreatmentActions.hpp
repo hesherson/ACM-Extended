@@ -42,7 +42,7 @@ class ace_medical_treatment_actions {
     class ACME_TempusProView: ACME_TempusProSetup {
         displayName = "View Tempus Pro";
         displayNameProgress = "";
-        treatmentTime = 0.01;
+        treatmentTime = 0.1;
         allowedSelections[] = {"All"};
         condition = "[_medic,_patient,'pro','view'] call ACME_fnc_equipmentMonitorAction";
         callbackSuccess = "[_medic,_patient,'pro','view',true] call ACME_fnc_equipmentMonitorAction";
@@ -59,6 +59,32 @@ class ace_medical_treatment_actions {
         condition = "[_medic,_patient,'pro','nibp'] call ACME_fnc_equipmentMonitorAction";
         callbackSuccess = "[_medic,_patient,'pro','nibp',true] call ACME_fnc_equipmentMonitorAction";
     };
+#define ACME_EQUIPMENT_ACTION(NAME,BASE,LABEL,KIND,OP,ICON) \
+    class NAME: BASE { \
+        displayName = LABEL; \
+        displayNameProgress = LABEL; \
+        allowedSelections[] = {"Body"}; \
+        ACM_menuIcon = ICON; \
+        condition = QUOTE([ARR_4(_medic,_patient,KIND,OP)] call ACME_fnc_equipmentMonitorAction); \
+        callbackSuccess = QUOTE([ARR_5(_medic,_patient,KIND,OP,true)] call ACME_fnc_equipmentMonitorAction); \
+    }
+    ACME_EQUIPMENT_ACTION(ACME_TempusProDisconnect,ACME_TempusProView,"Disconnect Tempus Pro",'pro','disconnect',"ACME_TempusPro_Item");
+    ACME_EQUIPMENT_ACTION(ACME_TempusLSDisconnect,ACME_TempusLSView,"Disconnect Tempus LS",'ls','disconnect',"ACME_TempusLS_Item");
+    ACME_EQUIPMENT_ACTION(ACME_TempusLSPair,ACME_TempusLSView,"Pair Tempus LS with Pro",'ls','pair',"ACME_TempusLS_Item");
+    ACME_EQUIPMENT_ACTION(ACME_TempusLSUsb,ACME_TempusLSView,"Connect Tempus USB cable",'ls','usb',"ACME_TempusLS_Item");
+    ACME_EQUIPMENT_ACTION(ACME_TempusLSUnplug,ACME_TempusLSView,"Disconnect Tempus USB cable",'ls','unplug',"ACME_TempusLS_Item");
+#undef ACME_EQUIPMENT_ACTION
+
+    class ACME_SetDownBloodCooler: ACME_TempusProView {
+        displayName = "Set Down Blood Cooler";
+        displayNameProgress = "Select Blood Cooler";
+        allowedSelections[] = {"Body"};
+        medicRequired = 0;
+        ACM_menuIcon = "";
+        condition = "count ([_medic] call ACME_fnc_coolerRows) > 0";
+        callbackSuccess = "[{params ['_medic','_patient']; private _rows = [_medic] call ACME_fnc_coolerRows; if (_rows isNotEqualTo []) then {[(_rows select 0) select 0,_patient] call ACME_fnc_coolerOpenDialog;};},[_medic,_patient],0.1] call CBA_fnc_waitAndExecute";
+    };
+
 #define ACME_TEMPUS_SENSOR(NAME,LABEL,KIND,INDEX,ATTACH,PART,TIME,ICON) \
     class NAME: ACME_TempusProSetup { \
         displayName = LABEL; \

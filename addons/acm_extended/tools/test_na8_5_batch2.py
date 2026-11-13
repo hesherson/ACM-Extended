@@ -55,7 +55,7 @@ class SuctionSource(unittest.TestCase):
     def test_selection_uses_treating_provider(self):
         s=sqf('suctionSelectDevice')
         self.assertIn('ACME_laryngo_medic',s)
-        self.assertIn('[_medic, _patient, "ACM_ACCUVAC"] call ACME_fnc_treatmentSupplyCount',s)
+        self.assertIn('[_medic,_patient] call ACME_fnc_equipmentUseAccuvac',s)
         self.assertIn('[_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount',s)
         self.assertNotIn('[_patient, "ACM_ACCUVAC"]',s)
     def test_accuvac_precedes_bag(self):

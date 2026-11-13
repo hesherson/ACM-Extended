@@ -22,7 +22,11 @@ if (_request isNotEqualTo (_c getVariable ["ACME_eq_nibpSeen",-1])) then {
     _c setVariable ["ACME_eq_nibpSeen",_request];
     if (_request >= 0 && {CBA_missionTime-_request < 6}) then {_c ctrlWebBrowserAction ["ExecJS","tp.key('nibp')"];};
 };
+private _pat = _o getVariable ["acme_tempus_pat", objNull];
 private _v = +(_o getVariable ["acme_tempus_v", []]);
+if (isNull _pat) then {_v = [];} else {
+    if (_v isEqualTo [] && {_o distance _pat <= 6} && {(_pw select 0)}) then {_v = [_pat] call ACME_fnc_tempusVitals;};
+};
 private _sensors=_o getVariable ["acme_tempus_sensors",[true,false,false,false,false]];
 if (count _v==9) then {
     if !(_sensors select 0) then {_v set [1,-1];if !(_sensors select 1) then {_v set [0,-1];};};
@@ -32,8 +36,6 @@ if (count _v==9) then {
     if !(_sensors select 3) then {_v set [7,-1];};
     if !(_sensors select 4) then {_v set [8,-1];};
 };
-private _pat = _o getVariable ["acme_tempus_pat", objNull];
-if (isNull _pat) then { _v = [] };
 if (_force || {_v isNotEqualTo (_c getVariable ["acme_tempus_sV", []])} || {diag_tickTime - (_c getVariable ["acme_tempus_vAt", 0]) > 5}) then {
 	_c setVariable ["acme_tempus_sV", _v];
 	_c setVariable ["acme_tempus_vAt", diag_tickTime];

@@ -27,6 +27,9 @@ def convert(s):
     s=re.sub(r'(_\w+) isEqualTypeAll 0',r'(\1 findIf {!(_x isEqualType 0)}) < 0',s)
     s=re.sub(r'!finite (_\w+)',r'!(\1 isEqualType 0)',s)
     s=s.replace('canSuspend','false').replace('isServer','_server').replace('isRemoteExecuted','_remote').replace('remoteExecutedOwner','_caller').replace('owner _actor','7')
+    s=s.replace('owner _patient','7').replace('serverTime','_monitorTime')
+    s=re.sub(r'\[_device,_patient\] remoteExecCall \[\["ACME_fnc_tempusFeed"[^;]+','_feedRetries=_feedRetries+1',s)
+    s=s.replace('alive _provider','_actorAlive').replace('owner _provider','7').replace('isNull objectParent _provider','!_mountedActor')
     s=s.replace('alive _actor','_actorAlive').replace('!isNull objectParent _actor','_mountedActor').replace('isNull objectParent _actor','!_mountedActor')
     s=s.replace('isNull objectParent _patient','!_mountedPatient')
     s=s.replace('getText(configOf _mount >> "ACME_eq_mountKind")','(_mount getVariable ["fixtureMountKind","pro"])')
@@ -69,7 +72,7 @@ def setup():
       _device setVariable ["ACME_eq_kind","pro"];
       _device setVariable ["acme_tempus_pat",_patient];
       _device setVariable ["ACME_eq_patient",_patient];
-      private _connections=0;
+      private _connections=0;private _monitorTime=20;private _feedRetries=0;
       ACME_fnc_tempusConnect={params ["_o","_p"];_connections=_connections+1;_o setVariable ["acme_tempus_pat",_p]};
     '''+defs(['equipmentTransferStamp','equipmentPickupReady','equipmentUsbRelease','equipmentMountApply','equipmentMountRelease','equipmentMountRequest','equipmentLinkRequest','equipmentMonitorTick','equipmentCableSpecs','equipmentCablePose'])
 
@@ -81,6 +84,7 @@ def usb_setup():
       _ls setVariable ["acme_tempusls_pw",[true,10]];
       _pro setVariable ["ACME_eq_kind","pro"];
       _pro setVariable ["acme_tempus_pw",[true,10,false]];
+      _pro setVariable ["acme_tempus_pat",_patient];
     '''
 
 
@@ -147,7 +151,7 @@ def test_usb_is_separate_from_wireless_pairing_and_unplug_keeps_pair():
       [_actor,_ls,objNull,false] call ACME_fnc_equipmentLinkRequest;
       [(_ls getVariable ["ACME_eq_usb",_ls]) isEqualTo objNull,"USB unplug failed"] call _check;
       [(_ls getVariable ["acme_tempusls_link",objNull]) isEqualTo _pro,"unplug erased Bluetooth pair"] call _check;
-      [_connections==1,"USB did not connect unassigned Pro to the LS patient once"] call _check;
+      [_connections==0,"USB attached clinical sensors"] call _check;
     ''')
 
 
@@ -270,17 +274,18 @@ def visual_setup():
     s=(E/'fn_equipmentCableVisualTick.sqf').read_text().replace('diag_tickTime','_clock')
     s=s.replace('nearestObjects [positionCameraToWorld [0,0,0],["ACME_TempusPro","ACME_TempusLS"],20]','_visualDevices')
     s=s.replace('isObjectHidden _device','_hidden').replace('netId _device','"fixture-device"').replace('netId _target','"fixture-target"')
-    s=re.sub(r'"ace_fastroping_helper" createVehicleLocal \(ASLToAGL _(?:from|to)\)', 'call _createHelper', s)
-    s=re.sub(r'ropeCreate \[[^;]+', 'call _createRope', s)
+    s=re.sub(r'"ace_fastroping_helper" createVehicleLocal \(_(?:device|target) modelToWorld _(?:from|to)\)', 'call _createHelper', s)
+    s=re.sub(r'_(?:device|target) modelToWorldVisualWorld (_(?:from|to))',r'\1',s)
+    s=s.replace('ropeCreate [','call _createRope; _ropeInputs pushBack [')
     s=s.replace('ropeDestroy _rope','_ropeDeletes=_ropeDeletes+1')
     s=re.sub(r'deleteVehicle _(?:from|to)Helper','_deletes=_deletes+1',s)
-    s=re.sub(r'_(?:from|to)Helper setPosWorld _(?:from|to)','_moves=_moves+1',s)
+    s=re.sub(r'_(?:from|to)Helper attachTo \[[^;]+','_moves=_moves+1',s)
     s=re.sub(r'ropeUnwind \[[^;]+','_unwinds=_unwinds+1',s)
     s=re.sub(r'_x (?:allowDamage false|hideObject true|enableRopeAttach true);','',s)
-    s=s.replace('_fromHelper disableCollisionWith _toHelper;','')
+    s=re.sub(r'(?:_fromHelper|_x) disableCollisionWith _\w+;', '', s)
     return setup()+'''
       private _clock=10;private _hidden=false;private _deletes=0;private _ropeDeletes=0;
-      private _visualSpawns=0;private _ropeSpawns=0;private _moves=0;private _unwinds=0;
+      private _visualSpawns=0;private _ropeSpawns=0;private _ropeInputs=[];private _moves=0;private _unwinds=0;
       private _failRope=false;private _visualDevices=[_device];private _visualSpecs=[];
       private _fromPoint=[100,200,1000];private _toPoint=[101,200,1000.2];
       private _createHelper={_visualSpawns=_visualSpawns+1;parsingNamespace};
@@ -295,6 +300,8 @@ def test_visual_worker_caps_local_rope_objects_and_reuses_stationary_anchors():
       for "_i" from 1 to 30 do {_visualSpecs pushBack [str _i,_patient,true];};
       call ACME_fnc_equipmentCableVisualTick;
       [_visualSpawns==32 && {_ropeSpawns==16} && {count (missionNamespace getVariable "ACME_eqCableCache")==16},"local rope budget exceeded"] call _check;
+      [(_ropeInputs select 0 select 7) == "ACME_TempusCable" && {(_ropeInputs select 0 select 8)==40}
+          && {((_ropeInputs select 0) select 4) > 1.55},"cable thickness, segment count or slack regressed"] call _check;
       private _first=_moves;
       call ACME_fnc_equipmentCableVisualTick;
       [_visualSpawns==32 && {_moves==_first},"stationary cables rebuilt or retransformed"] call _check;
@@ -454,7 +461,7 @@ def test_mount_and_usb_helpers_have_no_inventory_grant_or_server_visual_rpc():
         assert not re.search(r'\b(addItem|addItemCargoGlobal|createVehicle|removeItem|deleteVehicle|execVM|compile)\b',s)
         assert 'if (canSuspend)' in s
     s=(E/'fn_equipmentCableVisualTick.sqf').read_text()
-    assert 'ace_refuel_fuelHose' in s and 'remoteExec' not in s
+    assert 'ACME_TempusCable' in s and 'remoteExec' not in s
     assert 'if (!hasInterface)' in s and 'createVehicleLocal' in s
 
 
@@ -533,7 +540,7 @@ def test_tiny_idle_cable_motion_does_not_reposition_rope_anchors():
       private _count=_moves;
       _toPoint=_toPoint vectorAdd [0.001,0,0];call ACME_fnc_equipmentCableVisualTick;
       [_moves==_count,"submillimetre idle motion retransformed all cable segments"] call _check;
-      _toPoint=_toPoint vectorAdd [0.003,0,0];call ACME_fnc_equipmentCableVisualTick;
+      _toPoint=_toPoint vectorAdd [0.020,0,0];call ACME_fnc_equipmentCableVisualTick;
       [_moves==_count+1,"visible endpoint motion did not update existing segments"] call _check;
       [_visualSpawns==2,"endpoint motion recreated cable objects"] call _check;
     ''')

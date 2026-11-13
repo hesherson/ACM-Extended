@@ -12,7 +12,8 @@ if (uiNamespace getVariable ["ACME_laryngo_sucPinned", false]) exitWith {
 if (([true] call ACME_fnc_suctionSelectDevice) != 1) exitWith {
     ["Continuous SALAD parking requires the ACCUVAC. The suction bag must be squeezed by hand.", 3] call ace_common_fnc_displayTextStructured;
 };
-if ((uiNamespace getVariable ["ACME_laryngo_held", ""]) != "suction") exitWith {
+if (!([_medic,uiNamespace getVariable ["ACME_laryngo_patient",objNull]] call ACME_fnc_equipmentAvailable)
+    || {(uiNamespace getVariable ["ACME_laryngo_held", ""]) != "suction"}) exitWith {
     ["Take the ACCUVAC suction first; bring its tip into the mouth, then middle-click.", 3] call ace_common_fnc_displayTextStructured;
 };
 // Recompute hit test at the click, rather than trusting a stale previous frame.

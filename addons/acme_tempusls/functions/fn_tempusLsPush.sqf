@@ -15,6 +15,9 @@ private _pat = _o getVariable ["acme_tempusls_pat", objNull];
 private _pads=_o getVariable ["acme_tempusls_pads",true];
 private _ecg=_pads || {_o getVariable ["acme_tempusls_ecg",false]};
 private _v = [_o getVariable ["acme_tempusls_v", []], []] select (isNull _pat || {!_ecg});
+if (_v isEqualTo [] && {!isNull _pat} && {_ecg} && {_pw} && {_o distance _pat <= 6}) then {
+    _v = [_pat] call ACME_fnc_tempusLsVitals;
+};
 if (_force || {[_pads,_ecg] isNotEqualTo (_c getVariable ["ACME_eq_sSignals",[]])} || {_v isNotEqualTo (_c getVariable ["acme_tempusls_sV", -1])} || {diag_tickTime - (_c getVariable ["acme_tempusls_vAt", 0]) > 5}) then {
 	_c setVariable ["ACME_eq_sSignals",[_pads,_ecg]];
 	_c setVariable ["acme_tempusls_sV", _v];

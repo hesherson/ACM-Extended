@@ -15,10 +15,11 @@ if (_newSession || _force) then {
     _control setVariable ["ACME_wave_origin",_now];
     _control setVariable ["ACME_wave_missionOrigin",CBA_missionTime];
     _control setVariable ["ACME_wave_beat",[]];
+    _control setVariable ["ACME_wave_hasRate",false];
     _control setVariable ["ACME_wave_resp",[]];
     _control ctrlWebBrowserAction ["ExecJS",_api+".resetWaveforms()"];
 };
-if (!(_power select 0) || {isNull _patient}) exitWith {};
+if (!(_power select 0) || {isNull _patient} || {_device distance _patient > 6}) exitWith {};
 private _step = 0.03;
 private _count = 40;
 private _origin = _control getVariable ["ACME_wave_origin",_now];
@@ -40,17 +41,23 @@ if (_cpr) then {_hr = 110;};
 if (!_cpr && {alive _patient} && {[_patient] call ACM_circulation_fnc_recentAEDShock}) then {_rhythm = 1;_hr = 0;};
 private _rr = 60 / (_hr max 1);
 private _clock = _control getVariable ["ACME_wave_beat",[]];
+if ((_hr > 0) isNotEqualTo (_control getVariable ["ACME_wave_hasRate",false])) then {
+    _clock = [];
+    _control setVariable ["ACME_wave_hasRate",_hr > 0];
+};
 private _plan = [_at,_at+_step*_count,_rr,_rhythm,_clock] call ACME_fnc_tempusBeatPlan;
 _plan params ["_carry","_beats"];
 _control setVariable ["ACME_wave_beat",_carry];
 private _pulseIndex = 1;
-private _ready = _vitals isNotEqualTo [];
+if (!_ls && {_vitals isEqualTo []} && {(_sensors select 1) || {_sensors select 3}}) then {
+    _vitals = [_patient] call ACME_fnc_tempusVitals;
+};
 private _ecg = []; _ecg resize [_count,0];
 private _pleth = +_ecg;
 private _capno = +_ecg;
 private _markers = [];
 private _phases = [];
-if (_ready && {_ecgOn}) then {
+if (_ecgOn) then {
     private _sample = [_rhythm,0,0,[_patient,_at,_hr,_count,_beats]] call ACM_circulation_fnc_displayAEDMonitor_generateEKG;
     _ecg = (_sample select 0) select [0,_count];
     _phases = (_sample param [3,[]]) select [0,_count];
@@ -60,14 +67,14 @@ if (_ready && {_ecgOn}) then {
         _markers = (_sample param [2,[]]) select {_x < _count};
     };
 };
-if (_ready && {!_ls}) then {
+if (!_ls && {_vitals isNotEqualTo []}) then {
     private _saturation = _vitals param [5,0];
     private _respRate = _vitals param [6,0];
     private _co2 = _vitals param [7,-1];
     private _perfusing = [_patient] call ACM_circulation_fnc_hasPulse;
     private _breathPeriod = 60 / (_respRate max 1);
     private _breath = _control getVariable ["ACME_wave_resp",[_at,_breathPeriod]];
-    _breath params ["_breathAt","_oldPeriod"];
+    _breath params [["_breathAt",_at],["_oldPeriod",_breathPeriod]];
     if (_at - _breathAt > 12 || {_at < _breathAt}) then {_breathAt = _at;};
     private _phase = ((_at - _breathAt) / _oldPeriod) mod 1;
     _breathAt = _at - _phase * _breathPeriod;
@@ -103,4 +110,9 @@ if (!_ls) then {
     _packets pushBack format ['{"channel":"pleth","units":"acme","sampleRateHz":33.3333333333,"samples":%1}',_pleth];
     _packets pushBack format ['{"channel":"capno","units":"acme","sampleRateHz":33.3333333333,"samples":%1}',_capno];
 };
-_control ctrlWebBrowserAction ["ExecJS",format ["%1.waveforms([%2],false,%3,%4,%5)",_api,_packets joinString ",",_offset,_elapsed,_markers]];
+// Keep browser messages small, and commit the whole sample block on the same sweep clock.
+for "_first" from 0 to (count _packets - 1) step 3 do {
+    private _part = (_packets select [_first,3]) joinString ",";
+    _control ctrlWebBrowserAction ["ExecJS",format ["%1.waveformPart(%2,%3,%4,[%5],%6,%7)",
+        _api,_offset,_elapsed,_first,_part,count _packets,_markers]];
+};
