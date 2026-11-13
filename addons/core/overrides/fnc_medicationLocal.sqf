@@ -223,7 +223,7 @@ TRACE_3("adjustments",_heartRateChange,_painReduce,_viscosityChange);
 _timeTillMaxEffect = (_timeTillMaxEffect max 0.01) min ((_timeInSystem max 1) - 0.02);
 _timeInSystem = _timeInSystem max (_timeTillMaxEffect + 0.02);
 _maxEffectTime = (_maxEffectTime max 0) min ((_timeInSystem - _timeTillMaxEffect - 0.01) max 0);
-[_patient, _classname, _timeTillMaxEffect, _timeInSystem, _heartRateChange, _painReduce, _viscosityChange * _concentrationRatio, _administrationType, _maxEffectTime, _rrAdjustment, _coSensitivityAdjustment, _breathingEffectivenessAdjustment, _concentrationRatio, _medicationType, _partIndex] call ACEFUNC(medical_status,addMedicationAdjustment);
+[_patient, _classname, _timeTillMaxEffect, _timeInSystem, _heartRateChange, _painReduce, _viscosityChange * _concentrationRatio, _administrationType, _maxEffectTime, _rrAdjustment, _coSensitivityAdjustment, _breathingEffectivenessAdjustment, _concentrationRatio, _medicationType, _partIndex, (_delivery param [3,""]) == "infusion"] call ACEFUNC(medical_status,addMedicationAdjustment);
 
 // Check for medication compatiblity
 if (_classname in ["Rocuronium", "Rocuronium_IV", "Sugammadex_IV"]) then {[_patient] call ACME_fnc_medicationRecordIDs;};

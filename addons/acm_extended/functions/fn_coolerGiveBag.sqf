@@ -2,7 +2,7 @@
 params ["_owner","_entry",["_manual",true]];
 _entry params ["_class","_warm"];
 if (isNull _owner || {!local _owner}) exitWith {false};
-if (_warm >= (missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800]) && {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]}) then {_class=[_class] call ACME_fnc_bloodSpoiledClass;};
+if (_warm >= ([_class] call ACME_fnc_bloodWarmLimit) && {(["spoil"] call ACME_fnc_bloodTiming)}) then {_class=[_class] call ACME_fnc_bloodSpoiledClass;};
 if ((_class find "ACME_SpoiledBlood")!=0 && {count (_owner getVariable ["ACME_bloodSeedPending",createHashMap])>=128}) exitWith {false};
 private _before = { _x == _class } count ((uniformItems _owner)+(vestItems _owner)+(backpackItems _owner));
 if !(_owner canAdd _class) exitWith {false};

@@ -1094,7 +1094,7 @@ if (!isNull _ctrlRightList
         private _state=[_x select 1] call ACME_fnc_coolerAdvance;
         {
             _x params ["_bc","_warm"];
-            if (_bc find "ACM_BloodBag_"==0 && {!(missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]) || {_warm<(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])}}) then {_want set [_bc,(_want getOrDefault [_bc,0])+1];};
+            if (_bc find "ACM_BloodBag_"==0 && {!((["spoil"] call ACME_fnc_bloodTiming)) || {_warm<([_bc] call ACME_fnc_bloodWarmLimit)}}) then {_want set [_bc,(_want getOrDefault [_bc,0])+1];};
         } forEach (_state select 2);
     } forEach _rows;
 

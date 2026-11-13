@@ -28,7 +28,7 @@ private _lidocaineIV = 0;
 
 //ace_medical_status_fnc_getMedicationCount
 {
-    _x params ["_medication", "_timeAdded", "_timeTillMaxEffect", "_maxTimeInSystem", "", "", "", "_administrationType", "_maxEffectTime", "", "", "", "_concentration"];
+    _x params ["_medication", "_timeAdded", "", "", "", "", "", "", "", "", "", "", "_concentration"];
 
     if !(_medication in ["Morphine","Morphine_IV","Fentanyl","Fentanyl_IV","Fentanyl_BUC","Epinephrine_IV","Amiodarone_IV","Lidocaine_IV"]) then {
         continue;
@@ -36,8 +36,8 @@ private _lidocaineIV = 0;
 
     private _timeInSystem = CBA_missionTime - _timeAdded;
 
-    // Native envelope ignores a sixth argument. Scale delivered concentration exactly once.
-    private _getEffect = ([_administrationType, _timeInSystem, _timeTillMaxEffect, _maxTimeInSystem, _maxEffectTime] call FUNC(getMedicationEffect))
+    // Scale delivered concentration exactly once.
+    private _getEffect = ([_x,_timeInSystem] call ACME_fnc_medicationKineticEffect)
         * (_concentration max 0) * ([_patient, _x] call ACME_fnc_medicationAvailability);
 
     switch (_medication) do {

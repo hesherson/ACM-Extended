@@ -43,7 +43,7 @@ def setup():
     _medic setVariable ["ACME_inventoryEscrow",createHashMap];
     _medic setVariable ["ACME_coolerRestoreJournal",[]];
     missionNamespace setVariable ["ACME_inventoryLedgerIndex",createHashMapFromArray [["cooler:save1",37]]];
-    missionNamespace setVariable ["ACME_coolerThawRateInside",0.2];
+    missionNamespace setVariable ["ACME_clinicalTiming",[1,false,true,true]];
     private _issueCount=0;private _issued=[];private _issueAllowed=true;
     private _removeAllowed=true;private _lyingRemove=false;
     ACME_fnc_coolerRows={params ["_o"];_o getVariable ["rows",[]]};

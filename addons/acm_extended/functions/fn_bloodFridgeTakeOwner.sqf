@@ -34,6 +34,7 @@ _history set [_key, _sequence];
 _player setVariable ["ACME_bf_serverTakeTokens", _history];
 private _valid = alive _player && {!(_player getVariable ["ACE_isUnconscious", false])}
     && {_player distance _anchor <= 4.5} && {isNull objectParent _player};
+[_anchor] call ACME_fnc_bloodFridgeExpire;
 private _stock = [_anchor getVariable ["ACME_bf_stock", []]] call ACME_fnc_syringeDeliveryCopy;
 private _i = _stock findIf {(_x # 0) == _class && {(_x # 1) > 0}};
 if (!_valid || {_i < 0}) exitWith {

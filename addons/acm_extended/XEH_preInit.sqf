@@ -337,12 +337,6 @@ private _settings = [
         [0.5, 3.0, 1.4, 1], 1, {}
     ],
     [
-        "ACME_circ_pushDoseHalfLife", "SLIDER",
-        ["Push-dose half-life (s)", "How fast push-dose epi support decays. Push-dose epi is gone in minutes by design."],
-        [_cCirc, "Shock & pressors"],
-        [30, 300, 120, 0], 1, {}
-    ],
-    [
         "ACME_circ_ichMAPThreshold", "SLIDER",
         ["ICH overshoot MAP (mmHg)", "MAP above which epi-driven overshoot accrues intracranial hemorrhage risk (worse on a TBI brain)."],
         [_cCirc, "Shock & pressors"],
@@ -520,8 +514,8 @@ private _settings = [
         ["Hypothermia model", "Core temperature, the lethal triad coupling, and cold-blood cooling. OFF: temperature stops being tracked or applied. Takes effect immediately."],
         [_cSys, "Systems"], true, 1, {}],
     ["ACME_sys_bloodChain", "CHECKBOX",
-        ["Blood cold chain", "Blood aging, the cooler and fridge, warmed/cold unit states and the flow penalty for cold blood. OFF: blood never ages or changes temperature state and coolers stop simulating. Takes effect immediately. Units already in a cold or warm state keep that state until used."],
-        [_cSys, "Systems"], true, 1, {}],
+        ["Blood cold chain", "Blood aging, the cooler and fridge, warmed/cold unit states and the flow penalty for cold blood. OFF: blood never ages or changes temperature state and coolers stop simulating. Restart the mission after editing. Units already in a cold or warm state keep that state until used."],
+        [_cSys, "Systems"], true, 1, {},true],
     ["ACME_sys_permHypo", "CHECKBOX",
         ["Permissive hypotension", "Bleeding scales with the pressure driving it, so resuscitating an uncontrolled hemorrhage to a normal pressure costs blood and pops fresh clots. Also enables the hypotension secondary insult in TBI, where a LOW pressure is the harmful one. The two pull opposite ways on a casualty who has both. OFF: bleeding ignores blood pressure entirely and TBI takes no penalty for hypotension. Takes effect immediately."],
         [_cSys, "Systems"], true, 1, {}],

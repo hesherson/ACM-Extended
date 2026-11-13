@@ -67,9 +67,9 @@ def setup():
     _medic setVariable ["ACME_bf_regenMins",120];
     _medic setVariable ["ACME_bf_lastRestockGH",4382];
     _medic setVariable ["cargo",[]];
-    private _savedFridge=[1,[["ACM_BloodBag_ON_500",2]],[["ACM_BloodBag_ON_500",6]],true,120,60];
+    private _savedFridge=[2,[["ACM_BloodBag_ON_500",2]],[["ACM_BloodBag_ON_500",6]],true,120,60,0];
     ''' + '\n'.join('ACME_fnc_' + n + '={' + production(n) + '};' for n in [
-        'bloodFridgeSnapshotValid', 'bloodFridgeSnapshot', 'bloodFridgeRestore', 'bloodFridgeTick',
+        'bloodFridgeSnapshotValid', 'bloodFridgeSnapshot', 'bloodFridgeRestore', 'bloodFridgeTick','bloodFridgeExpire',
         'bloodExposureSnapshotValid', 'bloodExposureSnapshot', 'bloodExposureRestore',
         'bloodPersistenceRequest', 'persistenceReady', 'persistenceSnapshot', 'persistenceFingerprint', 'persistenceCaptureValid', 'persistenceLocalCheckpoint', 'persistenceCheckpoint', 'persistenceRestoreExtended', 'persistenceBarrier',
         'coolerPersistenceInit'])

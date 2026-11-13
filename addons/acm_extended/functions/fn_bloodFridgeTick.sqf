@@ -54,7 +54,8 @@ private _yearHours = 365.25 * 24;
 private _nowGameHours = (dateToNumber date) * _yearHours;
 {
     private _fridge = _x;
-    if (!isNull _fridge && {missionNamespace getVariable ["ACME_sys_bloodChain", true]}
+    if (!isNull _fridge) then {[_fridge] call ACME_fnc_bloodFridgeExpire;};
+    if (!isNull _fridge && {(["enabled"] call ACME_fnc_bloodTiming)}
         && {_fridge getVariable ["ACME_bf_restock", true]}) then {
         // the per-fridge interval override, in minutes, or the global hours plus minutes setting.
         private _intervalMins = _fridge getVariable ["ACME_bf_regenMins", -1];
@@ -74,6 +75,7 @@ private _nowGameHours = (dateToNumber date) * _yearHours;
                     [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
                 } else {
                     if ((_nowGameHours - _last) >= _intervalHours) then {
+                        _fridge setVariable ["ACME_bf_lotStart",serverTime,true];
                         [_fridge, "ACME_bf_stock", +(_fridge getVariable ["ACME_bf_default", []])] call ACME_fnc_setVarNet;
                         [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
                         _fridge setVariable ["ACME_bf_restoreRestockDelayMins",nil,false];

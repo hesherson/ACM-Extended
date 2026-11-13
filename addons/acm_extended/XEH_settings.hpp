@@ -35,11 +35,12 @@
 [
     "ACME_bloodSpoilEnabled",
     "CHECKBOX",
-    ["Blood spoilage", "When ON, warm/out-of-date blood spoils into Spoiled Blood (the normal cold-chain). Turn OFF to disable all blood spoilage."],
+    ["Blood spoilage", "When ON, warm/out-of-date blood spoils into Spoiled Blood (the normal cold-chain). Turn OFF to disable new spoilage. Server setting. Restart the mission after editing."],
     ["ACM Extended: Systems", "Blood"],
     true,
     1,
-    {}
+    {},
+    true
 ] call CBA_fnc_addSetting;
 
 [
@@ -687,10 +688,23 @@
     { params ["_v"]; missionNamespace setVariable ["ACME_laryngo_attemptLimit", _v, false]; }
 ] call CBA_fnc_addSetting;
 
-["ACME_persistentCampaignTiming","CHECKBOX",
- ["Persistent campaign: real-time blood storage","Use real-time cooler durations (1U 48 h, 2U 24 h, 4U 72 h by default), followed by a 4-hour warm-use limit. Existing persistence adapters preserve elapsed clocks; this does not install an autosave backend. Whole blood is refrigerated, not frozen. Restart the mission after changing."],
- ["ACM Extended: Persistence","Blood storage"],false,1,{if (!isNil "ACME_fnc_bloodTimingApply") then {call ACME_fnc_bloodTimingApply;};},true] call CBA_fnc_addSetting;
+// ACME consumes the Server source only. Restart fixes the policy for the mission's saved clocks.
+["ACME_medicationTimeScale","SLIDER",
+ ["Medication half-life multiplier","Server setting. 1.00 uses reference half-lives; lower values speed up washout. Restart the mission after editing."],
+ ["ACM Extended: Circulation","Medications"],[0.05,4,1,2],1,{},true] call CBA_fnc_addSetting;
+["ACME_bloodRealTime","CHECKBOX",
+ ["Real-time blood storage","Server setting. Uses reference cold-chain and use windows in real elapsed seconds. Disable for the older short-mission cold chain. Restart the mission after editing."],
+ ["ACM Extended: Persistence","Blood storage"],true,1,{},true] call CBA_fnc_addSetting;
 {
-    _x params ["_name","_title","_hours"];
-    [_name,"SLIDER",[_title,"Validated cooling duration depends on the carrier, conditioning and environment. Hours of cooling in the real-time campaign preset."],["ACM Extended: Persistence","Blood storage"],[1,120,_hours,0],1,{},true] call CBA_fnc_addSetting;
-} forEach [["ACME_persistentCooler1Hours","1U cooler cooling hours",48],["ACME_persistentCooler2Hours","2U cooler cooling hours",24],["ACME_persistentCooler4Hours","4U cooler cooling hours",72]];
+    _x params ["_name","_title","_max","_default"];
+    [_name,"SLIDER",[_title,"Server setting. Restart the mission after editing."],
+        ["ACM Extended: Persistence","Blood storage"],[1,_max,_default,0],1,{},true] call CBA_fnc_addSetting;
+} forEach [
+    ["ACME_persistentCooler1Hours","1U cooler cooling hours",120,24],
+    ["ACME_persistentCooler2Hours","2U cooler cooling hours",120,24],
+    ["ACME_persistentCooler4Hours","4U cooler cooling hours",120,48],
+    ["ACME_bloodStoredWarmHours","Stored whole blood out of controlled storage (hours)",24,4],
+    ["ACME_bloodFreshHours","Fresh whole blood from collection (hours)",48,24],
+    ["ACME_bloodSpikedHours","Spiked whole blood use window (hours)",24,4],
+    ["ACME_bloodFridgeDays","Refrigerated CPD whole blood stock (days)",42,21]
+];

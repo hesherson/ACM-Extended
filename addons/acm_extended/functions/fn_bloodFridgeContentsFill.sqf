@@ -51,7 +51,10 @@ private _mins = if (isNull _fridge) then { 0 } else { _fridge getVariable ["ACME
 private _sub = format ["%1 units on hand, %2 mL total", _total, _total * 500];
 (_dlg displayCtrl 87621) ctrlSetText _sub;
 
-private _foot = "<t color='#8a9099' size='0.9'>Blood keeps indefinitely while the door is shut. Once it leaves the fridge the cold chain is running.</t><br/>";
+private _foot = if ((["real"] call ACME_fnc_bloodTiming) && {["spoil"] call ACME_fnc_bloodTiming}) then {
+    private _remaining = ((["fridge"] call ACME_fnc_bloodTiming) - (serverTime - (_fridge getVariable ["ACME_bf_lotStart",serverTime]))) max 0;
+    format ["<t color='#8a9099' size='0.9'>Refrigerated stock expires in %1 hours. Time outside controlled storage counts against the unit's use window.</t><br/>",ceil (_remaining/3600)]
+} else {""};
 if (_restock) then {
     private _h = floor (_mins / 60);
     private _m = _mins - (_h * 60);

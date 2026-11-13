@@ -152,6 +152,8 @@ def setup():
 
 def take():
     return '''
+        ACME_fnc_bloodFridgeExpire={};
+
         [_anchor,"ON",_player] call ACME_fnc_bloodFridgeTake;
         private _token=(_player getVariable "ACME_bf_take") select 0;
         [_anchor,"ON",_player,_token] call ACME_fnc_bloodFridgeTakeOwner;

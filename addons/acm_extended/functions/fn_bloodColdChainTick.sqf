@@ -15,7 +15,7 @@
 private _arguments = [];
 if !(isNil "_this") then {if (_this isEqualType []) then {_arguments = _this;};};
 private _excludeBox = _arguments param [1, objNull];
-if !(missionNamespace getVariable ["ACME_sys_bloodChain", true]) exitWith {};  // the system toggle. fully off means this stops.
+if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};  // the system toggle. fully off means this stops.
 if (!isServer) exitWith {};
 private _now = serverTime;
 // Every entry path, including loadout nudges and the ordinary periodic scan,
@@ -29,7 +29,6 @@ private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
     if !(_x isEqualTo _excludeBox) then {[_x, _now, "release"] call ACME_fnc_coolerBoxReconcile;};
 } forEach _boxes;
 
-private _loose    = missionNamespace getVariable ["ACME_bloodLooseSpoilTime", 1800];
 private _fillType = missionNamespace getVariable ["ACME_coolerFillType", "ON"];
 private _ttl      = missionNamespace getVariable ["ACME_bloodFloatTTL", 180];
 private _store    = missionNamespace getVariable ["ACME_ccByHolder", createHashMap];
@@ -215,7 +214,7 @@ private _autofill = [];
     {
         (_x select 1) params ["_bc","_bv","_bw",["_at",_now]];
         if (_keptMl + _bv <= _coverMl) then { _keptMl = _keptMl + _bv; _kept pushBack [_bc, _bv, _bw, _now]; }
-        else { private _nw = _bw + ((_now - _at) max 0); if (_nw >= _loose && {missionNamespace getVariable ["ACME_bloodSpoilEnabled", true]}) then { _spoil pushBack _bc; } else { _kept pushBack [_bc, _bv, _nw, _now]; }; };
+        else { private _nw = _bw + ((_now - _at) max 0); if (_nw >= ([_bc] call ACME_fnc_bloodWarmLimit) && {(["spoil"] call ACME_fnc_bloodTiming)}) then { _spoil pushBack _bc; } else { _kept pushBack [_bc, _bv, _nw, _now]; }; };
     } forEach _byVol;
     if !(_spoil isEqualTo []) then {
         if (_h isKindOf "CAManBase") then { private _add = []; { _add pushBack ([_x] call ACME_fnc_bloodSpoiledClass); } forEach _spoil; [_h, _spoil, _add] remoteExec ["ACME_fnc_ccApply", _h]; }

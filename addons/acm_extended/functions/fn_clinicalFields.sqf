@@ -354,7 +354,7 @@
     true
   ],
   [
-    "ACME_amio_serumHalfLifeSec",
+    "ACME_amio_slowSerumLevel",
     "",
     true
   ],

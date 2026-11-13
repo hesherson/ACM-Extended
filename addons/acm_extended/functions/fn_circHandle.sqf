@@ -414,11 +414,19 @@ private _completed = [];
     // torsades ceiling.
     private _amioSerum = _patient getVariable ["ACME_amio_serumLevel", 0];
     private _amioClear = (missionNamespace getVariable ["ACME_amio_serumClearance", 6]) max 0.001;
-    private _amioHalfMin = ((missionNamespace getVariable ["ACME_amio_serumHalfLifeSec", 420]) / 60) max 0.1;
     private _amioSteady = _amioRateMgMin / _amioClear;
-    private _amioK = 0.693 / _amioHalfMin;
-    _amioSerum = (_amioSerum + (_amioK * (_amioSteady - _amioSerum) * (_dt / 60))) max 0;
-    [_patient,"ACME_amio_serumLevel",_amioSerum,0.005,3] call ACME_fnc_setVarNetApprox;
+    private _scale = (missionNamespace getVariable ["ACME_clinicalTiming",[]]) param [0,1];
+    if (_amioRateMgMin > 0 || {_amioSerum > 0}) then {
+        (["Amiodarone"] call ACME_fnc_medicationHalfLife) params ["_amioHalf","","_amioInitial","_amioFraction"];
+        private _oldTissue = _patient getVariable ["ACME_amio_slowSerumLevel",0];
+        private _tissue = _amioSteady + (_oldTissue - _amioSteady) * (0.5 ^ (_dt / (_amioHalf*_scale)));
+        private _oldFast = ((_amioSerum-(1-_amioFraction)*_oldTissue)/_amioFraction) max 0;
+        private _fast = _amioSteady + (_oldFast - _amioSteady) * (0.5 ^ (_dt / (_amioInitial*_scale)));
+        _amioSerum = _amioFraction*_fast + (1-_amioFraction)*_tissue;
+        if (_amioRateMgMin <= 0 && {_amioSerum < 0.00005}) then {_amioSerum = 0;_tissue = 0;};
+        [_patient,"ACME_amio_slowSerumLevel",_tissue,0.005,3] call ACME_fnc_setVarNetApprox;
+        [_patient,"ACME_amio_serumLevel",_amioSerum,0.005,3] call ACME_fnc_setVarNetApprox;
+    };
 
     // amiodarone and magnesium vasodilate, which drops resistance and lowers bp, and they ride their fast
     // fractions. calcium is handled separately below, because acute hypercalcemia does the opposite early on.
@@ -464,18 +472,17 @@ private _completed = [];
     // cleared per its half-life so it washes out after the bag stops. it is display only, with no downstream
     // effect wired, and the debug panel reads the level and the band. the levels are stored per med in
     // ACME_serum_<med> and cleaned up when they decay.
+    private _pkScale = _scale;
     private _pkTable = missionNamespace getVariable ["ACME_infusion_pk", createHashMap];
     {
         private _pkMed = _x;
-        _y params [["_pkClear", 0.5], ["_pkHalf", 300]];
+        _y params ["_pkClear","_pkHalf"];
         private _pkDrive = _driveByMed getOrDefault [_pkMed, 0];
         private _lvlKey = format ["ACME_serum_%1", _pkMed];
         private _lvl = _patient getVariable [_lvlKey, 0];
-        if (_pkDrive > 0 || {_lvl > 0.0001}) then {
-            private _pkHalfMin = ((_pkHalf) / 60) max 0.1;
+        if (_pkDrive > 0 || {_lvl > 0}) then {
             private _pkSteady = _pkDrive / (_pkClear max 0.001);
-            private _pkK = 0.693 / _pkHalfMin;
-            _lvl = (_lvl + (_pkK * (_pkSteady - _lvl) * (_dt / 60))) max 0;
+            _lvl = (_pkSteady + (_lvl - _pkSteady) * (0.5 ^ (_dt / (_pkHalf*_pkScale)))) max 0;
             if (_lvl < 0.00005 && {_pkDrive <= 0}) then { _lvl = 0; };
             [_patient, _lvlKey, _lvl, 0.005, 2] call ACME_fnc_setVarNetApprox;
         };
@@ -485,7 +492,6 @@ private _completed = [];
     // deriving a tiny distribution volume from a compressed half-life made ordinary boluses enormous.
     // Clearance/Vd defines washout; native therapeutic-effect clocks remain a separate game abstraction.
     private _lidoLevel = _patient getVariable ["ACME_lido_serumLevel", 0];
-    private _lidoClear = missionNamespace getVariable ["ACME_lido_clearanceLmin", 0.40];  // the plateau in mcg/ml is the drip divided by this.
     private _lidoClearFrac = 1;
     if (_shockActive) then {_lidoClearFrac = _lidoClearFrac * (missionNamespace getVariable ["ACME_lido_shockClearFrac",0.6]);};
     if ((_patient getVariable ["ACME_esmolol_serumLevel",0]) > 0.1) then {
@@ -494,8 +500,7 @@ private _completed = [];
     _lidoClearFrac = _lidoClearFrac max 0.05;
     private _weightPK = (_patient getVariable ["ACM_core_BodyWeight",80]) max 30;
     private _lidoVd = _weightPK * 0.7; // L; simple game distribution calibration, not a patient assay.
-    private _lidoEffClear = (_lidoClear * _lidoClearFrac) max 0.001;
-    private _lidoKSec = _lidoEffClear / (_lidoVd * 60);
+    private _lidoKSec = (ln 2) * _lidoClearFrac / (((["Lidocaine"] call ACME_fnc_medicationHalfLife) select 0) * _pkScale);
     private _lidoDecay = exp (-_lidoKSec * _dt);
     _lidoLevel = (_lidoLevel * _lidoDecay + ((_lidoDrive / 60) / _lidoVd)
         * (1 - _lidoDecay) / _lidoKSec) max 0;
@@ -516,11 +521,10 @@ private _completed = [];
     _state set ["magEffect", _magEffect];
     _state set ["esmololEffect", _esmololEffect];
     // Esmolol distribution and clearance apply to every admitted route, including bolus.
-    private _esmClear = missionNamespace getVariable ["ACME_esmolol_clearanceLmin", 3.5];
     [_patient, "ACME_esmolol_driveMgMin", _esmololInfusionDrive, 0.005, 2] call ACME_fnc_setVarNetApprox;
     private _esmOld = _patient getVariable ["ACME_esmolol_serumLevel",0];
     private _esmVd = ((_patient getVariable ["ACM_core_BodyWeight",80]) max 30) * 0.5;
-    private _esmK = (_esmClear max 0.001) / (_esmVd * 60); // clearance/Vd, per second
+    private _esmK = (ln 2) / (((["Esmolol"] call ACME_fnc_medicationHalfLife) select 0) * _pkScale);
     private _esmDecay = exp (-_esmK * _dt);
     private _esmInput = _deliveredRates getOrDefault ["Esmolol",0];
     private _esmSerum = (_esmOld * _esmDecay + (_esmInput / 60 / _esmVd) * (1 - _esmDecay) / _esmK) max 0;
@@ -680,7 +684,7 @@ private _completed = [];
     private _pushDose = _state getOrDefault ["pushDoseSupport", 0];
     if (_pushDose > 0.01) then {
         // a roughly exponential decay. push-dose epi lasts a few minutes per bolus.
-        private _halfLife = missionNamespace getVariable ["ACME_circ_pushDoseHalfLife", 120];  // seconds.
+        private _halfLife = ((["Epinephrine"] call ACME_fnc_medicationHalfLife) select 0) * ((missionNamespace getVariable ["ACME_clinicalTiming",[]]) param [0,1]);
         _pushDose = _pushDose * (0.5 ^ (_dt / (_halfLife max 1)));
         if (_pushDose < 0.05) then {_pushDose = 0};
     };

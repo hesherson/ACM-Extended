@@ -57,13 +57,15 @@ def function(name,component='circulation',extended=False,override=False):
 
 
 def setup():
+    from test_b318_clinical_timing import definitions as kinetics_definitions
+
     headers=(ROOT/'addons/main/script_macros.hpp').read_text()
     constants=''
     for name in ('ACM_ROUTE_IM','ACM_ROUTE_IV','ACM_ROUTE_PO','ACM_ROUTE_INHALE'):
         values=re.findall(r'^#define\s+'+name+r'\s+(\d+)\b',headers,re.M)
         assert len(values)==1,(name,values)
         constants+=name+'='+values[0]+';'
-    return constants+'''
+    return constants+kinetics_definitions()+'''
         private _patientLocal=true;
         private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
         private _linear={params ["_lo","_hi","_x","_a","_b",["_clamp",false]];
@@ -128,7 +130,7 @@ def test_bound_rocuronium_affects_effect_count_but_not_raw_admitted_count():
         _patient setVariable ["ACME_sug_bindings",[["roc",1]]];
         private _raw=[_patient,"Rocuronium_IV",true] call ace_medical_status_fnc_getMedicationCount;
         private _effect=[_patient,"Rocuronium_IV",false] call ace_medical_status_fnc_getMedicationCount;
-        [_raw==2 && {_effect==1},"raw count or bound fraction changed"] call _check;
+        [abs (_raw - 2*(0.5 ^ (20/4380))) < 0.00001 && {_effect==1},"binding affected residual amount or unbound effect changed"] call _check;
         _patient setVariable ["ACME_sug_bindings",[["different-record",2]]];
         [[_patient,"Rocuronium_IV",false] call ace_medical_status_fnc_getMedicationCount==2,"unrelated binding affected record"] call _check;
     ''')

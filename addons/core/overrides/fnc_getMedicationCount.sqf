@@ -23,18 +23,18 @@ params ["_target", "_medication", ["_getCount", true], ["_targetBodyPartIndex", 
 
 private _return = 0;
 {
-    _x params ["_xMed", "_timeAdded", "_timeTillMaxEffect", "_maxTimeInSystem", "", "", "", "_administrationType", "_maxEffectTime", "", "", "", "_concentration", "", "_bodyPartIndex"];
+    _x params ["_xMed", "_timeAdded", "", "", "", "", "", "", "", "", "", "", "_concentration", "", "_bodyPartIndex"];
 
     if (_xMed == _medication) then {
         private _timeInSystem = CBA_missionTime - _timeAdded;
 
         if (_targetBodyPartIndex == -1 || {_targetBodyPartIndex == _bodyPartIndex}) then {
             if (_getCount) then {
-                // just return effective count, a medication will always start at 1 and only drop after reaching timeTilMaxEffect
-                _return = _return + ((linearConversion [(_timeTillMaxEffect + _maxEffectTime), _maxTimeInSystem, _timeInSystem, 1, 0, true]) * _concentration);
+                // Remaining dose equivalents, independent of clinical effect.
+                _return = _return + (([_x,_timeInSystem,"physical"] call ACME_fnc_medicationKineticEffect) * _concentration);
             } else {
                 // as used in handleUnitVitals, a medication effectiveness will start low, ramp up to timeTillMaxEffect, and then drop off
-                _return = _return + (([_administrationType, _timeInSystem, _timeTillMaxEffect, _maxTimeInSystem, _maxEffectTime] call EFUNC(circulation,getMedicationEffect)) * _concentration * ([_target, _x] call ACME_fnc_medicationAvailability));
+                _return = _return + (([_x,_timeInSystem] call ACME_fnc_medicationKineticEffect) * _concentration * ([_target, _x] call ACME_fnc_medicationAvailability));
             };
         };
     };

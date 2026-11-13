@@ -16,8 +16,7 @@ private _valid = true;
 if (!_valid) exitWith {[]};
 private _sample = _now max _last;
 private _chain = ([_base] call ACME_fnc_coolerColdChainTime);
-private _rate = missionNamespace getVariable ["ACME_coolerThawRateInside", 0.2];
-if !(_rate isEqualType 0 && {finite _rate} && {_rate >= 0}) then {_rate = 0.2;};
+private _rate = [0.2,1] select (["real"] call ACME_fnc_bloodTiming);
 private _increment = 0;
 if (_chain > 0) then {
     private _expiry = _start + _chain;

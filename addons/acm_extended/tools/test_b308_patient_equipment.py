@@ -137,16 +137,15 @@ def test_pose_preserves_raised_surface_and_patient_relative_right(head):
 
 def test_persistent_cooling_and_warm_use_are_real_time():
     execute(cold_fixture()+'''
-      missionNamespace setVariable ["ACME_persistentCampaignTiming",true];
-    '''+'ACME_fnc_bloodTimingApply={'+cold_source('bloodTimingApply')+'''};
-      call ACME_fnc_bloodTimingApply;
-      [ACME_bloodLooseSpoilTime==14400,"persistent use window is compressed"] call _check;
-      [["ACME_BloodCooler_CSWB1U"] call ACME_fnc_coolerColdChainTime==172800,"1U duration incorrect"] call _check;
+      missionNamespace setVariable ["ACME_clinicalTiming",[]];
+      [["warm"] call ACME_fnc_bloodTiming==14400,"default use window is compressed"] call _check;
+      [["ACME_BloodCooler_CSWB1U"] call ACME_fnc_coolerColdChainTime==86400,"1U duration incorrect"] call _check;
       [["ACME_BloodCooler_CSWB2U"] call ACME_fnc_coolerColdChainTime==86400,"2U duration incorrect"] call _check;
-      [["ACME_BloodCooler_CSWB4U"] call ACME_fnc_coolerColdChainTime==259200,"4U duration incorrect"] call _check;
-      private _state=[["ACME_BloodCooler_CSWB1U",0,[[_bag,0]],172799],172900] call ACME_fnc_coolerAdvance;
+      [["ACME_BloodCooler_CSWB4U"] call ACME_fnc_coolerColdChainTime==172800,"4U duration incorrect"] call _check;
+      private _state=[["ACME_BloodCooler_CSWB1U",0,[[_bag,0]],86399],86500] call ACME_fnc_coolerAdvance;
       [((_state select 2) select 0) select 1==100,"warm tail not charged at real time"] call _check;
     ''')
+
 
 
 @pytest.mark.parametrize('volume',[250,500,1000])

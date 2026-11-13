@@ -2264,6 +2264,12 @@ class CfgFunctions {
             class medicationTakeSources {};
             class medicationAvailability {};
             class medicationCountRaw {};
+            class medicationKinetics {};
+            class medicationHalfLife {};
+            class medicationResidual {};
+            class medicationKineticEffect {};
+            class compactMedicationRecords {};
+            class clinicalTimingSync {};
             class medicationToxicityTick {};
             class medicationCBRNTick {};
             class medicationRecordIDs {};
@@ -2442,6 +2448,7 @@ class CfgFunctions {
             class bloodFridgeModuleInit {};
             class bloodFridgeSetup {};
             class bloodFridgeSnapshot {};
+            class bloodFridgeExpire {};
             class bloodFridgeSnapshotValid {};
             class bloodFridgeRestore {};
             class bloodFridgeTakeMenu {};
@@ -2666,7 +2673,8 @@ class CfgFunctions {
             class coolerRecover {};
             class coolerAdvance {};
             class coolerColdChainTime {};
-            class bloodTimingApply {};
+            class bloodTiming {};
+            class bloodWarmLimit {};
             class bloodSpoiledClass {};
             class bloodUseClock {};
             class bloodUseRow {};
@@ -11104,6 +11112,7 @@ class CfgRemoteExec {
         class ACME_fnc_bloodColdChainNudge { allowedTargets = 2; };
         class ACME_fnc_bloodFridgeSpawn { allowedTargets = 2; };
         class ACME_fnc_ccApply { allowedTargets = 0; };
+        class ACME_fnc_clinicalTimingSync { allowedTargets = 1; jip = 1; };
         class ACME_fnc_coolerBoxApplyScale { allowedTargets = 0; jip = 1; };
         class ACME_fnc_edemaSet { allowedTargets = 0; };
         class ACME_fnc_forceWalkLocal { allowedTargets = 0; };

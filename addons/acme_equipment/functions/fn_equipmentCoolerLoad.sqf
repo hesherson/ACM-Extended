@@ -17,7 +17,7 @@ private _entries=(_snapshot select 0) select {(_x select 0)==_bag};
 if (_entries isEqualTo []) exitWith {};
 private _warm=selectMax (_entries apply {_x select 2});
 _warm=_warm+((serverTime-(_snapshot select 1)) max 0);
-if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {_warm>=ACME_bloodLooseSpoilTime}) exitWith {};
+if ((["spoil"] call ACME_fnc_bloodTiming) && {_warm>=([_bag] call ACME_fnc_bloodWarmLimit)}) exitWith {};
 private _state=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
 if (_state isEqualTo []) exitWith {};
 private _used=0;{_used=_used+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);

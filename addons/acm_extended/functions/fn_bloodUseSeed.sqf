@@ -18,4 +18,10 @@ private _pending=_holder getVariable ["ACME_bloodSeedPending",createHashMap];
     private _seed=_pending get _x;
     if ((_seed param [0,""])==_class) then {_warm=_warm max ((_seed select 2)+((_sample-(_seed select 3)) max 0));};
 } forEach keys _pending;
+if ((_class find "ACM_FreshBloodBag_") == 0) then {
+    private _limit = [_class] call ACME_fnc_bloodWarmLimit;
+    _warm = if (_warm >= _limit) then {["spiked"] call ACME_fnc_bloodTiming} else {0};
+} else {
+    if (_warm >= ([_class] call ACME_fnc_bloodWarmLimit)) then {_warm = ["spiked"] call ACME_fnc_bloodTiming;};
+};
 [_started,"prepared","set",0,[[],"start",_warm] call ACME_fnc_bloodUseClock] call ACME_fnc_bloodUseRow

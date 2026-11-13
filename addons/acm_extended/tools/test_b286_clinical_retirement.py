@@ -23,6 +23,11 @@ def setup():
         ACME_circ_activePatients=[];ACME_tbi_activePatients=[];ACME_infusion_activePatients=[];
         missionNamespace setVariable ["ACME_sys_circ",true];
         missionNamespace setVariable ["ACME_sys_do2",false];
+        ACME_fnc_medicationHalfLife={params ["_med"];switch (_med) do {
+            case "Lidocaine": {[6000,480,0.9]};
+            case "Amiodarone": {[1728000,600,0.99]};
+            default {[540]};
+        }};
         ACME_fnc_bpNative={[80,120]};
         ACME_fnc_coagulationBase={[1,1,1,1]};
         ACME_fnc_tbiApplyPressorMAP={[0,false]};
@@ -48,7 +53,7 @@ def setup():
         text = source(name)
         if name == 'circHandle':
             # SQF-VM lacks forEach HASHMAP; preserve its exact key/value lookup.
-            text = text.replace('_y params [["_pkClear"', '(_pkTable get _x) params [["_pkClear"')
+            text = text.replace('_y params ["_pkClear"', '(_pkTable get _x) params ["_pkClear"')
             text = text.replace('} forEach _pkTable;', '} forEach (keys _pkTable);')
             # VM comparison dispatch lacks Boolean !=; retain Boolean inequality.
             text = text.replace('(_offset == 0) != (_prevOffset == 0)',

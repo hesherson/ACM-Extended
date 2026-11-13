@@ -116,10 +116,7 @@ def fixture():
             {[_object,_x,-1] call _cargoAdjust;} forEach _remove;
             {[_object,_x,1] call _cargoAdjust;} forEach _add;
         };
-        missionNamespace setVariable ["ACME_sys_bloodChain",true];
-        missionNamespace setVariable ["ACME_bloodSpoilEnabled",true];
-        missionNamespace setVariable ["ACME_bloodLooseSpoilTime",1800];
-        missionNamespace setVariable ["ACME_coolerThawRateInside",0.2];
+        missionNamespace setVariable ["ACME_clinicalTiming",[1,false,true,true]];
         missionNamespace setVariable ["ACME_bloodFloatTTL",180];
         missionNamespace setVariable ["ACME_ccByHolder",createHashMap];
         missionNamespace setVariable ["ACME_ccBagFloat",createHashMap];
@@ -225,7 +222,7 @@ def test_box_tick_spoils_individual_bags_and_preserves_other_cargo():
         [!(_bag in _cargo) && {_fresh in _cargo} && {"bandage" in _cargo},"wrong cargo spoiled or lost"] call _check;
         [("ACME_SpoiledBlood" in _cargo) && {"ACME_SpoiledBlood_500" in _cargo},"spoiled count changed"] call _check;
         [[_fresh,1] in ((_box getVariable "ACME_boxCoolerState") # 2),"fresh blood exposure changed"] call _check;
-        [["ACME_SpoiledBlood_500",1800] in ((_box getVariable "ACME_boxCoolerState") # 2),"spoiled unit was ejected from cooler metadata"] call _check;
+        [["ACME_SpoiledBlood_500",0] in ((_box getVariable "ACME_boxCoolerState") # 2),"spoiled unit was ejected from cooler metadata"] call _check;
     ''')
 
 

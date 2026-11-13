@@ -13,9 +13,24 @@ private _blood=if (_kind=="prepared") then {
     private _class=_out param [1,""];(_class find "ACM_BloodBag_")==0 || {(_class find "ACM_FreshBloodBag_")==0}
         || {(_class find "ACE_bloodIV")==0} || {(_out param [8,""]) in ["blood","yset"]}
 } else {(_out param [[0,1] select (_kind=="used"),""]) in ["Blood","FreshBlood"]};
-if (_mode=="expired") exitWith {_blood && {_meta isNotEqualTo []} && {[_meta,"expired"] call ACME_fnc_bloodUseClock}};
-if (!_blood || {_meta isEqualTo [] && {(_mode!="set") && {(_mode!="start") || {!(missionNamespace getVariable ["ACME_persistentCampaignTiming",false])}}}}) exitWith {_out};
+private _freshExpired = false;
+if (_blood && {["real"] call ACME_fnc_bloodTiming} && {["spoil"] call ACME_fnc_bloodTiming}) then {
+    private _donorIndex = switch (_kind) do {case "used":{8};case "prepared":{11};default {10}};
+    private _donor = _out param [_donorIndex,[]];
+    if (_donor isEqualType [] && {count _donor == 4} && {(_donor select 2) isEqualType 0}) then {
+        private _tag = _donor select 0;
+        private _age = -1;
+        if (_tag == "freshV1") then {_age = CBA_missionTime - (_donor select 2);};
+        if (_tag == "freshAgeV1" && {_mode == "restore"}) then {_age = (_donor select 2) + _seconds;};
+        _freshExpired = _age >= (["fresh"] call ACME_fnc_bloodTiming);
+    };
+};
+if (_mode=="expired") exitWith {_blood && {_freshExpired || {_meta isNotEqualTo [] && {[_meta,"expired"] call ACME_fnc_bloodUseClock}}}};
+if (!_blood || {_meta isEqualTo [] && {(_mode!="set") && {(_mode!="start") || {!(["real"] call ACME_fnc_bloodTiming)}}}}) exitWith {_out};
 if (_mode=="set") then {_meta=+_clock;} else {_meta=[_meta,_mode,_seconds] call ACME_fnc_bloodUseClock;};
+if (_freshExpired && {_meta isNotEqualTo []}) then {
+    _meta set [0,["bloodUseSpoiledV1","bloodUseSpoiledAgeV1"] select (_mode=="snapshot")];
+};
 if (_kind=="native") then {
     if (count _out<8) then {_out pushBack -1;};
     if (count _out<9) then {_out pushBack "";};

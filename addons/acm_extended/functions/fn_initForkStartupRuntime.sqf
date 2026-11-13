@@ -1,9 +1,9 @@
 ACME_infusion_version = getText (configFile >> "CfgPatches" >> "ACM_Extended" >> "version");
 if (ACME_infusion_version == "") then { ACME_infusion_version = "1.2.4.1"; };
-ACME_buildBatch = "B317";
+ACME_buildBatch = "B318";
 ACME_networkProtocol = getNumber (configFile >> "CfgPatches" >> "ACM_Extended" >> "acmeNetworkProtocol");
 ACME_debugRevision = "";
-ACME_networkAuditRevision = "NA8-B317-1.2.4.1-candidate";
+ACME_networkAuditRevision = "NA8-B318-1.2.4.1-candidate";
 diag_log format ["[ACME BUILD] version=%1 batch=%2 revision=%3",ACME_infusion_version,ACME_buildBatch,ACME_networkAuditRevision];
 
 /*
@@ -17,6 +17,7 @@ call ACM_core_fnc_suppressPhysicalBandageReopening;
 // Re-assert after CBA's server-setting synchronization as well; this keeps JIP clients on the same invariant.
 ["CBA_settingsInitialized", {
     call ACM_core_fnc_suppressPhysicalBandageReopening;
+    if (isServer) then {call ACME_fnc_clinicalTimingSync;};
 }] call CBA_fnc_addEventHandler;
 call ACME_fnc_chestSealNetInit;
 [] call ACME_fnc_ventCustodyInit;

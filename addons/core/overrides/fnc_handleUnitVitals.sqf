@@ -100,13 +100,13 @@ if (_adjustments isNotEqualTo []) then {
     private _painSuppressAdjustmentMap = +GVAR(MedicationTypes_MaxPainAdjust);
     private _deleted = false;
     {
-        _x params ["_medication", "_timeAdded", "_timeTillMaxEffect", "_maxTimeInSystem", "_hrAdjust", "_painAdjust", "_flowAdjust", "_administrationType", "_maxEffectTime", "_rrAdjust", "_coSensitivityAdjust", "_breathingEffectivenessAdjust", "_concentration", "_medicationType"];
+        _x params ["", "_timeAdded", "", "", "_hrAdjust", "_painAdjust", "_flowAdjust", "", "", "_rrAdjust", "_coSensitivityAdjust", "_breathingEffectivenessAdjust", "", "_medicationType"];
         private _timeInSystem = CBA_missionTime - _timeAdded;
-        if (_timeInSystem >= _maxTimeInSystem) then {
+        if !([_x,_timeInSystem,"active"] call ACME_fnc_medicationKineticEffect) then {
             _deleted = true;
             _adjustments deleteAt _forEachIndex;
         } else {
-            private _effectRatio = ([_administrationType, _timeInSystem, _timeTillMaxEffect, _maxTimeInSystem, _maxEffectTime] call EFUNC(circulation,getMedicationEffect)) * ([_unit, _x] call ACME_fnc_medicationAvailability);
+            private _effectRatio = ([_x,_timeInSystem] call ACME_fnc_medicationKineticEffect) * ([_unit, _x] call ACME_fnc_medicationAvailability);
             if (_hrAdjust != 0 && (GET_HEART_RATE(_unit) > 0)) then {
                 private _HREffect = [(GET_HEART_RATE(_unit) / ((ACM_TARGETVITALS_HR(_unit) - 20) max 0.001)), ((ACM_TARGETVITALS_HR(_unit) + 20) / GET_HEART_RATE(_unit))] select (_hrAdjust > 0);
 

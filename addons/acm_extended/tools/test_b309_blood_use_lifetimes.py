@@ -9,7 +9,7 @@ from test_b289_bag_only_returns import fixture as used_fixture
 from test_b308_patient_equipment import setup as equipment_setup, converted
 from test_b230_prepared_infusion_transaction import setup as native_setup
 
-PRESET='missionNamespace setVariable ["ACME_persistentCampaignTiming",true];'
+PRESET='missionNamespace setVariable ["ACME_clinicalTiming",[1,true,true,true]];'
 
 
 @pytest.mark.parametrize('kind,row',[
@@ -66,14 +66,14 @@ def test_expired_canonical_bag_never_drains_credits_blood_or_warms_patient(mode)
     ''')
 
 
-@pytest.mark.parametrize('setting',['ACME_persistentCampaignTiming','ACME_bloodSpoilEnabled'])
+@pytest.mark.parametrize('setting',[1,2])
 def test_disabling_policy_preserves_existing_blood_flow(setting):
     execute(delivery_setup(False,'Blood',False)+PRESET+'''
       ACM_circulation_fnc_isBloodTypeCompatible={true};
       CBA_missionTime=0;_primary=[_primary] call ACME_fnc_bloodUseRow;
       (_patient getVariable "ACM_circulation_IV_Bags") set ["leftarm",[_primary]];
       CBA_missionTime=15000;
-    '''+f'missionNamespace setVariable ["{setting}",false];'+'''
+    '''+f'(missionNamespace getVariable "ACME_clinicalTiming") set [{setting},false];'+'''
       private _result=call _integrate;
       [((_result select 0) select 0) select 1<420,"policy off still stopped usable blood"] call _check;
     ''')
@@ -119,8 +119,7 @@ def test_spoilage_is_permanent_after_policy_change_and_restart(kind,row):
     execute(PRESET+f'private _kind="{kind}";private _row={row};'+'''
       CBA_missionTime=0;_row=[_row,_kind] call ACME_fnc_bloodUseRow;
       CBA_missionTime=14400;_row=[_row,_kind] call ACME_fnc_bloodUseRow;
-      missionNamespace setVariable ["ACME_persistentCampaignTiming",false];
-      missionNamespace setVariable ["ACME_bloodSpoilEnabled",false];
+      missionNamespace setVariable ["ACME_clinicalTiming",[1,false,false,true]];
       [[_row,_kind,"expired"] call ACME_fnc_bloodUseRow,"spoiled blood became usable after policy change"] call _check;
       private _saved=[_row,_kind,"snapshot"] call ACME_fnc_bloodUseRow;
       CBA_missionTime=1;_row=[_saved,_kind,"restore"] call ACME_fnc_bloodUseRow;

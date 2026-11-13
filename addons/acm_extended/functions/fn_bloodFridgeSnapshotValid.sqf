@@ -1,9 +1,13 @@
-/* [1,current stock,default stock,restock enabled,configured interval,remaining game minutes]. */
+/* [1,current stock,default stock,restock enabled,configured interval,remaining game minutes]. V2 adds elapsed real lot seconds. */
 params ["_snapshot"];
-if (isNil "_snapshot" || {!(_snapshot isEqualType [])} || {count _snapshot != 6}) exitWith {false};
+if (isNil "_snapshot" || {!(_snapshot isEqualType [])} || {!(count _snapshot in [6,7])}) exitWith {false};
 if (([0,1,2,3,4,5] findIf {isNil {_snapshot select _x}}) >= 0) exitWith {false};
 _snapshot params ["_version","_stock","_defaults","_restock","_interval","_remaining"];
-if (_version isNotEqualTo 1 || {!(_restock isEqualType true)}) exitWith {false};
+if !(_restock isEqualType true
+    && {(_version == 1 && {count _snapshot == 6})
+        || {_version == 2 && {count _snapshot == 7} && {!isNil {_snapshot select 6}}
+            && {(_snapshot select 6) isEqualType 0} && {finite (_snapshot select 6)}
+            && {(_snapshot select 6) >= 0} && {(_snapshot select 6) <= 1e9}}}) exitWith {false};
 if !(_interval isEqualType 0 && {finite _interval} && {_interval >= -1} && {_interval <= 1e9}
     && {_remaining isEqualType 0} && {finite _remaining} && {_remaining >= 0} && {_remaining <= 1e9}) exitWith {false};
 private _validStock = {

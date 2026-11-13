@@ -31,13 +31,7 @@ ACME_rhythm_lidoDefibBoost      = 0.8;  // + effectiveness*boost -> 1.0 (determi
 // plateau: the steady level in mcg/ml is drip mg/min divided by clearancelmin. at 0.625, a 2 mg/min drip
 // settles near 3.2, which is therapeutic. 4 gives about 6.4 and 8 gives about 12.8, the seizure band. lower
 // clearance raises the plateau.
-// speed: the half-life is compressed on purpose, about 5.5 min against about 100 min in life, so a too-fast
-// drip or an impaired clearance reaches the toxic band inside a scenario instead of across many hours.
-// impaired clearance, from active shock perfusion or a beta-blocker on board, multiplies clearance down. that
-// raises the plateau and lengthens the effective half-life. nothing reads the level yet. this phase is
-// calibration only.
-ACME_lido_clearanceLmin = 0.40;  // l/min. the plateau in mcg/ml is drip mg/min divided by this. it was lowered from 0.625 so a dilute bedside-mixed bag run wide open reaches toxicity, which makes careless technique punishing.
-ACME_lido_halfLifeSec   = 330;  // about a 5.5 min compressed elimination half-life. real lidocaine runs about 100 min. it is halved for faster onset and washout.
+// Distribution volume and reference half-life govern the serum model.
 ACME_lido_shockClearFrac = 0.6;  // active shock multiplies clearance by this, because hepatic clearance is perfusion-limited.
 ACME_lido_betaClearFrac  = 0.7;  // esmolol (beta-blocker) on board multiplies clearance by this
 
@@ -195,7 +189,6 @@ ACME_ca_pressorGateMin   = 0.5;  // pressor effectiveness multiplier at full hyp
 // cumulative qt ceiling into torsades, acme_rhythm_amio*. this serum accumulator is the readable level for the
 // debug panel and gives parity with the other drips. the standard load is 150 mg across 10 min, or 15 mg/min.
 ACME_amio_serumClearance   = 6;  // mg/min per mg/l plateau (serum mg/l = drive / this)
-ACME_amio_serumHalfLifeSec = 420;  // compressed
 ACME_amio_serumTherapeuticLow  = 1.0;  // mg/l
 ACME_amio_serumTherapeuticHigh = 2.5;  // mg/l (above = fast-infusion / accumulation territory)
 
@@ -205,16 +198,16 @@ ACME_amio_serumTherapeuticHigh = 2.5;  // mg/l (above = fast-infusion / accumula
 // level and therapeutic band. the table maps med to [clearancelmin, halflifesec, theraplow, theraphigh,
 // unitlabel], where the plateau is drip mg/min divided by clearancelmin.
 ACME_infusion_pk = createHashMapFromArray [
-    ["Epinephrine",    [0.30, 120, 0.02, 0.20, "mcg/mL"]],
-    ["Norepinephrine", [0.25, 90,  0.01, 0.10, "mcg/mL"]],
-    ["Ketamine",       [1.20, 180, 0.50, 3.00, "mcg/mL"]],
-    ["Fentanyl",       [0.80, 200, 0.001, 0.003, "mcg/mL"]],
-    ["Morphine",       [1.50, 300, 0.01, 0.08, "mcg/mL"]],
-    ["Midazolam",      [0.50, 600, 0.05, 0.25, "mcg/mL"]],
-    ["Ondansetron",    [0.60, 240, 0.02, 0.15, "mcg/mL"]],
-    ["TXA",            [0.20, 360, 5.00, 15.00, "mcg/mL"]],
-    ["Ceftriaxone",    [0.15, 480, 20.0, 150.0, "mcg/mL"]],
-    ["Magnesium",      [0.80, 1800, 2.00, 4.00, "mg/dL"]]
+    ["Epinephrine",    [0.30, ((["Epinephrine"] call ACME_fnc_medicationHalfLife) select 0), 0.02, 0.20, "mcg/mL"]],
+    ["Norepinephrine", [0.25, ((["Norepinephrine"] call ACME_fnc_medicationHalfLife) select 0),  0.01, 0.10, "mcg/mL"]],
+    ["Ketamine",       [1.20, ((["Ketamine"] call ACME_fnc_medicationHalfLife) select 0), 0.50, 3.00, "mcg/mL"]],
+    ["Fentanyl",       [0.80, ((["Fentanyl"] call ACME_fnc_medicationHalfLife) select 0), 0.001, 0.003, "mcg/mL"]],
+    ["Morphine",       [1.50, ((["Morphine"] call ACME_fnc_medicationHalfLife) select 0), 0.01, 0.08, "mcg/mL"]],
+    ["Midazolam",      [0.50, ((["Midazolam"] call ACME_fnc_medicationHalfLife) select 0), 0.05, 0.25, "mcg/mL"]],
+    ["Ondansetron",    [0.60, ((["Ondansetron"] call ACME_fnc_medicationHalfLife) select 0), 0.02, 0.15, "mcg/mL"]],
+    ["TXA",            [0.20, ((["TXA"] call ACME_fnc_medicationHalfLife) select 0), 5.00, 15.00, "mcg/mL"]],
+    ["Ceftriaxone",    [0.15, ((["Ceftriaxone"] call ACME_fnc_medicationHalfLife) select 0), 20.0, 150.0, "mcg/mL"]],
+    ["Magnesium",      [0.80, ((["Magnesium"] call ACME_fnc_medicationHalfLife) select 0), 2.00, 4.00, "mg/dL"]]
 ];
 // epinephrine chronotropy. this addon owns it, and config zeroes ACM's epi hr adjustment because it
 // accumulated for a continuous drip. hr rises with the epi-specific infusion drive in mg/min, the same eased

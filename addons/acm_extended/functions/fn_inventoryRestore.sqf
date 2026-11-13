@@ -71,7 +71,7 @@ private _complete = true;
                 _body set [0,_sid];
                 private _fresh = _body param [11,[]];
                 if (_fresh isNotEqualTo [] && {_fresh isNotEqualTo ["freshMissingV1"]}) then {
-                    _body set [11,["freshV1",_fresh select 1,CBA_missionTime - (_fresh select 2),_fresh select 3]];
+                    _body set [11,["freshV1",_fresh select 1,CBA_missionTime - (_fresh select 2) - _offlineSeconds,_fresh select 3]];
                 };
                 if (_tie isNotEqualTo []) then {
                     private _patient = _rebind getOrDefault [_tie select 0,objNull];

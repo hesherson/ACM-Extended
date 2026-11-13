@@ -114,10 +114,8 @@ if (hasInterface) then {
 
 // blood cold chain. a cooler keeps blood transfusable and warm blood spoils. freshness is tracked from the
 // moment blood enters a holder and survives a hand-off, through a server-authoritative ledger and a short
-// floating pool. a cooler arrives pre-loaded with its rated o- blood. the times are compressed hard for
-// operations of about 4 h, because a real chain runs 24 to 72 h.
+// floating pool. Real elapsed timing comes from the server policy.
 ACME_bloodScanInterval   = 60;  // s between cold-chain passes (also the age step)
-ACME_bloodLooseSpoilTime = 1800;  // 30 min in the warm before uncovered blood spoils
 ACME_bloodRewarmTime     = 1200;  // 20 min for a hung cold, [cooled], unit to rewarm thermally toward ambient.
                                   // transfusion hypothermia fades to zero across this time; the cold-unit flow tier does not.
 ACME_bloodFloatTTL       = 180;  // s that the clock of a handed-off or dropped bag persists in the float pool before a reset.
@@ -132,8 +130,6 @@ ACME_coolerContentsDt    = 5;  // s between local cooler-contents aging passes
 if (hasInterface) then {
     [{ call ACME_fnc_coolerContentsTick }, ACME_coolerContentsDt, []] call CBA_fnc_addPerFrameHandler;
 };
-ACME_coolerThawRateInside = 0.2;  // once the coolant is gone, blood inside the box thaws at this fraction of real time.
-call ACME_fnc_bloodTimingApply;
 ACME_coolerBoxScale      = 0.65;  // visual and geometry scale applied to a deployed cooler box. 1 is the vanilla box size.
 // fluid-overload clot pop. crystalloid into a hemodynamically unstable, hypovolemic, patient tears clots
 // loose.

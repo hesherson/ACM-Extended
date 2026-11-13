@@ -23,6 +23,7 @@
  * 12: Medication Concentration <NUMBER>
  * 13: Medication Type <STRING>
  * 14: Body Part Index <NUMBER>
+ * 15: Infusion delivery sample <BOOL>
  *
  * Return Value:
  * None
@@ -32,7 +33,7 @@
  *
  * Public: No
  */
-params ["_unit", "_medication", "_timeToMaxEffect", "_maxTimeInSystem", "_hrAdjust", "_painAdjust", "_flowAdjust", ["_administrationType", ACM_ROUTE_IM], "_maxEffectTime", "_rrAdjust", "_coSensitivityAdjust", "_breathingEffectivenessAdjust", "_concentration", ["_medicationType", "Default"], "_bodyPartIndex"];
+params ["_unit", "_medication", "_timeToMaxEffect", "_maxTimeInSystem", "_hrAdjust", "_painAdjust", "_flowAdjust", ["_administrationType", ACM_ROUTE_IM], "_maxEffectTime", "_rrAdjust", "_coSensitivityAdjust", "_breathingEffectivenessAdjust", "_concentration", ["_medicationType", "Default"], "_bodyPartIndex",["_infusion",false]];
 TRACE_7("addMedicationAdjustment",_unit,_medication,_timeToMaxEffect,_maxTimeInSystem,_hrAdjust,_painAdjust,_flowAdjust);
 
 if (_maxTimeInSystem <= 0) exitWith { WARNING_1("bad value for _maxTimeInSystem - %1",_this); };
@@ -40,6 +41,10 @@ _timeToMaxEffect = _timeToMaxEffect max 1;
 
 private _adjustments = _unit getVariable [VAR_MEDICATIONS, []];
 
-_adjustments pushBack [_medication, CBA_missionTime, _timeToMaxEffect, _maxTimeInSystem, _hrAdjust, _painAdjust, _flowAdjust, _administrationType, _maxEffectTime, _rrAdjust, _coSensitivityAdjust, _breathingEffectivenessAdjust, _concentration, _medicationType, _bodyPartIndex];
-
+private _record = [_medication, CBA_missionTime, _timeToMaxEffect, _maxTimeInSystem, _hrAdjust, _painAdjust, _flowAdjust, _administrationType, _maxEffectTime, _rrAdjust, _coSensitivityAdjust, _breathingEffectivenessAdjust, _concentration, _medicationType, _bodyPartIndex];
+if (_infusion) then {_record append ["","ACME_infusionPulse"];};
+_adjustments pushBack _record;
+if (_infusion && {count _adjustments > 32}) then {
+    _adjustments = [_adjustments,CBA_missionTime] call ACME_fnc_compactMedicationRecords;
+};
 _unit setVariable [VAR_MEDICATIONS, _adjustments, true];

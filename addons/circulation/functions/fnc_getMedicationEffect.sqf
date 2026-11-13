@@ -13,21 +13,30 @@
  * 2: Time until max effect <NUMBER>
  * 3: Max time in system <NUMBER>
  * 4: Max effect time <NUMBER>
- * 5: Medication Concentration <NUMBER>
+ * 5: Legacy unused concentration argument
+ * 6: Optional clinical washout half-life <NUMBER>
  *
  * Return Value:
  * Medication effect <NUMBER>
  *
  * Example:
- * [0, 10, 60, 180, 60, 1] call ACM_circulation_fnc_getMedicationEffect;
+ * [0, 10, 60, 180, 60] call ACM_circulation_fnc_getMedicationEffect;
  *
  * Public: No
  */
 
-params ["_administrationType", "_timeInSystem", "_timeTillMaxEffect", "_maxTimeInSystem", "_maxEffectTime", "_concentration"];
+params ["_administrationType", "_timeInSystem", "_timeTillMaxEffect", "_maxTimeInSystem", "_maxEffectTime", "", ["_halfLife",0]];
+
+if (_timeInSystem < 0) exitWith {0};
+if (_halfLife <= 0 && {_timeInSystem >= _maxTimeInSystem}) exitWith {0};
 
 private _eliminationTime = (_maxTimeInSystem - _maxEffectTime - _timeTillMaxEffect);
 private _currentEliminationTime = (_timeInSystem - _maxEffectTime - _timeTillMaxEffect);
+
+if (_halfLife > 0 && {_currentEliminationTime >= 0}) exitWith {
+    private _fraction = 0.5 ^ (_currentEliminationTime / _halfLife);
+    if (_fraction < 0.001) then {0} else {_fraction}
+};
 
 private _effect = 0;
 

@@ -1,6 +1,6 @@
 /* No periodic metadata writes: timestamps age every physical carrier even in cargo.
  * This pass only imports legacy issue items and settles actual spoilage. */
-if (!hasInterface || {!(missionNamespace getVariable ["ACME_sys_bloodChain",true])}) exitWith {};
+if (!hasInterface || {!((["enabled"] call ACME_fnc_bloodTiming))}) exitWith {};
 private _p=ACE_player;
 if (isNull _p || {!local _p}) exitWith {};
 private _seeds=_p getVariable ["ACME_bloodSeedPending",createHashMap];
@@ -29,18 +29,17 @@ private _base=["ACME_BloodCooler_CSWB1U","ACME_BloodCooler_CSWB2U","ACME_BloodCo
     if (_x in _base) then {[_p,_x] call ACME_fnc_coolerIssue;};
 } forEach ((uniformItems _p)+(vestItems _p)+(backpackItems _p));
 call ACME_fnc_coolerAutoStore;
-if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]) then {
-    private _limit=missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800];
+if ((["spoil"] call ACME_fnc_bloodTiming)) then {
     {
         _x params ["_sid","_raw"];
         private _state=[_raw] call ACME_fnc_coolerAdvance;
-        if (((_state select 2) findIf {(_x select 1)>=_limit && {((_x select 0) find "ACME_SpoiledBlood")!=0}})>=0) then {
+        if (((_state select 2) findIf {(_x select 1)>=([_x select 0] call ACME_fnc_bloodWarmLimit) && {((_x select 0) find "ACME_SpoiledBlood")!=0}})>=0) then {
             [_p,_sid,{
                 params ["_owner","_sid","_state"];
                 private _kept=[];
                 {
                     private _entry=+_x;
-                    if ((_entry select 1)>=(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])) then {_entry set [0,[_entry select 0] call ACME_fnc_bloodSpoiledClass];};
+                    if ((_entry select 1)>=([_entry select 0] call ACME_fnc_bloodWarmLimit)) then {_entry set [0,[_entry select 0] call ACME_fnc_bloodSpoiledClass];};
                     _kept pushBack _entry;
                 } forEach (_state select 2);
                 _state set [2,_kept];[false,_state]

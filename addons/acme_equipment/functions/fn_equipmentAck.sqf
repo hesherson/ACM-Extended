@@ -82,13 +82,19 @@ if (_kind=="blood") exitWith {
         _r set ["phase","refund"];_r set ["sent",serverTime];
         [_actor,_id] call ACME_fnc_equipmentRefundRequest;
     };
-    private _bag=_r get "item";private _before={_x==_bag} count itemCargo _box;
+    private _bag = _r get "item";
+    private _warm = (_r get "warm") + ((serverTime-(_r get "sample")) max 0);
+    if ((["spoil"] call ACME_fnc_bloodTiming) && {_warm >= ([_bag] call ACME_fnc_bloodWarmLimit)}) exitWith {
+        _r set ["phase","refund"];_r set ["sent",serverTime];
+        [_actor,_id] call ACME_fnc_equipmentRefundRequest;
+    };
+    private _before = {_x == _bag} count itemCargo _box;
     _box addItemCargoGlobal [_bag,1];
     if (({_x==_bag} count itemCargo _box)!=_before+1) exitWith {
         _r set ["phase","refund"];_r set ["sent",serverTime];[_actor,_id] call ACME_fnc_equipmentRefundRequest;
     };
     private _entries=+(_state select 2);
-    _entries pushBack [_bag,(_r get "warm")+((serverTime-(_r get "sample")) max 0)];
+    _entries pushBack [_bag,_warm];
     _state set [2,_entries];_box setVariable ["ACME_boxCoolerState",_state,true];
     _pending deleteAt _id;_actor setVariable ["ACME_equipmentWorldPending","",true];
 };

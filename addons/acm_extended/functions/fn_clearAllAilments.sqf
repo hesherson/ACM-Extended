@@ -272,6 +272,7 @@ if (alive _patient) then {
     "ACME_rhythmPressorSurgeRefractoryUntil", "ACME_rhythmThresholdForced", "ACME_rhythmThresholdKind",
     "ACME_rhythmThresholdStart",
     "ACME_amio_serumLevel",
+    "ACME_amio_slowSerumLevel",
     "ACME_hrTarget_circ", "ACME_hrTarget_tbi", "ACME_rrDrive_tbi", "ACME_vent_rrDrive", "ACME_vent_measRR", "ACME_vent_spontRR", "ACME_vent_backupActive",
     "ACME_vent_breathTimes", "ACME_vent_breathAcc",
     "ACME_hrDrive_ventRelief",

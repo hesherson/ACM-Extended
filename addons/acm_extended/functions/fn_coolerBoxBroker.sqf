@@ -62,7 +62,7 @@ if (_mode == "draw") exitWith {
     private _nativeIndex=_cargo find _bagClass;
     if (_selected < 0 || {_nativeIndex < 0}) exitWith {[false,"That blood unit is no longer available."] call _reply;};
     private _entry=_entries deleteAt _selected;
-    if (((_entry select 0) find "ACME_SpoiledBlood")!=0 && {(_entry select 1) >= (missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])} && {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]}) exitWith {
+    if (((_entry select 0) find "ACME_SpoiledBlood")!=0 && {(_entry select 1) >= ([_bagClass] call ACME_fnc_bloodWarmLimit)} && {(["spoil"] call ACME_fnc_bloodTiming)}) exitWith {
         _box addItemCargoGlobal [_bagClass,-1]; _box addItemCargoGlobal [[_bagClass] call ACME_fnc_bloodSpoiledClass,1];
         _state set [2,_entries]; _box setVariable ["ACME_boxCoolerState",_state,true];
         [false,"That blood unit has spoiled."] call _reply;
@@ -245,8 +245,7 @@ if (_mode == "pack") exitWith {
     private _usedMl=0; {_usedMl=_usedMl+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);
     private _capacity=getNumber (configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl");
     if (_capacity <= 0 || {_usedMl > _capacity}) exitWith {[false,"This cooler contains more blood than its rated capacity. Remove the excess before picking it up."] call _reply;};
-    private _limit=missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800];
-    if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {((_state select 2) findIf {(_x select 1) >= _limit && {((_x select 0) find "ACME_SpoiledBlood")!=0}}) >= 0}) exitWith {
+    if ((["spoil"] call ACME_fnc_bloodTiming) && {((_state select 2) findIf {(_x select 1) >= ([_x select 0] call ACME_fnc_bloodWarmLimit) && {((_x select 0) find "ACME_SpoiledBlood")!=0}}) >= 0}) exitWith {
         [false,"Some blood has spoiled. Remove it before picking up the cooler."] call _reply;
     };
     if (_token == 0) then {
@@ -282,8 +281,7 @@ _box setVariable ["ACME_coolerPacking",true,false];
 if (_state isEqualTo []) exitWith {["The cooler state changed during pickup. Its contents remain in the box."] call _abort;};
 private _usedMl=0; {_usedMl=_usedMl+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);
 private _capacity=getNumber (configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl");
-private _limit=missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800];
-if (_capacity<=0 || {_usedMl>_capacity} || {missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {((_state select 2) findIf {(_x select 1)>=_limit && {((_x select 0) find "ACME_SpoiledBlood")!=0}})>=0}}) exitWith {
+if (_capacity<=0 || {_usedMl>_capacity} || {(["spoil"] call ACME_fnc_bloodTiming) && {((_state select 2) findIf {(_x select 1)>=([_x select 0] call ACME_fnc_bloodWarmLimit) && {((_x select 0) find "ACME_SpoiledBlood")!=0}})>=0}}) exitWith {
     ["The cooler contents changed during pickup. Remove excess or spoiled blood before trying again."] call _abort;
 };
 private _cargo=itemCargo _box;

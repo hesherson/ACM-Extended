@@ -46,7 +46,7 @@ private _chain=([_class] call ACME_fnc_coolerColdChainTime);
 private _remaining=if (_chain<=0) then {-1} else {(_chain-(serverTime-_start)) max 0};
 private _coldStr=if (_remaining<0) then {"coolant: stable"} else {
     if (_remaining>0) then {
-        if (missionNamespace getVariable ["ACME_persistentCampaignTiming",false]) then {format ["cooling: %1 h %2 min",floor(_remaining/3600),floor((_remaining mod 3600)/60)]} else {format ["coolant: %1 min left",ceil(_remaining/60)]}
+        if ((["real"] call ACME_fnc_bloodTiming)) then {format ["cooling: %1 h %2 min",floor(_remaining/3600),floor((_remaining mod 3600)/60)]} else {format ["coolant: %1 min left",ceil(_remaining/60)]}
     } else {"COOLANT EXPIRED - contents warming"}
 };
 (_dlg displayCtrl 87403) ctrlSetText format ["%1 / %2 mL   -   %3",_used,_capacity,_coldStr];

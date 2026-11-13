@@ -25,7 +25,7 @@ def ref_function(name):
     text = re.sub(r'\bfinite (\([^\n]*?\)|_\w+)', r'(\1 call _finiteRef)', text)
     dependencies=''
     if name=='clinicalFreshBlood':
-        dependencies=ref_function('bloodUseClock')+ref_function('bloodUseRow')
+        dependencies=ref_function('bloodTiming')+ref_function('bloodUseClock')+ref_function('bloodUseRow')
     text=text.replace('_out select [12]', '_out select [12,count _out]')
     return dependencies+'ACME_fnc_' + name + '={' + adapt(map_defaults(iteration_scopes(text))) + '};\n'
 

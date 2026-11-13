@@ -1,8 +1,7 @@
 /* B287: one server-side owner ages deployed cooler cargo. */
-if !(missionNamespace getVariable ["ACME_sys_bloodChain", true]) exitWith {};
+if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};
 if (!isServer) exitWith {};
-private _spoilEnabled = missionNamespace getVariable ["ACME_bloodSpoilEnabled", true];
-private _spoilT = missionNamespace getVariable ["ACME_bloodLooseSpoilTime", 1800];
+private _spoilEnabled = (["spoil"] call ACME_fnc_bloodTiming);
 private _now = serverTime;
 private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
     + (allMissionObjects "ACME_BloodCoolerBox_CSWB2U")
@@ -18,7 +17,7 @@ private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
             private _kept = [];
             private _spoiled = [];
             {
-                if (_spoilEnabled && {(_x # 1) >= _spoilT} && {((_x # 0) find "ACME_SpoiledBlood")!=0}) then {_spoiled pushBack (_x # 0);}
+                if (_spoilEnabled && {(_x # 1) >= ([_x # 0] call ACME_fnc_bloodWarmLimit)} && {((_x # 0) find "ACME_SpoiledBlood")!=0}) then {_spoiled pushBack (_x # 0);}
                 else {_kept pushBack +_x;};
             } forEach (_state # 2);
             if !(_spoiled isEqualTo []) then {
@@ -26,7 +25,7 @@ private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
                 {_box addItemCargoGlobal [_x, -1];} forEach _spoiled;
                 {
                     private _class=[_x] call ACME_fnc_bloodSpoiledClass;
-                    _box addItemCargoGlobal [_class,1];_kept pushBack [_class,_spoilT];
+                    _box addItemCargoGlobal [_class,1];_kept pushBack [_class,0];
                 } forEach _spoiled;
                 _state set [2, _kept];
                 _box setVariable ["ACME_boxCoolerState", _state, true];

@@ -32,7 +32,7 @@ ACME_edema_breathPenaltyMax = 0.35;  // max gas-exchange, or breathing-effective
 ACME_edema_spo2Floor = 85;  // legacy. the old direct SpO2 cap floor. edema works through breathing effectiveness now, so nothing uses it. it is kept so any external reference still resolves.
 ACME_edema_tachypneaMax = 32;  // rr target at full edema (drives fast crackles)
 ACME_edema_debugInduceVolume = 1.8;  // the Overload_Volume the debug toggle pins. it was bumped to 1.8 to still hit full severity.
-// ACME_circ_pushDoseHalfLife and ACME_circ_pushDoseMAPperMcg moved to CBA, under circulation.
+// Push-dose washout uses the server medication policy. The response magnitude is a circulation setting.
 ACME_circ_pushDoseMAPcap = 35;  // ceiling on stacked push-dose support
 ACME_circ_pushDoseBolusMcg = 10;  // mcg per push (1 ml of 1:100,000)
 // push-dose epi chronotropy. a bolus raises hr, and bp follows through the cardiac output. it ties to the live

@@ -12,6 +12,7 @@ _closed animateSource ["Door_1_noSound_source", 0, true];
 _closed setVariable ["ACME_bloodFridge", true, true];
 _closed setVariable ["ACME_bf_anchor", _closed, true];
 _closed setVariable ["ACME_bf_openObj", objNull, true];
+_closed setVariable ["ACME_bf_lotStart",serverTime,true];
 _closed setVariable ["ACME_bf_stock", _stock, true];
 _closed setVariable ["ACME_bf_default", +_stock, true];
 _closed setVariable ["ACME_bf_restock", _restock, true];

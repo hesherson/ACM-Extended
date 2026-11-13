@@ -7,7 +7,7 @@ private _sid="";private _index=-1;private _oldest=-1;
     private _state=[_x select 1] call ACME_fnc_coolerAdvance;
     private _key=_x select 0;
     {
-        if ((_x select 0)==_bag && {(_x select 1)>_oldest} && {!(missionNamespace getVariable ["ACME_bloodSpoilEnabled",true]) || {(_x select 1)<(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])}}) then {
+        if ((_x select 0)==_bag && {(_x select 1)>_oldest} && {!((["spoil"] call ACME_fnc_bloodTiming)) || {(_x select 1)<([_bag] call ACME_fnc_bloodWarmLimit)}}) then {
             _sid=_key;_index=_forEachIndex;_oldest=_x select 1;
         };
     } forEach (_state select 2);
@@ -19,7 +19,7 @@ if (_sid!="") exitWith {
         private _entries=+(_state select 2);
         if (_index>=count _entries || {((_entries select _index) select 0)!=_bag}) exitWith {[]};
         private _entry=_entries select _index;
-        if (missionNamespace getVariable ["ACME_bloodSpoilEnabled",true] && {(_entry select 1)>=(missionNamespace getVariable ["ACME_bloodLooseSpoilTime",1800])}) exitWith {[]};
+        if ((["spoil"] call ACME_fnc_bloodTiming) && {(_entry select 1)>=([_bag] call ACME_fnc_bloodWarmLimit)}) exitWith {[]};
         if !([_owner,_entry,true] call ACME_fnc_coolerGiveBag) exitWith {[]};
         _entries deleteAt _index;_state set [2,_entries];
         [false,_state]
