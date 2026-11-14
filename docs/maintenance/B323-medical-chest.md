@@ -8,7 +8,7 @@ The stock is one of each public ACE medical inventory class in the loaded config
 
 ## Numbered finishes
 
-B326 adds **Medical Chest 01–10** under the same Eden and Zeus category. The classnames run from `ACME_MedicalChest_01` to `ACME_MedicalChest_10`. The lid lettering by number is MED CHEST 1, SURG, OR, MED, PAD, IV FLUIDS, AIRWAY and BLOOD. Finishes 09 and 10 use a black and red cross, respectively. The markings identify the look of each chest. Each still starts with the full medical inventory.
+B326 adds **Medical Chest 01–10** under the same Eden and Zeus category. The classnames run from `ACME_MedicalChest_01` to `ACME_MedicalChest_10`. B327 replaces finish 02's SURG stencil with handwritten inventory marks. Finishes 03, 06, and 08 have weathered white painter’s tape. Finish 09 has a black cross on its lid. Finish 10 has a blank, scuffed lid and red crosses only on the carry sides. All ten numbered finishes have new scuffs, impact marks, and shaded gouges across the lid, rear, sides, top, and underside. The markings identify the look of each chest. Each still starts with the full medical inventory.
 
 The finish appears when the mission starts, stays with the loose lid after opening, and returns to the original chest when it closes. The cabinet keeps its handle markings where the open shell has a flat panel. The numbered finishes use paint and wear geometry fitted to the stock panels. This keeps the spray and tape from mirroring across the vanilla UVs. The installed Arma models still provide the shell and drawers.
 

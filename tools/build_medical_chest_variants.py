@@ -20,8 +20,20 @@ from build_medical_chest_stencils import DATA, noise, plane, stencil_glyphs, tap
 FRONT = (1000, 1600)
 SIDE = (640, 1600)
 TOP = (1000, 640)
-ATLAS_SIZE = (1024, 4096)
-ATLAS_REGIONS = ((8, 8, 1008, 1600), (8, 1624, 640, 1600), (8, 3240, 1008, 640))
+ATLAS_SIZE = (2048, 4096)
+ATLAS_REGIONS = {
+    "lid": (8, 8, *FRONT),
+    "back": (1032, 8, *FRONT),
+    "right": (8, 1632, *SIDE),
+    "left": (664, 1632, *SIDE),
+    "top": (8, 3256, *TOP),
+    "bottom": (1032, 3256, *TOP),
+}
+WHITE_TAPE = {
+    3: ((697, 410), 263, 63, -4, "C3"),
+    6: ((360, 1216), 344, 59, 5, "IV"),
+    8: ((679, 432), 233, 65, -8, ""),
+}
 PIGMENTS = {
     "yellow": ((232, 182, 51), (161, 122, 36)),
     "blue": ((96, 155, 188), (51, 102, 139)),
@@ -171,7 +183,7 @@ def abrasion(size, rng, density, lid=False):
 # The coordinates lie on the upright lid, with top-left as the origin.
 DESIGNS = (
     (("MED CHEST", "1"), "yellow", (483, 766), 97, -3.5, True, (573, 416), 0, ()),
-    (("SURG",), "blue", (541, 407), 150, 6.8, True, (384, 1194), 1, (((630, 1430), 232, 77, -14),)),
+    ((), "black", (0, 0), 0, 0, False, (384, 1194), 1, (((630, 1430), 232, 77, -14),)),
     (("OR",), "red", (365, 788), 208, -8.5, False, (636, 1156), 2, (((769, 444), 160, 62, 14),)),
     (("MED",), "black", (594, 1142), 156, 8, True, (347, 421), 3, (((362, 828), 150, 60, -26),)),
     (("PAD",), "yellow", (308, 404), 124, -4, False, (666, 830), 4, (((625, 1192), 291, 72, 8),)),
@@ -179,7 +191,7 @@ DESIGNS = (
     (("AIRWAY",), "yellow", (514, 1106), 103, -9, True, (612, 424), 5, (((248, 768), 170, 55, -17),)),
     (("BLOOD",), "red", (578, 838), 118, 4, False, (384, 414), 1, (((575, 1250), 204, 69, -7),)),
     ((), "black", (553, 725), 0, -7, False, (357, 1157), 4, (((630, 424), 277, 83, 3),)),
-    ((), "red", (386, 1152), 0, 12, True, (568, 410), 3, (((721, 805), 142, 78, 27), ((759, 859), 101, 49, -24))),
+    ((), "red", (0, 0), 0, 0, False, (0, 0), 0, ()),
 )
 
 
@@ -199,34 +211,170 @@ def residue(size, center, style, rng):
     return tape_residue(size, strips, rng.randrange(2**31))
 
 
+# Paint marker strokes are drawn independently to keep the writing uneven.
+MARKER_STROKES = {
+    "F": [[(.12,.98),(.21,.68),(.22,.31),(.29,.07),(.89,.13)],[(.24,.46),(.69,.49)]],
+    "8": [[(.49,.49),(.22,.39),(.12,.22),(.28,.08),(.61,.06),(.80,.15),(.77,.28),
+           (.60,.43),(.31,.61),(.16,.80),(.22,.93),(.42,.99),(.70,.92),(.86,.78),
+           (.81,.65),(.63,.54),(.49,.49)]],
+    "1": [[(.34,.24),(.59,.07),(.58,.47),(.52,.98)]],
+    "0": [[(.52,.08),(.28,.12),(.11,.32),(.13,.67),(.27,.89),(.51,.93),(.77,.79),
+           (.87,.54),(.81,.26),(.65,.11),(.52,.08)]],
+    "5": [[(.85,.08),(.26,.11),(.17,.46),(.36,.39),(.64,.44),(.82,.61),(.78,.80),
+           (.61,.93),(.35,.97),(.11,.83)]],
+    "C": [[(.86,.18),(.60,.08),(.36,.14),(.18,.36),(.15,.63),(.29,.85),(.55,.92),(.85,.81)]],
+    "3": [[(.17,.19),(.39,.10),(.69,.09),(.79,.22),(.57,.41),(.44,.50),(.70,.56),
+           (.83,.71),(.71,.91),(.45,.96),(.18,.88)]],
+    "I": [[(.43,.08),(.42,.57),(.37,.93)]],
+    "V": [[(.10,.08),(.23,.49),(.45,.93),(.63,.58),(.86,.10)]],
+}
+
+
+def paint_marker(text, height, color, rng):
+    step = round(height * .64)
+    mask = Image.new("L", (step*len(text)+22, height+28))
+    draw = ImageDraw.Draw(mask)
+    for index, char in enumerate(text):
+        base_x = 10 + index*step + rng.randint(-5, 5)
+        base_y = 13 + rng.randint(-7, 7)
+        width = step * rng.uniform(.86, 1.04)
+        for stroke in MARKER_STROKES[char]:
+            points = [(round(base_x+x*width+rng.uniform(-2,2)),
+                       round(base_y+y*height+rng.uniform(-2,2))) for x,y in stroke]
+            for start, end in zip(points, points[1:]):
+                weight = max(2, round(height*rng.uniform(.043,.084)))
+                draw.line([start,end], fill=rng.randrange(177,244), width=weight)
+                x,y = start
+                draw.ellipse((x-weight//2,y-weight//2,x+weight//2,y+weight//2), fill=199)
+    mask = ImageChops.multiply(mask.filter(ImageFilter.GaussianBlur(.38)),
+                               noise(mask.size, 3, rng).point(lambda p: 135+p*120//255))
+    return color_layer(mask.size, color, mask)
+
+
+def painters_tape(length, width, label, rng):
+    size = (length+20, width+20)
+    mask = Image.new("L", size)
+    points = [(10+x,10+rng.randint(-1,2)) for x in range(0,length+1,8)]
+    points += [(length+9+rng.randint(-6,4),y) for y in range(12,width+9,4)]
+    points += [(10+x,width+10+rng.randint(-2,2)) for x in range(length,-1,-8)]
+    points += [(10+rng.randint(-4,6),y) for y in range(width+8,9,-4)]
+    ImageDraw.Draw(mask).polygon(points, fill=247)
+
+    fibers = noise(size, 2, rng)
+    dirt = noise(size, 22, rng)
+    texture = ImageChops.add(dirt, fibers, scale=2)
+    tape = Image.composite(Image.new("RGB",size,(221,220,206)), Image.new("RGB",size,(151,145,127)), texture)
+    tape.putalpha(mask)
+    crease = Image.new("RGBA",size)
+    draw = ImageDraw.Draw(crease)
+    for _ in range(7):
+        x,y = rng.randrange(18,length), rng.randrange(16,width+6)
+        points = [(x,y),(x+4,y+7),(x+2,y+13)]
+        draw.line(points, fill=(92,86,71,rng.randrange(39,101)), width=2)
+        draw.line([(px+2,py) for px,py in points], fill=(245,242,225,108), width=1)
+    crease.putalpha(ImageChops.multiply(crease.getchannel("A"),mask))
+    tape.alpha_composite(crease)
+    if label:
+        stamp(tape,paint_marker(label,round(width*.53),(47,46,38),rng),(length*.48,width*.55),3)
+    return tape
+
+
+def impact_wear(size, rng, density):
+    width,height = size
+    smear = Image.new("L", size)
+    draw = ImageDraw.Draw(smear)
+    # Abrasions collect at the corners and where a strap or another case rubbed.
+    for _ in range(density):
+        x = rng.choice((rng.randrange(13,width//7),rng.randrange(width-width//7,width-13),rng.randrange(24,width-24)))
+        y = rng.choice((rng.randrange(16,height//7),rng.randrange(height-height//7,height-16),rng.randrange(24,height-24)))
+        length = rng.randrange(29,123)
+        angle = rng.uniform(-math.pi,math.pi)
+        dx,dy = math.cos(angle)*length,math.sin(angle)*length
+        for _ in range(rng.randint(6,16)):
+            slide = rng.randrange(-23,24)
+            start = (x+slide,y+rng.randint(-14,14))
+            end = (start[0]+dx*rng.uniform(.28,1.06),start[1]+dy*rng.uniform(.41,1))
+            draw.line((start,end),fill=rng.randint(18,82),width=rng.randint(1,7))
+    roughness = noise(size, 3, rng).point(lambda p: 65+p*190//255)
+    smear = ImageChops.multiply(smear.filter(ImageFilter.GaussianBlur(1.6)),roughness)
+    layer = color_layer(size,(136,138,116),smear)
+
+    cuts = Image.new("RGBA",size)
+    draw = ImageDraw.Draw(cuts)
+    for _ in range(density + 5):
+        x,y = rng.randrange(28,width-28),rng.randrange(24,height-24)
+        angle = rng.uniform(-math.pi,math.pi)
+        length = rng.randrange(15,115)
+        dx,dy = math.cos(angle)*length,math.sin(angle)*length
+        points = [(x,y),(round(x+dx*.38),round(y+dy*.41+rng.randint(-4,4))),
+                  (round(x+dx*.77),round(y+dy*.76)),(round(x+dx),round(y+dy))]
+        radius = rng.randint(2,5)
+        draw.line(points,fill=(23,25,19,rng.randint(99,164)),width=radius)
+        draw.line([(px-1,py+max(1,radius//2)) for px,py in points[:-1]],
+                  fill=(164,158,131,rng.randint(94,175)),width=2)
+        draw.line(points[2:],fill=(142,141,117,rng.randint(80,142)),width=1)
+    for _ in range(density):
+        x,y = rng.randrange(18,width-18),rng.randrange(17,height-17)
+        span = rng.randint(6,19)
+        tip = [(x-span,y),(x-4,y-4),(x+span,y-2),(x+4,y+4),(x-6,y+5)]
+        draw.polygon(tip,fill=(27,28,23,rng.randint(92,153)))
+        draw.line(tip[2:]+tip[:1],fill=(152,146,123,rng.randint(92,164)),width=2)
+    layer.alpha_composite(cuts)
+    return layer
+
+
 def artwork(number, glyphs):
     lines, color, center, height, angle, halo, residue_pos, residue_style, tape = DESIGNS[number-1]
     rng = random.Random(32540 + number*193)
-    lid = Image.new("RGBA", FRONT)
+    wear_rng = random.Random(32740 + number*173)
+    lid = impact_wear(FRONT, wear_rng, 22)
     if lines:
         mask = label_mask(lines, height, 13, rng, glyphs)
-    else:
-        mask = cross_mask(325+number, 322 if number == 9 else 277, 346 if number == 9 else 290, True)
-    layer = aerosol(mask, color, rng, halo, 1.22 if color == "black" else 1.04)
-    stamp(lid, layer, center, angle)
-    lid.alpha_composite(residue(FRONT, residue_pos, residue_style, rng))
-    if number in (1, 3, 6, 8, 10):
-        pos = ((748, 1425), (552, 160), (380, 135), (661, 188), (418, 744))[(1,3,6,8,10).index(number)]
+        stamp(lid, aerosol(mask, color, rng, halo, 1.22 if color == "black" else 1.04), center, angle)
+    elif number == 9:
+        mask = cross_mask(334, 322, 346, True)
+        stamp(lid, aerosol(mask, color, rng, False, 1.22), center, angle)
+    elif number == 2:
+        stamp(lid, paint_marker("F8105", 112, (230,228,211), rng), (449, 420), 4)
+        stamp(lid, paint_marker("C3", 63, (192,189,172), rng), (631, 775), -9)
+        swipe = tape_residue(FRONT, [((642,790),97,8,-13,.28)], 28105)
+        lid.alpha_composite(swipe)
+
+    # Finish 10's lid has handling wear only. Its red crosses are on the shell.
+    if number != 10:
+        lid.alpha_composite(residue(FRONT, residue_pos, residue_style, rng))
+    fragments = {1:(748,1425),3:(552,160),6:(380,135),8:(661,188)}
+    if number in fragments:
+        pos = fragments[number]
         lid.alpha_composite(tape_residue(FRONT, [(pos, rng.randint(100,174), 24, rng.choice((-12, 8, 15)), .68)], number * 41))
     for pos, length, width, rotation in tape:
         stamp(lid, tape_patch(length, width, rng), pos, rotation)
-    lid.alpha_composite(abrasion(FRONT, rng, 27+number%5, lid=True))
+    if number in WHITE_TAPE:
+        pos,length,width,rotation,label = WHITE_TAPE[number]
+        stamp(lid, painters_tape(length,width,label,rng), pos, rotation)
+    lid.alpha_composite(abrasion(FRONT, rng, 35+number%5, lid=True))
 
-    side = abrasion(SIDE, rng, 15)
-    side.alpha_composite(tape_residue(SIDE, [((455, 257), 120, 26, 3-number, .43)], number*149))
-    cross = cross_mask(380+number, 125, 128, number in (5, 7, 9, 10))
-    stamp(side, aerosol(cross, "black" if number != 10 else "red", rng, False, 1.1), (452, 793), rng.uniform(-11, 11))
+    sides = []
+    for side_index in range(2):
+        side = impact_wear(SIDE, wear_rng, 16)
+        side.alpha_composite(abrasion(SIDE, rng, 19))
+        side.alpha_composite(tape_residue(SIDE, [((455, 257), 120, 26, 3-number, .43)], number*149+side_index))
+        cross = cross_mask(380+number+side_index, 125, 128, number in (5, 7, 9, 10))
+        stamp(side, aerosol(cross, "black" if number != 10 else "red", rng, False, 1.1), (452, 793), rng.uniform(-11, 11))
+        sides.append(side)
 
-    top = abrasion(TOP, rng, 12)
-    small = cross_mask(411+number, 108, 111, number % 2 == 0)
-    stamp(top, aerosol(small, "black" if number != 10 else "red", rng, False, 1.08), (803, 458), rng.uniform(-8,8))
-    return lid, side, top
+    top = impact_wear(TOP, wear_rng, 17)
+    top.alpha_composite(abrasion(TOP, rng, 15))
+    if number != 10:
+        small = cross_mask(411+number, 108, 111, number % 2 == 0)
+        stamp(top, aerosol(small, "black", rng, False, 1.08), (803, 458), rng.uniform(-8,8))
 
+    back = impact_wear(FRONT, wear_rng, 25)
+    back.alpha_composite(abrasion(FRONT, rng, 25, lid=True))
+    back.alpha_composite(residue(FRONT, (rng.randint(385,615), rng.randint(710,860)), number%6, rng))
+    bottom = impact_wear(TOP, wear_rng, 21)
+    bottom.alpha_composite(abrasion(TOP, rng, 23))
+    return dict(zip(ATLAS_REGIONS, (lid, back, *sides, top, bottom)))
 
 
 def mesh_dump(path):
@@ -251,19 +399,24 @@ def fitted_faces(path, surface):
     # direction across the molded ribs and the removable cover.
     x, y, z = positions.transpose(2, 0, 1)
     front = .082 if surface == "closed" else .005
-    front_faces = (y.min(axis=1) > front) & (normals[:, 1] > .15)
+    dominant = np.argmax(abs(normals), axis=1)
+    front_faces = (y.min(axis=1) > front) & (dominant == 1) & (normals[:, 1] > 0)
     lid_coords = ((.266 + z)/.532, (.421 - x)/.844)
-    projections = [(front_faces, 0, lid_coords, (0, 1, 0))]
+    projections = [(front_faces, "lid", lid_coords, (0, 1, 0))]
     if surface == "closed":
-        top_faces = (x.min(axis=1) > .395) & (normals[:, 0] > .25)
-        right_faces = (z.min(axis=1) > .229) & (normals[:, 2] > .22)
-        left_faces = (z.max(axis=1) < -.229) & (normals[:, 2] < -.22)
+        rear_faces = (y.max(axis=1) < -.083) & (dominant == 1) & (normals[:, 1] < 0)
+        top_faces = (x.min(axis=1) > .377) & (dominant == 0) & (normals[:, 0] > 0)
+        bottom_faces = (x.max(axis=1) < -.377) & (dominant == 0) & (normals[:, 0] < 0)
+        right_faces = (z.min(axis=1) > .216) & (dominant == 2) & (normals[:, 2] > 0)
+        left_faces = (z.max(axis=1) < -.216) & (dominant == 2) & (normals[:, 2] < 0)
         side_coords = ((.164 - y)/.334, (.421 - x)/.844)
         top_coords = ((.266 + z)/.532, (.164 - y)/.334)
         projections.extend([
-            (right_faces, 1, side_coords, (0, 0, 1)),
-            (left_faces, 1, side_coords, (0, 0, -1)),
-            (top_faces, 2, top_coords, (1, 0, 0)),
+            (rear_faces, "back", ((.266-z)/.532, (.421-x)/.844), (0,-1,0)),
+            (right_faces, "right", side_coords, (0, 0, 1)),
+            (left_faces, "left", side_coords, (0, 0, -1)),
+            (top_faces, "top", top_coords, (1, 0, 0)),
+            (bottom_faces, "bottom", top_coords, (-1, 0, 0)),
         ])
 
     for selected, region, (u, v), offset in projections:
@@ -315,8 +468,8 @@ def visual_model(faces, texture):
 
 def atlas(layers):
     image = Image.new("RGBA", ATLAS_SIZE)
-    for layer, (x, y, width, height) in zip(layers, ATLAS_REGIONS):
-        image.paste(layer.resize((width, height), Image.Resampling.LANCZOS), (x, y))
+    for region, (x, y, width, height) in ATLAS_REGIONS.items():
+        image.paste(layers[region].resize((width, height), Image.Resampling.LANCZOS), (x, y))
     return image
 
 

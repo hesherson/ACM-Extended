@@ -22,8 +22,8 @@ private _markings = switch (_surface) do {
 };
 
 if (_hasRetexture) then {
-    // The lid and side paint follow the molded surfaces of these two models.
-    _markings = _markings select {(_x select 0) == "chest_tape_back"};
+    // These fitted finishes include their own paint and wear on every face.
+    _markings = [];
 };
 
 private _placements = _markings apply {
@@ -43,10 +43,12 @@ if (_surface == "cabinet") then {
     private _strips = [
         [_cross, _right, _up, _body, 0.052, 0.052],
         [_cross, _right vectorMultiply -1, _up, _body, 0.052, 0.052],
-        [_cross, _up, _right, _center vectorAdd ((_forward vectorMultiply -0.075) vectorAdd (_right vectorMultiply -0.161)), 0.052, 0.052],
         ["chest_tape_side", _right vectorMultiply -1, _up, _body vectorAdd [0, 0, 0.275], 0.051, 0.0165],
         ["chest_tape_back", _forward vectorMultiply -1, _up, _center vectorAdd (_right vectorMultiply 0.022), 0.128, 0.0785]
     ];
+    if (_variant != 10) then {
+        _strips pushBack [_cross, _up, _right, _center vectorAdd ((_forward vectorMultiply -0.075) vectorAdd (_right vectorMultiply -0.161)), 0.052, 0.052];
+    };
     {
         _x params ["_asset", "_normal", "_vertical", "_origin", "_halfWidth", "_halfHeight"];
         private _tangent = _vertical vectorCrossProduct _normal;
