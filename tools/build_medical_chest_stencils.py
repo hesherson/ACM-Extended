@@ -6,9 +6,19 @@ import random
 import struct
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 
 DATA = Path(__file__).resolve().parents[1] / "addons/acm_extended/data/medical_chest"
+
+# Pixel bounds of the six rows on the supplied military stencil sheet.
+STENCIL_ROWS = (
+    ("ABCDEFG", 36, 77, 60, 110),
+    ("HIJKLMN", 36, 77, 132, 183),
+    ("OPQRSTU", 36, 77, 204, 256),
+    ("VWXYZ", 113, 77, 276, 328),
+    ("123456", 76, 77, 350, 400),
+    ("7890", 152, 77, 422, 473),
+)
 
 
 def noise(size, cell, rng):
@@ -53,7 +63,7 @@ def weather(paint, footprint, rng, chip_count):
         cuts.line([(x, y), (x + length // 2, y + 4), (x + length, y + 7)], fill=45, width=2)
         cuts.line([(x + 4, y + 4), (x + length // 3, y + 6)], fill=116, width=1)
 
-    # Dirt darkens both colors equally, while cuts in either pigment show the shell.
+    # Dirt tones down the pigment and the chips reveal the shell beneath it.
     dirt = ImageChops.multiply(noise(size, 28, rng), noise(size, 8, rng))
     grit = noise(size, 1, rng).point(lambda p: 22 if p > 224 else 0)
     dirt = ImageChops.add(dirt.point(lambda p: min(129, max(0, p - 30) * 2)), grit)
@@ -62,36 +72,114 @@ def weather(paint, footprint, rng, chip_count):
     return dusty_paint
 
 
-def stencils(font_path):
-    title = Image.new("L", (1024, 256))
-    font = ImageFont.truetype(font_path, 92)
-    draw = ImageDraw.Draw(title)
-    for word, y in (("MEDICAL", 75), ("CHEST", 180)):
-        advance = font.getlength(word)
-        start = (1024 - advance) / 2
-        offsets = ((-2, 1), (0, -2), (1, 2), (0, 0), (2, -1), (0, 1), (-1, 0))
-        for index, letter in enumerate(word):
-            x = start + font.getlength(word[:index])
-            dx, dy = offsets[index]
-            draw.text((x + dx, y + dy), letter, font=font, anchor="lm", fill=255)
-            if letter in "ADC":
-                bridge = x + dx + font.getlength(letter) * 0.46
-                draw.rectangle((bridge, y - 52, bridge + 5, y + 52), fill=0)
-    title = title.crop((160, 0, 864, 256)).resize((512, 256), Image.Resampling.LANCZOS)
+def stencil_glyphs(reference):
+    source = ImageOps.invert(Image.open(reference).convert("L").resize((540, 540)))
+    source = source.point(lambda p: max(0, min(255, (p - 48) * 255 // 185)))
+    glyphs = {}
+    for letters, first, step, top, bottom in STENCIL_ROWS:
+        for index, letter in enumerate(letters):
+            center = first + index * step
+            tile = source.crop((center - 29, top, center + 29, bottom))
+            glyphs[letter] = tile.crop(tile.getbbox())
+    return glyphs
+
+
+def stencil_line(mask, label, y, height, gap, glyphs):
+    tiles = []
+    for letter in label:
+        if letter == "-":
+            tiles.append(Image.new("L", (round(height * 0.27), round(height * 0.11)), 255))
+            continue
+        glyph = glyphs[letter]
+        tiles.append(glyph.resize((round(glyph.width * height / glyph.height), height), Image.Resampling.LANCZOS))
+    x = (mask.width - sum(tile.width for tile in tiles) - gap * (len(tiles) - 1)) // 2
+    for index, tile in enumerate(tiles):
+        nudge = (-1, 1, 0, -1, 0, 1, 0)[index % 7]
+        mask.paste(tile, (x, y - tile.height // 2 + nudge))
+        x += tile.width + gap
+
+
+def tape_residue(size, strips, seed):
+    """Faded adhesive, torn scrim and dirt along old tape edges."""
+    rng = random.Random(seed)
+    layer = Image.new("RGBA", size)
+    for (cx, cy), length, width, angle, remnant in strips:
+        pad = 8
+        patch_size = length + 2 * pad, width + 2 * pad
+        silhouette = Image.new("L", patch_size)
+        rim = [
+            (pad + x, pad + rng.randint(-2, 2)) for x in range(0, length + 1, 4)
+        ] + [
+            (pad + x, pad + width + rng.randint(-2, 2)) for x in range(length, -1, -4)
+        ]
+        ImageDraw.Draw(silhouette).polygon(rim, fill=255)
+
+        wear = noise(patch_size, 12, rng)
+        grain = noise(patch_size, 2, rng)
+        strength = ImageChops.multiply(wear, grain)
+        film = strength.point(lambda p: min(126, max(0, (p - 18) * 2)))
+        outline = ImageChops.subtract(silhouette, silhouette.filter(ImageFilter.MinFilter(5)))
+        dirt = ImageChops.multiply(outline, strength.point(lambda p: min(150, p * 2)))
+        thread = Image.new("L", patch_size)
+        draw = ImageDraw.Draw(thread)
+        for x in range(pad + 1, pad + length, rng.choice((3, 4))):
+            if rng.random() < remnant:
+                y = rng.randint(pad, pad + width // 2)
+                draw.line((x, y, x, min(pad + width, y + rng.randint(2, width))), fill=rng.randint(44, 136))
+        for _ in range(max(2, length // 17)):
+            x = rng.randrange(pad, pad + length)
+            y = rng.randint(pad, pad + width)
+            draw.line((x, y, min(x + rng.randint(2, 9), pad + length), y), fill=rng.randint(30, 95))
+        glue = Image.composite(Image.new("RGB", patch_size, (152, 138, 107)),
+                               Image.new("RGB", patch_size, (67, 64, 50)), wear)
+        glue.putalpha(ImageChops.multiply(silhouette, ImageChops.add(film, thread)))
+        edge = Image.new("RGBA", patch_size, (31, 28, 23, 0))
+        edge.putalpha(dirt)
+        glue.alpha_composite(edge)
+        glue = glue.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
+        layer.alpha_composite(glue, (cx - glue.width // 2, cy - glue.height // 2))
+    return layer
+
+
+def stencils(reference):
+    glyphs = stencil_glyphs(reference)
+    title = Image.new("L", (512, 256))
+    stencil_line(title, "MEDICAL", 76, 65, 12, glyphs)
+    stencil_line(title, "CHEST", 172, 65, 12, glyphs)
+
+    serial = Image.new("L", (256, 64))
+    stencil_line(serial, "MED-01", 33, 38, 8, glyphs)
+
     cross = Image.new("L", (256, 256))
     ImageDraw.Draw(cross).polygon(
-        [(89, 34), (167, 34), (167, 89), (222, 89), (222, 167), (167, 167),
-         (167, 222), (89, 222), (89, 167), (34, 167), (34, 89), (89, 89)],
+        [(89, 35), (168, 37), (168, 90), (220, 89), (222, 166), (168, 167),
+         (166, 219), (90, 221), (88, 167), (36, 167), (35, 89), (89, 88)],
         fill=255,
     )
-    red = Image.new("L", (256, 256))
-    ImageDraw.Draw(red).rounded_rectangle((17, 17, 239, 239), radius=14, fill=255)
     title_rng = random.Random(324)
-    badge_rng = random.Random(325)
-    lettering = spray(title, (224, 173, 43), (166, 126, 30), title_rng)
-    badge = spray(red, (147, 41, 34), (108, 47, 33), badge_rng)
-    badge.alpha_composite(spray(cross, (223, 219, 191), (176, 167, 138), badge_rng))
-    return weather(lettering, title, title_rng, 132), weather(badge, red, badge_rng, 171)
+    serial_rng = random.Random(325)
+    cross_rng = random.Random(326)
+    return (
+        ("chest_title", weather(spray(title, (227, 174, 49), (161, 117, 29), title_rng),
+                                title, title_rng, 183), 0.40, 0.16),
+        ("chest_serial", weather(spray(serial, (210, 158, 46), (142, 109, 36), serial_rng),
+                                 serial, serial_rng, 53), 0.178, 0.041),
+        ("chest_cross", weather(spray(cross, (15, 15, 13), (40, 38, 31), cross_rng),
+                                cross, cross_rng, 222), 0.104, 0.104),
+        ("chest_tape_lid", tape_residue((512, 256), [
+            ((244, 49), 354, 25, 1.6, 0.25), ((247, 207), 330, 23, 0.6, 0.19),
+            ((72, 123), 190, 25, 90.5, 0.58), ((416, 126), 177, 24, 89.6, 0.33),
+            ((437, 211), 47, 16, -7, 0.70),
+        ], 327), 0.246, 0.100),
+        ("chest_tape_side", tape_residue((256, 64), [
+            ((114, 34), 184, 29, -2, 0.61), ((211, 28), 43, 14, 8, 0.39),
+        ], 328), 0.102, 0.033),
+        ("chest_tape_back", tape_residue((512, 256), [
+            ((248, 31), 342, 23, -1.5, 0.40), ((251, 223), 353, 27, -1.1, 0.45),
+            ((86, 113), 205, 22, 90, 0.44), ((418, 127), 199, 24, 88, 0.38),
+            ((72, 224), 56, 17, 6, 0.73),
+        ], 329), 0.256, 0.157),
+    )
 
 
 def plane(name, width, height):
@@ -118,12 +206,10 @@ def plane(name, width, height):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--font", required=True, type=Path)
+    parser.add_argument("--reference", required=True, type=Path, help="Supplied military stencil sheet")
     parser.add_argument("--png-dir", required=True, type=Path)
     args = parser.parse_args()
     args.png_dir.mkdir(parents=True, exist_ok=True)
-    for name, image, width, height in zip(
-        ("chest_title", "chest_cross"), stencils(args.font), (0.40, 0.092), (0.15, 0.092)
-    ):
+    for name, image, width, height in stencils(args.reference):
         image.save(args.png_dir / f"{name}_ca.png")
         plane(name, width, height)

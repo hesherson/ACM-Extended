@@ -1,66 +1,78 @@
-/* The original stencils sit on the vanilla surfaces. Cast against the
-   rendered mesh so the panel ribs and handle recesses set their depth. */
-params ["_object", "_title", "_sides", ["_flat", false]];
-(boundingBoxReal _object) params ["_min", "_max"];
-private _origin = getPosWorld _object;
-private _bounds = [];
-{
-    private _xPos = _x;
-    {
-        private _yPos = _x;
-        {_bounds pushBack (_object modelToWorldWorld [_xPos, _yPos, _x]);}
-            forEach [_min select 2, _max select 2];
-    } forEach [_min select 1, _max select 1];
-} forEach [_min select 0, _max select 0];
-
-private _heading = _object getVariable "ACME_medicalChestHeading";
-private _forward = [sin _heading, cos _heading, 0];
-private _right = [cos _heading, -(sin _heading), 0];
-private _up = [0, 0, 1];
-private _low = selectMin (_bounds apply {_x select 2});
-private _high = selectMax (_bounds apply {_x select 2});
-_origin set [2, (_low + _high) * 0.5];
-private _surfaces = [];
-if (_title) then {
-    private _normal = if (_flat) then {_up} else {_forward};
-    private _vertical = if (_flat) then {_forward} else {_up};
-    _surfaces pushBack ["chest_title", _normal, _vertical, _origin, 0.115, 0.055];
+/* The closed cabinet and detached lid have measured model-space paint positions.
+   The open cabinet variants use their own rendered surfaces for placement. */
+params ["_object", "_surface"];
+private _markings = switch (_surface) do {
+    case "closed": {[
+        ["chest_title", [0, 0.1539, 0], [0, 1, 0], [1, 0, 0]],
+        ["chest_serial", [-0.195, 0.154, -0.093], [0, 1, 0], [1, 0, 0]],
+        ["chest_tape_lid", [0.197, 0.1536, 0.026], [0, 1, 0], [1, 0, 0]],
+        ["chest_cross", [0, -0.063, 0.2665], [0, 0, 1], [1, 0, 0]],
+        ["chest_cross", [0, -0.063, -0.2665], [0, 0, -1], [1, 0, 0]],
+        ["chest_cross", [0.4168, -0.075, 0.161], [1, 0, 0], [0, 0, -1]],
+        ["chest_tape_side", [0.275, -0.068, 0.2662], [0, 0, 1], [1, 0, 0]],
+        ["chest_tape_back", [0, -0.1617, -0.022], [0, -1, 0], [1, 0, 0]]
+    ]};
+    case "lid": {[
+        ["chest_title", [0, 0.0319, 0], [0, 1, 0], [1, 0, 0]],
+        ["chest_serial", [-0.195, 0.0319, -0.093], [0, 1, 0], [1, 0, 0]],
+        ["chest_tape_lid", [0.197, 0.0319, 0.026], [0, 1, 0], [1, 0, 0]]
+    ]};
+    default {[]};
 };
-if (_sides) then {
-    private _badgeCenter = _origin vectorAdd ((_forward vectorMultiply -0.056) vectorAdd [0, 0, 0.045]);
+
+private _placements = _markings apply {
+    _x params ["_asset", "_point", "_normal", "_vertical"];
+    [_asset, _object modelToWorldWorld _point, _object vectorModelToWorld _normal, _object vectorModelToWorld _vertical]
+};
+
+if (_surface == "cabinet") then {
+    (boundingBoxReal _object) params ["_min", "_max"];
+    private _center = _object modelToWorldWorld ((_min vectorAdd _max) vectorMultiply 0.5);
+    private _heading = _object getVariable "ACME_medicalChestHeading";
+    private _forward = [sin _heading, cos _heading, 0];
+    private _right = [cos _heading, -(sin _heading), 0];
+    private _up = [0, 0, 1];
+    private _body = _center vectorAdd (_forward vectorMultiply -0.063);
+    private _strips = [
+        ["chest_cross", _right, _up, _body, 0.052, 0.052],
+        ["chest_cross", _right vectorMultiply -1, _up, _body, 0.052, 0.052],
+        ["chest_cross", _up, _right, _center vectorAdd ((_forward vectorMultiply -0.075) vectorAdd (_right vectorMultiply -0.161)), 0.052, 0.052],
+        ["chest_tape_side", _right vectorMultiply -1, _up, _body vectorAdd [0, 0, 0.275], 0.051, 0.0165],
+        ["chest_tape_back", _forward vectorMultiply -1, _up, _center vectorAdd (_right vectorMultiply 0.022), 0.128, 0.0785]
+    ];
     {
-        _surfaces pushBack ["chest_cross", _right vectorMultiply _x, _up,
-            _badgeCenter, 0.044, 0.044];
-    } forEach [-1, 1];
+        _x params ["_asset", "_normal", "_vertical", "_origin", "_halfWidth", "_halfHeight"];
+        private _tangent = _vertical vectorCrossProduct _normal;
+        private _reach = _normal vectorMultiply 1.25;
+        private _depths = [];
+        {
+            private _row = _origin vectorAdd (_vertical vectorMultiply _x);
+            {
+                private _sample = _row vectorAdd (_tangent vectorMultiply _x);
+                private _hits = lineIntersectsSurfaces [
+                    _sample vectorAdd _reach, _sample vectorDiff _reach, objNull, objNull, true, -1, "VIEW", "NONE"
+                ];
+                private _index = _hits findIf {(_x select 2) isEqualTo _object || {(_x select 3) isEqualTo _object}};
+                if (_index >= 0) then {
+                    _depths pushBack (((_hits select _index select 0) vectorDiff _origin) vectorDotProduct _normal);
+                };
+            } forEach [-_halfWidth, 0, _halfWidth];
+        } forEach [-_halfHeight, 0, _halfHeight];
+        // Skip a marking if a handle or a cabinet edge breaks up its paint surface.
+        if (count _depths == 9 && {(selectMax _depths) - (selectMin _depths) <= 0.008}) then {
+            private _position = _origin vectorAdd (_normal vectorMultiply ((selectMax _depths) + 0.001));
+            _placements pushBack [_asset, _position, _normal, _vertical];
+        };
+    } forEach _strips;
 };
 
 private _decals = [];
 {
-    _x params ["_asset", "_normal", "_vertical", "_center", "_halfWidth", "_halfHeight"];
-    private _tangent = _normal vectorCrossProduct _vertical;
-    private _depth = -1e6;
-    {
-        private _v = _x;
-        {
-            private _sample = (_center vectorAdd (_vertical vectorMultiply _v)) vectorAdd (_tangent vectorMultiply _x);
-            private _reach = _normal vectorMultiply 1.25;
-            private _hits = lineIntersectsSurfaces [
-                _sample vectorAdd _reach, _sample vectorDiff _reach, objNull, objNull, true, -1, "VIEW", "GEOM"
-            ];
-            private _i = _hits findIf {(_x select 2) isEqualTo _object || {(_x select 3) isEqualTo _object}};
-            if (_i >= 0) then {
-                _depth = _depth max (((_hits select _i select 0) vectorDiff _center) vectorDotProduct _normal);
-            };
-        } forEach [-_halfWidth, 0, _halfWidth];
-    } forEach [-_halfHeight, 0, _halfHeight];
-    if (_depth < -1e5) then {
-        _depth = selectMax (_bounds apply {(_x vectorDiff _center) vectorDotProduct _normal});
-    };
-    private _position = _center vectorAdd (_normal vectorMultiply (_depth + 0.0015));
+    _x params ["_asset", "_position", "_normal", "_vertical"];
     private _decal = createSimpleObject [format ["\acm_extended\data\medical_chest\%1.p3d", _asset], _position, false];
     if (!isNull _decal) then {
         _decal setVectorDirAndUp [_normal, _vertical];
         _decals pushBack _decal;
     };
-} forEach _surfaces;
+} forEach _placements;
 _decals

@@ -8,7 +8,7 @@ The stock is one of each public ACE medical inventory class in the loaded config
 
 ## Cabinet assets and stencil positioning
 
-The closed stock class is `Land_PortableCabinet_01_closed_olive_F`. The PBO references Bohemia's installed cabinet meshes for the closed case, loose lid and both open variants. B324 places the chipped yellow stencil between the middle ribs and the dirty red-and-white badges on the handle sides. The transparent decal geometry keeps the lettering and badges readable across the mirrored and shared areas of the stock olive UV layout. The removed lid keeps the front stencil and rests painted side up.
+The closed stock class is `Land_PortableCabinet_01_closed_olive_F`. The PBO references Bohemia's installed cabinet meshes for the closed case, loose lid and both open variants. B325 uses the supplied military stencil lettering for the chipped yellow MEDICAL CHEST and smaller MED-01 markings. Worn black crosses sit between the handles on both sides and in the clear area beside the top handle. The lid and rear panel show old adhesive outlines, with a smaller tape remnant on one carry side. The original transparent decal geometry keeps the lettering readable across shared and mirrored stock UVs. The detached lid retains the front markings and rests painted side up. The open cabinet applies case markings where its model exposes a continuous panel.
 
 To see the exact model and texture paths on your install, preview a mission in Eden on VR and execute this in the **local** Debug Console. It prints the model path, camo slots, texture paths, model bounds and drawer animation names to the clipboard.
 
