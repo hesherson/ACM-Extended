@@ -14,6 +14,14 @@ class Extended_PostInit_EventHandlers {
     };
 };
 
+class Extended_InitPost_EventHandlers {
+    class ACME_MedicalChest {
+        class ACM_Extended {
+            init = "if (isServer && {!is3DEN}) then {[ACME_fnc_medicalChestInit,_this] call CBA_fnc_execNextFrame;};";
+        };
+    };
+};
+
 // Pause-menu bridge for ACME's patient-focused diagnostic dump. CBA opens this empty display, the onLoad
 // handler writes the snapshot, then closes immediately, mirroring ACE's own Debug To Clipboard option.
 class RscDisplayEmpty;
@@ -504,7 +512,7 @@ class CfgPatches {
     class ACM_Extended {
         ACME_BUILD_CONFIG("extended");
         name = "ACM Extended";
-        units[] = {"ACME_ModuleMegacodeKelly", "ACME_ModuleBloodFridge", "ACME_BloodFridge_Closed", "ACME_BloodFridge_Open",
+        units[] = {"ACME_MedicalChest", "ACME_ModuleMegacodeKelly", "ACME_ModuleBloodFridge", "ACME_BloodFridge_Closed", "ACME_BloodFridge_Open",
             // zeus enumerates units[]. a module that is not in this list does not exist as far as the curator is
             // concerned, however correctly it is built and whatever its scopecurator says. these five were fully
             // implemented and completely unreachable.
@@ -550,6 +558,7 @@ class CfgPatches {
             "A3_Data_F",
             "A3_Anims_F",
             "A3_Weapons_F_Ammoboxes",
+            "A3_Props_F_Enoch_Military_Camps",
             "cba_main",
             "ace_main",
             "ace_fastroping",
@@ -2290,6 +2299,14 @@ class CfgFunctions {
             class clinicalTimingSync {};
             class clinicalClock {};
             class clinicalClockTick {};
+            class medicalChestInit {};
+            class medicalChestPlace {};
+            class medicalChestStock {};
+            class medicalChestDrawers {};
+            class medicalChestDecals {};
+            class medicalChestRequest {};
+            class medicalChestUse {};
+            class registerMedicalChestRuntime {};
             class ivStartKitUnpack {};
             class ivStartKitStock {};
             class yAutoWarmer {};
@@ -7540,6 +7557,8 @@ class CfgFactionClasses {
 };
 
 class CfgVehicles {
+    class Box_NATO_Ammo_F;
+    #include "MedicalChestVehicles.hpp"
     class ReammoBox_F;
     // A native ground container, paired with the exact removed vest mesh. There is no wearable duplicate
     // to take; its live supplies use vanilla Gear, including world access and multiplayer inventory.
@@ -7637,7 +7656,6 @@ class CfgVehicles {
     // on the models: 2u and 4u keep their containers, and the 1u now uses the ammo-box container as well. its old
     // land_ammobox_rounds_f was a static prop with no inventory and no paintable selection, so it could neither
     // store blood nor go red. the 1u and 2u therefore share the ammo-box look for now.
-    class Box_NATO_Ammo_F;
     class Box_NATO_Wps_F;
     class ACME_BloodCoolerBox_CSWB1U: Box_NATO_Ammo_F {
         scope = 2;
@@ -11139,6 +11157,7 @@ class CfgRemoteExec {
         class ACME_fnc_coolerBoxApplyScale { allowedTargets = 0; jip = 1; };
         class ACME_fnc_edemaSet { allowedTargets = 0; };
         class ACME_fnc_forceWalkLocal { allowedTargets = 0; };
+        class ACME_fnc_medicalChestRequest { allowedTargets = 2; };
         class ACME_fnc_megacodeArrest { allowedTargets = 0; };
         class ACME_fnc_megacodeCableApply { allowedTargets = 2; };
         class ACME_fnc_megacodeChestInjury { allowedTargets = 0; };

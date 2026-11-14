@@ -1,0 +1,161 @@
+"""Run the production chest state machine with mocked Arma objects and 3D commands."""
+import re
+
+import pytest
+
+from test_menu_death_lifecycle import ROOT, adapt, execute, read
+
+
+def request_fixture():
+    code = adapt(read("medicalChestRequest"))
+    replacements = {
+        'isRemoteExecuted': '_remote',
+        'remoteExecutedOwner': '_sender',
+        'alive _actor': '_alive',
+        'owner _actor': '_ownerNum',
+        '_chest isKindOf "ACME_MedicalChest"': '_chest getVariable ["fixtureChest", false]',
+        '_actor distance _target': '_distance',
+        'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
+        'createVehicle ["Land_PortableCabinet_01_lid_olive_F", ASLToATL _base, [], 0, "CAN_COLLIDE"]':
+            '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
+        '    _cabinet allowDamage false;': '',
+        '    _lid allowDamage false;': '',
+        '    _lid enableSimulationGlobal false;': '',
+        '    private _cabinetDir = _chest vectorWorldToModel (vectorDir _cabinet);': '',
+        '    private _cabinetUp = _chest vectorWorldToModel (vectorUp _cabinet);': '',
+        '    _cabinet attachTo [_chest, _chest worldToModel (ASLToAGL getPosWorld _cabinet)];': '',
+        '    _cabinet setVectorDirAndUp [_cabinetDir, _cabinetUp];': '',
+        '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
+        '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
+        '    _cargo setPosWorld (_base vectorAdd [0, 0, -25]);': '',
+        '_chest hideObjectGlobal true;': '_hidden = true;',
+        '_chest hideObjectGlobal false;': '_hidden = false;',
+        'ATLToASL [_side select 0, _side select 1, 0]': '[_side select 0, _side select 1, 0]',
+        'playSound3D [format ["acm_extended\\sound\\%1.ogg", _sound], objNull, false, getPosWorld _chest, 1.5, 1, 18];':
+            '_audio pushBack _sound;',
+    }
+    for engine, stand_in in replacements.items():
+        assert engine in code, engine
+        code = code.replace(engine, stand_in)
+    code = re.sub(r'lineIntersectsSurfaces\s*\[[^;]+\]', '[]', code)
+    code = re.sub(r'deleteVehicle ([^;]+);', r'_deleted pushBack (\1);', code)
+    return "private _request = {" + code + "};" + r'''
+        private _chest = _patient;
+        private _cargo = missionNamespace;
+        private _created = [];
+        private _deleted = [];
+        private _audio = [];
+        private _placed = [];
+        private _drawers = [];
+        private _hidden = false;
+        private _failLid = false;
+        private _remote = true;
+        private _sender = _ownerNum;
+        private _spawn = {
+            params ["_class"];
+            _created pushBack _class;
+            if (_class == "Land_PortableCabinet_01_lid_olive_F") exitWith {
+                if (_failLid) then {objNull} else {parsingNamespace}
+            };
+            uiNamespace
+        };
+        _chest setVariable ["fixtureChest", true];
+        _chest setVariable ["ACME_medicalChestPlacement", [[20, 12, 0], 0]];
+        _chest setVariable ["ACME_medicalChestState", [0, false]];
+        _chest setVariable ["ACME_medicalChestCargo", _cargo];
+        _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
+        ACME_fnc_medicalChestPlace = {_placed pushBack _this;};
+        ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
+        ACME_fnc_medicalChestDecals = {[]};
+        CBA_fnc_globalEvent = {_events pushBack _this;};
+    '''
+
+
+def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests():
+    execute(request_fixture() + '''
+        [_chest, _medic, true, 0] call _request;
+        private _open = _chest getVariable "ACME_medicalChestCabinet";
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "closed shell did not yield to the drawers"] call _check;
+        [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
+        [(_placed select 0 select 1) isEqualTo [20.95, 12, 0] && {!(_placed select 0 select 3)}, "lid used the cabinet footprint or remained upright"] call _check;
+        [_chest, _medic, true, 0] call _request;
+        [count _created == 2, "concurrent open spawned extra visuals"] call _check;
+        _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
+        [_open, _medic, false, 1] call _request;
+        [_open, _medic, false, 1] call _request;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
+        [_chest, _medic, true, 0] call _request;
+        [count _created == 2, "old open replayed after the chest closed"] call _check;
+        [_chest, _medic, true, 2] call _request;
+        [(_chest getVariable "ACME_medicalChestCargo") isEqualTo _cargo && {(_cargo getVariable "stock") isEqualTo ["ACM_ACCUVAC", "ACE_tourniquet"]}, "using drawers refilled or discarded live cargo"] call _check;
+        [_audio isEqualTo ["medical_chest_open", "medical_chest_close", "medical_chest_open"], "transition failed to emit exactly one matching sound"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("cause,spawn_calls", [("_sender=8;", 0), ("_distance=5;", 0), ("_failLid=true;", 2)])
+def test_denied_or_failed_open_leaves_stock_and_state_intact(cause, spawn_calls):
+    execute(request_fixture() + cause + f'''
+        [_chest, _medic, true, 0] call _request;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [0,false] && {{!_hidden}}, "failed request left a partial swap"] call _check;
+        [count _created == {spawn_calls} && {{_audio isEqualTo []}}, "invalid spawn or success sound"] call _check;
+        [(_cargo getVariable "stock") isEqualTo ["ACM_IV_18g", "ACM_ACCUVAC"], "failed request changed stock"] call _check;
+    ''')
+
+
+def placement_fixture():
+    source = read("medicalChestPlace")
+    for engine, fixture in (
+        ("boundingBoxReal _object", "_bounds"),
+        ("_object setVectorDirAndUp [_forward, _up];", "_orient = [_forward, _up];"),
+        ("_object setPosWorld", "_position ="),
+    ):
+        assert engine in source
+        source = source.replace(engine, fixture)
+    return "private _place={" + source + "};"
+
+
+def test_grounding_supports_both_native_orientation_conventions():
+    execute(placement_fixture() + r'''
+        private _bounds = [[-0.3,-0.4,-0.1],[0.3,0.4,0.1]];
+        private _orient = [];
+        private _position = [];
+        [_medic, [0,0,1], 0] call _place;
+        [_orient isEqualTo [[0,0,1],[0,1,0]] && {abs ((_position select 2) - 1.408) < 0.0001}, "flat case did not stand up on its original lower edge"] call _check;
+        _bounds = [[-0.3,-0.2,-0.5],[0.3,0.2,0.5]];
+        [_medic, [0,0,1], 0] call _place;
+        [_orient isEqualTo [[0,1,0],[0,0,1]] && {abs ((_position select 2) - 1.508) < 0.0001}, "upright cabinet tilted or sank"] call _check;
+        [_medic, [0,0,1], 0, false] call _place;
+        [_orient isEqualTo [[0,0,1],[0,1,0]] && {abs ((_position select 2) - 1.208) < 0.0001}, "cover did not lie clear of the floor"] call _check;
+    ''')
+
+
+def test_live_catalog_routes_medical_items_and_charges_to_native_cargo():
+    source = read("medicalChestStock")
+    source = source.replace('_cargo addItemCargoGlobal [_x, 1]', '_itemsOut pushBack _x')
+    source = source.replace('_cargo addMagazineCargoGlobal [_x, 1]', '_magazinesOut pushBack _x')
+    source = source.replace('_cargo addBackpackCargoGlobal [_x, 1]', '_packsOut pushBack _x')
+    source = source.replace('getNumber (configFile >> "CfgVehicles" >> _x >> "isBackpack") == 1', '_x == "MedicalBackpack"')
+    execute('private _stock={' + source + '};' + r'''
+        private _itemsOut = []; private _magazinesOut = []; private _packsOut = [];
+        missionNamespace setVariable ["ACME_medicalChestCatalog",
+            [["ACME_TempusLS_Item","ACME_IVStartKit_18g"],["ACM_OxygenTank_425"],["MedicalBackpack","HealthVehicle"]]];
+        [_patient] call _stock;
+        [_itemsOut isEqualTo ["ACME_TempusLS_Item","ACME_IVStartKit_18g"], "missing ordinary stock"] call _check;
+        [_magazinesOut isEqualTo ["ACM_OxygenTank_425"], "charge-bearing supplies used the wrong cargo type"] call _check;
+        [_packsOut isEqualTo ["MedicalBackpack"], "whole vehicles treated as backpacks"] call _check;
+    ''')
+
+
+def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
+    addon = ROOT / "addons/acm_extended"
+    config = (addon / "config.cpp").read_text()
+    vehicles = (addon / "MedicalChestVehicles.hpp").read_text()
+    assert 'units[] = {"ACME_MedicalChest"' in config
+    assert 'class ACME_MedicalChest: Land_PortableCabinet_01_closed_olive_F' in vehicles
+    assert 'ACME_MedicalChest4Drawers,Land_PortableCabinet_01_4drawers_olive_F' in vehicles
+    assert 'ACME_MedicalChest7Drawers,Land_PortableCabinet_01_7drawers_olive_F' in vehicles
+    for asset in ("chest_title", "chest_cross"):
+        assert (addon / "data/medical_chest" / f"{asset}.p3d").read_bytes().startswith(b"MLOD")
+        assert (addon / "data/medical_chest" / f"{asset}_ca.paa").is_file()
+    for name in ("open", "close"):
+        assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")
