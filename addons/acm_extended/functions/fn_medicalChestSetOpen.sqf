@@ -11,20 +11,18 @@ if (_opening) then {
         selectRandom ["ACME_MedicalChest4Drawers", "ACME_MedicalChest7Drawers"]
     };
     _cabinet = createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"];
-    private _lid = createVehicle ["Land_PortableCabinet_01_lid_olive_F", ASLToATL _base, [], 0, "CAN_COLLIDE"];
+    private _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _base];
     if (isNull _cabinet || {isNull _lid}) exitWith {
         if (!isNull _cabinet) then {deleteVehicle _cabinet;};
         if (!isNull _lid) then {deleteVehicle _lid;};
         _cabinet = objNull;
     };
     _cabinet allowDamage false;
-    _lid allowDamage false;
-    _lid enableSimulationGlobal false;
     _cabinet enableSimulationGlobal false;
     // The detached cover lies to the side, clear of the open drawers.
-    private _side = [_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase;
-    [_lid, _side, _heading, true] call ACME_fnc_medicalChestPlace;
-    [_cabinet, _base, _heading] call ACME_fnc_medicalChestPlace;
+    ([_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
+    private _lidFrame = [_lid, _side, _heading, "lid", _normal, _chest] call ACME_fnc_medicalChestPlace;
+    private _shellFrame = [_cabinet, _base, _heading, "cabinet", [0, 0, 1], _chest] call ACME_fnc_medicalChestPlace;
     _cargo attachTo [_cabinet, [0, 0, 0]];
     _cabinet setVariable ["ACME_medicalChestAnchor", _chest, true];
     _chest setVariable ["ACME_medicalChestCabinet", _cabinet, true];
@@ -33,7 +31,7 @@ if (_opening) then {
     [_cabinet, _initial, true] call ACME_fnc_medicalChestDrawers;
     {deleteVehicle _x;} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
     _chest setVariable ["ACME_medicalChestDecals",
-        ([_cabinet, "cabinet", _variant] call ACME_fnc_medicalChestDecals) + ([_lid, "lid", _variant] call ACME_fnc_medicalChestDecals)];
+        ([_cabinet, "cabinet", _variant, false, _shellFrame] call ACME_fnc_medicalChestDecals) + ([_lid, "lid", _variant, false, _lidFrame] call ACME_fnc_medicalChestDecals)];
 } else {
     // Keep the same cargo, and move it out of native Gear reach while shut.
     detach _cargo;

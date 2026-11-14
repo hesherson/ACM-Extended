@@ -1,7 +1,7 @@
 {
   "version": "1.2.4.1",
-  "batch": "B330",
-  "network_revision": "NA8-B330-1.2.4.1-candidate",
+  "batch": "B331",
+  "network_revision": "NA8-B331-1.2.4.1-candidate",
   "network_protocol": 12,
   "debug_revision": "",
   "status": "candidate",

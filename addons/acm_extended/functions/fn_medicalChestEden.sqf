@@ -44,10 +44,10 @@ private _look = [typeOf _entity, _open];
 ];
 private _heading = getDir _entity;
 private _base = [getPosWorld _entity, [_entity], 0.3, 2, true] call ACME_fnc_medicalChestGround;
-private _side = if (_open) then {
+private _lidSupport = if (_open) then {
     [_base, _heading, _entity, objNull, true] call ACME_fnc_medicalChestLidBase
 } else {[]};
-private _next = [_base, _heading, _side];
+private _next = [_base, _heading, _lidSupport];
 private _replace = _entity isNotEqualTo _owner || {_look isNotEqualTo _oldLook}
     || {(_parts findIf {isNull _x}) >= 0} || {(_decals findIf {isNull (_x select 1)}) >= 0};
 if (_replace) then {
@@ -55,7 +55,7 @@ if (_replace) then {
     private _class = if (_open) then {"ACME_MedicalChest4Drawers"} else {typeOf _entity};
     _parts = [createSimpleObject [_class, _base, true]];
     if (_open) then {
-        _parts pushBack (createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _side, true]);
+        _parts pushBack (createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _lidSupport select 0, true]);
     };
     if ((_parts findIf {isNull _x}) >= 0) exitWith {
         {deleteVehicle _x;} forEach _parts;
@@ -65,13 +65,16 @@ if (_replace) then {
         _x setPhysicsCollisionFlag false;
         _x setVariable ["ACME_medicalChestEdenVisual", true];
     } forEach _parts;
-    if (_open) then {[_parts select 0, true, true] call ACME_fnc_medicalChestDrawers;};
     _decals = [];
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {
-    [_parts select 0, _base, _heading] call ACME_fnc_medicalChestPlace;
-    if (_open) then {[_parts select 1, _side, _heading, true] call ACME_fnc_medicalChestPlace;};
+    private _shellFrame = [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, [0, 0, 1], _entity] call ACME_fnc_medicalChestPlace;
+    private _lidFrame = if (_open) then {
+        _lidSupport params ["_side", "_normal"];
+        [_parts select 1, _side, _heading, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace
+    } else {[]};
+    if (_replace && {_open}) then {[_parts select 0, true, true] call ACME_fnc_medicalChestDrawers;};
     if (_replace) then {
         private _variant = getNumber (configOf _entity >> "acmeChestVariant");
         {
@@ -85,7 +88,7 @@ if (_replace || {_next isNotEqualTo _transform}) then {
                     _part vectorWorldToModel (vectorDir _x),
                     _part vectorWorldToModel (vectorUp _x)
                 ];
-            } forEach ([_part, _surface, _variant, true] call ACME_fnc_medicalChestDecals);
+            } forEach ([_part, _surface, _variant, true, [_shellFrame, _lidFrame] select (_surface == "lid")] call ACME_fnc_medicalChestDecals);
         } forEach _parts;
     } else {
         {

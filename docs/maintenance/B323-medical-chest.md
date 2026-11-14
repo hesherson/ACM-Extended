@@ -2,7 +2,7 @@
 
 In Eden or Zeus, place **Medical Chest (Full Stock)** from **Supplies → ACM**. Its mission classname is `ACME_MedicalChest`. Leave Eden's Simple Object attribute off so it can run its initialization and interactions.
 
-In ACE Interact, **Open Medical Chest** removes the lid, sets it beside the upright drawers with its painted face down, and opens Gear for the player who opened it. The server chooses the four- or seven-drawer cabinet and each drawer's extension. With the chest open, **Close Medical Chest** is the chest's ACE action. Items taken or deposited stay with the same inventory between openings.
+In ACE Interact, **Open Medical Chest** removes the lid, sets it beside the upright drawers with its painted face down against the ground, and opens Gear for the player who opened it. The drawers stack vertically and face the same direction as the closed chest. The server chooses the four- or seven-drawer cabinet and each drawer's extension. With the chest open, **Close Medical Chest** is the chest's ACE action. Items taken or deposited stay with the same inventory between openings.
 
 The stock is one of each public ACE medical inventory class in the loaded configuration, including ACM and ACME. It includes medical items, charge-bearing medical magazines, and medical backpacks when tagged by a loaded addon. Hidden compatibility classes and runtime-only items that require a prepared-item identity are excluded. Native blood items in this chest follow normal loose-blood rules. Existing ACM Basic and Advanced supply crates remain available.
 

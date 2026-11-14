@@ -12,7 +12,7 @@ _cargo setVariable ["ACME_medicalChestAnchor", _chest, true];
 
 _chest enableSimulationGlobal false;
 _chest allowDamage false;
-[_chest, _base, _heading] call ACME_fnc_medicalChestPlace;
+[_chest, _base, _heading, "closed"] call ACME_fnc_medicalChestPlace;
 _cargo setPosWorld (_base vectorAdd [0, 0, -25]);
 _chest setVariable ["ACME_medicalChestPlacement", [_base, _heading]];
 _chest setVariable ["ACME_medicalChestCargo", _cargo, true];

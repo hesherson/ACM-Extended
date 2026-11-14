@@ -1,6 +1,6 @@
 /* The closed cabinet and detached lid have measured model-space paint positions.
    The original cabinet markings use rendered surfaces for placement. */
-params ["_object", "_surface", ["_variant", 0], ["_localOnly", false]];
+params ["_object", "_surface", ["_variant", 0], ["_localOnly", false], ["_finishFrame", []]];
 private _hasRetexture = _variant in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 private _markings = switch (_surface) do {
     case "closed": {[
@@ -26,9 +26,18 @@ if (_hasRetexture) then {
     _markings = [];
 };
 
+private _frame = if (_finishFrame isEqualTo []) then {
+    [_object modelToWorldWorld [0, 0, 0], vectorDir _object, vectorUp _object]
+} else {_finishFrame};
+_frame params ["_origin", "_modelY", "_modelZ"];
+private _modelX = _modelY vectorCrossProduct _modelZ;
+private _transform = {
+    params ["_x", "_y", "_z"];
+    ((_modelX vectorMultiply _x) vectorAdd (_modelY vectorMultiply _y)) vectorAdd (_modelZ vectorMultiply _z)
+};
 private _placements = _markings apply {
     _x params ["_asset", "_point", "_normal", "_vertical"];
-    [_asset, _object modelToWorldWorld _point, _object vectorModelToWorld _normal, _object vectorModelToWorld _vertical]
+    [_asset, _origin vectorAdd (_point call _transform), _normal call _transform, _vertical call _transform]
 };
 
 if (_surface == "cabinet" && {!_hasRetexture}) then {
@@ -75,10 +84,7 @@ if (_surface == "cabinet" && {!_hasRetexture}) then {
     } forEach _strips;
 };
 
-_placements insert [0, [[
-    format ["variants\chest_%1_%2", [0, _variant] select _hasRetexture, _surface],
-    _object modelToWorldWorld [0, 0, 0], vectorDir _object, vectorUp _object
-]]];
+_placements insert [0, [[format ["variants\chest_%1_%2", [0, _variant] select _hasRetexture, _surface]] + _frame]];
 
 private _decals = [];
 {

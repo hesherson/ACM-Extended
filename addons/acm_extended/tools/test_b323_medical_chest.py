@@ -10,7 +10,7 @@ from test_menu_death_lifecycle import ROOT, adapt, execute, read
 def request_fixture():
     request = adapt(read("medicalChestRequest"))
     transition = adapt(read("medicalChestSetOpen"))
-    lid_base = adapt(read("medicalChestLidBase"))
+    lid_base = adapt(read("medicalChestLidBase")).replace("0 boundingBoxReal _chest", "[[-.423,-.170,-.266],[.421,.163,.266]]")
     replacements = {
         'isRemoteExecuted': '_remote',
         'is3DEN': '_eden',
@@ -21,11 +21,9 @@ def request_fixture():
         '_actor distance _target': '_distance',
         'getNumber (configOf _chest >> "acmeChestVariant")': '_fixtureVariant',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
-        'createVehicle ["Land_PortableCabinet_01_lid_olive_F", ASLToATL _base, [], 0, "CAN_COLLIDE"]':
+        'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _base]':
             '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
         '    _cabinet allowDamage false;': '',
-        '    _lid allowDamage false;': '',
-        '    _lid enableSimulationGlobal false;': '',
         '    _cabinet enableSimulationGlobal false;': '    _cabinet setVariable ["fixtureFrozen", true];',
         '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
         '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
@@ -46,7 +44,7 @@ def request_fixture():
         "ACME_fnc_medicalChestLidBase = {" + lid_base + "};"
     )
     return definitions + r'''
-        ACME_fnc_medicalChestGround = {_this select 0};
+        ACME_fnc_medicalChestGround = {[_this select 0, [0, 0, 1]]};
         private _chest = _patient;
         private _cargo = missionNamespace;
         private _created = [];
@@ -75,7 +73,7 @@ def request_fixture():
         _chest setVariable ["ACME_medicalChestState", [0, false]];
         _chest setVariable ["ACME_medicalChestCargo", _cargo];
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
-        ACME_fnc_medicalChestPlace = {_placed pushBack _this;};
+        ACME_fnc_medicalChestPlace = {_placed pushBack _this; [_this select 1, [0,1,0], [-1,0,0]]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
         ACME_fnc_medicalChestDecals = {_markings pushBack (_this select [1, 2]); []};
         CBA_fnc_globalEvent = {_events pushBack _this;};
@@ -90,7 +88,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "closed shell did not yield to the drawers"] call _check;
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
         [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
-        [(_placed select 0 select 1) isEqualTo [20.7, 12, 0] && {_placed select 0 select 3}, "lid used the cabinet footprint or remained upright"] call _check;
+        [(_placed select 0 select 1) isEqualTo [20.7, 12, 0] && {(_placed select 0 select 3) == "lid"} && {(_placed select 1 select 3) == "cabinet"}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         [(_open getVariable ["fixtureFrozen", false]) && {_drawers select 0 select 2}, "open cabinet was free to tip or needs simulation to set the drawers"] call _check;
@@ -155,9 +153,11 @@ def test_denied_or_failed_open_leaves_stock_and_state_intact(cause, spawn_calls)
 def placement_fixture():
     source = read("medicalChestPlace")
     for engine, fixture in (
-        ("boundingBoxReal _object", "_bounds"),
-        ("_object setVectorDirAndUp _orientation;", "_orient = _orientation;"),
-        ("_object setPosWorld", "_position ="),
+        ("0 boundingBoxReal _object", "_bounds"),
+        ("0 boundingBoxReal _closed", "_closedBounds"),
+        ("_object setVectorDirAndUp [_dir, _up];", "_orient = [_dir, _up];"),
+        ("_object setPosWorld", "_worldPosition ="),
+        ("_object modelToWorldWorld [0, 0, 0]", "_worldPosition"),
     ):
         assert engine in source
         source = source.replace(engine, fixture)
@@ -165,19 +165,63 @@ def placement_fixture():
 
 
 @pytest.mark.parametrize("heading", [0, 90, 228])
-def test_cabinet_uses_long_axis_and_lid_exterior_faces_ground(heading):
+@pytest.mark.parametrize("face_y", [True, False])
+def test_cabinet_drawers_stack_vertically_with_the_same_front_as_closed(heading, face_y):
+    closed = "[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y else "[[-.423,-.266,-.170],[.421,.266,.163]]"
+    cabinet = "[[-.266,-.170,-.421],[.266,.09,.423]]" if face_y else "[[-.266,-.423,-.170],[.266,.421,.09]]"
     execute(placement_fixture() + f'''
         private _heading = {heading};
-        private _bounds = [[-0.423,-0.170,-0.266],[0.421,0.163,0.266]];
+        private _closedBounds = {closed};
+        private _bounds = _closedBounds;
         private _orient = [];
-        private _position = [];
-        [_medic, [0,0,1], _heading] call _place;
+        private _worldPosition = [];
+        [_medic, [0,0,1], _heading, "closed"] call _place;
+        _orient params ["_closedY", "_closedZ"];
+        [((_closedY vectorCrossProduct _closedZ) select 2) > .999, "closed case no longer stands on the wheel end"] call _check;
+        _bounds = {cabinet};
+        private _paint = [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
         _orient params ["_modelY", "_modelZ"];
-        private _modelX = _modelY vectorCrossProduct _modelZ;
-        [(_modelX select 2) > .999 && {{(_modelY select 2) == 0}} && {{abs ((_position select 2) - 1.431) < 0.0001}}, "drawer cabinet did not stand upright"] call _check;
-        _bounds = [[-0.4145,-0.0408,-0.265],[0.4151,0.0413,0.265]];
-        [_medic, [0,0,1], _heading, true] call _place;
-        [(_orient select 0) isEqualTo [0,0,-1] && {{abs ((_position select 2) - 1.0493) < 0.0001}}, "lid exterior did not face the floor at its outermost surface"] call _check;
+        [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,-1]" if face_y else "[0,0,1]"} && {{(_orient select {0 if face_y else 1}) isEqualTo {"_closedY" if face_y else "_closedZ"}}}, "drawer bank did not put drawer 1 at the top facing the closed case heading"] call _check;
+        [abs ((_worldPosition select 2) - 1.431) < 0.0001 && {{(_paint select 2) isEqualTo _closedZ}}, "cabinet lost ground contact or rotated its fitted shell"] call _check;
+        _bounds = _closedBounds;
+        [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
+        [(_orient select {0 if face_y else 1}) isEqualTo {"_closedY" if face_y else "_closedZ"}, "long-X cabinet did not inherit the closed case front"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("bounds,face_axis", [
+    ("[[-.4145,-.0408,-.265],[.4151,.0413,.265]]", 0),
+    ("[[-.4145,-.265,-.0408],[.4151,.265,.0413]]", 1),
+])
+@pytest.mark.parametrize("normal", ["[0,0,1]", "[0.3,0.2,0.9327]"])
+def test_lid_resting_face_follows_the_support_in_both_model_layouts(bounds, face_axis, normal):
+    execute(placement_fixture() + f'''
+        private _closedBounds = [[-.423,-.170,-.266],[.421,.163,.266]];
+        private _bounds = {bounds};
+        private _orient = [];
+        private _worldPosition = [];
+        private _normal = vectorNormalized {normal};
+        private _base = [20,12,1];
+        private _paint = [_medic, _base, 73, "lid", _normal, _patient] call _place;
+        private _modelNormal = _orient select {face_axis};
+        [(_modelNormal vectorDotProduct _normal) < -.999 && {{((_paint select 1) vectorDotProduct _normal) < -.999}}, "lid or its finish remained on edge"] call _check;
+        [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .0493) < .0001, "lid failed to rest at the height of its painted face"] call _check;
+    ''')
+
+
+def test_ground_hit_passes_surface_normal_to_the_lid():
+    source = read("medicalChestGround")
+    start = source.index("lineIntersectsSurfaces")
+    end = source.index("];", start) + 1
+    source = source[:start] + "_mockHits" + source[end:]
+    source = source.replace("ATLToASL [_origin select 0, _origin select 1, 0]", "[0,0,0]")
+    source = source.replace("surfaceNormal [_origin select 0, _origin select 1]", "[0,0,1]")
+    execute("private _ground={" + source + "};" + r'''
+        private _mockHits = [[[20,12,1], [0,.6,.8], _patient, _patient]];
+        private _lid = [[20,12,1], [], 1, 1, false, true] call _ground;
+        [_lid isEqualTo [[20,12,1], [0,.6,.8]], "lid ray used an object reference instead of the support normal"] call _check;
+        private _cabinet = [[20,12,1], [], 1, 1] call _ground;
+        [_cabinet isEqualTo [20,12,1], "cabinet grounding no longer returns its position"] call _check;
     ''')
 
 
