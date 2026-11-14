@@ -44,6 +44,7 @@ def setup():
     private _publications=0;
     private _missionTime=1;
     CBA_missionTime=100;
+    ACME_fnc_clinicalClock={CBA_missionTime};
     private _removeInput={params ["_owner","_base"]; private _items=+(_owner getVariable ["inputItems",[]]);
         private _index=_items find _base; if (_index>=0) then {_items deleteAt _index;}; _owner setVariable ["inputItems",_items];};
     private _addInput={params ["_owner","_base"];private _items=+(_owner getVariable ["inputItems",[]]);_items pushBack _base;_owner setVariable ["inputItems",_items];};

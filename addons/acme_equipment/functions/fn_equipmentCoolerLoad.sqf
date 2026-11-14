@@ -12,13 +12,13 @@ if ((values _pending findIf {(_x get "actor") isEqualTo _actor})>=0) exitWith {}
 private _stamp=[_actor] call ACME_fnc_equipmentTransferStamp;
 if (_stamp isEqualTo []) exitWith {};
 [0] call ACME_fnc_bloodColdChainTick;
-private _snapshot=_actor getVariable ["ACME_bloodExposure",[[],serverTime]];
+private _snapshot=_actor getVariable ["ACME_bloodExposure",[[],([] call ACME_fnc_clinicalClock)]];
 private _entries=(_snapshot select 0) select {(_x select 0)==_bag};
 if (_entries isEqualTo []) exitWith {};
 private _warm=selectMax (_entries apply {_x select 2});
-_warm=_warm+((serverTime-(_snapshot select 1)) max 0);
+_warm=_warm+((([] call ACME_fnc_clinicalClock)-(_snapshot select 1)) max 0);
 if ((["spoil"] call ACME_fnc_bloodTiming) && {_warm>=([_bag] call ACME_fnc_bloodWarmLimit)}) exitWith {};
-private _state=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
+private _state=[_box,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerBoxReconcile;
 if (_state isEqualTo []) exitWith {};
 private _used=0;{_used=_used+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);
 {if ((_x get "kind")=="blood" && {(_x get "device") isEqualTo _box}) then {_used=_used+([_x get "item"] call ACME_fnc_coolerBagVolume);};} forEach values _pending;
@@ -26,7 +26,7 @@ private _capacity=getNumber(configFile >> "CfgWeapons" >> (_state select 0) >> "
 if (_used+_volume>_capacity) exitWith {};
 private _serial=(missionNamespace getVariable ["ACME_eqSerial",0])+1;missionNamespace setVariable ["ACME_eqSerial",_serial];
 private _id=format ["cooler-load:%1:%2",_serial,random 1e9];
-private _r=createHashMapFromArray [["actor",_actor],["patient",objNull],["kind","blood"],["device",_box],["item",_bag],["warm",_warm],["sample",serverTime],["phase","take"],["sent",serverTime],["stamp",_stamp]];
+private _r=createHashMapFromArray [["actor",_actor],["patient",objNull],["kind","blood"],["device",_box],["item",_bag],["warm",_warm],["sample",([] call ACME_fnc_clinicalClock)],["phase","take"],["sent",serverTime],["stamp",_stamp]];
 _actor setVariable ["ACME_eqAdmission",[_id,_stamp],true];
 _actor setVariable ["ACME_equipmentWorldPending",_id,true];
 _pending set [_id,_r];missionNamespace setVariable ["ACME_eqPending",_pending];

@@ -79,6 +79,7 @@ private _patientLocal=true;
 private _alive=false; // Absent native BVM provider is not delivering breaths.
 private _patientAlive=true;
 private _clock=10;
+ACME_fnc_clinicalClock={if (_this param [0,false]) then {CBA_missionTime} else {_clock}};
 private _nowTime=10;
 private _distance=1;
 CBA_missionTime=10;

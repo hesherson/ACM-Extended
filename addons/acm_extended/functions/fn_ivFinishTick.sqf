@@ -37,8 +37,7 @@ if (count _active>=3 && {count _p>=9}) then {
         || {!((_p select 7) call ACME_fnc_ivMinigameViewValid)}
         || {([_medic,_patient] call ACME_fnc_patientInteractionDistance)>3}
         || {!alive _medic} || {_medic getVariable ["ACE_isUnconscious",false]}
-        || {(objectParent _medic) isNotEqualTo (objectParent _patient)}
-        || {((_row param [16,[]]) param [5,""])=="blood_return_flush" && {!([_patient,_row] call ACME_fnc_ivFinishPatency)}}) then {
+        || {(objectParent _medic) isNotEqualTo (objectParent _patient)}) then {
         [] call ACME_fnc_ivFinishAbort;_active=[];
     } else {
         private _job=_row param [16,[]];

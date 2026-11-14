@@ -41,10 +41,10 @@ _timeToMaxEffect = _timeToMaxEffect max 1;
 
 private _adjustments = _unit getVariable [VAR_MEDICATIONS, []];
 
-private _record = [_medication, CBA_missionTime, _timeToMaxEffect, _maxTimeInSystem, _hrAdjust, _painAdjust, _flowAdjust, _administrationType, _maxEffectTime, _rrAdjust, _coSensitivityAdjust, _breathingEffectivenessAdjust, _concentration, _medicationType, _bodyPartIndex];
+private _record = [_medication, ([true] call ACME_fnc_clinicalClock), _timeToMaxEffect, _maxTimeInSystem, _hrAdjust, _painAdjust, _flowAdjust, _administrationType, _maxEffectTime, _rrAdjust, _coSensitivityAdjust, _breathingEffectivenessAdjust, _concentration, _medicationType, _bodyPartIndex];
 if (_infusion) then {_record append ["","ACME_infusionPulse"];};
 _adjustments pushBack _record;
 if (_infusion && {count _adjustments > 32}) then {
-    _adjustments = [_adjustments,CBA_missionTime] call ACME_fnc_compactMedicationRecords;
+    _adjustments = [_adjustments,([true] call ACME_fnc_clinicalClock)] call ACME_fnc_compactMedicationRecords;
 };
 _unit setVariable [VAR_MEDICATIONS, _adjustments, true];

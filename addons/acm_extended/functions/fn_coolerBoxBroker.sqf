@@ -29,7 +29,7 @@ if (_past isNotEqualTo []) exitWith {
         else {
             _mode="draw";
             private _entry=+(_past select 5);
-            _entry set [1,(_entry select 1)+((serverTime-(_past select 6)) max 0)];
+            _entry set [1,(_entry select 1)+((([] call ACME_fnc_clinicalClock)-(_past select 6)) max 0)];
             [true,"",_entry] call _reply;
         };
     };
@@ -54,7 +54,7 @@ if (_mode == "draw") exitWith {
     if (isNull _box || {!alive _owner} || {_owner distance _box > 4.5}
         || {_box getVariable ["ACME_coolerPacking",false]} || {_box getVariable ["ACME_coolerRetired",false]}) exitWith {[false,"This cooler is unavailable."] call _reply;};
     private _bagClass=_sid;
-    private _state=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
+    private _state=[_box,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerBoxReconcile;
     if (_state isEqualTo []) exitWith {[false,"The cooler state is unavailable."] call _reply;};
     private _entries=+(_state select 2);
     private _selected=_entries findIf {(_x select 0) == _bagClass};
@@ -72,7 +72,11 @@ if (_mode == "draw") exitWith {
     _box addItemCargoGlobal [_bagClass,-1];
     if (({_x == _bagClass} count (itemCargo _box)) != ({_x == _bagClass} count _cargo)-1) exitWith {[false,"The blood unit could not be moved."] call _reply;};
     _state set [2,_entries]; _box setVariable ["ACME_boxCoolerState",_state,true];
-    _receipts set [_request,["draw",_owner,_bagClass,0,_box,_entry,serverTime,false]];
+    _box setVariable ["ACME_eqCoolerDrawUntil",serverTime+3];
+    private _openBoxes = missionNamespace getVariable ["ACME_eqOpenCoolers",[]];
+    _openBoxes pushBackUnique _box;
+    missionNamespace setVariable ["ACME_eqOpenCoolers",_openBoxes];
+    _receipts set [_request,["draw",_owner,_bagClass,0,_box,_entry,([] call ACME_fnc_clinicalClock),false]];
     missionNamespace setVariable ["ACME_coolerBoxReceipts",_receipts];
     _token=0; [true,"",_entry] call _reply;
 };
@@ -83,7 +87,7 @@ if (_mode == "deploy") exitWith {
     };
     private _payload=[_owner,"cooler",_sid,_request] call ACME_fnc_inventoryLedgerCertificate;
     if (_payload isEqualTo [] || {!alive _owner}) exitWith {[false,"The cooler could not be set down."] call _reply;};
-    private _state=[_payload select 1,serverTime] call ACME_fnc_coolerAdvance;
+    private _state=[_payload select 1,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerAdvance;
     private _base=_state select 0;
     private _boxClass=switch (_base) do {
         case "ACME_BloodCooler_CSWB1U":{"ACME_BloodCoolerBox_CSWB1U"};
@@ -168,7 +172,7 @@ private _finishAbort={
     };
     if ((_box getVariable ["ACME_coolerPackRollbackState",[]]) isNotEqualTo []) exitWith {};
     _box setVariable ["ACME_coolerPacking",false,false];
-    private _restoredState=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
+    private _restoredState=[_box,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerBoxReconcile;
     if (_restoredState isEqualTo []) exitWith {_box setVariable ["ACME_coolerPacking",true,false];};
     _record set [2,[_sid,_restoredState]]; _record set [3,_box]; _record set [5,"deployed"]; _record set [6,(_record select 6)+1];
     missionNamespace setVariable [format ["ACME_inventoryToken_%1",_token],_record,true];
@@ -240,7 +244,7 @@ if (_mode == "pack") exitWith {
     if (_other isNotEqualTo [] || {weaponCargo _box isNotEqualTo []} || {magazineCargo _box isNotEqualTo []} || {backpackCargo _box isNotEqualTo []}) exitWith {
         [false,"Remove unrelated cargo before picking up the cooler."] call _reply;
     };
-    private _state=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
+    private _state=[_box,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerBoxReconcile;
     if (_state isEqualTo []) exitWith {[false,"The cooler state is unavailable."] call _reply;};
     private _usedMl=0; {_usedMl=_usedMl+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);
     private _capacity=getNumber (configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl");
@@ -276,7 +280,7 @@ if ((_record select 5) == "packingAbort") exitWith {[_box getVariable ["ACME_coo
 // The proof names the current holder, including an intervening native Gear handoff.
 private _originalOwner=_record select 3;
 _box setVariable ["ACME_coolerPacking",false,false];
-private _state=[_box,serverTime] call ACME_fnc_coolerBoxReconcile;
+private _state=[_box,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerBoxReconcile;
 _box setVariable ["ACME_coolerPacking",true,false];
 if (_state isEqualTo []) exitWith {["The cooler state changed during pickup. Its contents remain in the box."] call _abort;};
 private _usedMl=0; {_usedMl=_usedMl+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);

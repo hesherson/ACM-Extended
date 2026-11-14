@@ -2,7 +2,7 @@
  * Unidentified same-class removals retain the oldest matching records; additions
  * inherit a recent released exposure, otherwise begin at this observation.
  */
-params ["_box", ["_now", serverTime, [0]], ["_mode", "full", [""]]];
+params ["_box", ["_now", ([] call ACME_fnc_clinicalClock), [0]], ["_mode", "full", [""]]];
 if (!isServer || {isNull _box} || {!finite _now}) exitWith {[]};
 if !(_mode in ["full", "release"]) exitWith {[]};
 if (_box getVariable ["ACME_coolerRetired", false]) exitWith {[]};
@@ -41,6 +41,7 @@ private _byClass = createHashMap;
     _byClass set [_class, _ages];
 } forEach (_advanced # 2);
 private _float = missionNamespace getVariable ["ACME_ccBagFloat", createHashMap];
+private _custodyNow = serverTime;
 private _ttl = missionNamespace getVariable ["ACME_bloodFloatTTL", 180];
 private _entries = [];
 {
@@ -52,7 +53,7 @@ private _entries = [];
         if (_forEachIndex < _wanted) then {_entries pushBack [_class, _x];}
         else {
             private _released = _float getOrDefault [_class, []];
-            _released pushBack [_x, _now];
+            _released pushBack [_x, _now, _custodyNow];
             _float set [_class, _released];
         };
     } forEach _ages;
@@ -73,7 +74,7 @@ if (_mode == "full" && {_hasAdmissions}) then {
 if (_mode == "full") then {
 {
     private _class = _x;
-    private _released = (_float getOrDefault [_class, []]) select {(_now - (_x # 1)) < _ttl};
+    private _released = (_float getOrDefault [_class, []]) select {(_custodyNow - (_x param [2,_x select 1])) < _ttl};
     private _ranked = _released apply {[(_x # 0) + ((_now - (_x # 1)) max 0), _x]};
     _ranked sort false;
     for "_i" from 1 to (_counts get _class) do {

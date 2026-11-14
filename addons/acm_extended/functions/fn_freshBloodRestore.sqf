@@ -19,7 +19,7 @@ private _plan = createHashMap;
 {
     _x params ["_id","_donor","_volume","_type","_alive","_age"];
     _plan set [_id,[_donor,false] call ACME_fnc_clinicalCodec];
-    _plan set [_id,[_plan get _id,_volume,_type,_alive,CBA_missionTime - _age - _offline]];
+    _plan set [_id,[_plan get _id,_volume,_type,_alive,([true] call ACME_fnc_clinicalClock) - _age - _offline]];
 } forEach (_snapshot select 1);
 // Preserve the compatibility seed if the historical snapshot omitted it.
 if (!(0 in _plan) && {0 in _registry}) then {_plan set [0,+(_registry get 0)];};

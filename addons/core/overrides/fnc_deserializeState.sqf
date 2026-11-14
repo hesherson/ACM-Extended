@@ -307,9 +307,9 @@ _unit setVariable [QACEGVAR(medical,lastWakeUpCheck), nil];
 // Convert medications offset to time
 // Native medication entries were validated before reset.
 {
-    _x set [1, _x#1 + CBA_missionTime - _offlineSeconds];
+    _x set [1, _x#1 + ([true] call ACME_fnc_clinicalClock) - _offlineSeconds];
 } forEach _medications;
-_medications = _medications select {[_x,CBA_missionTime - (_x select 1),"active"] call ACME_fnc_medicationKineticEffect};
+_medications = _medications select {[_x,([true] call ACME_fnc_clinicalClock) - (_x select 1),"active"] call ACME_fnc_medicationKineticEffect};
 _unit setVariable [VAR_MEDICATIONS, _medications, true];
 
 // All Extended injury/ROSC constraints exist before state-machine entry callbacks

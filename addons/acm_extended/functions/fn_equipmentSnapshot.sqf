@@ -73,7 +73,7 @@ private _bags = _bagStore apply {[_x,"used","snapshot"] call ACME_fnc_bloodUseRo
             && {(_meta select 1) isEqualType false} && {(_meta select 2) isEqualType 0} && {finite (_meta select 2)}
             && {(_meta select 3) isEqualTo (_x param [4,-1])};
         _x set [7,-1];
-        _x set [8,if (_validFresh) then {["freshAgeV1",_meta select 1,(CBA_missionTime - (_meta select 2)) max 0,_meta select 3]} else {["freshMissingV1"]}];
+        _x set [8,if (_validFresh) then {["freshAgeV1",_meta select 1,(([true] call ACME_fnc_clinicalClock) - (_meta select 2)) max 0,_meta select 3]} else {["freshMissingV1"]}];
     };
 } forEach _bags;
 private _vent = [];

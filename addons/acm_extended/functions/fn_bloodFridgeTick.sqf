@@ -75,7 +75,7 @@ private _nowGameHours = (dateToNumber date) * _yearHours;
                     [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
                 } else {
                     if ((_nowGameHours - _last) >= _intervalHours) then {
-                        _fridge setVariable ["ACME_bf_lotStart",serverTime,true];
+                        _fridge setVariable ["ACME_bf_lotStart",([] call ACME_fnc_clinicalClock),true];
                         [_fridge, "ACME_bf_stock", +(_fridge getVariable ["ACME_bf_default", []])] call ACME_fnc_setVarNet;
                         [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
                         _fridge setVariable ["ACME_bf_restoreRestockDelayMins",nil,false];

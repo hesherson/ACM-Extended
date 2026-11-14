@@ -32,6 +32,7 @@ def code(name):
 def setup():
     return r'''
     private _serverTime=10000;
+    ACME_fnc_clinicalClock={if (_this param [0,false]) then {CBA_missionTime} else {_serverTime}};
     private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
     private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
     private _bags=["ACM_BloodBag_ON_500","ACM_BloodBag_A_500","ACM_FreshBloodBag_250_7","ACM_BloodBag_ON_1000"];

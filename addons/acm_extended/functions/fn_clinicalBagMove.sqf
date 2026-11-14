@@ -82,7 +82,7 @@ if (_onY) then {
     {
         private _state = _p getVariable [_x,createHashMap];
         if (_fromKey in _state) then {_serviceHistory pushBack [_x,_state get _fromKey];};
-    } forEach ["ACME_YLinePrimed","ACME_YLineDirty","ACME_YLineUnitsSinceFlush","ACME_YLineVolSinceFlush"];
+    } forEach ["ACME_YLinePrimed","ACME_YLineDirty","ACME_YLineUnitsSinceFlush","ACME_YLineVolSinceFlush","ACME_yAutoWarmers"];
     [_p,_lines] call ACME_fnc_yLinesCommit;
     {
         _x params ["_name","_value"];

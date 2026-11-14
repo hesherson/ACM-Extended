@@ -4,7 +4,7 @@ if (_depth > 24) exitWith {if (_encode) then {["N"]} else {nil}};
 if (!_encode && {_depth == 0} && {!([_value] call ACME_fnc_clinicalEncodedValid)}) exitWith {nil};
 if (_encode) exitWith {
     if (_clock != "" && {_value isEqualType 0} && {finite _value} && {_value >= 0}) exitWith {
-        ["T", _clock, _value - (if (_clock == "time") then {time} else {CBA_missionTime})]
+        ["T", _clock, _value - (switch (_clock) do {case "time": {time}; case "clinical": {[true] call ACME_fnc_clinicalClock}; default {CBA_missionTime}})]
     };
     switch (typeName _value) do {
         case "SCALAR": {if (finite _value) then {["V", _value]} else {["N"]}};
@@ -23,7 +23,7 @@ switch (_value param [0, ""]) do {
         private _ref = if (count _value == 2) then {_value select 1} else {_value select [1, 3]};
         ["decode", _ref, _legacyObjectSession] call ACME_fnc_clinicalObjectRef
     };
-    case "T": {(if ((_value param [1, "cba"]) == "time") then {time} else {CBA_missionTime}) + (_value param [2, 0])};
+    case "T": {(switch (_value param [1,"cba"]) do {case "time": {time}; case "clinical": {[true] call ACME_fnc_clinicalClock}; default {CBA_missionTime}}) + (_value param [2, 0])};
     case "A": {(_value param [1, []]) apply {[_x, false, "", _depth + 1, _legacyObjectSession] call ACME_fnc_clinicalCodec}};
     case "M": {private _m = createHashMap; {_m set [_x select 0, [_x select 1, false, "", _depth + 1, _legacyObjectSession] call ACME_fnc_clinicalCodec];} forEach (_value param [1, []]); _m};
     default {nil};

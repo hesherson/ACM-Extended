@@ -47,10 +47,12 @@ private _boxes=missionNamespace getVariable ["ACME_eqOpenCoolers",[]];
     private _box=_x;if (isNull _box) then {continue;};
     private _users=(_box getVariable ["ACME_eqCoolerUsers",[]]) select {!isNull (_x select 0) && {alive (_x select 0)} && {serverTime<(_x select 1)} && {(_x select 0) distance _box<=4.5}};
     _box setVariable ["ACME_eqCoolerUsers",_users];
-    private _open=_users isNotEqualTo [];
+    private _open=_users isNotEqualTo [] || {serverTime < (_box getVariable ["ACME_eqCoolerDrawUntil",0])};
     if (_open isNotEqualTo (_box getVariable ["ACME_eqCoolerOpen",false])) then {
         _box setVariable ["ACME_eqCoolerOpen",_open,true];
         [_box,["ACME_BloodFridgeDoorClose","ACME_BloodFridgeDoorOpen"] select _open,30] call ACME_fnc_worldSfxNearby;
     };
 } forEach _boxes;
-missionNamespace setVariable ["ACME_eqOpenCoolers",_boxes select {!isNull _x && {(_x getVariable ["ACME_eqCoolerUsers",[]]) isNotEqualTo []}}];
+missionNamespace setVariable ["ACME_eqOpenCoolers",_boxes select {
+    !isNull _x && {(_x getVariable ["ACME_eqCoolerUsers",[]]) isNotEqualTo [] || {serverTime < (_x getVariable ["ACME_eqCoolerDrawUntil",0])}}
+}];

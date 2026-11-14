@@ -54,21 +54,21 @@ private _index = _bags findIf {
     (_x param [8, ""]) == _uid && {(_x param [3, -1]) == _site} && {(_x param [4, true]) isEqualTo _iv}
 };
 if (_index < 0) exitWith {[false, "That bag changed or was moved. Select it again."] call _finish};
-private _fitted = [_patient, _part, _iv, _site] call ACME_fnc_lineWarmer;
+private _key = toLowerANSI format ["%1#%2#%3", _part, _iv, _site];
+private _lines = _patient getVariable ["ACME_lineWarmers", createHashMap];
+private _fitted = _lines getOrDefault [_key,false];
 if (_operation == "remove") exitWith {
     if (!_fitted) exitWith {[false, "This line no longer has a fluid warmer."] call _finish};
     [_patient, _part, _iv, _site, _medic] call ACME_fnc_lineWarmerDetach;
     [true, "Fluid warmer removed."] call _finish
 };
 if (!alive _patient) exitWith {[false, "A fluid warmer cannot be fitted to a dead patient."] call _finish};
-if (_fitted) exitWith {[false, "A fluid warmer is already fitted downstream on this line."] call _finish};
+if (_fitted || {[_patient,_part,_iv,_site] call ACME_fnc_yAutoWarmer}) exitWith {[false, "A fluid warmer is already fitted downstream on this line."] call _finish};
 if (count _receipt != 4 || {isNull (_receipt param [0, objNull])}
     || {(_receipt param [1, ""]) != "ACME_BloodWarmer"} || {(_receipt param [3, ""]) == ""}) exitWith {[false, "No reserved fluid warmer is available."] call _finish};
 private _bag = _bags select _index;
 if (!((_bag param [0, ""]) in ["Blood", "FreshBlood", "Saline", "ACME_SalineY", "Plasma"])
     || {(_bag param [1, 0]) <= 0.01}) exitWith {[false, "Select a blood, saline or plasma bag with fluid remaining."] call _finish};
-private _key = toLowerANSI format ["%1#%2#%3", _part, _iv, _site];
-private _lines = _patient getVariable ["ACME_lineWarmers", createHashMap];
 private _custody = _patient getVariable ["ACME_lineWarmerCustody", createHashMap];
 _custody set [_key, [_id, _medic, _epoch]];
 _lines set [_key, true];

@@ -11,7 +11,7 @@ if (_mode=="validLive") exitWith {_live};
 if (_mode=="validSaved") exitWith {_saved};
 private _limit = ["spiked"] call ACME_fnc_bloodTiming;
 private _age = _limit;
-if (_live) then {_age = (_meta select 1) + ((CBA_missionTime - (_meta select 2)) max 0);};
+if (_live) then {_age = (_meta select 1) + ((([true] call ACME_fnc_clinicalClock) - (_meta select 2)) max 0);};
 if (_saved) then {_age = _meta select 1;};
 private _latched=(_live || {_saved}) && {(_meta select 0) in ["bloodUseSpoiledV1","bloodUseSpoiledAgeV1"]};
 private _policy=(["real"] call ACME_fnc_bloodTiming)
@@ -23,7 +23,7 @@ if (_mode=="snapshot") exitWith {[["bloodUseAgeV1","bloodUseSpoiledAgeV1"] selec
 if (!(_seconds isEqualType 0) || {!finite _seconds} || {_seconds<0} || {_seconds>1e9}) then {_seconds=_limit;};
 if (_mode=="restore") exitWith {
     private _restoredAge=if (_saved) then {((_meta select 1)+_seconds) min 1e9} else {_limit};
-    [["bloodUseV1","bloodUseSpoiledV1"] select (!_saved || {_latched} || {_policy && {_restoredAge>=_limit}}),_restoredAge,CBA_missionTime]
+    [["bloodUseV1","bloodUseSpoiledV1"] select (!_saved || {_latched} || {_policy && {_restoredAge>=_limit}}),_restoredAge,([true] call ACME_fnc_clinicalClock)]
 };
 if (_live) exitWith {private _copy=+_meta;if (_expired) then {_copy set [0,"bloodUseSpoiledV1"];};_copy};
-[["bloodUseV1","bloodUseSpoiledV1"] select (_meta isNotEqualTo [] || {_policy && {_seconds>=_limit}}),if (_meta isEqualTo []) then {_seconds} else {_limit},CBA_missionTime]
+[["bloodUseV1","bloodUseSpoiledV1"] select (_meta isNotEqualTo [] || {_policy && {_seconds>=_limit}}),if (_meta isEqualTo []) then {_seconds} else {_limit},([true] call ACME_fnc_clinicalClock)]

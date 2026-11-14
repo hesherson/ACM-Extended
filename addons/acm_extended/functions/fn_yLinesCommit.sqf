@@ -12,6 +12,11 @@ if (local _patient) then {
     {if !(_x in _new) then {_jobs deleteAt _x;};} forEach keys _jobs;
     [_patient, "ACME_yFlushJobs", _jobs] call ACME_fnc_setVarNet;
     private _removed = _old - _new;
+    private _autoWarmers = _patient getVariable ["ACME_yAutoWarmers",createHashMap];
+    if ((_removed findIf {_x in _autoWarmers}) >= 0) then {
+        {_autoWarmers deleteAt _x;} forEach _removed;
+        [_patient,"ACME_yAutoWarmers",_autoWarmers] call ACME_fnc_setVarNet;
+    };
     {
         private _pieces = _x splitString "#";
         if (count _pieces == 3) then {

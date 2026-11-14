@@ -542,7 +542,8 @@ class CfgPatches {
             "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_Spray_Esketamine",
             "ACM_Vial_Phentolamine", "ACM_Vial_Hyaluronidase", "ACM_Vial_CalciumGluconate", "ACM_Vial_Propofol", "ACM_Vial_Midazolam", "ACM_Vial_Fentanyl",
             "ACME_IVLine", "ACME_IVExtension", "ACME_Tegaderm", "ACME_SalineLock", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood", "ACME_SpoiledBlood_250", "ACME_SpoiledBlood_500", "ACME_SpoiledBlood_1000",
-            "ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U"
+            "ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U",
+            "ACME_IVStartKit_14g", "ACME_IVStartKit_16g", "ACME_IVStartKit_18g", "ACME_IVStartKit_20g"
         };
         requiredVersion = 2.20;
         requiredAddons[] = {
@@ -1587,6 +1588,21 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.1; };
     };
 
+    class ACME_IVStartKit_14g: ACE_ItemCore {
+        dlc = "ACM_Extended";
+        scope = 2;
+        scopeArsenal = 2;
+        author = "mavis";
+        displayName = "IV Start Kit (14G)";
+        descriptionShort = "Catheter, BOA IV band, transparent dressing, saline lock, extension, administration tubing and a 10 mL saline flush.";
+        picture = "\acm_extended\ui\items\iv_start_kit_ca.paa";
+        ACE_isMedicalItem = 1;
+        class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
+    };
+    class ACME_IVStartKit_16g: ACME_IVStartKit_14g { displayName = "IV Start Kit (16G)"; };
+    class ACME_IVStartKit_18g: ACME_IVStartKit_14g { displayName = "IV Start Kit (18G)"; };
+    class ACME_IVStartKit_20g: ACME_IVStartKit_14g { displayName = "IV Start Kit (20G)"; };
+
     // The administration line can be installed on a completed IV and receive bags.
     class ACME_IVLine: ACE_ItemCore {
         dlc = "ACM_Extended";
@@ -2270,6 +2286,10 @@ class CfgFunctions {
             class medicationKineticEffect {};
             class compactMedicationRecords {};
             class clinicalTimingSync {};
+            class clinicalClock {};
+            class clinicalClockTick {};
+            class ivStartKitOpen {};
+            class yAutoWarmer {};
             class medicationToxicityTick {};
             class medicationCBRNTick {};
             class medicationRecordIDs {};
@@ -7786,6 +7806,32 @@ class CfgVehicles {
                 statement = "[_player, true] call ACM_core_fnc_getUp";
             };
             class ACM_Equipment {
+                class ACME_OpenIVStartKit {
+                    displayName = "Open IV Start Kit";
+                    icon = "\acm_extended\ui\items\iv_start_kit_ca.paa";
+                    condition = "(items _player findIf {_x in ['ACME_IVStartKit_14g','ACME_IVStartKit_16g','ACME_IVStartKit_18g','ACME_IVStartKit_20g']}) >= 0";
+                    statement = "";
+                    class ACME_OpenIVStartKit14 {
+                        displayName = "14G IV Start Kit";
+                        condition = "'ACME_IVStartKit_14g' in items _player";
+                        statement = "[_player,'ACME_IVStartKit_14g'] call ACME_fnc_ivStartKitOpen";
+                    };
+                    class ACME_OpenIVStartKit16 {
+                        displayName = "16G IV Start Kit";
+                        condition = "'ACME_IVStartKit_16g' in items _player";
+                        statement = "[_player,'ACME_IVStartKit_16g'] call ACME_fnc_ivStartKitOpen";
+                    };
+                    class ACME_OpenIVStartKit18 {
+                        displayName = "18G IV Start Kit";
+                        condition = "'ACME_IVStartKit_18g' in items _player";
+                        statement = "[_player,'ACME_IVStartKit_18g'] call ACME_fnc_ivStartKitOpen";
+                    };
+                    class ACME_OpenIVStartKit20 {
+                        displayName = "20G IV Start Kit";
+                        condition = "'ACME_IVStartKit_20g' in items _player";
+                        statement = "[_player,'ACME_IVStartKit_20g'] call ACME_fnc_ivStartKitOpen";
+                    };
+                };
                                 // custom syringe kit. it is always accessible. it draws any medication through ACM's own syringe-draw dialog,
                 // with the same drug list as "Use Syringe", plus a one-tap push-dose epi at 10 mcg/ml. the self side draws
                 // into your own syringe with no patient inject.

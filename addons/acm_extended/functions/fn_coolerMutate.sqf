@@ -17,7 +17,7 @@ _owner setVariable ["ACME_coolerIntents",_intents,true];
     private _held = (_owner getVariable ["ACME_inventoryEscrow",createHashMap]) getOrDefault [_request,[]];
     if (_held isEqualTo []) exitWith {[false,_completion] call _finish;};
     if (!_accepted) exitWith {[_owner,_request,false] call ACME_fnc_inventoryLedgerSettle; [false,_completion] call _finish;};
-    private _state = [(_held select 1) select 1,serverTime] call ACME_fnc_coolerAdvance;
+    private _state = [(_held select 1) select 1,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerAdvance;
     private _result = [_owner,_sid,_state,_args,_request] call _code;
     private _validResult=_result isNotEqualTo [];
     if (_result isEqualTo []) then {_result=[false,_state];};

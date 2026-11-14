@@ -9,7 +9,7 @@ if (isNull _holder || {!([_snapshot] call ACME_fnc_coolerSnapshotValid)}) exitWi
 if !(_offline isEqualType 0 && {finite _offline} && {_offline >= 0} && {_offline <= 1e9}) exitWith {false};
 private _scope = _snapshot select 1;
 private _records = _snapshot select 2;
-private _now = serverTime;
+private _now = ([] call ACME_fnc_clinicalClock);
 private _key = str _snapshot;
 private _decode = {
     params ["_row"];

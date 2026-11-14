@@ -43,7 +43,7 @@ _selector setVariable ["ACME_filling",false];
 (_dlg displayCtrl 87421) ctrlSetText format ["%1 mL",_capacity];
 private _start=_state select 1;
 private _chain=([_class] call ACME_fnc_coolerColdChainTime);
-private _remaining=if (_chain<=0) then {-1} else {(_chain-(serverTime-_start)) max 0};
+private _remaining=if (_chain<=0) then {-1} else {(_chain-(([] call ACME_fnc_clinicalClock)-_start)) max 0};
 private _coldStr=if (_remaining<0) then {"coolant: stable"} else {
     if (_remaining>0) then {
         if ((["real"] call ACME_fnc_bloodTiming)) then {format ["cooling: %1 h %2 min",floor(_remaining/3600),floor((_remaining mod 3600)/60)]} else {format ["coolant: %1 min left",ceil(_remaining/60)]}

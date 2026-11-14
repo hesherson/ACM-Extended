@@ -16,7 +16,7 @@ private _last = _fridge getVariable ["ACME_bf_lastRestockGH",-1];
 if !(_last isEqualType 0 && {finite _last}) exitWith {[]};
 private _elapsed = if (_last < 0 || {_now < _last}) then {0} else {(_now - _last) * 60};
 private _remaining = (_delay - _elapsed) max 0;
-private _lotAge = ((serverTime - (_fridge getVariable ["ACME_bf_lotStart",serverTime])) max 0) min 1e9;
+private _lotAge = ((([] call ACME_fnc_clinicalClock) - (_fridge getVariable ["ACME_bf_lotStart",([] call ACME_fnc_clinicalClock)])) max 0) min 1e9;
 private _snapshot = [2,_fridge getVariable ["ACME_bf_stock",[]],_fridge getVariable ["ACME_bf_default",[]],_fridge getVariable ["ACME_bf_restock",true],_interval,_remaining,_lotAge];
 if !([_snapshot] call ACME_fnc_bloodFridgeSnapshotValid) exitWith {[]};
 [_snapshot select 0,(_snapshot select 1) apply {+_x},(_snapshot select 2) apply {+_x},_snapshot select 3,_snapshot select 4,_snapshot select 5,_snapshot select 6]

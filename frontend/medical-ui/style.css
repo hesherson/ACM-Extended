@@ -38,5 +38,5 @@ button { font: inherit; }
 .acme-medical-surface .track { position: relative; }
 .acme-medical-surface .flow-mask { position:absolute; inset:0 auto auto 0; height:100%; overflow:hidden; pointer-events:none; }
 .acme-medical-surface .flow-stripes { height:100%; background:var(--flow-texture) 0 0 / 100% 100%; animation:acme-flow .8s linear infinite; }
-@keyframes acme-flow { from { transform:translateX(-3.125%); } to { transform:translateX(0); } }
+@keyframes acme-flow { from { transform:translateX(0); } to { transform:translateX(-3.125%); } }
 .acme-medical-surface .mark-label { transition:font-size .25s linear; }

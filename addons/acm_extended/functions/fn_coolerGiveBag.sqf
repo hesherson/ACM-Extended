@@ -17,9 +17,9 @@ if ((_class find "ACME_SpoiledBlood")!=0) then {
     missionNamespace setVariable ["ACME_bloodExposureSerial",_serial];
     private _request=[clientOwner,_serial];
     private _seeds=_owner getVariable ["ACME_bloodSeedPending",createHashMap];
-    _seeds set [str _request,[_class,_request,_warm,serverTime,serverTime,_after]];
+    _seeds set [str _request,[_class,_request,_warm,([] call ACME_fnc_clinicalClock),serverTime,_after]];
     _owner setVariable ["ACME_bloodSeedPending",_seeds,true];
-    ["ACME_bloodExposureRequest",["seed",_owner,_class,_request,_warm,serverTime,_after]] call CBA_fnc_serverEvent;
+    ["ACME_bloodExposureRequest",["seed",_owner,_class,_request,_warm,([] call ACME_fnc_clinicalClock),_after]] call CBA_fnc_serverEvent;
 };
 if (_manual) then {missionNamespace setVariable ["ACME_coolerManualOut",(missionNamespace getVariable ["ACME_coolerManualOut",0])+1];};
 true

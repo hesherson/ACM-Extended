@@ -51,11 +51,11 @@ private _registry = missionNamespace getVariable ["ACM_circulation_FreshBloodLis
                     };
                 };
                 if ([_meta, "freshV1", _bloodType] call _metaValid) then {
-                    _next = ["freshAgeV1", _meta select 1, (CBA_missionTime - (_meta select 2)) max 0, _bloodType];
+                    _next = ["freshAgeV1", _meta select 1, (([true] call ACME_fnc_clinicalClock) - (_meta select 2)) max 0, _bloodType];
                 };
             } else {
                 if ([_meta, "freshAgeV1", _bloodType] call _metaValid && {(_meta select 2) >= 0}) then {
-                    _next = ["freshV1", _meta select 1, CBA_missionTime - (_meta select 2) - _offlineSeconds, _bloodType];
+                    _next = ["freshV1", _meta select 1, ([true] call ACME_fnc_clinicalClock) - (_meta select 2) - _offlineSeconds, _bloodType];
                 };
             };
             if (count _bag < 8) then {_bag set [7, -1];};

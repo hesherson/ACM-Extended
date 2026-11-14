@@ -3,7 +3,7 @@
  * Only the portion of an interval after coolant expiry contributes warm exposure.
  * Spoilage is applied by the holder transaction, never by this pure state transform.
  */
-params [["_state", [], [[]]], ["_now", serverTime, [0]]];
+params [["_state", [], [[]]], ["_now", ([] call ACME_fnc_clinicalClock), [0]]];
 if (count _state != 4 || {!finite _now}) exitWith {[]};
 _state params ["_base", "_start", "_entries", "_last"];
 if !(_base isEqualType "" && {_start isEqualType 0} && {_entries isEqualType []} && {_last isEqualType 0}) exitWith {[]};

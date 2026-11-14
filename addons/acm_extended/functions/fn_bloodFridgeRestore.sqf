@@ -19,7 +19,7 @@ if (_minutes < 0) then {_minutes = (missionNamespace getVariable ["ACME_bf_regen
 private _due = _restock && {_minutes > 0} && {_offlineGameMinutes >= _remaining};
 private _current = if (_due) then {_defaults} else {_stock};
 private _delay = if (_due) then {_minutes} else {(_remaining - _offlineGameMinutes) max 0};
-_fridge setVariable ["ACME_bf_lotStart",serverTime - ([(_lotAge+_offlineSeconds) min 1e9,0] select _due),true];
+_fridge setVariable ["ACME_bf_lotStart",([] call ACME_fnc_clinicalClock) - ([(_lotAge+_offlineSeconds) min 1e9,0] select _due),true];
 _fridge setVariable ["ACME_bf_stock",_current apply {+_x},true];
 [_fridge] call ACME_fnc_bloodFridgeExpire;
 _fridge setVariable ["ACME_bf_default",_defaults apply {+_x},true];

@@ -6,7 +6,7 @@ private _started=[_row,"prepared"] call ACME_fnc_bloodUseRow;
 if (_started isEqualTo _row || {isNull _holder}) exitWith {_started};
 if (_class=="") then {_class=_row param [1,""];};
 private _warm=0;
-private _sample=serverTime;
+private _sample=([] call ACME_fnc_clinicalClock);
 private _exposure=_holder getVariable ["ACME_bloodExposure",[[],_sample]];
 if (_exposure isEqualType [] && {count _exposure==2} && {(_exposure select 0) isEqualType []} && {(_exposure select 1) isEqualType 0}) then {
     {

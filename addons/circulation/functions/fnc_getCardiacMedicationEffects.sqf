@@ -34,7 +34,7 @@ private _lidocaineIV = 0;
         continue;
     };
 
-    private _timeInSystem = CBA_missionTime - _timeAdded;
+    private _timeInSystem = ([true] call ACME_fnc_clinicalClock) - _timeAdded;
 
     // Scale delivered concentration exactly once.
     private _getEffect = ([_x,_timeInSystem] call ACME_fnc_medicationKineticEffect)

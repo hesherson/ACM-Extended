@@ -16,7 +16,7 @@ if (!isNull _box) exitWith {
 [ACE_player,_sid,{
     params ["_owner","_sid","_state","_args"];
     _args params ["_index","_renderState"];
-    private _expectedState=[_renderState,serverTime] call ACME_fnc_coolerAdvance;
+    private _expectedState=[_renderState,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerAdvance;
     private _expected=(_expectedState select 2) select _index;
     private _entries=+(_state select 2);
     if (_index>=count _entries || {((_entries select _index) select 0)!=(_expected select 0)} || {abs (((_entries select _index) select 1)-(_expected select 1))>0.001}) exitWith {[]};

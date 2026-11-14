@@ -69,7 +69,7 @@ private _valid = true;
                 && {(_meta select 1) isEqualType true} && {(_meta select 2) isEqualType 0} && {finite (_meta select 2)}
                 && {(_meta select 3) isEqualType 0} && {(_meta select 3) in [0,1,2,3,4,5,6,7]};
             while {count _set < 11} do {_set pushBack 0;};
-            _set set [11,if (_known) then {["freshAgeV1",_meta select 1,(CBA_missionTime - (_meta select 2)) max 0,_meta select 3]} else {["freshMissingV1"]}];
+            _set set [11,if (_known) then {["freshAgeV1",_meta select 1,(([true] call ACME_fnc_clinicalClock) - (_meta select 2)) max 0,_meta select 3]} else {["freshMissingV1"]}];
         };
         _payload set [1,_set];
         private _med = +(_payload param [2,[]]);

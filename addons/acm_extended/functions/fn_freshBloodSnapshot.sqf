@@ -13,7 +13,7 @@ private _ok = true;
         && {!isNil {_entry select 4}} && {(_entry select 4) isEqualType 0}
         && {finite (_entry select 4)}) exitWith {_ok = false;};
     _rows pushBack [_x,[_entry select 0,true] call ACME_fnc_clinicalCodec,
-        _entry select 1,_entry select 2,_entry select 3,(CBA_missionTime - (_entry select 4)) max 0];
+        _entry select 1,_entry select 2,_entry select 3,(([true] call ACME_fnc_clinicalClock) - (_entry select 4)) max 0];
 } forEach keys _registry;
 private _snapshot = [1,_rows];
 if (!_ok || {!([_snapshot] call ACME_fnc_freshBloodSnapshotValid)}) exitWith {[]};

@@ -222,7 +222,7 @@ def test_unproved_ack_keeps_physical_escrow_reserved_until_owner_certificate_arr
     ''')
 
 
-@pytest.mark.parametrize("warm,physical,want_per_second", [(False, 10, 5), (True, 10, 200 / 60), (True, 1, 1), (True, 0, 0)])
+@pytest.mark.parametrize("warm,physical,want_per_second", [(False, 10, 200 / 60), (True, 10, 200 / 60), (True, 1, 1), (True, 0, 0)])
 def test_priming_opens_exact_line_but_finishes_only_after_actual_capped_saline_delivery(warm, physical, want_per_second):
     execute(service_setup() + f'''
         [100,false,false,500] call _init;

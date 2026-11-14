@@ -101,6 +101,9 @@ private _toxicityFiredRestore = createHashMap;
         continue;
     };
     if (_name in ["ACME_coldBloodHungAt", "ACME_tempFlagHoldUntil"]) then {
+        if (_name == "ACME_coldBloodHungAt" && {(_encoded param [0,""]) == "T"} && {(_encoded param [1,""]) == "cba"}) then {
+            _value = ([true] call ACME_fnc_clinicalClock) + (_encoded select 2);
+        };
         _bloodThermalRestore set [_name, _value];
         continue;
     };

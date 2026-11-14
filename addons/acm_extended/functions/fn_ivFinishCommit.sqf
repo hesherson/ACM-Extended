@@ -151,7 +151,22 @@ if (_valid) then {
             if (_success) then {
                 [_patient,"crystalloidCredit",[0.010]] call ACME_fnc_ownerDispatch;
                 _message="Blood return observed. Flushed 10 mL.";
-            } else {_message="No blood return. No fluid injected.";};
+            } else {
+                private _bruise = _row select [0,14];
+                _bruise set [4,"flushbruise"];
+                _bruise set [5,""];
+                _bruise set [6,""];
+                _bruise set [8,_now];
+                _bruise set [11,0];
+                _bruise set [12,0.86];
+                _bruise pushBack _uid;
+                private _life = missionNamespace getVariable ["ACME_iv_bruiseLifeSec",1200];
+                _marks = _marks select {(_x param [4,""]) != "flushbruise" || {_now - (_x param [8,_now]) < _life}};
+                _mi = _marks findIf {(_x param [4,""]) == "hub" && {(_x param [14,""]) == _uid}};
+                private _bruiseIndex = _marks findIf {(_x param [4,""]) == "flushbruise" && {(_x param [14,""]) == _uid}};
+                if (_bruiseIndex < 0) then {_marks pushBack _bruise;} else {_marks set [_bruiseIndex,_bruise];};
+                _message="No blood return. The site is bruising.";
+            };
         };
     };
     _row set [15,_state];

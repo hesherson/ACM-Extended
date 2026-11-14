@@ -67,7 +67,7 @@ if (_mode=="request") then {
     if (([0,1,2,3] findIf {isNil {_facts select _x}})>=0) exitWith {};
     if !((_facts select 0) isEqualTo "freshV1" && {(_facts select 1) isEqualType true}
         && {(_facts select 2) isEqualType 0} && {finite (_facts select 2)}
-        && {(_facts select 2)<=CBA_missionTime+5}
+        && {(_facts select 2)<=([true] call ACME_fnc_clinicalClock)+5}
         && {(_facts select 3) isEqualType 0} && {finite (_facts select 3)}
         && {(_facts select 3)>=0} && {(_facts select 3)<=7} && {(_facts select 3)==floor (_facts select 3)}) exitWith {};
     private _sourceProof=if (isNull _donor) then {[]} else {(_donor getVariable ["ACME_txRemoveFunded",createHashMap]) getOrDefault [_request,[]]};

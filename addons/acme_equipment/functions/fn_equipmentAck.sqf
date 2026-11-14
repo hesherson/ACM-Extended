@@ -75,7 +75,7 @@ if (_phase=="give") exitWith {
 if (_phase=="take") then {_r set ["debited",true];};
 if (_kind=="blood") exitWith {
     private _box=_r get "device";
-    private _state=if (isNull _box) then {[]} else {[_box,serverTime] call ACME_fnc_coolerBoxReconcile};
+    private _state=if (isNull _box) then {[]} else {[_box,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerBoxReconcile};
     private _used=0;if (_state isNotEqualTo []) then {{_used=_used+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach (_state select 2);};
     private _capacity=if (_state isEqualTo []) then {0} else {getNumber(configFile >> "CfgWeapons" >> (_state select 0) >> "ACME_coolerCapacityMl")};
     if (_state isEqualTo [] || {_used+([_r get "item"] call ACME_fnc_coolerBagVolume)>_capacity} || {_actor distance _box>4.5} || {_box getVariable ["ACME_coolerPacking",false]}) exitWith {
@@ -83,7 +83,7 @@ if (_kind=="blood") exitWith {
         [_actor,_id] call ACME_fnc_equipmentRefundRequest;
     };
     private _bag = _r get "item";
-    private _warm = (_r get "warm") + ((serverTime-(_r get "sample")) max 0);
+    private _warm = (_r get "warm") + ((([] call ACME_fnc_clinicalClock)-(_r get "sample")) max 0);
     if ((["spoil"] call ACME_fnc_bloodTiming) && {_warm >= ([_bag] call ACME_fnc_bloodWarmLimit)}) exitWith {
         _r set ["phase","refund"];_r set ["sent",serverTime];
         [_actor,_id] call ACME_fnc_equipmentRefundRequest;

@@ -7,7 +7,7 @@ if (isNull _patient || {!local _patient} || {!alive _patient}) exitWith {};
 if !(missionNamespace getVariable ["ACME_sys_paralytic", true]) exitWith {};
 [_patient] call ACME_fnc_medicationRecordIDs;
 private _records = _patient getVariable ["ace_medical_medications", []];
-private _now = CBA_missionTime;
+private _now = ([true] call ACME_fnc_clinicalClock);
 private _roc = _records select {(_x param [0, ""]) in ["Rocuronium", "Rocuronium_IV"] && {_now < (_x select 1) + (_x select 3)}};
 private _sug = _records select {(_x param [0, ""]) == "Sugammadex_IV" && {_now < (_x select 1) + (_x select 3)}};
 private _rocIDs = _roc apply {_x param [15, ""]};

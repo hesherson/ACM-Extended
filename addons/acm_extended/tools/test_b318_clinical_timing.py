@@ -80,12 +80,15 @@ def test_only_server_setting_source_is_published_and_clients_cannot_inject_a_pol
     execute('private _sync={'+adapt(source)+'''};
         private _server=true;private _remote=false;private _sender=2;
         private _published=[];private _scopes=[];
-        CBA_settings_fnc_get={_scopes pushBack (_this select 1);if ((_this select 0)=="ACME_medicationTimeScale") then {0.8} else {true}};
+        ACME_fnc_clinicalClockTick={};
+        CBA_settings_fnc_get={_scopes pushBack (_this select 1);switch (_this select 0) do {
+            case "ACME_medicationTimeScale": {0.8}; case "ACME_clinicalTimeBasis": {0}; default {true};
+        }};
         call _sync; call _sync;
-        [count _published==1 && {count _scopes==22} && {(_scopes findIf {_x!="server"})<0},"settings were not read from server only"] call _check;
-        _server=false;_remote=true;_sender=5;[99,true,true,true,24,24,48,4,24,4,21] call _sync;
+        [count _published==1 && {count _scopes==24} && {(_scopes findIf {_x!="server"})<0},"settings were not read from server only"] call _check;
+        _server=false;_remote=true;_sender=5;[99,true,true,true,24,24,48,4,24,4,21,1] call _sync;
         [((missionNamespace getVariable "ACME_clinicalTiming") select 0)==0.8,"peer overwrote policy"] call _check;
-        _sender=2;[1.1,true,true,true,24,24,48,4,24,4,21] call _sync;
+        _sender=2;[1.1,true,true,true,24,24,48,4,24,4,21,1] call _sync;
         [((missionNamespace getVariable "ACME_clinicalTiming") select 0)==1.1,"authenticated JIP policy failed"] call _check;
     ''')
 

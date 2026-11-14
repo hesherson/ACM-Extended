@@ -173,6 +173,10 @@ _patient setVariable ["ACME_ivCompromised_leftarm_1",true];
 ["begin","flush","f",_receipt] call _invoke;
 [((call _getRow select 16) select 5)=="resisted_no_return","correct branch"] call _check;
 _serverTime=106;["finish","flush","f"] call _invoke;
+["finish","flush","f"] call _invoke;
+[count (_patient getVariable "ACME_IV_Marks")==2,"failed flush did not add exactly one bruise"] call _check;
+private _bruise = (_patient getVariable "ACME_IV_Marks") select 1;
+[(_bruise select 4)=="flushbruise" && {(_bruise select 8)==106} && {(_bruise select 10)=="middle"},"failed flush bruise not at the catheter"] call _check;
 [count (call _credits)==0,"no injected fluid"] call _check;
 [!(call _getState select 1),"not marked good"] call _check;
 [_patient getVariable ["ACME_ivCompromised_leftarm_1",false],"not repaired"] call _check;
@@ -400,7 +404,7 @@ _d setVariable ["ACME_IV_FinishCtrls",[]];
     if boundary=='cancel':body+='[] call ACME_fnc_ivFinishAbort;'
     body+='_nowTime=18;_serverTime=108;[] call ACME_fnc_ivFinishTick;'
     if boundary=='duplicate_frame':body+='[] call ACME_fnc_ivFinishTick;'
-    wanted='finish' if boundary in ['complete','duplicate_frame'] else 'cancel'
+    wanted='finish' if boundary in ['complete','duplicate_frame','compromised'] else 'cancel'
     body+=f'[count _events==1 && {{(((_events select 0) select 2) select 1)=="{wanted}"}},"exact completion or cancel"] call _check;'
     run(body)
 

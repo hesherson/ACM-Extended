@@ -83,8 +83,9 @@ private _completed = [];
     private _patient = _x;
     if (isNull _patient || {!alive _patient} || {!local _patient}) then {continue};
 
-    if ((_patient getVariable ["ACME_clinicalMaintenanceDormant", false])
-        || {!(_patient in _previous) && {!isNil {_patient getVariable "ACME_clock_clinicalMaintenance"}}}) then {
+    private _resumed = (_patient getVariable ["ACME_clinicalMaintenanceDormant", false])
+        || {!(_patient in _previous) && {!isNil {_patient getVariable "ACME_clock_clinicalMaintenance"}}};
+    if (_resumed) then {
         // No dormant interval belongs to a newly admitted dose or reattached
         // device. First re-entry has zero elapsed time; ordinary active passes
         // retain their original bounded clocks and active registration is inert.
@@ -106,8 +107,15 @@ private _completed = [];
     };
     _completed pushBack _patient;
     private _dt = [_patient, "clinicalMaintenance", 0.25, 5] call ACME_fnc_clinicalTickDelta;
+    private _pkNow = [true] call ACME_fnc_clinicalClock;
+    private _pkOwner = _patient getVariable ["ACME_medicationTickOwner",-1];
+    private _pkLast = _patient getVariable ["ACME_medicationTickAt",_pkNow];
+    private _pkDt = if (!_resumed && {_pkOwner == clientOwner}) then {(_pkNow - _pkLast) max 0} else {0};
+    _patient setVariable ["ACME_medicationTickAt",_pkNow,false];
+    _patient setVariable ["ACME_medicationTickOwner",clientOwner,false];
     // Consume only newly admitted mass even when custom circulation is disabled: never replay old doses.
     private _deliveredRates = [_patient,_dt] call ACME_fnc_medicationDriveTick;
+    private _pkRateScale = _dt / (_pkDt max 0.001);
     [_patient] call ACME_fnc_yFlushTick;
 
     // dose-dependent ketamine sedation. an induction dose drives the casualty unconscious, so a medic can manage
@@ -414,14 +422,14 @@ private _completed = [];
     // torsades ceiling.
     private _amioSerum = _patient getVariable ["ACME_amio_serumLevel", 0];
     private _amioClear = (missionNamespace getVariable ["ACME_amio_serumClearance", 6]) max 0.001;
-    private _amioSteady = _amioRateMgMin / _amioClear;
+    private _amioSteady = (_deliveredRates getOrDefault ["Amiodarone",0]) * _pkRateScale / _amioClear;
     private _scale = (missionNamespace getVariable ["ACME_clinicalTiming",[]]) param [0,1];
     if (_amioRateMgMin > 0 || {_amioSerum > 0}) then {
         (["Amiodarone"] call ACME_fnc_medicationHalfLife) params ["_amioHalf","","_amioInitial","_amioFraction"];
         private _oldTissue = _patient getVariable ["ACME_amio_slowSerumLevel",0];
-        private _tissue = _amioSteady + (_oldTissue - _amioSteady) * (0.5 ^ (_dt / (_amioHalf*_scale)));
+        private _tissue = _amioSteady + (_oldTissue - _amioSteady) * (0.5 ^ (_pkDt / (_amioHalf*_scale)));
         private _oldFast = ((_amioSerum-(1-_amioFraction)*_oldTissue)/_amioFraction) max 0;
-        private _fast = _amioSteady + (_oldFast - _amioSteady) * (0.5 ^ (_dt / (_amioInitial*_scale)));
+        private _fast = _amioSteady + (_oldFast - _amioSteady) * (0.5 ^ (_pkDt / (_amioInitial*_scale)));
         _amioSerum = _amioFraction*_fast + (1-_amioFraction)*_tissue;
         if (_amioRateMgMin <= 0 && {_amioSerum < 0.00005}) then {_amioSerum = 0;_tissue = 0;};
         [_patient,"ACME_amio_slowSerumLevel",_tissue,0.005,3] call ACME_fnc_setVarNetApprox;
@@ -481,8 +489,8 @@ private _completed = [];
         private _lvlKey = format ["ACME_serum_%1", _pkMed];
         private _lvl = _patient getVariable [_lvlKey, 0];
         if (_pkDrive > 0 || {_lvl > 0}) then {
-            private _pkSteady = _pkDrive / (_pkClear max 0.001);
-            _lvl = (_pkSteady + (_lvl - _pkSteady) * (0.5 ^ (_dt / (_pkHalf*_pkScale)))) max 0;
+            private _pkSteady = _pkDrive * _pkRateScale / (_pkClear max 0.001);
+            _lvl = (_pkSteady + (_lvl - _pkSteady) * (0.5 ^ (_pkDt / (_pkHalf*_pkScale)))) max 0;
             if (_lvl < 0.00005 && {_pkDrive <= 0}) then { _lvl = 0; };
             [_patient, _lvlKey, _lvl, 0.005, 2] call ACME_fnc_setVarNetApprox;
         };
@@ -501,9 +509,9 @@ private _completed = [];
     private _weightPK = (_patient getVariable ["ACM_core_BodyWeight",80]) max 30;
     private _lidoVd = _weightPK * 0.7; // L; simple game distribution calibration, not a patient assay.
     private _lidoKSec = (ln 2) * _lidoClearFrac / (((["Lidocaine"] call ACME_fnc_medicationHalfLife) select 0) * _pkScale);
-    private _lidoDecay = exp (-_lidoKSec * _dt);
-    _lidoLevel = (_lidoLevel * _lidoDecay + ((_lidoDrive / 60) / _lidoVd)
-        * (1 - _lidoDecay) / _lidoKSec) max 0;
+    private _lidoDecay = exp (-_lidoKSec * _pkDt);
+    private _lidoInput = (_lidoDrive / 60) / _lidoVd * _pkRateScale;
+    _lidoLevel = (_lidoLevel * _lidoDecay + _lidoInput * (1 - _lidoDecay) / _lidoKSec) max 0;
     [_patient,"ACME_lido_serumLevel",_lidoLevel,0.005,3] call ACME_fnc_setVarNetApprox;
 
     // lidocaine toxicity arc, the seizure. it reads the level just computed, drives apnea through the dedicated
@@ -525,8 +533,8 @@ private _completed = [];
     private _esmOld = _patient getVariable ["ACME_esmolol_serumLevel",0];
     private _esmVd = ((_patient getVariable ["ACM_core_BodyWeight",80]) max 30) * 0.5;
     private _esmK = (ln 2) / (((["Esmolol"] call ACME_fnc_medicationHalfLife) select 0) * _pkScale);
-    private _esmDecay = exp (-_esmK * _dt);
-    private _esmInput = _deliveredRates getOrDefault ["Esmolol",0];
+    private _esmDecay = exp (-_esmK * _pkDt);
+    private _esmInput = (_deliveredRates getOrDefault ["Esmolol",0]) * _pkRateScale;
     private _esmSerum = (_esmOld * _esmDecay + (_esmInput / 60 / _esmVd) * (1 - _esmDecay) / _esmK) max 0;
     [_patient,"ACME_esmolol_serumLevel",_esmSerum,0.005,3] call ACME_fnc_setVarNetApprox;
     // esmolol overdose band. past the therapeutic ceiling, where the serum exceeds
@@ -685,7 +693,7 @@ private _completed = [];
     if (_pushDose > 0.01) then {
         // a roughly exponential decay. push-dose epi lasts a few minutes per bolus.
         private _halfLife = ((["Epinephrine"] call ACME_fnc_medicationHalfLife) select 0) * ((missionNamespace getVariable ["ACME_clinicalTiming",[]]) param [0,1]);
-        _pushDose = _pushDose * (0.5 ^ (_dt / (_halfLife max 1)));
+        _pushDose = _pushDose * (0.5 ^ (_pkDt / (_halfLife max 1)));
         if (_pushDose < 0.05) then {_pushDose = 0};
     };
     private _reserve = _state getOrDefault ["epiBolusReserve", 0];

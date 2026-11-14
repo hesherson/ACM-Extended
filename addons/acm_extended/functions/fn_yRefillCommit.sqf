@@ -219,7 +219,7 @@ switch (_operation) do {
                     [_patient,true,false,objNull,serverTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
                 } else {
                     if (_fromCooler) then {
-                        [_patient,false,true,serverTime,serverTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
+                        [_patient,false,true,[true] call ACME_fnc_clinicalClock,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
                     };
                 };
                 if (!isNil "ace_medical_treatment_fnc_addToLog") then {

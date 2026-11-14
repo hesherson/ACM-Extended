@@ -157,7 +157,7 @@ if (alive _patient && {_type in ["Blood", "FreshBlood"]}) then {
     if (_warmer) then {
         [_patient,true,false,objNull,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;
     } else {
-        if (_set param [7,false]) then {[_patient,false,true,CBA_missionTime,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;};
+        if (_set param [7,false]) then {[_patient,false,true,[true] call ACME_fnc_clinicalClock,CBA_missionTime + 15,true] call ACME_fnc_bloodThermalStateCommit;};
     };
 };
 [_patient,"activity","%1 connected a piggyback secondary",[[_medic,false,true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;

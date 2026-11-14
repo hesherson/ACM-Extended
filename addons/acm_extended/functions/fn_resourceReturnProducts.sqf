@@ -43,7 +43,7 @@ private _ok = true;
     };
     if (_type == "FBTK" && {_returned > 0}) then {
         _blood = [_patient] call ACM_circulation_fnc_generateBloodType;
-        _fresh = ["freshV1",alive _patient,CBA_missionTime,_blood];
+        _fresh = ["freshV1",alive _patient,([true] call ACME_fnc_clinicalClock),_blood];
         _type = "FreshBlood";
     };
     if (_returned > 0 && {_type != "FBTK"}) then {

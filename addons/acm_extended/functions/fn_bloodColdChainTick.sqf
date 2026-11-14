@@ -17,7 +17,8 @@ if !(isNil "_this") then {if (_this isEqualType []) then {_arguments = _this;};}
 private _excludeBox = _arguments param [1, objNull];
 if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};  // the system toggle. fully off means this stops.
 if (!isServer) exitWith {};
-private _now = serverTime;
+private _now = ([] call ACME_fnc_clinicalClock);
+private _custodyNow = serverTime;
 // Every entry path, including loadout nudges and the ordinary periodic scan,
 // must release deployed sources before discovering plain receiver inventory.
 // A FULL box reconciliation already released its own removals and excludes
@@ -48,8 +49,8 @@ private _snap     = {
 };
 
 // prune the expired floating ages.
-{ private _c = _x; private _a = (_bagFloat get _c) select {(_now - (_x select 1)) < _ttl}; if (_a isEqualTo []) then { _bagFloat deleteAt _c; } else { _bagFloat set [_c, _a]; }; } forEach (keys _bagFloat);
-{ private _c = _x; private _a = (_cooFloat get _c) select {(_now - (_x select 1)) < _ttl}; if (_a isEqualTo []) then { _cooFloat deleteAt _c; } else { _cooFloat set [_c, _a]; }; } forEach (keys _cooFloat);
+{ private _c = _x; private _a = (_bagFloat get _c) select {(_custodyNow - (_x param [2,_x select 1])) < _ttl}; if (_a isEqualTo []) then { _bagFloat deleteAt _c; } else { _bagFloat set [_c, _a]; }; } forEach (keys _bagFloat);
+{ private _c = _x; private _a = (_cooFloat get _c) select {(_custodyNow - (_x select 1)) < _ttl}; if (_a isEqualTo []) then { _cooFloat deleteAt _c; } else { _cooFloat set [_c, _a]; }; } forEach (keys _cooFloat);
 
 // Corpses keep aging. Deployed cooler cargo has exactly one dedicated owner.
 private _holders = (allUnits + allDeadMen + vehicles) select {
@@ -82,7 +83,7 @@ private _data = [];
     {
         private _c = _x; private _ages = _byClass get _c; _ages sort false;
         private _surplus = (count _ages) - (_cb getOrDefault [_c, 0]);
-        if (_surplus > 0) then { for "_i" from 1 to _surplus do { private _e = _ages deleteAt ((count _ages) - 1); private _fa = _bagFloat getOrDefault [_c, []]; _fa pushBack [(_e # 0) + ((_now - (_e # 1)) max 0), _now]; _bagFloat set [_c, _fa]; }; };
+        if (_surplus > 0) then { for "_i" from 1 to _surplus do { private _e = _ages deleteAt ((count _ages) - 1); private _fa = _bagFloat getOrDefault [_c, []]; _fa pushBack [(_e # 0) + ((_now - (_e # 1)) max 0), _now, _custodyNow]; _bagFloat set [_c, _fa]; }; };
         { _kept pushBack [_c, ([_c] call _volOf), _x # 0, _x # 1]; } forEach _ages;
     } forEach (keys _byClass);
     _x set [4, _kept];
@@ -120,7 +121,7 @@ private _data = [];
     {
         private _c = _x; private _ages = _byClass get _c; _ages sort true;
         private _surplus = (count _ages) - (_cc getOrDefault [_c, 0]);
-        if (_surplus > 0) then { for "_i" from 1 to _surplus do { private _w = _ages deleteAt ((count _ages) - 1); private _fa = _cooFloat getOrDefault [_c, []]; _fa pushBack [_w, _now]; _cooFloat set [_c, _fa]; }; };
+        if (_surplus > 0) then { for "_i" from 1 to _surplus do { private _w = _ages deleteAt ((count _ages) - 1); private _fa = _cooFloat getOrDefault [_c, []]; _fa pushBack [_w, _custodyNow]; _cooFloat set [_c, _fa]; }; };
         { _kept pushBack [_c, _x]; } forEach _ages;
     } forEach (keys _byClass);
     _x set [5, _kept];

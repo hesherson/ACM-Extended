@@ -16,7 +16,9 @@ private _index = _bags findIf {
 };
 if (_index < 0) exitWith {[false, false, 0, false, false]};
 private _bag = _bags select _index;
-private _fitted = [_patient, _part, _iv, _site] call ACME_fnc_lineWarmer;
+private _key = toLowerANSI format ["%1#%2#%3",_part,_iv,_site];
+private _fitted = (_patient getVariable ["ACME_lineWarmers",createHashMap]) getOrDefault [_key,false];
+if (!_fitted && {[_patient,_part,_iv,_site] call ACME_fnc_yAutoWarmer}) exitWith {[false,false,0,false,false]};
 private _eligible = (_bag param [0, ""]) in ["Blood", "FreshBlood", "Saline", "ACME_SalineY", "Plasma"] && {(_bag param [1, 0]) > 0.01};
 private _available = 0;
 if (_eligible && {!_fitted}) then {

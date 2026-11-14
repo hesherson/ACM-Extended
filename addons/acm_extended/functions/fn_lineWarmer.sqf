@@ -5,4 +5,4 @@ params ["_patient", "_part", "_iv", "_site"];
 if (isNull _patient) exitWith {false};
 private _key = toLowerANSI format ["%1#%2#%3", _part, _iv, _site];
 private _lines = _patient getVariable ["ACME_lineWarmers", createHashMap];
-(_lines getOrDefault [_key, false]) isEqualTo true
+(_lines getOrDefault [_key, false]) isEqualTo true || {[_patient,_part,_iv,_site] call ACME_fnc_yAutoWarmer}

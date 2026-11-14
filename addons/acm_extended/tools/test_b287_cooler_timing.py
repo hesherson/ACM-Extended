@@ -60,6 +60,7 @@ def source(name):
 def fixture():
     code = r'''
         private _clock=0;
+        ACME_fnc_clinicalClock={if (_this param [0,false]) then {CBA_missionTime} else {_clock}};
         private _frame=0;
         private _boxPublic=[];
         private _nextFrames=[];

@@ -22,7 +22,7 @@ if ((_row select 4)!=(_owner getVariable ["ACME_equipmentKitEpoch",0]) || {(_row
     private _entries=+(_state select 2);
     private _used=0;{_used=_used+([_x select 0] call ACME_fnc_coolerBagVolume);} forEach _entries;
     if (_used+([_bag] call ACME_fnc_coolerBagVolume)>_capacity) exitWith {[]};
-    _warm=_warm+((serverTime-_sampled) max 0);
+    _warm=_warm+((([] call ACME_fnc_clinicalClock)-_sampled) max 0);
     if (_warm>=([_bag] call ACME_fnc_bloodWarmLimit) && {(["spoil"] call ACME_fnc_bloodTiming)}) exitWith {[]};
     _owner removeItem _bag;
     if (({_x==_bag} count ((uniformItems _owner)+(vestItems _owner)+(backpackItems _owner)))!=_before-1) exitWith {[]};

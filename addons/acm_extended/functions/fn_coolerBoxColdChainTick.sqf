@@ -2,7 +2,7 @@
 if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};
 if (!isServer) exitWith {};
 private _spoilEnabled = (["spoil"] call ACME_fnc_bloodTiming);
-private _now = serverTime;
+private _now = ([] call ACME_fnc_clinicalClock);
 private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
     + (allMissionObjects "ACME_BloodCoolerBox_CSWB2U")
     + (allMissionObjects "ACME_BloodCoolerBox_CSWB4U");

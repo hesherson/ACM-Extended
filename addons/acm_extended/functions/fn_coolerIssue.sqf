@@ -22,7 +22,7 @@ if (_state isEqualTo []) then {
     private _legacyCoolant=_owner getVariable ["ACME_coolerCoolant",createHashMap];
     if (_base in _legacyCoolant) then {
         private _legacyStore=_owner getVariable ["ACME_coolerStore",createHashMap];
-        _state=[_base,serverTime-(time-(_legacyCoolant get _base)),+(_legacyStore getOrDefault [_base,[]]),serverTime];
+        _state=[_base,([] call ACME_fnc_clinicalClock)-(time-(_legacyCoolant get _base)),+(_legacyStore getOrDefault [_base,[]]),([] call ACME_fnc_clinicalClock)];
         _legacyCoolant deleteAt _base; _legacyStore deleteAt _base;
         [_owner,"coolant",_legacyCoolant,false] call ACME_fnc_coolerStateCommit;
         [_owner,"store",_legacyStore,false] call ACME_fnc_coolerStateCommit;
@@ -33,8 +33,8 @@ if (_state isEqualTo []) then {
     private _fill = missionNamespace getVariable ["ACME_coolerFillType","ON"];
     private _capacity = floor (getNumber (configFile >> "CfgWeapons" >> _base >> "ACME_coolerCapacityMl") / 500);
     for "_i" from 1 to _capacity do {_contents pushBack [format ["ACM_BloodBag_%1_500",_fill],0];};
-    _state = [_base,serverTime,_contents,serverTime];
-} else {_state = [_state,serverTime] call ACME_fnc_coolerAdvance;};
+    _state = [_base,([] call ACME_fnc_clinicalClock),_contents,([] call ACME_fnc_clinicalClock)];
+} else {_state = [_state,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerAdvance;};
 private _sequence = (missionNamespace getVariable ["ACME_coolerIssueSequence",0])+1;
 missionNamespace setVariable ["ACME_coolerIssueSequence",_sequence];
 private _sid = format ["cooler:%1:%2:%3:%4",clientOwner,netId _owner,diag_tickTime,_sequence];

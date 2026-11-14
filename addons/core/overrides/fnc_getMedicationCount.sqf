@@ -26,7 +26,7 @@ private _return = 0;
     _x params ["_xMed", "_timeAdded", "", "", "", "", "", "", "", "", "", "", "_concentration", "", "_bodyPartIndex"];
 
     if (_xMed == _medication) then {
-        private _timeInSystem = CBA_missionTime - _timeAdded;
+        private _timeInSystem = ([true] call ACME_fnc_clinicalClock) - _timeAdded;
 
         if (_targetBodyPartIndex == -1 || {_targetBodyPartIndex == _bodyPartIndex}) then {
             if (_getCount) then {

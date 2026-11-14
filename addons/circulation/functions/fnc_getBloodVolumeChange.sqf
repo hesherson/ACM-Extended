@@ -190,9 +190,10 @@ private _coldFlag = _unit getVariable ["ACME_coldBlood", false];
 // gradually reverting to the room-temperature flow curve.
 private _coldFrac = 0;
 if (_coldFlag) then {
-    private _hungAt = _unit getVariable ["ACME_coldBloodHungAt", CBA_missionTime];
+    private _bloodNow = [true] call ACME_fnc_clinicalClock;
+    private _hungAt = _unit getVariable ["ACME_coldBloodHungAt", _bloodNow];
     private _rewarm = (missionNamespace getVariable ["ACME_bloodRewarmTime", 1200]) max 1;
-    _coldFrac = (1 - ((CBA_missionTime - _hungAt) / _rewarm)) max 0 min 1;
+    _coldFrac = (1 - ((_bloodNow - _hungAt) / _rewarm)) max 0 min 1;
 };
 private _warmerTempPerLiter = missionNamespace getVariable ["ACME_warmer_tempPerLiter", 0.8];
 private _warmthAdd = 0;
@@ -246,6 +247,7 @@ if (_hasFluidBags) then {
             // because the hard requirement is that saline holds until flush line.
             private _bpLC = toLower _targetBodyPart;
             private _onYLine = [_unit, _targetBodyPart, _iv, _accessSite] call ACME_fnc_isYLineAccess;
+            if (_onYLine && {_type in ["Blood","FreshBlood"]}) then {[_unit,_targetBodyPart,_iv,_accessSite,true] call ACME_fnc_yAutoWarmer;};
             private _warmedFlag = [_unit, _targetBodyPart, _iv, _accessSite] call ACME_fnc_lineWarmer;
             private _serviceKey = toLowerANSI format ["%1#%2#%3", _targetBodyPart, _iv, _accessSite];
             private _needsPrime = _onYLine && {!((_unit getVariable ["ACME_YLinePrimed", createHashMap]) getOrDefault [_serviceKey, true])};
@@ -309,7 +311,7 @@ if (_hasFluidBags) then {
                     case "FreshBlood": {
                         _uniqueFreshBloodEntry = _acmeFreshEntry;
 
-                        private _timeEffect = ((0.67 max (900 / ((CBA_missionTime - (_uniqueFreshBloodEntry param [4, CBA_missionTime])) max 0.001))) min 1);
+                        private _timeEffect = ((0.67 max (900 / ((([true] call ACME_fnc_clinicalClock) - (_uniqueFreshBloodEntry param [4, ([true] call ACME_fnc_clinicalClock)])) max 0.001))) min 1);
 
                         _fluidFlowRate = ([0.8, (1.2 * _timeEffect)] select (_uniqueFreshBloodEntry select 3));
                         _freshBloodEffectiveness = _timeEffect;

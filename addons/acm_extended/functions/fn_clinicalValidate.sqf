@@ -45,7 +45,7 @@ private _required = createHashMapFromArray [
     ["ACME_pendingFlush","ARRAY"],
     ["ACME_do2_dilution","ARRAY"], ["ACME_piCuffs","HASHMAP"],
     ["ACME_circ_State","HASHMAP"], ["ACME_tbi_State","HASHMAP"],
-    ["ACME_yFlushJobs","HASHMAP"], ["ACME_lineWarmers","HASHMAP"], ["ACME_YLinePrimed","HASHMAP"], ["ACME_bagMoves","HASHMAP"],
+    ["ACME_yFlushJobs","HASHMAP"], ["ACME_lineWarmers","HASHMAP"], ["ACME_YLinePrimed","HASHMAP"], ["ACME_yAutoWarmers","HASHMAP"], ["ACME_bagMoves","HASHMAP"],
     ["ACME_lineWarmerCustody","HASHMAP"], ["ACME_PiggybackLines","HASHMAP"],
     ["ACME_infusion_BagMedications","ARRAY"], ["ACME_detachedBags","ARRAY"],
     ["ACME_IV_SiteState","ARRAY"], ["ACME_CS_holeData","ARRAY"],
@@ -190,6 +190,7 @@ private _clampReceiptsValid = {
             if (!_bad) then {_bad = (_v select 0) < 0 || {(_v select 1) < 0} || {(_v select 0) > (_v select 1)};};
         };
         case "ACME_lineWarmers";
+        case "ACME_yAutoWarmers";
         case "ACME_YLinePrimed": {
             _bad = ((keys _v) findIf {!(_x isEqualType "") || {!((_v get _x) isEqualType true)}}) >= 0;
         };

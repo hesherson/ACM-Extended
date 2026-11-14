@@ -212,7 +212,7 @@ _state setVariable ["ACME_NativeClocks_v3", _clockRows];
 // Convert medications time to offset
 private _medications = (_unit getVariable [VAR_MEDICATIONS, []]) apply {+_x};
 {
-    _x set [1, _x#1 - CBA_missionTime];
+    _x set [1, _x#1 - ([true] call ACME_fnc_clinicalClock)];
 } forEach _medications;
 _state setVariable [VAR_MEDICATIONS, _medications];
 

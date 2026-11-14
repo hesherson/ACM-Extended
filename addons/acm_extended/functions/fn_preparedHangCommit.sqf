@@ -224,7 +224,7 @@ if (_kind == "blood" || {!_isSingle} || {_kind == "bagOnly" && {_carrierType in 
     if (_warmer) then {
         [_patient, true, false, objNull, CBA_missionTime + 15, true] call ACME_fnc_bloodThermalStateCommit;
     } else {
-        if (_bloodCold) then {[_patient, false, true, CBA_missionTime, CBA_missionTime + 15, true] call ACME_fnc_bloodThermalStateCommit;};
+        if (_bloodCold) then {[_patient, false, true, [true] call ACME_fnc_clinicalClock, CBA_missionTime + 15, true] call ACME_fnc_bloodThermalStateCommit;};
     };
 };
 

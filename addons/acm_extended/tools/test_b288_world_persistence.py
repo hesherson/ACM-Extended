@@ -33,6 +33,7 @@ def production(name):
 def setup():
     return r'''
     private _server=true;private _local=true;private _serverTime=100;private _gameDate=0.5;
+    ACME_fnc_clinicalClock={if (_this param [0,false]) then {CBA_missionTime} else {_serverTime}};
     private _finite={_this isEqualType 0 && {_this > -1e30} && {_this < 1e30}};
     private _mapDefault={params ["_map","_args"];_args params ["_key","_default"];if (_key in _map) then {_map get _key} else {_default}};
     private _nativeVariable={params ["_o","_k","_default"];if (isNil {_o getVariable _k}) then {_default} else {_o getVariable _k}};

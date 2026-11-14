@@ -52,7 +52,7 @@ private _sub = format ["%1 units on hand, %2 mL total", _total, _total * 500];
 (_dlg displayCtrl 87621) ctrlSetText _sub;
 
 private _foot = if ((["real"] call ACME_fnc_bloodTiming) && {["spoil"] call ACME_fnc_bloodTiming}) then {
-    private _remaining = ((["fridge"] call ACME_fnc_bloodTiming) - (serverTime - (_fridge getVariable ["ACME_bf_lotStart",serverTime]))) max 0;
+    private _remaining = ((["fridge"] call ACME_fnc_bloodTiming) - (([] call ACME_fnc_clinicalClock) - (_fridge getVariable ["ACME_bf_lotStart",([] call ACME_fnc_clinicalClock)]))) max 0;
     format ["<t color='#8a9099' size='0.9'>Refrigerated stock expires in %1 hours. Time outside controlled storage counts against the unit's use window.</t><br/>",ceil (_remaining/3600)]
 } else {""};
 if (_restock) then {

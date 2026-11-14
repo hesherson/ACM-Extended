@@ -7,7 +7,7 @@ if ((_holder getVariable ["ACME_coolerTake4UPending",[]]) isNotEqualTo [] || {co
 private _boxClasses = ["ACME_BloodCoolerBox_CSWB1U","ACME_BloodCoolerBox_CSWB2U","ACME_BloodCoolerBox_CSWB4U"];
 if (_scope == "") then {_scope = ["holder","box"] select ((typeOf _holder) in _boxClasses);};
 if !(_scope in ["holder","box"]) exitWith {[]};
-private _now = serverTime;
+private _now = ([] call ACME_fnc_clinicalClock);
 private _records = [];
 private _ready = false;
 if (_scope == "box") then {

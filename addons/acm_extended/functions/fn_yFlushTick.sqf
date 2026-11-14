@@ -20,6 +20,7 @@ private _changed = false; private _topology = false;
     if ((_e param [1,0]) <= 0.001 || {!((_e param [0, ""]) in ["Saline","ACME_SalineY"])}
         || {((_p getVariable ["ACME_infusion_BagMedications", []]) findIf {(_x param [23, ""]) == _id}) >= 0}) then {_jobs deleteAt _key; _topology = true; continue;};
     private _dt = ((serverTime - _last) max 0) min 1;
+    [_p,_part,_iv,_site,true] call ACME_fnc_yAutoWarmer;
     private _pi = ACME_infusion_bodyParts find _part;
     private _drain = (_rate * _dt) min _remaining min (_e select 1);
     private _pass = 1;

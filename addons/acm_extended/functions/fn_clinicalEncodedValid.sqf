@@ -21,7 +21,7 @@ switch (_v select 0) do {
                     && {(_v select 3) isEqualType ""} && {count (_v select 3) <= 256}
             }}
     };
-    case "T": {_n == 3 && {!isNil {_v select 1}} && {!isNil {_v select 2}} && {(_v select 1) in ["time","cba"]} && {(_v select 2) isEqualType 0} && {finite (_v select 2)}};
+    case "T": {_n == 3 && {!isNil {_v select 1}} && {!isNil {_v select 2}} && {(_v select 1) in ["time","cba","clinical"]} && {(_v select 2) isEqualType 0} && {finite (_v select 2)}};
     case "A": {
         _n == 2 && {!isNil {_v select 1}} && {(_v select 1) isEqualType []} && {
             ((_v select 1) findIf {!([_x, _depth + 1, _budget] call ACME_fnc_clinicalEncodedValid)}) < 0

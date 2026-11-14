@@ -16,7 +16,7 @@ private _saved = (_snapshot select 1) apply {_x select 0};
 _bags sort true;
 _saved sort true;
 if (_bags isNotEqualTo _saved) exitWith {false};
-private _now = serverTime;
+private _now = ([] call ACME_fnc_clinicalClock);
 private _store = missionNamespace getVariable ["ACME_ccByHolder",createHashMap];
 private _record = _store getOrDefault [netId _holder,[[],[]]];
 private _old = createHashMap;

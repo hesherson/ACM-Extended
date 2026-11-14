@@ -121,6 +121,9 @@
   ["ACME_PiggybackLines", "", true, true],
   ["ACME_piggybackResults", "", false, false],
   ["ACME_YLinePrimed", "", true, true],
+  ["ACME_yAutoWarmers", "", true, true],
+  ["ACME_medicationTickAt", "", false, false],
+  ["ACME_medicationTickOwner", "", false, false],
   ["ACME_yServiceReceipts", "", false, false],
   // Wake injury history may survive saves; pose records, PFH IDs and cross-owner tokens never do.
   ["ACME_wakeHadArmFracture", "", true, true],
@@ -980,7 +983,7 @@
   ],
   [
     "ACME_coldBloodHungAt",
-    "cba",
+    "clinical",
     true
   ],
   [

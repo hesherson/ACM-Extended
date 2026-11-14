@@ -112,7 +112,7 @@ private _liveBags = _bags apply {
     if ((_row select 1) == "FreshBlood") then {
         private _meta = _row select 8;
         _row set [7,-1];
-        _row set [8,if (_meta isEqualTo ["freshMissingV1"]) then {+_meta} else {["freshV1",_meta select 1,CBA_missionTime - (_meta select 2),_meta select 3]}];
+        _row set [8,if (_meta isEqualTo ["freshMissingV1"]) then {+_meta} else {["freshV1",_meta select 1,([true] call ACME_fnc_clinicalClock) - (_meta select 2) - _offlineSeconds,_meta select 3]}];
     };
     _row
 };

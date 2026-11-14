@@ -208,7 +208,7 @@ PREAMBLE += "\nACME_fnc_yBagReplaceEmpty={" + adapt(read("yBagReplaceEmpty")) + 
 
 
 PREAMBLE += "\nACME_fnc_bloodSpoiledClass={" + adapt(read("bloodSpoiledClass")) + "};"
-for _blood_dependency in ("bloodTiming", "bloodWarmLimit", "bloodUseClock", "bloodUseRow", "bloodUseSeed"):
+for _blood_dependency in ("clinicalClock", "bloodTiming", "bloodWarmLimit", "bloodUseClock", "bloodUseRow", "bloodUseSeed"):
     _blood_source = adapt(read(_blood_dependency)).replace('serverTime','_nowTime')
     # VM has no finite command; its fixture scalars are ordinary finite values.
     _blood_source = re.sub(r'\bfinite (_\w+)', r'(\1 isEqualType 0)', _blood_source)
@@ -216,6 +216,13 @@ for _blood_dependency in ("bloodTiming", "bloodWarmLimit", "bloodUseClock", "blo
     _blood_source = _blood_source.replace('_out select [12]', '_out select [12,count _out]')
     PREAMBLE += f'\nACME_fnc_{_blood_dependency}={{' + _blood_source + '};'
 PREAMBLE += "\nACME_fnc_freshBloodResolve={[]};"
+# Inject the engine hash-map primitive for fixtures using the automatic Y warmer.
+_y_auto = adapt(read("yAutoWarmer"))
+for _receiver, _key, _default in (("_warmers", "_key", "false"), ("_bagMap", "_partKey", "[]")):
+    _y_auto = _y_auto.replace(f"{_receiver} getOrDefault [{_key},{_default}]",
+        f"(if ({_key} in {_receiver}) then {{{_receiver} get {_key}}} else {{{_default}}})")
+PREAMBLE += '\nACME_fnc_isYLineAccess={false};ACME_fnc_yAutoWarmer={' + _y_auto + '};'
+
 
 GROUND_CONTACT_SOURCE = adapt(read('patientInteractionContact'))
 GROUND_CONTACT_SOURCE = re.sub(r'\bfinite (_\w+)',r'(\1 isEqualType 0)',GROUND_CONTACT_SOURCE)

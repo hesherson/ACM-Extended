@@ -101,7 +101,7 @@ if (_adjustments isNotEqualTo []) then {
     private _deleted = false;
     {
         _x params ["", "_timeAdded", "", "", "_hrAdjust", "_painAdjust", "_flowAdjust", "", "", "_rrAdjust", "_coSensitivityAdjust", "_breathingEffectivenessAdjust", "", "_medicationType"];
-        private _timeInSystem = CBA_missionTime - _timeAdded;
+        private _timeInSystem = ([true] call ACME_fnc_clinicalClock) - _timeAdded;
         if !([_x,_timeInSystem,"active"] call ACME_fnc_medicationKineticEffect) then {
             _deleted = true;
             _adjustments deleteAt _forEachIndex;

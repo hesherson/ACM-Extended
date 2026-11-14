@@ -14,7 +14,7 @@ export function cardLayout(layout, card, fontScale = 1) {
       status:{...rect(textX+trackW*.70,u*.0015,Math.max(trackW*.30-(card.vial?vialW:0),0),u*.017),fontSize:font(.010)},
       thermal:{...rect(textX+trackW*.60,u*.0185,trackW*.40,u*.013),fontSize:font(.010)},
       icon:rect(pad+(column-iconH)/2,(rowH-iconH)/2,iconH,iconH),vial:rect(w-pad-vialW,u*.0015,vialW,vialH),
-      volume:{...rect(textX,rowH*.72,trackW,rowH*.28),fontSize:font(.009),'--track-height':`${100*u*.0025/h}vh`},
+      volume:{...rect(textX,rowH*.72,trackW,rowH*.28),fontSize:font(.009),'--track-height':`${100*u*.0035/h}vh`},
       flowStripe:{width:`${100*trackW*32/31/h}vh`},
       mark:{top:`${100*u*.0015/h}vh`,lineHeight:`${100*rowH*.225/h}vh`},
       tick:{top:`${-100*u*.002/h}vh`,height:`${100*u*.006/h}vh`}};
@@ -34,7 +34,7 @@ export function cardLayout(layout, card, fontScale = 1) {
     status:{...rect(textX,top+nameH+(card.detail?detailH:0),trackW,statusH),fontSize:font(.0125)},
     thermal:{...rect(textX,top+nameH+(card.detail?detailH:0)+(card.status?statusH:0),trackW,thermalH),fontSize:font(.0125)},
     icon:rect(pad,Math.max(((card.fraction>=0?rowH*.75:rowH*.91)-iconH)/2,0),iconW,iconH),vial:rect(w-pad-vialW,top,vialW,vialH),
-    volume:{...rect(textX,rowH*.79,trackW,rowH*.21),fontSize:font(.010),'--track-height':`${100*u*.0025/h}vh`},
+    volume:{...rect(textX,rowH*.79,trackW,rowH*.21),fontSize:font(.010),'--track-height':`${100*u*.0035/h}vh`},
     flowStripe:{width:`${100*trackW*32/31/h}vh`},
     mark:{top:`${100*u*.003/h}vh`,lineHeight:`${100*rowH*.17/h}vh`},
     tick:{top:`${-100*u*.002/h}vh`,height:`${100*u*.006/h}vh`}};

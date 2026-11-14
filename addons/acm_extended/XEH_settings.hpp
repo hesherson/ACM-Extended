@@ -689,6 +689,9 @@
 ] call CBA_fnc_addSetting;
 
 // ACME consumes the Server source only. Restart fixes the policy for the mission's saved clocks.
+["ACME_clinicalTimeBasis","LIST",
+ ["Drug and blood clock","Server setting. In-game time follows the server's time multiplier. Real-life time uses elapsed seconds. Restart the mission after editing."],
+ ["ACM Extended: Persistence","Clinical timing"],[[0,1],["Real-life time","In-game time"],0],1,{},true] call CBA_fnc_addSetting;
 ["ACME_medicationTimeScale","SLIDER",
  ["Medication half-life multiplier","Server setting. 1.00 uses reference half-lives; lower values speed up washout. Restart the mission after editing."],
  ["ACM Extended: Circulation","Medications"],[0.05,4,1,2],1,{},true] call CBA_fnc_addSetting;

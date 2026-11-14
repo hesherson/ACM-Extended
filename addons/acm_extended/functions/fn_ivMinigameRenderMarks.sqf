@@ -190,7 +190,7 @@ if (!isNull _patient && {_bp in ["leftarm", "rightarm", "leftleg", "rightleg"]})
             };
         } else {
             // the miss-site bruise first, under the hole, gauge-correlated, scaled to fit and faded in.
-            if (_mkind == "miss" && {_mgauge > 0}) then {
+            if (_mkind in ["miss","flushbruise"] && {_mgauge > 0}) then {
                 private _b = _dlg ctrlCreate ["ACME_IV_Bruise", -1];
                 // THE BRUISE ART EXISTS FOR 14g, 16g AND 18g ONLY. there is no bruise_20g_ca.paa in the tree,
                 // and a texture path to a file that is not packed reports Picture not found rather than falling

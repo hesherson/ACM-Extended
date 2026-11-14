@@ -4,14 +4,14 @@
  * can inherit the preserved exposure. Replays never seed another replacement.
  */
 params [["_mode", "read", [""]], "_holder", ["_class", "", [""]], ["_request", [], [[]]],
-    ["_warm", 0, [0]], ["_sampled", serverTime, [0]], ["_expected", 1, [0]]];
+    ["_warm", 0, [0]], ["_sampled", ([] call ACME_fnc_clinicalClock), [0]], ["_expected", 1, [0]]];
 if (!isServer || {isNull _holder} || {count _request != 2}
     || {!(_mode in ["read", "seed"])} || {([_class] call ACME_fnc_coolerBagVolume) <= 0}) exitWith {};
 _request params ["_machine", "_sequence"];
 if !(_machine isEqualType 0 && {_sequence isEqualType 0}
     && {finite _sequence} && {_sequence >= 1} && {_sequence == floor _sequence}) exitWith {};
-private _now = serverTime;
-if (!finite _warm || {_warm < 0} || {!finite _sampled} || {_sampled > _now}
+private _now = ([] call ACME_fnc_clinicalClock);
+if (!finite _warm || {_warm < 0} || {!finite _sampled} || {_sampled > _now + 5 * ((missionNamespace getVariable ["ACME_clinicalClockAnchor",[]]) param [2,1])}
     || {!finite _expected} || {_expected < 1} || {_expected != floor _expected}) exitWith {};
 private _authorized = _machine == owner _holder;
 if (!_authorized && {_mode == "seed"}) then {

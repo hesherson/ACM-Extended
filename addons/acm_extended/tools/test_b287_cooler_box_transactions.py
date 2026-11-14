@@ -17,7 +17,7 @@ def function(name):
     text=text.replace('alive _owner','true').replace('_owner distance _box','_distance')
     text=text.replace('createVehicle [_boxClass,_owner getRelPos [1.1,0],[],0,"CAN_COLLIDE"]','_boxFixture')
     text=text.replace('createVehicle [_boxClass,_placementPos,[],0,\"CAN_COLLIDE\"]','_boxFixture')
-    text=text.replace('_box setDir getDir _owner','_box setVariable ["dir",0]')
+    text=text.replace('_box setDir ((getDir _owner) + 180)','_box setVariable ["dir",180]')
     text=text.replace('_owner getRelPos [1.1,0]','[0,0,0]')
     text=text.replace('netId _box','"box"')
     for prefix,field in [('Weapon','weapons'),('Magazine','magazines'),('Item','cargo'),('Backpack','backpacks')]:
@@ -27,6 +27,9 @@ def function(name):
     text=text.replace('_box addItemCargoGlobal [_x select 0,1]','[_box,_x select 0] call _addCargo')
     text=text.replace('_box addItemCargoGlobal [_x,1]','[_box,_x] call _addCargo')
     text=text.replace('_box setObjectTextureGlobal [_x,"#(argb,8,8,3)color(0.62,0.10,0.10,1.0,co)"]','nil')
+    text=text.replace('configFile >> "CfgVehicles" >> _boxClass','_boxClass')
+    text=text.replace('getNumber (_modelCfg >> "ACME_preserveModelTextures")','1')
+    text=text.replace('getNumber (_modelCfg >> "ACME_modelScale")','1')
     text=text.replace('deleteVehicle _box','_box setVariable ["deleted",true]')
     for c in ['uniformContainer','vestContainer','backpackContainer']:
         text=text.replace(f'{c} _owner','_holder')
@@ -44,6 +47,8 @@ def function(name):
 def setup():
     return backend_setup()+r'''
     private _boxFixture=parsingNamespace;
+    ACME_fnc_clinicalClock={CBA_missionTime};
+    missionNamespace setVariable ["ACME_clinicalTiming",[1,false,true,true]];
     private _boxQueue=[];private _boxReplies=[];
     ACME_fnc_coolerBagVolume={500};
     private _removeCargo={params ["_box","_class"];private _cargo=+(_box getVariable ["cargo",[]]);private _i=_cargo find _class;if (_i>=0) then {_cargo deleteAt _i;};_box setVariable ["cargo",_cargo];};

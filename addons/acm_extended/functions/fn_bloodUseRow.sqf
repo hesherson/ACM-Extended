@@ -20,7 +20,7 @@ if (_blood && {["real"] call ACME_fnc_bloodTiming} && {["spoil"] call ACME_fnc_b
     if (_donor isEqualType [] && {count _donor == 4} && {(_donor select 2) isEqualType 0}) then {
         private _tag = _donor select 0;
         private _age = -1;
-        if (_tag == "freshV1") then {_age = CBA_missionTime - (_donor select 2);};
+        if (_tag == "freshV1") then {_age = ([true] call ACME_fnc_clinicalClock) - (_donor select 2);};
         if (_tag == "freshAgeV1" && {_mode == "restore"}) then {_age = (_donor select 2) + _seconds;};
         _freshExpired = _age >= (["fresh"] call ACME_fnc_bloodTiming);
     };

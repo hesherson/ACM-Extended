@@ -116,7 +116,7 @@ ACM_MEDICATION_VIALS = [];
 // ID 0; usable inventory classes are IDs 1..512. Clients explicitly request a snapshot on postInit/JIP rather than
 // relying on a one-time publicVariable broadcast that may have happened before they connected.
 if (isServer) then {
-    missionNamespace setVariable [QGVAR(FreshBloodList), (createHashMapFromArray [[0,[objNull,250,ACM_BLOODTYPE_ON,true,CBA_missionTime]]]), true];
+    missionNamespace setVariable [QGVAR(FreshBloodList), (createHashMapFromArray [[0,[objNull,250,ACM_BLOODTYPE_ON,true,([true] call ACME_fnc_clinicalClock)]]]), true];
 };
 
 if (hasInterface || isServer) then {

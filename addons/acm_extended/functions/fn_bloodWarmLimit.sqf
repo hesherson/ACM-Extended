@@ -9,5 +9,5 @@ private _id = _parts param [3,""];
 if (_id == "") exitWith {_limit};
 private _entry = [parseNumber _id] call ACME_fnc_freshBloodResolve;
 if (_entry isEqualTo []) exitWith {_limit};
-if ((CBA_missionTime - (_entry select 4)) >= _limit) exitWith {0};
+if ((([true] call ACME_fnc_clinicalClock) - (_entry select 4)) >= _limit) exitWith {0};
 _limit

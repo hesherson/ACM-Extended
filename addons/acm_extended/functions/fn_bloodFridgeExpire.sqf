@@ -1,5 +1,5 @@
 /* Fridge stock is issued in lots. An explicit restock replaces the lot and resets its age. */
-params ["_fridge",["_now",serverTime]];
+params ["_fridge",["_now",([] call ACME_fnc_clinicalClock)]];
 if (!isServer || {_fridge getVariable ["ACME_persistenceFrozen",false]} || {!(["real"] call ACME_fnc_bloodTiming)} || {!(["spoil"] call ACME_fnc_bloodTiming)}) exitWith {};
 private _stock = _fridge getVariable ["ACME_bf_stock",[]];
 if (_stock isEqualTo []) exitWith {};
