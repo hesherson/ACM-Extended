@@ -22,6 +22,22 @@ class Extended_InitPost_EventHandlers {
     };
 };
 
+class Cfg3DEN {
+    class EventHandlers {
+        class ACME_MedicalChestPreview {
+            init = "['reload'] call ACME_fnc_medicalChestEden";
+            onMissionLoad = "['reload'] call ACME_fnc_medicalChestEden";
+            onMissionNew = "['reload'] call ACME_fnc_medicalChestEden";
+            onBeforeMissionPreview = "['clear'] call ACME_fnc_medicalChestEden";
+            onMissionPreviewEnd = "[] spawn {uiSleep 0.1; ['reload'] call ACME_fnc_medicalChestEden;}";
+            onEditableEntityAdded = "['update', _this select 0] call ACME_fnc_medicalChestEden";
+            onEditableEntityRemoved = "['remove', _this select 0] call ACME_fnc_medicalChestEden";
+            onEntityAttributeChanged = "['update', _this select 0] call ACME_fnc_medicalChestEden";
+            onEntityDragged = "['update', _this select 0] call ACME_fnc_medicalChestEden";
+        };
+    };
+};
+
 // Pause-menu bridge for ACME's patient-focused diagnostic dump. CBA opens this empty display, the onLoad
 // handler writes the snapshot, then closes immediately, mirroring ACE's own Debug To Clipboard option.
 class RscDisplayEmpty;
@@ -2303,6 +2319,10 @@ class CfgFunctions {
             class clinicalClockTick {};
             class medicalChestInit {};
             class medicalChestPlace {};
+            class medicalChestGround {};
+            class medicalChestLidBase {};
+            class medicalChestEden {};
+            class medicalChestSetOpen {};
             class medicalChestStock {};
             class medicalChestDrawers {};
             class medicalChestDecals {};

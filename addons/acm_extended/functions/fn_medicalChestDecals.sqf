@@ -1,6 +1,6 @@
 /* The closed cabinet and detached lid have measured model-space paint positions.
    The open cabinet variants use their own rendered surfaces for placement. */
-params ["_object", "_surface", ["_variant", 0]];
+params ["_object", "_surface", ["_variant", 0], ["_localOnly", false]];
 private _hasRetexture = _variant in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 private _markings = switch (_surface) do {
     case "closed": {[
@@ -85,7 +85,7 @@ if (_hasRetexture && {_surface in ["closed", "lid"]}) then {
 private _decals = [];
 {
     _x params ["_asset", "_position", "_normal", "_vertical"];
-    private _decal = createSimpleObject [format ["\acm_extended\data\medical_chest\%1.p3d", _asset], _position, false];
+    private _decal = createSimpleObject [format ["\acm_extended\data\medical_chest\%1.p3d", _asset], _position, _localOnly];
     if (!isNull _decal) then {
         _decal setVectorDirAndUp [_normal, _vertical];
         _decals pushBack _decal;

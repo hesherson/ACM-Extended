@@ -8,9 +8,12 @@ from test_menu_death_lifecycle import ROOT, adapt, execute, read
 
 
 def request_fixture():
-    code = adapt(read("medicalChestRequest"))
+    request = adapt(read("medicalChestRequest"))
+    transition = adapt(read("medicalChestSetOpen"))
+    lid_base = adapt(read("medicalChestLidBase"))
     replacements = {
         'isRemoteExecuted': '_remote',
+        'is3DEN': '_eden',
         'remoteExecutedOwner': '_sender',
         'alive _actor': '_alive',
         'owner _actor': '_ownerNum',
@@ -32,16 +35,21 @@ def request_fixture():
         '    _cargo setPosWorld (_base vectorAdd [0, 0, -25]);': '',
         '_chest hideObjectGlobal true;': '_hidden = true;',
         '_chest hideObjectGlobal false;': '_hidden = false;',
-        'ATLToASL [_side select 0, _side select 1, 0]': '[_side select 0, _side select 1, 0]',
         'playSound3D [format ["acm_extended\\sound\\%1.ogg", _sound], objNull, false, getPosWorld _chest, 1.5, 1, 18];':
             '_audio pushBack _sound;',
     }
     for engine, stand_in in replacements.items():
-        assert engine in code, engine
-        code = code.replace(engine, stand_in)
-    code = re.sub(r'lineIntersectsSurfaces\s*\[[^;]+\]', '[]', code)
-    code = re.sub(r'deleteVehicle ([^;]+);', r'_deleted pushBack (\1);', code)
-    return "private _request = {" + code + "};" + r'''
+        assert engine in request or engine in transition, engine
+        request = request.replace(engine, stand_in)
+        transition = transition.replace(engine, stand_in)
+    transition = re.sub(r'deleteVehicle ([^;]+);', r'_deleted pushBack (\1);', transition)
+    definitions = (
+        "private _request = {" + request + "};"
+        "ACME_fnc_medicalChestSetOpen = {" + transition + "};"
+        "ACME_fnc_medicalChestLidBase = {" + lid_base + "};"
+    )
+    return definitions + r'''
+        ACME_fnc_medicalChestGround = {_this select 0};
         private _chest = _patient;
         private _cargo = missionNamespace;
         private _created = [];
@@ -54,6 +62,7 @@ def request_fixture():
         private _hidden = false;
         private _failLid = false;
         private _remote = true;
+        private _eden = false;
         private _sender = _ownerNum;
         private _spawn = {
             params ["_class"];
@@ -96,6 +105,40 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [(_chest getVariable "ACME_medicalChestCargo") isEqualTo _cargo && {(_cargo getVariable "stock") isEqualTo ["ACM_ACCUVAC", "ACE_tourniquet"]}, "using drawers refilled or discarded live cargo"] call _check;
         [_audio isEqualTo ["medical_chest_open", "medical_chest_close", "medical_chest_open"], "transition failed to emit exactly one matching sound"] call _check;
     ''')
+
+
+def test_mission_start_open_and_later_close_share_the_same_cargo():
+    execute(request_fixture() + r'''
+        [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
+        [count _created == 0, "remote caller entered the initialization path"] call _check;
+        _remote = false;
+        [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true], "initial lid state was closed"] call _check;
+        [(_created select 0) isEqualTo "ACME_MedicalChest4Drawers", "initial drawer layout differs from Eden"] call _check;
+        [(_drawers select 0 select 1) && {_audio isEqualTo []}, "initialization randomized the drawers or played audio"] call _check;
+        [(_cargo getVariable "fixtureAttached") isEqualTo (_chest getVariable "ACME_medicalChestCabinet"), "open chest did not expose the live cargo"] call _check;
+        private _open = _chest getVariable "ACME_medicalChestCabinet";
+        [_open, _medic, false, 1] call _request;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {(_cargo getVariable "stock") isEqualTo ["ACM_IV_18g", "ACM_ACCUVAC"]}, "initially open chest failed to close with stock intact"] call _check;
+    ''')
+
+
+def test_eden_preview_is_local_and_uses_the_saved_state_and_live_assets():
+    config = (ROOT / "addons/acm_extended/config.cpp").read_text()
+    chest = (ROOT / "addons/acm_extended/MedicalChestVehicles.hpp").read_text()
+    eden = read("medicalChestEden")
+    init = read("medicalChestInit")
+    for handler in ("onMissionLoad", "onMissionNew", "onBeforeMissionPreview", "onMissionPreviewEnd",
+                    "onEditableEntityAdded", "onEditableEntityRemoved", "onEntityAttributeChanged", "onEntityDragged"):
+        assert re.search(rf'{handler} = "[^\n]+call ACME_fnc_medicalChestEden', config)
+    assert 'if (!is3DEN) exitWith' in eden
+    assert 'get3DENAttribute "ACME_medicalChestStartOpen"' in eden
+    assert 'property = "ACME_medicalChestStartOpen"' in chest
+    assert 'getVariable ["ACME_medicalChestStartOpen", false]' in init
+    assert 'createSimpleObject [_class, _base, true]' in eden
+    assert 'call ACME_fnc_medicalChestDecals' in eden
+    assert 'set3DENAttribute' not in eden and 'create3DENEntity' not in eden
+    assert 'ACME_fnc_medicalChestStock' not in eden
 
 
 @pytest.mark.parametrize("cause,spawn_calls", [("_sender=8;", 0), ("_distance=5;", 0), ("_failLid=true;", 2)])

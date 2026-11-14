@@ -1,6 +1,6 @@
 /* Cabinet animation names come from the live assets. Each drawer gets an
    independent extension, with at least one visibly open. */
-params ["_cabinet"];
+params ["_cabinet", ["_initial", false], ["_immediate", false]];
 private _isDrawer = {
     params ["_name"];
     _name = toLowerANSI _name;
@@ -15,12 +15,19 @@ private _names = if (_useSources) then {_sources} else {(animationNames _cabinet
 if (_names isEqualTo []) exitWith {
     diag_log format ["[ACME] No drawer animations found for %1: %2", typeOf _cabinet, animationNames _cabinet];
 };
-private _phases = _names apply {selectRandom [0, 0.23, 0.42, 0.63, 0.86]};
-_phases set [floor random count _phases, selectRandom [0.63, 0.86]];
+private _phases = if (_initial) then {
+    _names sort true;
+    private _pattern = [0.63, 0, 0.42, 0.23];
+    _names apply {_pattern select ((_names find _x) mod count _pattern)}
+} else {
+    private _randomPhases = _names apply {selectRandom [0, 0.23, 0.42, 0.63, 0.86]};
+    _randomPhases set [floor random count _randomPhases, selectRandom [0.63, 0.86]];
+    _randomPhases
+};
 {
     if (_useSources) then {
-        _cabinet animateSource [_x, _phases select _forEachIndex];
+        _cabinet animateSource [_x, _phases select _forEachIndex, _immediate];
     } else {
-        _cabinet animate [_x, _phases select _forEachIndex];
+        _cabinet animate [_x, _phases select _forEachIndex, _immediate];
     };
 } forEach _names;

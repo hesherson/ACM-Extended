@@ -264,83 +264,88 @@ GHOST_STENCILS = {
 }
 
 
-def contact_points(region, size, rng):
+def contact_mask(region, size, rng):
     width, height = size
-    corners = ((.049,.033),(.951,.033),(.049,.967),(.951,.967))
+    x = (np.arange(width, dtype=np.float32)+.5)/width
+    y = ((np.arange(height, dtype=np.float32)+.5)/height)[:, None]
+    field = np.zeros(size[::-1], dtype=np.float32)
+
+    def patch(cx, cy, sx, sy, weight):
+        sx *= rng.uniform(.72, 1.24)
+        sy *= rng.uniform(.74, 1.22)
+        blob = np.exp(-.5*((x-cx)/sx)**2-.5*((y-cy)/sy)**2)
+        np.maximum(field, blob * weight, out=field)
+
+    # Corner radii and the lower edge take the most abuse during transport.
+    for cx, cy in ((.047,.035),(.953,.035),(.047,.967),(.953,.967)):
+        weight = rng.uniform(.53,.98) * (1 if cy < .5 else 1.24)
+        patch(cx,cy,.044,.027,weight)
+        patch(cx,cy+(.035 if cy < .5 else -.035),.020,.041,weight*.71)
+
     side = region in ("left", "right")
     end = region in ("top", "bottom")
-    rails = FRONT_RIBS if region == "lid" else REAR_RIBS
-    outlines = SIDE_HANDLES if side else END_HANDLE if end else rails
-    points = [(x*width,y*height,math.pi*.24 if (x<.5)==(y<.5) else -math.pi*.24,27,20,1.35)
-              for x,y in corners]
+    outlines = SIDE_HANDLES if side else END_HANDLE if end else (FRONT_RIBS if region == "lid" else REAR_RIBS)
     for x0,y0,x1,y1 in outlines:
-        for y in (y0,y1):
-            for fraction in (.06,.26,.52,.77,.94):
-                x = x0+(x1-x0)*fraction
-                points.append((x*width,y*height,rng.uniform(-.23,.23),24,10,1.15))
-        for x in (x0,x1):
-            for fraction in (.18,.50,.82):
-                y = y0+(y1-y0)*fraction
-                points.append((x*width,y*height,math.pi/2+rng.uniform(-.34,.34),10,24,1.0))
+        if side or end:
+            for edge in (x0,x1):
+                patch(edge,(y0+y1)*.5,.020,(y1-y0)*.26,rng.uniform(.27,.53))
+            for edge in (y0,y1):
+                patch(rng.uniform(x0,x1),edge,(x1-x0)*.26,.016,rng.uniform(.23,.50))
+        else:
+            # The raised spacers get rubbed on their faces and at the molded ends.
+            rib = np.exp(-.5*((y-(y0+y1)*.5)/.015)**2)
+            extent = np.clip((x-x0)/.036,0,1)*np.clip((x1-x)/.036,0,1)
+            np.maximum(field, rib*extent*rng.uniform(.23,.43), out=field)
+            for edge in (x0+.018,x1-.018):
+                patch(edge,rng.uniform(y0+.012,y1-.012),.027,.021,rng.uniform(.44,.76))
+
     if region == "bottom":
         for x0,y0,x1,y1 in END_WHEELS:
-            points.append(((x0+x1)*width/2,(y0+y1)*height/2,math.pi/2,19,30,1.6))
-    for y in (.17,.43,.68,.88):
-        for x in (.033,.967):
-            points.append((x*width,y*height,math.pi/2,11,39,.75))
-    return points
+            patch((x0+x1)*.5,(y0+y1)*.5,.059,.098,1.17)
+        for cx in (.19,.34,.67,.81):
+            patch(cx,rng.uniform(.71,.91),.083,.075,rng.uniform(.52,.92))
+    else:
+        patch(rng.uniform(.26,.71),.962,.21,.016,rng.uniform(.38,.59))
+    return field
 
 
 def contact_wear(region, size, rng):
-    points = contact_points(region, size, rng)
-    smear = Image.new("L", size)
-    draw = ImageDraw.Draw(smear)
-    for x,y,angle,sx,sy,force in points:
-        if force < 1.3 and rng.random() < .37:
-            continue
-        x += rng.gauss(0,sx*.36)
-        y += rng.gauss(0,sy*.36)
-        direction = angle + rng.uniform(-.45,.45)
-        for _ in range(round(rng.randint(12,26)*force)):
-            start = (x+rng.gauss(0,sx*.7),y+rng.gauss(0,sy*.68))
-            turn = direction + rng.gauss(0,.48)
-            length = rng.randrange(6,51) * force
-            end = (start[0]+math.cos(turn)*length,start[1]+math.sin(turn)*length)
-            draw.line((start,end),fill=rng.randrange(18,111),width=rng.randint(1,7))
-    roughness = noise(size, 3, rng).point(lambda p: 93+p*162//255)
-    soft = smear.filter(ImageFilter.GaussianBlur(1.1))
-    faded = ImageChops.multiply(soft, roughness)
-    layer = color_layer(size,(157,158,132),faded)
+    contact = contact_mask(region,size,rng)
+    # Layer broad polished patches with broken, grainy stress whitening.
+    cloud = np.asarray(noise(size,35,rng),dtype=np.float32)/255
+    mottles = np.asarray(noise(size,11,rng),dtype=np.float32)/255
+    fine = np.asarray(noise(size,3,rng),dtype=np.float32)/255
+    rough = np.clip((mottles*.64 + fine*.36 - .33)*2.7,0,1)
+    soft = contact*(.19 + cloud*.39)*(.43 + rough*.57)
+    flecks = np.clip((fine*.61 + mottles*.39 - .59)*3.6,0,1) * contact**1.45
+    opacity = np.clip(soft*139 + flecks*63,0,147).astype(np.uint8)
+    opacity[opacity < 6] = 0
+    dull = Image.new("RGB",size,(116,119,105))
+    chalk = Image.new("RGB",size,(183,180,159))
+    layer = Image.composite(chalk,dull,Image.fromarray(np.clip((rough*.66+fine*.34)*255,0,255).astype(np.uint8)))
+    visible = Image.fromarray(opacity).point(lambda p: 255 if p else 0)
+    layer = Image.composite(layer,dull,visible)
+    layer.putalpha(Image.fromarray(opacity))
 
+    # A few isolated cuts interrupt the rubbed texture.
     cuts = Image.new("RGBA",size)
     draw = ImageDraw.Draw(cuts)
-    for x,y,angle,sx,sy,force in rng.sample(points, max(10,round(len(points)*.61))):
-        for _ in range(rng.randint(1,3)):
-            x0,y0 = round(x+rng.gauss(0,sx*.72)),round(y+rng.gauss(0,sy*.72))
-            turn = angle+rng.uniform(-.7,.7)
-            span = rng.choices((rng.randrange(6,16),rng.randrange(17,34),rng.randrange(35,83)),(4,5,1))[0]
-            dx,dy = math.cos(turn)*span,math.sin(turn)*span
-            width = rng.randrange(2,5)
-            groove = [(x0,y0),(round(x0+dx*.4),round(y0+dy*.43+rng.uniform(-3,3))),
-                      (round(x0+dx),round(y0+dy))]
-            draw.line(groove,fill=(26,29,23,rng.randint(84,176)),width=width)
-            draw.line([(px,py+max(1,width//2)) for px,py in groove],
-                      fill=(175,170,145,rng.randint(64,166)),width=1)
-        if rng.random() < .56:
-            x,y = round(x+rng.gauss(0,sx*.4)),round(y+rng.gauss(0,sy*.45))
-            span = rng.randrange(4,15)
-            nick = [(x-span,y),(x-2,y-3),(x+span,y-1),(x+3,y+3),(x-5,y+2)]
-            draw.polygon(nick,fill=(27,29,23,rng.randint(108,175)))
-            draw.line(nick[2:]+nick[:1],fill=(180,174,149,rng.randint(94,151)),width=1)
+    width,height = size
+    for _ in range(5 if region in ("lid","back","bottom") else 3):
+        for _ in range(70):
+            x,y = rng.randrange(17,width-17),rng.randrange(16,height-16)
+            if contact[y,x] > .37:
+                break
+        else:
+            continue
+        angle = rng.uniform(-math.pi,math.pi)
+        length = rng.randrange(10,37)
+        dx,dy = math.cos(angle)*length,math.sin(angle)*length
+        path = [(x,y),(round(x+dx*.54),round(y+dy*.51+rng.uniform(-2,2))),
+                (round(x+dx),round(y+dy))]
+        draw.line(path,fill=(28,31,25,rng.randrange(91,137)),width=rng.randrange(2,4))
+        draw.line([(px,py+2) for px,py in path[:2]],fill=(160,159,139,rng.randrange(72,123)),width=1)
     layer.alpha_composite(cuts)
-
-    # Flat panels get a handful of handling marks, with the deepest wear on the raised areas.
-    draw = ImageDraw.Draw(layer)
-    w,h = size
-    for _ in range(8):
-        x,y = rng.randrange(w//5,w*4//5),rng.randrange(h//6,h*5//6)
-        draw.line((x,y,x+rng.randrange(-29,36),y+rng.randrange(-14,19)),
-                  fill=(136,137,118,rng.randrange(28,70)),width=1)
     return layer
 
 

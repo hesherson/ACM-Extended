@@ -12,6 +12,17 @@
         ace_dragging_canDrag = 0;
         ace_dragging_canCarry = 0;
         ace_cargo_canLoad = 0;
+        class Attributes {
+            class ACME_medicalChestStartOpen {
+                property = "ACME_medicalChestStartOpen";
+                displayName = "Start Open";
+                tooltip = "Place the detached lid beside the chest and start with the drawers accessible.";
+                control = "Checkbox";
+                typeName = "BOOL";
+                defaultValue = "false";
+                expression = "if (!is3DEN && {isServer}) then {_this setVariable ['ACME_medicalChestStartOpen', _value];};";
+            };
+        };
         class ACE_Actions {
             class ACE_MainActions {
                 displayName = "Medical Chest";

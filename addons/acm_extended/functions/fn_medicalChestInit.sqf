@@ -2,17 +2,7 @@
 params ["_chest"];
 if (!isServer || {is3DEN} || {isNull _chest} || {!isNil {_chest getVariable "ACME_medicalChestState"}}) exitWith {};
 private _heading = getDir _chest;
-private _origin = getPosWorld _chest;
-private _hit = lineIntersectsSurfaces [
-    _origin vectorAdd [0, 0, 0.3],
-    _origin vectorAdd [0, 0, -2],
-    _chest, objNull, true, 1, "ROADWAY", "GEOM"
-];
-private _base = if (_hit isEqualTo []) then {
-    ATLToASL [(_origin select 0), (_origin select 1), 0]
-} else {
-    _hit select 0 select 0
-};
+private _base = [getPosWorld _chest, [_chest], 0.3, 2] call ACME_fnc_medicalChestGround;
 
 private _cargo = createVehicle ["ACME_MedicalChestCargo", ASLToATL _base, [], 0, "CAN_COLLIDE"];
 if (isNull _cargo) exitWith {};
@@ -35,5 +25,9 @@ _chest addEventHandler ["Deleted", {
     } forEach ["ACME_medicalChestCabinet", "ACME_medicalChestLid", "ACME_medicalChestCargo"];
     {if (!isNull _x) then {deleteVehicle _x;};} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
 }];
+if (_chest getVariable ["ACME_medicalChestStartOpen", false]) then {
+    [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
+};
+if ((_chest getVariable "ACME_medicalChestState") select 1) exitWith {};
 private _variant = getNumber (configOf _chest >> "acmeChestVariant");
 _chest setVariable ["ACME_medicalChestDecals", [_chest, "closed", _variant] call ACME_fnc_medicalChestDecals];
