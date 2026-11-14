@@ -2,7 +2,8 @@
 """Build the paint textures and fitted visual models for the ten medical chests.
 
 The mesh dumps contain model-space vertices and face indices for the closed
-cabinet and loose lid. The original models still supply the case and collision.
+cabinet and loose lid. The body panels are also fitted to the shared outer
+shell of the open cabinet. The stock models still supply the case and collision.
 """
 import argparse
 import json
@@ -264,89 +265,129 @@ GHOST_STENCILS = {
 }
 
 
-def contact_mask(region, size, rng):
+def contact_masks(region, size, rng):
     width, height = size
     x = (np.arange(width, dtype=np.float32)+.5)/width
     y = ((np.arange(height, dtype=np.float32)+.5)/height)[:, None]
-    field = np.zeros(size[::-1], dtype=np.float32)
+    abrasion = np.zeros(size[::-1], dtype=np.float32)
+    dust = np.zeros_like(abrasion)
 
-    def patch(cx, cy, sx, sy, weight):
-        sx *= rng.uniform(.72, 1.24)
-        sy *= rng.uniform(.74, 1.22)
+    def patch(field, cx, cy, sx, sy, strength):
         blob = np.exp(-.5*((x-cx)/sx)**2-.5*((y-cy)/sy)**2)
-        np.maximum(field, blob * weight, out=field)
+        np.maximum(field, blob*strength, out=field)
 
-    # Corner radii and the lower edge take the most abuse during transport.
-    for cx, cy in ((.047,.035),(.953,.035),(.047,.967),(.953,.967)):
-        weight = rng.uniform(.53,.98) * (1 if cy < .5 else 1.24)
-        patch(cx,cy,.044,.027,weight)
-        patch(cx,cy+(.035 if cy < .5 else -.035),.020,.041,weight*.71)
-
-    side = region in ("left", "right")
     end = region in ("top", "bottom")
-    outlines = SIDE_HANDLES if side else END_HANDLE if end else (FRONT_RIBS if region == "lid" else REAR_RIBS)
-    for x0,y0,x1,y1 in outlines:
-        if side or end:
-            for edge in (x0,x1):
-                patch(edge,(y0+y1)*.5,.020,(y1-y0)*.26,rng.uniform(.27,.53))
+    side = region in ("left", "right")
+    # Worn bevels wrap around each end of the case. Their edges taper into
+    # the panels, with more spread at the corners used to set the case down.
+    for dx in (x, 1-x):
+        for dy, lower in ((y, False), (1-y, not end)):
+            corner = np.exp(-.5*((dx/.096)**2 + (dy/.069)**2))
+            bevel = np.minimum(np.minimum(dx*width, dy*height), (dx*width+dy*height-23)*.71)
+            rim = np.exp(-.5*((bevel-rng.uniform(15,26))/rng.uniform(12,20))**2)
+            np.maximum(abrasion, corner*(rim*.81+.19)*rng.uniform(.87,1.1)*(1.30 if lower else 1), out=abrasion)
+    if not end:
+        lower_edge = np.exp(-.5*((y-.973)/.023)**2)
+        np.maximum(abrasion, lower_edge*(.20+.19*np.cos(x*math.pi*3)**2), out=abrasion)
+        patch(dust,.53,.96,.42,.090,.70)
+    else:
+        patch(dust,.50,.54,.54,.38,.72 if region == "bottom" else .37)
+
+    if side or end:
+        for x0,y0,x1,y1 in (SIDE_HANDLES if side else END_HANDLE):
+            # Knuckles polish the rim. Dust survives toward the recess corners.
+            patch(abrasion,x0,(y0+y1)*.48,.023,(y1-y0)*.32,.38)
             for edge in (y0,y1):
-                patch(rng.uniform(x0,x1),edge,(x1-x0)*.26,.016,rng.uniform(.23,.50))
-        else:
-            # The raised spacers get rubbed on their faces and at the molded ends.
-            rib = np.exp(-.5*((y-(y0+y1)*.5)/.015)**2)
-            extent = np.clip((x-x0)/.036,0,1)*np.clip((x1-x)/.036,0,1)
-            np.maximum(field, rib*extent*rng.uniform(.23,.43), out=field)
-            for edge in (x0+.018,x1-.018):
-                patch(edge,rng.uniform(y0+.012,y1-.012),.027,.021,rng.uniform(.44,.76))
+                patch(abrasion,x0+.16*(x1-x0),edge,(x1-x0)*.21,.015,.36)
+                patch(dust,x0+.24*(x1-x0),edge+(y1-y0)*.09,(x1-x0)*.29,.025,.66)
+    else:
+        for x0,y0,x1,y1 in (FRONT_RIBS if region == "lid" else REAR_RIBS):
+            span = np.clip((x-x0)/.030,0,1)*np.clip((x1-x)/.030,0,1)
+            lip = np.exp(-.5*((y-(y0+.017))/.010)**2)
+            np.maximum(abrasion, lip*span*rng.uniform(.26,.38), out=abrasion)
+            for cx in (x0+.027,x1-.027):
+                patch(abrasion,cx,y0+.023,.027,.016,rng.uniform(.40,.59))
+            for cx in (x0+.070,rng.uniform(.36,.65),x1-.070):
+                patch(dust,cx,y1+.005,rng.uniform(.049,.113),.010,rng.uniform(.30,.52))
 
     if region == "bottom":
+        # Wheels and the rear skid points take the weight during loading.
         for x0,y0,x1,y1 in END_WHEELS:
-            patch((x0+x1)*.5,(y0+y1)*.5,.059,.098,1.17)
-        for cx in (.19,.34,.67,.81):
-            patch(cx,rng.uniform(.71,.91),.083,.075,rng.uniform(.52,.92))
-    else:
-        patch(rng.uniform(.26,.71),.962,.21,.016,rng.uniform(.38,.59))
-    return field
+            patch(abrasion,(x0+x1)*.5,(y0+y1)*.5,.043,.077,1.10)
+        for cx in (.19,.32,.68,.81):
+            patch(abrasion,cx,rng.uniform(.69,.85),.035,.099,rng.uniform(.48,.78))
+    return abrasion, dust
+
+
+def scrape(mask, start, end, width, strength, rng):
+    # Vary the pressure along a single path so each scrape feathers at both ends.
+    draw = ImageDraw.Draw(mask)
+    x0,y0 = start
+    dx,dy = end[0]-x0,end[1]-y0
+    wobble = rng.uniform(-3,3)
+    steps = 12
+    for index in range(steps):
+        a,b = index/steps,(index+1)/steps
+        pressure = math.sin(math.pi*(a+b)*.5)**.7
+        points = [(x0+dx*t,y0+dy*t+wobble*math.sin(t*math.pi)) for t in (a,b)]
+        draw.line(points, fill=round(strength*pressure*rng.uniform(.68,1)),
+                  width=max(1,round(width*(.38+.62*pressure))))
 
 
 def contact_wear(region, size, rng):
-    contact = contact_mask(region,size,rng)
-    # Layer broad polished patches with broken, grainy stress whitening.
-    cloud = np.asarray(noise(size,35,rng),dtype=np.float32)/255
-    mottles = np.asarray(noise(size,11,rng),dtype=np.float32)/255
-    fine = np.asarray(noise(size,3,rng),dtype=np.float32)/255
-    rough = np.clip((mottles*.64 + fine*.36 - .33)*2.7,0,1)
-    soft = contact*(.19 + cloud*.39)*(.43 + rough*.57)
-    flecks = np.clip((fine*.61 + mottles*.39 - .59)*3.6,0,1) * contact**1.45
-    opacity = np.clip(soft*139 + flecks*63,0,147).astype(np.uint8)
-    opacity[opacity < 6] = 0
-    dull = Image.new("RGB",size,(116,119,105))
-    chalk = Image.new("RGB",size,(183,180,159))
-    layer = Image.composite(chalk,dull,Image.fromarray(np.clip((rough*.66+fine*.34)*255,0,255).astype(np.uint8)))
-    visible = Image.fromarray(opacity).point(lambda p: 255 if p else 0)
-    layer = Image.composite(layer,dull,visible)
-    layer.putalpha(Image.fromarray(opacity))
-
-    # A few isolated cuts interrupt the rubbed texture.
-    cuts = Image.new("RGBA",size)
-    draw = ImageDraw.Draw(cuts)
+    contact, dust = contact_masks(region,size,rng)
     width,height = size
-    for _ in range(5 if region in ("lid","back","bottom") else 3):
-        for _ in range(70):
-            x,y = rng.randrange(17,width-17),rng.randrange(16,height-16)
-            if contact[y,x] > .37:
-                break
-        else:
-            continue
-        angle = rng.uniform(-math.pi,math.pi)
-        length = rng.randrange(10,37)
-        dx,dy = math.cos(angle)*length,math.sin(angle)*length
-        path = [(x,y),(round(x+dx*.54),round(y+dy*.51+rng.uniform(-2,2))),
-                (round(x+dx),round(y+dy))]
-        draw.line(path,fill=(28,31,25,rng.randrange(91,137)),width=rng.randrange(2,4))
-        draw.line([(px,py+2) for px,py in path[:2]],fill=(160,159,139,rng.randrange(72,123)),width=1)
-    layer.alpha_composite(cuts)
-    return layer
+
+    def grain(scale):
+        return np.asarray(noise(size,scale,rng),dtype=np.float32)/255
+
+    cloud, speck, fine = grain(61),grain(13),grain(3)
+    texture = .46*speck+.34*fine+.20*cloud
+    dust_opacity = (dust*(.26+.74*cloud)+cloud*.12)*np.clip((texture-.27)*2.5,0,1)
+    dust_alpha = Image.fromarray((dust_opacity*46).astype(np.uint8))
+    layer = color_layer(size,(137,122,96),dust_alpha)
+
+    # Diffuse burnishing at the bevels, broken up by fine stress whitening.
+    polish = contact*(.27+.62*cloud)*np.clip((texture-.22)*2.3,0,1)
+    fibers = np.clip((speck*.52+fine*.48-.54)*3.8,0,1)*contact**1.4
+    abrasion_alpha = Image.fromarray(np.clip(polish*143+fibers*49,0,154).astype(np.uint8))
+    dull = Image.new("RGB",size,(104,110,94))
+    chalk = Image.new("RGB",size,(153,154,136))
+    rub = Image.composite(chalk,dull,Image.fromarray((texture*255).astype(np.uint8)))
+    rub.putalpha(abrasion_alpha)
+    layer.alpha_composite(rub)
+
+    hairlines = Image.new("L",size)
+    # Upright panels mostly get glancing marks from sliding in and out of stacks.
+    for _ in range(17 if region in ("lid","back") else 11):
+        cx = rng.uniform(.055,.945)
+        cy = rng.uniform(.045,.955)
+        if region in ("lid","back","left","right") and rng.random() < .44:
+            cx = rng.choice((.10,.90))+rng.uniform(-.038,.038)
+        x,y = cx*width,cy*height
+        angle = rng.uniform(-.37,.41) if region in ("lid","back") else rng.uniform(.68,1.48)
+        length = rng.uniform(13,57)
+        scrape(hairlines,(x,y),(x+math.cos(angle)*length,y+math.sin(angle)*length),
+               rng.choice((1,2,2)),rng.uniform(16,48),rng)
+    layer.alpha_composite(color_layer(size,(130,130,109),hairlines.filter(ImageFilter.GaussianBlur(.25))))
+
+    if region == "bottom":
+        # Drag lines follow the wheel travel across the underside. Keep the
+        # wheel hubs and recessed central handle clear of the deepest cuts.
+        gouges = Image.new("L",size)
+        for _ in range(9):
+            x = rng.choice((.17,.27,.72,.83))*width+rng.uniform(-24,24)
+            y = rng.uniform(.31,.86)*height
+            end = (x+rng.uniform(-24,24),y-rng.uniform(39,125))
+            scrape(gouges,(x,y),end,rng.uniform(2.6,5.6),rng.uniform(112,195),rng)
+        lip = Image.new("L",size)
+        lip.paste(gouges,(2,0))
+        lip = ImageChops.subtract(lip,gouges).point(lambda p: p*48//100)
+        layer.alpha_composite(color_layer(size,(147,143,123),lip))
+        layer.alpha_composite(color_layer(size,(22,25,19),gouges))
+    alpha = layer.getchannel("A").point(lambda value: value if value >= 5 else 0)
+    layer.putalpha(alpha)
+    return Image.composite(layer, Image.new("RGBA",size), alpha.point(lambda value: 255 if value else 0))
 
 
 def ghost_stencil(text, height, color, rng, glyphs):
@@ -469,7 +510,7 @@ def fitted_faces(path, surface):
     # Use this for both meshes so lettering and tape keep their orientation.
     lid_coords = ((.266 - z)/.532, (.421 - x)/.844)
     projections = [(front_faces, "lid", lid_coords, (0, 1, 0))]
-    if surface == "closed":
+    if surface in ("closed", "cabinet"):
         rear_faces = (y.max(axis=1) < -.083) & (dominant == 1) & (normals[:, 1] < 0)
         top_faces = (x.min(axis=1) > .377) & (dominant == 0) & (normals[:, 0] > 0)
         bottom_faces = (x.max(axis=1) < -.377) & (dominant == 0) & (normals[:, 0] < 0)
@@ -486,6 +527,10 @@ def fitted_faces(path, surface):
         ])
 
     for selected, region, (u, v), offset in projections:
+        if surface == "cabinet":
+            # Use only the common shell behind the lid seam. Clip paint on the
+            # latch faces and front bevels by keeping whole shell triangles.
+            selected = selected & (y.max(axis=1) < .078)
         atlas_x, atlas_y, width, height = ATLAS_REGIONS[region]
         uv = np.stack(((atlas_x + u.clip(0, 1)*width)/ATLAS_SIZE[0],
                        (atlas_y + v.clip(0, 1)*height)/ATLAS_SIZE[1]), axis=2)
@@ -552,8 +597,12 @@ def main():
     destination.mkdir(parents=True, exist_ok=True)
     args.png_dir.mkdir(parents=True, exist_ok=True)
     glyphs = stencil_glyphs(args.reference)
-    closed = tuple(fitted_faces(args.closed_mesh, "closed"))
-    lid = tuple(fitted_faces(args.lid_mesh, "lid"))
+    surfaces = {
+        "closed": tuple(fitted_faces(args.closed_mesh, "closed")),
+        "cabinet": tuple(fitted_faces(args.closed_mesh, "cabinet")),
+        "lid": tuple(fitted_faces(args.lid_mesh, "lid")),
+    }
+
     def write_texture(png, paa):
         temp = args.png_dir / paa.name
         temp.unlink(missing_ok=True)
@@ -561,12 +610,18 @@ def main():
         paa.write_bytes(temp.read_bytes())
         temp.unlink()
 
-    for number in range(1, 11):
+    for number in range(11):
         png = args.png_dir / f"chest_{number}_ca.png"
-        atlas(artwork(number, glyphs)).save(png)
+        if number:
+            layers = artwork(number, glyphs)
+        else:
+            rng = random.Random(32840)
+            layers = {region: contact_wear(region, (width, height), rng)
+                      for region, (_, _, width, height) in ATLAS_REGIONS.items()}
+        atlas(layers).save(png)
         write_texture(png, destination / png.with_suffix(".paa").name)
         texture = f"acm_extended\\data\\medical_chest\\variants\\{png.with_suffix('.paa').name}"
-        for surface, faces in (("closed", closed), ("lid", lid)):
+        for surface, faces in surfaces.items():
             (destination / f"chest_{number}_{surface}.p3d").write_bytes(visual_model(faces, texture))
 
     rng = random.Random(32610)

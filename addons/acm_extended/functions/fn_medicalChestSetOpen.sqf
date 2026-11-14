@@ -20,21 +20,17 @@ if (_opening) then {
     _cabinet allowDamage false;
     _lid allowDamage false;
     _lid enableSimulationGlobal false;
+    _cabinet enableSimulationGlobal false;
     // The detached cover lies to the side, clear of the open drawers.
     private _side = [_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase;
-    [_lid, _side, _heading, false] call ACME_fnc_medicalChestPlace;
+    [_lid, _side, _heading, true] call ACME_fnc_medicalChestPlace;
     [_cabinet, _base, _heading] call ACME_fnc_medicalChestPlace;
-    // Hold the cabinet upright while allowing its native drawer animations.
-    private _cabinetDir = _chest vectorWorldToModel (vectorDir _cabinet);
-    private _cabinetUp = _chest vectorWorldToModel (vectorUp _cabinet);
-    _cabinet attachTo [_chest, _chest worldToModel (ASLToAGL getPosWorld _cabinet)];
-    _cabinet setVectorDirAndUp [_cabinetDir, _cabinetUp];
     _cargo attachTo [_cabinet, [0, 0, 0]];
     _cabinet setVariable ["ACME_medicalChestAnchor", _chest, true];
     _chest setVariable ["ACME_medicalChestCabinet", _cabinet, true];
     _chest setVariable ["ACME_medicalChestLid", _lid];
     _chest hideObjectGlobal true;
-    [_cabinet, _initial] call ACME_fnc_medicalChestDrawers;
+    [_cabinet, _initial, true] call ACME_fnc_medicalChestDrawers;
     {deleteVehicle _x;} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
     _chest setVariable ["ACME_medicalChestDecals",
         ([_cabinet, "cabinet", _variant] call ACME_fnc_medicalChestDecals) + ([_lid, "lid", _variant] call ACME_fnc_medicalChestDecals)];

@@ -31,6 +31,22 @@ if (!hasInterface) exitWith {};
     _unit setVariable ["ACME_medicalChestInventoryEH", [_open, _close]];
 }, true] call CBA_fnc_addPlayerEventHandler;
 
+["ACME_medicalChestOpened", {
+    // The event can arrive before the replicated state and cargo position.
+    [{
+        params ["_actor", "_chest", "_cargo", "_revision"];
+        (_chest getVariable ["ACME_medicalChestState", []]) isEqualTo [_revision, true]
+            && {!isNull _cargo} && {attachedTo _cargo isNotEqualTo objNull}
+            && {_actor distance _cargo <= 4.5}
+    }, {
+        params ["_actor"];
+        if (_actor isEqualTo ACE_player && {local _actor} && {alive _actor}
+            && {!(_actor getVariable ["ACE_isUnconscious", false])}) then {
+            _actor action ["Gear", _this select 2];
+        };
+    }, _this, 4] call CBA_fnc_waitUntilAndExecute;
+}] call CBA_fnc_addEventHandler;
+
 ["ACME_medicalChestClosed", {
     params ["_cargo", "_revision"];
     if (isNull _cargo || {isNull ACE_player} || {(ACE_player getVariable ["ACME_medicalChestViewing", objNull]) isNotEqualTo _cargo}) exitWith {};

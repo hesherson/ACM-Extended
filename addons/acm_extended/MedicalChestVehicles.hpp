@@ -25,16 +25,11 @@
         };
         class ACE_Actions {
             class ACE_MainActions {
-                displayName = "Medical Chest";
+                displayName = "Open Medical Chest";
                 distance = 4;
-                condition = "private _state = _target getVariable ['ACME_medicalChestState',[]]; count _state == 2 && {!(_state select 1)}";
+                condition = "private _state = _target getVariable ['ACME_medicalChestState',[]]; count _state == 2 && {!(_state select 1)} && {[_player,_target,[]] call ace_common_fnc_canInteractWith}";
                 selection = "";
-                class ACME_OpenMedicalChest {
-                    displayName = "Open Medical Chest";
-                    distance = 4;
-                    condition = "true";
-                    statement = "[_target,_player,'open'] call ACME_fnc_medicalChestUse";
-                };
+                statement = "[_target,_player,true] call ACME_fnc_medicalChestUse";
             };
         };
     };
@@ -68,7 +63,7 @@
         transportMaxWeapons = 2000;
         transportMaxMagazines = 2000;
         transportMaxBackpacks = 100;
-        supplyRadius = 0;
+        supplyRadius = 2.5;
         forceSupply = 1;
         showWeaponCargo = 0;
         ace_cargo_canLoad = 0;
@@ -91,22 +86,11 @@
         class UserActions {}; \
         class ACE_Actions { \
             class ACE_MainActions { \
-                displayName = "Medical Chest"; \
+                displayName = "Close Medical Chest"; \
                 distance = 4; \
                 selection = ""; \
-                condition = "((_target getVariable ['ACME_medicalChestAnchor',objNull]) getVariable ['ACME_medicalChestState',[0,false]]) select 1"; \
-                class ACME_MedicalChestSupplies { \
-                    displayName = "Open Supplies"; \
-                    distance = 4; \
-                    condition = "true"; \
-                    statement = "[_target,_player,'supplies'] call ACME_fnc_medicalChestUse"; \
-                }; \
-                class ACME_CloseMedicalChest { \
-                    displayName = "Close Medical Chest"; \
-                    distance = 4; \
-                    condition = "true"; \
-                    statement = "[_target,_player,'close'] call ACME_fnc_medicalChestUse"; \
-                }; \
+                condition = "(((_target getVariable ['ACME_medicalChestAnchor',objNull]) getVariable ['ACME_medicalChestState',[0,false]]) select 1) && {[_player,_target,[]] call ace_common_fnc_canInteractWith}"; \
+                statement = "[_target,_player,false] call ACME_fnc_medicalChestUse"; \
             }; \
         }; \
     }

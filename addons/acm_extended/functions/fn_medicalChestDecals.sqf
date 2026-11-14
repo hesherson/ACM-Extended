@@ -1,5 +1,5 @@
 /* The closed cabinet and detached lid have measured model-space paint positions.
-   The open cabinet variants use their own rendered surfaces for placement. */
+   The original cabinet markings use rendered surfaces for placement. */
 params ["_object", "_surface", ["_variant", 0], ["_localOnly", false]];
 private _hasRetexture = _variant in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 private _markings = switch (_surface) do {
@@ -31,7 +31,7 @@ private _placements = _markings apply {
     [_asset, _object modelToWorldWorld _point, _object vectorModelToWorld _normal, _object vectorModelToWorld _vertical]
 };
 
-if (_surface == "cabinet") then {
+if (_surface == "cabinet" && {!_hasRetexture}) then {
     (boundingBoxReal _object) params ["_min", "_max"];
     private _center = _object modelToWorldWorld ((_min vectorAdd _max) vectorMultiply 0.5);
     private _heading = _object getVariable "ACME_medicalChestHeading";
@@ -75,12 +75,10 @@ if (_surface == "cabinet") then {
     } forEach _strips;
 };
 
-if (_hasRetexture && {_surface in ["closed", "lid"]}) then {
-    _placements pushBack [
-        format ["variants\chest_%1_%2", _variant, _surface],
-        _object modelToWorldWorld [0, 0, 0], vectorDir _object, vectorUp _object
-    ];
-};
+_placements insert [0, [[
+    format ["variants\chest_%1_%2", [0, _variant] select _hasRetexture, _surface],
+    _object modelToWorldWorld [0, 0, 0], vectorDir _object, vectorUp _object
+]]];
 
 private _decals = [];
 {

@@ -70,8 +70,8 @@ if (_replace) then {
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {
-    [_parts select 0, _base, _heading, true, !_open] call ACME_fnc_medicalChestPlace;
-    if (_open) then {[_parts select 1, _side, _heading, false] call ACME_fnc_medicalChestPlace;};
+    [_parts select 0, _base, _heading] call ACME_fnc_medicalChestPlace;
+    if (_open) then {[_parts select 1, _side, _heading, true] call ACME_fnc_medicalChestPlace;};
     if (_replace) then {
         private _variant = getNumber (configOf _entity >> "acmeChestVariant");
         {
