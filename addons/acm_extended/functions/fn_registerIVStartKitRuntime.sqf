@@ -6,6 +6,11 @@
     [ACME_fnc_ivStartKitUnpack,[_unit,_item]] call CBA_fnc_execNextFrame;
 }] call CBA_fnc_addClassEventHandler;
 
+["CAManBase","InventoryClosed",{
+    params ["_unit"];
+    if (local _unit) then {[ACME_fnc_ivStartKitUnpack,[_unit]] call CBA_fnc_execNextFrame;};
+}] call CBA_fnc_addClassEventHandler;
+
 ["CBA_loadoutSet",{
     params ["_unit"];
     if (!local _unit || {is3DEN}) exitWith {};

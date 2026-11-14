@@ -47,42 +47,73 @@ def test_automatic_y_warmer_requires_blood_and_stays_for_the_saline_flush():
     ''')
 
 
-@pytest.mark.parametrize("gauge", [14, 16, 18, 20])
-def test_picked_up_kit_auto_unpacks_once_and_gives_matching_catheter_and_flush(gauge):
-    kit = adapt(read("ivStartKitUnpack")).replace("local _unit","true").replace("alive _unit","true")
-    kit = kit.replace("is3DEN", "false").replace("items _unit", "+_stock")
-    kit = kit.replace('getText (configFile >> "CfgWeapons" >> _kit >> "ACME_ivKitCatheter")',
-                      'format ["ACM_IV_%1g",_kit select [16,2]]')
+def kit_runtime(stock):
+    kit = adapt(read("ivStartKitUnpack")).replace("local _unit", "true").replace("alive _unit", "true")
+    for native, fixture in (
+        ("is3DEN", "false"), ("items _unit", "+_stock"),
+        ("uniformContainer _unit", "_medic"), ("vestContainer _unit", "objNull"),
+        ("backpackContainer _unit", "objNull"), ("itemCargo _container", "+_stock"),
+        ("itemCargo _x", "+_stock"),
+        ("_container canAdd [_class,_count]", "([_class,_count] call _canAdd)"),
+        ('_container addItemCargoGlobal [_kit,-1]', '[_kit,-1] call _adjust'),
+        ('_container addItemCargoGlobal [_class,_count]', '[_class,_count] call _adjust'),
+        ('_container addItemCargoGlobal _x', '_x call _adjust'),
+        ('_container addItemCargoGlobal [_kit,1]', '[_kit,1] call _adjust'),
+    ):
+        kit = kit.replace(native, fixture)
     runtime = adapt(read("registerIVStartKitRuntime"))
     runtime = runtime.replace("local _unit", "true").replace("is3DEN", "false").replace("ACE_player", "_patient")
-    execute(f'''
-        private _stock=[];private _supplies=[];private _commits=0;
-        private _selected="ACME_IVStartKit_{gauge}g";
-    ''' + "ACME_fnc_ivStartKitUnpack={" + kit + "};" + '''
-        private _take={};private _queued=[];
-        CBA_fnc_addClassEventHandler={if ((_this select 1)=="Take") then {_take=_this select 2;};};
+    return "private _stock=" + stock + ";" + r'''
+        private _queued=[];private _take={};private _close={};
+        private _cannotFit="";private _partialIssue=false;
+        private _canAdd = {(_this select 0) != _cannotFit};
+        private _adjust = {
+            params ["_class","_amount"];
+            if (_partialIssue && {_class=="ACM_IV_18g"} && {_amount==2}) then {_amount=1;};
+            if (_amount < 0) then {
+                for "_i" from 1 to (-_amount) do {_stock deleteAt (_stock find _class);};
+            } else {
+                for "_i" from 1 to _amount do {_stock pushBack _class;};
+            };
+        };
+        private _runQueued={{(_x select 1) call (_x select 0);} forEach _queued;_queued=[];};
+        CBA_fnc_addClassEventHandler={switch (_this select 1) do {
+            case "Take": {_take=_this select 2;};
+            case "InventoryClosed": {_close=_this select 2;};
+        }};
         CBA_fnc_addEventHandler={};
         CBA_fnc_addPlayerEventHandler={};
         BIS_fnc_addScriptedEventHandler={};
         CBA_fnc_execNextFrame={_queued pushBack _this;};
-        ACME_fnc_treatmentSupplyTake={
-            private _class=(_this select 2) select 0;
-            private _i = _stock find _class;
-            if (_i < 0) exitWith {[]};
-            _stock deleteAt _i;
-            [_patient,_class,objNull,"kit"]
-        };
-        ACME_fnc_treatmentSupplyRefund={if (_this select 1) exitWith {false};_commits=_commits+1;true};
-        ace_common_fnc_addToInventory={_supplies pushBack (_this select 1);};
-    ''' + "call {" + runtime + "};" + '''
+    ''' + "ACME_fnc_ivStartKitUnpack={" + kit + "}; call {" + runtime + "};"
+
+
+CONTENTS = '["ACM_IV_18g","ACM_IV_18g","ACME_NARBOA","ACME_Tegaderm","ACME_SalineLock","ACM_SalineFlush_10"]'
+
+
+@pytest.mark.parametrize("gauge", [14, 16, 18, 20])
+def test_pickup_replaces_one_kit_with_standard_supplies_even_on_replay(gauge):
+    execute(kit_runtime("[]") + f'''
+        private _selected="ACME_IVStartKit_{gauge}g";
         [_patient,objNull,"ACME_Tegaderm"] call _take;
         [count _queued==0,"unrelated inventory item queued an unpack"] call _check;
         _stock pushBack _selected;
         [_patient,objNull,_selected] call _take;
         [_patient,objNull,_selected] call _take;
-        [count _queued==2 && {_stock isEqualTo [_selected]},"pickup did not defer until inventory settled"] call _check;
-        {(_x select 1) call (_x select 0);} forEach _queued;
-        [_stock isEqualTo [] && {_commits==1},"kit debit was missed or replay duplicated supplies"] call _check;
-    ''' + f'''
-        [_supplies isEqualTo ["ACM_IV_{gauge}g","ACME_NARBOA","ACME_Tegaderm","ACME_SalineLock","ACME_IVExtension","ACME_IVLine","ACM_SalineFlush_10"],"kit contents are incomplete"] call _check;
+        [count _queued==2 && {{_stock isEqualTo [_selected]}},"pickup did not defer until inventory settled"] call _check;
+        call _runQueued;
+        [_stock isEqualTo {CONTENTS},"kit contents were lost, changed or duplicated"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize("failure", ['_cannotFit="ACM_SalineFlush_10";', '_partialIssue=true;'])
+def test_unpack_failure_keeps_kit_and_existing_supplies_and_retries_on_inventory_close(failure):
+    execute(kit_runtime('["ACM_IV_18g","ACME_IVStartKit_18g"]') + failure + f'''
+        [_patient,objNull,"ACME_IVStartKit_18g"] call _take;
+        call _runQueued;
+        [_stock isEqualTo ["ACM_IV_18g","ACME_IVStartKit_18g"],"failed unpack lost the kit or changed loose stock"] call _check;
+        _cannotFit="";_partialIssue=false;
+        [_patient,objNull] call _close;
+        call _runQueued;
+        [_stock isEqualTo (["ACM_IV_18g"] + {CONTENTS}),"inventory close did not restore all supplies"] call _check;
     ''')

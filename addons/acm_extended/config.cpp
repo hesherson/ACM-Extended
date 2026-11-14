@@ -1588,30 +1588,21 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.1; };
     };
 
-    class ACME_IVStartKit_14g: ACE_ItemCore {
+    class ACME_IVStartKit_18g: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         scopeArsenal = 2;
         author = "mavis";
-        displayName = "IV Start Kit (14G)";
-        descriptionShort = "Automatically supplies a catheter, BOA IV band, transparent dressing, saline lock, extension, administration tubing and a 10 mL saline flush.";
+        displayName = "IV Start Kit";
+        descriptionShort = "Two 18G IV catheters, one BOA band, Tegaderm, saline lock and 10 mL saline flush. Unpacks into your inventory.";
         picture = "\acm_extended\ui\items\iv_start_kit_ca.paa";
         ACE_isMedicalItem = 1;
-        ACME_ivKitCatheter = "ACM_IV_14g";
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
     };
-    class ACME_IVStartKit_16g: ACME_IVStartKit_14g {
-        displayName = "IV Start Kit (16G)";
-        ACME_ivKitCatheter = "ACM_IV_16g";
-    };
-    class ACME_IVStartKit_18g: ACME_IVStartKit_14g {
-        displayName = "IV Start Kit (18G)";
-        ACME_ivKitCatheter = "ACM_IV_18g";
-    };
-    class ACME_IVStartKit_20g: ACME_IVStartKit_14g {
-        displayName = "IV Start Kit (20G)";
-        ACME_ivKitCatheter = "ACM_IV_20g";
-    };
+    // Keep the historical classnames for existing loadouts and supply crates.
+    class ACME_IVStartKit_14g: ACME_IVStartKit_18g { scopeArsenal = 0; };
+    class ACME_IVStartKit_16g: ACME_IVStartKit_18g { scopeArsenal = 0; };
+    class ACME_IVStartKit_20g: ACME_IVStartKit_18g { scopeArsenal = 0; };
 
     // The administration line can be installed on a completed IV and receive bags.
     class ACME_IVLine: ACE_ItemCore {
