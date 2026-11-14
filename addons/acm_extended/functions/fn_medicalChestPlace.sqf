@@ -4,15 +4,25 @@ params ["_object", "_base", "_heading", ["_upright", true]];
 private _extent = _max vectorDiff _min;
 private _forward = [sin _heading, cos _heading, 0];
 private _up = [0, 0, 1];
+private _right = [cos _heading, -(sin _heading), 0];
 private _laidBack = (_extent select 2) < (_extent select 1) min (_extent select 0);
+private _longAxisX = (_object isKindOf "ACME_MedicalChest")
+    || {(_extent select 0) > 1.25 * ((_extent select 1) max (_extent select 2))};
 private _bottom = _min select 2;
-if (_upright && {_laidBack}) then {
-    _up = _forward;
-    _forward = [0, 0, 1];
-    _bottom = _min select 1;
+if (_upright) then {
+    if (_longAxisX) then {
+        _up = _right vectorMultiply -1;
+        _bottom = _min select 0;
+    } else {
+        if (_laidBack) then {
+            _up = _forward;
+            _forward = [0, 0, 1];
+            _bottom = _min select 1;
+        };
+    };
 };
-if (!_upright && {!_laidBack}) then {
-    _up = _forward;
+if (!_upright) then {
+    _up = _right;
     _forward = [0, 0, 1];
     _bottom = _min select 1;
 };

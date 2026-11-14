@@ -24,19 +24,19 @@ private _surfaces = [];
 if (_title) then {
     private _normal = if (_flat) then {_up} else {_forward};
     private _vertical = if (_flat) then {_forward} else {_up};
-    _surfaces pushBack ["chest_title", _normal, _vertical,
-        _origin vectorAdd (_vertical vectorMultiply (if (_flat) then {0} else {(_high - _low) * 0.19})), 0.12];
+    _surfaces pushBack ["chest_title", _normal, _vertical, _origin, 0.115, 0.055];
 };
 if (_sides) then {
+    private _badgeCenter = _origin vectorAdd ((_forward vectorMultiply -0.056) vectorAdd [0, 0, 0.045]);
     {
         _surfaces pushBack ["chest_cross", _right vectorMultiply _x, _up,
-            _origin vectorAdd (_forward vectorMultiply 0.11), 0.04];
+            _badgeCenter, 0.044, 0.044];
     } forEach [-1, 1];
 };
 
 private _decals = [];
 {
-    _x params ["_asset", "_normal", "_vertical", "_center", "_radius"];
+    _x params ["_asset", "_normal", "_vertical", "_center", "_halfWidth", "_halfHeight"];
     private _tangent = _normal vectorCrossProduct _vertical;
     private _depth = -1e6;
     {
@@ -51,8 +51,8 @@ private _decals = [];
             if (_i >= 0) then {
                 _depth = _depth max (((_hits select _i select 0) vectorDiff _center) vectorDotProduct _normal);
             };
-        } forEach [-_radius, 0, _radius];
-    } forEach [-_radius * 0.44, 0, _radius * 0.44];
+        } forEach [-_halfWidth, 0, _halfWidth];
+    } forEach [-_halfHeight, 0, _halfHeight];
     if (_depth < -1e5) then {
         _depth = selectMax (_bounds apply {(_x vectorDiff _center) vectorDotProduct _normal});
     };

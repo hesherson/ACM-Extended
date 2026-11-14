@@ -106,6 +106,7 @@ def placement_fixture():
     source = read("medicalChestPlace")
     for engine, fixture in (
         ("boundingBoxReal _object", "_bounds"),
+        ('_object isKindOf "ACME_MedicalChest"', '_object getVariable ["closedChest", false]'),
         ("_object setVectorDirAndUp [_forward, _up];", "_orient = [_forward, _up];"),
         ("_object setPosWorld", "_position ="),
     ):
@@ -124,8 +125,14 @@ def test_grounding_supports_both_native_orientation_conventions():
         _bounds = [[-0.3,-0.2,-0.5],[0.3,0.2,0.5]];
         [_medic, [0,0,1], 0] call _place;
         [_orient isEqualTo [[0,1,0],[0,0,1]] && {abs ((_position select 2) - 1.508) < 0.0001}, "upright cabinet tilted or sank"] call _check;
+        _medic setVariable ["closedChest", true];
+        _bounds = [[-0.423,-0.170,-0.266],[0.421,0.163,0.266]];
+        [_medic, [0,0,1], 0] call _place;
+        [_orient isEqualTo [[0,1,0],[-1,0,0]] && {abs ((_position select 2) - 1.431) < 0.0001}, "closed model did not put its wheel edge on the ground"] call _check;
+        _medic setVariable ["closedChest", false];
+        _bounds = [[-0.4145,-0.0408,-0.265],[0.4151,0.0413,0.265]];
         [_medic, [0,0,1], 0, false] call _place;
-        [_orient isEqualTo [[0,0,1],[0,1,0]] && {abs ((_position select 2) - 1.208) < 0.0001}, "cover did not lie clear of the floor"] call _check;
+        [_orient isEqualTo [[0,0,1],[1,0,0]] && {abs ((_position select 2) - 1.0488) < 0.0001}, "cover did not lie face-up and clear of the floor"] call _check;
     ''')
 
 
