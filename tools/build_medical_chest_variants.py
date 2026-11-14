@@ -149,37 +149,6 @@ def tape_patch(length, width, rng):
     return tape
 
 
-def abrasion(size, rng, density, lid=False):
-    w, h = size
-    layer = Image.new("RGBA", size)
-    d = ImageDraw.Draw(layer)
-    for _ in range(density * 5):
-        if rng.random() < .55:
-            x = rng.choice((rng.randint(10, w//9), rng.randint(w-w//9, w-10)))
-        else:
-            x = rng.randint(22, w-22)
-        y = rng.randint(22, h-22)
-        length = rng.choices((rng.randint(3, 10), rng.randint(11, 29), rng.randint(31, 88)), (57, 33, 10))[0]
-        turn = rng.uniform(-math.pi, math.pi)
-        dx, dy = math.cos(turn)*length, math.sin(turn)*length
-        end = (round(x+dx), round(y+dy))
-        edge = (round(x+dx*.64), round(y+dy*.61+rng.uniform(-3,3)))
-        if length > 28:
-            d.line([(x,y), edge, end], fill=(24, 25, 21, rng.randint(76,148)), width=3)
-        alpha = rng.randint(74,168)
-        tint = rng.choice(((138,133,111), (111,116,98), (160,151,123), (112,104,88)))
-        d.line([(x,y+1), (edge[0],edge[1]+1), (end[0],end[1]+1)], fill=tint+(alpha,), width=rng.choice((1,2,2,3)))
-    for _ in range(density):
-        x, y = rng.randint(22,w-22), rng.randint(28,h-28)
-        if lid and rng.random() < .60:
-            y = rng.choice((238, 286, 541, 576, 997, 1047, 1297, 1341, 1525)) + rng.randint(-15,15)
-        r = rng.choice((4,5,6,8,11,13))
-        d.polygon([(x-r,y+2),(x-2,y-3),(x+r,y-1),(x+r//2,y+2),(x-4,y+4)],
-                  fill=(41, 39, 31, rng.randint(79,148)))
-        d.line((x-r+2,y+2,x-4,y+4,x+r//2,y+2), fill=(149,139,113,rng.randint(105,179)), width=2)
-    return layer
-
-
 # The coordinates lie on the upright lid, with top-left as the origin.
 DESIGNS = (
     (("MED CHEST", "1"), "yellow", (483, 766), 97, -3.5, True, (573, 416), 0, ()),
@@ -279,55 +248,146 @@ def painters_tape(length, width, label, rng):
     return tape
 
 
-def impact_wear(size, rng, density):
-    width,height = size
+# Rectangle bounds are measured on the model-space atlas projections.
+FRONT_RIBS = ((.13,.141,.865,.201), (.13,.337,.865,.396),
+              (.13,.602,.865,.662), (.13,.797,.865,.856))
+REAR_RIBS = ((.13,.119,.865,.179), (.13,.315,.865,.375),
+             (.13,.58,.865,.64), (.13,.775,.865,.835))
+SIDE_HANDLES = ((.41,.226,.955,.391), (.41,.623,.955,.787))
+END_HANDLE = ((.353,.417,.647,.957),)
+END_WHEELS = ((.056,.87,.125,.997), (.875,.87,.944,.997))
+MISMATCHED_FINISH = 8
+GHOST_STENCILS = {
+    2: ("FTH", (575, 1162), 137, -5, "black"),
+    5: ("EVAC", (328, 797), 105, 3, "black"),
+    7: ("M2", (266, 414), 135, -3, "yellow"),
+}
+
+
+def contact_points(region, size, rng):
+    width, height = size
+    corners = ((.049,.033),(.951,.033),(.049,.967),(.951,.967))
+    side = region in ("left", "right")
+    end = region in ("top", "bottom")
+    rails = FRONT_RIBS if region == "lid" else REAR_RIBS
+    outlines = SIDE_HANDLES if side else END_HANDLE if end else rails
+    points = [(x*width,y*height,math.pi*.24 if (x<.5)==(y<.5) else -math.pi*.24,27,20,1.35)
+              for x,y in corners]
+    for x0,y0,x1,y1 in outlines:
+        for y in (y0,y1):
+            for fraction in (.06,.26,.52,.77,.94):
+                x = x0+(x1-x0)*fraction
+                points.append((x*width,y*height,rng.uniform(-.23,.23),24,10,1.15))
+        for x in (x0,x1):
+            for fraction in (.18,.50,.82):
+                y = y0+(y1-y0)*fraction
+                points.append((x*width,y*height,math.pi/2+rng.uniform(-.34,.34),10,24,1.0))
+    if region == "bottom":
+        for x0,y0,x1,y1 in END_WHEELS:
+            points.append(((x0+x1)*width/2,(y0+y1)*height/2,math.pi/2,19,30,1.6))
+    for y in (.17,.43,.68,.88):
+        for x in (.033,.967):
+            points.append((x*width,y*height,math.pi/2,11,39,.75))
+    return points
+
+
+def contact_wear(region, size, rng):
+    points = contact_points(region, size, rng)
     smear = Image.new("L", size)
     draw = ImageDraw.Draw(smear)
-    # Abrasions collect at the corners and where a strap or another case rubbed.
-    for _ in range(density):
-        x = rng.choice((rng.randrange(13,width//7),rng.randrange(width-width//7,width-13),rng.randrange(24,width-24)))
-        y = rng.choice((rng.randrange(16,height//7),rng.randrange(height-height//7,height-16),rng.randrange(24,height-24)))
-        length = rng.randrange(29,123)
-        angle = rng.uniform(-math.pi,math.pi)
-        dx,dy = math.cos(angle)*length,math.sin(angle)*length
-        for _ in range(rng.randint(6,16)):
-            slide = rng.randrange(-23,24)
-            start = (x+slide,y+rng.randint(-14,14))
-            end = (start[0]+dx*rng.uniform(.28,1.06),start[1]+dy*rng.uniform(.41,1))
-            draw.line((start,end),fill=rng.randint(18,82),width=rng.randint(1,7))
-    roughness = noise(size, 3, rng).point(lambda p: 65+p*190//255)
-    smear = ImageChops.multiply(smear.filter(ImageFilter.GaussianBlur(1.6)),roughness)
-    layer = color_layer(size,(136,138,116),smear)
+    for x,y,angle,sx,sy,force in points:
+        if force < 1.3 and rng.random() < .37:
+            continue
+        x += rng.gauss(0,sx*.36)
+        y += rng.gauss(0,sy*.36)
+        direction = angle + rng.uniform(-.45,.45)
+        for _ in range(round(rng.randint(12,26)*force)):
+            start = (x+rng.gauss(0,sx*.7),y+rng.gauss(0,sy*.68))
+            turn = direction + rng.gauss(0,.48)
+            length = rng.randrange(6,51) * force
+            end = (start[0]+math.cos(turn)*length,start[1]+math.sin(turn)*length)
+            draw.line((start,end),fill=rng.randrange(18,111),width=rng.randint(1,7))
+    roughness = noise(size, 3, rng).point(lambda p: 93+p*162//255)
+    soft = smear.filter(ImageFilter.GaussianBlur(1.1))
+    faded = ImageChops.multiply(soft, roughness)
+    layer = color_layer(size,(157,158,132),faded)
 
     cuts = Image.new("RGBA",size)
     draw = ImageDraw.Draw(cuts)
-    for _ in range(density + 5):
-        x,y = rng.randrange(28,width-28),rng.randrange(24,height-24)
-        angle = rng.uniform(-math.pi,math.pi)
-        length = rng.randrange(15,115)
-        dx,dy = math.cos(angle)*length,math.sin(angle)*length
-        points = [(x,y),(round(x+dx*.38),round(y+dy*.41+rng.randint(-4,4))),
-                  (round(x+dx*.77),round(y+dy*.76)),(round(x+dx),round(y+dy))]
-        radius = rng.randint(2,5)
-        draw.line(points,fill=(23,25,19,rng.randint(99,164)),width=radius)
-        draw.line([(px-1,py+max(1,radius//2)) for px,py in points[:-1]],
-                  fill=(164,158,131,rng.randint(94,175)),width=2)
-        draw.line(points[2:],fill=(142,141,117,rng.randint(80,142)),width=1)
-    for _ in range(density):
-        x,y = rng.randrange(18,width-18),rng.randrange(17,height-17)
-        span = rng.randint(6,19)
-        tip = [(x-span,y),(x-4,y-4),(x+span,y-2),(x+4,y+4),(x-6,y+5)]
-        draw.polygon(tip,fill=(27,28,23,rng.randint(92,153)))
-        draw.line(tip[2:]+tip[:1],fill=(152,146,123,rng.randint(92,164)),width=2)
+    for x,y,angle,sx,sy,force in rng.sample(points, max(10,round(len(points)*.61))):
+        for _ in range(rng.randint(1,3)):
+            x0,y0 = round(x+rng.gauss(0,sx*.72)),round(y+rng.gauss(0,sy*.72))
+            turn = angle+rng.uniform(-.7,.7)
+            span = rng.choices((rng.randrange(6,16),rng.randrange(17,34),rng.randrange(35,83)),(4,5,1))[0]
+            dx,dy = math.cos(turn)*span,math.sin(turn)*span
+            width = rng.randrange(2,5)
+            groove = [(x0,y0),(round(x0+dx*.4),round(y0+dy*.43+rng.uniform(-3,3))),
+                      (round(x0+dx),round(y0+dy))]
+            draw.line(groove,fill=(26,29,23,rng.randint(84,176)),width=width)
+            draw.line([(px,py+max(1,width//2)) for px,py in groove],
+                      fill=(175,170,145,rng.randint(64,166)),width=1)
+        if rng.random() < .56:
+            x,y = round(x+rng.gauss(0,sx*.4)),round(y+rng.gauss(0,sy*.45))
+            span = rng.randrange(4,15)
+            nick = [(x-span,y),(x-2,y-3),(x+span,y-1),(x+3,y+3),(x-5,y+2)]
+            draw.polygon(nick,fill=(27,29,23,rng.randint(108,175)))
+            draw.line(nick[2:]+nick[:1],fill=(180,174,149,rng.randint(94,151)),width=1)
     layer.alpha_composite(cuts)
+
+    # Flat panels get a handful of handling marks, with the deepest wear on the raised areas.
+    draw = ImageDraw.Draw(layer)
+    w,h = size
+    for _ in range(8):
+        x,y = rng.randrange(w//5,w*4//5),rng.randrange(h//6,h*5//6)
+        draw.line((x,y,x+rng.randrange(-29,36),y+rng.randrange(-14,19)),
+                  fill=(136,137,118,rng.randrange(28,70)),width=1)
     return layer
+
+
+def ghost_stencil(text, height, color, rng, glyphs):
+    mask = label_mask((text,), height, 11, rng, glyphs)
+    paint = aerosol(mask, color, rng, False, 1.05)
+    patches = noise(paint.size, 22, rng).point(lambda p: min(194,max(0,p-98)*3))
+    grain = noise(paint.size, 4, rng).point(lambda p: min(239,max(0,p-47)*2))
+    erosion = ImageChops.multiply(patches,grain)
+    drag = ImageDraw.Draw(erosion)
+    for _ in range(21):
+        x,y = rng.randrange(paint.width),rng.randrange(45,paint.height-30)
+        drag.line((x,y,x+rng.randrange(15,97),y+rng.randrange(-9,13)),
+                  fill=rng.randrange(0,45),width=rng.randrange(1,5))
+    paint.putalpha(ImageChops.multiply(paint.getchannel("A"),erosion))
+    return paint
+
+
+def shell_tint(region, size, rng):
+    width,height = size
+    mask = Image.new("L",size)
+    draw = ImageDraw.Draw(mask)
+    # The stock shell's seam borders the olive cover. Keep the fittings dark.
+    if region == "back":
+        draw.rectangle((0,0,width,height),fill=123)
+        draw.rectangle((.39*width,0,.61*width,.06*height),fill=0)
+        draw.rectangle((.03*width,.93*height,.16*width,height),fill=0)
+        draw.rectangle((.84*width,.93*height,.97*width,height),fill=0)
+    elif region in ("right","left"):
+        draw.rectangle((.248*width,0,width,height),fill=125)
+        for x0,y0,x1,y1 in SIDE_HANDLES:
+            draw.rounded_rectangle((x0*width,y0*height,x1*width,y1*height),radius=13,fill=0)
+        for y in (.105,.272,.679,.868):
+            draw.rectangle((.248*width,(y-.025)*height,.365*width,(y+.024)*height),fill=0)
+    else:
+        draw.rectangle((0,.26*height,width,height),fill=125)
+        for x0,y0,x1,y1 in END_HANDLE + (END_WHEELS if region == "bottom" else ((.07,.42,.306,.74),)):
+            draw.rounded_rectangle((x0*width,y0*height,x1*width,y1*height),radius=12,fill=0)
+    grain = noise(size, 31, rng).point(lambda p: 200+p*55//255)
+    return color_layer(size,(115,125,100),ImageChops.multiply(mask.filter(ImageFilter.GaussianBlur(1.1)),grain))
 
 
 def artwork(number, glyphs):
     lines, color, center, height, angle, halo, residue_pos, residue_style, tape = DESIGNS[number-1]
     rng = random.Random(32540 + number*193)
-    wear_rng = random.Random(32740 + number*173)
-    lid = impact_wear(FRONT, wear_rng, 22)
+    wear_rng = random.Random(32840 + number*173)
+    lid = contact_wear("lid", FRONT, wear_rng)
     if lines:
         mask = label_mask(lines, height, 13, rng, glyphs)
         stamp(lid, aerosol(mask, color, rng, halo, 1.22 if color == "black" else 1.04), center, angle)
@@ -339,6 +399,10 @@ def artwork(number, glyphs):
         stamp(lid, paint_marker("C3", 63, (192,189,172), rng), (631, 775), -9)
         swipe = tape_residue(FRONT, [((642,790),97,8,-13,.28)], 28105)
         lid.alpha_composite(swipe)
+
+    if number in GHOST_STENCILS:
+        text, pos, height, rotation, pigment = GHOST_STENCILS[number]
+        stamp(lid, ghost_stencil(text,height,pigment,rng,glyphs), pos, rotation)
 
     # Finish 10's lid has handling wear only. Its red crosses are on the shell.
     if number != 10:
@@ -352,29 +416,24 @@ def artwork(number, glyphs):
     if number in WHITE_TAPE:
         pos,length,width,rotation,label = WHITE_TAPE[number]
         stamp(lid, painters_tape(length,width,label,rng), pos, rotation)
-    lid.alpha_composite(abrasion(FRONT, rng, 35+number%5, lid=True))
+    layers = {"lid": lid}
+    for region, size in (("back", FRONT), ("right", SIDE), ("left", SIDE), ("top", TOP), ("bottom", TOP)):
+        panel = shell_tint(region, size, wear_rng) if number == MISMATCHED_FINISH else Image.new("RGBA",size)
+        panel.alpha_composite(contact_wear(region, size, wear_rng))
+        layers[region] = panel
 
-    sides = []
-    for side_index in range(2):
-        side = impact_wear(SIDE, wear_rng, 16)
-        side.alpha_composite(abrasion(SIDE, rng, 19))
+    for side_index, region in enumerate(("right","left")):
+        side = layers[region]
         side.alpha_composite(tape_residue(SIDE, [((455, 257), 120, 26, 3-number, .43)], number*149+side_index))
         cross = cross_mask(380+number+side_index, 125, 128, number in (5, 7, 9, 10))
         stamp(side, aerosol(cross, "black" if number != 10 else "red", rng, False, 1.1), (452, 793), rng.uniform(-11, 11))
-        sides.append(side)
 
-    top = impact_wear(TOP, wear_rng, 17)
-    top.alpha_composite(abrasion(TOP, rng, 15))
     if number != 10:
         small = cross_mask(411+number, 108, 111, number % 2 == 0)
-        stamp(top, aerosol(small, "black", rng, False, 1.08), (803, 458), rng.uniform(-8,8))
+        stamp(layers["top"], aerosol(small, "black", rng, False, 1.08), (803, 458), rng.uniform(-8,8))
 
-    back = impact_wear(FRONT, wear_rng, 25)
-    back.alpha_composite(abrasion(FRONT, rng, 25, lid=True))
-    back.alpha_composite(residue(FRONT, (rng.randint(385,615), rng.randint(710,860)), number%6, rng))
-    bottom = impact_wear(TOP, wear_rng, 21)
-    bottom.alpha_composite(abrasion(TOP, rng, 23))
-    return dict(zip(ATLAS_REGIONS, (lid, back, *sides, top, bottom)))
+    layers["back"].alpha_composite(residue(FRONT, (rng.randint(385,615), rng.randint(710,860)), number%6, rng))
+    return layers
 
 
 def mesh_dump(path):
@@ -401,7 +460,9 @@ def fitted_faces(path, surface):
     front = .082 if surface == "closed" else .005
     dominant = np.argmax(abs(normals), axis=1)
     front_faces = (y.min(axis=1) > front) & (dominant == 1) & (normals[:, 1] > 0)
-    lid_coords = ((.266 + z)/.532, (.421 - x)/.844)
+    # In Arma's upright placement, -model Z is the viewer's right.
+    # Use this for both meshes so lettering and tape keep their orientation.
+    lid_coords = ((.266 - z)/.532, (.421 - x)/.844)
     projections = [(front_faces, "lid", lid_coords, (0, 1, 0))]
     if surface == "closed":
         rear_faces = (y.max(axis=1) < -.083) & (dominant == 1) & (normals[:, 1] < 0)
@@ -412,7 +473,7 @@ def fitted_faces(path, surface):
         side_coords = ((.164 - y)/.334, (.421 - x)/.844)
         top_coords = ((.266 + z)/.532, (.164 - y)/.334)
         projections.extend([
-            (rear_faces, "back", ((.266-z)/.532, (.421-x)/.844), (0,-1,0)),
+            (rear_faces, "back", ((.266+z)/.532, (.421-x)/.844), (0,-1,0)),
             (right_faces, "right", side_coords, (0, 0, 1)),
             (left_faces, "left", side_coords, (0, 0, -1)),
             (top_faces, "top", top_coords, (1, 0, 0)),

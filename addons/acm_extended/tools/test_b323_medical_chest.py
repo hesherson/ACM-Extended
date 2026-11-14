@@ -1,5 +1,6 @@
 """Run the production chest state machine with mocked Arma objects and 3D commands."""
 import re
+import struct
 
 import pytest
 
@@ -181,3 +182,33 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
             assert model.startswith(b"MLOD") and texture.encode() + b"\0" in model
     for name in ("open", "close"):
         assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")
+
+
+
+def test_fitted_lid_uvs_increase_toward_the_viewers_right_in_arma():
+    folder = ROOT / "addons/acm_extended/data/medical_chest/variants"
+    for model in sorted(folder.glob("*.p3d")):
+        data = model.read_bytes()
+        _, _, points, normals, faces, _ = struct.unpack_from("<6I", data, 16)
+        offset = 40 + 16 * points + 12 * normals
+        checked = 0
+        for _ in range(faces):
+            corners = []
+            for i in range(3):
+                vertex, _, u, v = struct.unpack_from("<IIff", data, offset + 4 + 16 * i)
+                x, _, z = struct.unpack_from("<3f", data, 40 + 16 * vertex)
+                corners.append((x, z, u, v))
+            offset = data.index(b"\0\0", offset + 72) + 2
+            # The first atlas row contains the front and rear projections.
+            if max(corner[3] for corner in corners) >= 1609 / 4096:
+                continue
+            if max(corner[2] for corner in corners) >= 1010 / 2048:
+                continue
+            left, *_, right = sorted(corners, key=lambda corner: -corner[1])
+            if left[1] - right[1] > .001:
+                assert left[2] < right[2], model
+                checked += 1
+            low, *_, high = sorted(corners, key=lambda corner: corner[0])
+            if high[0] - low[0] > .001:
+                assert low[3] > high[3], model
+        assert checked > 30, model
