@@ -35,4 +35,5 @@ _chest addEventHandler ["Deleted", {
     } forEach ["ACME_medicalChestCabinet", "ACME_medicalChestLid", "ACME_medicalChestCargo"];
     {if (!isNull _x) then {deleteVehicle _x;};} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
 }];
-_chest setVariable ["ACME_medicalChestDecals", [_chest, "closed"] call ACME_fnc_medicalChestDecals];
+private _variant = getNumber (configOf _chest >> "acmeChestVariant");
+_chest setVariable ["ACME_medicalChestDecals", [_chest, "closed", _variant] call ACME_fnc_medicalChestDecals];

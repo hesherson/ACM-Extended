@@ -15,6 +15,7 @@ if (!_opening && {_target isNotEqualTo _cabinet}) exitWith {};
 private _cargo = _chest getVariable ["ACME_medicalChestCargo", objNull];
 if (isNull _cargo) exitWith {};
 
+private _variant = getNumber (configOf _chest >> "acmeChestVariant");
 (_chest getVariable "ACME_medicalChestPlacement") params ["_base", "_heading"];
 if (_opening) then {
     private _class = selectRandom ["ACME_MedicalChest4Drawers", "ACME_MedicalChest7Drawers"];
@@ -53,7 +54,7 @@ if (_opening) then {
     [_cabinet] call ACME_fnc_medicalChestDrawers;
     {deleteVehicle _x;} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
     _chest setVariable ["ACME_medicalChestDecals",
-        ([_cabinet, "cabinet"] call ACME_fnc_medicalChestDecals) + ([_lid, "lid"] call ACME_fnc_medicalChestDecals)];
+        ([_cabinet, "cabinet", _variant] call ACME_fnc_medicalChestDecals) + ([_lid, "lid", _variant] call ACME_fnc_medicalChestDecals)];
 } else {
     // Keep the same cargo, and move it out of native Gear reach while shut.
     detach _cargo;
@@ -62,7 +63,7 @@ if (_opening) then {
     deleteVehicle _cabinet;
     deleteVehicle (_chest getVariable ["ACME_medicalChestLid", objNull]);
     {deleteVehicle _x;} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
-    _chest setVariable ["ACME_medicalChestDecals", [_chest, "closed"] call ACME_fnc_medicalChestDecals];
+    _chest setVariable ["ACME_medicalChestDecals", [_chest, "closed", _variant] call ACME_fnc_medicalChestDecals];
     _chest setVariable ["ACME_medicalChestCabinet", objNull, true];
     _chest setVariable ["ACME_medicalChestLid", objNull];
 };

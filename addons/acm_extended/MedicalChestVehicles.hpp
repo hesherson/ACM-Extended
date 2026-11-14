@@ -28,6 +28,25 @@
         };
     };
 
+#define ACME_MEDICAL_CHEST_RETEXTURE(CLASS,NUMBER,LABEL) \
+    class CLASS: ACME_MedicalChest { \
+        scope = 2; \
+        scopeCurator = 2; \
+        displayName = LABEL; \
+        acmeChestVariant = NUMBER; \
+    }
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_01,1,"Medical Chest 01 (MED CHEST 1)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_02,2,"Medical Chest 02 (SURG)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_03,3,"Medical Chest 03 (OR)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_04,4,"Medical Chest 04 (MED)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_05,5,"Medical Chest 05 (PAD)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_06,6,"Medical Chest 06 (IV FLUIDS)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_07,7,"Medical Chest 07 (AIRWAY)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_08,8,"Medical Chest 08 (BLOOD)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_09,9,"Medical Chest 09 (Black Cross)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_10,10,"Medical Chest 10 (Red Cross)");
+#undef ACME_MEDICAL_CHEST_RETEXTURE
+
     // An invisible model provides a live native Gear container inside the chest.
     class ACME_MedicalChestCargo: Box_NATO_Ammo_F {
         scope = 1;

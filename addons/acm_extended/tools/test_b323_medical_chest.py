@@ -15,6 +15,7 @@ def request_fixture():
         'owner _actor': '_ownerNum',
         '_chest isKindOf "ACME_MedicalChest"': '_chest getVariable ["fixtureChest", false]',
         '_actor distance _target': '_distance',
+        'getNumber (configOf _chest >> "acmeChestVariant")': '_fixtureVariant',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
         'createVehicle ["Land_PortableCabinet_01_lid_olive_F", ASLToATL _base, [], 0, "CAN_COLLIDE"]':
             '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
@@ -48,6 +49,7 @@ def request_fixture():
         private _placed = [];
         private _drawers = [];
         private _markings = [];
+        private _fixtureVariant = 10;
         private _hidden = false;
         private _failLid = false;
         private _remote = true;
@@ -67,7 +69,7 @@ def request_fixture():
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
         ACME_fnc_medicalChestPlace = {_placed pushBack _this;};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
-        ACME_fnc_medicalChestDecals = {_markings pushBack (_this select 1); []};
+        ACME_fnc_medicalChestDecals = {_markings pushBack (_this select [1, 2]); []};
         CBA_fnc_globalEvent = {_events pushBack _this;};
     '''
 
@@ -78,14 +80,14 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         private _open = _chest getVariable "ACME_medicalChestCabinet";
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "closed shell did not yield to the drawers"] call _check;
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
-        [_markings isEqualTo ["cabinet", "lid"], "opening did not transfer lid and body markings"] call _check;
+        [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
         [(_placed select 0 select 1) isEqualTo [20.95, 12, 0] && {!(_placed select 0 select 3)}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
         [_open, _medic, false, 1] call _request;
         [_open, _medic, false, 1] call _request;
-        [_markings isEqualTo ["cabinet", "lid", "closed"], "closing did not restore the closed shell markings"] call _check;
+        [_markings isEqualTo [["cabinet",10], ["lid",10], ["closed",10]], "closing did not restore the selected finish"] call _check;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "old open replayed after the chest closed"] call _check;
@@ -167,5 +169,15 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
     for asset in ("chest_title", "chest_serial", "chest_cross", "chest_tape_lid", "chest_tape_side", "chest_tape_back"):
         assert (addon / "data/medical_chest" / f"{asset}.p3d").read_bytes().startswith(b"MLOD")
         assert (addon / "data/medical_chest" / f"{asset}_ca.paa").is_file()
+    for number in range(1, 11):
+        name = f"ACME_MedicalChest_{number:02d}"
+        assert f'"{name}"' in config
+        assert f"ACME_MEDICAL_CHEST_RETEXTURE({name},{number}," in vehicles
+        folder = addon / "data/medical_chest/variants"
+        texture = f"acm_extended\\data\\medical_chest\\variants\\chest_{number}_ca.paa"
+        assert (folder / f"chest_{number}_ca.paa").is_file()
+        for surface in ("closed", "lid"):
+            model = (folder / f"chest_{number}_{surface}.p3d").read_bytes()
+            assert model.startswith(b"MLOD") and texture.encode() + b"\0" in model
     for name in ("open", "close"):
         assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")

@@ -1,6 +1,7 @@
 /* The closed cabinet and detached lid have measured model-space paint positions.
    The open cabinet variants use their own rendered surfaces for placement. */
-params ["_object", "_surface"];
+params ["_object", "_surface", ["_variant", 0]];
+private _hasRetexture = _variant in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 private _markings = switch (_surface) do {
     case "closed": {[
         ["chest_title", [0, 0.1539, 0], [0, 1, 0], [1, 0, 0]],
@@ -20,6 +21,11 @@ private _markings = switch (_surface) do {
     default {[]};
 };
 
+if (_hasRetexture) then {
+    // The lid and side paint follow the molded surfaces of these two models.
+    _markings = _markings select {(_x select 0) == "chest_tape_back"};
+};
+
 private _placements = _markings apply {
     _x params ["_asset", "_point", "_normal", "_vertical"];
     [_asset, _object modelToWorldWorld _point, _object vectorModelToWorld _normal, _object vectorModelToWorld _vertical]
@@ -33,10 +39,11 @@ if (_surface == "cabinet") then {
     private _right = [cos _heading, -(sin _heading), 0];
     private _up = [0, 0, 1];
     private _body = _center vectorAdd (_forward vectorMultiply -0.063);
+    private _cross = ["chest_cross", "chest_cross_red"] select (_variant == 10);
     private _strips = [
-        ["chest_cross", _right, _up, _body, 0.052, 0.052],
-        ["chest_cross", _right vectorMultiply -1, _up, _body, 0.052, 0.052],
-        ["chest_cross", _up, _right, _center vectorAdd ((_forward vectorMultiply -0.075) vectorAdd (_right vectorMultiply -0.161)), 0.052, 0.052],
+        [_cross, _right, _up, _body, 0.052, 0.052],
+        [_cross, _right vectorMultiply -1, _up, _body, 0.052, 0.052],
+        [_cross, _up, _right, _center vectorAdd ((_forward vectorMultiply -0.075) vectorAdd (_right vectorMultiply -0.161)), 0.052, 0.052],
         ["chest_tape_side", _right vectorMultiply -1, _up, _body vectorAdd [0, 0, 0.275], 0.051, 0.0165],
         ["chest_tape_back", _forward vectorMultiply -1, _up, _center vectorAdd (_right vectorMultiply 0.022), 0.128, 0.0785]
     ];
@@ -64,6 +71,13 @@ if (_surface == "cabinet") then {
             _placements pushBack [_asset, _position, _normal, _vertical];
         };
     } forEach _strips;
+};
+
+if (_hasRetexture && {_surface in ["closed", "lid"]}) then {
+    _placements pushBack [
+        format ["variants\chest_%1_%2", _variant, _surface],
+        _object modelToWorldWorld [0, 0, 0], vectorDir _object, vectorUp _object
+    ];
 };
 
 private _decals = [];

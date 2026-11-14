@@ -6,9 +6,15 @@ The chest starts upright. In ACE Interact, **Open Medical Chest** puts the olive
 
 The stock is one of each public ACE medical inventory class in the loaded configuration, including ACM and ACME. It includes medical items, charge-bearing medical magazines, and medical backpacks when tagged by a loaded addon. Hidden compatibility classes and runtime-only items that require a prepared-item identity are excluded. Native blood items in this chest follow normal loose-blood rules. Existing ACM Basic and Advanced supply crates remain available.
 
+## Numbered finishes
+
+B326 adds **Medical Chest 01–10** under the same Eden and Zeus category. The classnames run from `ACME_MedicalChest_01` to `ACME_MedicalChest_10`. The lid lettering by number is MED CHEST 1, SURG, OR, MED, PAD, IV FLUIDS, AIRWAY and BLOOD. Finishes 09 and 10 use a black and red cross, respectively. The markings identify the look of each chest. Each still starts with the full medical inventory.
+
+The finish appears when the mission starts, stays with the loose lid after opening, and returns to the original chest when it closes. The cabinet keeps its handle markings where the open shell has a flat panel. The numbered finishes use paint and wear geometry fitted to the stock panels. This keeps the spray and tape from mirroring across the vanilla UVs. The installed Arma models still provide the shell and drawers.
+
 ## Cabinet assets and stencil positioning
 
-The closed stock class is `Land_PortableCabinet_01_closed_olive_F`. The PBO references Bohemia's installed cabinet meshes for the closed case, loose lid and both open variants. B325 uses the supplied military stencil lettering for the chipped yellow MEDICAL CHEST and smaller MED-01 markings. Worn black crosses sit between the handles on both sides and in the clear area beside the top handle. The lid and rear panel show old adhesive outlines, with a smaller tape remnant on one carry side. The original transparent decal geometry keeps the lettering readable across shared and mirrored stock UVs. The detached lid retains the front markings and rests painted side up. The open cabinet applies case markings where its model exposes a continuous panel.
+The closed stock class is `Land_PortableCabinet_01_closed_olive_F`. The PBO references Bohemia's installed cabinet meshes for the closed case, loose lid and both open variants. The original full-stock chest uses the supplied military stencil lettering for the chipped yellow MEDICAL CHEST and smaller MED-01 markings. Worn black crosses sit between the handles on both sides and in the clear area beside the top handle. The lid and rear panel show old adhesive outlines, with a smaller tape remnant on one carry side. The original transparent decal geometry keeps the lettering readable across shared and mirrored stock UVs. The detached lid retains the front markings and rests painted side up. The open cabinet applies case markings where its model exposes a continuous panel.
 
 To see the exact model and texture paths on your install, preview a mission in Eden on VR and execute this in the **local** Debug Console. It prints the model path, camo slots, texture paths, model bounds and drawer animation names to the clipboard.
 
