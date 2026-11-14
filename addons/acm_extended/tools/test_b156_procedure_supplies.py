@@ -30,6 +30,7 @@ def supply_setup():
         text=source(name).replace('objectParent _x','(_x getVariable ["fixtureParent",objNull])')
         text=text.replace('itemCargo _vehicle','(_vehicle call _cargoFor)')
         text=text.replace('_vehicle addItemCargoGlobal [_item, 1]','[_vehicle,_item] call _addCargo')
+        text=text.replace('_kitSource addItemCargoGlobal [_item, 1]','[_kitSource,_item] call _addCargo')
         functions+='ACME_fnc_'+name+'={'+primitives(adapt(text))+'};'
     return '''
         private _debits=[]; private _refunds=[];
@@ -118,6 +119,15 @@ def test_iv_registration_cannot_commit_without_final_stock(stock):
         call _register;
     '''+f'[(uiNamespace getVariable ["ACME_IV_RegOK",false]) isEqualTo {str(stock).lower()},"IV reports success without supply"] call _check;'+\
         f'[count _debits=={int(stock)} && {{count _dispatches=={2 if stock else 0}}},"IV did not reserve exactly one catheter before owner request"] call _check;')
+
+
+def test_iv_registration_does_not_debit_a_catheter_paid_at_puncture():
+    execute(iv_setup()+'''
+        uiNamespace setVariable ["ACME_IV_InsFunded",true];
+        call _register;
+        [uiNamespace getVariable ["ACME_IV_RegOK",false],"funded puncture could not be seated"] call _check;
+        [count _debits==0 && {count _dispatches==2},"seating charged a second catheter"] call _check;
+    ''')
 
 
 @pytest.mark.parametrize('cargo',[False,True])

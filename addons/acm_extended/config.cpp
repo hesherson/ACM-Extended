@@ -1594,7 +1594,8 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         scopeArsenal = 2;
         author = "mavis";
         displayName = "IV Start Kit";
-        descriptionShort = "Two 18G IV catheters, one BOA band, Tegaderm, saline lock and 10 mL saline flush. Unpacks into your inventory.";
+        descriptionShort = "Two 18G IV catheters, a BOA band, Tegaderm, a saline lock and a 10 mL saline flush. Opens when you use a supply.";
+        ACME_ivStartKitContents[] = {"ACM_IV_18g", "ACM_IV_18g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACM_SalineFlush_10"};
         picture = "\acm_extended\ui\items\iv_start_kit_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
@@ -2290,7 +2291,7 @@ class CfgFunctions {
             class clinicalClock {};
             class clinicalClockTick {};
             class ivStartKitUnpack {};
-            class registerIVStartKitRuntime {};
+            class ivStartKitStock {};
             class yAutoWarmer {};
             class medicationToxicityTick {};
             class medicationCBRNTick {};
@@ -7828,7 +7829,7 @@ class CfgVehicles {
                     };
                     class ACME_SyringeKit_PushEpi {
                         displayName = "Draw Push-Dose Epi (10 mcg/mL)";
-                        condition = "(([_player, 'ACM_SalineFlush_10'] call ace_common_fnc_getCountOfItem) > 0) && {([_player, 'EpinephrineCardiac'] call ACME_fnc_infusionVialVolume) >= 1}";
+                        condition = "(([_player, 'ACM_SalineFlush_10'] call ACME_fnc_itemCount) > 0) && {([_player, 'EpinephrineCardiac'] call ACME_fnc_infusionVialVolume) >= 1}";
                         statement = "[_player, _player, '', ['pushDoseOneShot']] call ACME_fnc_salineFlush";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 1;

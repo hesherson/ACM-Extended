@@ -73,7 +73,7 @@ def setup():
         'bloodFridgeSnapshotValid', 'bloodFridgeSnapshot', 'bloodFridgeRestore', 'bloodFridgeTick','bloodFridgeExpire',
         'bloodExposureSnapshotValid', 'bloodExposureSnapshot', 'bloodExposureRestore',
         'bloodPersistenceRequest', 'persistenceReady', 'persistenceSnapshot', 'persistenceFingerprint', 'persistenceCaptureValid', 'persistenceLocalCheckpoint', 'persistenceCheckpoint', 'persistenceRestoreExtended', 'persistenceBarrier',
-        'coolerPersistenceInit'])
+        'coolerPersistenceInit', 'treatmentSupplyRefund'])
 
 
 def test_fridge_roundtrip_rebases_remaining_schedule_and_replay_never_refills():

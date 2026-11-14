@@ -56,7 +56,9 @@ private _ins = [
     uiNamespace getVariable ["ACME_IV_StickAcc", 0],
     uiNamespace getVariable ["ACME_IV_InsEJSide", ""],
     // Optional element 11 retains the puncture angle across reopen/provider handoff.
-    uiNamespace getVariable ["ACME_IV_InsAngle", 0]
+    uiNamespace getVariable ["ACME_IV_InsAngle", 0],
+    // A punctured catheter stays paid for across view changes and provider handoff.
+    uiNamespace getVariable ["ACME_IV_InsFunded", false]
 ];
 // Tray choices do not constitute an insertion when no catheter is in progress.
 if (_stage == "") then {_ins = ["",0,"",16,0.5,0.5,false,0,"",0,"",0];};

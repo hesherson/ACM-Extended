@@ -100,6 +100,7 @@ uiNamespace setVariable ["ACME_IV_Gauge", 16];
 // There is no puncture yet. Therefore there is no site.
 // fn_ivMinigameRestoreState can set this value again below.
 uiNamespace setVariable ["ACME_IV_InsSite", ""];
+uiNamespace setVariable ["ACME_IV_InsFunded", false];
 uiNamespace setVariable ["ACME_IV_SnapUV", [_bandU, _bandV]];  // where the held band currently snaps.
 
 // ej mode: no band on the neck. both jugulars are live, and the active side tracks the cursor in the tick.

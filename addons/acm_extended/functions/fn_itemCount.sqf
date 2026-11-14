@@ -1,7 +1,13 @@
-/* How many of an item a unit can use for treatment. Every read of a medic's or patient's supplies goes
-   through here, so an inventory mod has one place to answer it: with Enhanced First Aid Kits loaded,
-   what is packed in the unit's kits counts as well (efak_medical_fnc_countItem). Otherwise ACE's count. */
-params [["_unit", objNull, [objNull]], ["_item", "", [""]]];
+/* Count loose supplies, EFAK contents and available sealed IV Start Kits. */
+params [["_unit", objNull, [objNull]], ["_item", "", [""]], ["_includeStartKits", true]];
 if (isNull _unit || {_item == ""}) exitWith {0};
-if (!isNil "efak_medical_fnc_countItem" && {_unit isKindOf "CAManBase"}) exitWith {[_unit, _item] call efak_medical_fnc_countItem};
-[_unit, _item] call ace_common_fnc_getCountOfItem
+private _count = if (!isNil "efak_medical_fnc_countItem" && {_unit isKindOf "CAManBase"}) then {
+    [_unit, _item] call efak_medical_fnc_countItem
+} else {
+    [_unit, _item] call ace_common_fnc_getCountOfItem
+};
+if (_includeStartKits) then {
+    ([_unit, _item] call ACME_fnc_ivStartKitStock) params ["_contents", "_kits"];
+    _count = _count + (({_x == _item} count _contents) * count _kits);
+};
+_count

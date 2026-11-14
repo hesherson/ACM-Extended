@@ -106,6 +106,7 @@ uiNamespace setVariable ["ACME_IV_DLG", displayNull];
 uiNamespace setVariable ["ACME_IV_Held", "none"];
 uiNamespace setVariable ["ACME_IV_BandOn", false];
 uiNamespace setVariable ["ACME_IV_InsSite", ""];
+uiNamespace setVariable ["ACME_IV_InsFunded", false];
 uiNamespace setVariable ["ACME_IV_Stage", "ready"];
 uiNamespace setVariable ["ACME_IV_Dragging", false];
 uiNamespace setVariable ["ACME_IV_PullIdx", -1];  // any pull in progress is abandoned here.

@@ -11,8 +11,15 @@ if (_returnItem != "" && {!(_item in (call ACME_fnc_ventBatteryItems))
 private _pending = missionNamespace getVariable ["ACME_supplyReceipts", createHashMap];
 if !((_pending getOrDefault [_id, []]) isEqualTo _receipt) exitWith {false};
 _pending deleteAt _id;
+private _kitSources = missionNamespace getVariable ["ACME_ivStartKitSources", createHashMap];
+private _kitSource = objNull;
+if (_id in _kitSources) then {_kitSource = _kitSources deleteAt _id;};
 if (!_refund) exitWith {true};
 if (_returnItem != "") then {_item = _returnItem;};
+if (!isNull _kitSource) exitWith {
+    _kitSource addItemCargoGlobal [_item, 1];
+    true
+};
 if (!isNull _vehicle) exitWith {_vehicle addItemCargoGlobal [_item, 1]; true};
 if (isNull _donor) exitWith {false};
 [_donor, _item] call ace_common_fnc_addToInventory;

@@ -23,7 +23,7 @@ private _scopes = missionNamespace getVariable ["ACME_IV_SupplyScopes",createHas
     private _scope = _scopes get _x;
     if (_scope isEqualType [] && {count _scope == 8} && {(_scope select 6) isEqualType 0}
         && {finite (_scope select 6)} && {(_scope select 6) + 30 < serverTime}) then {
-        if ((_stock getOrDefault [_x,[]]) isEqualTo (_scope select 0)) then {_stock deleteAt _x;};
+        if ((_stock getOrDefault [_x,[]]) isEqualTo (_scope select 0)) then {[_scope select 0, false] call ACME_fnc_treatmentSupplyRefund;};
         _scopes deleteAt _x;
     };
 } forEach keys _scopes;

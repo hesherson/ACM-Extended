@@ -16,6 +16,21 @@ _rect params ["_bx", "_by", "_bw", "_bh"];
 
 private _frame = uiNamespace getVariable ["ACME_IV_NeedleFrame", ""];
 private _gauge = uiNamespace getVariable ["ACME_IV_Gauge", 16];
+private _usesStock = !(_dlg getVariable ["ACME_IV_FieldInserting", false]);
+if (_usesStock && {!(_stickSite in ["upper", "middle", "lower"])} && {!(uiNamespace getVariable ["ACME_IV_EJMode", false])}) exitWith {};
+private _receipt = [];
+if (_usesStock) then {
+    private _medic = uiNamespace getVariable ["ACME_IV_Medic", objNull];
+    private _patient = uiNamespace getVariable ["ACME_IV_Patient", objNull];
+    _receipt = [_medic, _patient, [format ["ACM_IV_%1g", _gauge]]] call ACME_fnc_treatmentSupplyTake;
+};
+if (_usesStock && {_receipt isEqualTo []}) exitWith {
+    (_dlg displayCtrl 86503) ctrlSetText "No catheter available.";
+    [] call ACME_fnc_ivMinigameRefreshBandSlot;
+};
+// The puncture uses the catheter even if it is missed or left partly inserted.
+if (_usesStock) then {[_receipt, false] call ACME_fnc_treatmentSupplyRefund;};
+uiNamespace setVariable ["ACME_IV_InsFunded", _usesStock];
 private _angle = uiNamespace getVariable ["ACME_IV_NeedleAngle", 0];
 uiNamespace setVariable ["ACME_IV_InsAngle", _angle];
 

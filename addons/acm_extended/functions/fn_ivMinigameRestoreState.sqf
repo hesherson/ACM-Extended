@@ -62,7 +62,8 @@ uiNamespace setVariable ["ACME_IV_PrepLast", []];
 
 // the catheter that was left in the arm. put the sprite back on the puncture at the frame it was left at, and
 // hand control straight back to the medic.
-_ins params ["_stage", "_frame", "_suffix", "_gauge", "_insU", "_insV", "_hit2", "_prog", ["_insSite", ""], ["_accuracy", 0], ["_ejSide", ""], ["_angle", 0]];
+_ins params ["_stage", "_frame", "_suffix", "_gauge", "_insU", "_insV", "_hit2", "_prog", ["_insSite", ""], ["_accuracy", 0], ["_ejSide", ""], ["_angle", 0], ["_funded", false, [false]]];
+uiNamespace setVariable ["ACME_IV_InsFunded", _funded];
 // Older snapshots can contain a withdrawn needle state. Resume from fully threaded.
 if (_stage == "retract") then {_stage = "thread"; _frame = 11;};
 if (_stage in ["advance", "thread"]) then {

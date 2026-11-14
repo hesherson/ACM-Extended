@@ -1,6 +1,5 @@
-/* Reserve one physical treatment ITEM through ACE's supply policy, extended for EFAK virtual kit contents.
-   Without EFAK, the native ACE useItem path is unchanged. With EFAK, the same patient/medic/vehicle ordering is
-   reproduced per source and only then extended to a kit-contained item.
+/* Reserve one treatment item through ACE or EFAK. Open a worn IV Start Kit
+   only when the normal sources cannot issue the requested item.
    Return [] on failure, otherwise [unit, classname, sourceVehicle, receiptId].
    Settle a receipt once with treatmentSupplyRefund: true refunds, false commits. */
 params ["_medic", "_patient", "_items", ["_personalOnly", false]];
@@ -19,6 +18,7 @@ isNil {
     } forEach ([_medic, _patient] call ACME_fnc_treatmentSupplyOrder);
 
     private _used = [objNull, "", false];
+    private _kitContainer = objNull;
 
     if (_personalOnly) then {
         // Used/cooled bags carry provenance outside the ordinary inventory model. Keep this branch
@@ -102,13 +102,27 @@ isNil {
         };
     };
 
+    if (!_personalOnly && {(_used select 1) == ""}) then {
+        {
+            private _unit = _x select 0;
+            {
+                private _container = [_unit, _x] call ACME_fnc_ivStartKitUnpack;
+                if (!isNull _container) exitWith {
+                    _kitContainer = _container;
+                    _used = [_unit, _x, true];
+                };
+            } forEach _items;
+            if ((_used select 1) != "") exitWith {};
+        } forEach _sources;
+    };
+
     _used params [["_donor", objNull], ["_item", ""]];
     if (!isNull _donor && {_item != ""}) then {
         private _vehicle = _used param [3, objNull];
         private _index = _sources findIf {(_x select 0) isEqualTo _donor};
         if (_index >= 0) then {
             private _source = _sources select _index;
-            if (!_personalOnly && {isNull _vehicle} && {_item in (_source select 2)}) then {
+            if (!_personalOnly && {isNull _kitContainer} && {isNull _vehicle} && {_item in (_source select 2)}) then {
                 _vehicle = _source select 1;
             };
         };
@@ -121,6 +135,12 @@ isNil {
         private _pending = missionNamespace getVariable ["ACME_supplyReceipts", createHashMap];
         _pending set [_id, +_receipt];
         missionNamespace setVariable ["ACME_supplyReceipts", _pending];
+        if (!isNull _kitContainer) then {
+            // Worn cargo proxies are local. Keep the refund destination off the wire.
+            private _kitSources = missionNamespace getVariable ["ACME_ivStartKitSources", createHashMap];
+            _kitSources set [_id, _kitContainer];
+            missionNamespace setVariable ["ACME_ivStartKitSources", _kitSources];
+        };
     };
     true
 };

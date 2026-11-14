@@ -17,7 +17,7 @@ if !(_stock isEqualType createHashMap && {_scopes isEqualType createHashMap}) ex
 {
     private _old=_scopes get _x;
     if (_old isEqualType [] && {count _old==8} && {(_old select 6) isEqualType 0} && {(_old select 6)+30<serverTime}) then {
-        if ((_stock getOrDefault [_x,[]]) isEqualTo (_old select 0)) then {_stock deleteAt _x;};
+        if ((_stock getOrDefault [_x,[]]) isEqualTo (_old select 0)) then {[_old select 0, false] call ACME_fnc_treatmentSupplyRefund;};
         _scopes deleteAt _x;
     };
 } forEach keys _scopes;

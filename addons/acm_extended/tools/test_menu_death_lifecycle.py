@@ -152,6 +152,8 @@ ACME_fnc_controlledProvider = {ACE_player};
 // Historical feature fixtures supply a valid native panel; B288 executes the
 // complete captured-device predicate and invalidation cases separately.
 ACME_fnc_ventPanelContext = {true};
+ACME_fnc_ivStartKitStock = {[[], []]};
+ACME_fnc_ivStartKitUnpack = {objNull};
 ACME_fnc_ivInteractionValid = {true};
 ace_medical_gui_maxDistance = 3;
 ACM_core_ContinuousAction_Active = false;

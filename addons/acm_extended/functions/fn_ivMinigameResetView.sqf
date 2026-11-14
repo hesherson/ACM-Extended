@@ -16,7 +16,7 @@ _display setVariable ["ACME_IV_RetractPFH", -1];
     uiNamespace setVariable [_name, _value];
 } forEach [
     ["ACME_IV_Held", "none"], ["ACME_IV_Dragging", false],
-    ["ACME_IV_InsStage", ""], ["ACME_IV_InsFrame", 0], ["ACME_IV_InsSite", ""],
+    ["ACME_IV_InsStage", ""], ["ACME_IV_InsFrame", 0], ["ACME_IV_InsSite", ""], ["ACME_IV_InsFunded", false],
     ["ACME_IV_InsSuffix", ""], ["ACME_IV_InsGauge", 16], ["ACME_IV_InsHit", false],
     ["ACME_IV_InsProg", 0], ["ACME_IV_InsU", 0.5], ["ACME_IV_InsV", 0.5],
     ["ACME_IV_InsAngle", 0], ["ACME_IV_NeedleAngle", 0], ["ACME_IV_PullAngle", 0],

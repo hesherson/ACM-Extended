@@ -1,7 +1,6 @@
 // Registered medical litter collection is available to every player.
 call ACME_fnc_registerMedicalLitterRuntime;
 call ACME_fnc_inventoryLedgerInit;
-call ACME_fnc_registerIVStartKitRuntime;
 // Phase 37: fork version/network bootstrap, chest-seal/vent custody and owner initialization.
 call ACME_fnc_initForkStartupRuntime;
 // Phase 37: debug-menu PFH plus EachFrame fallback registration.

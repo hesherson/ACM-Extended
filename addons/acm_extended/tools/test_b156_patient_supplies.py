@@ -37,12 +37,17 @@ def execute(scenario):
         source = source.replace("itemCargo _vehicle", "(_cargo getOrDefault [_vehicle, []])")
         source = source.replace("clientOwner", "42").replace("objNull", '""')
         source = source.replace('_vehicle addItemCargoGlobal [_item, 1]', '[_vehicle, _item] call _addCargo')
+        source = source.replace("isNull _kitSource", '(_kitSource isEqualTo "")')
+        source = source.replace("isNull _kitContainer", '(_kitContainer isEqualTo "")')
+        source = source.replace("isNull _container", '(_container isEqualTo "")')
         definitions.append(f"ACME_fnc_{name} = {{{source}}};")
     code = r'''
         private _ok = true;
         // No removed-carrier fixture in this legacy string-object harness.
         ACME_fnc_carrierInventoryGet = {""};
         ACME_fnc_carrierSupplyTake = {["", "", false, ""]};
+        ACME_fnc_ivStartKitStock = {[[], []]};
+        ACME_fnc_ivStartKitUnpack = {""};
         private _actorVariables = createHashMap;
         private _actorGetVariable = {
             params ["_actor", "_field"];

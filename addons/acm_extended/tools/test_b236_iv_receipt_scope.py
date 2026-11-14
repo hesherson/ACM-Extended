@@ -125,7 +125,7 @@ call _begin;_serverTime=108;call _finish;call _finish;
 ''')
 
 def test_expired_unknown_supply_cannot_be_rebound_with_new_deadline():
-    run(PREP+r'''
+    run(PREP+'ACME_fnc_treatmentSupplyRefund={'+source('treatmentSupplyRefund')+'};'+r'''
 [call _bind,"bind"] call _check;_serverTime=200;
 [!([_medic,_patient,"ivhub:7:1","flush","new",7,230,_receipt] call ACME_fnc_ivSupplyBind),"expired reservation revived"] call _check;
 [!("stock1" in (missionNamespace getVariable "ACME_supplyReceipts")),"expired unknown result must not recreate stock"] call _check;

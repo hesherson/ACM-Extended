@@ -208,6 +208,20 @@ switch (_held) do {
         if (!_onBody) exitWith {};
         private _snap = uiNamespace getVariable ["ACME_IV_SnapActive", []];
         if (_snap isEqualTo []) exitWith {};
+        private _medic = uiNamespace getVariable ["ACME_IV_Medic", objNull];
+        private _patient = uiNamespace getVariable ["ACME_IV_Patient", objNull];
+        if (isNull _patient || {_patient getVariable ["ACME_persistenceFrozen", false]}) exitWith {};
+        private _band = "ACME_NARBOA";
+        private _available = ([_medic, _patient, _band, false] call ACME_fnc_treatmentSupplyCount) > 0;
+        if (!_available) then {
+            {
+                if (!isNull ([_x, _band, false] call ACME_fnc_ivStartKitUnpack)) exitWith {_available = true;};
+            } forEach ([_medic, _patient] call ACME_fnc_treatmentSupplyOrder);
+        };
+        if (!_available) exitWith {
+            ["No NAR BOA constricting band available.", 2, _medic] call ace_common_fnc_displayTextStructured;
+            [] call ACME_fnc_ivMinigameRefreshBandSlot;
+        };
         _snap params ["_sName", "_sbU", "_sbV", "_svU", "_svV", "_slbl", "_sBandTex"];
         uiNamespace setVariable ["ACME_IV_Site", _sName];
         uiNamespace setVariable ["ACME_IV_BandUV", [_sbU, _sbV]];

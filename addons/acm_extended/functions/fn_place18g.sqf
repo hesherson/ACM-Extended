@@ -11,17 +11,15 @@ params ["_medic", "_patient", "_bodyPart", "_args"];
 _args params [["_accessSite", 2]];  // 0 upper, 1 middle, 2 lower.
 if (isNull _patient) exitWith {};
 
-if (([_medic, "ACM_IV_18g"] call ACME_fnc_itemCount) < 1) exitWith {
-    ["No 18G catheter in inventory.", 2, _medic] call ace_common_fnc_displayTextStructured;
-};
-
 // 5 is the ACME 18g gauge type. the args are [medic, patient, part, type, state, isiv, accesssite].
 // setiv runs ACM's own vein-finding success chance and shows "Failed to locate vein" on a miss, so we only announce
 // success, and only consume the catheter as a confirmed stick, when an 18g actually landed at the site. a failed
 // stick lets the message of setiv stand and wastes the catheter, like ACM.
 if (!isNil "ACM_circulation_fnc_setIV") then {
+    if !([_medic, "ACM_IV_18g"] call ACME_fnc_itemTake) exitWith {
+        ["No 18G catheter in inventory.", 2, _medic] call ace_common_fnc_displayTextStructured;
+    };
     [_medic, _patient, _bodyPart, 5, true, true, _accessSite] call ACM_circulation_fnc_setIV;
-    [_medic, "ACM_IV_18g"] call ACME_fnc_itemTake;
     if ([_patient, _bodyPart, 5, _accessSite] call ACM_circulation_fnc_hasIV) then {
         private _siteName = ["upper", "middle", "lower"] select _accessSite;
         [format ["18G IV: %1 %2.", _siteName, ([_bodyPart, "display"] call ACME_fnc_bodyPartName)], 2, _medic] call ace_common_fnc_displayTextStructured;
