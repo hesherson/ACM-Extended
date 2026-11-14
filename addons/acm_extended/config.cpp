@@ -1594,14 +1594,24 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         scopeArsenal = 2;
         author = "mavis";
         displayName = "IV Start Kit (14G)";
-        descriptionShort = "Catheter, BOA IV band, transparent dressing, saline lock, extension, administration tubing and a 10 mL saline flush.";
+        descriptionShort = "Automatically supplies a catheter, BOA IV band, transparent dressing, saline lock, extension, administration tubing and a 10 mL saline flush.";
         picture = "\acm_extended\ui\items\iv_start_kit_ca.paa";
         ACE_isMedicalItem = 1;
+        ACME_ivKitCatheter = "ACM_IV_14g";
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
     };
-    class ACME_IVStartKit_16g: ACME_IVStartKit_14g { displayName = "IV Start Kit (16G)"; };
-    class ACME_IVStartKit_18g: ACME_IVStartKit_14g { displayName = "IV Start Kit (18G)"; };
-    class ACME_IVStartKit_20g: ACME_IVStartKit_14g { displayName = "IV Start Kit (20G)"; };
+    class ACME_IVStartKit_16g: ACME_IVStartKit_14g {
+        displayName = "IV Start Kit (16G)";
+        ACME_ivKitCatheter = "ACM_IV_16g";
+    };
+    class ACME_IVStartKit_18g: ACME_IVStartKit_14g {
+        displayName = "IV Start Kit (18G)";
+        ACME_ivKitCatheter = "ACM_IV_18g";
+    };
+    class ACME_IVStartKit_20g: ACME_IVStartKit_14g {
+        displayName = "IV Start Kit (20G)";
+        ACME_ivKitCatheter = "ACM_IV_20g";
+    };
 
     // The administration line can be installed on a completed IV and receive bags.
     class ACME_IVLine: ACE_ItemCore {
@@ -2288,7 +2298,8 @@ class CfgFunctions {
             class clinicalTimingSync {};
             class clinicalClock {};
             class clinicalClockTick {};
-            class ivStartKitOpen {};
+            class ivStartKitUnpack {};
+            class registerIVStartKitRuntime {};
             class yAutoWarmer {};
             class medicationToxicityTick {};
             class medicationCBRNTick {};
@@ -7806,32 +7817,6 @@ class CfgVehicles {
                 statement = "[_player, true] call ACM_core_fnc_getUp";
             };
             class ACM_Equipment {
-                class ACME_OpenIVStartKit {
-                    displayName = "Open IV Start Kit";
-                    icon = "\acm_extended\ui\items\iv_start_kit_ca.paa";
-                    condition = "(items _player findIf {_x in ['ACME_IVStartKit_14g','ACME_IVStartKit_16g','ACME_IVStartKit_18g','ACME_IVStartKit_20g']}) >= 0";
-                    statement = "";
-                    class ACME_OpenIVStartKit14 {
-                        displayName = "14G IV Start Kit";
-                        condition = "'ACME_IVStartKit_14g' in items _player";
-                        statement = "[_player,'ACME_IVStartKit_14g'] call ACME_fnc_ivStartKitOpen";
-                    };
-                    class ACME_OpenIVStartKit16 {
-                        displayName = "16G IV Start Kit";
-                        condition = "'ACME_IVStartKit_16g' in items _player";
-                        statement = "[_player,'ACME_IVStartKit_16g'] call ACME_fnc_ivStartKitOpen";
-                    };
-                    class ACME_OpenIVStartKit18 {
-                        displayName = "18G IV Start Kit";
-                        condition = "'ACME_IVStartKit_18g' in items _player";
-                        statement = "[_player,'ACME_IVStartKit_18g'] call ACME_fnc_ivStartKitOpen";
-                    };
-                    class ACME_OpenIVStartKit20 {
-                        displayName = "20G IV Start Kit";
-                        condition = "'ACME_IVStartKit_20g' in items _player";
-                        statement = "[_player,'ACME_IVStartKit_20g'] call ACME_fnc_ivStartKitOpen";
-                    };
-                };
                                 // custom syringe kit. it is always accessible. it draws any medication through ACM's own syringe-draw dialog,
                 // with the same drug list as "Use Syringe", plus a one-tap push-dose epi at 10 mcg/ml. the self side draws
                 // into your own syringe with no patient inject.

@@ -1,4 +1,6 @@
 """Exercise the server clock, shared blood Y warmer and physical IV kit."""
+import pytest
+
 from test_menu_death_lifecycle import adapt, execute, read
 
 
@@ -45,14 +47,42 @@ def test_automatic_y_warmer_requires_blood_and_stays_for_the_saline_flush():
     ''')
 
 
-def test_opening_a_kit_debits_one_and_gives_matching_catheter_and_flush():
-    kit = adapt(read("ivStartKitOpen")).replace("local _unit","true").replace("alive _unit","true")
-    execute("private _open={" + kit + "};" + '''
-        private _stock=1;private _supplies=[];private _commits=0;
-        ACME_fnc_treatmentSupplyTake={if (_stock==0) exitWith {[]};_stock=0;[_patient,"ACME_IVStartKit_18g",objNull,"kit"]};
+@pytest.mark.parametrize("gauge", [14, 16, 18, 20])
+def test_picked_up_kit_auto_unpacks_once_and_gives_matching_catheter_and_flush(gauge):
+    kit = adapt(read("ivStartKitUnpack")).replace("local _unit","true").replace("alive _unit","true")
+    kit = kit.replace("is3DEN", "false").replace("items _unit", "+_stock")
+    kit = kit.replace('getText (configFile >> "CfgWeapons" >> _kit >> "ACME_ivKitCatheter")',
+                      'format ["ACM_IV_%1g",_kit select [16,2]]')
+    runtime = adapt(read("registerIVStartKitRuntime"))
+    runtime = runtime.replace("local _unit", "true").replace("is3DEN", "false").replace("ACE_player", "_patient")
+    execute(f'''
+        private _stock=[];private _supplies=[];private _commits=0;
+        private _selected="ACME_IVStartKit_{gauge}g";
+    ''' + "ACME_fnc_ivStartKitUnpack={" + kit + "};" + '''
+        private _take={};private _queued=[];
+        CBA_fnc_addClassEventHandler={if ((_this select 1)=="Take") then {_take=_this select 2;};};
+        CBA_fnc_addEventHandler={};
+        CBA_fnc_addPlayerEventHandler={};
+        BIS_fnc_addScriptedEventHandler={};
+        CBA_fnc_execNextFrame={_queued pushBack _this;};
+        ACME_fnc_treatmentSupplyTake={
+            private _class=(_this select 2) select 0;
+            private _i = _stock find _class;
+            if (_i < 0) exitWith {[]};
+            _stock deleteAt _i;
+            [_patient,_class,objNull,"kit"]
+        };
         ACME_fnc_treatmentSupplyRefund={if (_this select 1) exitWith {false};_commits=_commits+1;true};
         ace_common_fnc_addToInventory={_supplies pushBack (_this select 1);};
-        [[_patient,"ACME_IVStartKit_18g"] call _open,"kit was not opened"] call _check;
-        [!([_patient,"ACME_IVStartKit_18g"] call _open) && {_commits==1},"kit supplied duplicates"] call _check;
-        [_supplies isEqualTo ["ACM_IV_18g","ACME_NARBOA","ACME_Tegaderm","ACME_SalineLock","ACME_IVExtension","ACME_IVLine","ACM_SalineFlush_10"],"kit contents are incomplete"] call _check;
+    ''' + "call {" + runtime + "};" + '''
+        [_patient,objNull,"ACME_Tegaderm"] call _take;
+        [count _queued==0,"unrelated inventory item queued an unpack"] call _check;
+        _stock pushBack _selected;
+        [_patient,objNull,_selected] call _take;
+        [_patient,objNull,_selected] call _take;
+        [count _queued==2 && {_stock isEqualTo [_selected]},"pickup did not defer until inventory settled"] call _check;
+        {(_x select 1) call (_x select 0);} forEach _queued;
+        [_stock isEqualTo [] && {_commits==1},"kit debit was missed or replay duplicated supplies"] call _check;
+    ''' + f'''
+        [_supplies isEqualTo ["ACM_IV_{gauge}g","ACME_NARBOA","ACME_Tegaderm","ACME_SalineLock","ACME_IVExtension","ACME_IVLine","ACM_SalineFlush_10"],"kit contents are incomplete"] call _check;
     ''')
