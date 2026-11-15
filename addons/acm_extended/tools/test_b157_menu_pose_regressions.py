@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from test_b156_menu_pose import setup
+from test_b156_menu_pose import menu_code, setup
 from test_menu_death_lifecycle import adapt, core, execute
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -130,6 +130,74 @@ def ace_dispatch_fixture():
         };
         ACME_fnc_doAnim=ace_common_fnc_doAnimation;
     '''
+
+
+def continuous_pose_recovery_fixture():
+    return setup() + ace_dispatch_fixture() + (
+        'private _recover = {' + menu_code('reconcileProviderContinuousPose') + '};'
+    )
+
+
+def test_generic_idle_recovers_after_a_reserved_menu_handoff_falls_through():
+    execute(continuous_pose_recovery_fixture() + '''
+        [_medic,_patient,_display] call ACME_fnc_menuPoseStart;
+        0 call _runWait; 1 call _runWait;
+        _menuAnimation="ACM_GenericContinuous";
+        _medic setVariable ["ACME_nativeTreatmentRate",[1,_patient,"head","x",0]];
+        [_medic,false,_medic getVariable "ACME_menuPoseEpoch"] call ACME_fnc_menuPoseStop;
+        private _h=_handlers select 0;
+        [_h select 1,0] call (_h select 0);
+        [!((_handlers select 0) select 2),"fixture did not reach the abandoned menu handoff"] call _check;
+        [!([_medic] call _recover) && {count _moves==1},"recovery interrupted the live reservation"] call _check;
+        _medic setVariable ["ACME_nativeTreatmentRate",[]];
+        _medic setVariable ["ace_medical_treatment_endInAnim","AmovPknlMstpSnonWnonDnon"];
+        [!([_medic] call _recover) && {!_stanceFreed},"recovery skipped the handoff grace period"] call _check;
+        _nowTime=_nowTime+1;
+        [[_medic] call _recover,"orphaned generic crouch survived owner reconciliation"] call _check;
+        [_stanceFreed && {_testAnimationSpeed==1} && {_moves select 1 == "AmovPknlMstpSnonWnonDnon"}
+            && {_priorities select 1 == 1},"recovery did not restore normal stance, speed and crouched movement"] call _check;
+        _menuAnimation="amovpknlmstpsnonwnondnon";
+        _nowTime=_nowTime+1;
+        [!([_medic] call _recover) && {count _moves==2},"recovery replayed after the engine exited the pose"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('owner', [
+    '_medic setVariable ["ACME_menuPose",[2,_display,_patient]];',
+    '_medic setVariable ["ACME_assessmentReturn",[1,_patient,0,0]];',
+    '_medic setVariable ["ACME_hang_Raising",true];',
+    'uiNamespace setVariable ["ace_common_dlgProgress",_display];',
+    'ACM_core_ContinuousAction_Active=true; _medic setVariable ["ACM_core_ContinuousAction_Session",[_patient,1]];'
+    ' _medic setVariable ["ACM_core_ContinuousAction_LastSeen",CBA_missionTime];',
+    '_medic setVariable ["ACE_isUnconscious",true];',
+    'ACME_fnc_animBlocked={true};',
+])
+def test_continuous_pose_recovery_yields_to_current_owners_and_unsafe_actors(owner):
+    execute(continuous_pose_recovery_fixture() + '''
+        _menuAnimation="ACM_GenericContinuous";
+        [_medic] call _recover;
+        _nowTime=_nowTime+1;
+    ''' + owner + '''
+        [!([_medic] call _recover) && {!_stanceFreed} && {count _moves==0},"recovery replaced a newly acquired pose"] call _check;
+    ''')
+
+
+def test_orphaned_prone_loop_recovers_with_choreography_off_and_retries_only_once():
+    execute(continuous_pose_recovery_fixture() + '''
+        _menuAnimation="ACM_ProneContinuous";
+        missionNamespace setVariable ["ACME_interventionAnimations",false];
+        [_medic] call _recover;
+        _nowTime=_nowTime+1;
+        _medic setVariable ["ACME_providerLocalityEpoch",1];
+        [!([_medic] call _recover),"recovery crossed an ownership generation"] call _check;
+        _nowTime=_nowTime+1;
+        [[_medic] call _recover,"disabling choreography stranded the prone loop"] call _check;
+        _nowTime=_nowTime+1;
+        [[_medic] call _recover,"persistent loop did not receive a final recovery attempt"] call _check;
+        _nowTime=_nowTime+1;
+        [!([_medic] call _recover) && {_priorities isEqualTo [1,2]}
+            && {_moves isEqualTo ["AmovPpneMstpSnonWnonDnon","AmovPpneMstpSnonWnonDnon"]},"prone recovery repeated or forced a different stance"] call _check;
+    ''')
 
 
 def test_generic_entry_dispatch_never_requests_switchmove_on_delayed_owner_event():

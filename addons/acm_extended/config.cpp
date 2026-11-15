@@ -2453,6 +2453,7 @@ class CfgFunctions {
             class aiProtectionInit {};
             class transientStateReconcile {};
             class providerStateReconcile {};
+            class reconcileProviderContinuousPose {};
             class nrbStateLocal {};
             class nrbStateCommit {};
             class nrbSoundServer {};

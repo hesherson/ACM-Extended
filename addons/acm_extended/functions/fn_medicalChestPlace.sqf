@@ -1,5 +1,6 @@
 /* Place the native model and return the matching frame for the fitted finish. */
 params ["_object", "_base", "_heading", "_part", ["_normal", [0, 0, 1]], ["_closed", objNull]];
+if (_part == "cabinet") then {_heading = (_heading + 180) % 360;};
 (0 boundingBoxReal _object) params ["_min", "_max"];
 private _extent = _max vectorDiff _min;
 private _forward = [sin _heading, cos _heading, 0];

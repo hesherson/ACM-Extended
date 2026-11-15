@@ -1,4 +1,4 @@
-/* Recover the machine's actual continuous controller, then reconcile local-player preflight/claims. */
+/* Recover the machine's continuous controller and reconcile local provider state. */
 private _repairs = 0;
 private _active = missionNamespace getVariable ["ACM_core_ContinuousAction_Active", false];
 private _controller = missionNamespace getVariable ["ACM_core_ContinuousAction_Controller", []];
@@ -156,5 +156,7 @@ if !(_medic getVariable ["ACME_DP_Active", false]) then {
         _repairs = _repairs + 1;
     };
 };
+
+if ([_medic] call ACME_fnc_reconcileProviderContinuousPose) then {_repairs = _repairs + 1;};
 
 _repairs

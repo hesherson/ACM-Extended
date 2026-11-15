@@ -166,7 +166,7 @@ def placement_fixture():
 
 @pytest.mark.parametrize("heading", [0, 90, 228])
 @pytest.mark.parametrize("face_y", [True, False])
-def test_cabinet_drawers_stack_vertically_with_the_same_front_as_closed(heading, face_y):
+def test_cabinet_drawers_stack_vertically_and_face_opposite_the_closed_front(heading, face_y):
     closed = "[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y else "[[-.423,-.266,-.170],[.421,.266,.163]]"
     cabinet = "[[-.266,-.170,-.421],[.266,.09,.423]]" if face_y else "[[-.266,-.423,-.170],[.266,.421,.09]]"
     execute(placement_fixture() + f'''
@@ -181,11 +181,13 @@ def test_cabinet_drawers_stack_vertically_with_the_same_front_as_closed(heading,
         _bounds = {cabinet};
         private _paint = [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
         _orient params ["_modelY", "_modelZ"];
-        [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,-1]" if face_y else "[0,0,1]"} && {{(_orient select {0 if face_y else 1}) isEqualTo {"_closedY" if face_y else "_closedZ"}}}, "drawer bank did not put drawer 1 at the top facing the closed case heading"] call _check;
-        [abs ((_worldPosition select 2) - 1.431) < 0.0001 && {{(_paint select 2) isEqualTo _closedZ}}, "cabinet lost ground contact or rotated its fitted shell"] call _check;
+        private _oldFront = {"_closedY" if face_y else "_closedZ"};
+        [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,-1]" if face_y else "[0,0,1]"} && {{((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999}}, "cabinet did not keep its vertical drawer stack and turn 180 degrees"] call _check;
+        [abs ((_worldPosition select 2) - 1.431) < 0.0001 && {{((_paint select 1) vectorDotProduct _closedY) < -.999}} && {{((_paint select 2) vectorDotProduct _closedZ) < -.999}}, "cabinet lost ground contact or its finish failed to follow the turn"] call _check;
+        [(_medic getVariable "ACME_medicalChestHeading") == ((_heading + 180) % 360), "cabinet markings kept the original heading"] call _check;
         _bounds = _closedBounds;
         [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
-        [(_orient select {0 if face_y else 1}) isEqualTo {"_closedY" if face_y else "_closedZ"}, "long-X cabinet did not inherit the closed case front"] call _check;
+        [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999, "long-X cabinet failed to turn 180 degrees"] call _check;
     ''')
 
 
