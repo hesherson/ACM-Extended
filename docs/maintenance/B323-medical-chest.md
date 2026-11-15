@@ -2,7 +2,7 @@
 
 In Eden or Zeus, place **Medical Chest (Full Stock)** from **Supplies → ACM**. Its mission classname is `ACME_MedicalChest`. Leave Eden's Simple Object attribute off so it can run its initialization and interactions.
 
-In ACE Interact, **Open Medical Chest** removes the lid, sets it beside the upright drawers with its painted face down against the ground, and opens Gear for the player who opened it. The drawers stack vertically and face the same direction as the closed chest. The server chooses the four- or seven-drawer cabinet and each drawer's extension. With the chest open, **Close Medical Chest** is the chest's ACE action. Items taken or deposited stay with the same inventory between openings.
+In ACE Interact, **Open Medical Chest** removes the lid, lays it beside the upright drawers with its painted face up, and opens Gear for the player who opened it. Drawer 1 sits at the top, and the open cabinet faces 180° from the closed chest's heading. The server chooses the four- or seven-drawer cabinet and each drawer's extension. With the chest open, **Close Medical Chest** is the chest's ACE action. Items taken or deposited stay with the same inventory between openings.
 
 The stock is one of each public ACE medical inventory class in the loaded configuration, including ACM and ACME. It includes medical items, charge-bearing medical magazines, and medical backpacks when tagged by a loaded addon. Hidden compatibility classes and runtime-only items that require a prepared-item identity are excluded. Native blood items in this chest follow normal loose-blood rules. Existing ACM Basic and Advanced supply crates remain available.
 
@@ -14,7 +14,7 @@ Eden shows the upright case and its actual finish while you place and move it. I
 
 ## Cabinet assets and stencil positioning
 
-The closed stock class is `Land_PortableCabinet_01_closed_olive_F`. The PBO references Bohemia's installed cabinet meshes for the closed case, loose lid and both open variants. The original full-stock chest uses the supplied military stencil lettering for the chipped yellow MEDICAL CHEST and smaller MED-01 markings. Worn black crosses sit between the handles on both sides and in the clear area beside the top handle. The lid and rear panel show old adhesive outlines, with a smaller tape remnant on one carry side. The original transparent decal geometry keeps the lettering readable across shared and mirrored stock UVs. The detached lid retains the front markings and rests painted side down. The open cabinet applies case markings where its model exposes a continuous panel.
+The closed stock class is `Land_PortableCabinet_01_closed_olive_F`. The PBO references Bohemia's installed cabinet meshes for the closed case, loose lid and both open variants. The original full-stock chest uses the supplied military stencil lettering for the chipped yellow MEDICAL CHEST and smaller MED-01 markings. Worn black crosses sit between the handles on both sides and in the clear area beside the top handle. The lid and rear panel show old adhesive outlines, with a smaller tape remnant on one carry side. The original transparent decal geometry keeps the lettering readable across shared and mirrored stock UVs. The detached lid shows the front markings on its upward-facing surface. The open cabinet applies case markings where its model exposes a continuous panel.
 
 To see the exact model and texture paths on your install, preview a mission in Eden on VR and execute this in the **local** Debug Console. It prints the model path, camo slots, texture paths, model bounds and drawer animation names to the clipboard.
 
@@ -52,6 +52,6 @@ For placement, provide the clipboard output and straight-on screenshots of the u
 ## In-game checks
 
 - Place a chest on ground and one on a raised floor. Check upright orientation and that the lid falls beside the correct face.
-- Open and close several times. Check both drawer layouts, the face-down lid, and that the initiating player enters Gear directly.
+- Open and close several times. Check that drawer 1 sits at the top in both layouts, the lid markings face up, and the initiating player enters Gear directly.
 - Use two players to open the same chest, take and deposit supplies, and close it with an inventory window open. Verify neither duplicates supplies and both hear one matching clip.
 - Join after a chest is open and check that the cabinet, lid, drawer positions and cargo match the other players.

@@ -166,7 +166,7 @@ def placement_fixture():
 
 @pytest.mark.parametrize("heading", [0, 90, 228])
 @pytest.mark.parametrize("face_y", [True, False])
-def test_cabinet_drawers_stack_vertically_and_face_opposite_the_closed_front(heading, face_y):
+def test_cabinet_is_right_side_up_with_the_same_bearing_as_the_previous_open_pose(heading, face_y):
     closed = "[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y else "[[-.423,-.266,-.170],[.421,.266,.163]]"
     cabinet = "[[-.266,-.170,-.421],[.266,.09,.423]]" if face_y else "[[-.266,-.423,-.170],[.266,.421,.09]]"
     execute(placement_fixture() + f'''
@@ -182,12 +182,15 @@ def test_cabinet_drawers_stack_vertically_and_face_opposite_the_closed_front(hea
         private _paint = [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
         _orient params ["_modelY", "_modelZ"];
         private _oldFront = {"_closedY" if face_y else "_closedZ"};
-        [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,-1]" if face_y else "[0,0,1]"} && {{((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999}}, "cabinet did not keep its vertical drawer stack and turn 180 degrees"] call _check;
-        [abs ((_worldPosition select 2) - 1.431) < 0.0001 && {{((_paint select 1) vectorDotProduct _closedY) < -.999}} && {{((_paint select 2) vectorDotProduct _closedZ) < -.999}}, "cabinet lost ground contact or its finish failed to follow the turn"] call _check;
+        [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,1]" if face_y else "[0,0,-1]"}, "cabinet still stacks the drawers upside down"] call _check;
+        [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999, "uprighting the drawers changed their bearing"] call _check;
+        [abs ((_worldPosition select 2) - 1.429) < 0.0001 && {{abs ((_paint select 0 select 2) - 1.431) < 0.0001}}, "cabinet or fitted shell used the upside-down support edge"] call _check;
+        [((_paint select 1) vectorDotProduct _closedY) < -.999 && {{(((_paint select 1) vectorCrossProduct (_paint select 2)) select 2) > .999}}, "fitted shell paint no longer faces forward and reads upright"] call _check;
         [(_medic getVariable "ACME_medicalChestHeading") == ((_heading + 180) % 360), "cabinet markings kept the original heading"] call _check;
         _bounds = _closedBounds;
         [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
-        [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999, "long-X cabinet failed to turn 180 degrees"] call _check;
+        [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999 && {{(((_orient select 0) vectorCrossProduct (_orient select 1)) select 2) < -.999}}, "long-X cabinet was not flipped around its drawer face"] call _check;
+        [abs ((_worldPosition select 2) - 1.429) < .0001, "long-X cabinet used the wrong support edge"] call _check;
     ''')
 
 
@@ -196,7 +199,7 @@ def test_cabinet_drawers_stack_vertically_and_face_opposite_the_closed_front(hea
     ("[[-.4145,-.265,-.0408],[.4151,.265,.0413]]", 1),
 ])
 @pytest.mark.parametrize("normal", ["[0,0,1]", "[0.3,0.2,0.9327]"])
-def test_lid_resting_face_follows_the_support_in_both_model_layouts(bounds, face_axis, normal):
+def test_lid_paint_faces_up_and_the_inner_face_follows_the_support(bounds, face_axis, normal):
     execute(placement_fixture() + f'''
         private _closedBounds = [[-.423,-.170,-.266],[.421,.163,.266]];
         private _bounds = {bounds};
@@ -206,8 +209,11 @@ def test_lid_resting_face_follows_the_support_in_both_model_layouts(bounds, face
         private _base = [20,12,1];
         private _paint = [_medic, _base, 73, "lid", _normal, _patient] call _place;
         private _modelNormal = _orient select {face_axis};
-        [(_modelNormal vectorDotProduct _normal) < -.999 && {{((_paint select 1) vectorDotProduct _normal) < -.999}}, "lid or its finish remained on edge"] call _check;
-        [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .0493) < .0001, "lid failed to rest at the height of its painted face"] call _check;
+        [(_modelNormal vectorDotProduct _normal) > .999 && {{((_paint select 1) vectorDotProduct _normal) > .999}}, "lid or its finish failed to show the painted face"] call _check;
+        private _modelLong = (_orient select 0) vectorCrossProduct (_orient select 1);
+        private _paintLong = (_paint select 1) vectorCrossProduct (_paint select 2);
+        [(_modelLong vectorDotProduct _paintLong) > .999, "paint lost alignment with the long edge of the lid"] call _check;
+        [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .0488) < .0001, "lid failed to rest at the height of its inner face"] call _check;
     ''')
 
 

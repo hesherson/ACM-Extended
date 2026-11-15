@@ -22,27 +22,29 @@ if (_part != "closed") then {
     if (_part == "cabinet") then {
         private _faceY = (_extent select 1) < (_extent select 2);
         private _drawerAxis = [1, 2] select _faceY;
+        // Flip end over end around the drawer-face normal to keep its heading.
         if ((_extent select _drawerAxis) > (_extent select 0)) then {
-            // Rolling the sideways drawer bank puts drawer 1 at the top.
-            _dir = [_vertical, _front] select _faceY;
-            _up = [_front, [0, 0, -1]] select _faceY;
-            _bottom = if (_faceY) then {-(_max select 2)} else {_min select 1};
+            _dir = [[0, 0, -1], _front] select _faceY;
+            _up = [_front, _vertical] select _faceY;
+            _bottom = if (_faceY) then {_min select 2} else {-(_max select 1)};
         } else {
-            _dir = [_front vectorCrossProduct _vertical, _front] select _faceY;
-            _up = [_front, _vertical vectorCrossProduct _front] select _faceY;
+            _dir = [_vertical vectorCrossProduct _front, _front] select _faceY;
+            _up = [_front, _front vectorCrossProduct _vertical] select _faceY;
+            _bottom = -(_max select 0);
         };
+        // The fitted shell already uses the closed case's upright model axes.
         _finishOffset = [0, 0, _bottom - (_closedMin select 0)];
     } else {
-        // The broad painted face rests against the floor or local ground slope.
+        // Rest the lid on its inner face so the paint is visible on top.
         if ((_normal select 2) > .7) then {_supportNormal = vectorNormalized _normal;};
-        private _down = _supportNormal vectorMultiply -1;
         private _right = vectorNormalized (_front vectorCrossProduct _supportNormal);
         private _faceY = (_extent select 1) < (_extent select 2);
-        _dir = [_right vectorMultiply -1, _down] select _faceY;
-        _up = [_down, _right] select _faceY;
-        _bottom = -(_max select ([2, 1] select _faceY));
-        _finishDir = [_right vectorMultiply -1, _down] select _closedFaceY;
-        _finishUp = [_down, _right] select _closedFaceY;
+        _dir = [_right, _supportNormal] select _faceY;
+        _up = [_supportNormal, _right vectorMultiply -1] select _faceY;
+        _bottom = _min select ([2, 1] select _faceY);
+        // The paint geometry is authored on +Y in every fitted lid.
+        _finishDir = _supportNormal;
+        _finishUp = _right vectorMultiply -1;
     };
 };
 
