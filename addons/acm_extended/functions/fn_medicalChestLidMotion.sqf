@@ -3,15 +3,42 @@ params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revisio
 
 _seatPose params ["_seated", "_caseDir", "_caseUp"];
 _restPose params ["_restPos", "_restDir", "_restUp"];
-private _released = _seated vectorAdd (_caseDir vectorMultiply 0.051);
 private _side = _caseUp vectorMultiply -1;
-private _clear = _released vectorAdd (_side vectorMultiply ((_restPos vectorDiff _released) vectorDotProduct _side));
+(0 boundingBoxReal _cabinet) params ["_cabinetMin", "_cabinetMax"];
+private _cabinetDir = vectorDir _cabinet;
+private _cabinetUp = vectorUp _cabinet;
+private _cabinetAxes = [_cabinetDir vectorCrossProduct _cabinetUp, _cabinetDir, _cabinetUp];
+private _cabinetCenter = getPosWorld _cabinet vectorDiff _seated;
+private _cabinetEdge = {
+    params ["_direction"];
+    private _edge = _cabinetCenter vectorDotProduct _direction;
+    {
+        private _projection = _x vectorDotProduct _direction;
+        private _bound = [_cabinetMin, _cabinetMax] select (_projection >= 0);
+        _edge = _edge + _projection * (_bound select _forEachIndex);
+    } forEach _cabinetAxes;
+    _edge
+};
 
-// Raise the upright lid over the support along the sideways path, including on steps and slopes.
 (0 boundingBoxReal _lid) params ["_lidMin", "_lidMax"];
-private _carryHeight = _clear select 2;
 private _halfSize = _lidMin apply {abs _x};
 {_halfSize set [_forEachIndex, _x max (_halfSize select _forEachIndex)];} forEach _lidMax;
+private _sweepRadius = vectorMagnitude _halfSize;
+
+// Keep the lid upright until its inside face clears the front of the cabinet.
+private _frontEdge = [_caseDir] call _cabinetEdge;
+private _pullDistance = 0.065 max (_frontEdge - (_lidMin select 1) + 0.075);
+private _released = _seated vectorAdd (_caseDir vectorMultiply _pullDistance);
+
+// Keep the entire rotating lid outboard of the cabinet, including on uneven ground.
+private _restSide = (_restPos vectorDiff _seated) vectorDotProduct _side;
+private _sideEdge = [_side] call _cabinetEdge;
+private _turnSide = _restSide max (_sideEdge + _sweepRadius + 0.04);
+private _clear = _released vectorAdd (_side vectorMultiply _turnSide);
+private _hover = _restPos vectorAdd (_side vectorMultiply (_turnSide - _restSide));
+
+// Raise the upright lid over the support along the sideways path.
+private _carryHeight = (_restPos select 2) + _sweepRadius + 0.025;
 {
     ([_x, [_cabinet, _lid], 0.55, 1.1, false, true] call ACME_fnc_medicalChestGround) params ["_floor", "_normal"];
     private _slopeRise = (
@@ -21,10 +48,13 @@ private _halfSize = _lidMin apply {abs _x};
     private _minZ = (_floor select 2) + (_halfSize select 0) + _slopeRise + 0.025;
     _carryHeight = _carryHeight max _minZ;
 } forEach [_released, _clear];
+_hover set [2, _carryHeight];
+_clear set [2, _carryHeight];
 
-private _hover = +_restPos;
-_hover set [2, _carryHeight max ((_restPos select 2) + vectorMagnitude _halfSize + 0.025)];
-_clear set [2, _hover select 2];
+if (_opening) then {
+    diag_log format ["[ACME] Medical chest lid path: %1 m straight pull, %2 m front clearance",
+        _pullDistance toFixed 3, (_pullDistance + (_lidMin select 1) - _frontEdge) toFixed 3];
+};
 
 private _parts = [_lid] + _lidPaint;
 private _apply = {
@@ -55,24 +85,19 @@ private _apply = {
     };
 
     private _elapsed = CBA_missionTime - _started;
-    private _pullEnd = 0.19;
+    private _pullEnd = 0.23;
     private _slideDuration = 0.46;
-    private _turnDuration = 0.18;
-    private _settleDuration = 0.28;
+    private _turnDuration = 0.24;
+    private _settleDuration = 0.38;
     private _slideEnd = _pullEnd + _slideDuration;
     private _turnEnd = _slideEnd + _turnDuration;
     private _duration = _turnEnd + _settleDuration;
     private _finished = _elapsed >= _duration;
     private _t = if (_opening) then {_elapsed min _duration} else {(_duration - _elapsed) max 0};
     private _ease = {
-        params ["_fraction", ["_sharp", false]];
+        params ["_fraction"];
         _fraction = _fraction max 0 min 1;
-        private _square = _fraction * _fraction;
-        if (_sharp) exitWith {
-            // Quintic smoothstep concentrates the speed through the middle of the motion.
-            _square * _fraction * (10 + _fraction * (6 * _fraction - 15))
-        };
-        _square * (3 - 2 * _fraction)
+        _fraction * _fraction * (3 - 2 * _fraction)
     };
     private _lerp = {
         params ["_from", "_to", "_s"];
@@ -87,12 +112,12 @@ private _apply = {
             private _progress = (_t - _pullEnd) / _slideDuration;
             private _carry = [_released, _clear, [_progress] call _ease] call _lerp;
             // Pick up the lid early in the carry so its lower edge can clear raised ground.
-            private _lift = [_progress / 0.6] call _ease;
+            private _lift = [_progress / 0.8] call _ease;
             _carry set [2, (_released select 2) + ((_clear select 2) - (_released select 2)) * _lift];
             _carry
         } else {
             if (_t < _turnEnd) then {
-                private _s = [(_t - _slideEnd) / _turnDuration, true] call _ease;
+                private _s = [(_t - _slideEnd) / _turnDuration] call _ease;
                 _dir = vectorNormalized ([_caseDir, _restDir, _s] call _lerp);
                 _up = [_caseUp, _restUp, _s] call _lerp;
                 _up = vectorNormalized (_up vectorDiff (_dir vectorMultiply (_up vectorDotProduct _dir)));
