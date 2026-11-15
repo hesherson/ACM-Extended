@@ -470,14 +470,7 @@ def mesh_dump(path):
     return points, np.array(faces)
 
 
-def fitted_faces(path, surface):
-    points, faces = mesh_dump(path)
-    positions = points[faces]
-    edges = positions[:, 1:] - positions[:, :1]
-    normals = np.cross(edges[:, 0], edges[:, 1])
-    lengths = np.linalg.norm(normals, axis=1, keepdims=True)
-    normals /= np.maximum(lengths, 1e-12)
-
+def paint_projections(positions, normals, surface):
     # U and V are projected in model space so the paint reads in the same
     # direction across the molded ribs and the removable cover.
     x, y, z = positions.transpose(2, 0, 1)
@@ -511,7 +504,18 @@ def fitted_faces(path, surface):
             (bottom_faces, "bottom", top_coords, (-1, 0, 0)),
         ])
 
-    for selected, region, (u, v), offset in projections:
+    return projections
+
+
+def fitted_faces(path, surface):
+    points, faces = mesh_dump(path)
+    positions = points[faces]
+    edges = positions[:, 1:] - positions[:, :1]
+    normals = np.cross(edges[:, 0], edges[:, 1])
+    lengths = np.linalg.norm(normals, axis=1, keepdims=True)
+    normals /= np.maximum(lengths, 1e-12)
+
+    for selected, region, (u, v), offset in paint_projections(positions, normals, surface):
         if surface == "cabinet":
             # Paint only exterior triangles behind the front opening. None
             # of the moving drawer geometry belongs in the finish.

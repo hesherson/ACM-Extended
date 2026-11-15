@@ -31,6 +31,9 @@
             }; \
         }
 
+#define ACME_CHEST_TEXTURE_PATH(PATH) #PATH
+#define ACME_CHEST_TEXTURE(NUMBER) ACME_CHEST_TEXTURE_PATH(\acm_extended\data\medical_chest\variants\chest_##NUMBER##_baked_co.paa)
+
     class Land_PortableCabinet_01_closed_olive_F;
     class Land_PortableCabinet_01_4drawers_olive_F;
     class Land_PortableCabinet_01_7drawers_olive_F;
@@ -40,6 +43,7 @@
         scopeCurator = 2;
         author = "mavis";
         displayName = "Medical Chest (Full Stock)";
+        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0)};
         editorCategory = "EdCat_Supplies";
         editorSubcategory = "ACM_core_EditorCategory";
         ace_dragging_canDrag = 0;
@@ -65,6 +69,7 @@
         scopeCurator = 2; \
         displayName = LABEL; \
         acmeChestVariant = NUMBER; \
+        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(NUMBER)}; \
         acmeChestStock = STOCK; \
     }
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_01,1,"Medical Chest 01 (MED CHEST 1)","");
@@ -74,15 +79,12 @@
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_05,5,"Medical Chest 05 (PAD)","dressings");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_06,6,"Medical Chest 06 (IV FLUIDS)","fluids");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_07,7,"Medical Chest 07 (AIRWAY)","airway");
-    class ACME_MedicalChest_08: ACME_MedicalChest {
-        displayName = "Medical Chest 08 (BLOOD)";
-        acmeChestVariant = 8;
-        acmeChestStock = "blood";
-        hiddenSelectionsTextures[] = {"\acm_extended\data\medical_chest\variants\chest_8_shell_co.paa"};
-    };
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_08,8,"Medical Chest 08 (BLOOD)","blood");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_09,9,"Medical Chest 09 (Black Cross)","");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_10,10,"Medical Chest 10 (Red Cross)","");
 #undef ACME_MEDICAL_CHEST_RETEXTURE
+#undef ACME_CHEST_TEXTURE
+#undef ACME_CHEST_TEXTURE_PATH
 
     // An invisible model provides a live native Gear container inside the chest.
     class ACME_MedicalChestCargo: Box_NATO_Ammo_F {

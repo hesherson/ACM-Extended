@@ -13,8 +13,8 @@ def request_fixture():
     motion = adapt(read("medicalChestLidMotion"))
     for engine, stand_in in {
         "isMultiplayer": "false",
-        "_x setVectorDirAndUp [_dir, _up];": "_x setVariable ['fixtureAxes', [_dir, _up]];",
-        "_x setPosWorld _position;": "_x setVariable ['fixturePosition', _position];",
+        "_lid setVectorDirAndUp [_dir, _up];": "_lid setVariable ['fixtureAxes', [_dir, _up]];",
+        "_lid setPosWorld _position;": "_lid setVariable ['fixturePosition', _position];",
         "typeOf _cabinet": "'fixture cabinet'",
     }.items():
         assert engine in motion, engine
@@ -43,13 +43,15 @@ def request_fixture():
         'owner _actor': '_ownerNum',
         '_chest isKindOf "ACME_MedicalChest"': '_chest getVariable ["fixtureChest", false]',
         '_actor distance _target': '_distance',
-        'getNumber (configOf _chest >> "acmeChestVariant")': '_fixtureVariant',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
         'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _seatPose select 0]':
             '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
         '    _cabinet allowDamage false;': '',
-        'getArray (configOf _chest >> "hiddenSelectionsTextures")': '["fixture_body_co.paa"]',
-        '_cabinet setObjectTextureGlobal [0, _bodyTexture];': '_cabinet setVariable ["fixtureBodyTexture", _bodyTexture];',
+        'getObjectTextures _chest': '[_chest getVariable "fixtureTexture"]',
+        'getObjectTextures _cabinet': '[_cabinet getVariable "fixtureTexture"]',
+        'getObjectTextures _lid': '[_lid getVariable "fixtureTexture"]',
+        '_cabinet setObjectTextureGlobal ["camo_1", _texture];': '_cabinet setVariable ["fixtureTexture", _texture];',
+        '_lid setObjectTextureGlobal ["camo_1", _texture];': '_lid setVariable ["fixtureTexture", _texture];',
         '    _cabinet enableSimulationGlobal false;': '    _cabinet setVariable ["fixtureFrozen", true];',
         '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
         '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
@@ -95,7 +97,6 @@ def request_fixture():
         private _motion = [];
         private _drawerMotion = [];
         private _removedMotion = [];
-        private _fixtureLidPaint = currentNamespace;
         private _tickDrawers = {
             CBA_missionTime = CBA_missionTime + _this;
             [_drawerMotion select 2, 31] call (_drawerMotion select 0);
@@ -105,8 +106,6 @@ def request_fixture():
             CBA_missionTime = CBA_missionTime + _this;
             [_motion select 2, 30] call (_motion select 0);
         };
-        private _markings = [];
-        private _fixtureVariant = 10;
         private _hidden = false;
         private _failLid = false;
         private _remote = true;
@@ -121,6 +120,7 @@ def request_fixture():
             uiNamespace
         };
         _chest setVariable ["fixtureChest", true];
+        _chest setVariable ["fixtureTexture", "fixture_body_co.paa"];
         _chest setVariable ["ACME_medicalChestPlacement", [[20, 12, 0], 0]];
         _chest setVariable ["ACME_medicalChestState", [0, false]];
         _chest setVariable ["ACME_medicalChestCargo", _cargo];
@@ -136,15 +136,6 @@ def request_fixture():
         ACME_fnc_medicalChestLidSeat = {[[20, 11.88, 0.43], [0,-1,0], [1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
-        ACME_fnc_medicalChestDecals = {
-            _markings pushBack (_this select [1, 2]);
-            if ((_this select 1) isEqualTo "lid") then {
-                private _part = _this select 0;
-                _fixtureLidPaint setVariable ["fixturePosition", _part getVariable "fixturePosition"];
-                _fixtureLidPaint setVariable ["fixtureAxes", _part getVariable "fixtureAxes"];
-                [_fixtureLidPaint]
-            } else {[]}
-        };
         CBA_fnc_addPerFrameHandler = {
             if (count (_this select 2) == 4) exitWith {_drawerMotion = _this; 31};
             _motion = _this;
@@ -162,14 +153,16 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         private _open = _chest getVariable "ACME_medicalChestCabinet";
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [0,false] && {_hidden}, "inventory became available during the visual swap"] call _check;
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
-        [(_open getVariable "fixtureBodyTexture") isEqualTo "fixture_body_co.paa", "open cabinet lost the closed chest's native color"] call _check;
-        [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
+        private _lid = _chest getVariable "ACME_medicalChestLid";
+        [(_open getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture")
+            && {(_lid getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture")},
+            "cabinet or lid lost the closed chest's native albedo"] call _check;
         [((_placed select 1 select 1) vectorDistance [20.82, 12, 0]) < .001 && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         [(_open getVariable ["fixtureFrozen", false]) && {(_drawers select 0 select 2) == 0}, "cabinet was free to tip or drawers began open"] call _check;
         [_open, _medic, false, 1] call _request;
-        [count _markings == 2 && {_gearRequests isEqualTo []}, "early close or Gear interrupted the animation"] call _check;
+        [_gearRequests isEqualTo [], "early close or Gear interrupted the animation"] call _check;
         1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "opening did not publish the finished cabinet"] call _check;
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1], _medic]], "open did not send exactly one Gear request to the initiating player"] call _check;
@@ -179,7 +172,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [(_chest getVariable "ACME_medicalChestTransition") && {_hidden}
             && {_events isEqualTo [["ACME_medicalChestClosing", [_cargo, 1]]]}, "closing swapped models or missed the Gear close signal"] call _check;
         1.00 call _tickLid;
-        [_markings isEqualTo [["cabinet",10], ["lid",10], ["closed",10]], "closing did not restore the selected finish"] call _check;
+        [(_chest getVariable "fixtureTexture") isEqualTo "fixture_body_co.paa", "closing changed the original finish"] call _check;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "old open replayed after the chest closed"] call _check;
@@ -237,8 +230,8 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(fa
             _this call _tickLid;
             private _pos = _lid getVariable "fixturePosition";
             private _axes = _lid getVariable "fixtureAxes";
-            [_pos isEqualTo (_fixtureLidPaint getVariable "fixturePosition") && {_axes isEqualTo (_fixtureLidPaint getVariable "fixtureAxes")},
-                "paint drifted away from the lid"] call _check;
+            [(_lid getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture"),
+                "the lid lost its native paint during motion"] call _check;
             [_pos, _axes]
         };
         (0.10 call _sample) params ["_earlyPull", "_earlyAxes"];
@@ -530,7 +523,7 @@ def test_eden_preview_is_local_and_uses_the_saved_state_and_live_assets():
     assert 'property = "ACME_medicalChestStartOpen"' in chest
     assert 'getVariable ["ACME_medicalChestStartOpen", false]' in init
     assert 'createSimpleObject [_class, _base, true]' in eden
-    assert 'call ACME_fnc_medicalChestDecals' in eden
+    assert '_x setObjectTexture ["camo_1", _texture]' in eden
     assert 'set3DENAttribute' not in eden and 'create3DENEntity' not in eden
     assert 'ACME_fnc_medicalChestStock' not in eden
 
@@ -737,74 +730,17 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
     assert 'class ACME_MedicalChest: Land_PortableCabinet_01_closed_olive_F' in vehicles
     assert 'ACME_MedicalChest4Drawers,Land_PortableCabinet_01_4drawers_olive_F' in vehicles
     assert 'ACME_MedicalChest7Drawers,Land_PortableCabinet_01_7drawers_olive_F' in vehicles
-    for asset in ("chest_title", "chest_serial", "chest_cross", "chest_tape_lid", "chest_tape_side", "chest_tape_back"):
-        assert (addon / "data/medical_chest" / f"{asset}.p3d").read_bytes().startswith(b"MLOD")
-        assert (addon / "data/medical_chest" / f"{asset}_ca.paa").is_file()
-    for number in range(1, 11):
-        name = f"ACME_MedicalChest_{number:02d}"
-        assert f'"{name}"' in config
-        folder = addon / "data/medical_chest/variants"
-        if number == 8:
-            assert f"class {name}: ACME_MedicalChest" in vehicles
-            assert r"\acm_extended\data\medical_chest\variants\chest_8_shell_co.paa" in vehicles
-            assert (folder / "chest_8_shell_co.paa").is_file()
-        else:
+    assert "hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0)}" in vehicles
+    assert "hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(NUMBER)}" in vehicles
+    folder = addon / "data/medical_chest/variants"
+    for number in range(11):
+        if number:
+            name = f"ACME_MedicalChest_{number:02d}"
+            assert f'"{name}"' in config
             assert f"ACME_MEDICAL_CHEST_RETEXTURE({name},{number}," in vehicles
-        texture = f"acm_extended\\data\\medical_chest\\variants\\chest_{number}_ca.paa"
-        assert (folder / f"chest_{number}_ca.paa").is_file()
-        for surface in ("closed", "cabinet4", "cabinet7", "lid"):
-            model = (folder / f"chest_{number}_{surface}.p3d").read_bytes()
-            assert model.startswith(b"MLOD") and texture.encode() + b"\0" in model
+        assert (folder / f"chest_{number}_baked_co.paa").read_bytes().startswith(b"\x01\xff")
     for name in ("open", "close"):
         assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")
-
-
-def test_open_finishes_use_the_native_part_transform():
-    source = read("medicalChestDecals")
-    for engine, fixture in (
-        ('typeOf _object', '_partClass'),
-        ('_object modelToWorldWorld _modelPos', '([_modelPos] call _partPoint)'),
-        ('_object vectorModelToWorld _modelDir', '([_modelDir] call _partVector)'),
-        ('_object vectorModelToWorld _modelUp', '([_modelUp] call _partVector)'),
-        ('createSimpleObject [format ["\\acm_extended\\data\\medical_chest\\%1.p3d", _asset], _position, _localOnly]',
-         '([_asset, _position, _localOnly] call _spawn)'),
-        ('_decal setVectorDirAndUp', '_axis ='), ('_decal setPosWorld', '_at ='),
-    ):
-        assert engine in source
-        source = source.replace(engine, fixture)
-    execute('private _finish={' + adapt(source) + '};' + r'''
-        private _partClass="ACME_MedicalChest7Drawers";
-        private _parts=[]; private _axis=[]; private _at=[];
-        private _partPoint={params ["_p"]; [11,12,13] vectorAdd _p};
-        private _partVector={params ["_v"]; [_v select 0,-(_v select 2),_v select 1]};
-        private _spawn={_parts pushBack _this; _patient};
-        [_medic,"cabinet",8] call _finish;
-        [_parts isEqualTo [["variants\chest_8_cabinet7",[11,12,13],false]], "seven drawers borrowed another shell's finish"] call _check;
-        [_axis isEqualTo [[0,0,1],[0,-1,0]] && {_at isEqualTo [11,12,13]}, "paint did not inherit the exact model frame"] call _check;
-        _parts=[];
-        [_medic,"lid",0,true] call _finish;
-        [_parts isEqualTo [["variants\chest_0_lid",[11,12,13],true]], "generic lid still has separate floating paint objects"] call _check;
-    ''')
-
-
-def test_cabinet_paint_meshes_stay_behind_the_drawer_openings():
-    folder = ROOT / "addons/acm_extended/data/medical_chest/variants"
-    for number in range(11):
-        models = []
-        for layout in (4, 7):
-            model = (folder / f"chest_{number}_cabinet{layout}.p3d").read_bytes()
-            points = struct.unpack_from("<I", model, 24)[0]
-            positions = [struct.unpack_from("<3f", model, 40 + 16 * i) for i in range(points)]
-            assert min(z for _, _, z in positions) > -.005
-            assert max(z for _, _, z in positions) > .20
-            assert min(y for _, y, _ in positions) < -.40
-            assert max(y for _, y, _ in positions) > .40
-            models.append(positions)
-        assert models[0] != models[1]
-    generic_lid = (folder / "chest_0_lid.p3d").read_bytes()
-    assert b"chest_0_open_ca.paa\0" in generic_lid
-    assert b"chest_0_ca.paa\0" in (folder / "chest_0_closed.p3d").read_bytes()
-
 
 
 def test_fitted_lid_uvs_increase_toward_the_viewers_right_in_arma():

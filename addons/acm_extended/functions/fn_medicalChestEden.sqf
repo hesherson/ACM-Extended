@@ -6,9 +6,8 @@ uiNamespace setVariable ["ACME_medicalChestEdenPreviews", _previews];
 private _remove = {
     params ["_id"];
     (_previews getOrDefault [_id, []]) params [
-        ["_chest", objNull], ["_look", []], ["_parts", []], ["_decals", []]
+        ["_chest", objNull], ["_look", []], ["_parts", []]
     ];
-    {deleteVehicle (_x select 1);} forEach _decals;
     {deleteVehicle _x;} forEach _parts;
     if (!isNull _chest) then {_chest hideObject false;};
     _previews deleteAt _id;
@@ -38,9 +37,10 @@ if (_action == "remove" || {!(_entity isKindOf "ACME_MedicalChest")}) exitWith {
 };
 
 private _open = (_entity get3DENAttribute "ACME_medicalChestStartOpen") param [0, false];
-private _look = [typeOf _entity, _open];
+private _texture = (getObjectTextures _entity) param [0, ""];
+private _look = [typeOf _entity, _open, _texture];
 (_previews getOrDefault [_id, []]) params [
-    ["_owner", objNull], ["_oldLook", []], ["_parts", []], ["_decals", []], ["_transform", []]
+    ["_owner", objNull], ["_oldLook", []], ["_parts", []], ["_transform", []]
 ];
 private _heading = getDir _entity;
 private _base = [getPosWorld _entity, [_entity], 0.3, 2, true] call ACME_fnc_medicalChestGround;
@@ -49,7 +49,7 @@ private _lidSupport = if (_open) then {
 } else {[]};
 private _next = [_base, _heading, _lidSupport];
 private _replace = _entity isNotEqualTo _owner || {_look isNotEqualTo _oldLook}
-    || {(_parts findIf {isNull _x}) >= 0} || {(_decals findIf {isNull (_x select 1)}) >= 0};
+    || {(_parts findIf {isNull _x}) >= 0};
 if (_replace) then {
     [_id] call _remove;
     private _class = if (_open) then {"ACME_MedicalChest4Drawers"} else {typeOf _entity};
@@ -64,8 +64,8 @@ if (_replace) then {
     {
         _x setPhysicsCollisionFlag false;
         _x setVariable ["ACME_medicalChestEdenVisual", true];
+        if (_texture != "") then {_x setObjectTexture ["camo_1", _texture];};
     } forEach _parts;
-    _decals = [];
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {
@@ -80,30 +80,6 @@ if (_replace || {_next isNotEqualTo _transform}) then {
         private _cabinet = _parts select 0;
         [_cabinet, [_cabinet] call ACME_fnc_medicalChestDrawerPlan, 0] call ACME_fnc_medicalChestDrawers;
     };
-    if (_replace) then {
-        private _bodyTexture = getArray (configOf _entity >> "hiddenSelectionsTextures") param [0, ""];
-        if (_bodyTexture != "") then {(_parts select 0) setObjectTexture [0, _bodyTexture];};
-        private _variant = getNumber (configOf _entity >> "acmeChestVariant");
-        {
-            private _part = _x;
-            private _surface = ["closed", "cabinet", "lid"] select (_forEachIndex + ([0, 1] select _open));
-            {
-                _x setVariable ["ACME_medicalChestEdenVisual", true];
-                _decals pushBack [
-                    _part, _x,
-                    _part worldToModel (ASLToAGL getPosWorld _x),
-                    _part vectorWorldToModel (vectorDir _x),
-                    _part vectorWorldToModel (vectorUp _x)
-                ];
-            } forEach ([_part, _surface, _variant, true] call ACME_fnc_medicalChestDecals);
-        } forEach _parts;
-    } else {
-        {
-            _x params ["_part", "_decal", "_position", "_forward", "_up"];
-            _decal setVectorDirAndUp [_part vectorModelToWorld _forward, _part vectorModelToWorld _up];
-            _decal setPosWorld (_part modelToWorldWorld _position);
-        } forEach _decals;
-    };
-    _previews set [_id, [_entity, _look, _parts, _decals, _next]];
+    _previews set [_id, [_entity, _look, _parts, _next]];
 };
 if (!isObjectHidden _entity) then {_entity hideObject true;};

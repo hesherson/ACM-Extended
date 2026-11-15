@@ -25,11 +25,7 @@ _chest addEventHandler ["Deleted", {
         private _object = _chest getVariable [_x, objNull];
         if (!isNull _object) then {deleteVehicle _object;};
     } forEach ["ACME_medicalChestCabinet", "ACME_medicalChestLid", "ACME_medicalChestCargo"];
-    {if (!isNull _x) then {deleteVehicle _x;};} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
 }];
 if (_chest getVariable ["ACME_medicalChestStartOpen", false]) then {
     [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
 };
-if ((_chest getVariable "ACME_medicalChestState") select 1) exitWith {};
-private _variant = getNumber (configOf _chest >> "acmeChestVariant");
-_chest setVariable ["ACME_medicalChestDecals", [_chest, "closed", _variant] call ACME_fnc_medicalChestDecals];

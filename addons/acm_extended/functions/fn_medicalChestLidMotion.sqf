@@ -1,5 +1,5 @@
 /* The lid travels through the same clearance positions in both directions. */
-params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revision", "_opening", "_seatPose", "_restPose"];
+params ["_chest", "_cabinet", "_lid", "_cargo", "_actor", "_revision", "_opening", "_seatPose", "_restPose"];
 
 _seatPose params ["_seated", "_caseDir", "_caseUp", "_outward", "_side"];
 _restPose params ["_restPos", "_restDir", "_restUp", "_normal"];
@@ -33,20 +33,15 @@ if (_opening) then {
         _pull toFixed 3, _outward, (abs _lateralDistance) toFixed 3, ["Z", "Y"] select _faceY, _normal];
 };
 
-private _parts = [_lid] + _lidPaint;
 private _apply = {
-    params ["_parts", "_position", "_dir", "_up"];
-    {
-        if (!isNull _x) then {
-            _x setVectorDirAndUp [_dir, _up];
-            _x setPosWorld _position;
-        };
-    } forEach _parts;
+    params ["_lid", "_position", "_dir", "_up"];
+    _lid setVectorDirAndUp [_dir, _up];
+    _lid setPosWorld _position;
 };
 
 [{
     params ["_args", "_handle"];
-    _args params ["_chest", "_cabinet", "_lid", "_parts", "_cargo", "_actor", "_revision", "_opening",
+    _args params ["_chest", "_cabinet", "_lid", "_cargo", "_actor", "_revision", "_opening",
         "_seated", "_released", "_clear", "_hover", "_restPos", "_caseDir", "_caseUp", "_restDir", "_restUp", "_apply",
         "_normal", "_halfSize", "_tipBaseZ", "_extraHeight", "_heightForPose", "_started"];
     if (isNull _chest || {(_chest getVariable ["ACME_medicalChestState", []]) isNotEqualTo [_revision, !_opening]}) exitWith {
@@ -107,10 +102,10 @@ private _apply = {
         }
     };
 
-    if (!_finished) exitWith {[_parts, _pos, _dir, _up] call _apply;};
+    if (!_finished) exitWith {[_lid, _pos, _dir, _up] call _apply;};
     [_handle] call CBA_fnc_removePerFrameHandler;
     if (_opening) then {
-        [_parts, _restPos, _restDir, _restUp] call _apply;
+        [_lid, _restPos, _restDir, _restUp] call _apply;
         private _openedRevision = _revision + 1;
         _chest setVariable ["ACME_medicalChestState", [_openedRevision, true], true];
         _chest setVariable ["ACME_medicalChestTransition", false, true];
@@ -119,10 +114,10 @@ private _apply = {
             ["ACME_medicalChestOpened", [_actor, _chest, _cargo, _openedRevision], _actor] call CBA_fnc_targetEvent;
         };
     } else {
-        [_parts, _seated, _caseDir, _caseUp] call _apply;
+        [_lid, _seated, _caseDir, _caseUp] call _apply;
         diag_log format ["[ACME] Medical chest closed: %1 in %2 seconds", typeOf _cabinet, _elapsed toFixed 2];
         [_chest, false, _revision, true] call ACME_fnc_medicalChestSetOpen;
     };
-}, [0, 0.03] select isMultiplayer, [_chest, _cabinet, _lid, _parts, _cargo, _actor, _revision, _opening,
+}, [0, 0.03] select isMultiplayer, [_chest, _cabinet, _lid, _cargo, _actor, _revision, _opening,
     _seated, _released, _clear, _hover, _restPos, _caseDir, _caseUp, _restDir, _restUp, _apply,
     _normal, _halfSize, _tipBaseZ, _extraHeight, _heightForPose, CBA_missionTime]] call CBA_fnc_addPerFrameHandler;
