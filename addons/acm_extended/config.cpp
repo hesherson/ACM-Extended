@@ -2327,6 +2327,7 @@ class CfgFunctions {
             class medicalChestDrawers {};
             class medicalChestDecals {};
             class medicalChestRequest {};
+            class medicalChestCanUse {};
             class medicalChestUse {};
             class registerMedicalChestRuntime {};
             class ivStartKitUnpack {};

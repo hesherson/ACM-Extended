@@ -1,6 +1,7 @@
 /* ACE actions send the current chest revision to the server. */
 params ["_target", "_actor", "_opening"];
-if (!local _actor || {!alive _actor} || {_actor distance _target > 4}) exitWith {};
+if (!local _actor || {!alive _actor} || {_actor distance _target > 4}
+    || {!([_target, _actor, _opening] call ACME_fnc_medicalChestCanUse)}) exitWith {};
 private _chest = if (_opening) then {_target} else {
     _target getVariable ["ACME_medicalChestAnchor", objNull]
 };

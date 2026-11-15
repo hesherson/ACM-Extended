@@ -4,11 +4,13 @@ if (!isServer || {is3DEN} || {isNull _chest} || {!isNil {_chest getVariable "ACM
 private _heading = getDir _chest;
 private _base = [getPosWorld _chest, [_chest], 0.3, 2] call ACME_fnc_medicalChestGround;
 
-private _cargo = createVehicle ["ACME_MedicalChestCargo", ASLToATL _base, [], 0, "CAN_COLLIDE"];
+private _profile = getText (configOf _chest >> "acmeChestStock");
+private _cargoClass = ["ACME_MedicalChestCargo", "ACME_MedicalChestSpecialtyCargo"] select (_profile != "");
+private _cargo = createVehicle [_cargoClass, ASLToATL _base, [], 0, "CAN_COLLIDE"];
 if (isNull _cargo) exitWith {};
 _cargo allowDamage false;
 _cargo setVariable ["ACME_medicalChestAnchor", _chest, true];
-[_cargo] call ACME_fnc_medicalChestStock;
+[_cargo, _profile] call ACME_fnc_medicalChestStock;
 
 _chest enableSimulationGlobal false;
 _chest allowDamage false;

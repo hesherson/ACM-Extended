@@ -12,6 +12,7 @@
         ace_dragging_canDrag = 0;
         ace_dragging_canCarry = 0;
         ace_cargo_canLoad = 0;
+        class UserActions {};
         class Attributes {
             class ACME_medicalChestStartOpen {
                 property = "ACME_medicalChestStartOpen";
@@ -27,30 +28,31 @@
             class ACE_MainActions {
                 displayName = "Open Medical Chest";
                 distance = 4;
-                condition = "private _state = _target getVariable ['ACME_medicalChestState',[]]; count _state == 2 && {!(_state select 1)} && {[_player,_target,[]] call ace_common_fnc_canInteractWith}";
+                condition = "[_target,_player,true] call ACME_fnc_medicalChestCanUse";
                 selection = "";
                 statement = "[_target,_player,true] call ACME_fnc_medicalChestUse";
             };
         };
     };
 
-#define ACME_MEDICAL_CHEST_RETEXTURE(CLASS,NUMBER,LABEL) \
+#define ACME_MEDICAL_CHEST_RETEXTURE(CLASS,NUMBER,LABEL,STOCK) \
     class CLASS: ACME_MedicalChest { \
         scope = 2; \
         scopeCurator = 2; \
         displayName = LABEL; \
         acmeChestVariant = NUMBER; \
+        acmeChestStock = STOCK; \
     }
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_01,1,"Medical Chest 01 (MED CHEST 1)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_02,2,"Medical Chest 02 (Field Markings)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_03,3,"Medical Chest 03 (OR)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_04,4,"Medical Chest 04 (MED)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_05,5,"Medical Chest 05 (PAD)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_06,6,"Medical Chest 06 (IV FLUIDS)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_07,7,"Medical Chest 07 (AIRWAY)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_08,8,"Medical Chest 08 (BLOOD)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_09,9,"Medical Chest 09 (Black Cross)");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_10,10,"Medical Chest 10 (Red Cross)");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_01,1,"Medical Chest 01 (MED CHEST 1)","");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_02,2,"Medical Chest 02 (Field Markings)","");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_03,3,"Medical Chest 03 (OR)","surgery");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_04,4,"Medical Chest 04 (MED)","");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_05,5,"Medical Chest 05 (PAD)","dressings");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_06,6,"Medical Chest 06 (IV FLUIDS)","fluids");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_07,7,"Medical Chest 07 (AIRWAY)","airway");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_08,8,"Medical Chest 08 (BLOOD)","blood");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_09,9,"Medical Chest 09 (Black Cross)","");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_10,10,"Medical Chest 10 (Red Cross)","");
 #undef ACME_MEDICAL_CHEST_RETEXTURE
 
     // An invisible model provides a live native Gear container inside the chest.
@@ -59,7 +61,7 @@
         scopeCurator = 0;
         displayName = "Medical Chest";
         model = "\core\empty\empty.p3d";
-        maximumLoad = 20000;
+        maximumLoad = 2000000;
         transportMaxWeapons = 2000;
         transportMaxMagazines = 2000;
         transportMaxBackpacks = 100;
@@ -67,12 +69,16 @@
         forceSupply = 1;
         showWeaponCargo = 0;
         ace_cargo_canLoad = 0;
+        class ACE_Actions {class ACE_MainActions {condition = "false";};};
         ace_dragging_canDrag = 0;
         ace_dragging_canCarry = 0;
         class TransportWeapons {};
         class TransportMagazines {};
         class TransportItems {};
         class TransportBackpacks {};
+    };
+    class ACME_MedicalChestSpecialtyCargo: ACME_MedicalChestCargo {
+        maximumLoad = 20000;
     };
 
 #define ACME_MEDICAL_CHEST_OPEN_VARIANT(NAME, BASE) \
@@ -89,7 +95,7 @@
                 displayName = "Close Medical Chest"; \
                 distance = 4; \
                 selection = ""; \
-                condition = "(((_target getVariable ['ACME_medicalChestAnchor',objNull]) getVariable ['ACME_medicalChestState',[0,false]]) select 1) && {[_player,_target,[]] call ace_common_fnc_canInteractWith}"; \
+                condition = "[_target,_player,false] call ACME_fnc_medicalChestCanUse"; \
                 statement = "[_target,_player,false] call ACME_fnc_medicalChestUse"; \
             }; \
         }; \

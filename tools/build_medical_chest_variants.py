@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Build the paint textures and fitted visual models for the ten medical chests.
 
-The mesh dumps contain model-space vertices and face indices for the closed
-cabinet and loose lid. The body panels are also fitted to the shared outer
-shell of the open cabinet. The stock models still supply the case and collision.
+The mesh dumps contain model-space vertices and face indices for each stock
+model. Each finish follows its own model's surfaces. Stock models still supply
+the case, moving drawers and collision.
 """
 import argparse
 import json
@@ -503,19 +503,26 @@ def fitted_faces(path, surface):
     # U and V are projected in model space so the paint reads in the same
     # direction across the molded ribs and the removable cover.
     x, y, z = positions.transpose(2, 0, 1)
+    projection_normals = normals
+    if surface == "cabinet":
+        # The open stock models have their top on -Y and their drawers on -Z.
+        # Transform only the artwork coordinates. The mesh stays in native space.
+        x, y, z = -y, -z + .05, x
+        projection_normals = normals[:, [1, 2, 0]] * (-1, -1, 1)
     front = .082 if surface == "closed" else .005
-    dominant = np.argmax(abs(normals), axis=1)
-    front_faces = (y.min(axis=1) > front) & (dominant == 1) & (normals[:, 1] > 0)
+    dominant = np.argmax(abs(projection_normals), axis=1)
+    front_faces = (y.min(axis=1) > front) & (dominant == 1) & (projection_normals[:, 1] > 0)
     # In Arma's upright placement, -model Z is the viewer's right.
     # Use this for both meshes so lettering and tape keep their orientation.
     lid_coords = ((.266 - z)/.532, (.421 - x)/.844)
-    projections = [(front_faces, "lid", lid_coords, (0, 1, 0))]
+    projections = [] if surface == "cabinet" else [(front_faces, "lid", lid_coords, (0, 1, 0))]
     if surface in ("closed", "cabinet"):
-        rear_faces = (y.max(axis=1) < -.083) & (dominant == 1) & (normals[:, 1] < 0)
-        top_faces = (x.min(axis=1) > .377) & (dominant == 0) & (normals[:, 0] > 0)
-        bottom_faces = (x.max(axis=1) < -.377) & (dominant == 0) & (normals[:, 0] < 0)
-        right_faces = (z.min(axis=1) > .216) & (dominant == 2) & (normals[:, 2] > 0)
-        left_faces = (z.max(axis=1) < -.216) & (dominant == 2) & (normals[:, 2] < 0)
+        nx, ny, nz = projection_normals.T
+        rear_faces = (y.max(axis=1) < -.083) & (dominant == 1) & (ny < 0)
+        top_faces = (x.min(axis=1) > .377) & (dominant == 0) & (nx > 0)
+        bottom_faces = (x.max(axis=1) < -.377) & (dominant == 0) & (nx < 0)
+        right_faces = (z.min(axis=1) > .216) & (dominant == 2) & (nz > 0)
+        left_faces = (z.max(axis=1) < -.216) & (dominant == 2) & (nz < 0)
         side_coords = ((.164 - y)/.334, (.421 - x)/.844)
         top_coords = ((.266 + z)/.532, (.164 - y)/.334)
         projections.extend([
@@ -528,15 +535,16 @@ def fitted_faces(path, surface):
 
     for selected, region, (u, v), offset in projections:
         if surface == "cabinet":
-            # Use only the common shell behind the lid seam. Clip paint on the
-            # latch faces and front bevels by keeping whole shell triangles.
-            selected = selected & (y.max(axis=1) < .078)
+            # Paint only exterior triangles behind the front opening. None
+            # of the moving drawer geometry belongs in the finish.
+            selected = selected & (y.max(axis=1) < .053)
         atlas_x, atlas_y, width, height = ATLAS_REGIONS[region]
         uv = np.stack(((atlas_x + u.clip(0, 1)*width)/ATLAS_SIZE[0],
                        (atlas_y + v.clip(0, 1)*height)/ATLAS_SIZE[1]), axis=2)
         # MLOD expects clockwise faces with explicit outward normals.
         for index in np.flatnonzero(selected):
-            vertices = (positions[index] + .0012 * np.array(offset))[::-1]
+            outward = normals[index] if surface in ("cabinet", "lid") else offset
+            vertices = (positions[index] + .0012 * np.asarray(outward))[::-1]
             yield vertices, normals[index], uv[index, ::-1]
 
 
@@ -584,24 +592,63 @@ def atlas(layers):
     return image
 
 
+def generic_open_atlas(base_paint, png_dir, hemtt):
+    """Put the original chest's markings on the same fitted surfaces as the wear."""
+    def decode(paa):
+        png = png_dir / paa.with_suffix(".png").name
+        png.unlink(missing_ok=True)
+        subprocess.run([hemtt, "utils", "paa", "convert", str(paa), str(png)], check=True)
+        with Image.open(png) as image:
+            return image.convert("RGBA")
+
+    image = decode(base_paint)
+    stamps = {}
+    placements = [
+        ("lid", "chest_title", (500, 800), (752, 303)),
+        ("lid", "chest_serial", (675, 1168), (335, 78)),
+        ("lid", "chest_tape_lid", (451, 425), (462, 190)),
+        ("right", "chest_cross", (327, 790), (199, 197)),
+        ("left", "chest_cross", (327, 790), (199, 197)),
+        ("left", "chest_tape_side", (327, 280), (195, 63)),
+        ("top", "chest_cross", (780, 465), (195, 199)),
+        ("back", "chest_tape_back", (500, 827), (481, 298)),
+    ]
+    for region, mark, (cx, cy), (width, height) in placements:
+        if mark not in stamps:
+            stamps[mark] = decode(DATA / f"{mark}_ca.paa")
+        left, top, _, _ = ATLAS_REGIONS[region]
+        patch = stamps[mark].resize((width, height), Image.Resampling.LANCZOS)
+        image.alpha_composite(patch, (left + cx - width // 2, top + cy - height // 2))
+    return image
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--reference", type=Path, required=True)
-    parser.add_argument("--closed-mesh", type=Path, required=True)
+    parser.add_argument("--reference", type=Path)
+    parser.add_argument("--closed-mesh", type=Path)
+    parser.add_argument("--cabinet4-mesh", type=Path, required=True)
+    parser.add_argument("--cabinet7-mesh", type=Path, required=True)
     parser.add_argument("--lid-mesh", type=Path, required=True)
     parser.add_argument("--png-dir", type=Path, required=True)
     parser.add_argument("--hemtt", required=True)
+    parser.add_argument("--open-only", action="store_true", help="Reuse existing paint atlases and update only open parts")
     args = parser.parse_args()
+    if not args.open_only and (args.reference is None or args.closed_mesh is None):
+        parser.error("--reference and --closed-mesh are required for a full rebuild")
 
     destination = DATA / "variants"
     destination.mkdir(parents=True, exist_ok=True)
     args.png_dir.mkdir(parents=True, exist_ok=True)
-    glyphs = stencil_glyphs(args.reference)
     surfaces = {
-        "closed": tuple(fitted_faces(args.closed_mesh, "closed")),
-        "cabinet": tuple(fitted_faces(args.closed_mesh, "cabinet")),
+        "cabinet4": tuple(fitted_faces(args.cabinet4_mesh, "cabinet")),
+        "cabinet7": tuple(fitted_faces(args.cabinet7_mesh, "cabinet")),
         "lid": tuple(fitted_faces(args.lid_mesh, "lid")),
     }
+    if not args.open_only:
+        surfaces["closed"] = tuple(fitted_faces(args.closed_mesh, "closed"))
+        glyphs = stencil_glyphs(args.reference)
+    if any(not faces for faces in surfaces.values()):
+        parser.error("At least one source mesh has no paintable exterior faces")
 
     def write_texture(png, paa):
         temp = args.png_dir / paa.name
@@ -611,18 +658,28 @@ def main():
         temp.unlink()
 
     for number in range(11):
-        png = args.png_dir / f"chest_{number}_ca.png"
-        if number:
-            layers = artwork(number, glyphs)
-        else:
-            rng = random.Random(32840)
-            layers = {region: contact_wear(region, (width, height), rng)
-                      for region, (_, _, width, height) in ATLAS_REGIONS.items()}
-        atlas(layers).save(png)
-        write_texture(png, destination / png.with_suffix(".paa").name)
-        texture = f"acm_extended\\data\\medical_chest\\variants\\{png.with_suffix('.paa').name}"
+        paint = f"chest_{number}_ca.paa"
+        if not args.open_only:
+            png = args.png_dir / Path(paint).with_suffix(".png")
+            if number:
+                layers = artwork(number, glyphs)
+            else:
+                rng = random.Random(32840)
+                layers = {region: contact_wear(region, (width, height), rng)
+                          for region, (_, _, width, height) in ATLAS_REGIONS.items()}
+            atlas(layers).save(png)
+            write_texture(png, destination / paint)
+        if number == 0:
+            open_png = args.png_dir / "chest_0_open_ca.png"
+            generic_open_atlas(destination / paint, args.png_dir, args.hemtt).save(open_png)
+            write_texture(open_png, destination / open_png.with_suffix(".paa").name)
         for surface, faces in surfaces.items():
+            surface_paint = "chest_0_open_ca.paa" if number == 0 and surface != "closed" else paint
+            texture = f"acm_extended\\data\\medical_chest\\variants\\{surface_paint}"
             (destination / f"chest_{number}_{surface}.p3d").write_bytes(visual_model(faces, texture))
+
+    if args.open_only:
+        return
 
     rng = random.Random(32610)
     red_cross = cross_mask(421, 125, 128, True)

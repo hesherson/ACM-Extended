@@ -69,11 +69,11 @@ if (_replace) then {
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {
-    private _shellFrame = [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, [0, 0, 1], _entity] call ACME_fnc_medicalChestPlace;
-    private _lidFrame = if (_open) then {
+    [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, [0, 0, 1], _entity] call ACME_fnc_medicalChestPlace;
+    if (_open) then {
         _lidSupport params ["_side", "_normal"];
         [_parts select 1, _side, _heading, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace
-    } else {[]};
+    };
     if (_replace && {_open}) then {[_parts select 0, true, true] call ACME_fnc_medicalChestDrawers;};
     if (_replace) then {
         private _variant = getNumber (configOf _entity >> "acmeChestVariant");
@@ -88,7 +88,7 @@ if (_replace || {_next isNotEqualTo _transform}) then {
                     _part vectorWorldToModel (vectorDir _x),
                     _part vectorWorldToModel (vectorUp _x)
                 ];
-            } forEach ([_part, _surface, _variant, true, [_shellFrame, _lidFrame] select (_surface == "lid")] call ACME_fnc_medicalChestDecals);
+            } forEach ([_part, _surface, _variant, true] call ACME_fnc_medicalChestDecals);
         } forEach _parts;
     } else {
         {

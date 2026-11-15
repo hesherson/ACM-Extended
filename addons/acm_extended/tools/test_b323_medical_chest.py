@@ -157,7 +157,6 @@ def placement_fixture():
         ("0 boundingBoxReal _closed", "_closedBounds"),
         ("_object setVectorDirAndUp [_dir, _up];", "_orient = [_dir, _up];"),
         ("_object setPosWorld", "_worldPosition ="),
-        ("_object modelToWorldWorld [0, 0, 0]", "_worldPosition"),
     ):
         assert engine in source
         source = source.replace(engine, fixture)
@@ -179,14 +178,12 @@ def test_cabinet_is_right_side_up_with_the_same_bearing_as_the_previous_open_pos
         _orient params ["_closedY", "_closedZ"];
         [((_closedY vectorCrossProduct _closedZ) select 2) > .999, "closed case no longer stands on the wheel end"] call _check;
         _bounds = {cabinet};
-        private _paint = [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
+        [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
         _orient params ["_modelY", "_modelZ"];
         private _oldFront = {"_closedY" if face_y else "_closedZ"};
         [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,1]" if face_y else "[0,0,-1]"}, "cabinet still stacks the drawers upside down"] call _check;
         [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999, "uprighting the drawers changed their bearing"] call _check;
-        [abs ((_worldPosition select 2) - 1.429) < 0.0001 && {{abs ((_paint select 0 select 2) - 1.431) < 0.0001}}, "cabinet or fitted shell used the upside-down support edge"] call _check;
-        [((_paint select 1) vectorDotProduct _closedY) < -.999 && {{(((_paint select 1) vectorCrossProduct (_paint select 2)) select 2) > .999}}, "fitted shell paint no longer faces forward and reads upright"] call _check;
-        [(_medic getVariable "ACME_medicalChestHeading") == ((_heading + 180) % 360), "cabinet markings kept the original heading"] call _check;
+        [abs ((_worldPosition select 2) - 1.429) < 0.0001, "cabinet used the upside-down support edge"] call _check;
         _bounds = _closedBounds;
         [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
         [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999 && {{(((_orient select 0) vectorCrossProduct (_orient select 1)) select 2) < -.999}}, "long-X cabinet was not flipped around its drawer face"] call _check;
@@ -207,12 +204,9 @@ def test_lid_paint_faces_up_and_the_inner_face_follows_the_support(bounds, face_
         private _worldPosition = [];
         private _normal = vectorNormalized {normal};
         private _base = [20,12,1];
-        private _paint = [_medic, _base, 73, "lid", _normal, _patient] call _place;
+        [_medic, _base, 73, "lid", _normal, _patient] call _place;
         private _modelNormal = _orient select {face_axis};
-        [(_modelNormal vectorDotProduct _normal) > .999 && {{((_paint select 1) vectorDotProduct _normal) > .999}}, "lid or its finish failed to show the painted face"] call _check;
-        private _modelLong = (_orient select 0) vectorCrossProduct (_orient select 1);
-        private _paintLong = (_paint select 1) vectorCrossProduct (_paint select 2);
-        [(_modelLong vectorDotProduct _paintLong) > .999, "paint lost alignment with the long edge of the lid"] call _check;
+        [(_modelNormal vectorDotProduct _normal) > .999, "lid failed to show the painted face"] call _check;
         [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .0488) < .0001, "lid failed to rest at the height of its inner face"] call _check;
     ''')
 
@@ -236,31 +230,81 @@ def test_ground_hit_passes_surface_normal_to_the_lid():
 def test_chest_ace_actions_are_direct_and_gear_waits_for_matching_open_state():
     vehicles = (ROOT / "addons/acm_extended/MedicalChestVehicles.hpp").read_text()
     runtime = read("registerMedicalChestRuntime")
-    assert vehicles.count('class ACE_MainActions {') == 2
+    assert vehicles.count('class ACE_MainActions {') == 3
+    assert 'class ACE_Actions {class ACE_MainActions {condition = "false";};};' in vehicles
     assert 'class ACME_OpenMedicalChest' not in vehicles
     assert 'class ACME_CloseMedicalChest' not in vehicles
     assert 'Open Supplies' not in vehicles
     assert "[_target,_player,true] call ACME_fnc_medicalChestUse" in vehicles
     assert "[_target,_player,false] call ACME_fnc_medicalChestUse" in vehicles
+    assert "[_target,_player,true] call ACME_fnc_medicalChestCanUse" in vehicles
+    assert "[_target,_player,false] call ACME_fnc_medicalChestCanUse" in vehicles
     assert 'isEqualTo [_revision, true]' in runtime
     assert 'attachedTo _cargo isNotEqualTo objNull' in runtime
     assert '_actor action ["Gear", _this select 2]' in runtime
 
 
-def test_live_catalog_routes_medical_items_and_charges_to_native_cargo():
+def test_overlapping_chests_offer_only_the_pointed_active_case_action():
+    source = read("medicalChestCanUse")
+    for engine, fixture in (
+        ('isObjectHidden _target', '(_target getVariable ["hidden",false])'),
+        ('isObjectHidden _aim', '(_aim getVariable ["hidden",false])'),
+        ('cursorObject', '_aimObject'), ('_actor distance _aim', '1'),
+        ('_aim isKindOf "ACME_MedicalChest"', '(_aim getVariable ["closedClass",false])'),
+    ):
+        assert engine in source
+        source = source.replace(engine, fixture)
+    execute('private _canUse={' + adapt(source) + '};' + r'''
+        ace_common_fnc_canInteractWith={true};
+        private _cabinet=parsingNamespace;
+        private _other=missionNamespace;
+        private _stale=uiNamespace;
+        _patient setVariable ["closedClass",true];
+        _other setVariable ["closedClass",true];
+        _patient setVariable ["ACME_medicalChestState",[1,true]];
+        _other setVariable ["ACME_medicalChestState",[0,false]];
+        {_x setVariable ["ACME_medicalChestAnchor",_patient];} forEach [_cabinet,_stale];
+        _patient setVariable ["ACME_medicalChestCabinet",_cabinet];
+        private _aimObject=_cabinet;
+        [[_cabinet,_medic,false] call _canUse,"active cabinet has no close action"] call _check;
+        [!([_patient,_medic,true] call _canUse),"open chest still offers Open"] call _check;
+        [!([_stale,_medic,false] call _canUse),"superseded cabinet still offers Close"] call _check;
+        [!([_other,_medic,true] call _canUse),"neighbor's Open overlaps the targeted Close"] call _check;
+        _aimObject=_other;
+        [[_other,_medic,true] call _canUse,"closed neighbor has no Open when pointed at"] call _check;
+        [!([_cabinet,_medic,false] call _canUse),"neighbor's Close overlaps the targeted Open"] call _check;
+        _other setVariable ["hidden",true];
+        [!([_other,_medic,true] call _canUse),"hidden case appears in ACE"] call _check;
+    ''')
+
+
+def test_live_catalog_routes_generous_medical_stock_to_matching_containers():
     source = read("medicalChestStock")
-    source = source.replace('_cargo addItemCargoGlobal [_x, 1]', '_itemsOut pushBack _x')
-    source = source.replace('_cargo addMagazineCargoGlobal [_x, 1]', '_magazinesOut pushBack _x')
-    source = source.replace('_cargo addBackpackCargoGlobal [_x, 1]', '_packsOut pushBack _x')
+    source = source.replace('_cargo addItemCargoGlobal [_x, _count]', '_itemsOut pushBack [_x, _count]')
+    source = source.replace('_cargo addMagazineCargoGlobal [_x, _count]', '_magazinesOut pushBack [_x, _count]')
+    source = source.replace('_cargo addBackpackCargoGlobal [_x, _count]', '_packsOut pushBack [_x, _count]')
+    source = re.sub(r'getNumber \(configFile >> "Cfg(?:Weapons|Magazines)" >> _x >> "scope"\) == 2', 'false', source)
     source = source.replace('getNumber (configFile >> "CfgVehicles" >> _x >> "isBackpack") == 1', '_x == "MedicalBackpack"')
-    execute('private _stock={' + source + '};' + r'''
+    execute('private _stock={' + adapt(source) + '};' + r'''
         private _itemsOut = []; private _magazinesOut = []; private _packsOut = [];
         missionNamespace setVariable ["ACME_medicalChestCatalog",
-            [["ACME_TempusLS_Item","ACME_IVStartKit_18g"],["ACM_OxygenTank_425"],["MedicalBackpack","HealthVehicle"]]];
+            [["ACME_TempusLS_Item","ACME_IVStartKit_18g","ACM_ETTube","ACM_CombatGauze","ACM_BloodBag_ON_500",
+              "ACME_Vial_Propofol","ACME_SalineBag_100","ACM_Syringe_5"],
+             ["ACM_OxygenTank_425","ACM_Syringe_5_Epinephrine"],["MedicalBackpack","HealthVehicle"]]];
         [_patient] call _stock;
-        [_itemsOut isEqualTo ["ACME_TempusLS_Item","ACME_IVStartKit_18g"], "missing ordinary stock"] call _check;
-        [_magazinesOut isEqualTo ["ACM_OxygenTank_425"], "charge-bearing supplies used the wrong cargo type"] call _check;
-        [_packsOut isEqualTo ["MedicalBackpack"], "whole vehicles treated as backpacks"] call _check;
+        [["ACME_TempusLS_Item",4] in _itemsOut && {["ACME_IVStartKit_18g",24] in _itemsOut}
+            && {["ACME_Vial_Propofol",8] in _itemsOut} && {count _itemsOut==8}, "generic stock is incomplete"] call _check;
+        [_magazinesOut isEqualTo [["ACM_OxygenTank_425",4],["ACM_Syringe_5_Epinephrine",8]], "charge-bearing cargo used the wrong type or count"] call _check;
+        [_packsOut isEqualTo [["MedicalBackpack",4]], "whole vehicles treated as backpacks"] call _check;
+        _itemsOut=[]; _magazinesOut=[]; _packsOut=[];
+        [_patient,"airway"] call _stock;
+        [_itemsOut isEqualTo [["ACM_ETTube",8]] && {_magazinesOut isEqualTo [["ACM_OxygenTank_425",4]]}, "airway stock was missing supplies or included unrelated items"] call _check;
+        _itemsOut=[]; _magazinesOut=[];
+        [_patient,"blood"] call _stock;
+        [["ACM_BloodBag_ON_500",8] in _itemsOut && {["ACM_Syringe_5",8] in _itemsOut} && {_magazinesOut isEqualTo []}, "blood stock omitted supplies or included unrelated medicines"] call _check;
+        _itemsOut=[];
+        [_patient,"fluids"] call _stock;
+        [["ACME_SalineBag_100",8] in _itemsOut && {(["ACM_BloodBag_ON_500",8] in _itemsOut) isEqualTo false}, "fluid chest did not prioritize crystalloid stock"] call _check;
     ''')
 
 
@@ -282,11 +326,58 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
         folder = addon / "data/medical_chest/variants"
         texture = f"acm_extended\\data\\medical_chest\\variants\\chest_{number}_ca.paa"
         assert (folder / f"chest_{number}_ca.paa").is_file()
-        for surface in ("closed", "cabinet", "lid"):
+        for surface in ("closed", "cabinet4", "cabinet7", "lid"):
             model = (folder / f"chest_{number}_{surface}.p3d").read_bytes()
             assert model.startswith(b"MLOD") and texture.encode() + b"\0" in model
     for name in ("open", "close"):
         assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")
+
+
+def test_open_finishes_use_the_native_part_transform():
+    source = read("medicalChestDecals")
+    for engine, fixture in (
+        ('typeOf _object', '_partClass'),
+        ('_object modelToWorldWorld _modelPos', '([_modelPos] call _partPoint)'),
+        ('_object vectorModelToWorld _modelDir', '([_modelDir] call _partVector)'),
+        ('_object vectorModelToWorld _modelUp', '([_modelUp] call _partVector)'),
+        ('createSimpleObject [format ["\\acm_extended\\data\\medical_chest\\%1.p3d", _asset], _position, _localOnly]',
+         '([_asset, _position, _localOnly] call _spawn)'),
+        ('_decal setVectorDirAndUp', '_axis ='), ('_decal setPosWorld', '_at ='),
+    ):
+        assert engine in source
+        source = source.replace(engine, fixture)
+    execute('private _finish={' + adapt(source) + '};' + r'''
+        private _partClass="ACME_MedicalChest7Drawers";
+        private _parts=[]; private _axis=[]; private _at=[];
+        private _partPoint={params ["_p"]; [11,12,13] vectorAdd _p};
+        private _partVector={params ["_v"]; [_v select 0,-(_v select 2),_v select 1]};
+        private _spawn={_parts pushBack _this; _patient};
+        [_medic,"cabinet",8] call _finish;
+        [_parts isEqualTo [["variants\chest_8_cabinet7",[11,12,13],false]], "seven drawers borrowed another shell's finish"] call _check;
+        [_axis isEqualTo [[0,0,1],[0,-1,0]] && {_at isEqualTo [11,12,13]}, "paint did not inherit the exact model frame"] call _check;
+        _parts=[];
+        [_medic,"lid",0,true] call _finish;
+        [_parts isEqualTo [["variants\chest_0_lid",[11,12,13],true]], "generic lid still has separate floating paint objects"] call _check;
+    ''')
+
+
+def test_cabinet_paint_meshes_stay_behind_the_drawer_openings():
+    folder = ROOT / "addons/acm_extended/data/medical_chest/variants"
+    for number in range(11):
+        models = []
+        for layout in (4, 7):
+            model = (folder / f"chest_{number}_cabinet{layout}.p3d").read_bytes()
+            points = struct.unpack_from("<I", model, 24)[0]
+            positions = [struct.unpack_from("<3f", model, 40 + 16 * i) for i in range(points)]
+            assert min(z for _, _, z in positions) > -.005
+            assert max(z for _, _, z in positions) > .20
+            assert min(y for _, y, _ in positions) < -.40
+            assert max(y for _, y, _ in positions) > .40
+            models.append(positions)
+        assert models[0] != models[1]
+    generic_lid = (folder / "chest_0_lid.p3d").read_bytes()
+    assert b"chest_0_open_ca.paa\0" in generic_lid
+    assert b"chest_0_ca.paa\0" in (folder / "chest_0_closed.p3d").read_bytes()
 
 
 
