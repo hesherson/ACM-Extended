@@ -9,7 +9,7 @@ if (!isServer || {isNull _actor} || {isNull _target} || {!alive _actor}
 
 private _chest = if (_opening) then {_target} else {_target getVariable ["ACME_medicalChestAnchor", objNull]};
 if (isNull _chest || {!(_chest isKindOf "ACME_MedicalChest")}
-    || {_chest getVariable ["ACME_medicalChestOpening", false]}) exitWith {};
+    || {_chest getVariable ["ACME_medicalChestTransition", false]}) exitWith {};
 if ((_chest getVariable ["ACME_medicalChestState", []]) isNotEqualTo [_revision, !_opening]) exitWith {};
 private _cabinet = _chest getVariable ["ACME_medicalChestCabinet", objNull];
 if (!_opening && {_target isNotEqualTo _cabinet}) exitWith {};

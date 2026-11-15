@@ -76,7 +76,7 @@ if (_replace || {_next isNotEqualTo _transform}) then {
     };
     if (_replace && {_open}) then {
         private _cabinet = _parts select 0;
-        [_cabinet, [_cabinet, true] call ACME_fnc_medicalChestDrawerPlan] call ACME_fnc_medicalChestDrawers;
+        [_cabinet, [_cabinet] call ACME_fnc_medicalChestDrawerPlan, 0] call ACME_fnc_medicalChestDrawers;
     };
     if (_replace) then {
         private _variant = getNumber (configOf _entity >> "acmeChestVariant");

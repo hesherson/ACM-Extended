@@ -2326,7 +2326,10 @@ class CfgFunctions {
             class medicalChestStock {};
             class medicalChestDrawerPlan {};
             class medicalChestDrawers {};
-            class medicalChestOpenMotion {};
+            class medicalChestLidMotion {};
+            class medicalChestView {};
+            class medicalChestDrawerTick {};
+            class medicalChestEndViewing {};
             class medicalChestDecals {};
             class medicalChestRequest {};
             class medicalChestCanUse {};
@@ -11184,6 +11187,7 @@ class CfgRemoteExec {
         class ACME_fnc_edemaSet { allowedTargets = 0; };
         class ACME_fnc_forceWalkLocal { allowedTargets = 0; };
         class ACME_fnc_medicalChestRequest { allowedTargets = 2; };
+        class ACME_fnc_medicalChestView { allowedTargets = 2; };
         class ACME_fnc_megacodeArrest { allowedTargets = 0; };
         class ACME_fnc_megacodeCableApply { allowedTargets = 2; };
         class ACME_fnc_megacodeChestInjury { allowedTargets = 0; };
