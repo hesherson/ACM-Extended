@@ -1,5 +1,5 @@
 /* Cabinet animation names come from the live assets. Each drawer gets an
-   independent extension, with at least one visibly open. */
+   independent extension, with one drawer visibly farther out than the rest. */
 params ["_cabinet"];
 private _isDrawer = {
     params ["_name"];
@@ -16,6 +16,6 @@ if (_names isEqualTo []) exitWith {
     diag_log format ["[ACME] No drawer animations found for %1: %2", typeOf _cabinet, animationNames _cabinet];
     [[], [], false]
 };
-private _phases = _names apply {selectRandom [0, 0.23, 0.42, 0.63, 0.86]};
-_phases set [floor random count _phases, selectRandom [0.63, 0.86]];
+private _phases = _names apply {selectRandom [0, 0.23, 0.38, 0.52, 0.62]};
+_phases set [floor random count _phases, 0.9];
 [_names, _phases, _useSources]

@@ -3,12 +3,13 @@ params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revisio
 
 _seatPose params ["_seated", "_caseDir", "_caseUp"];
 _restPose params ["_restPos", "_restDir", "_restUp"];
-private _released = _seated vectorAdd (_caseDir vectorMultiply 0.24) vectorAdd [0, 0, 0.06];
+private _released = _seated vectorAdd (_caseDir vectorMultiply 0.051);
 private _side = _caseUp vectorMultiply -1;
 private _clear = _released vectorAdd (_side vectorMultiply ((_restPos vectorDiff _released) vectorDotProduct _side));
 
 // Raise the upright lid over the support along the sideways path, including on steps and slopes.
 (0 boundingBoxReal _lid) params ["_lidMin", "_lidMax"];
+private _carryHeight = _clear select 2;
 private _halfSize = _lidMin apply {abs _x};
 {_halfSize set [_forEachIndex, _x max (_halfSize select _forEachIndex)];} forEach _lidMax;
 {
@@ -18,11 +19,11 @@ private _halfSize = _lidMin apply {abs _x};
         abs (_normal vectorDotProduct _caseUp) * (_halfSize select 2)
     ) / ((_normal select 2) max 0.5);
     private _minZ = (_floor select 2) + (_halfSize select 0) + _slopeRise + 0.025;
-    _x set [2, (_x select 2) max _minZ];
+    _carryHeight = _carryHeight max _minZ;
 } forEach [_released, _clear];
 
 private _hover = +_restPos;
-_hover set [2, (_clear select 2) max ((_restPos select 2) + vectorMagnitude _halfSize + 0.025)];
+_hover set [2, _carryHeight max ((_restPos select 2) + vectorMagnitude _halfSize + 0.025)];
 _clear set [2, _hover select 2];
 
 private _parts = [_lid] + _lidPaint;
@@ -55,7 +56,7 @@ private _apply = {
 
     private _elapsed = CBA_missionTime - _started;
     private _pullEnd = 0.19;
-    private _slideDuration = 0.16;
+    private _slideDuration = 0.46;
     private _turnDuration = 0.18;
     private _settleDuration = 0.28;
     private _slideEnd = _pullEnd + _slideDuration;
@@ -83,7 +84,12 @@ private _apply = {
         [_seated, _released, [_t / _pullEnd] call _ease] call _lerp
     } else {
         if (_t < _slideEnd) then {
-            [_released, _clear, [(_t - _pullEnd) / _slideDuration, true] call _ease] call _lerp
+            private _progress = (_t - _pullEnd) / _slideDuration;
+            private _carry = [_released, _clear, [_progress] call _ease] call _lerp;
+            // Pick up the lid early in the carry so its lower edge can clear raised ground.
+            private _lift = [_progress / 0.6] call _ease;
+            _carry set [2, (_released select 2) + ((_clear select 2) - (_released select 2)) * _lift];
+            _carry
         } else {
             if (_t < _turnEnd) then {
                 private _s = [(_t - _slideEnd) / _turnDuration, true] call _ease;
@@ -115,5 +121,5 @@ private _apply = {
         diag_log format ["[ACME] Medical chest closed: %1 in %2 seconds", typeOf _cabinet, _elapsed toFixed 2];
         [_chest, false, _revision, true] call ACME_fnc_medicalChestSetOpen;
     };
-}, 0.03, [_chest, _cabinet, _lid, _parts, _cargo, _actor, _revision, _opening,
+}, [0, 0.03] select isMultiplayer, [_chest, _cabinet, _lid, _parts, _cargo, _actor, _revision, _opening,
     _seated, _released, _clear, _hover, _restPos, _caseDir, _caseUp, _restDir, _restUp, _apply, CBA_missionTime]] call CBA_fnc_addPerFrameHandler;
