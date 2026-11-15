@@ -11,6 +11,7 @@ private _up = _left;
 private _bottom = _min select 0;
 private _supportNormal = _vertical;
 private _footprintOffset = [0, 0, 0];
+private _surfaceDirection = [_up, _dir] select ((_extent select 1) < (_extent select 2));
 
 if (_part != "closed") then {
     (0 boundingBoxReal _closed) params ["_closedMin", "_closedMax"];
@@ -32,20 +33,21 @@ if (_part != "closed") then {
         };
 
         // Match the rear of the covered and uncovered bodies across the model swap.
-        private _closedForward = _front vectorMultiply -1;
+        _surfaceDirection = _front vectorMultiply -1;
         private _rear = 0;
         {
-            private _projection = _x vectorDotProduct _closedForward;
+            private _projection = _x vectorDotProduct _surfaceDirection;
             private _edge = [_max, _min] select (_projection >= 0);
             _rear = _rear + _projection * (_edge select _forEachIndex);
         } forEach [_dir vectorCrossProduct _up, _dir, _up];
         private _closedRear = _closedMin select ([2, 1] select _closedFaceY);
-        _footprintOffset = _closedForward vectorMultiply (_closedRear - _rear);
+        _footprintOffset = _surfaceDirection vectorMultiply (_closedRear - _rear);
     } else {
         // Rest the lid on its inner face so the paint is visible on top.
         if ((_normal select 2) > .7) then {_supportNormal = vectorNormalized _normal;};
         private _right = vectorNormalized (_forward vectorCrossProduct _supportNormal);
         private _faceY = (_extent select 1) < (_extent select 2);
+        _surfaceDirection = _supportNormal;
         _dir = [_right, _supportNormal] select _faceY;
         _up = [_supportNormal, _right vectorMultiply -1] select _faceY;
         _bottom = _min select ([2, 1] select _faceY);
@@ -59,4 +61,4 @@ if (_apply) then {
     _object setVectorDirAndUp [_dir, _up];
     _object setPosWorld _position;
 };
-[_position, _dir, _up]
+[_position, _dir, _up, _surfaceDirection]

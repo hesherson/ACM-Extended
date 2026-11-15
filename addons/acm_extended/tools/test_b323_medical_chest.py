@@ -127,9 +127,11 @@ def request_fixture():
         _cargo setVariable ["fixtureCargo", true];
         _cargo setVariable ["ACME_medicalChestAnchor", _chest];
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
+        private _fixtureLidFaceY = true;
         ACME_fnc_medicalChestPlace = {
             _placed pushBack _this;
-            [(_this select 1) vectorAdd [0,0,0.05], [0,0,1], [1,0,0]]
+            private _restAxes = [[[-1,0,0],[0,0,1]], [[0,0,1],[1,0,0]]] select _fixtureLidFaceY;
+            [(_this select 1) vectorAdd [0,0,0.05], _restAxes select 0, _restAxes select 1, [0,0,1]]
         };
         ACME_fnc_medicalChestLidSeat = {[[20, 11.88, 0.43], [0,-1,0], [1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
@@ -219,14 +221,16 @@ def test_lid_only_request_and_inventory_request_offer_different_gear_behavior():
     ''')
 
 
-def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
-    execute(request_fixture() + r'''
+@pytest.mark.parametrize("face_y", [False, True])
+def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(face_y):
+    execute(request_fixture() + f'_fixtureLidFaceY = {str(face_y).lower()};' + r'''
         [_chest, _medic, true, 0] call _request;
         private _lid = _chest getVariable "ACME_medicalChestLid";
         private _cab = _chest getVariable "ACME_medicalChestCabinet";
         private _start = _lid getVariable "fixturePosition";
-        private _upright = [[0,-1,0],[1,0,0]];
-        private _flat = [[0,0,1],[1,0,0]];
+        private _upright = [[[-1,0,0],[0,-1,0]], [[0,-1,0],[1,0,0]]] select _fixtureLidFaceY;
+        private _flat = [[[-1,0,0],[0,0,1]], [[0,0,1],[1,0,0]]] select _fixtureLidFaceY;
+        private _faceIndex = [1,0] select _fixtureLidFaceY;
         [abs ((_start select 1) - 11.88) < 0.001 && {(_lid getVariable "fixtureAxes") isEqualTo _upright},
             "the lid did not start seated"] call _check;
         private _sample = {
@@ -257,7 +261,7 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
             && {_outboardAxes isEqualTo _upright}, "lid began to turn before it was beside the cabinet"] call _check;
         (0.125 call _sample) params ["_turn", "_turnAxes"];
         [abs ((_turn select 0) - 20.82) < .001 && {(_turn select 1) < 12} && {(_turn select 1) > 11.77}
-            && {(_turnAxes select 0 select 2) > 0} && {_gearRequests isEqualTo []},
+            && {(_turnAxes select _faceIndex select 2) > 0} && {_gearRequests isEqualTo []},
             "lid failed to tip into its original depth after clearing the cabinet"] call _check;
         (0.235 call _sample) params ["_settling", "_settlingAxes"];
         [(_settling select 2) > .05 && {(_settling select 2) < .08} && {_settlingAxes isEqualTo _flat}
@@ -269,7 +273,7 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
             "Gear opened early or the drawers opened without a viewer"] call _check;
         [_cab, _medic, false, 1] call _request;
         (0.305 call _sample) params ["_reverse", "_reverseAxes"];
-        [(_reverse vectorDistance _turn) < 0.001 && {((_reverseAxes select 0) vectorDistance (_turnAxes select 0)) < 0.001},
+        [(_reverse vectorDistance _turn) < 0.001 && {((_reverseAxes select _faceIndex) vectorDistance (_turnAxes select _faceIndex)) < 0.001},
             "closing did not retrace the opening motion"] call _check;
         (0.70 call _sample) params ["_seated", "_seatedAxes"];
         [_seated isEqualTo _start && {_seatedAxes isEqualTo _upright} && {!_hidden}
@@ -278,7 +282,11 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
 
 
 @pytest.mark.parametrize("face_y", [False, True])
-def test_lid_pulls_away_from_the_drawers_and_lands_on_its_original_side(face_y):
+@pytest.mark.parametrize("cabinet_bounds", [
+    "[[-.269,-.42175773,-.06175841],[.266,.42175987,.2130746]]",
+    "[[-.269,-.06175841,-.42175773],[.266,.2130746,.42175987]]",
+])
+def test_lid_pulls_away_from_the_drawers_and_lands_on_its_original_side(face_y, cabinet_bounds):
     seat = adapt(read("medicalChestLidSeat")).replace("getPosWorld _chest", "_center")
     base = adapt(read("medicalChestLidBase")).replace("0 boundingBoxReal _chest", "_closedBounds")
     closed_bounds = ("[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y
@@ -286,7 +294,7 @@ def test_lid_pulls_away_from_the_drawers_and_lands_on_its_original_side(face_y):
     execute(placement_fixture() + "private _seatLid = {" + seat + "}; private _lidBase = {" + base + "};" + rf"""
         ACME_fnc_medicalChestGround = {{[_this select 0, [0, 0, 1]]}};
         private _closedBounds = {closed_bounds};
-        private _bounds = [[-.269,-.42175773,-.06175841],[.266,.42175987,.2130746]];
+        private _bounds = {cabinet_bounds};
         private _anchor = [20, 12, 0];
         private _center = _anchor vectorAdd [0, 0, .43];
         {{

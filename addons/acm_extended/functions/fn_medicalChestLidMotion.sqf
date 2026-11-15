@@ -1,15 +1,15 @@
 /* The lid travels through the same clearance positions in both directions. */
 params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revision", "_opening", "_seatPose", "_restPose"];
 
-_seatPose params ["_seated", "_caseDir", "_caseUp"];
-_restPose params ["_restPos", "_restDir", "_restUp"];
+_seatPose params ["_seated", "_caseDir", "_caseUp", "_outward", "_side"];
+_restPose params ["_restPos", "_restDir", "_restUp", "_normal"];
 private _pull = 0.11;
-private _released = _seated vectorAdd (_caseDir vectorMultiply _pull);
+private _released = _seated vectorAdd (_outward vectorMultiply _pull);
 
 // Tip over the lower edge so the lid stays just above its landing surface.
-// Half-extents of the stock lid in its native axes.
-private _halfSize = [0.4151, 0.0413, 0.2652];
-private _normal = [_restDir, [0, 0, 1]] select ((_restDir select 2) < 0.7);
+// Half-extents match the native axes of the seated and flat poses.
+private _faceY = (_restDir vectorDotProduct _normal) > 0.5;
+private _halfSize = [[0.4151, 0.2652, 0.0413], [0.4151, 0.0413, 0.2652]] select _faceY;
 private _heightForPose = {
     params ["_dir", "_up", "_normal", "_halfSize"];
     private _side = _dir vectorCrossProduct _up;
@@ -23,13 +23,14 @@ private _hover = _restPos vectorAdd [0, 0, 0.025];
 private _tipBaseZ = (_hover select 2) - ([_restDir, _restUp, _normal, _halfSize] call _heightForPose);
 private _uprightZ = _tipBaseZ + ([_caseDir, _caseUp, _normal, _halfSize] call _heightForPose);
 // Keep the lid at its release depth until its full width is beside the cabinet.
-private _lateralDistance = (_restPos vectorDiff _released) vectorDotProduct _caseUp;
-private _clear = _released vectorAdd (_caseUp vectorMultiply _lateralDistance);
+private _lateralDistance = (_restPos vectorDiff _released) vectorDotProduct _side;
+private _clear = _released vectorAdd (_side vectorMultiply _lateralDistance);
 _clear set [2, (_seated select 2) max _uprightZ];
 private _extraHeight = (_clear select 2) - _uprightZ;
 
 if (_opening) then {
-    diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then %3 m sideways", _pull toFixed 3, _caseDir, (abs _lateralDistance) toFixed 3];
+    diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then %3 m sideways; lid face %4, landing normal %5",
+        _pull toFixed 3, _outward, (abs _lateralDistance) toFixed 3, ["Z", "Y"] select _faceY, _normal];
 };
 
 private _parts = [_lid] + _lidPaint;
