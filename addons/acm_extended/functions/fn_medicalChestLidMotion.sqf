@@ -3,7 +3,7 @@ params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revisio
 
 _seatPose params ["_seated", "_caseDir", "_caseUp"];
 _restPose params ["_restPos", "_restDir", "_restUp"];
-private _pull = (_restPos vectorDiff _seated) vectorDotProduct _caseDir;
+private _pull = 0.11;
 private _released = _seated vectorAdd (_caseDir vectorMultiply _pull);
 
 // Tip over the lower edge so the lid stays just above its landing surface.
@@ -22,12 +22,14 @@ private _heightForPose = {
 private _hover = _restPos vectorAdd [0, 0, 0.025];
 private _tipBaseZ = (_hover select 2) - ([_restDir, _restUp, _normal, _halfSize] call _heightForPose);
 private _uprightZ = _tipBaseZ + ([_caseDir, _caseUp, _normal, _halfSize] call _heightForPose);
-private _clear = +_restPos;
+// Keep the lid at its release depth until its full width is beside the cabinet.
+private _side = _caseUp vectorMultiply -1;
+private _clear = _released vectorAdd (_side vectorMultiply ((_restPos vectorDiff _released) vectorDotProduct _side));
 _clear set [2, (_seated select 2) max _uprightZ];
 private _extraHeight = (_clear select 2) - _uprightZ;
 
 if (_opening) then {
-    diag_log format ["[ACME] Medical chest lid path: %1 m straight pull, sideways carry, flip in place", _pull toFixed 3];
+    diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then sideways to %3 m", _pull toFixed 3, _caseDir, ((_clear vectorDiff _released) vectorDotProduct _side) toFixed 3];
 };
 
 private _parts = [_lid] + _lidPaint;
@@ -91,7 +93,8 @@ private _apply = {
                 _dir = vectorNormalized ([_caseDir, _restDir, _s] call _lerp);
                 _up = [_caseUp, _restUp, _s] call _lerp;
                 _up = vectorNormalized (_up vectorDiff (_dir vectorMultiply (_up vectorDotProduct _dir)));
-                private _pos = +_restPos;
+                // Align with the landing point while tipping outside the cabinet.
+                private _pos = [_clear, _restPos, _s] call _lerp;
                 private _height = [_dir, _up, _normal, _halfSize] call _heightForPose;
                 _pos set [2, _tipBaseZ + _height + _extraHeight * (1 - _s)];
                 _pos

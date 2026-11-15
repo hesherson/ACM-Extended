@@ -32,7 +32,9 @@ def request_fixture():
     }.items():
         view = view.replace(engine, stand_in)
         drawer_tick = drawer_tick.replace(engine, stand_in)
-    lid_base = adapt(read("medicalChestLidBase"))
+    lid_base = adapt(read("medicalChestLidBase")).replace(
+        "0 boundingBoxReal _chest", "[[-.423,-.170,-.266],[.421,.163,.266]]"
+    )
     replacements = {
         'isRemoteExecuted': '_remote',
         'is3DEN': '_eden',
@@ -43,7 +45,7 @@ def request_fixture():
         '_actor distance _target': '_distance',
         'getNumber (configOf _chest >> "acmeChestVariant")': '_fixtureVariant',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
-        'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _chest modelToWorldWorld [0, 0.13, 0]]':
+        'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _seatPose select 0]':
             '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
         '    _cabinet allowDamage false;': '',
         'getArray (configOf _chest >> "hiddenSelectionsTextures")': '["fixture_body_co.paa"]',
@@ -157,7 +159,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
         [(_open getVariable "fixtureBodyTexture") isEqualTo "fixture_body_co.paa", "open cabinet lost the closed chest's native color"] call _check;
         [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
-        [((_placed select 1 select 1) vectorDistance [20.82, 12.23, 0]) < .001 && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
+        [((_placed select 1 select 1) vectorDistance [20.82, 12, 0]) < .001 && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         [(_open getVariable ["fixtureFrozen", false]) && {(_drawers select 0 select 2) == 0}, "cabinet was free to tip or drawers began open"] call _check;
@@ -247,16 +249,19 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
             "lid turned or moved backwards while carrying sideways"] call _check;
         [((_slide select 0) - _slideEarly) > 1.2 * (_slideEarly - _slideStart),
             "slide did not ramp up to its faster middle section"] call _check;
-        (0.325 call _sample) params ["_turn", "_turnAxes"];
-        [abs ((_turn select 0) - 20.82) < .001 && {abs ((_turn select 1) - 12.23) < .001}
+        (0.20 call _sample) params ["_outboard", "_outboardAxes"];
+        [abs ((_outboard select 0) - 20.82) < .001 && {abs ((_outboard select 1) - 12.23) < .001}
+            && {_outboardAxes isEqualTo _upright}, "lid began to turn before it was beside the cabinet"] call _check;
+        (0.125 call _sample) params ["_turn", "_turnAxes"];
+        [abs ((_turn select 0) - 20.82) < .001 && {(_turn select 1) > 12} && {(_turn select 1) < 12.23}
             && {(_turnAxes select 0 select 2) > 0} && {_gearRequests isEqualTo []},
-            "lid swung backwards or flipped before reaching its landing point"] call _check;
+            "lid failed to tip into its original depth after clearing the cabinet"] call _check;
         (0.235 call _sample) params ["_settling", "_settlingAxes"];
         [(_settling select 2) > .05 && {(_settling select 2) < .08} && {_settlingAxes isEqualTo _flat}
-            && {((_settling vectorDiff _turn) select 1) == 0} && {_gearRequests isEqualTo []},
+            && {abs ((_settling select 1) - 12) < .001} && {_gearRequests isEqualTo []},
             "lid hovered or moved sideways instead of settling down"] call _check;
         (0.10 call _sample) params ["_rest", "_restAxes"];
-        [(_rest vectorDistance [20.82,12.23,0.05]) < .001 && {_restAxes isEqualTo _flat}
+        [(_rest vectorDistance [20.82,12,0.05]) < .001 && {_restAxes isEqualTo _flat}
             && {count _gearRequests == 1} && {count _drawers == 1} && {_removedMotion isEqualTo [30]},
             "Gear opened early or the drawers opened without a viewer"] call _check;
         [_cab, _medic, false, 1] call _request;
@@ -269,7 +274,7 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
     ''')
 
 
-def test_lid_seats_flush_at_the_original_closed_cover_plane():
+def test_lid_seats_on_the_reversed_release_side():
     source = adapt(read("medicalChestLidSeat"))
     for engine, fixture in (
         ('getPosWorld _chest', '[0,0,.43]'),
@@ -281,10 +286,10 @@ def test_lid_seats_flush_at_the_original_closed_cover_plane():
         {
             private _forward = [sin _x, cos _x, 0];
             ([_patient] call _seatLid) params ["_seat", "_dir", "_up"];
-            [(_dir vectorDistance _forward) < .0001 && {abs (_up vectorDotProduct _dir) < .0001},
-                "lid twisted or pitched away from the closed cover"] call _check;
-            [abs ((_seat vectorDotProduct _dir) + 0.0413 - 0.16343) < .0001 && {(_seat select 2) == .43},
-                "lid jumped from the closed cover during the visual swap"] call _check;
+            [(_dir vectorDotProduct _forward) < -.999 && {abs (_up vectorDotProduct _dir) < .0001},
+                "lid retained the previous pull direction or lost its upright pose"] call _check;
+            [abs ((_seat vectorDotProduct _dir) - .1222) < .0001 && {(_seat select 2) == .43},
+                "lid did not start at the corrected face of the case"] call _check;
         } forEach [0, 90, 172, 270];
     ''')
 
@@ -573,8 +578,9 @@ def test_rear_of_open_stock_cabinet_stays_aligned_with_closed_shell(heading, fro
         private _rearShift = (_worldPosition vectorDiff _origin) vectorDotProduct _forward;
         [abs (_rearShift - .04302693) < .0001, "rear of the open cabinet slipped backwards"] call _check;
         [(_orient select 1) vectorDotProduct _forward < -.999, "native drawer front turned away"] call _check;
-        [.16343084 - .04125522 - .04076026 + .051 > _rearShift + {front_extent},
-            "the short lid pull did not clear the aligned drawer front"] call _check;
+        [.1222 + .11 - .04076026 > .2130746 - _rearShift,
+            "the reversed pull did not clear the cabinet shell for the sideways pass"] call _check;
+        [.82 - .2652 > .269, "the lid has insufficient lateral clearance for the tip"] call _check;
     ''')
 
 

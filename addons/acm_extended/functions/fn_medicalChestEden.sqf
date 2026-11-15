@@ -45,9 +45,7 @@ private _look = [typeOf _entity, _open];
 private _heading = getDir _entity;
 private _base = [getPosWorld _entity, [_entity], 0.3, 2, true] call ACME_fnc_medicalChestGround;
 private _lidSupport = if (_open) then {
-    private _closedPose = [_entity, _base, _heading, "closed", [0, 0, 1], objNull, false] call ACME_fnc_medicalChestPlace;
-    private _seatPose = [_entity, _closedPose] call ACME_fnc_medicalChestLidSeat;
-    [_base, _seatPose, [_entity], true] call ACME_fnc_medicalChestLidBase
+    [_base, _heading, _entity, objNull, true] call ACME_fnc_medicalChestLidBase
 } else {[]};
 private _next = [_base, _heading, _lidSupport];
 private _replace = _entity isNotEqualTo _owner || {_look isNotEqualTo _oldLook}
@@ -74,7 +72,7 @@ if (_replace || {_next isNotEqualTo _transform}) then {
     [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, [0, 0, 1], _entity] call ACME_fnc_medicalChestPlace;
     if (_open) then {
         _lidSupport params ["_side", "_normal"];
-        [_parts select 1, _side, _heading, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace
+        [_parts select 1, _side, (_heading + 180) % 360, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace
     };
     if (_replace && {_open}) then {
         private _cabinet = _parts select 0;

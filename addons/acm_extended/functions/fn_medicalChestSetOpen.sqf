@@ -34,7 +34,8 @@ if (_opening) then {
         selectRandom ["ACME_MedicalChest4Drawers", "ACME_MedicalChest7Drawers"]
     };
     _cabinet = createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"];
-    _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _chest modelToWorldWorld [0, 0.13, 0]];
+    _seatPose = [_chest] call ACME_fnc_medicalChestLidSeat;
+    _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _seatPose select 0];
     if (isNull _cabinet || {isNull _lid}) exitWith {
         if (!isNull _cabinet) then {deleteVehicle _cabinet;};
         if (!isNull _lid) then {deleteVehicle _lid;};
@@ -51,8 +52,7 @@ if (_opening) then {
     _chest setVariable ["ACME_medicalChestLid", _lid];
     private _drawerPlan = [_cabinet] call ACME_fnc_medicalChestDrawerPlan;
     [_cabinet, _drawerPlan, 0] call ACME_fnc_medicalChestDrawers;
-    _seatPose = [_chest] call ACME_fnc_medicalChestLidSeat;
-    ([_base, _seatPose, [_chest, _lid]] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
+    ([_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
     private _coverForward = _seatPose select 1;
     private _coverHeading = (_coverForward select 0) atan2 (_coverForward select 1);
     _restPose = [_lid, _side, _coverHeading, "lid", _normal, _chest, false] call ACME_fnc_medicalChestPlace;

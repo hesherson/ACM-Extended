@@ -1,6 +1,8 @@
-params ["_base", "_seatPose", "_ignore", ["_editor", false]];
-_seatPose params ["_seated", "_forward", "_up"];
-// Keep the landing point at the depth of the released lid.
-private _side = _seated vectorAdd (_forward vectorMultiply 0.11) vectorAdd (_up vectorMultiply -0.82);
-_side set [2, _base select 2];
-[_side, _ignore, 0.65, 0.7, _editor, true] call ACME_fnc_medicalChestGround
+params ["_base", "_heading", "_chest", "_lid", ["_editor", false]];
+private _right = [cos _heading, -(sin _heading), 0];
+(0 boundingBoxReal _chest) params ["_min", "_max"];
+private _extent = _max vectorDiff _min;
+// Choose the original side from the chest footprint, independently of the release.
+private _sideDirection = [[sin _heading, cos _heading, 0], _right] select ((_extent select 1) < (_extent select 2));
+private _side = _base vectorAdd (_sideDirection vectorMultiply 0.82);
+[_side, [_chest, _lid], 0.65, 0.7, _editor, true] call ACME_fnc_medicalChestGround
