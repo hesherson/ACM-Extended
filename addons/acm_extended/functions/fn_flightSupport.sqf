@@ -27,10 +27,18 @@ private _shareSamples = !isNil "_acmeFlightSupportSamples"
     && {isNil {_acmeFlightSupportSamples get "invalidated"}};
 private _rayKey = [_start, _end];
 private _raySamples = [];
+private _patientKey = "";
+private _sampleEntries = [];
+private _sampleIndex = -1;
 if (_shareSamples) then {
-    private _sample = _acmeFlightSupportSamples get _patient;
-    if (!isNil "_sample" && {(_sample select 0) isEqualTo _rayKey}) then {
-        _raySamples = _sample select 1;
+    // Use a string key and keep exact object identity when units share a name.
+    _patientKey = "patient:" + str _patient;
+    private _cachedEntries = _acmeFlightSupportSamples get _patientKey;
+    if (!isNil "_cachedEntries") then {_sampleEntries = _cachedEntries;};
+    _sampleIndex = _sampleEntries findIf {(_x select 0) isEqualTo _patient};
+    if (_sampleIndex >= 0) then {
+        private _sample = _sampleEntries select _sampleIndex;
+        if ((_sample select 1) isEqualTo _rayKey) then {_raySamples = _sample select 2;};
     };
 };
 if (_raySamples isEqualTo []) then {
@@ -38,7 +46,15 @@ if (_raySamples isEqualTo []) then {
         private _hits = lineIntersectsSurfaces [_start,_end,_patient,objNull,true,1,_x,"NONE"];
         _raySamples pushBack _hits;
     } forEach ["ROADWAY","GEOM","PHYSX"];
-    if (_shareSamples) then {_acmeFlightSupportSamples set [_patient, [_rayKey, _raySamples]];};
+    if (_shareSamples) then {
+        private _sample = [_patient, _rayKey, _raySamples];
+        if (_sampleIndex < 0) then {
+            _sampleEntries pushBack _sample;
+        } else {
+            _sampleEntries set [_sampleIndex, _sample];
+        };
+        _acmeFlightSupportSamples set [_patientKey, _sampleEntries];
+    };
 };
 {
     private _hits = _x;

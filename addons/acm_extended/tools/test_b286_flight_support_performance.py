@@ -42,6 +42,8 @@ def test_actual_paired_callback_queries_each_patient_once_and_discards_the_conte
         ACME_fnc_preoxygenationTick={{
             _order pushBack "preoxygenation";
             {{[([_x] call ACME_fnc_flightSupport) isEqualTo [],"ground preoxygenation captured air"] call _check;}} forEach _patients;
+            [(keys _acmeFlightSupportSamples) findIf {{!(_x isEqualType "")}} == -1,
+                "flight support used a key type the Arma runtime rejects"] call _check;
         }};
         call ACME_fnc_expansionRegisterRuntime;
         private _callback=(_handlers select 0) select 0;
@@ -51,6 +53,26 @@ def test_actual_paired_callback_queries_each_patient_once_and_discards_the_conte
         [isNil "_acmeFlightSupportSamples","geometry context escaped callback scope"] call _check;
         call _callback;
         [count _rays=={patients * 6},"later invocation reused old scene rays"] call _check;
+    ''')
+
+
+def test_shared_key_keeps_coincident_patients_rays_separate():
+    support = code("flightSupport")
+    assert "str _patient" in support
+    support = support.replace("str _patient", '"shared-name"')
+    execute(setup() + support + r'''
+        private _acmeFlightSupportSamples=createHashMap;
+        private _first=_patient;
+        private _second=uiNamespace;
+        private _ray={
+            _rays pushBack +_this;
+            if ((_this select 2) isEqualTo _first && {(_this select 6) isEqualTo "GEOM"}) then {_geom} else {[]}
+        };
+        for "_pass" from 1 to 2 do {
+            [count ([_first] call ACME_fnc_flightSupport)==3,"first casualty lost aircraft floor"] call _check;
+            [([_second] call ACME_fnc_flightSupport) isEqualTo [],"second casualty inherited cached rays"] call _check;
+        };
+        [count _rays==6,"colliding names stopped ray reuse or mixed patients"] call _check;
     ''')
 
 
