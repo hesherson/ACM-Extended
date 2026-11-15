@@ -54,13 +54,24 @@ private _apply = {
     };
 
     private _elapsed = CBA_missionTime - _started;
-    private _duration = 0.60;
+    private _pullEnd = 0.19;
+    private _slideDuration = 0.16;
+    private _turnDuration = 0.18;
+    private _settleDuration = 0.28;
+    private _slideEnd = _pullEnd + _slideDuration;
+    private _turnEnd = _slideEnd + _turnDuration;
+    private _duration = _turnEnd + _settleDuration;
     private _finished = _elapsed >= _duration;
     private _t = if (_opening) then {_elapsed min _duration} else {(_duration - _elapsed) max 0};
     private _ease = {
-        params ["_fraction"];
+        params ["_fraction", ["_sharp", false]];
         _fraction = _fraction max 0 min 1;
-        _fraction * _fraction * (3 - 2 * _fraction)
+        private _square = _fraction * _fraction;
+        if (_sharp) exitWith {
+            // Quintic smoothstep concentrates the speed through the middle of the motion.
+            _square * _fraction * (10 + _fraction * (6 * _fraction - 15))
+        };
+        _square * (3 - 2 * _fraction)
     };
     private _lerp = {
         params ["_from", "_to", "_s"];
@@ -68,14 +79,14 @@ private _apply = {
     };
     private _dir = _caseDir;
     private _up = _caseUp;
-    private _pos = if (_t < 0.10) then {
-        [_seated, _released, [_t / 0.10] call _ease] call _lerp
+    private _pos = if (_t < _pullEnd) then {
+        [_seated, _released, [_t / _pullEnd] call _ease] call _lerp
     } else {
-        if (_t < 0.26) then {
-            [_released, _clear, [(_t - 0.10) / 0.16] call _ease] call _lerp
+        if (_t < _slideEnd) then {
+            [_released, _clear, [(_t - _pullEnd) / _slideDuration, true] call _ease] call _lerp
         } else {
-            if (_t < 0.44) then {
-                private _s = [(_t - 0.26) / 0.18] call _ease;
+            if (_t < _turnEnd) then {
+                private _s = [(_t - _slideEnd) / _turnDuration, true] call _ease;
                 _dir = vectorNormalized ([_caseDir, _restDir, _s] call _lerp);
                 _up = [_caseUp, _restUp, _s] call _lerp;
                 _up = vectorNormalized (_up vectorDiff (_dir vectorMultiply (_up vectorDotProduct _dir)));
@@ -83,7 +94,7 @@ private _apply = {
             } else {
                 _dir = _restDir;
                 _up = _restUp;
-                [_hover, _restPos, [(_t - 0.44) / 0.16] call _ease] call _lerp
+                [_hover, _restPos, [(_t - _turnEnd) / _settleDuration] call _ease] call _lerp
             }
         }
     };

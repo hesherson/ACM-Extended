@@ -41,6 +41,8 @@ if (_opening) then {
         _cabinet = objNull;
     };
     _cabinet allowDamage false;
+    private _bodyTexture = getArray (configOf _chest >> "hiddenSelectionsTextures") param [0, ""];
+    if (_bodyTexture != "") then {_cabinet setObjectTextureGlobal [0, _bodyTexture];};
     _cabinet enableSimulationGlobal false;
     ([_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
     [_cabinet, _base, _heading, "cabinet", [0, 0, 1], _chest] call ACME_fnc_medicalChestPlace;

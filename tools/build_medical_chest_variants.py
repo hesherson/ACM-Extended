@@ -405,30 +405,6 @@ def ghost_stencil(text, height, color, rng, glyphs):
     return paint
 
 
-def shell_tint(region, size, rng):
-    width,height = size
-    mask = Image.new("L",size)
-    draw = ImageDraw.Draw(mask)
-    # The stock shell's seam borders the olive cover. Keep the fittings dark.
-    if region == "back":
-        draw.rectangle((0,0,width,height),fill=123)
-        draw.rectangle((.39*width,0,.61*width,.06*height),fill=0)
-        draw.rectangle((.03*width,.93*height,.16*width,height),fill=0)
-        draw.rectangle((.84*width,.93*height,.97*width,height),fill=0)
-    elif region in ("right","left"):
-        draw.rectangle((.248*width,0,width,height),fill=125)
-        for x0,y0,x1,y1 in SIDE_HANDLES:
-            draw.rounded_rectangle((x0*width,y0*height,x1*width,y1*height),radius=13,fill=0)
-        for y in (.105,.272,.679,.868):
-            draw.rectangle((.248*width,(y-.025)*height,.365*width,(y+.024)*height),fill=0)
-    else:
-        draw.rectangle((0,.26*height,width,height),fill=125)
-        for x0,y0,x1,y1 in END_HANDLE + (END_WHEELS if region == "bottom" else ((.07,.42,.306,.74),)):
-            draw.rounded_rectangle((x0*width,y0*height,x1*width,y1*height),radius=12,fill=0)
-    grain = noise(size, 31, rng).point(lambda p: 200+p*55//255)
-    return color_layer(size,(115,125,100),ImageChops.multiply(mask.filter(ImageFilter.GaussianBlur(1.1)),grain))
-
-
 def artwork(number, glyphs):
     lines, color, center, height, angle, halo, residue_pos, residue_style, tape = DESIGNS[number-1]
     rng = random.Random(32540 + number*193)
@@ -462,11 +438,13 @@ def artwork(number, glyphs):
     if number in WHITE_TAPE:
         pos,length,width,rotation,label = WHITE_TAPE[number]
         stamp(lid, painters_tape(length,width,label,rng), pos, rotation)
-    layers = {"lid": lid}
+    return {"lid": lid, **shell_artwork(number, rng, wear_rng)}
+
+
+def shell_artwork(number, rng, wear_rng):
+    layers = {}
     for region, size in (("back", FRONT), ("right", SIDE), ("left", SIDE), ("top", TOP), ("bottom", TOP)):
-        panel = shell_tint(region, size, wear_rng) if number == MISMATCHED_FINISH else Image.new("RGBA",size)
-        panel.alpha_composite(contact_wear(region, size, wear_rng))
-        layers[region] = panel
+        layers[region] = contact_wear(region, size, wear_rng)
 
     for side_index, region in enumerate(("right","left")):
         side = layers[region]
@@ -592,6 +570,38 @@ def atlas(layers):
     return image
 
 
+
+def native_shell_albedo(olive_path, sand_path, lid_uv, cabinet4_uv, cabinet7_uv):
+    """Tint the molded body in native UV space and keep the olive lid islands."""
+    with Image.open(olive_path) as image:
+        olive = image.convert("RGB")
+    with Image.open(sand_path) as image:
+        sand = image.convert("RGB")
+    if olive.size != sand.size:
+        raise ValueError("Native cabinet albedos must share the same texture layout")
+
+    def uv_mask(*paths):
+        mask = Image.new("L", olive.size)
+        draw = ImageDraw.Draw(mask)
+        for path in paths:
+            for lod in json.loads(path.read_text()):
+                uv = np.asarray(lod["UV"]) * (olive.width - 1, olive.height - 1)
+                for face in lod["Faces"]:
+                    draw.polygon([tuple(uv[index]) for index in face], fill=255)
+        return mask
+
+    # Extend the color outside the UV islands to avoid dark borders in filtered mipmaps.
+    lid_mask = uv_mask(lid_uv).filter(ImageFilter.MaxFilter(9))
+    body_mask = uv_mask(cabinet4_uv, cabinet7_uv).filter(ImageFilter.MaxFilter(17))
+    paint_mask = ImageChops.subtract(body_mask, lid_mask)
+    olive_rgb = np.asarray(olive, dtype=np.float32)
+    sand_rgb = np.asarray(sand, dtype=np.float32)
+    # Use the stock sand finish's luminance change so the native wear and dark hardware survive.
+    luminance_change = (sand_rgb - olive_rgb) @ np.array((.2126, .7152, .0722), dtype=np.float32)
+    green_tint = luminance_change[:, :, None] * np.array((.91, 1.19, .90), dtype=np.float32)
+    painted = Image.fromarray(np.uint8(np.clip(olive_rgb + green_tint, 0, 255).round()))
+    return Image.composite(painted, olive, paint_mask)
+
 def generic_open_atlas(base_paint, png_dir, hemtt):
     """Put the original chest's markings on the same fitted surfaces as the wear."""
     def decode(paa):
@@ -631,6 +641,9 @@ def main():
     parser.add_argument("--lid-mesh", type=Path, required=True)
     parser.add_argument("--png-dir", type=Path, required=True)
     parser.add_argument("--hemtt", required=True)
+    parser.add_argument("--native-shell", nargs=5, type=Path,
+                        metavar=("OLIVE_PNG", "SAND_PNG", "LID_UV", "CABINET4_UV", "CABINET7_UV"),
+                        help="Rebuild the two-tone body albedo from native textures and visual LOD UV dumps")
     parser.add_argument("--open-only", action="store_true", help="Reuse existing paint atlases and update only open parts")
     args = parser.parse_args()
     if not args.open_only and (args.reference is None or args.closed_mesh is None):
@@ -656,6 +669,11 @@ def main():
         subprocess.run([args.hemtt, "utils", "paa", "convert", str(png), str(temp)], check=True)
         paa.write_bytes(temp.read_bytes())
         temp.unlink()
+
+    if args.native_shell:
+        body = args.png_dir / f"chest_{MISMATCHED_FINISH}_shell_co.png"
+        native_shell_albedo(*args.native_shell).save(body)
+        write_texture(body, destination / body.with_suffix(".paa").name)
 
     for number in range(11):
         paint = f"chest_{number}_ca.paa"

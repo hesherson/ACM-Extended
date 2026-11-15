@@ -79,6 +79,8 @@ if (_replace || {_next isNotEqualTo _transform}) then {
         [_cabinet, [_cabinet] call ACME_fnc_medicalChestDrawerPlan, 0] call ACME_fnc_medicalChestDrawers;
     };
     if (_replace) then {
+        private _bodyTexture = getArray (configOf _entity >> "hiddenSelectionsTextures") param [0, ""];
+        if (_bodyTexture != "") then {(_parts select 0) setObjectTexture [0, _bodyTexture];};
         private _variant = getNumber (configOf _entity >> "acmeChestVariant");
         {
             private _part = _x;

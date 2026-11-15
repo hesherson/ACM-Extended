@@ -74,7 +74,12 @@
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_05,5,"Medical Chest 05 (PAD)","dressings");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_06,6,"Medical Chest 06 (IV FLUIDS)","fluids");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_07,7,"Medical Chest 07 (AIRWAY)","airway");
-    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_08,8,"Medical Chest 08 (BLOOD)","blood");
+    class ACME_MedicalChest_08: ACME_MedicalChest {
+        displayName = "Medical Chest 08 (BLOOD)";
+        acmeChestVariant = 8;
+        acmeChestStock = "blood";
+        hiddenSelectionsTextures[] = {"\acm_extended\data\medical_chest\variants\chest_8_shell_co.paa"};
+    };
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_09,9,"Medical Chest 09 (Black Cross)","");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_10,10,"Medical Chest 10 (Red Cross)","");
 #undef ACME_MEDICAL_CHEST_RETEXTURE
