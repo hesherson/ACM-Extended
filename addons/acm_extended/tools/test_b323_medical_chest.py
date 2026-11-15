@@ -10,6 +10,22 @@ from test_menu_death_lifecycle import ROOT, adapt, execute, read
 def request_fixture():
     request = adapt(read("medicalChestRequest"))
     transition = adapt(read("medicalChestSetOpen"))
+    motion = adapt(read("medicalChestOpenMotion"))
+    for engine, stand_in in {
+        "getPosWorld _lid": "(_lid getVariable 'fixturePosition')",
+        "vectorDir _lid": "[0,0,1]",
+        "vectorUp _lid": "[-1,0,0]",
+        "vectorDir _chest": "[0,1,0]",
+        "vectorUp _chest": "[-1,0,0]",
+        "(0 boundingBoxReal _chest) select 1 select 1": "0.16",
+        "(0 boundingBoxReal _lid) select 1 select 1": "0.04",
+        "_chest modelToWorldWorld [0, _chestFront - _lidFront, 0]": "[20, 12 + _chestFront - _lidFront, 0.43]",
+        "_x setVectorDirAndUp [_dir, _up];": "_x setVariable ['fixtureAxes', [_dir, _up]];",
+        "_x setPosWorld _position;": "_x setVariable ['fixturePosition', _position];",
+        "typeOf _cabinet": "'fixture cabinet'",
+    }.items():
+        assert engine in motion, engine
+        motion = motion.replace(engine, stand_in)
     lid_base = adapt(read("medicalChestLidBase")).replace("0 boundingBoxReal _chest", "[[-.423,-.170,-.266],[.421,.163,.266]]")
     replacements = {
         'isRemoteExecuted': '_remote',
@@ -41,6 +57,7 @@ def request_fixture():
     definitions = (
         "private _request = {" + request + "};"
         "ACME_fnc_medicalChestSetOpen = {" + transition + "};"
+        "ACME_fnc_medicalChestOpenMotion = {" + motion + "};"
         "ACME_fnc_medicalChestLidBase = {" + lid_base + "};"
     )
     return definitions + r'''
@@ -53,6 +70,16 @@ def request_fixture():
         private _placed = [];
         private _gearRequests = [];
         private _drawers = [];
+        private _plans = [];
+        private _motion = [];
+        private _removedMotion = [];
+        private _fixtureLidPaint = currentNamespace;
+        private _openedAt = CBA_missionTime;
+        private _tickOpening = {
+            private _remote = false;
+            CBA_missionTime = _openedAt + _this;
+            [_motion select 2, 30] call (_motion select 0);
+        };
         private _markings = [];
         private _fixtureVariant = 10;
         private _hidden = false;
@@ -73,9 +100,20 @@ def request_fixture():
         _chest setVariable ["ACME_medicalChestState", [0, false]];
         _chest setVariable ["ACME_medicalChestCargo", _cargo];
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
-        ACME_fnc_medicalChestPlace = {_placed pushBack _this; [_this select 1, [0,1,0], [-1,0,0]]};
+        ACME_fnc_medicalChestPlace = {
+            _placed pushBack _this;
+            if ((_this select 3) == "lid") then {
+                (_this select 0) setVariable ["fixturePosition", [20.7, 12, 0.05]];
+            };
+        };
+        ACME_fnc_medicalChestDrawerPlan = {_plans pushBack _this; [["drawer"], [0.63], true]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
-        ACME_fnc_medicalChestDecals = {_markings pushBack (_this select [1, 2]); []};
+        ACME_fnc_medicalChestDecals = {
+            _markings pushBack (_this select [1, 2]);
+            if ((_this select 1) isEqualTo "lid") then {[_fixtureLidPaint]} else {[]}
+        };
+        CBA_fnc_addPerFrameHandler = {_motion = _this; 30};
+        CBA_fnc_removePerFrameHandler = {_removedMotion append _this;};
         CBA_fnc_globalEvent = {_events pushBack _this;};
         CBA_fnc_targetEvent = {_gearRequests pushBack _this;};
     '''
@@ -85,13 +123,17 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
     execute(request_fixture() + '''
         [_chest, _medic, true, 0] call _request;
         private _open = _chest getVariable "ACME_medicalChestCabinet";
-        [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "closed shell did not yield to the drawers"] call _check;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [0,false] && {_hidden}, "inventory became available during the visual swap"] call _check;
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
         [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
         [(_placed select 0 select 1) isEqualTo [20.7, 12, 0] && {(_placed select 0 select 3) == "lid"} && {(_placed select 1 select 3) == "cabinet"}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
-        [(_open getVariable ["fixtureFrozen", false]) && {_drawers select 0 select 2}, "open cabinet was free to tip or needs simulation to set the drawers"] call _check;
+        [(_open getVariable ["fixtureFrozen", false]) && {(_drawers select 0 select 2) == 0}, "cabinet was free to tip or drawers began open"] call _check;
+        [_open, _medic, false, 1] call _request;
+        [count _markings == 2 && {_gearRequests isEqualTo []}, "early close or Gear interrupted the animation"] call _check;
+        0.59 call _tickOpening;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "opening did not publish the finished cabinet"] call _check;
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1], _medic]], "open did not send exactly one Gear request to the initiating player"] call _check;
         _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
         [_open, _medic, false, 1] call _request;
@@ -106,6 +148,56 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
     ''')
 
 
+def test_lid_and_paint_move_together_before_the_drawers_slide_and_gear_opens():
+    execute(request_fixture() + r'''
+        [_chest, _medic, true, 0] call _request;
+        private _lid = _chest getVariable "ACME_medicalChestLid";
+        private _start = _lid getVariable "fixturePosition";
+        [abs ((_start select 1) - 12.12) < 0.001 && {(_lid getVariable "fixtureAxes") isEqualTo [[0,1,0],[-1,0,0]]},
+            "the lid did not start in the closed chest's plane"] call _check;
+        private _sample = {
+            _this call _tickOpening;
+            private _pos = _lid getVariable "fixturePosition";
+            private _axes = _lid getVariable "fixtureAxes";
+            [_pos isEqualTo (_fixtureLidPaint getVariable "fixturePosition") && {_axes isEqualTo (_fixtureLidPaint getVariable "fixtureAxes")},
+                "paint drifted away from the lid"] call _check;
+            [_pos, _axes]
+        };
+        (0.10 call _sample) params ["_lift", "_liftAxes"];
+        [(_lift select 1) > (_start select 1) && {(_lift select 2) > (_start select 2)} && {_liftAxes isEqualTo [[0,1,0],[-1,0,0]]},
+            "lid did not lift clear of the case before rotating"] call _check;
+        (0.23 call _sample) params ["_swing", "_swingAxes"];
+        [(_swing select 0) > (_start select 0) && {(_swingAxes select 0 select 2) > 0} && {count _drawers == 1}
+            && {_gearRequests isEqualTo []}, "lid failed to swing clear before the drawers and Gear"] call _check;
+        (0.44 call _sample) params ["_settle", "_settleAxes"];
+        private _drawerFraction = _drawers select 1 select 2;
+        [(_settle select 2) < (_swing select 2) && {_settleAxes isEqualTo [[0,0,1],[-1,0,0]]}
+            && {_drawerFraction > 0 && {_drawerFraction < 1}} && {_gearRequests isEqualTo []},
+            "drawers did not slide while the painted lid settled or Gear opened early"] call _check;
+        (0.57 call _sample) params ["_end", "_endAxes"];
+        [_end isEqualTo [20.7,12,0.05] && {_endAxes isEqualTo [[0,0,1],[-1,0,0]]}
+            && {(_drawers select 2 select 2) == 1} && {count _gearRequests == 1} && {_removedMotion isEqualTo [30]},
+            "opening failed to complete at the exact resting pose and expose Gear"] call _check;
+    ''')
+
+
+def test_missing_lid_cancels_the_motion_and_allows_a_fresh_open():
+    execute(request_fixture() + r'''
+        [_chest, _medic, true, 0] call _request;
+        (_motion select 2) set [2, objNull];
+        _chest setVariable ["ACME_medicalChestLid", objNull];
+        0.15 call _tickOpening;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,false] && {!_hidden}
+            && {_gearRequests isEqualTo []} && {_removedMotion isEqualTo [30]},
+            "interrupted opening did not restore the closed shell"] call _check;
+        _openedAt = CBA_missionTime;
+        [_chest, _medic, true, 1] call _request;
+        0.59 call _tickOpening;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,true] && {count _gearRequests == 1},
+            "interrupted opening blocked future use"] call _check;
+    ''')
+
+
 def test_mission_start_open_and_later_close_share_the_same_cargo():
     execute(request_fixture() + r'''
         [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
@@ -114,7 +206,8 @@ def test_mission_start_open_and_later_close_share_the_same_cargo():
         [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true], "initial lid state was closed"] call _check;
         [(_created select 0) isEqualTo "ACME_MedicalChest4Drawers", "initial drawer layout differs from Eden"] call _check;
-        [(_drawers select 0 select 1) && {_audio isEqualTo []} && {_gearRequests isEqualTo []}, "initialization randomized the drawers or played audio"] call _check;
+        [(_plans select 0 select 1) && {(_drawers select 0 select 2) == 1} && {_motion isEqualTo []}
+            && {_audio isEqualTo []} && {_gearRequests isEqualTo []}, "initialization animated the drawers or played audio"] call _check;
         [(_cargo getVariable "fixtureAttached") isEqualTo (_chest getVariable "ACME_medicalChestCabinet"), "open chest did not expose the live cargo"] call _check;
         private _open = _chest getVariable "ACME_medicalChestCabinet";
         [_open, _medic, false, 1] call _request;

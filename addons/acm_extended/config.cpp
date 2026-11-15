@@ -2324,7 +2324,9 @@ class CfgFunctions {
             class medicalChestEden {};
             class medicalChestSetOpen {};
             class medicalChestStock {};
+            class medicalChestDrawerPlan {};
             class medicalChestDrawers {};
+            class medicalChestOpenMotion {};
             class medicalChestDecals {};
             class medicalChestRequest {};
             class medicalChestCanUse {};

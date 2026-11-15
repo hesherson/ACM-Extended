@@ -1,8 +1,11 @@
 /* Trusted server-side transition used after validation or during initialization. */
-params ["_chest", "_opening", "_revision", ["_initial", false]];
+params ["_chest", "_opening", "_revision", ["_initial", false], ["_actor", objNull]];
 if (!isServer || {is3DEN} || {isRemoteExecuted && {_initial}}) exitWith {};
 private _cabinet = _chest getVariable ["ACME_medicalChestCabinet", objNull];
 private _cargo = _chest getVariable ["ACME_medicalChestCargo", objNull];
+private _lid = objNull;
+private _lidPaint = [];
+private _drawerPlan = [];
 
 private _variant = getNumber (configOf _chest >> "acmeChestVariant");
 (_chest getVariable "ACME_medicalChestPlacement") params ["_base", "_heading"];
@@ -11,7 +14,7 @@ if (_opening) then {
         selectRandom ["ACME_MedicalChest4Drawers", "ACME_MedicalChest7Drawers"]
     };
     _cabinet = createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"];
-    private _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _base];
+    _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _base];
     if (isNull _cabinet || {isNull _lid}) exitWith {
         if (!isNull _cabinet) then {deleteVehicle _cabinet;};
         if (!isNull _lid) then {deleteVehicle _lid;};
@@ -28,10 +31,12 @@ if (_opening) then {
     _chest setVariable ["ACME_medicalChestCabinet", _cabinet, true];
     _chest setVariable ["ACME_medicalChestLid", _lid];
     _chest hideObjectGlobal true;
-    [_cabinet, _initial, true] call ACME_fnc_medicalChestDrawers;
+    _drawerPlan = [_cabinet, _initial] call ACME_fnc_medicalChestDrawerPlan;
+    [_cabinet, _drawerPlan, [0, 1] select _initial] call ACME_fnc_medicalChestDrawers;
     {deleteVehicle _x;} forEach (_chest getVariable ["ACME_medicalChestDecals", []]);
-    _chest setVariable ["ACME_medicalChestDecals",
-        ([_cabinet, "cabinet", _variant] call ACME_fnc_medicalChestDecals) + ([_lid, "lid", _variant] call ACME_fnc_medicalChestDecals)];
+    private _cabinetPaint = [_cabinet, "cabinet", _variant] call ACME_fnc_medicalChestDecals;
+    _lidPaint = [_lid, "lid", _variant] call ACME_fnc_medicalChestDecals;
+    _chest setVariable ["ACME_medicalChestDecals", _cabinetPaint + _lidPaint];
 } else {
     // Keep the same cargo, and move it out of native Gear reach while shut.
     detach _cargo;
@@ -46,11 +51,19 @@ if (_opening) then {
 };
 if (_opening && {isNull _cabinet}) exitWith {};
 
-_chest setVariable ["ACME_medicalChestState", [_revision + 1, _opening], true];
-if (!_opening) then {
-    ["ACME_medicalChestClosed", [_cargo, _revision + 1]] call CBA_fnc_globalEvent;
-};
 if (!_initial) then {
     private _sound = ["medical_chest_close", "medical_chest_open"] select _opening;
     playSound3D [format ["acm_extended\sound\%1.ogg", _sound], objNull, false, getPosWorld _chest, 1.5, 1, 18];
+};
+
+if (_opening && {!_initial}) exitWith {
+    // Until the motion finishes, the original revision still denies Gear and the close action.
+    _chest setVariable ["ACME_medicalChestOpening", true];
+    [_chest, _cabinet, _lid, _lidPaint, _drawerPlan, _cargo, _actor, _revision] call ACME_fnc_medicalChestOpenMotion;
+};
+
+_chest setVariable ["ACME_medicalChestState", [_revision + 1, _opening], true];
+_chest setVariable ["ACME_medicalChestOpening", false];
+if (!_opening) then {
+    ["ACME_medicalChestClosed", [_cargo, _revision + 1]] call CBA_fnc_globalEvent;
 };

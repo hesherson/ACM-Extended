@@ -8,14 +8,12 @@ if (!isServer || {isNull _actor} || {isNull _target} || {!alive _actor}
     || {isRemoteExecuted && {remoteExecutedOwner != owner _actor}}) exitWith {};
 
 private _chest = if (_opening) then {_target} else {_target getVariable ["ACME_medicalChestAnchor", objNull]};
-if (isNull _chest || {!(_chest isKindOf "ACME_MedicalChest")}) exitWith {};
+if (isNull _chest || {!(_chest isKindOf "ACME_MedicalChest")}
+    || {_chest getVariable ["ACME_medicalChestOpening", false]}) exitWith {};
 if ((_chest getVariable ["ACME_medicalChestState", []]) isNotEqualTo [_revision, !_opening]) exitWith {};
 private _cabinet = _chest getVariable ["ACME_medicalChestCabinet", objNull];
 if (!_opening && {_target isNotEqualTo _cabinet}) exitWith {};
 private _cargo = _chest getVariable ["ACME_medicalChestCargo", objNull];
 if (isNull _cargo) exitWith {};
 
-[_chest, _opening, _revision] call ACME_fnc_medicalChestSetOpen;
-if (_opening && {(_chest getVariable "ACME_medicalChestState") isEqualTo [_revision + 1, true]}) then {
-    ["ACME_medicalChestOpened", [_actor, _chest, _cargo, _revision + 1], _actor] call CBA_fnc_targetEvent;
-};
+[_chest, _opening, _revision, false, _actor] call ACME_fnc_medicalChestSetOpen;

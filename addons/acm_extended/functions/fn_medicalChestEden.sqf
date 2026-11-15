@@ -74,7 +74,10 @@ if (_replace || {_next isNotEqualTo _transform}) then {
         _lidSupport params ["_side", "_normal"];
         [_parts select 1, _side, _heading, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace
     };
-    if (_replace && {_open}) then {[_parts select 0, true, true] call ACME_fnc_medicalChestDrawers;};
+    if (_replace && {_open}) then {
+        private _cabinet = _parts select 0;
+        [_cabinet, [_cabinet, true] call ACME_fnc_medicalChestDrawerPlan] call ACME_fnc_medicalChestDrawers;
+    };
     if (_replace) then {
         private _variant = getNumber (configOf _entity >> "acmeChestVariant");
         {
