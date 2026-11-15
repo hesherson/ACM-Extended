@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake the existing chest artwork into the stock cabinet's shared olive UV texture.
+"""Bake the crate body and fit a separate, uniquely mapped paint layer to the lid.
 
 Supply the native olive albedo as PNG and the stock model's visual LOD dumps.
 Each dump is an array of LODs with Points, UV, and Sections containing Texture
@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 from build_medical_chest_variants import (
-    ATLAS_REGIONS, DATA, generic_open_atlas, paint_projections,
+    ATLAS_REGIONS, DATA, fitted_faces, generic_open_atlas, paint_projections, visual_model,
 )
 
 OLIVE = "portablecabinet_01_olive_co.paa"
@@ -67,14 +67,10 @@ def project_artwork(mapping, lod, surface, regions):
             stamp_triangle(mapping, uv[i], source[i])
 
 
-def texture_mapping(closed_lods, lid_lods, size):
+def texture_mapping(closed_lods, size):
     width, height = size
     mapping = np.full((height, width, 2), -1, dtype=np.float32)
-    for lod in reversed(closed_lods):
-        project_artwork(mapping, lod, "closed", {"lid"})
-    for lod in reversed(lid_lods):
-        project_artwork(mapping, lod, "lid", {"lid"})
-    # Preserve the closed shell artwork where a texture island touches the cover.
+    # The stock lid repeats mirrored UV islands. Bake only the crate body.
     for lod in reversed(closed_lods):
         project_artwork(mapping, lod, "closed", ATLAS_REGIONS.keys() - {"lid"})
     return mapping
@@ -99,7 +95,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--olive", type=Path, required=True)
     parser.add_argument("--closed-uv", type=Path, required=True)
-    parser.add_argument("--lid-uv", type=Path, required=True)
+    parser.add_argument("--closed-mesh", type=Path, required=True)
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--hemtt", default="hemtt")
     args = parser.parse_args()
@@ -118,12 +114,15 @@ def main():
 
     with Image.open(args.olive) as texture:
         olive = texture.convert("RGB")
-    mapping = texture_mapping(json.loads(args.closed_uv.read_text()), json.loads(args.lid_uv.read_text()), olive.size)
+    mapping = texture_mapping(json.loads(args.closed_uv.read_text()), olive.size)
     if (mapping[:, :, 0] >= 0).sum() < 1000:
         raise ValueError("The stock UV dumps did not cover the cabinet texture")
     shell_eight = decode(folder / "chest_8_shell_co.paa").convert("RGB")
     if shell_eight.size != olive.size:
         raise ValueError("The stock and tinted finishes must share the same UV atlas")
+    closed_lid_faces = tuple(fitted_faces(args.closed_mesh, "closed", {"lid"}))
+    if not closed_lid_faces:
+        raise ValueError("The stock closed mesh did not have any paintable lid faces")
     for number in range(11):
         art = folder / f"chest_{number}_ca.paa"
         artwork = decode(art) if number else generic_open_atlas(art, args.work, args.hemtt)
@@ -131,6 +130,9 @@ def main():
         png = args.work / f"chest_{number}_baked_co.png"
         bake(base, artwork, mapping).save(png)
         convert(png, folder / png.with_suffix(".paa").name)
+        lid_art = art.name if number else "chest_0_open_ca.paa"
+        texture = f"acm_extended\\data\\medical_chest\\variants\\{lid_art}"
+        (folder / f"chest_{number}_closed_lid.p3d").write_bytes(visual_model(closed_lid_faces, texture))
 
 
 if __name__ == "__main__":

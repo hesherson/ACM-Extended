@@ -507,7 +507,7 @@ def paint_projections(positions, normals, surface):
     return projections
 
 
-def fitted_faces(path, surface):
+def fitted_faces(path, surface, regions=None):
     points, faces = mesh_dump(path)
     positions = points[faces]
     edges = positions[:, 1:] - positions[:, :1]
@@ -516,10 +516,12 @@ def fitted_faces(path, surface):
     normals /= np.maximum(lengths, 1e-12)
 
     for selected, region, (u, v), offset in paint_projections(positions, normals, surface):
+        if regions is not None and region not in regions:
+            continue
         if surface == "cabinet":
             # Paint only exterior triangles behind the front opening. None
             # of the moving drawer geometry belongs in the finish.
-            selected = selected & (y.max(axis=1) < .053)
+            selected = selected & ((.05 - positions[:, :, 2]).max(axis=1) < .053)
         atlas_x, atlas_y, width, height = ATLAS_REGIONS[region]
         uv = np.stack(((atlas_x + u.clip(0, 1)*width)/ATLAS_SIZE[0],
                        (atlas_y + v.clip(0, 1)*height)/ATLAS_SIZE[1]), axis=2)

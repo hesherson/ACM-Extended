@@ -2328,6 +2328,7 @@ class CfgFunctions {
             class medicalChestDrawers {};
             class medicalChestLidSeat {};
             class medicalChestLidMotion {};
+            class medicalChestLidMarking {};
             class medicalChestView {};
             class medicalChestDrawerTick {};
             class medicalChestEndViewing {};

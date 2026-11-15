@@ -15,6 +15,8 @@ def request_fixture():
         "isMultiplayer": "false",
         "_lid setVectorDirAndUp [_dir, _up];": "_lid setVariable ['fixtureAxes', [_dir, _up]];",
         "_lid setPosWorld _position;": "_lid setVariable ['fixturePosition', _position];",
+        "_marking setVectorDirAndUp [_dir, _up];": "_marking setVariable ['fixtureAxes', [_dir, _up]];",
+        "_marking setPosWorld _position;": "_marking setVariable ['fixturePosition', _position];",
         "typeOf _cabinet": "'fixture cabinet'",
     }.items():
         assert engine in motion, engine
@@ -90,6 +92,7 @@ def request_fixture():
         private _cargo = missionNamespace;
         private _created = [];
         private _deleted = [];
+        private _marked = [];
         private _audio = [];
         private _placed = [];
         private _gearRequests = [];
@@ -136,6 +139,15 @@ def request_fixture():
         ACME_fnc_medicalChestLidSeat = {[[20, 11.88, 0.43], [0,-1,0], [1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
+        ACME_fnc_medicalChestLidMarking = {
+            params ["_part", "_chest", "_closed"];
+            _marked pushBack [_part, _closed];
+            if (_closed) exitWith {missionNamespace};
+            private _marking = currentNamespace;
+            _marking setVariable ["fixturePosition", _part getVariable ["fixturePosition", []]];
+            _marking setVariable ["fixtureAxes", _part getVariable ["fixtureAxes", []]];
+            _marking
+        };
         CBA_fnc_addPerFrameHandler = {
             if (count (_this select 2) == 4) exitWith {_drawerMotion = _this; 31};
             _motion = _this;
@@ -166,6 +178,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "opening did not publish the finished cabinet"] call _check;
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1], _medic]], "open did not send exactly one Gear request to the initiating player"] call _check;
+        [_marked isEqualTo [[_lid, false]], "a cabinet body was given a separate marking"] call _check;
         _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
         [_open, _medic, false, 1] call _request;
         [_open, _medic, false, 1] call _request;
@@ -173,6 +186,8 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
             && {_events isEqualTo [["ACME_medicalChestClosing", [_cargo, 1]]]}, "closing swapped models or missed the Gear close signal"] call _check;
         1.00 call _tickLid;
         [(_chest getVariable "fixtureTexture") isEqualTo "fixture_body_co.paa", "closing changed the original finish"] call _check;
+        [_marked isEqualTo [[_lid, false], [_chest, true]] && {currentNamespace in _deleted},
+            "closing left the detached paint or omitted the fitted closed lid marking"] call _check;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "old open replayed after the chest closed"] call _check;
@@ -220,6 +235,7 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(fa
         [_chest, _medic, true, 0] call _request;
         private _lid = _chest getVariable "ACME_medicalChestLid";
         private _cab = _chest getVariable "ACME_medicalChestCabinet";
+        private _marking = _chest getVariable "ACME_medicalChestLidMarking";
         private _start = _lid getVariable "fixturePosition";
         private _upright = [[[-1,0,0],[0,-1,0]], [[0,-1,0],[1,0,0]]] select _fixtureLidFaceY;
         private _flat = [[[-1,0,0],[0,0,1]], [[0,0,1],[1,0,0]]] select _fixtureLidFaceY;
@@ -232,6 +248,8 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(fa
             private _axes = _lid getVariable "fixtureAxes";
             [(_lid getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture"),
                 "the lid lost its native paint during motion"] call _check;
+            [_pos isEqualTo (_marking getVariable "fixturePosition") && {_axes isEqualTo (_marking getVariable "fixtureAxes")},
+                "the fitted marking moved independently of the lid"] call _check;
             [_pos, _axes]
         };
         (0.10 call _sample) params ["_earlyPull", "_earlyAxes"];
@@ -524,6 +542,7 @@ def test_eden_preview_is_local_and_uses_the_saved_state_and_live_assets():
     assert 'getVariable ["ACME_medicalChestStartOpen", false]' in init
     assert 'createSimpleObject [_class, _base, true]' in eden
     assert '_x setObjectTexture ["camo_1", _texture]' in eden
+    assert '[_lid, _entity, !_open, true, _marking] call ACME_fnc_medicalChestLidMarking' in eden
     assert 'set3DENAttribute' not in eden and 'create3DENEntity' not in eden
     assert 'ACME_fnc_medicalChestStock' not in eden
 
@@ -745,7 +764,9 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
 
 def test_fitted_lid_uvs_increase_toward_the_viewers_right_in_arma():
     folder = ROOT / "addons/acm_extended/data/medical_chest/variants"
-    for model in sorted([*folder.glob("*_closed.p3d"), *folder.glob("*_lid.p3d")]):
+    models = sorted(folder.glob("*_lid.p3d"))
+    assert len(models) == 22
+    for model in models:
         data = model.read_bytes()
         _, _, points, normals, faces, _ = struct.unpack_from("<6I", data, 16)
         offset = 40 + 16 * points + 12 * normals
@@ -754,14 +775,15 @@ def test_fitted_lid_uvs_increase_toward_the_viewers_right_in_arma():
             corners = []
             for i in range(3):
                 vertex, _, u, v = struct.unpack_from("<IIff", data, offset + 4 + 16 * i)
-                x, _, z = struct.unpack_from("<3f", data, 40 + 16 * vertex)
+                x, y, z = struct.unpack_from("<3f", data, 40 + 16 * vertex)
+                assert y > (.082 if "_closed_lid" in model.stem else .005), model
                 corners.append((x, z, u, v))
             offset = data.index(b"\0\0", offset + 72) + 2
-            # The first atlas row contains the front and rear projections.
-            if max(corner[3] for corner in corners) >= 1609 / 4096:
-                continue
-            if max(corner[2] for corner in corners) >= 1010 / 2048:
-                continue
+            # Every triangle samples the outer lid region of the original artwork.
+            assert 8 / 4096 <= min(corner[3] for corner in corners)
+            assert max(corner[3] for corner in corners) <= 1608 / 4096
+            assert 8 / 2048 <= min(corner[2] for corner in corners)
+            assert max(corner[2] for corner in corners) <= 1008 / 2048
             left, *_, right = sorted(corners, key=lambda corner: -corner[1])
             if left[1] - right[1] > .001:
                 assert left[2] < right[2], model
