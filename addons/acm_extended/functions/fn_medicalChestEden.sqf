@@ -69,10 +69,12 @@ if (_replace) then {
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {
-    [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, [0, 0, 1], _entity] call ACME_fnc_medicalChestPlace;
+    private _bodyPose = [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, [0, 0, 1], _entity] call ACME_fnc_medicalChestPlace;
     if (_open) then {
         _lidSupport params ["_side", "_normal"];
-        [_parts select 1, _side, (_heading + 180) % 360, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace
+        private _coverForward = ([_entity, _bodyPose] call ACME_fnc_medicalChestLidSeat) select 1;
+        private _coverHeading = (_coverForward select 0) atan2 (_coverForward select 1);
+        [_parts select 1, _side, _coverHeading, "lid", _normal, _entity] call ACME_fnc_medicalChestPlace;
     };
     if (_replace && {_open}) then {
         private _cabinet = _parts select 0;

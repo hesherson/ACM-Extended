@@ -23,13 +23,13 @@ private _hover = _restPos vectorAdd [0, 0, 0.025];
 private _tipBaseZ = (_hover select 2) - ([_restDir, _restUp, _normal, _halfSize] call _heightForPose);
 private _uprightZ = _tipBaseZ + ([_caseDir, _caseUp, _normal, _halfSize] call _heightForPose);
 // Keep the lid at its release depth until its full width is beside the cabinet.
-private _side = _caseUp vectorMultiply -1;
-private _clear = _released vectorAdd (_side vectorMultiply ((_restPos vectorDiff _released) vectorDotProduct _side));
+private _lateralDistance = (_restPos vectorDiff _released) vectorDotProduct _caseUp;
+private _clear = _released vectorAdd (_caseUp vectorMultiply _lateralDistance);
 _clear set [2, (_seated select 2) max _uprightZ];
 private _extraHeight = (_clear select 2) - _uprightZ;
 
 if (_opening) then {
-    diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then sideways to %3 m", _pull toFixed 3, _caseDir, ((_clear vectorDiff _released) vectorDotProduct _side) toFixed 3];
+    diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then %3 m sideways", _pull toFixed 3, _caseDir, (abs _lateralDistance) toFixed 3];
 };
 
 private _parts = [_lid] + _lidPaint;

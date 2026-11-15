@@ -34,18 +34,21 @@ if (_opening) then {
         selectRandom ["ACME_MedicalChest4Drawers", "ACME_MedicalChest7Drawers"]
     };
     _cabinet = createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"];
-    _seatPose = [_chest] call ACME_fnc_medicalChestLidSeat;
+    if (isNull _cabinet) exitWith {};
+    private _cabinetPose = [_cabinet, _base, _heading, "cabinet", [0, 0, 1], _chest, false] call ACME_fnc_medicalChestPlace;
+    _seatPose = [_chest, _cabinetPose] call ACME_fnc_medicalChestLidSeat;
     _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _seatPose select 0];
-    if (isNull _cabinet || {isNull _lid}) exitWith {
-        if (!isNull _cabinet) then {deleteVehicle _cabinet;};
-        if (!isNull _lid) then {deleteVehicle _lid;};
+    if (isNull _lid) exitWith {
+        deleteVehicle _cabinet;
         _cabinet = objNull;
     };
     _cabinet allowDamage false;
     private _bodyTexture = getArray (configOf _chest >> "hiddenSelectionsTextures") param [0, ""];
     if (_bodyTexture != "") then {_cabinet setObjectTextureGlobal [0, _bodyTexture];};
     _cabinet enableSimulationGlobal false;
-    [_cabinet, _base, _heading, "cabinet", [0, 0, 1], _chest] call ACME_fnc_medicalChestPlace;
+    _cabinetPose params ["_cabinetPosition", "_cabinetDir", "_cabinetUp"];
+    _cabinet setVectorDirAndUp [_cabinetDir, _cabinetUp];
+    _cabinet setPosWorld _cabinetPosition;
     _cargo attachTo [_cabinet, [0, 0, 0]];
     _cabinet setVariable ["ACME_medicalChestAnchor", _chest, true];
     _chest setVariable ["ACME_medicalChestCabinet", _cabinet, true];

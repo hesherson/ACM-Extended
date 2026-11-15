@@ -54,6 +54,9 @@ def request_fixture():
         '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
         '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
         '    _cargo setPosWorld (_base vectorAdd [0, 0, -25]);': '',
+        '_cabinet setVectorDirAndUp [_cabinetDir, _cabinetUp];':
+            '_cabinet setVariable ["fixtureAxes", [_cabinetDir, _cabinetUp]];',
+        '_cabinet setPosWorld _cabinetPosition;': '_cabinet setVariable ["fixturePosition", _cabinetPosition];',
         '_lid setVectorDirAndUp [_dir, _up];': "_lid setVariable ['fixtureAxes', [_dir, _up]];",
         '_lid setPosWorld _position;': "_lid setVariable ['fixturePosition', _position];",
         '_chest hideObjectGlobal true;': '_hidden = true;',
@@ -126,9 +129,9 @@ def request_fixture():
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
         ACME_fnc_medicalChestPlace = {
             _placed pushBack _this;
-            [(_this select 1) vectorAdd [0,0,0.05], [0,0,1], [-1,0,0]]
+            [(_this select 1) vectorAdd [0,0,0.05], [0,0,1], [1,0,0]]
         };
-        ACME_fnc_medicalChestLidSeat = {[[20, 12.12, 0.43], [0,1,0], [-1,0,0]]};
+        ACME_fnc_medicalChestLidSeat = {[[20, 11.88, 0.43], [0,-1,0], [1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
         ACME_fnc_medicalChestDecals = {
@@ -222,9 +225,9 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
         private _lid = _chest getVariable "ACME_medicalChestLid";
         private _cab = _chest getVariable "ACME_medicalChestCabinet";
         private _start = _lid getVariable "fixturePosition";
-        private _upright = [[0,1,0],[-1,0,0]];
-        private _flat = [[0,0,1],[-1,0,0]];
-        [abs ((_start select 1) - 12.12) < 0.001 && {(_lid getVariable "fixtureAxes") isEqualTo _upright},
+        private _upright = [[0,-1,0],[1,0,0]];
+        private _flat = [[0,0,1],[1,0,0]];
+        [abs ((_start select 1) - 11.88) < 0.001 && {(_lid getVariable "fixtureAxes") isEqualTo _upright},
             "the lid did not start seated"] call _check;
         private _sample = {
             _this call _tickLid;
@@ -235,10 +238,10 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
             [_pos, _axes]
         };
         (0.10 call _sample) params ["_earlyPull", "_earlyAxes"];
-        [(_earlyPull select 0) == 20 && {(_earlyPull select 1) > 12.12} && {(_earlyPull select 1) < 12.2} && {(_earlyPull select 2) == (_start select 2)}
+        [(_earlyPull select 0) == 20 && {(_earlyPull select 1) < 11.88} && {(_earlyPull select 1) > 11.8} && {(_earlyPull select 2) == (_start select 2)}
             && {_earlyAxes isEqualTo _upright}, "the lid finished the straight pull too early"] call _check;
         (0.08 call _sample) params ["_pop", "_popAxes"];
-        [(_pop select 0) == 20 && {abs ((_pop select 1) - 12.23) < .001}
+        [(_pop select 0) == 20 && {abs ((_pop select 1) - 11.77) < .001}
             && {(_pop select 2) == (_start select 2)} && {_popAxes isEqualTo _upright},
             "the lid did not pull a short distance straight out from the painted face"] call _check;
         private _slideStart = ((0.04 call _sample) select 0) select 0;
@@ -250,10 +253,10 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
         [((_slide select 0) - _slideEarly) > 1.2 * (_slideEarly - _slideStart),
             "slide did not ramp up to its faster middle section"] call _check;
         (0.20 call _sample) params ["_outboard", "_outboardAxes"];
-        [abs ((_outboard select 0) - 20.82) < .001 && {abs ((_outboard select 1) - 12.23) < .001}
+        [abs ((_outboard select 0) - 20.82) < .001 && {abs ((_outboard select 1) - 11.77) < .001}
             && {_outboardAxes isEqualTo _upright}, "lid began to turn before it was beside the cabinet"] call _check;
         (0.125 call _sample) params ["_turn", "_turnAxes"];
-        [abs ((_turn select 0) - 20.82) < .001 && {(_turn select 1) > 12} && {(_turn select 1) < 12.23}
+        [abs ((_turn select 0) - 20.82) < .001 && {(_turn select 1) < 12} && {(_turn select 1) > 11.77}
             && {(_turnAxes select 0 select 2) > 0} && {_gearRequests isEqualTo []},
             "lid failed to tip into its original depth after clearing the cabinet"] call _check;
         (0.235 call _sample) params ["_settling", "_settlingAxes"];
@@ -274,24 +277,35 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
     ''')
 
 
-def test_lid_seats_on_the_reversed_release_side():
-    source = adapt(read("medicalChestLidSeat"))
-    for engine, fixture in (
-        ('getPosWorld _chest', '[0,0,.43]'),
-        ('_chest modelToWorldWorld [0, 1, 0]', '[0,0,.43] vectorAdd _forward'),
-    ):
-        assert engine in source
-        source = source.replace(engine, fixture)
-    execute('private _seatLid={' + source + '};' + r'''
-        {
-            private _forward = [sin _x, cos _x, 0];
-            ([_patient] call _seatLid) params ["_seat", "_dir", "_up"];
-            [(_dir vectorDotProduct _forward) < -.999 && {abs (_up vectorDotProduct _dir) < .0001},
-                "lid retained the previous pull direction or lost its upright pose"] call _check;
-            [abs ((_seat vectorDotProduct _dir) - .1222) < .0001 && {(_seat select 2) == .43},
-                "lid did not start at the corrected face of the case"] call _check;
-        } forEach [0, 90, 172, 270];
-    ''')
+@pytest.mark.parametrize("face_y", [False, True])
+def test_lid_pulls_away_from_the_drawers_and_lands_on_its_original_side(face_y):
+    seat = adapt(read("medicalChestLidSeat")).replace("getPosWorld _chest", "_center")
+    base = adapt(read("medicalChestLidBase")).replace("0 boundingBoxReal _chest", "_closedBounds")
+    closed_bounds = ("[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y
+                     else "[[-.423,-.266,-.170],[.421,.266,.163]]")
+    execute(placement_fixture() + "private _seatLid = {" + seat + "}; private _lidBase = {" + base + "};" + rf"""
+        ACME_fnc_medicalChestGround = {{[_this select 0, [0, 0, 1]]}};
+        private _closedBounds = {closed_bounds};
+        private _bounds = [[-.269,-.42175773,-.06175841],[.266,.42175987,.2130746]];
+        private _anchor = [20, 12, 0];
+        private _center = _anchor vectorAdd [0, 0, .43];
+        {{
+            private _heading = _x;
+            private _cabinetPose = [_medic, _anchor, _heading, "cabinet", [0,0,1], _patient, false] call _place;
+            ([_patient, _cabinetPose] call _seatLid) params ["_seat", "_outward", "_side"];
+            private _front = {("[sin _heading, cos _heading, 0]" if face_y else "[-cos _heading, sin _heading, 0]")};
+            private _expectedSide = {("[cos _heading, -sin _heading, 0]" if face_y else "[sin _heading, cos _heading, 0]")};
+            [(_outward vectorDotProduct _front) > .999 && {{abs (_outward select 2) < .0001}},
+                "first motion was not horizontally away from the drawer face"] call _check;
+            [abs (((_seat vectorDiff _center) vectorDotProduct _front) - .1222) < .0001,
+                "lid did not start at the drawer face"] call _check;
+            private _landing = ([_anchor, _heading, _patient, _medic] call _lidBase) select 0;
+            private _displacement = _landing vectorDiff _anchor;
+            [(_displacement vectorDistance (_expectedSide vectorMultiply .82)) < .0001
+                && {{abs (_displacement vectorDotProduct _outward) < .0001}},
+                "landing left the original side or lost the sideways travel"] call _check;
+        }} forEach [0, 90, 172, 270];
+    """)
 
 
 def test_lid_rises_over_a_step_in_its_release_path():
@@ -301,7 +315,7 @@ def test_lid_rises_over_a_step_in_its_release_path():
         private _cover = _chest getVariable "ACME_medicalChestLid";
         0.181 call _tickLid;
         private _pop = _cover getVariable "fixturePosition";
-        [(_pop select 1) > 12.22 && {(_pop select 2) < .431},
+        [(_pop select 1) < 11.78 && {(_pop select 2) < .431},
             "the lid rose before the straight release finished"] call _check;
         0.385 call _tickLid;
         private _turn = _cover getVariable "fixturePosition";
