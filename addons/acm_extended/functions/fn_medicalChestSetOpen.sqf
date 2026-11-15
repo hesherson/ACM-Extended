@@ -44,7 +44,6 @@ if (_opening) then {
     private _bodyTexture = getArray (configOf _chest >> "hiddenSelectionsTextures") param [0, ""];
     if (_bodyTexture != "") then {_cabinet setObjectTextureGlobal [0, _bodyTexture];};
     _cabinet enableSimulationGlobal false;
-    ([_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
     [_cabinet, _base, _heading, "cabinet", [0, 0, 1], _chest] call ACME_fnc_medicalChestPlace;
     _cargo attachTo [_cabinet, [0, 0, 0]];
     _cabinet setVariable ["ACME_medicalChestAnchor", _chest, true];
@@ -52,8 +51,11 @@ if (_opening) then {
     _chest setVariable ["ACME_medicalChestLid", _lid];
     private _drawerPlan = [_cabinet] call ACME_fnc_medicalChestDrawerPlan;
     [_cabinet, _drawerPlan, 0] call ACME_fnc_medicalChestDrawers;
-    _restPose = [_lid, _side, _heading, "lid", _normal, _chest, false] call ACME_fnc_medicalChestPlace;
-    _seatPose = [_chest, _lid, _heading] call ACME_fnc_medicalChestLidSeat;
+    _seatPose = [_chest] call ACME_fnc_medicalChestLidSeat;
+    ([_base, _seatPose, [_chest, _lid]] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
+    private _coverForward = _seatPose select 1;
+    private _coverHeading = (_coverForward select 0) atan2 (_coverForward select 1);
+    _restPose = [_lid, _side, _coverHeading, "lid", _normal, _chest, false] call ACME_fnc_medicalChestPlace;
     ([_seatPose, _restPose] select _initial) params ["_position", "_dir", "_up"];
     _lid setVectorDirAndUp [_dir, _up];
     _lid setPosWorld _position;

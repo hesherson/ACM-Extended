@@ -45,7 +45,9 @@ private _look = [typeOf _entity, _open];
 private _heading = getDir _entity;
 private _base = [getPosWorld _entity, [_entity], 0.3, 2, true] call ACME_fnc_medicalChestGround;
 private _lidSupport = if (_open) then {
-    [_base, _heading, _entity, objNull, true] call ACME_fnc_medicalChestLidBase
+    private _closedPose = [_entity, _base, _heading, "closed", [0, 0, 1], objNull, false] call ACME_fnc_medicalChestPlace;
+    private _seatPose = [_entity, _closedPose] call ACME_fnc_medicalChestLidSeat;
+    [_base, _seatPose, [_entity], true] call ACME_fnc_medicalChestLidBase
 } else {[]};
 private _next = [_base, _heading, _lidSupport];
 private _replace = _entity isNotEqualTo _owner || {_look isNotEqualTo _oldLook}

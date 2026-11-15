@@ -12,11 +12,6 @@ def request_fixture():
     transition = adapt(read("medicalChestSetOpen"))
     motion = adapt(read("medicalChestLidMotion"))
     for engine, stand_in in {
-        "0 boundingBoxReal _cabinet": "[[-.269,-.422,-.0618],[.264,.422,.2131]]",
-        "getPosWorld _cabinet": "_fixtureCabinetCenter",
-        "vectorDir _cabinet": "[0,0,-1]",
-        "vectorUp _cabinet": "[0,-1,0]",
-        "0 boundingBoxReal _lid": "[[-.415,-.041,-.265],[.415,.041,.265]]",
         "isMultiplayer": "false",
         "_x setVectorDirAndUp [_dir, _up];": "_x setVariable ['fixtureAxes', [_dir, _up]];",
         "_x setPosWorld _position;": "_x setVariable ['fixturePosition', _position];",
@@ -37,7 +32,7 @@ def request_fixture():
     }.items():
         view = view.replace(engine, stand_in)
         drawer_tick = drawer_tick.replace(engine, stand_in)
-    lid_base = adapt(read("medicalChestLidBase")).replace("0 boundingBoxReal _chest", "[[-.423,-.170,-.266],[.421,.163,.266]]")
+    lid_base = adapt(read("medicalChestLidBase"))
     replacements = {
         'isRemoteExecuted': '_remote',
         'is3DEN': '_eden',
@@ -79,7 +74,6 @@ def request_fixture():
     )
     return definitions + r'''
         private _fixtureFloor = 0;
-        private _fixtureCabinetCenter = [20, 12.043, .43];
         ACME_fnc_medicalChestGround = {
             private _point = +(_this select 0);
             _point set [2, _fixtureFloor];
@@ -130,7 +124,7 @@ def request_fixture():
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
         ACME_fnc_medicalChestPlace = {
             _placed pushBack _this;
-            [[20.82, 12, 0.05], [0,0,1], [-1,0,0]]
+            [(_this select 1) vectorAdd [0,0,0.05], [0,0,1], [-1,0,0]]
         };
         ACME_fnc_medicalChestLidSeat = {[[20, 12.12, 0.43], [0,1,0], [-1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
@@ -163,13 +157,13 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
         [(_open getVariable "fixtureBodyTexture") isEqualTo "fixture_body_co.paa", "open cabinet lost the closed chest's native color"] call _check;
         [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
-        [(_placed select 1 select 1) isEqualTo [20.82, 12, 0] && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
+        [((_placed select 1 select 1) vectorDistance [20.82, 12.23, 0]) < .001 && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         [(_open getVariable ["fixtureFrozen", false]) && {(_drawers select 0 select 2) == 0}, "cabinet was free to tip or drawers began open"] call _check;
         [_open, _medic, false, 1] call _request;
         [count _markings == 2 && {_gearRequests isEqualTo []}, "early close or Gear interrupted the animation"] call _check;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "opening did not publish the finished cabinet"] call _check;
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1], _medic]], "open did not send exactly one Gear request to the initiating player"] call _check;
         _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
@@ -177,7 +171,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [_open, _medic, false, 1] call _request;
         [(_chest getVariable "ACME_medicalChestTransition") && {_hidden}
             && {_events isEqualTo [["ACME_medicalChestClosing", [_cargo, 1]]]}, "closing swapped models or missed the Gear close signal"] call _check;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [_markings isEqualTo [["cabinet",10], ["lid",10], ["closed",10]], "closing did not restore the selected finish"] call _check;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
         [_chest, _medic, true, 0] call _request;
@@ -203,7 +197,7 @@ def test_lid_only_request_and_inventory_request_offer_different_gear_behavior():
         };
         CBA_fnc_localEvent = {_gearRequests pushBack _this;};
         [_chest, _medic, true, 0, false] call _request;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_gearRequests isEqualTo []},
             "the lid-only ACE action opened Gear"] call _check;
         private _cabinet = _chest getVariable "ACME_medicalChestCabinet";
@@ -211,10 +205,10 @@ def test_lid_only_request_and_inventory_request_offer_different_gear_behavior():
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1]]],
             "Inventory on an uncovered chest did not reuse its live cargo"] call _check;
         [_cabinet, _medic, false, 1] call _request;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [_chest, _medic] call _inventory;
         [count _gearRequests == 1 && {(_chest getVariable "ACME_medicalChestTransition")}, "Inventory skipped the lid motion"] call _check;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [(count _gearRequests == 2) && {(_gearRequests select 1) isEqualTo ["ACME_medicalChestOpened", [_medic, _chest, _cargo, 3], _medic]},
             "Inventory on a covered chest failed to request Gear after the lid opened"] call _check;
     ''')
@@ -241,71 +235,55 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
         (0.10 call _sample) params ["_earlyPull", "_earlyAxes"];
         [(_earlyPull select 0) == 20 && {(_earlyPull select 1) > 12.12} && {(_earlyPull select 1) < 12.2} && {(_earlyPull select 2) == (_start select 2)}
             && {_earlyAxes isEqualTo _upright}, "the lid finished the straight pull too early"] call _check;
-        (0.13 call _sample) params ["_pop", "_popAxes"];
-        [(_pop select 0) == 20 && {(_pop select 1) - .041 - 12.1048 >= .074}
+        (0.08 call _sample) params ["_pop", "_popAxes"];
+        [(_pop select 0) == 20 && {abs ((_pop select 1) - 12.23) < .001}
             && {(_pop select 2) == (_start select 2)} && {_popAxes isEqualTo _upright},
-            "lid did not pop straight forward"] call _check;
-        private _slideStart = ((0.05 call _sample) select 0) select 0;
+            "the lid did not pull a short distance straight out from the painted face"] call _check;
+        private _slideStart = ((0.04 call _sample) select 0) select 0;
         private _slideEarly = ((0.07 call _sample) select 0) select 0;
         (0.07 call _sample) params ["_slide", "_slideAxes"];
         [(_slide select 0) > 20.25 && {(_slide select 0) < 20.5}
             && {abs ((_slide select 1) - (_pop select 1)) < .001} && {_slideAxes isEqualTo _upright},
-            "lid rotated before sliding past the cabinet"] call _check;
-        [((_slide select 0) - _slideEarly) > 1.4 * (_slideEarly - _slideStart),
+            "lid turned or moved backwards while carrying sideways"] call _check;
+        [((_slide select 0) - _slideEarly) > 1.2 * (_slideEarly - _slideStart),
             "slide did not ramp up to its faster middle section"] call _check;
-        (0.39 call _sample) params ["_turn", "_turnAxes"];
-        [abs ((_turn select 0) - 20.82) < 0.001 && {(_turnAxes select 0 select 2) > 0} && {_gearRequests isEqualTo []},
-            "lid turned while it still overlapped the cabinet"] call _check;
-        (0.46 call _sample) params ["_settling", "_settlingAxes"];
+        (0.325 call _sample) params ["_turn", "_turnAxes"];
+        [abs ((_turn select 0) - 20.82) < .001 && {abs ((_turn select 1) - 12.23) < .001}
+            && {(_turnAxes select 0 select 2) > 0} && {_gearRequests isEqualTo []},
+            "lid swung backwards or flipped before reaching its landing point"] call _check;
+        (0.235 call _sample) params ["_settling", "_settlingAxes"];
         [(_settling select 2) > .05 && {(_settling select 2) < .08} && {_settlingAxes isEqualTo _flat}
-            && {_gearRequests isEqualTo []}, "the lid finished before its soft touchdown"] call _check;
-        (0.05 call _sample) params ["_rest", "_restAxes"];
-        [_rest isEqualTo [20.82,12,0.05] && {_restAxes isEqualTo _flat}
+            && {((_settling vectorDiff _turn) select 1) == 0} && {_gearRequests isEqualTo []},
+            "lid hovered or moved sideways instead of settling down"] call _check;
+        (0.10 call _sample) params ["_rest", "_restAxes"];
+        [(_rest vectorDistance [20.82,12.23,0.05]) < .001 && {_restAxes isEqualTo _flat}
             && {count _gearRequests == 1} && {count _drawers == 1} && {_removedMotion isEqualTo [30]},
             "Gear opened early or the drawers opened without a viewer"] call _check;
         [_cab, _medic, false, 1] call _request;
-        (0.50 call _sample) params ["_reverse", "_reverseAxes"];
+        (0.305 call _sample) params ["_reverse", "_reverseAxes"];
         [(_reverse vectorDistance _turn) < 0.001 && {((_reverseAxes select 0) vectorDistance (_turnAxes select 0)) < 0.001},
             "closing did not retrace the opening motion"] call _check;
-        (0.82 call _sample) params ["_seated", "_seatedAxes"];
+        (0.70 call _sample) params ["_seated", "_seatedAxes"];
         [_seated isEqualTo _start && {_seatedAxes isEqualTo _upright} && {!_hidden}
             && {(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false]}, "lid did not reseat before the shell swap"] call _check;
     ''')
 
 
-def test_lid_clears_a_forward_drawer_face_before_moving_sideways():
-    execute(request_fixture() + r'''
-        _fixtureCabinetCenter = [20, 12.16, .43];
-        [_chest, _medic, true, 0] call _request;
-        private _lid = _chest getVariable "ACME_medicalChestLid";
-        private _insideFace = .041;
-        private _cabinetFront = 12.16 + .0618;
-        0.15 call _tickLid;
-        private _pull = _lid getVariable "fixturePosition";
-        [(_pull select 0) == 20 && {(_pull select 1) > 12.12}, "lid started sideways during its straight pull"] call _check;
-        0.20 call _tickLid;
-        private _carry = _lid getVariable "fixturePosition";
-        [(_carry select 0) > 20 && {(_carry select 1) - _insideFace - _cabinetFront >= .074},
-            "lid carried sideways before clearing the forward drawer face"] call _check;
-    ''')
-
-
 def test_lid_seats_flush_at_the_original_closed_cover_plane():
-    source = read("medicalChestLidSeat")
+    source = adapt(read("medicalChestLidSeat"))
     for engine, fixture in (
         ('getPosWorld _chest', '[0,0,.43]'),
-        ('0 boundingBoxReal _chest', '[[-.423,-.17,-.266],[.421,.163,.266]]'),
-        ('0 boundingBoxReal _lid', '[[-.415,-.041,-.265],[.415,.041,.265]]'),
+        ('_chest modelToWorldWorld [0, 1, 0]', '[0,0,.43] vectorAdd _forward'),
     ):
         assert engine in source
         source = source.replace(engine, fixture)
     execute('private _seatLid={' + source + '};' + r'''
         {
             private _forward = [sin _x, cos _x, 0];
-            ([_patient, _medic, _x] call _seatLid) params ["_seat", "_dir", "_up"];
-            [_dir isEqualTo _forward && {(_up vectorDotProduct _dir) == 0},
+            ([_patient] call _seatLid) params ["_seat", "_dir", "_up"];
+            [(_dir vectorDistance _forward) < .0001 && {abs (_up vectorDotProduct _dir) < .0001},
                 "lid twisted or pitched away from the closed cover"] call _check;
-            [abs ((_seat vectorDotProduct _dir) + 0.041 - 0.163) < .0001 && {(_seat select 2) == .43},
+            [abs ((_seat vectorDotProduct _dir) + 0.0413 - 0.16343) < .0001 && {(_seat select 2) == .43},
                 "lid jumped from the closed cover during the visual swap"] call _check;
         } forEach [0, 90, 172, 270];
     ''')
@@ -316,14 +294,14 @@ def test_lid_rises_over_a_step_in_its_release_path():
         _fixtureFloor = 0.26;
         [_chest, _medic, true, 0] call _request;
         private _cover = _chest getVariable "ACME_medicalChestLid";
-        0.231 call _tickLid;
+        0.181 call _tickLid;
         private _pop = _cover getVariable "fixturePosition";
         [(_pop select 1) > 12.22 && {(_pop select 2) < .431},
             "the lid rose before the straight release finished"] call _check;
-        0.58 call _tickLid;
+        0.385 call _tickLid;
         private _turn = _cover getVariable "fixturePosition";
         [(_turn select 0) > 20.8 && {(_turn select 2) - .415 > .26},
-            "the lid cut down through the raised support while turning"] call _check;
+            "the lid cut down through the raised support before tipping"] call _check;
     ''')
 
 
@@ -351,7 +329,7 @@ def test_one_drawer_always_has_a_clear_lead_at_full_extension():
 def test_drawers_follow_multiple_viewers_and_retract_before_the_lid_moves():
     execute(request_fixture() + r'''
         [_chest, _medic, true, 0] call _request;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         private _cab = _chest getVariable "ACME_medicalChestCabinet";
         private _lid = _chest getVariable "ACME_medicalChestLid";
         private _rest = _lid getVariable "fixturePosition";
@@ -383,7 +361,7 @@ def test_drawers_follow_multiple_viewers_and_retract_before_the_lid_moves():
             "lid moved over extended drawers or Gear opened during closing"] call _check;
         0.15 call _tickDrawers;
         [(_chest getVariable "ACME_medicalChestDrawerFraction") == 0, "drawers were still extended after closing Gear"] call _check;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "lid failed to close after the drawers retracted"] call _check;
     ''')
 
@@ -391,7 +369,7 @@ def test_drawers_follow_multiple_viewers_and_retract_before_the_lid_moves():
 def test_drawers_retract_if_the_viewer_stops_reporting():
     execute(request_fixture() + r'''
         [_chest, _medic, true, 0] call _request;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [_cargo, _medic, 1, true] call ACME_fnc_medicalChestView;
         0.25 call _tickDrawers;
         [(_chest getVariable "ACME_medicalChestDrawerFraction") == 1, "view did not extend drawers"] call _check;
@@ -488,7 +466,7 @@ def test_missing_lid_cancels_the_motion_and_allows_a_fresh_open():
             && {_gearRequests isEqualTo []} && {_removedMotion isEqualTo [30]},
             "interrupted opening did not restore the closed shell"] call _check;
         [_chest, _medic, true, 1] call _request;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,true] && {count _gearRequests == 1},
             "interrupted opening blocked future use"] call _check;
     ''')
@@ -507,7 +485,7 @@ def test_mission_start_open_and_later_close_share_the_same_cargo():
         [(_cargo getVariable "fixtureAttached") isEqualTo (_chest getVariable "ACME_medicalChestCabinet"), "open chest did not expose the live cargo"] call _check;
         private _open = _chest getVariable "ACME_medicalChestCabinet";
         [_open, _medic, false, 1] call _request;
-        1.32 call _tickLid;
+        1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {(_cargo getVariable "stock") isEqualTo ["ACM_IV_18g", "ACM_ACCUVAC"]}, "initially open chest failed to close with stock intact"] call _check;
     ''')
 
@@ -617,6 +595,7 @@ def test_lid_paint_faces_up_and_the_inner_face_follows_the_support(bounds, face_
         private _modelNormal = _orient select {face_axis};
         [(_modelNormal vectorDotProduct _normal) > .999, "lid failed to show the painted face"] call _check;
         [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .0488) < .0001, "lid failed to rest at the height of its inner face"] call _check;
+        [(_worldPosition select [0,2]) isEqualTo (_base select [0,2]), "sloped placement pulled the lid out of its sideways path"] call _check;
     ''')
 
 

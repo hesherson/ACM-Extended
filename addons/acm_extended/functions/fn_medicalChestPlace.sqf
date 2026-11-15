@@ -44,7 +44,7 @@ if (_part != "closed") then {
     } else {
         // Rest the lid on its inner face so the paint is visible on top.
         if ((_normal select 2) > .7) then {_supportNormal = vectorNormalized _normal;};
-        private _right = vectorNormalized (_front vectorCrossProduct _supportNormal);
+        private _right = vectorNormalized (_forward vectorCrossProduct _supportNormal);
         private _faceY = (_extent select 1) < (_extent select 2);
         _dir = [_right, _supportNormal] select _faceY;
         _up = [_supportNormal, _right vectorMultiply -1] select _faceY;
@@ -52,7 +52,9 @@ if (_part != "closed") then {
     };
 };
 
-private _position = _base vectorAdd _footprintOffset vectorAdd (_supportNormal vectorMultiply (0.008 - _bottom));
+// Moving along world Z preserves the planned landing coordinates even on a slope.
+private _lift = (0.008 - _bottom) / (_supportNormal select 2);
+private _position = _base vectorAdd _footprintOffset vectorAdd (_vertical vectorMultiply _lift);
 if (_apply) then {
     _object setVectorDirAndUp [_dir, _up];
     _object setPosWorld _position;
