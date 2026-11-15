@@ -3,11 +3,26 @@ params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revisio
 
 _seatPose params ["_seated", "_caseDir", "_caseUp"];
 _restPose params ["_restPos", "_restDir", "_restUp"];
-private _released = _seated vectorAdd (_caseDir vectorMultiply 0.34) vectorAdd [0, 0, 0.06];
+private _released = _seated vectorAdd (_caseDir vectorMultiply 0.24) vectorAdd [0, 0, 0.06];
 private _side = _caseUp vectorMultiply -1;
 private _clear = _released vectorAdd (_side vectorMultiply ((_restPos vectorDiff _released) vectorDotProduct _side));
+
+// Raise the upright lid over the support along the sideways path, including on steps and slopes.
+(0 boundingBoxReal _lid) params ["_lidMin", "_lidMax"];
+private _halfSize = _lidMin apply {abs _x};
+{_halfSize set [_forEachIndex, _x max (_halfSize select _forEachIndex)];} forEach _lidMax;
+{
+    ([_x, [_cabinet, _lid], 0.55, 1.1, false, true] call ACME_fnc_medicalChestGround) params ["_floor", "_normal"];
+    private _slopeRise = (
+        abs (_normal vectorDotProduct _caseDir) * (_halfSize select 1) +
+        abs (_normal vectorDotProduct _caseUp) * (_halfSize select 2)
+    ) / ((_normal select 2) max 0.5);
+    private _minZ = (_floor select 2) + (_halfSize select 0) + _slopeRise + 0.025;
+    _x set [2, (_x select 2) max _minZ];
+} forEach [_released, _clear];
+
 private _hover = +_restPos;
-_hover set [2, (_clear select 2) max ((_restPos select 2) + 0.50)];
+_hover set [2, (_clear select 2) max ((_restPos select 2) + vectorMagnitude _halfSize + 0.025)];
 _clear set [2, _hover select 2];
 
 private _parts = [_lid] + _lidPaint;
@@ -39,7 +54,7 @@ private _apply = {
     };
 
     private _elapsed = CBA_missionTime - _started;
-    private _duration = 0.66;
+    private _duration = 0.60;
     private _finished = _elapsed >= _duration;
     private _t = if (_opening) then {_elapsed min _duration} else {(_duration - _elapsed) max 0};
     private _ease = {
@@ -53,14 +68,14 @@ private _apply = {
     };
     private _dir = _caseDir;
     private _up = _caseUp;
-    private _pos = if (_t < 0.14) then {
-        [_seated, _released, [_t / 0.14] call _ease] call _lerp
+    private _pos = if (_t < 0.10) then {
+        [_seated, _released, [_t / 0.10] call _ease] call _lerp
     } else {
-        if (_t < 0.32) then {
-            [_released, _clear, [(_t - 0.14) / 0.18] call _ease] call _lerp
+        if (_t < 0.26) then {
+            [_released, _clear, [(_t - 0.10) / 0.16] call _ease] call _lerp
         } else {
-            if (_t < 0.50) then {
-                private _s = [(_t - 0.32) / 0.18] call _ease;
+            if (_t < 0.44) then {
+                private _s = [(_t - 0.26) / 0.18] call _ease;
                 _dir = vectorNormalized ([_caseDir, _restDir, _s] call _lerp);
                 _up = [_caseUp, _restUp, _s] call _lerp;
                 _up = vectorNormalized (_up vectorDiff (_dir vectorMultiply (_up vectorDotProduct _dir)));
@@ -68,7 +83,7 @@ private _apply = {
             } else {
                 _dir = _restDir;
                 _up = _restUp;
-                [_hover, _restPos, [(_t - 0.50) / 0.16] call _ease] call _lerp
+                [_hover, _restPos, [(_t - 0.44) / 0.16] call _ease] call _lerp
             }
         }
     };

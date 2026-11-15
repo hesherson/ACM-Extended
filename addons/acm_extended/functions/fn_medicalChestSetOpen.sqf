@@ -51,7 +51,7 @@ if (_opening) then {
     private _drawerPlan = [_cabinet] call ACME_fnc_medicalChestDrawerPlan;
     [_cabinet, _drawerPlan, 0] call ACME_fnc_medicalChestDrawers;
     _restPose = [_lid, _side, _heading, "lid", _normal, _chest, false] call ACME_fnc_medicalChestPlace;
-    _seatPose = [_chest, _cabinet, _lid] call ACME_fnc_medicalChestLidSeat;
+    _seatPose = [_chest, _cabinet, _lid, _heading] call ACME_fnc_medicalChestLidSeat;
     ([_seatPose, _restPose] select _initial) params ["_position", "_dir", "_up"];
     _lid setVectorDirAndUp [_dir, _up];
     _lid setPosWorld _position;

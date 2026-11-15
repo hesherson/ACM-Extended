@@ -1,13 +1,23 @@
-/* The stock drawer front is -Z. The loose lid's painted face is +Y. */
-params ["_chest", "_cabinet", "_lid"];
-private _outward = vectorNormalized (_cabinet vectorModelToWorld [0, 0, -1]);
-private _up = [0, 0, 1] vectorCrossProduct _outward;
-private _frontEdge = (0 boundingBoxReal _cabinet) select 0 select 2;
-private _drawerFace = _cabinet modelToWorldWorld [0, 0, _frontEdge];
-private _shellEdge = (0 boundingBoxReal _chest) select 1 select 1;
-private _shellFace = _chest modelToWorldWorld [0, _shellEdge, 0];
+/* Use the placed shell's heading. The open models can have different native axes. */
+params ["_chest", "_cabinet", "_lid", "_heading"];
+private _forward = [sin _heading, cos _heading, 0];
+private _up = [-(cos _heading), sin _heading, 0];
+private _center = getPosWorld _chest;
+private _shellFront = (0 boundingBoxReal _chest) select 1 select 1;
+
+private _cabinetDir = vectorDir _cabinet;
+private _cabinetUp = vectorUp _cabinet;
+private _cabinetAxes = [_cabinetDir vectorCrossProduct _cabinetUp, _cabinetDir, _cabinetUp];
+(0 boundingBoxReal _cabinet) params ["_cabinetMin", "_cabinetMax"];
+private _cabinetFront = (getPosWorld _cabinet vectorDiff _center) vectorDotProduct _forward;
+{
+    private _projection = _x vectorDotProduct _forward;
+    private _edge = [_cabinetMin, _cabinetMax] select (_projection >= 0);
+    _cabinetFront = _cabinetFront + _projection * (_edge select _forEachIndex);
+} forEach _cabinetAxes;
+
 (0 boundingBoxReal _lid) params ["_lidMin", "_lidMax"];
-private _shellOffset = ((_shellFace vectorDiff _drawerFace) vectorDotProduct _outward) - (_lidMax select 1);
-private _drawerClearance = 0.012 - (_lidMin select 1);
-private _seat = _drawerFace vectorAdd (_outward vectorMultiply (_shellOffset max _drawerClearance));
-[_seat, _outward, _up]
+private _shellSeat = _shellFront - (_lidMax select 1);
+private _clearSeat = _cabinetFront - (_lidMin select 1) + 0.012;
+private _position = _center vectorAdd (_forward vectorMultiply (_shellSeat max _clearSeat));
+[_position, _forward, _up]
