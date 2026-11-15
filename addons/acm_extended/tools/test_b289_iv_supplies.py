@@ -202,6 +202,21 @@ def test_lost_owner_result_never_speculatively_duplicates_the_reserved_accessory
     ''')
 
 
+def test_new_local_attempt_retires_expired_reservation_if_its_retry_stopped():
+    execute(fixture("extension") + r'''
+        _medic setVariable ["fixtureStock",[_item,_item]]; call _start;
+        private _expired=+(_medic getVariable "ACME_IV_FinishPending");
+        _serverTime=133; call _start;
+        private _replacement=+(_medic getVariable "ACME_IV_FinishPending");
+        [_medic,_expired select 1] call ACME_fnc_ivFinishRetry;
+        [count _debits==2 && {count _refunds==0} && {count _events==2},
+            "retry did not start a fresh procedure or duplicated an unsettled item"] call _check;
+        [(_replacement select 1) isNotEqualTo (_expired select 1)
+            && {(_medic getVariable "ACME_IV_FinishPending") isEqualTo _replacement},
+            "old retry could still clear the new reservation"] call _check;
+    ''')
+
+
 @pytest.mark.parametrize("legacy", [False, True])
 def test_removing_and_reinstalling_a_line_on_the_same_hub_retires_the_old_slot_identity(legacy):
     slot = "ACME_fnc_ivLineSlot={" + source("ivLineSlot") + "};"

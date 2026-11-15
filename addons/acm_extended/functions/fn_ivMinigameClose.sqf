@@ -1,6 +1,6 @@
 
 disableSerialization;
-params [["_closing", displayNull], ["_pending", [], [[]]], ["_allowReturn", true, [true]]];
+params [["_closing", displayNull], ["_pending", [], [[]]], ["_allowReturn", true, [true]], ["_lostSession", [], [[]]]];
 private _restore = {
     params ["_return", "_session", "_medic"];
     if (count _return == 3 && {count _session == 3} && {[_session] call ACME_fnc_ivUiValid}) then {
@@ -27,6 +27,9 @@ if (_pending isNotEqualTo []) exitWith {
     };
 };
 private _active = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
+private _lost = _lostSession isNotEqualTo [];
+if (_lost && {!isNull _active || {_lostSession isNotEqualTo (uiNamespace getVariable ["ACME_IV_ActiveSession", []])}}) exitWith {};
+if (!_lost && {isNull _closing}) exitWith {};
 if (!isNull _closing && {_closing isNotEqualTo _active}) exitWith {
     // An obsolete display owns no global controls or provider/menu context,
     // but its captured lease still needs an idempotent release of its own key.
@@ -37,31 +40,38 @@ if (!isNull _closing && {_closing isNotEqualTo _active}) exitWith {
     private _key = _closing getVariable ["ACME_IV_ECGKey", ""];
     if (!isNull _patient && {_key != ""}) then {[_patient, _key, false] call ACME_fnc_ecgJostleRequest;};
 };
-if (isNull _active) exitWith {};
-if (_active getVariable ["ACME_IV_Closed", false]) exitWith {};
-_active setVariable ["ACME_IV_Closed", true];
-private _session = +(_active getVariable ["ACME_IV_Session", []]);
-private _return = +(_active getVariable ["ACME_IV_ReturnMenu", []]);
-private _medic = _active getVariable ["ACME_IV_Medic", objNull];
+if (!_lost && {_active getVariable ["ACME_IV_Closed", false]}) exitWith {};
+uiNamespace setVariable ["ACME_IV_ActiveSession", []];
+if (!_lost) then {_active setVariable ["ACME_IV_Closed", true];};
+private _pfh = uiNamespace getVariable ["ACME_IV_PFH", -1];
+if (_pfh isEqualType 0 && {_pfh >= 0}) then {[_pfh] call CBA_fnc_removePerFrameHandler;};
+uiNamespace setVariable ["ACME_IV_PFH", -1];
+uiNamespace setVariable ["ACME_minigame_open",
+    !isNull (uiNamespace getVariable ["ACME_CS_DLG", displayNull])
+    || {!isNull (uiNamespace getVariable ["ACME_Thora_DLG", displayNull])}];
+
+private _session = if (_lost) then {_lostSession} else {_active getVariable ["ACME_IV_Session", []]};
+private _return = if (_lost) then {[]} else {_active getVariable ["ACME_IV_ReturnMenu", []]};
+private _medic = if (_lost) then {objNull} else {_active getVariable ["ACME_IV_Medic", objNull]};
 private _ecgPat = _session param [0, objNull];
-private _ecgKey = _active getVariable ["ACME_IV_ECGKey", "ui:iv:" + str clientOwner];
-if (!isNull _ecgPat) then {[_ecgPat, _ecgKey, false] call ACME_fnc_ecgJostleRequest;};
-// this fires first, before anything in this function can run or fail. the order against the keydown probes is the
-// whole answer: a close landing at the same instant ACE's cursormenu is created means creating a second child
-// display of 46 destroyed the first, and display mode is structurally impossible.
+private _ecgKey = if (_lost) then {uiNamespace getVariable ["ACME_IV_ECGKey", ""]} else {
+    _active getVariable ["ACME_IV_ECGKey", "ui:iv:" + str clientOwner]
+};
+if (!isNull _ecgPat && {_ecgKey != ""}) then {[_ecgPat, _ecgKey, false] call ACME_fnc_ecgJostleRequest;};
 
 // the iv mini-game teardown. stop the tick and drop the ctrlcreate'd sprites, the dot, catheter, stain and mark
 // sprites, so a re-open rebuilds cleanly. the persistent marks live on the patient, so they survive and re-render
 // on re-open.
 // save the unfinished work before the teardown clears it. a band still on the arm or a catheter still in it
 // comes back on the next open.
-[] call ACME_fnc_ivMinigameSaveState;
-[] call ACME_fnc_ivMinigameResetView;
-["clear"] call ACME_fnc_ivMinigamePrepView;
-
-private _pfh = uiNamespace getVariable ["ACME_IV_PFH", -1];
-if (_pfh isEqualType 0 && {_pfh >= 0}) then { [_pfh] call CBA_fnc_removePerFrameHandler; };
-uiNamespace setVariable ["ACME_IV_PFH", -1];
+if (_lost) then {
+    // The controls and the view journal were owned by the destroyed display.
+    [_lostSession] call ACME_fnc_ivFinishAbort;
+} else {
+    [] call ACME_fnc_ivMinigameSaveState;
+    [] call ACME_fnc_ivMinigameResetView;
+    ["clear"] call ACME_fnc_ivMinigamePrepView;
+};
 
 { if (!isNull _x) then { ctrlDelete _x; }; } forEach (uiNamespace getVariable ["ACME_IV_MarkCtrls", []]);
 uiNamespace setVariable ["ACME_IV_MarkCtrls", []];
@@ -124,9 +134,6 @@ uiNamespace setVariable ["ACME_IV_ShakeBase_off", [0, 0]];  // a stale offset wo
 uiNamespace setVariable ["ACME_IV_Shade", []];
 uiNamespace setVariable ["ACME_IV_Shade_n", -1];
 
-// the flashlights self-action is gated on this. left set, ACE would offer it forever.
-uiNamespace setVariable ["ACME_minigame_open", false];
-
 // The same return applies after complete placement, partial work, or Escape.
 // Flashlight rebuilding preserves the captured page without opening it underneath.
-[_return, _session, _medic] call _restore;
+if (_allowReturn) then {[_return, _session, _medic] call _restore;};

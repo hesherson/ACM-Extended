@@ -11,6 +11,7 @@ _display setVariable ["ACME_IV_Medic", uiNamespace getVariable ["ACME_IV_Medic",
 _display setVariable ["ACME_IV_ECGKey", uiNamespace getVariable ["ACME_IV_ECGKey", "ui:iv:" + str clientOwner]];
 _display setVariable ["ACME_IV_Closed", false];
 uiNamespace setVariable ["ACME_IV_DLG", _display];
+uiNamespace setVariable ["ACME_IV_ActiveSession", +(_display getVariable ["ACME_IV_Session", []])];
 uiNamespace setVariable ["ACME_IV_PendingLaunch", []];
 uiNamespace setVariable ["ACME_minigame_open", true];
 
@@ -585,7 +586,16 @@ uiNamespace setVariable ["ACME_IV_HeldCursorCtrl", _heldC];
 
 private _old = uiNamespace getVariable ["ACME_IV_PFH", -1];
 if (_old isEqualType 0 && {_old >= 0}) then { [_old] call CBA_fnc_removePerFrameHandler; };
-private _pfh = [{ call ACME_fnc_ivMinigameTick; }, 0, []] call CBA_fnc_addPerFrameHandler;
+private _pfh = [{
+    params ["_session", "_handle"];
+    if (_session isNotEqualTo (uiNamespace getVariable ["ACME_IV_ActiveSession", []])) exitWith {
+        [_handle] call CBA_fnc_removePerFrameHandler;
+    };
+    if (isNull (uiNamespace getVariable ["ACME_IV_DLG", displayNull])) exitWith {
+        [displayNull, [], false, _session] call ACME_fnc_ivMinigameClose;
+    };
+    call ACME_fnc_ivMinigameTick;
+}, 0, +(_display getVariable ["ACME_IV_Session", []])] call CBA_fnc_addPerFrameHandler;
 uiNamespace setVariable ["ACME_IV_PFH", _pfh];
 
 [] call ACME_fnc_ivMinigameRefreshBandSlot;  // populate the slot counts and the blank state on open.

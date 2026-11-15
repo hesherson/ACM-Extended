@@ -4,6 +4,12 @@ private _d=uiNamespace getVariable ["ACME_IV_DLG",displayNull];
 private _medic=uiNamespace getVariable ["ACME_IV_Medic",objNull];
 private _patient=uiNamespace getVariable ["ACME_IV_Patient",objNull];
 if (isNull _d || {isNull _medic} || {!local _medic} || {!([] call ACME_fnc_ivUiValid)}) exitWith {false};
+private _previous = _medic getVariable ["ACME_IV_FinishPending", []];
+if (count _previous >= 9 && {serverTime > (_previous select 5) + 2}) then {
+    // A retry can stop during a temporary loss of provider locality. Settle an
+    // expired receipt on the next local attempt instead of leaving it locked.
+    [_medic, _previous select 1] call ACME_fnc_ivFinishRetry;
+};
 if ((_medic getVariable ["ACME_IV_FinishPending",[]]) isNotEqualTo []) exitWith {true};
 private _action=if (_override!="") then {_override} else {uiNamespace getVariable ["ACME_IV_Held","none"]};
 if !(_action in ["extension","flush","dressing","line","lock","field14","field16","removeLock","removeSecondary","removeExtension","removeDressing","removeLine"]) exitWith {false};

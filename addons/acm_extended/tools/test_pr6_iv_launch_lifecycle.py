@@ -30,6 +30,9 @@ def setup(display_mode=False, fail=False):
     code = r'''
         private _providerLocal=true; private _frames=[]; private _leases=[];
         private _created=[]; private _reopened=[]; private _saves=0; private _creationSideEffect={};
+        private _removedPFHs=[]; private _abortedIV=[];
+        CBA_fnc_removePerFrameHandler={_removedPFHs pushBack (_this select 0);};
+        ACME_fnc_ivFinishAbort={_abortedIV pushBack +(_this select 0);};
         private _medicalDisplay=missionNamespace; private _missionDisplay=parsingNamespace;
         private _displayStack=[_missionDisplay,_medicalDisplay];
         private _drawDisplay=missionNamespace;
@@ -54,7 +57,7 @@ def setup(display_mode=False, fail=False):
         ace_medical_gui_target=_patient; ace_medical_gui_selectedCategory="advanced";
         ace_medical_gui_selectedBodyPart=3;
     '''
-    for name in ('ivUiValid', 'ivMinigameClose', 'reopenMedicalMenu', 'minigameOpen', 'ivMinigameOpen'):
+    for name in ('ivInteractionValid', 'ivUiValid', 'ivMinigameClose', 'reopenMedicalMenu', 'minigameOpen', 'ivMinigameOpen'):
         code += 'ACME_fnc_' + name + '={' + engine(read(name)) + '};\n'
     prefix = read('ivMinigameInit').split('private _bodyPart =', 1)[0]
     code += 'private _init={' + engine(prefix) + '};\n'
@@ -164,6 +167,71 @@ def test_active_panel_remains_usable_on_current_dead_patient():
         [(uiNamespace getVariable ["ACME_IV_DLG",objNull]) isEqualTo _drawDisplay,"corpse lost active IV panel"] call _check;
         [{!(_x select 2)} count _leases==0,"current corpse released active lease"] call _check;
     ''')
+
+
+def test_movement_interrupts_active_iv_and_same_medic_can_retry():
+    execute(setup() + r'''
+        call _launch; call _frame;
+        _distance=9; call _activeTick; call _timers;
+        [count _created==1 && {count _reopened==0} && {_saves==1},
+            "moving out of reach did not clean up and preserve the outgoing view"] call _check;
+        _distance=1; call _launch; call _frame;
+        [count _created==2,"same medic could not reopen IV access"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('recover_at', ['tick', 'open'])
+def test_lost_native_display_recovers_without_unload_and_preserves_replacement(recover_at):
+    init = read('ivMinigameInit')
+    per_frame = init.split('private _pfh = [{', 1)[1].split('}, 0,', 1)[0]
+    execute(setup() + 'private _ivPFH={' + engine(per_frame) + '};' + r'''
+        call _launch; call _frame;
+        private _old=+(uiNamespace getVariable ["ACME_IV_ActiveSession",[]]);
+        private _oldKey=_drawDisplay getVariable ["ACME_IV_ECGKey",""];
+        uiNamespace setVariable ["ACME_IV_PFH",23];
+        uiNamespace setVariable ["ACME_IV_DLG",objNull];
+        _displayStack=_displayStack-[_drawDisplay]; _dialog=false;
+    ''' + ('[_old,23] call _ivPFH;' if recover_at == 'tick' else '') + r'''
+        _drawDisplay=parsingNamespace; call _launch; call _frame;
+        [objNull,[],false,_old] call ACME_fnc_ivMinigameClose;
+        [objNull] call ACME_fnc_ivMinigameClose;
+        [count _created==2 && {_removedPFHs isEqualTo [23]} && {_abortedIV isEqualTo [_old]},
+            format ["display loss recovery counts: opens %1, removed PFHs %2, aborts %3, old session %4",
+                count _created, _removedPFHs, _abortedIV, _old]] call _check;
+        [{(_x select 1)==_oldKey && {!(_x select 2)}} count _leases==1,
+            "display loss did not release exactly the expired lease"] call _check;
+        [(uiNamespace getVariable ["ACME_IV_DLG",objNull]) isEqualTo _drawDisplay
+            && {uiNamespace getVariable ["ACME_minigame_open",false]},
+            "late cleanup tore down the replacement IV view"] call _check;
+    ''')
+
+
+@pytest.mark.parametrize('ace_menu_open', [False, True])
+def test_flashlight_watchdog_retires_missed_iv_reopen_when_ace_menu_is_gone(ace_menu_open):
+    watchdog = read('initMinigameInteractionRuntime').rsplit('[{', 1)[1].split('}, 1,', 1)[0]
+    watchdog = engine(watchdog.replace('isNull (findDisplay 91919)', '(isNull _cursorMenuDisplay)'))
+    execute(setup() + 'private _watchdog={' + watchdog + '};' + r'''
+        ACME_fnc_aceCursorRestore={};
+        _nowTime=10;
+        missionNamespace setVariable ["ACME_flashlightMenuActive",true];
+        missionNamespace setVariable ["ACME_flashlightMenuActiveAt",1];
+        uiNamespace setVariable ["ACME_minigame_reopen","ACME_IVMinigame_Dialog"];
+        uiNamespace setVariable ["ace_interact_menu_cursorMenuOpened",true];
+    ''' + ('private _cursorMenuDisplay=profileNamespace;' if ace_menu_open else 'private _cursorMenuDisplay=objNull;') + r'''
+        call _watchdog; call _launch; call _frame;
+    ''' + f'[count _created=={0 if ace_menu_open else 1},"watchdog discarded a live ACE menu or left IV blocked"] call _check;')
+
+
+@pytest.mark.parametrize('interruption', ['', '_distance=9;', 'call _launch;'])
+def test_flashlight_rebuild_belongs_to_the_captured_iv_attempt(interruption):
+    reopen = engine(read('minigameReopen')).replace('allDisplays', '_displayStack')
+    execute(setup() + 'private _reopenIV={' + reopen + '};' + r'''
+        call _launch; call _frame;
+        uiNamespace setVariable ["ACME_minigame_reopen","ACME_IVMinigame_Dialog"];
+        call _close; call _reopenIV;
+    ''' + interruption + r'''
+        call _frame;
+    ''' + f'[count _created=={1 if interruption == "_distance=9;" else 2},"stale flashlight rebuild reopened or replaced IV access"] call _check;')
 
 
 @pytest.mark.parametrize('display_mode', [False, True])

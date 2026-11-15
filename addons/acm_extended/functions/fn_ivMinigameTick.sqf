@@ -14,10 +14,10 @@ _acmeNVArgs call {
 // the held item routes through the dynamic ACME_IV_HeldCursor sprite, so it always draws above the buttons.
 private _display = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
 if (isNull _display) exitWith {};
-if !([] call ACME_fnc_ivUiValid) exitWith {_display closeDisplay 2;};
-private _medic = _display getVariable ["ACME_IV_Medic", objNull];
-if (isNull _medic || {_medic isNotEqualTo (call ACME_fnc_controlledProvider)} || {!local _medic} || {!alive _medic}
-    || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {_display closeDisplay 2;};
+if !([] call ACME_fnc_ivUiValid) exitWith {
+    [_display, [], false] call ACME_fnc_ivMinigameClose;
+    _display closeDisplay 2;
+};
 
 // Update band presence before any held-tool or insertion early return.
 [] call ACME_fnc_ivMinigameSyncBand;

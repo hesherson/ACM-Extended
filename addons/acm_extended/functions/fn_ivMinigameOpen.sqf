@@ -18,8 +18,11 @@ private _old = uiNamespace getVariable ["ACME_IV_DLG", displayNull];
 if (!isNull _old) then {
     // Retire controls/PFH while their global context still belongs to this
     // concrete display; a delayed native Unload must not see the new context.
-    [_old] call ACME_fnc_ivMinigameClose;
+    [_old, [], false] call ACME_fnc_ivMinigameClose;
     _old closeDisplay 2;
+} else {
+    // The native display can disappear before its Unload callback runs.
+    [displayNull, [], false, uiNamespace getVariable ["ACME_IV_ActiveSession", []]] call ACME_fnc_ivMinigameClose;
 };
 // A second launch can arrive before the first display has an onUnload handler.
 // Retire that exact pending launch before publishing the replacement context.

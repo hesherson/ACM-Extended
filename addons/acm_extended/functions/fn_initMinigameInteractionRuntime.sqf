@@ -121,8 +121,14 @@ ACME_minigameDisplays = [
 [{
     if (missionNamespace getVariable ["ACME_flashlightMenuActive", false]) then {
         private _at = missionNamespace getVariable ["ACME_flashlightMenuActiveAt", 0];
-        if ((diag_tickTime - _at) > 6) then {
+        if ((diag_tickTime - _at) > 6 && {isNull (findDisplay 91919)}) then {
             missionNamespace setVariable ["ACME_flashlightMenuActive", false];
+            // ACE may skip its close event if its menu never opened. Retire
+            // the IV rebuild request too, or every subsequent launch rejects it.
+            if ((uiNamespace getVariable ["ACME_minigame_reopen", ""]) == "ACME_IVMinigame_Dialog") then {
+                uiNamespace setVariable ["ACME_minigame_reopen", ""];
+            };
+            [] call ACME_fnc_aceCursorRestore;
         };
     };
 }, 1, []] call CBA_fnc_addPerFrameHandler;

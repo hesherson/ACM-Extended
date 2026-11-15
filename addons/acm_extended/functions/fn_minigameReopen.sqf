@@ -31,7 +31,17 @@ if (_alive) exitWith {
 // next frame. ACE's cursormenu is mid-teardown right now, and creating a display into 46 while another is being
 // destroyed on the same frame is how you end up with the focus in the wrong place.
 [{
-    params ["_c"];
+    params ["_c", "_ivSession", "_returnSerial"];
+    if (_c == "ACME_IVMinigame_Dialog") exitWith {
+        [_c, {
+            params ["_session", "_serial"];
+            _session isNotEqualTo []
+                && {_serial == (uiNamespace getVariable ["ACME_medicalReturnSerial", 0])}
+                && {!dialog}
+                && {[_session] call ACME_fnc_ivUiValid}
+                && {[] call ACME_fnc_ivInteractionValid}
+        }, [_ivSession, _returnSerial]] call ACME_fnc_minigameOpen;
+    };
     [_c] call ACME_fnc_minigameOpen;
 
     // the syringe kit rebuilds its lists and resets the barrel in its onload, so put the syringe back the frame
@@ -55,4 +65,5 @@ if (_alive) exitWith {
             call ACME_fnc_syringeKitRender;
         }, []] call CBA_fnc_execNextFrame;
     };
-}, [_cls]] call CBA_fnc_execNextFrame;
+}, [_cls, +(uiNamespace getVariable ["ACME_IV_Session", []]),
+    uiNamespace getVariable ["ACME_medicalReturnSerial", 0]]] call CBA_fnc_execNextFrame;
