@@ -1,3 +1,36 @@
+#define ACME_MEDICAL_CHEST_ACTIONS(LID_ACTION, LABEL, CONDITION, STATEMENT) \
+        class UserActions { \
+            class ACME_Inventory { \
+                displayName = "Medical Chest Inventory"; \
+                position = ""; \
+                radius = 4; \
+                priority = 2; \
+                showWindow = 0; \
+                hideOnUse = 1; \
+                onlyForPlayer = 1; \
+                condition = "([this] call ACME_fnc_medicalChestTarget) isNotEqualTo []"; \
+                statement = "[this,ACE_player] call ACME_fnc_medicalChestInventory"; \
+            }; \
+        }; \
+        class ACE_Actions { \
+            class ACE_MainActions { \
+                displayName = "Medical Chest"; \
+                distance = 4; \
+                selection = ""; \
+                condition = "[_target,_player] call ACME_fnc_medicalChestCanUse"; \
+                class ACME_Inventory { \
+                    displayName = "Inventory"; \
+                    condition = "[_target,_player] call ACME_fnc_medicalChestCanUse"; \
+                    statement = "[_target,_player] call ACME_fnc_medicalChestInventory"; \
+                }; \
+                class LID_ACTION { \
+                    displayName = LABEL; \
+                    condition = CONDITION; \
+                    statement = STATEMENT; \
+                }; \
+            }; \
+        }
+
     class Land_PortableCabinet_01_closed_olive_F;
     class Land_PortableCabinet_01_4drawers_olive_F;
     class Land_PortableCabinet_01_7drawers_olive_F;
@@ -12,7 +45,6 @@
         ace_dragging_canDrag = 0;
         ace_dragging_canCarry = 0;
         ace_cargo_canLoad = 0;
-        class UserActions {};
         class Attributes {
             class ACME_medicalChestStartOpen {
                 property = "ACME_medicalChestStartOpen";
@@ -24,15 +56,7 @@
                 expression = "if (!is3DEN && {isServer}) then {_this setVariable ['ACME_medicalChestStartOpen', _value];};";
             };
         };
-        class ACE_Actions {
-            class ACE_MainActions {
-                displayName = "Open Medical Chest";
-                distance = 4;
-                condition = "[_target,_player,true] call ACME_fnc_medicalChestCanUse";
-                selection = "";
-                statement = "[_target,_player,true] call ACME_fnc_medicalChestUse";
-            };
-        };
+        ACME_MEDICAL_CHEST_ACTIONS(ACME_OpenMedicalChest,"Open Medical Chest","[_target,_player,true] call ACME_fnc_medicalChestCanUse","[_target,_player,true] call ACME_fnc_medicalChestUse");
     };
 
 #define ACME_MEDICAL_CHEST_RETEXTURE(CLASS,NUMBER,LABEL,STOCK) \
@@ -89,17 +113,9 @@
         ace_cargo_canLoad = 0; \
         ace_dragging_canDrag = 0; \
         ace_dragging_canCarry = 0; \
-        class UserActions {}; \
-        class ACE_Actions { \
-            class ACE_MainActions { \
-                displayName = "Close Medical Chest"; \
-                distance = 4; \
-                selection = ""; \
-                condition = "[_target,_player,false] call ACME_fnc_medicalChestCanUse"; \
-                statement = "[_target,_player,false] call ACME_fnc_medicalChestUse"; \
-            }; \
-        }; \
+        ACME_MEDICAL_CHEST_ACTIONS(ACME_CloseMedicalChest,"Close Medical Chest","[_target,_player,false] call ACME_fnc_medicalChestCanUse","[_target,_player,false] call ACME_fnc_medicalChestUse"); \
     }
     ACME_MEDICAL_CHEST_OPEN_VARIANT(ACME_MedicalChest4Drawers,Land_PortableCabinet_01_4drawers_olive_F);
     ACME_MEDICAL_CHEST_OPEN_VARIANT(ACME_MedicalChest7Drawers,Land_PortableCabinet_01_7drawers_olive_F);
 #undef ACME_MEDICAL_CHEST_OPEN_VARIANT
+#undef ACME_MEDICAL_CHEST_ACTIONS

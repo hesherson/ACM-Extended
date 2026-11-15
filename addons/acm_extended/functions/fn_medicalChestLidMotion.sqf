@@ -1,15 +1,9 @@
 /* The lid travels through the same clearance positions in both directions. */
-params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revision", "_opening"];
+params ["_chest", "_cabinet", "_lid", "_lidPaint", "_cargo", "_actor", "_revision", "_opening", "_seatPose", "_restPose"];
 
-private _restPos = getPosWorld _lid;
-private _restDir = vectorDir _lid;
-private _restUp = vectorUp _lid;
-private _caseDir = vectorDir _chest;
-private _caseUp = vectorUp _chest;
-private _chestFront = (0 boundingBoxReal _chest) select 1 select 1;
-private _lidFront = (0 boundingBoxReal _lid) select 1 select 1;
-private _seated = _chest modelToWorldWorld [0, _chestFront - _lidFront, 0];
-private _released = _seated vectorAdd (_caseDir vectorMultiply 0.24) vectorAdd [0, 0, 0.06];
+_seatPose params ["_seated", "_caseDir", "_caseUp"];
+_restPose params ["_restPos", "_restDir", "_restUp"];
+private _released = _seated vectorAdd (_caseDir vectorMultiply 0.34) vectorAdd [0, 0, 0.06];
 private _side = _caseUp vectorMultiply -1;
 private _clear = _released vectorAdd (_side vectorMultiply ((_restPos vectorDiff _released) vectorDotProduct _side));
 private _hover = +_restPos;
@@ -26,7 +20,6 @@ private _apply = {
         };
     } forEach _parts;
 };
-if (_opening) then {[_parts, _seated, _caseDir, _caseUp] call _apply;};
 
 [{
     params ["_args", "_handle"];
@@ -46,7 +39,7 @@ if (_opening) then {[_parts, _seated, _caseDir, _caseUp] call _apply;};
     };
 
     private _elapsed = CBA_missionTime - _started;
-    private _duration = 0.60;
+    private _duration = 0.66;
     private _finished = _elapsed >= _duration;
     private _t = if (_opening) then {_elapsed min _duration} else {(_duration - _elapsed) max 0};
     private _ease = {
@@ -60,14 +53,14 @@ if (_opening) then {[_parts, _seated, _caseDir, _caseUp] call _apply;};
     };
     private _dir = _caseDir;
     private _up = _caseUp;
-    private _pos = if (_t < 0.10) then {
-        [_seated, _released, [_t / 0.10] call _ease] call _lerp
+    private _pos = if (_t < 0.14) then {
+        [_seated, _released, [_t / 0.14] call _ease] call _lerp
     } else {
-        if (_t < 0.26) then {
-            [_released, _clear, [(_t - 0.10) / 0.16] call _ease] call _lerp
+        if (_t < 0.32) then {
+            [_released, _clear, [(_t - 0.14) / 0.18] call _ease] call _lerp
         } else {
-            if (_t < 0.44) then {
-                private _s = [(_t - 0.26) / 0.18] call _ease;
+            if (_t < 0.50) then {
+                private _s = [(_t - 0.32) / 0.18] call _ease;
                 _dir = vectorNormalized ([_caseDir, _restDir, _s] call _lerp);
                 _up = [_caseUp, _restUp, _s] call _lerp;
                 _up = vectorNormalized (_up vectorDiff (_dir vectorMultiply (_up vectorDotProduct _dir)));
@@ -75,7 +68,7 @@ if (_opening) then {[_parts, _seated, _caseDir, _caseUp] call _apply;};
             } else {
                 _dir = _restDir;
                 _up = _restUp;
-                [_hover, _restPos, [(_t - 0.44) / 0.16] call _ease] call _lerp
+                [_hover, _restPos, [(_t - 0.50) / 0.16] call _ease] call _lerp
             }
         }
     };

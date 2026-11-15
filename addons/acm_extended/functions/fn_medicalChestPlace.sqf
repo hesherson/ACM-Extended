@@ -1,5 +1,5 @@
 /* Place the native model on its support surface. */
-params ["_object", "_base", "_heading", "_part", ["_normal", [0, 0, 1]], ["_closed", objNull]];
+params ["_object", "_base", "_heading", "_part", ["_normal", [0, 0, 1]], ["_closed", objNull], ["_apply", true]];
 if (_part == "cabinet") then {_heading = (_heading + 180) % 360;};
 (0 boundingBoxReal _object) params ["_min", "_max"];
 private _extent = _max vectorDiff _min;
@@ -40,5 +40,9 @@ if (_part != "closed") then {
     };
 };
 
-_object setVectorDirAndUp [_dir, _up];
-_object setPosWorld (_base vectorAdd (_supportNormal vectorMultiply (0.008 - _bottom)));
+private _position = _base vectorAdd (_supportNormal vectorMultiply (0.008 - _bottom));
+if (_apply) then {
+    _object setVectorDirAndUp [_dir, _up];
+    _object setPosWorld _position;
+};
+[_position, _dir, _up]

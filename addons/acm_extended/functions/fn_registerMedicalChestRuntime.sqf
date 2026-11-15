@@ -19,7 +19,23 @@ if (!hasInterface) exitWith {};
         {
             if (!isNull _x && {_x isKindOf "ACME_MedicalChestCargo"}) exitWith {_cargo = _x;};
         } forEach [_primary, _secondary];
-        if (isNull _cargo) exitWith {false};
+        if (isNull _cargo) exitWith {
+            private _target = objNull;
+            {
+                if (([_x] call ACME_fnc_medicalChestTarget) isNotEqualTo []) exitWith {_target = _x;};
+            } forEach [_primary, _secondary];
+            if (isNull _target && {(isNull _primary || {_primary isEqualTo _unit}) && {isNull _secondary}}) then {
+                private _aim = cursorObject;
+                if (isNull _aim) then {_aim = cursorTarget;};
+                if (!isNull _aim && {_unit distance _aim <= 4}
+                    && {([_aim] call ACME_fnc_medicalChestTarget) isNotEqualTo []}) then {
+                    _target = _aim;
+                };
+            };
+            if (isNull _target || {_unit distance _target > 4}) exitWith {false};
+            [ACME_fnc_medicalChestInventory, [_target, _unit]] call CBA_fnc_execNextFrame;
+            true
+        };
         private _chest = _cargo getVariable ["ACME_medicalChestAnchor", objNull];
         if (isNull _chest || {_chest getVariable ["ACME_medicalChestTransition", false]}) exitWith {true};
         (_chest getVariable ["ACME_medicalChestState", [0, false]]) params ["_revision", "_open"];

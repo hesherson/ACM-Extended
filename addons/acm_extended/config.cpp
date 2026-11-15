@@ -2326,6 +2326,7 @@ class CfgFunctions {
             class medicalChestStock {};
             class medicalChestDrawerPlan {};
             class medicalChestDrawers {};
+            class medicalChestLidSeat {};
             class medicalChestLidMotion {};
             class medicalChestView {};
             class medicalChestDrawerTick {};
@@ -2334,6 +2335,8 @@ class CfgFunctions {
             class medicalChestRequest {};
             class medicalChestCanUse {};
             class medicalChestUse {};
+            class medicalChestTarget {};
+            class medicalChestInventory {};
             class registerMedicalChestRuntime {};
             class ivStartKitUnpack {};
             class ivStartKitStock {};

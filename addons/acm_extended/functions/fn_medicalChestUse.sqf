@@ -7,4 +7,4 @@ private _chest = if (_opening) then {_target} else {
 };
 if (isNull _chest) exitWith {};
 private _revision = (_chest getVariable ["ACME_medicalChestState", [-1, false]]) select 0;
-[_target, _actor, _opening, _revision] remoteExecCall ["ACME_fnc_medicalChestRequest", 2];
+[_target, _actor, _opening, _revision, false] remoteExecCall ["ACME_fnc_medicalChestRequest", 2];

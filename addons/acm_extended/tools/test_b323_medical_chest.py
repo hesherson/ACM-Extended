@@ -12,14 +12,6 @@ def request_fixture():
     transition = adapt(read("medicalChestSetOpen"))
     motion = adapt(read("medicalChestLidMotion"))
     for engine, stand_in in {
-        "getPosWorld _lid": "(_lid getVariable 'fixturePosition')",
-        "vectorDir _lid": "[0,0,1]",
-        "vectorUp _lid": "[-1,0,0]",
-        "vectorDir _chest": "[0,1,0]",
-        "vectorUp _chest": "[-1,0,0]",
-        "(0 boundingBoxReal _chest) select 1 select 1": "0.16",
-        "(0 boundingBoxReal _lid) select 1 select 1": "0.04",
-        "_chest modelToWorldWorld [0, _chestFront - _lidFront, 0]": "[20, 12 + _chestFront - _lidFront, 0.43]",
         "_x setVectorDirAndUp [_dir, _up];": "_x setVariable ['fixtureAxes', [_dir, _up]];",
         "_x setPosWorld _position;": "_x setVariable ['fixturePosition', _position];",
         "typeOf _cabinet": "'fixture cabinet'",
@@ -50,13 +42,15 @@ def request_fixture():
         '_actor distance _target': '_distance',
         'getNumber (configOf _chest >> "acmeChestVariant")': '_fixtureVariant',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
-        'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _base]':
+        'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _chest modelToWorldWorld [0, 0.13, 0]]':
             '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
         '    _cabinet allowDamage false;': '',
         '    _cabinet enableSimulationGlobal false;': '    _cabinet setVariable ["fixtureFrozen", true];',
         '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
         '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
         '    _cargo setPosWorld (_base vectorAdd [0, 0, -25]);': '',
+        '_lid setVectorDirAndUp [_dir, _up];': "_lid setVariable ['fixtureAxes', [_dir, _up]];",
+        '_lid setPosWorld _position;': "_lid setVariable ['fixturePosition', _position];",
         '_chest hideObjectGlobal true;': '_hidden = true;',
         '_chest hideObjectGlobal false;': '_hidden = false;',
         'playSound3D [format ["acm_extended\\sound\\%1.ogg", _sound], objNull, false, getPosWorld _chest, 1.5, 1, 18];':
@@ -122,15 +116,19 @@ def request_fixture():
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
         ACME_fnc_medicalChestPlace = {
             _placed pushBack _this;
-            if ((_this select 3) == "lid") then {
-                (_this select 0) setVariable ["fixturePosition", [20.82, 12, 0.05]];
-            };
+            [[20.82, 12, 0.05], [0,0,1], [-1,0,0]]
         };
+        ACME_fnc_medicalChestLidSeat = {[[20, 12.12, 0.43], [0,1,0], [-1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
         ACME_fnc_medicalChestDecals = {
             _markings pushBack (_this select [1, 2]);
-            if ((_this select 1) isEqualTo "lid") then {[_fixtureLidPaint]} else {[]}
+            if ((_this select 1) isEqualTo "lid") then {
+                private _part = _this select 0;
+                _fixtureLidPaint setVariable ["fixturePosition", _part getVariable "fixturePosition"];
+                _fixtureLidPaint setVariable ["fixtureAxes", _part getVariable "fixtureAxes"];
+                [_fixtureLidPaint]
+            } else {[]}
         };
         CBA_fnc_addPerFrameHandler = {
             if (count (_this select 2) == 4) exitWith {_drawerMotion = _this; 31};
@@ -150,13 +148,13 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [0,false] && {_hidden}, "inventory became available during the visual swap"] call _check;
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
         [_markings isEqualTo [["cabinet",10], ["lid",10]], "opening did not transfer the selected finish"] call _check;
-        [(_placed select 0 select 1) isEqualTo [20.82, 12, 0] && {(_placed select 0 select 3) == "lid"} && {(_placed select 1 select 3) == "cabinet"}, "lid used the cabinet footprint or remained upright"] call _check;
+        [(_placed select 1 select 1) isEqualTo [20.82, 12, 0] && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         [(_open getVariable ["fixtureFrozen", false]) && {(_drawers select 0 select 2) == 0}, "cabinet was free to tip or drawers began open"] call _check;
         [_open, _medic, false, 1] call _request;
         [count _markings == 2 && {_gearRequests isEqualTo []}, "early close or Gear interrupted the animation"] call _check;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "opening did not publish the finished cabinet"] call _check;
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1], _medic]], "open did not send exactly one Gear request to the initiating player"] call _check;
         _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
@@ -164,7 +162,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [_open, _medic, false, 1] call _request;
         [(_chest getVariable "ACME_medicalChestTransition") && {_hidden}
             && {_events isEqualTo [["ACME_medicalChestClosing", [_cargo, 1]]]}, "closing swapped models or missed the Gear close signal"] call _check;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         [_markings isEqualTo [["cabinet",10], ["lid",10], ["closed",10]], "closing did not restore the selected finish"] call _check;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
         [_chest, _medic, true, 0] call _request;
@@ -172,6 +170,38 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [_chest, _medic, true, 2] call _request;
         [(_chest getVariable "ACME_medicalChestCargo") isEqualTo _cargo && {(_cargo getVariable "stock") isEqualTo ["ACM_ACCUVAC", "ACE_tourniquet"]}, "using drawers refilled or discarded live cargo"] call _check;
         [_audio isEqualTo ["medical_chest_open", "medical_chest_close", "medical_chest_open"], "transition failed to emit exactly one matching sound"] call _check;
+    ''')
+
+
+def test_lid_only_request_and_inventory_request_offer_different_gear_behavior():
+    inventory = adapt(read("medicalChestInventory"))
+    for engine, fixture in (
+        ('local _actor', 'true'),
+        ('alive _actor', '_alive'),
+        ('_actor distance _target', '_distance'),
+        ('remoteExecCall ["ACME_fnc_medicalChestRequest", 2]', 'call _request'),
+    ):
+        inventory = inventory.replace(engine, fixture)
+    execute(request_fixture() + 'private _inventory={' + inventory + '};' + r'''
+        ACME_fnc_medicalChestTarget = {
+            [_chest] + (_chest getVariable "ACME_medicalChestState")
+        };
+        CBA_fnc_localEvent = {_gearRequests pushBack _this;};
+        [_chest, _medic, true, 0, false] call _request;
+        0.67 call _tickLid;
+        [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_gearRequests isEqualTo []},
+            "the lid-only ACE action opened Gear"] call _check;
+        private _cabinet = _chest getVariable "ACME_medicalChestCabinet";
+        [_cabinet, _medic] call _inventory;
+        [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1]]],
+            "Inventory on an uncovered chest did not reuse its live cargo"] call _check;
+        [_cabinet, _medic, false, 1] call _request;
+        0.67 call _tickLid;
+        [_chest, _medic] call _inventory;
+        [count _gearRequests == 1 && {(_chest getVariable "ACME_medicalChestTransition")}, "Inventory skipped the lid motion"] call _check;
+        0.67 call _tickLid;
+        [(count _gearRequests == 2) && {(_gearRequests select 1) isEqualTo ["ACME_medicalChestOpened", [_medic, _chest, _cargo, 3], _medic]},
+            "Inventory on a covered chest failed to request Gear after the lid opened"] call _check;
     ''')
 
 
@@ -193,13 +223,13 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
                 "paint drifted away from the lid"] call _check;
             [_pos, _axes]
         };
-        (0.09 call _sample) params ["_pop", "_popAxes"];
+        (0.12 call _sample) params ["_pop", "_popAxes"];
         [(_pop select 0) == 20 && {(_pop select 1) > 12.3} && {_popAxes isEqualTo _upright},
             "lid did not pop straight forward"] call _check;
         (0.09 call _sample) params ["_slide", "_slideAxes"];
         [(_slide select 0) > 20 && {(_slide select 1) > 12.3} && {_slideAxes isEqualTo _upright},
             "lid rotated before sliding past the cabinet"] call _check;
-        (0.17 call _sample) params ["_turn", "_turnAxes"];
+        (0.20 call _sample) params ["_turn", "_turnAxes"];
         [abs ((_turn select 0) - 20.82) < 0.001 && {(_turnAxes select 0 select 2) > 0} && {_gearRequests isEqualTo []},
             "lid turned while it still overlapped the cabinet"] call _check;
         (0.26 call _sample) params ["_rest", "_restAxes"];
@@ -210,16 +240,39 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
         (0.25 call _sample) params ["_reverse", "_reverseAxes"];
         [(_reverse vectorDistance _turn) < 0.001 && {((_reverseAxes select 0) vectorDistance (_turnAxes select 0)) < 0.001},
             "closing did not retrace the opening motion"] call _check;
-        (0.36 call _sample) params ["_seated", "_seatedAxes"];
+        (0.42 call _sample) params ["_seated", "_seatedAxes"];
         [_seated isEqualTo _start && {_seatedAxes isEqualTo _upright} && {!_hidden}
             && {(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false]}, "lid did not reseat before the shell swap"] call _check;
+    ''')
+
+
+def test_lid_seats_on_the_drawer_face_even_when_the_closed_shell_axis_disagrees():
+    source = read("medicalChestLidSeat")
+    for engine, fixture in (
+        ('_cabinet vectorModelToWorld [0, 0, -1]', '_drawerDirection'),
+        ('0 boundingBoxReal _cabinet', '[[-.269,-.422,-.062],[.267,.422,.213]]'),
+        ('0 boundingBoxReal _chest', '[[-.423,-.17,-.266],[.421,.163,.266]]'),
+        ('0 boundingBoxReal _lid', '[[-.415,-.041,-.265],[.415,.041,.265]]'),
+        ('_cabinet modelToWorldWorld [0, 0, _frontEdge]', '_drawerDirection vectorMultiply (-_frontEdge)'),
+        ('_chest modelToWorldWorld [0, _shellEdge, 0]', '_shellDirection vectorMultiply _shellEdge'),
+    ):
+        assert engine in source
+        source = source.replace(engine, fixture)
+    execute('private _seatLid={' + source + '};' + r'''
+        {
+            private _drawerDirection = _x;
+            private _shellDirection = _drawerDirection vectorMultiply -1;
+            ([_patient, _medic, missionNamespace] call _seatLid) params ["_seat", "_dir", "_up"];
+            [_dir isEqualTo _drawerDirection && {(_up vectorDotProduct _dir) == 0}, "lid trusted the closed shell direction"] call _check;
+            [(_seat vectorDotProduct _dir) - 0.041 > 0.062, "seated lid interpenetrates the actual drawer face"] call _check;
+        } forEach [[0,1,0],[1,0,0],[0,-1,0],[-1,0,0]];
     ''')
 
 
 def test_drawers_follow_multiple_viewers_and_retract_before_the_lid_moves():
     execute(request_fixture() + r'''
         [_chest, _medic, true, 0] call _request;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         private _cab = _chest getVariable "ACME_medicalChestCabinet";
         private _lid = _chest getVariable "ACME_medicalChestLid";
         private _rest = _lid getVariable "fixturePosition";
@@ -251,7 +304,7 @@ def test_drawers_follow_multiple_viewers_and_retract_before_the_lid_moves():
             "lid moved over extended drawers or Gear opened during closing"] call _check;
         0.15 call _tickDrawers;
         [(_chest getVariable "ACME_medicalChestDrawerFraction") == 0, "drawers were still extended after closing Gear"] call _check;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "lid failed to close after the drawers retracted"] call _check;
     ''')
 
@@ -259,7 +312,7 @@ def test_drawers_follow_multiple_viewers_and_retract_before_the_lid_moves():
 def test_drawers_retract_if_the_viewer_stops_reporting():
     execute(request_fixture() + r'''
         [_chest, _medic, true, 0] call _request;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         [_cargo, _medic, 1, true] call ACME_fnc_medicalChestView;
         0.25 call _tickDrawers;
         [(_chest getVariable "ACME_medicalChestDrawerFraction") == 1, "view did not extend drawers"] call _check;
@@ -281,6 +334,10 @@ def test_inventory_reports_require_a_gear_display_and_end_when_it_goes_away():
         'findDisplay 602': 'objNull',
         'alive _unit': '_alive',
         '_unit distance _cargo': '_distance',
+        '_unit distance _aim': '_distance',
+        '_unit distance _target': '_distance',
+        'cursorObject': '_aimObject',
+        'cursorTarget': '_aimObject',
         'isNull ACE_player': 'ACE_player isEqualTo objNull',
         ' remoteExecCall ["ACME_fnc_medicalChestView", 2]': ' call _report',
     }.items():
@@ -292,6 +349,14 @@ def test_inventory_reports_require_a_gear_display_and_end_when_it_goes_away():
         private _inventoryPoll = {};
         private _reports = [];
         private _visible = false;
+        private _aimObject = objNull;
+        private _requests = [];
+        CBA_fnc_execNextFrame = {(_this select 1) call (_this select 0);};
+        ACME_fnc_medicalChestInventory = {_requests pushBack _this;};
+        ACME_fnc_medicalChestTarget = {
+            if ((_this select 0) isEqualTo _patient) exitWith {[_patient, 1, true]};
+            []
+        };
         private _addInventoryHandler = {
             _inventoryHandlers pushBack _this;
         };
@@ -306,6 +371,11 @@ def test_inventory_reports_require_a_gear_display_and_end_when_it_goes_away():
         + "call {" + runtime + "};" + r'''
         private _opened = _inventoryHandlers select 0 select 1;
         private _closed = _inventoryHandlers select 1 select 1;
+        [[_medic, _patient, objNull] call _opened, "native Gear on the crate bypassed the shared animation path"] call _check;
+        _aimObject = _patient;
+        [[_medic, _medic, objNull] call _opened, "inventory hotkey while pointing at a crate did not use the shared path"] call _check;
+        [!([_medic, parsingNamespace, objNull] call _opened), "a nearby chest intercepted a different container's Gear"] call _check;
+        [_requests isEqualTo [[_patient,_medic],[_patient,_medic]], "vanilla routes did not request that crate's Gear"] call _check;
         [_medic, _cargo, objNull] call _opened;
         call _inventoryPoll;
         CBA_missionTime = CBA_missionTime + 1;
@@ -339,7 +409,7 @@ def test_missing_lid_cancels_the_motion_and_allows_a_fresh_open():
             && {_gearRequests isEqualTo []} && {_removedMotion isEqualTo [30]},
             "interrupted opening did not restore the closed shell"] call _check;
         [_chest, _medic, true, 1] call _request;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,true] && {count _gearRequests == 1},
             "interrupted opening blocked future use"] call _check;
     ''')
@@ -358,7 +428,7 @@ def test_mission_start_open_and_later_close_share_the_same_cargo():
         [(_cargo getVariable "fixtureAttached") isEqualTo (_chest getVariable "ACME_medicalChestCabinet"), "open chest did not expose the live cargo"] call _check;
         private _open = _chest getVariable "ACME_medicalChestCabinet";
         [_open, _medic, false, 1] call _request;
-        0.61 call _tickLid;
+        0.67 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {(_cargo getVariable "stock") isEqualTo ["ACM_IV_18g", "ACM_ACCUVAC"]}, "initially open chest failed to close with stock intact"] call _check;
     ''')
 
@@ -468,14 +538,16 @@ def test_ground_hit_passes_surface_normal_to_the_lid():
     ''')
 
 
-def test_chest_ace_actions_are_direct_and_gear_waits_for_matching_open_state():
+def test_chest_actions_share_one_ace_root_and_gear_waits_for_matching_open_state():
     vehicles = (ROOT / "addons/acm_extended/MedicalChestVehicles.hpp").read_text()
     runtime = read("registerMedicalChestRuntime")
-    assert vehicles.count('class ACE_MainActions {') == 3
+    assert vehicles.count('class ACE_MainActions {') == 2
     assert 'class ACE_Actions {class ACE_MainActions {condition = "false";};};' in vehicles
-    assert 'class ACME_OpenMedicalChest' not in vehicles
-    assert 'class ACME_CloseMedicalChest' not in vehicles
-    assert 'Open Supplies' not in vehicles
+    assert 'ACME_MEDICAL_CHEST_ACTIONS(ACME_OpenMedicalChest' in vehicles
+    assert 'ACME_MEDICAL_CHEST_ACTIONS(ACME_CloseMedicalChest' in vehicles
+    assert 'displayName = "Medical Chest Inventory"' in vehicles
+    assert '[this,ACE_player] call ACME_fnc_medicalChestInventory' in vehicles
+    assert '[_target,_player] call ACME_fnc_medicalChestInventory' in vehicles
     assert "[_target,_player,true] call ACME_fnc_medicalChestUse" in vehicles
     assert "[_target,_player,false] call ACME_fnc_medicalChestUse" in vehicles
     assert "[_target,_player,true] call ACME_fnc_medicalChestCanUse" in vehicles
@@ -487,15 +559,18 @@ def test_chest_ace_actions_are_direct_and_gear_waits_for_matching_open_state():
 
 def test_overlapping_chests_offer_only_the_pointed_active_case_action():
     source = read("medicalChestCanUse")
+    target = read("medicalChestTarget")
     for engine, fixture in (
         ('isObjectHidden _target', '(_target getVariable ["hidden",false])'),
-        ('isObjectHidden _aim', '(_aim getVariable ["hidden",false])'),
-        ('cursorObject', '_aimObject'), ('_actor distance _aim', '1'),
-        ('_aim isKindOf "ACME_MedicalChest"', '(_aim getVariable ["closedClass",false])'),
+        ('cursorObject', '_aimObject'), ('cursorTarget', '_aimObject'),
+        ('_actor distance _aim', '1'),
+        ('_target isKindOf "ACME_MedicalChest"', '(_target getVariable ["closedClass",false])'),
     ):
-        assert engine in source
+        assert engine in source or engine in target
         source = source.replace(engine, fixture)
-    execute('private _canUse={' + adapt(source) + '};' + r'''
+        target = target.replace(engine, fixture)
+    execute('ACME_fnc_medicalChestTarget={' + adapt(target) + '};'
+            + 'private _canUse={' + adapt(source) + '};' + r'''
         ace_common_fnc_canInteractWith={true};
         private _cabinet=parsingNamespace;
         private _other=missionNamespace;
