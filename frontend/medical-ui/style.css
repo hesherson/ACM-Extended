@@ -1,4 +1,4 @@
-/* ACME transfusion only: original flat palette, fixed native geometry, functional flow and action cues only. */
+/* ACME transfusion cards keep the native pane geometry and functional flow cues. */
 :root { font-family: var(--font-body); color: var(--color-muted); background: var(--color-clear); font-synthesis: none; color-scheme: normal; }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; width: 100%; height: 100%; overflow-y: hidden; }
@@ -21,9 +21,8 @@ button { font: inherit; }
 .acme-medical-surface .card:disabled { cursor: not-allowed; }
 .acme-medical-surface .fluid-icon, .acme-medical-surface .vial-icon, .acme-medical-surface .caption, .acme-medical-surface .volume { position: absolute; }
 .acme-medical-surface .fluid-icon img, .acme-medical-surface .vial-icon img { width: 100%; height: 100%; object-fit: contain; }
-.acme-medical-surface .caption { display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; line-height: 1; }
+.acme-medical-surface .caption { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
 .acme-medical-surface .name { color: var(--color-clinical,var(--color-native-label)); }
-.acme-medical-surface .thermal { justify-content: flex-end; }
 .acme-medical-surface .warming { color: var(--color-warming); }
 .acme-medical-surface .piggyback .status { color: var(--color-piggyback); }
 .acme-medical-surface .track { height: var(--track-height); background: var(--color-track); }
@@ -31,8 +30,6 @@ button { font: inherit; }
 .acme-medical-surface .volume { font-variant-numeric: tabular-nums; }
 .acme-medical-surface .mark { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .acme-medical-surface .mark i { position: absolute; left: 50%; width: 1px; background: var(--color-muted); }
-/* Native RscText has 0.008 UI-unit side margins; the browser uses the measured inset. */
-.acme-medical-surface .caption { padding-inline: var(--text-inset,0px); }
 
 /* Clip moving texture to the existing measured white fill. Motion never changes volume or card geometry. */
 .acme-medical-surface .track { position: relative; }

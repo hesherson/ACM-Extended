@@ -24,8 +24,13 @@ if ((_display getVariable ["ACME_reactRect",[]]) isNotEqualTo _rect) then {
     [_browser,"position",_rect] call ACME_fnc_transfusionUiSet;
 };
 private _hasCards = _display getVariable ["ACME_txFluidHasCard",true];
-[_browser,"show",_shown && {_painted} && {_hasCards}] call ACME_fnc_transfusionUiSet;
-[_browser,"enable",_shown && {_painted} && {_hasCards}] call ACME_fnc_transfusionUiSet;
+private _visible = _shown && {_painted} && {_hasCards};
+[_browser,"show",_visible] call ACME_fnc_transfusionUiSet;
+[_browser,"enable",_visible] call ACME_fnc_transfusionUiSet;
+if (_visible && {!(_display getVariable ["ACME_reactVisibleLogged",false])}) then {
+    _display setVariable ["ACME_reactVisibleLogged",true];
+    diag_log "[ACME TRANSFUSION UI] React fluid cards visible";
+};
 _display setVariable ["ACME_reactActive",_painted];
 if (!_shown) exitWith {};
 private _now = diag_tickTime;

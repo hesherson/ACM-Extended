@@ -21,7 +21,10 @@ if (isNull _browser) then {
     _display setVariable ["ACME_reactDeadline",diag_tickTime + 6];
     _display setVariable ["ACME_reactFailed",false];
     _browser = _display ctrlCreate ["ACME_ReactTransfusionCards",89301];
-    if (isNull _browser) exitWith {_display setVariable ["ACME_reactFailed",true];};
+    if (isNull _browser) exitWith {
+        _display setVariable ["ACME_reactFailed",true];
+        diag_log "[ACME TRANSFUSION UI] Native fallback (browser control unavailable)";
+    };
     _browser ctrlShow false;
     private _rect = [_layout] call ACME_fnc_reactMedicalRect;
     _display setVariable ["ACME_reactRect",_rect];

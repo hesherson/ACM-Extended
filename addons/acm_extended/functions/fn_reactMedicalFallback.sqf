@@ -1,6 +1,9 @@
 /* Restore the original card pool in this display; never navigate, reopen or close a menu. */
 params ["_display"];
 if (isNull _display) exitWith {false};
+if (!(_display getVariable ["ACME_reactFailed",false])) then {
+    diag_log format ["[ACME TRANSFUSION UI] Native fallback (ready=%1 painted=%2)",_display getVariable ["ACME_reactReady",false],_display getVariable ["ACME_reactPainted",false]];
+};
 _display setVariable ["ACME_reactActive",false];
 _display setVariable ["ACME_reactReady",false];
 _display setVariable ["ACME_reactPainted",false];

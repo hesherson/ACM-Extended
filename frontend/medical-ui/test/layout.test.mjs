@@ -2,11 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {cardLayout} from '../layout.mjs';
 for (const [w,h] of [[360,227],[272,171],[210,132],[522,226]]) {
- test(`native card geometry matches at ${w}x${h}`,()=>{
+ test(`card anchors scale at ${w}x${h} without changing native icon size or radius`,()=>{
   const u=h/.21,rowH=(h-u*.007)/2,g=cardLayout([w,h,u,rowH,u*.007,Math.floor(u*.007)],{detail:'500 mL',status:'Running',fraction:.5});
   assert.ok(Math.abs(parseFloat(g.name.fontSize)*h/100-u*.018)<.00001);
   assert.ok(Math.abs(parseFloat(g.icon.width)*w/100-Math.min(rowH*.62,u*.052))<.00001);
   assert.ok(Math.abs(parseFloat(g.volume.left)-parseFloat(g.name.left))<.00001);
+  assert.ok(Math.abs(parseFloat(g.name.left)*w/100-10*Math.min(8*u/1080,w/20))<.00001);
+  const sparse = cardLayout([w,h,u,rowH,u*.007,Math.floor(u*.007)], {});
+  assert.equal(g.name.top,sparse.name.top);
+  assert.equal(g.status.top,sparse.status.top);
   assert.ok(parseFloat(g.name.top)>0);assert.ok(parseFloat(g.status.top)+parseFloat(g.status.height)<75.01);
   assert.equal(parseFloat(g.root['--radius'])*h/100,Math.floor(u*.007));
  });
@@ -44,6 +48,13 @@ for (const unit of [720,1080,1440]) for (const paneHeight of [.244,.187]) {
   assert.ok(rowH<unit*.05);
   assert.ok(parseFloat(g.detail.top)+parseFloat(g.detail.height)<=100);
   assert.ok(parseFloat(g.thermal.left)+parseFloat(g.thermal.width)<=100);
+  assert.equal(g.name.left,g.detail.left);
+  assert.equal(g.detail.left,g.volume.left);
+  assert.equal(g.status.left,g.thermal.left);
+  assert.equal(g.name.top,g.status.top);
+  assert.equal(g.detail.top,g.thermal.top);
+  const withVial = cardLayout(layout,{...card,vial:'medication.paa'});
+  assert.ok(parseFloat(withVial.thermal.left)+parseFloat(withVial.thermal.width)<parseFloat(withVial.vial.left));
   assert.deepEqual(cardLayout(layout,{...card,detail:'764 / 1000 mL',fraction:.699}),g);
  });
 }

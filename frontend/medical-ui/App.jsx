@@ -88,7 +88,7 @@ function App() {
     return ()=>cancelAnimationFrame(frame);
   },[snapshot.state,calibrated]);
   const enabled=snapshot.status==='connected';
-  return <main className="acme-medical-surface" style={{...cardLayout(snapshot.state?.layout,{}).root,'--text-inset':`${100*(snapshot.state?.fontProbe?.[2]||0)/(snapshot.state?.layout?.[1]||1)}vh`}} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
+  return <main className="acme-medical-surface" style={cardLayout(snapshot.state?.layout,{}).root} aria-label="Fluids at selected access" onWheel={e=>{e.preventDefault();if(e.deltaY) store.wheel(e.deltaY<0?1:-1);}}
     onKeyDown={e=>{if(keys[e.key]){e.preventDefault();store.key(keys[e.key]);}}}>
     {renderCards && snapshot.state?.cards.map(card=><Card key={card.token} card={card} enabled={enabled} layout={snapshot.state.layout} fontScale={scale ?? previousScale.current}/>)}
   </main>;
