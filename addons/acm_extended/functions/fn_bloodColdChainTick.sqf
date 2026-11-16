@@ -15,6 +15,8 @@
 private _arguments = [];
 if !(isNil "_this") then {if (_this isEqualType []) then {_arguments = _this;};};
 private _excludeBox = _arguments param [1, objNull];
+private _discover = count _arguments < 3;
+private _requested = _arguments param [2, [], [[]]];
 if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};  // the system toggle. fully off means this stops.
 if (!isServer) exitWith {};
 private _perf = missionNamespace getVariable ["ACME_performance_enabled", false];
@@ -46,8 +48,15 @@ private _isCooler = { params ["_c"]; _c find "ACME_BloodCooler_" == 0 };
 { private _c = _x; private _a = (_bagFloat get _c) select {(_custodyNow - (_x param [2,_x select 1])) < _ttl}; if (_a isEqualTo []) then { _bagFloat deleteAt _c; } else { _bagFloat set [_c, _a]; }; } forEach (keys _bagFloat);
 { private _c = _x; private _a = (_cooFloat get _c) select {(_custodyNow - (_x select 1)) < _ttl}; if (_a isEqualTo []) then { _cooFloat deleteAt _c; } else { _cooFloat set [_c, _a]; }; } forEach (keys _cooFloat);
 
-// Corpses keep aging. Deployed cooler cargo has exactly one dedicated owner.
-private _holders = (allUnits + allDeadMen + vehicles) select {
+// Periodic discovery includes native/scripted changes, including corpses. A transfer
+// event needs only its receivers and holders with a ledger from an earlier pass.
+private _candidates = if (_discover) then {
+    allUnits + allDeadMen + vehicles
+} else {
+    _requested + ((keys _store) apply {objectFromNetId _x})
+};
+private _holders = _candidates select {
+    if (isNull _x) exitWith {false};
     !(_x isKindOf "ACME_BloodCoolerBox_CSWB1U")
         && {!(_x isKindOf "ACME_BloodCoolerBox_CSWB2U")}
         && {!(_x isKindOf "ACME_BloodCoolerBox_CSWB4U")}
@@ -58,6 +67,7 @@ _holders = _holders arrayIntersect _holders;
 private _data = [];
 {
     private _h = _x; private _nid = netId _h;
+    if (!_discover) then {_h setVariable ["ACME_ccLastSyncFrame", diag_frameNo];};
     private _rec = _store getOrDefault [_nid, [[], []]];
     private _cb = createHashMap;
     private _cc = createHashMap;
@@ -242,7 +252,11 @@ private _autoCover = missionNamespace getVariable ["ACME_coolerAutoCover", false
         if (_h isKindOf "CAManBase") then { private _add = []; { _add pushBack ([_x] call ACME_fnc_bloodSpoiledClass); } forEach _spoil; [_h, _spoil, _add] remoteExec ["ACME_fnc_ccApply", _h]; }
         else { { _h addItemCargoGlobal [_x, -1]; _h addItemCargoGlobal [[_x] call ACME_fnc_bloodSpoiledClass, 1]; } forEach _spoil; };
     };
-    _store set [_nid, [_kept, _coolLedger]];
+    if (_kept isEqualTo [] && {_coolLedger isEqualTo []}) then {
+        _store deleteAt _nid;
+    } else {
+        _store set [_nid, [_kept, _coolLedger]];
+    };
     private _snapshot = [_kept apply {[_x # 0, _x # 1, _x # 2]}, _now];
     private _prior = _h getVariable ["ACME_bloodExposure", []];
     private _publish = _prior isNotEqualTo _snapshot;
@@ -275,6 +289,9 @@ private _autoCover = missionNamespace getVariable ["ACME_coolerAutoCover", false
 missionNamespace setVariable ["ACME_ccByHolder", _store];
 missionNamespace setVariable ["ACME_ccBagFloat", _bagFloat];
 missionNamespace setVariable ["ACME_ccCoolFloat", _cooFloat];
-missionNamespace setVariable ["ACME_ccBrokerFrame", diag_frameNo];
+if (_discover) then {missionNamespace setVariable ["ACME_ccBrokerFrame", diag_frameNo];};
 
-if (_perf) then {["bloodInventoryScan", (diag_tickTime - _perfStart) * 1000, -1, _perfGeneration] call ACME_fnc_performanceRecord;};
+if (_perf) then {
+    private _sample = ["bloodInventoryReconcile", "bloodInventoryScan"] select _discover;
+    [_sample, (diag_tickTime - _perfStart) * 1000, -1, _perfGeneration] call ACME_fnc_performanceRecord;
+};

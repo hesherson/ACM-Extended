@@ -15,11 +15,10 @@ private _dlg = uiNamespace getVariable ["ACME_EMMA_DLG", displayNull];
 
 private _supplyPatient = _player getVariable ["ACME_emma_supplyPatient", objNull];
 if (!isNull _supplyPatient && {_player distance _supplyPatient > 5}) then {_supplyPatient = objNull;};
-private _hasOwnEmma = (([_player, _supplyPatient, "ACM_EMMA"] call ACME_fnc_treatmentSupplyCount) > 0);
 
 // the BVM route stays tied to the medic's own inventory and device.
 private _bvmAttached = _player getVariable ["ACME_emma_bvmAttached", false];
-if (_bvmAttached && {!_hasOwnEmma}) then {
+if (_bvmAttached && {([_player, _supplyPatient, "ACM_EMMA"] call ACME_fnc_treatmentSupplyCount) <= 0}) then {
     _bvmAttached = false;
     [_player, "ACME_emma_bvmAttached", false] call ACME_fnc_setVarNet;
     _player setVariable ["ACME_emma_lastPatient", objNull];
@@ -53,22 +52,7 @@ if (!isNull _lastContact &&
 // the own-BVM route. it is only active if the player has attached their own EMMA to their own BVM.
 private _bvmPatient = objNull;
 if (_bvmAttached) then {
-    // near the medic rather than the whole mission. see the note in fn_bvmventtick: bagging means being at the
-    // casualty, so this is a superset of the old scan and costs a fraction of it at ten ticks a second.
-    {
-        if ((_x getVariable ["ACM_breathing_BVM_Medic", objNull]) isEqualTo _player) exitWith {
-            _bvmPatient = _x;
-        };
-    } forEach (_player nearEntities ["CAManBase", 10]);
-
-    // a fallback. if the per-patient bvm_medic scan missed, use the local current BVM target of the medic.
-    if (isNull _bvmPatient) then {
-        private _bt = missionNamespace getVariable ["ACM_breathing_BVMTarget", objNull];
-        if (!isNull _bt &&
-            {(_player getVariable ["ACM_breathing_isUsingBVM", false]) || {(_bt getVariable ["ACM_breathing_BVM_Medic", objNull]) isEqualTo _player}}) then {
-            _bvmPatient = _bt;
-        };
-    };
+    _bvmPatient = [_player] call ACME_fnc_bvmVisualPatient;
 
     if (!isNull _bvmPatient) then {
         _player setVariable ["ACME_emma_lastPatient", _bvmPatient];

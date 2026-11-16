@@ -21,7 +21,7 @@ if (_frameMilliseconds >= 0 && {finite _frameMilliseconds}) then {
     _bucket set [2, (_bucket select 2) + _frameMilliseconds];
     _bucket set [3, (_bucket select 3) max _frameMilliseconds];
 };
-if (_name != "" && {_name in ["ownerLifecycle", "idlePhysDiscovery", "preoxygenationTick", "coagulationTick", "flightTick", "circHandle", "handleUnitVitals", "handleUnitVitalsEvent", "bloodInventoryScan", "deployedCoolerTick"]}
+if (_name != "" && {_name in ["ownerLifecycle", "idlePhysDiscovery", "preoxygenationTick", "coagulationTick", "flightTick", "circHandle", "handleUnitVitals", "handleUnitVitalsEvent", "bloodInventoryScan", "bloodInventoryReconcile", "deployedCoolerTick"]}
     && {finite _milliseconds} && {_milliseconds >= 0}) then {
     private _timings = _bucket select 4;
     private _row = _timings getOrDefault [_name, [0, 0, 0]];

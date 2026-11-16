@@ -1,90 +1,48 @@
-// a server tick, registered once in postinit at about 0.25 s. it has two jobs.
-// 1. the daily restock: when the in-game day rolls over at midnight, reset each restock-enabled fridge to its load.
-// 2. the auto open and close: a fridge is in use while any client has pinged it within the timeout, because the
-// menu poll pings while a player has the ACE menu on it. Takes retain a bounded door lease through the provider
-// reach, including after the ACE menu closes. Door movement is independent of the cold-chain simulation toggle.
+// Fast server callback for door leases and delivery acknowledgements.
 if (!isServer) exitWith {};
 // The grant outlives its furniture object and cosmetic door lease. Continue
 // delivery even if Zeus removed the fridge after its stock was committed.
-private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
-private _returns=missionNamespace getVariable ["ACME_resourceReturns",createHashMap];
-private _activeGrants=[];
-{
-    private _grant=_serverGrants get _x;
-    if ((_grant select 3)=="pending") then {
-        private _bridge=_grant param [6,""];
-        private _journal=_returns getOrDefault [_bridge,[]];
-        private _unit=_grant select 0;
-        if (count _journal>=11 && {(_journal select 4)=="delivered"}) then {
-            _grant set [3,"delivered"];_serverGrants set [_x,_grant];
-            private _anchor=_grant select 5;
-            if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
-            if (!isNull _unit) then {
-                private _pending=_unit getVariable ["ACME_bf_pendingGrants",createHashMap];_pending deleteAt _x;_unit setVariable ["ACME_bf_pendingGrants",_pending,true];
-                ["ACME_bfGive",[_anchor,_grant select 2,_unit,_grant select 1,"delivered",_bridge],_unit] call CBA_fnc_targetEvent;
-            };
-        } else {
-            // Dispatch, retries and ownership proof all belong to the generic
-            // journal. Never send another native Give while its outcome is held.
-            if (_journal isEqualTo [] && {_bridge!=""}) then {
-                ["fridgeStock",[_unit,_grant select 5,_bridge,[["item",_grant select 2]]]] call ACME_fnc_resourceReturnBroker;
-            };
-            if (count _journal>=11 && {(_journal select 4)=="orphaned"}) then {
-                // Retain canonical orphaned custody without a permanent idle
-                // poll. Mission recovery must explicitly resolve the journals.
-                _grant set [3,"orphaned"];_serverGrants set [_x,_grant];
+private _fridges = missionNamespace getVariable ["ACME_bloodFridges", []];
+private _grantKeys = missionNamespace getVariable ["ACME_bf_activeGrants", []];
+if (_fridges isEqualTo [] && {_grantKeys isEqualTo []}) exitWith {};
+if !(_grantKeys isEqualTo []) then {
+    private _serverGrants=missionNamespace getVariable ["ACME_bf_serverGrants",createHashMap];
+    private _returns=missionNamespace getVariable ["ACME_resourceReturns",createHashMap];
+    private _activeGrants=[];
+    {
+        private _grant=_serverGrants get _x;
+        if ((_grant select 3)=="pending") then {
+            private _bridge=_grant param [6,""];
+            private _journal=_returns getOrDefault [_bridge,[]];
+            private _unit=_grant select 0;
+            if (count _journal>=11 && {(_journal select 4)=="delivered"}) then {
+                _grant set [3,"delivered"];_serverGrants set [_x,_grant];
                 private _anchor=_grant select 5;
                 if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
-            } else {_activeGrants pushBack _x;};
-        };
-    };
-} forEach (missionNamespace getVariable ["ACME_bf_activeGrants",[]]);
-missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
-missionNamespace setVariable ["ACME_bf_activeGrants",_activeGrants];
-private _fridges = missionNamespace getVariable ["ACME_bloodFridges", []];
-if (_fridges isEqualTo []) exitWith {};
-
-// the interval restock, in configurable in-game hours and minutes since the last restock of each fridge.
-// the interval is read live from the addon options, in hours and minutes, defaulting to 24 h. each fridge stores its
-// own last-restock time in in-game hours, so a fridge regenerates on its own schedule from when it was placed. a
-// per-fridge override, ACME_bf_regenMins, set by eden or zeus, wins over the global setting.
-// the elapsed in-game time is derived from dateToNumber, a fraction of the in-game year, so it follows the time
-// acceleration of the mission exactly. an interval of 0 disables regeneration.
-private _yearHours = 365.25 * 24;
-private _nowGameHours = (dateToNumber date) * _yearHours;
-{
-    private _fridge = _x;
-    if (!isNull _fridge) then {[_fridge] call ACME_fnc_bloodFridgeExpire;};
-    if (!isNull _fridge && {(["enabled"] call ACME_fnc_bloodTiming)}
-        && {_fridge getVariable ["ACME_bf_restock", true]}) then {
-        // the per-fridge interval override, in minutes, or the global hours plus minutes setting.
-        private _intervalMins = _fridge getVariable ["ACME_bf_regenMins", -1];
-        if (_intervalMins < 0) then {
-            _intervalMins = ((missionNamespace getVariable ["ACME_bf_regenHours", 24]) * 60)
-                          + (missionNamespace getVariable ["ACME_bf_regenMinutes", 0]);
-        };
-        if (_intervalMins > 0) then {
-            private _intervalHours = (_fridge getVariable ["ACME_bf_restoreRestockDelayMins",_intervalMins]) / 60;
-            private _last = _fridge getVariable ["ACME_bf_lastRestockGH", -1];
-            if (_last < 0) then {
-                // the first tick after placement: anchor the clock and do not restock yet.
-                [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
-            } else {
-                // guard the year-rollover wrap, because dateToNumber resets at jan 1: if now is below last, re-anchor.
-                if (_nowGameHours < _last) then {
-                    [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
-                } else {
-                    if ((_nowGameHours - _last) >= _intervalHours) then {
-                        _fridge setVariable ["ACME_bf_lotStart",([] call ACME_fnc_clinicalClock),true];
-                        [_fridge, "ACME_bf_stock", +(_fridge getVariable ["ACME_bf_default", []])] call ACME_fnc_setVarNet;
-                        [_fridge, "ACME_bf_lastRestockGH", _nowGameHours] call ACME_fnc_setVarNet;
-                        _fridge setVariable ["ACME_bf_restoreRestockDelayMins",nil,false];
-                    };
+                if (!isNull _unit) then {
+                    private _pending=_unit getVariable ["ACME_bf_pendingGrants",createHashMap];_pending deleteAt _x;_unit setVariable ["ACME_bf_pendingGrants",_pending,true];
+                    ["ACME_bfGive",[_anchor,_grant select 2,_unit,_grant select 1,"delivered",_bridge],_unit] call CBA_fnc_targetEvent;
                 };
+            } else {
+                // Dispatch, retries and ownership proof all belong to the generic
+                // journal. Never send another native Give while its outcome is held.
+                if (_journal isEqualTo [] && {_bridge!=""}) then {
+                    ["fridgeStock",[_unit,_grant select 5,_bridge,[["item",_grant select 2]]]] call ACME_fnc_resourceReturnBroker;
+                };
+                if (count _journal>=11 && {(_journal select 4)=="orphaned"}) then {
+                    // Retain canonical orphaned custody without a permanent idle
+                    // poll. Mission recovery must explicitly resolve the journals.
+                    _grant set [3,"orphaned"];_serverGrants set [_x,_grant];
+                    private _anchor=_grant select 5;
+                    if (!isNull _anchor) then {private _localGrants=_anchor getVariable ["ACME_bf_grants",createHashMap];_localGrants set [_x,_grant];_anchor setVariable ["ACME_bf_grants",_localGrants];};
+                } else {_activeGrants pushBack _x;};
             };
         };
-    };
-} forEach _fridges;
+    } forEach _grantKeys;
+    missionNamespace setVariable ["ACME_bf_serverGrants",_serverGrants];
+    missionNamespace setVariable ["ACME_bf_activeGrants",_activeGrants];
+};
+if (_fridges isEqualTo []) exitWith {};
 
 // the viewer-driven open and close.
 private _now = diag_tickTime;
@@ -92,22 +50,25 @@ private _timeout = missionNamespace getVariable ["ACME_bf_viewTimeout", 0.9];
 {
     private _anchor = _x;
     if (!isNull _anchor) then {
-        private _viewers = _anchor getVariable ["ACME_bf_viewers", createHashMap];
+        private _open = _anchor getVariable ["ACME_bf_open", false];
+        private _openObj = _anchor getVariable ["ACME_bf_openObj", objNull];
+        private _viewers = _anchor getVariable "ACME_bf_viewers";
+        private _takers = _anchor getVariable "ACME_bf_takers";
+        if (!_open && {isNull _openObj}
+            && {isNil "_viewers" || {count _viewers == 0}}
+            && {isNil "_takers" || {count _takers == 0}}) then {continue;};
         private _live = false;
         {
             if ((_now - (_viewers get _x)) <= _timeout) then {_live = true;} else {_viewers deleteAt _x;};
-        } forEach keys _viewers;
-        private _takers = _anchor getVariable ["ACME_bf_takers", createHashMap];
+        } forEach (if (isNil "_viewers") then {[]} else {keys _viewers});
         {
             (_takers get _x) params ["_unit", "_token", "_until"];
             if (!isNull _unit && {alive _unit} && {_now < _until} && {_unit distance _anchor <= 4.5}) then {
                 _live = true;
             } else {_takers deleteAt _x;};
-        } forEach keys _takers;
+        } forEach (if (isNil "_takers") then {[]} else {keys _takers});
 
-        private _open = _anchor getVariable ["ACME_bf_open", false];
         // Retire a pre-B216 twin from a saved running mission without hiding the stock/interaction anchor.
-        private _openObj = _anchor getVariable ["ACME_bf_openObj", objNull];
         if (!isNull _openObj) then {
             _openObj hideObjectGlobal true;
             _anchor hideObjectGlobal false;

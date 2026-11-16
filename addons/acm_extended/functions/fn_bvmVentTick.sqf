@@ -14,36 +14,11 @@ if !(missionNamespace getVariable ["ACME_a11y_bvmVentCircle", true]) exitWith {
 
 private _player = ACE_player;
 
-// detect active bagging. it mirrors fn_emmatick.
-private _bagging = false;
-if (!isNull _player && {alive _player}) then {
-    private _patient = objNull;
-    // the cheap answer first. the medic already knows who they are bagging, so read that before searching for it.
-    private _bt0 = missionNamespace getVariable ["ACM_breathing_BVMTarget", objNull];
-    if (!isNull _bt0 && {(_bt0 getVariable ["ACM_breathing_BVM_Medic", objNull]) isEqualTo _player}) then {
-        _patient = _bt0;
-    } else {
-        // and if that misses, search near the medic rather than the whole mission.
-        // this runs 25 times a second. walking allUnits at that rate on a full server is hundreds of unit reads
-        // per second to answer a question about one man standing within arm's reach, and bagging a casualty means
-        // being at the casualty, so a proximity search is a correct superset of the old scan rather than a
-        // narrowing of it.
-        {
-            if ((_x getVariable ["ACM_breathing_BVM_Medic", objNull]) isEqualTo _player) exitWith { _patient = _x; };
-        } forEach (_player nearEntities ["CAManBase", 10]);
-    };
-    if (isNull _patient) then {
-        private _bt = missionNamespace getVariable ["ACM_breathing_BVMTarget", objNull];
-        if (!isNull _bt &&
-            {(_player getVariable ["ACM_breathing_isUsingBVM", false]) ||
-             {(_bt getVariable ["ACM_breathing_BVM_Medic", objNull]) isEqualTo _player}}) then {
-            _patient = _bt;
-        };
-    };
-    _bagging = !isNull _patient;
-};
+private _patient = if (!isNull _player && {alive _player}) then {
+    [_player] call ACME_fnc_bvmVisualPatient
+} else {objNull};
 
-if (!_bagging) exitWith {
+if (isNull _patient) exitWith {
     if (!isNull _dlg) then { _layer cutText ["", "PLAIN"]; };
     uiNamespace setVariable ["ACME_bvmVent_t0", -1e9];
     uiNamespace setVariable ["ACME_bvmVent_lastNativeNextBreath", -1];

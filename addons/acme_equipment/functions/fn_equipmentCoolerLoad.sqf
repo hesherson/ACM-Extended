@@ -11,7 +11,7 @@ private _pending=missionNamespace getVariable ["ACME_eqPending",createHashMap];
 if ((values _pending findIf {(_x get "actor") isEqualTo _actor})>=0) exitWith {};
 private _stamp=[_actor] call ACME_fnc_equipmentTransferStamp;
 if (_stamp isEqualTo []) exitWith {};
-[0] call ACME_fnc_bloodColdChainTick;
+[0, objNull, [_actor]] call ACME_fnc_bloodColdChainTick;
 private _snapshot=_actor getVariable ["ACME_bloodExposure",[[],([] call ACME_fnc_clinicalClock)]];
 private _entries=(_snapshot select 0) select {(_x select 0)==_bag};
 if (_entries isEqualTo []) exitWith {};

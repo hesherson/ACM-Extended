@@ -2536,6 +2536,7 @@ class CfgFunctions {
             class bloodFridgeTakeOwner {};
             class bloodFridgeReceive {};
             class bloodFridgeTick {};
+            class bloodFridgeStockTick {};
             class bloodFridgeMenuPoll {};
             class coolerInvHook {};
             class coolerOpenDialog {};
@@ -3282,6 +3283,7 @@ class CfgFunctions {
             class emmaTick {};
             class emmaBuildDisplay {};
             class bvmVentTick {};
+            class bvmVisualPatient {};
             class vesicantRouteAllows {};
             class vesicantInjure {};
             class vesicantRegistryCommit {};

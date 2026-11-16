@@ -24,6 +24,7 @@ call ACME_fnc_coolerPersistenceInit;
 // restock.
 if (isServer) then {
     [{ call ACME_fnc_bloodFridgeTick }, 0.25, []] call CBA_fnc_addPerFrameHandler;
+    [{ call ACME_fnc_bloodFridgeStockTick }, 1, []] call CBA_fnc_addPerFrameHandler;
 };
 
 // owner-side viewer bookkeeping. a client pings the fridge through targetevent while its ACE menu is on it,
@@ -167,7 +168,7 @@ if (isServer) then {
         _bloodItems sort true;
         if (_bloodItems isNotEqualTo (_p getVariable ["ACME_ccNudgeItems", []])) then {
             _p setVariable ["ACME_ccNudgeItems", _bloodItems];
-            remoteExecCall ["ACME_fnc_bloodColdChainNudge", 2];
+            [_p] remoteExecCall ["ACME_fnc_bloodColdChainNudge", 2];
         };
     };
     [{call ACME_fnc_coolerContentsTick;call ACME_fnc_coolerAutoStore;},[]] call CBA_fnc_execNextFrame;

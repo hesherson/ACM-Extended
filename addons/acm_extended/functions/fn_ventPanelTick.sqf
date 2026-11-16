@@ -189,7 +189,8 @@ private _opCtrls = [87712,87713,87716,87767,87768,87720,87721,87722,87723,87724,
 // genuinely spills light onto the housing around it. nothing is added at level 1, because that setting exists
 // to make the machine hard to see and having it brighten the case would defeat the point.
 private _ambFace = _dlg displayCtrl 87701;
-if (!isNull _ambFace) then {
+if (!isNull _ambFace && {diag_tickTime >= (_dlg getVariable ["ACME_vent_ambientNextAt", 0])}) then {
+    _dlg setVariable ["ACME_vent_ambientNextAt", diag_tickTime + 0.1];
     // 1. sky. the sun, the moon and the overcast, the same number the rest of ACE lights by.
     private _amb = 1;
     if (!isNil "ace_common_fnc_ambientBrightness") then { _amb = [] call ace_common_fnc_ambientBrightness; };

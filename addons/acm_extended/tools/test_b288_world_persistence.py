@@ -70,7 +70,7 @@ def setup():
     _medic setVariable ["cargo",[]];
     private _savedFridge=[2,[["ACM_BloodBag_ON_500",2]],[["ACM_BloodBag_ON_500",6]],true,120,60,0];
     ''' + '\n'.join('ACME_fnc_' + n + '={' + production(n) + '};' for n in [
-        'bloodFridgeSnapshotValid', 'bloodFridgeSnapshot', 'bloodFridgeRestore', 'bloodFridgeTick','bloodFridgeExpire',
+        'bloodFridgeSnapshotValid', 'bloodFridgeSnapshot', 'bloodFridgeRestore', 'bloodFridgeTick', 'bloodFridgeStockTick', 'bloodFridgeExpire',
         'bloodExposureSnapshotValid', 'bloodExposureSnapshot', 'bloodExposureRestore',
         'bloodPersistenceRequest', 'persistenceReady', 'persistenceSnapshot', 'persistenceFingerprint', 'persistenceCaptureValid', 'persistenceLocalCheckpoint', 'persistenceCheckpoint', 'persistenceRestoreExtended', 'persistenceBarrier',
         'coolerPersistenceInit', 'treatmentSupplyRefund'])
@@ -435,13 +435,13 @@ def test_restored_fridge_tick_uses_remaining_delay_once_then_normal_interval():
     [_patient,_savedFridge] call ACME_fnc_bloodFridgeRestore;
     _patient setVariable ["ACME_bloodFridge",true];
     missionNamespace setVariable ["ACME_bloodFridges",[_patient]];
-    _gameDate=(59/60)/(365.25*24);call ACME_fnc_bloodFridgeTick;
+    _gameDate=(59/60)/(365.25*24);call ACME_fnc_bloodFridgeStockTick;
     [(_patient getVariable "ACME_bf_stock") isEqualTo [["ACM_BloodBag_ON_500",2]],"restore restocked before remaining delay"] call _check;
-    _gameDate=(61/60)/(365.25*24);call ACME_fnc_bloodFridgeTick;
+    _gameDate=(61/60)/(365.25*24);call ACME_fnc_bloodFridgeStockTick;
     [(_patient getVariable "ACME_bf_stock") isEqualTo [["ACM_BloodBag_ON_500",6]],"restored remaining delay never elapsed"] call _check;
     [isNil {_patient getVariable "ACME_bf_restoreRestockDelayMins"},"restored short delay reused for future cycles"] call _check;
     _patient setVariable ["ACME_bf_stock",[["ACM_BloodBag_ON_500",1]]];
-    _gameDate=(161/60)/(365.25*24);call ACME_fnc_bloodFridgeTick;
+    _gameDate=(161/60)/(365.25*24);call ACME_fnc_bloodFridgeStockTick;
     [(_patient getVariable "ACME_bf_stock") isEqualTo [["ACM_BloodBag_ON_500",1]],"next cycle did not resume configured interval"] call _check;
     ''')
 

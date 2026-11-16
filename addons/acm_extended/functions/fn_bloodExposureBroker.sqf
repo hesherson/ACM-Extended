@@ -32,16 +32,13 @@ if (!_authorized && {_mode == "seed"}) then {
 };
 if (!_authorized) exitWith {};
 private _sync = {
-    // Many loadout/UI callbacks can request the same inventory view in one
-    // frame. One world reconciliation suffices; queued seeds wait for the next
-    // retry if their native placement becomes visible later in that frame.
+    // A different receiver may still need its own view this frame. For the
+    // same holder, allow replication to settle before reconciling again.
     private _fresh = false;
-    if ((missionNamespace getVariable ["ACME_ccBrokerFrame", -1]) != diag_frameNo) then {
+    if ((missionNamespace getVariable ["ACME_ccBrokerFrame", -1]) != diag_frameNo
+        && {(_holder getVariable ["ACME_ccLastSyncFrame", -1]) != diag_frameNo}) then {
         _fresh = true;
-        missionNamespace setVariable ["ACME_ccBrokerFrame", diag_frameNo];
-        // The generic pass releases every deployed source before acquiring
-        // receiver cargo, including when invoked by a non-broker loadout nudge.
-        [0] call ACME_fnc_bloodColdChainTick;
+        [0, objNull, [_holder]] call ACME_fnc_bloodColdChainTick;
     };
     _fresh
 };

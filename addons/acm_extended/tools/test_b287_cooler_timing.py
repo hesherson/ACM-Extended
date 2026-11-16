@@ -32,6 +32,7 @@ def source(name):
     raw = re.sub(r'netId (_\w+)', r'(\1 getVariable ["fixtureId","holder"])', raw)
     raw = re.sub(r'owner (_\w+)', r'(\1 getVariable ["fixtureOwner",7])', raw)
     raw = raw.replace('isNull (objectFromNetId _x)', '((_byId getOrDefault [_x,objNull]) isEqualTo objNull)')
+    raw = raw.replace('objectFromNetId _x', '(_byId getOrDefault [_x,objNull])')
     raw = re.sub(r'\buniformItems (_h|_holder)\b', r'(\1 getVariable ["fixtureCargo",[]])', raw)
     raw = re.sub(r'\b(?:vestItems|backpackItems) (_h|_holder)\b', '[]', raw)
     raw = re.sub(r'getItemCargo (_h|_box)\b', r'([\1] call _cargoCounts)', raw)
@@ -431,4 +432,60 @@ def test_grouped_vehicle_cargo_preserves_bag_quantities():
         private _rows = (_holder getVariable "ACME_bloodExposure") select 0;
         [count _rows == 3 && {({_x select 0 == _bag} count _rows) == 2},
             "grouped cargo lost or invented blood units"] call _check;
+    """)
+
+
+def test_event_pass_reconciles_only_participants_and_tracked_donors():
+    execute(fixture() + r"""
+        private _receiver = parsingNamespace;
+        private _other = missionNamespace;
+        _receiver setVariable ["fixtureMan", true];
+        _receiver setVariable ["fixtureId", "receiver"];
+        _other setVariable ["fixtureMan", true];
+        _other setVariable ["fixtureId", "other"];
+        _byId set ["receiver", _receiver];
+        _byId set ["other", _other];
+        _holder setVariable ["fixtureCargo", [_bag]];
+        _units = [_holder];
+        call ACME_fnc_bloodColdChainTick;
+        _frame = 1;
+        _clock = 121;
+        _holder setVariable ["fixtureCargo", []];
+        _receiver setVariable ["fixtureCargo", [_bag]];
+        _other setVariable ["fixtureCargo", [_fresh]];
+        _units = [_holder, _receiver, _other];
+        [0, objNull, [_receiver]] call ACME_fnc_bloodColdChainTick;
+        private _store = missionNamespace getVariable "ACME_ccByHolder";
+        [! ("holder" in keys _store), "empty donor was kept in the active scan"] call _check;
+        [! ("other" in keys _store), "event pass discovered an unrelated unit"] call _check;
+        [(((_store get "receiver") select 0) select 0) select 2 == 121, "event pass lost transferred blood age"] call _check;
+        call ACME_fnc_bloodColdChainTick;
+        ["other" in keys (missionNamespace getVariable "ACME_ccByHolder"), "scheduled discovery missed scripted cargo"] call _check;
+    """)
+
+
+def test_loadout_nudges_batch_receivers_and_reject_another_clients_unit():
+    source_text = read("bloodColdChainNudge")
+    source_text = source_text.replace("objNull, [objNull]", "objNull").replace(
+        '_holder isKindOf "CAManBase"', '_holder getVariable ["fixtureMan", false]'
+    ).replace("isRemoteExecuted", "true").replace("owner _holder", '_holder getVariable ["fixtureOwner", 0]').replace(
+        "remoteExecutedOwner", "_sender"
+    )
+    execute(fixture() + "private _nudge = {" + adapt(source_text) + "};" + r"""
+        private _scheduled = [];
+        private _passes = [];
+        private _sender = 7;
+        _box setVariable ["fixtureMan", true];
+        _box setVariable ["fixtureOwner", 8];
+        CBA_fnc_waitAndExecute = {_scheduled pushBack _this};
+        ACME_fnc_bloodColdChainTick = {_passes pushBack _this};
+        [_box] call _nudge;
+        [_scheduled isEqualTo [], "server accepted a nudge for someone else's holder"] call _check;
+        [_holder] call _nudge;
+        [_holder] call _nudge;
+        _sender = 8;
+        [_box] call _nudge;
+        [count _scheduled == 1, "a burst started more than one reconciliation"] call _check;
+        call ((_scheduled select 0) select 0);
+        [_passes isEqualTo [[0, objNull, [_holder, _box]]], "batch dropped or duplicated a receiver"] call _check;
     """)
