@@ -246,7 +246,7 @@ def build_textures(root, out, work, hemtt):
             convert(texture, png)
             with Image.open(png) as image:
                 overlay = image.convert("RGBA")
-        paint_finish(overlay, index, REGIONS)
+        paint_finish(overlay, index, REGIONS["lid"])
         base.paste(overlay, mask=overlay.getchannel("A"))
         export(base, f"case_{index}_co")
     shutil.copyfile(out / "case_0_co.paa", out / "case_co.paa")

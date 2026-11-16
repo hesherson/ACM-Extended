@@ -727,3 +727,20 @@ def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
         )
     assert any(rib_face(face) for face in closed)
     assert not outside_faces(assets / "medchest_open.p3d", (0, 0))
+
+
+def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
+    pytest.importorskip("numpy")
+    image = pytest.importorskip("PIL.Image")
+    monkeypatch.syspath_prepend(str(ROOT / "tools"))
+    from build_hardigg_wear import paint_finish
+    from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE
+
+    x, y, width, height = ATLAS_REGIONS["lid"]
+    for index in range(12):
+        overlay = image.new("RGBA", ATLAS_SIZE)
+        paint_finish(overlay, index, ATLAS_REGIONS["lid"])
+        bounds = overlay.getchannel("A").getbbox()
+        assert bounds is not None, f"lid {index} has no new wear"
+        left, top, right, bottom = bounds
+        assert x <= left < right <= x + width and y <= top < bottom <= y + height, index

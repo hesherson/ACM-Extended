@@ -10,16 +10,28 @@ from build_medical_chest_stencils import noise, tape_residue
 from build_medical_chest_variants import DESIGNS, WHITE_TAPE, contact_wear, paint_marker, residue, stamp
 
 FORM = Path(__file__).with_name("assets") / "hardigg_inventory_record.webp"
+# Lid-face coordinates. Keep the long strips clear of the stock card and the large stencils.
 LONG_RESIDUE = {
-    1: ("lid", (824, 793), 1010, 58, 89),
-    2: ("back", (355, 802), 1110, 64, -87),
-    4: ("lid", (180, 827), 970, 60, 91),
-    6: ("back", (707, 811), 1100, 58, 89),
-    7: ("lid", (818, 786), 1150, 67, -88),
-    8: ("right", (211, 875), 1080, 74, 90),
-    9: ("left", (210, 789), 970, 67, 87),
-    10: ("back", (653, 822), 990, 55, -86),
-    11: ("left", (244, 779), 1050, 56, 89),
+    1: ((824, 793), 1010, 58, 89),
+    2: ((156, 804), 1110, 64, 89),
+    4: ((180, 827), 970, 60, 91),
+    6: ((135, 821), 1100, 58, -89),
+    7: ((818, 786), 1150, 67, -88),
+    8: ((151, 825), 1080, 74, 90),
+    9: ((833, 813), 970, 67, 89),
+    10: ((750, 821), 990, 55, -87),
+    11: ((887, 775), 1050, 56, 89),
+}
+SHORT_RESIDUE = {
+    0: ((710, 393), 222, 33, -7),
+    10: ((379, 472), 207, 48, 8),
+    11: ((353, 393), 244, 42, -6),
+}
+EXTRA_TAPE = {
+    0: ((372, 1248), 216, 64, -9, (56, 58, 53)),
+    1: ((640, 1276), 237, 70, 6, (58, 61, 53)),
+    10: ((390, 1088), 262, 76, -11, (118, 119, 104)),
+    11: ((562, 1170), 248, 65, -5, (117, 119, 111)),
 }
 
 
@@ -137,9 +149,9 @@ def inventory_card(rng):
     return sheet
 
 
-def paint_finish(overlay, index, regions):
+def paint_finish(overlay, index, lid_region):
     rng = random.Random(35600 + index * 31)
-    lid_x, lid_y, width, height = regions["lid"]
+    lid_x, lid_y, width, height = lid_region
     lid_bounds = (lid_x, lid_y, lid_x+width, lid_y+height)
     lid = overlay.crop(lid_bounds)
     black_tape = DESIGNS[index-1][8] if 0 < index <= len(DESIGNS) else ()
@@ -160,16 +172,13 @@ def paint_finish(overlay, index, regions):
     if 0 < index < 10:
         layout = DESIGNS[index-1]
         lid.alpha_composite(make_adhesive_visible(residue(lid.size, layout[6], layout[7], rng)))
-    if index in LONG_RESIDUE:
-        region, center, length, depth, angle = LONG_RESIDUE[index]
-        x, y, w, h = regions[region]
-        band = tape_residue((w,h), [(center, length, depth, angle, .81)], 35690+index)
-        band = make_adhesive_visible(band)
-        if region == "lid":
-            lid.alpha_composite(band)
-        else:
-            overlay.alpha_composite(band, (x,y))
+    strips = [layout for layouts in (LONG_RESIDUE, SHORT_RESIDUE) if (layout := layouts.get(index))]
+    if strips:
+        bands = [(*layout, .81) for layout in strips]
+        lid.alpha_composite(make_adhesive_visible(tape_residue(lid.size, bands, 35690+index)))
 
+    if index in EXTRA_TAPE:
+        tapes.append((*EXTRA_TAPE[index], ""))
     for i, (pos, length, depth, angle, color, label) in enumerate(tapes):
         damage = ("fold", "lift", "split")[(index+i) % 3]
         tape = worn_tape(length, depth, rng, color, damage)
