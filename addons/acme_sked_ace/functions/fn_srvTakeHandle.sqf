@@ -7,7 +7,7 @@
 params ["_unit", "_litter"];
 if (!isServer || {isNull _litter} || {_litter getVariable ["acme_sked_lifted", false]}) exitWith {};
 if (!isNull (_unit getVariable ["acme_sked_bearing", objNull]) || {!isNull attachedTo _litter}
-    || {!isNull (_litter getVariable ["ace_common_owner", objNull])} || {!isNull objectParent _unit}) exitWith {};
+    || {!isNull (_litter getVariable ["ace_common_owner", objNull])} || {!isNull objectParent _unit} || {!isNull attachedTo _unit}) exitWith {};
 private _slots = getArray (configOf _litter >> "acmeLitterHandles");
 private _bearers = +(_litter getVariable ["acme_sked_bearers", [objNull, objNull, objNull, objNull]]);
 if (({!isNull _x} count _bearers) >= (([_litter] call acme_sked_fnc_bearerLimits) select 1)) exitWith {};

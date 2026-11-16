@@ -1,4 +1,4 @@
-# B352 medical transport test
+# Medical transport test
 
 Enable **Addon Options > ACM Extended > SKED > Medical transport diagnostics** in the running mission. Inspect state with **ACE Self Interaction > Audit nearby medical transport**. Search the RPT for **[ACME Transport]**. In multiplayer, collect the server RPT and the RPT of the client who owns the casualty. The server has the authoritative chest viewer count and drawer fraction.
 

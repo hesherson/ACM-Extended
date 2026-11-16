@@ -11,4 +11,5 @@ private _bearers = _litter getVariable ["acme_sked_bearers", [objNull, objNull, 
 && {!(_litter getVariable ["acme_sked_lifted", false])}
 && {isNull (_player getVariable ["acme_sked_bearing", objNull])}
 && {isNull objectParent _player}
+&& {isNull attachedTo _player}
 && {({!isNull _x} count _bearers) < (([_litter] call acme_sked_fnc_bearerLimits) select 1)}

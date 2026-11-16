@@ -15,9 +15,13 @@ private _bearers = +(_litter getVariable ["acme_sked_bearers", []]);
     if (_x isEqualTo _unit) then {_bearers set [_forEachIndex, objNull]};
 } forEach _bearers;
 _litter setVariable ["acme_sked_bearers", _bearers, true];
+private _lead = _litter getVariable ["acme_sked_lead", objNull];
+private _parent = attachedTo _unit;
+// Release the actual carry attachment even if the old owner left with the local bookkeeping.
+if (!isNull _parent && {_parent in [_litter, _lead]}) then {detach _unit};
 if (_litter getVariable ["acme_sked_lifted", false]) then {
-    private _left = {!isNull _x && {alive _x}} count _bearers;
-    if (_left < (([_litter] call acme_sked_fnc_bearerLimits) select 0) || {(_litter getVariable ["acme_sked_lead", objNull]) isEqualTo _unit}) then {
+    private _left = {!isNull _x && {alive _x} && {!(_x getVariable ["ACE_isUnconscious", false])}} count _bearers;
+    if (_left < (([_litter] call acme_sked_fnc_bearerLimits) select 0) || {_lead isEqualTo _unit}) then {
         [_litter] call acme_sked_fnc_srvSetDown;
     };
 };

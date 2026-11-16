@@ -86,3 +86,31 @@ def test_litter_runtime_points_and_materials_have_asset_dependencies():
     for material in ("hw", "mesh", "web"):
         for suffix in ("co", "nohq", "smdi"):
             assert (TALON / "data" / f"talon_{material}_{suffix}.paa").stat().st_size > 0
+
+
+def test_server_release_can_detach_known_root_after_bearer_locality_change():
+    source = read("srvLetGo").replace("attachedTo _unit", "_unitParent").replace(
+        "detach _unit", "_detached = true"
+    ).replace("alive _x", "true").replace(
+        'getNumber (_cfg >> "ace_dragging_canDrag")', '1'
+    ).replace(
+        'getArray (_cfg >> "ace_dragging_dragPosition")', '[]'
+    ).replace(
+        'getNumber (_cfg >> "ace_dragging_dragDirection")', '0'
+    ).replace("configOf _litter", "configNull")
+    execute("private _release = {" + adapt(source) + "};" + r"""
+        private _unitParent = _patient;
+        private _detached = false;
+        acme_sked_fnc_sendLocal = {};
+        acme_sked_fnc_traceTransport = {};
+        _patient setVariable ["acme_sked_bearers", [_medic, missionNamespace]];
+        _medic setVariable ["acme_sked_bearing", _patient];
+        [_medic] call _release;
+        [_detached, "server left the bearer attached to the litter"] call _check;
+        _detached = false;
+        _unitParent = missionNamespace;
+        _patient setVariable ["acme_sked_bearers", [_medic, missionNamespace]];
+        _medic setVariable ["acme_sked_bearing", _patient];
+        [_medic] call _release;
+        [!_detached, "server detached an unrelated attachment"] call _check;
+    """)
