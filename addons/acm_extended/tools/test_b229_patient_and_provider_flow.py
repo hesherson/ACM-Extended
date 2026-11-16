@@ -314,7 +314,8 @@ def test_native_holder_and_saline_icon_registered_without_custom_inventory_actio
     config=(ROOT/'addons/acm_extended/config.cpp').read_text()
     assert 'class ACME_RemovedCarrierCargo: GroundWeaponHolder_Scripted' in config
     a=block(config,'class ACME_RemovedCarrierCargo: GroundWeaponHolder_Scripted')
-    assert 'simulation = "WeaponHolder";' in a and 'showWeaponCargo = 0;' in a and 'forceSupply = 0;' in a
+    assert not re.search(r'\bsimulation\s*=', a)
+    assert 'showWeaponCargo = 0;' in a and 'forceSupply = 0;' in a
     assert 'addAction' not in read('carrierInventoryWorld')
     assert 'call ACME_fnc_carrierInventoryWorld' not in read('registerManualPlateCarrierRuntime')
     assert ACTIONS['OpenTransfusionMenu']['props']['ACM_menuIcon']=='ACE_salineIV_500'

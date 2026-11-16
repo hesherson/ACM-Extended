@@ -7611,7 +7611,7 @@ class CfgVehicles {
         scopeCurator = 0;
         displayName = "Plate carrier";
         model = "\A3\Weapons_F\DummyWeapon.p3d";
-        simulation = "WeaponHolder";
+        // Inherit the native scripted holder simulation. Arma rejects "WeaponHolder" as a simulation name.
         showWeaponCargo = 0;
         // The separately parked original vest mesh is the visual representation.
         // Cargo contains supplies only: a manually removed carrier cannot be stolen as a wearable.
@@ -9949,6 +9949,7 @@ class ace_medical_treatment_actions {
         callbackFailure = "";
         callbackProgress = "";
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
+        ACME_normalSpeedAnimation = 1;
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
         ACM_menuIcon = "ACM_HPMK";
@@ -9967,6 +9968,7 @@ class ace_medical_treatment_actions {
         callbackFailure = "";
         callbackProgress = "";
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
+        ACME_normalSpeedAnimation = 1;
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
         ACM_menuIcon = "ACM_HPMK";
@@ -9985,6 +9987,7 @@ class ace_medical_treatment_actions {
         callbackFailure = "";
         callbackProgress = "";
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
+        ACME_normalSpeedAnimation = 1;
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
         ACM_menuIcon = "ACM_HPMK";

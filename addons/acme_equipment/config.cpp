@@ -110,12 +110,6 @@ class CfgVehicles {
         ACME_modelScale = 1;
     };
 };
-class Extended_PostInit_EventHandlers {
-    class acme_equipment {
-        init = "ACME_hpmk_blanketClass = 'ACME_HPMK_Open';";
-    };
-};
-
 class CfgFunctions { class ACME { class equipment { file="\acme_equipment\functions";
 class equipmentLayout {};
 class equipmentPose {};

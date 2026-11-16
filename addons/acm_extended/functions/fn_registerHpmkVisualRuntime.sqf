@@ -68,13 +68,19 @@ if (hasInterface) then {
                     private _model = _anchor getVariable ["ACME_hpmk_visualClass", _class];
                     if (_model != "") then {
                         _vis = createSimpleObject [_model, [0,0,0], true];
+                        if (!isNull _vis && {_model == "ACME_HPMK_Open"}) then {
+                            // Place the hem at the pickup anchor's height. The authored origin is midway through the prop.
+                            private _minZ = ((boundingBoxReal _vis) select 0) select 2;
+                            _vis setVariable ["ACME_hpmk_groundLift", (-_minZ) max 0];
+                        };
                         ACME_hpmk_visuals set [_id, _vis];
                     };
                 };
                 if (!isNull _vis) then {
                     private _dir = vectorDirVisual _anchor;
-                    if (vectorDirVisual _vis distance _dir > 0.005) then {_vis setVectorDirAndUp [_dir,vectorUpVisual _anchor];};
-                    private _position = getPosWorldVisual _anchor;
+                    private _up = vectorUpVisual _anchor;
+                    if (vectorDirVisual _vis distance _dir > 0.005 || {vectorUpVisual _vis distance _up > 0.005}) then {_vis setVectorDirAndUp [_dir,_up];};
+                    private _position = (getPosWorldVisual _anchor) vectorAdd (_up vectorMultiply (_vis getVariable ["ACME_hpmk_groundLift",0]));
                     if (getPosWorldVisual _vis distance _position > 0.005) then {_vis setPosWorld _position;};
                 };
             } forEach ((ACE_player nearObjects ["Land_HelipadEmpty_F", 120]) select {_x getVariable ["ACME_hpmk_isBlanket", false]});

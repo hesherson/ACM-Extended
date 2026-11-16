@@ -19,5 +19,6 @@ ACME_warmer_tempPerLiter  = 0.8;
 [{call ACME_fnc_hpmkTick}, 5, []] call CBA_fnc_addPerFrameHandler;
 // Visual class for an HPMK that has been dropped after a wrapped casualty becomes mobile. Wrapped patients never
 // receive a world object; the dropped representation uses a collision-free network anchor plus client simpleObject.
-// Set this to the desired discarded emergency blanket model class. "" leaves dropped visuals inert.
-ACME_hpmk_blanketClass = "Land_EmergencyBlanket_02_discarded_F";
+// Resolve at initialization when all vehicle configs are loaded.
+ACME_hpmk_blanketClass = ["Land_EmergencyBlanket_02_discarded_F","ACME_HPMK_Open"] select
+    (isClass (configFile >> "CfgVehicles" >> "ACME_HPMK_Open"));

@@ -1,6 +1,8 @@
 
 disableSerialization;
-params [["_closing", displayNull], ["_pending", [], [[]]], ["_allowReturn", true, [true]], ["_lostSession", [], [[]]]];
+// Display onUnload supplies [display, exitCode]. Internal callers can also pass a pending launch.
+private _closeArgs = if ((_this param [1, []]) isEqualType 0) then {_this select [0, 1]} else {_this};
+_closeArgs params [["_closing", displayNull], ["_pending", [], [[]]], ["_allowReturn", true, [true]], ["_lostSession", [], [[]]]];
 private _restore = {
     params ["_return", "_session", "_medic"];
     if (count _return == 3 && {count _session == 3} && {[_session] call ACME_fnc_ivUiValid}) then {

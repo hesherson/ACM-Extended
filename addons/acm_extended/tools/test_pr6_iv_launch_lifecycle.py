@@ -264,7 +264,7 @@ def test_two_concrete_displays_replacement_then_old_unload_preserves_new_workspa
         private _newSession=+(uiNamespace getVariable ["ACME_IV_Session",[]]);
         uiNamespace setVariable ["ACME_IV_Held","needle"];
         private _before=+_leases;private _saved=_saves;
-        [_oldDisplay] call ACME_fnc_ivMinigameClose;[_oldDisplay] call ACME_fnc_ivMinigameClose;
+        [_oldDisplay,2] call ACME_fnc_ivMinigameClose;[_oldDisplay,2] call ACME_fnc_ivMinigameClose;
         [_drawDisplay isNotEqualTo _oldDisplay,"fixture did not create distinct display identities"] call _check;
         [(uiNamespace getVariable ["ACME_IV_DLG",objNull]) isEqualTo _drawDisplay
             && {(uiNamespace getVariable ["ACME_IV_Session",[]]) isEqualTo _newSession}
