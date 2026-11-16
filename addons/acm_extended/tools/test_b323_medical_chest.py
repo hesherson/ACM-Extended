@@ -733,8 +733,14 @@ def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
     pytest.importorskip("numpy")
     image = pytest.importorskip("PIL.Image")
     monkeypatch.syspath_prepend(str(ROOT / "tools"))
-    from build_hardigg_wear import paint_finish
+    from build_hardigg_wear import LONG_RESIDUE, paint_finish
     from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE
+
+    assert len(LONG_RESIDUE) == 4
+    assert len({layout[1] for layout in LONG_RESIDUE.values()}) == 4
+    assert len({layout[4] for layout in LONG_RESIDUE.values()}) == 4
+    horizontal = [layout for layout in LONG_RESIDUE.values() if abs(layout[3]) < 8]
+    assert len(horizontal) == 1 and horizontal[0][0][1] > 1300
 
     x, y, width, height = ATLAS_REGIONS["lid"]
     for index in range(12):

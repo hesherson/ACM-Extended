@@ -10,17 +10,12 @@ from build_medical_chest_stencils import noise, tape_residue
 from build_medical_chest_variants import DESIGNS, WHITE_TAPE, contact_wear, paint_marker, residue, stamp
 
 FORM = Path(__file__).with_name("assets") / "hardigg_inventory_record.webp"
-# Lid-face coordinates. Keep the long strips clear of the stock card and the large stencils.
+# Lid-face center, length, width, rotation and opacity.
 LONG_RESIDUE = {
-    1: ((824, 793), 1010, 58, 89),
-    2: ((156, 804), 1110, 64, 89),
-    4: ((180, 827), 970, 60, 91),
-    6: ((135, 821), 1100, 58, -89),
-    7: ((818, 786), 1150, 67, -88),
-    8: ((151, 825), 1080, 74, 90),
-    9: ((833, 813), 970, 67, 89),
-    10: ((750, 821), 990, 55, -87),
-    11: ((887, 775), 1050, 56, 89),
+    1: ((824, 793), 1060, 62, 89, .96),
+    4: ((165, 873), 842, 51, 94, .72),
+    7: ((547, 479), 612, 45, 120, .51),
+    11: ((499, 1373), 733, 55, -2, .84),
 }
 SHORT_RESIDUE = {
     0: ((710, 393), 222, 33, -7),
@@ -35,10 +30,10 @@ EXTRA_TAPE = {
 }
 
 
-def make_adhesive_visible(layer):
+def make_adhesive_visible(layer, opacity=1.0):
     grain = layer.getchannel("A")
     warmed = Image.blend(layer.convert("RGB"), Image.new("RGB", layer.size, (155, 144, 111)), .36)
-    warmed.putalpha(grain.point(lambda p: min(192, round(p * 2.15))))
+    warmed.putalpha(grain.point(lambda p: round(min(192, p * 2.15) * opacity)))
     return warmed
 
 
@@ -172,10 +167,13 @@ def paint_finish(overlay, index, lid_region):
     if 0 < index < 10:
         layout = DESIGNS[index-1]
         lid.alpha_composite(make_adhesive_visible(residue(lid.size, layout[6], layout[7], rng)))
-    strips = [layout for layouts in (LONG_RESIDUE, SHORT_RESIDUE) if (layout := layouts.get(index))]
-    if strips:
-        bands = [(*layout, .81) for layout in strips]
-        lid.alpha_composite(make_adhesive_visible(tape_residue(lid.size, bands, 35690+index)))
+    if index in SHORT_RESIDUE:
+        short = tape_residue(lid.size, [(*SHORT_RESIDUE[index], .81)], 35690+index)
+        lid.alpha_composite(make_adhesive_visible(short))
+    if index in LONG_RESIDUE:
+        center, length, depth, angle, opacity = LONG_RESIDUE[index]
+        band = tape_residue(lid.size, [(center, length, depth, angle, .81)], 35690+index)
+        lid.alpha_composite(make_adhesive_visible(band, opacity))
 
     if index in EXTRA_TAPE:
         tapes.append((*EXTRA_TAPE[index], ""))
