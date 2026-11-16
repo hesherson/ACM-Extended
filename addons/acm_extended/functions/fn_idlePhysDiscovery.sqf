@@ -11,6 +11,7 @@ if (_fullAudit) then {
     _units = _units select {!isNull _x && {local _x} && {alive _x}};
 };
 private _now = CBA_missionTime;
+private _emptyMap = createHashMap;
 private _preox = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_preox_activePatients", []]) - _units};
 private _aspiration = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_aspiration_activePatients", []]) - _units};
 private _shock = if (_fullAudit) then {[]} else {(missionNamespace getVariable ["ACME_shock_activePatients", []]) - _units};
@@ -66,8 +67,10 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
     // replicated/local drive that still needs neutralization.
     private _load = if (_aspState isEqualTo []) then {0} else {_aspState select 2};
     private _edema = if (_aspState isEqualTo []) then {0} else {_aspState select 3};
-    private _episode = [_u] call ACME_fnc_aspirationEventKey;
-    private _freshAspiration = !(_aspState isEqualTo []) && {(_episode select 2)} && {(_episode select 0) != (_aspState select 1)};
+    private _freshAspiration = !(_aspState isEqualTo []) && {!((_u getVariable ["ACME_laryngo_emesis", []]) isEqualTo [])} && {
+        private _episode = [_u] call ACME_fnc_aspirationEventKey;
+        (_episode select 2) && {(_episode select 0) != (_aspState select 1)}
+    };
     private _aspResidue = (_u getVariable ["ACME_aspiration_injury",0]) > 0.0005
         || {(_u getVariable ["ACME_aspiration_SpO2Penalty",0]) > 0.001}
         || {abs (_u getVariable ["ACME_aspiration_RRDrive",0]) > 0.001}
@@ -89,7 +92,7 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
     private _forced = _u getVariable ["ACME_shock_forced", []];
     private _forcedLive = _forced isEqualType [] && {count _forced >= 2}
         && {(_forced param [2,-1]) < 0 || {_now <= (_forced param [2,-1])}};
-    private _circState = _u getVariable ["ACME_circ_State", createHashMap];
+    private _circState = _u getVariable ["ACME_circ_State", _emptyMap];
     private _circShock = _circState isEqualType createHashMap && {_circState getOrDefault ["shockActive",false]};
     if (_priorShock || {_forcedLive}
         || {_u getVariable ["ACM_breathing_TensionPneumothorax_State", false]}
@@ -130,7 +133,7 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         || {_u getVariable ["ACME_nrb_on", false]}
         || {(_u getVariable ["ACME_blastLung_State", 0]) > 0}
         || {count (_u getVariable ["ace_medical_medications", []]) > 0}
-        || {count (_u getVariable ["ACME_yFlushJobs", createHashMap]) > 0}
+        || {count (_u getVariable ["ACME_yFlushJobs", _emptyMap]) > 0}
         || {_circUncon}
         || {_circStateNeeds}
         || {_u getVariable ["ACME_tbi_HasTBI", false]}
@@ -139,7 +142,7 @@ private _acmHighHR = missionNamespace getVariable ["ACME_rhythmACMFatalHighHR", 
         || {(_u getVariable ["ACM_circulation_Saline_Volume", 0]) > 0}
         || {(_u getVariable ["ACME_lido_serumLevel", 0]) > 0.05}
         || {(_u getVariable ["ACME_lido_seizureState", ""]) != ""}
-        || {count (_u getVariable ["ACM_circulation_IV_Bags", createHashMap]) > 0};
+        || {count (_u getVariable ["ACM_circulation_IV_Bags", _emptyMap]) > 0};
     if (_needsCirc) then {_circPatients pushBackUnique _u;};
 
     // Coagulation missed-transition discovery. Expensive base reconstruction is

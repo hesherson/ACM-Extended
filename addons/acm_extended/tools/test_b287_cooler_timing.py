@@ -24,12 +24,9 @@ def source(name):
     raw = re.sub(r'(_\w+) sort (true|false);', r'[\1,\2] call _nativeSort;', raw)
     raw = re.sub(r'getNumber\s*\(configFile >> "CfgWeapons" >> (_\w+) >> "(\w+)"\)',
                  r'([\1,"\2"] call _config)', raw)
-    raw = raw.replace('itemCargo _box', '(_box getVariable ["fixtureCargo",[]])')
     raw = raw.replace('typeOf _box', '(_box getVariable ["fixtureType",""])')
     raw = raw.replace('allUnits', '_units').replace('allDeadMen', '_dead').replace('vehicles', '_vehicles')
     raw = raw.replace('allPlayers', '[]')
-    raw = re.sub(r'allMissionObjects "([^"]+)"',
-                 r'(_boxes select {(_x getVariable ["fixtureType",""])=="\1"})', raw)
     raw = re.sub(r'(_\w+) isKindOf "([^"]+)"',
                  r'([\1,"\2"] call _kind)', raw)
     raw = re.sub(r'netId (_\w+)', r'(\1 getVariable ["fixtureId","holder"])', raw)
@@ -37,7 +34,7 @@ def source(name):
     raw = raw.replace('isNull (objectFromNetId _x)', '((_byId getOrDefault [_x,objNull]) isEqualTo objNull)')
     raw = re.sub(r'\buniformItems (_h|_holder)\b', r'(\1 getVariable ["fixtureCargo",[]])', raw)
     raw = re.sub(r'\b(?:vestItems|backpackItems) (_h|_holder)\b', '[]', raw)
-    raw = raw.replace('getItemCargo _h', '([_h] call _cargoCounts)')
+    raw = re.sub(r'getItemCargo (_h|_box)\b', r'([\1] call _cargoCounts)', raw)
     raw = raw.replace('_box addItemCargoGlobal [_x, -1];', '[_box,_x,-1] call _cargoAdjust;')
     raw = raw.replace('_box addItemCargoGlobal ["ACME_SpoiledBlood", count _spoiled];',
                       '[_box,"ACME_SpoiledBlood",count _spoiled] call _cargoAdjust;')
@@ -66,7 +63,8 @@ def fixture():
         private _nextFrames=[];
         private _box=profileNamespace;
         private _holder=uiNamespace;
-        private _units=[]; private _dead=[]; private _vehicles=[]; private _boxes=[];
+        private _units=[]; private _dead=[]; private _vehicles=[];
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", []];
         private _byId=createHashMapFromArray [["box",_box],["holder",_holder]];
         private _class="ACME_BloodCooler_CSWB1U";
         private _bag="ACM_BloodBag_ON_500";
@@ -217,7 +215,7 @@ def test_box_tick_spoils_individual_bags_and_preserves_other_cargo():
     execute(fixture()+r'''
         _box setVariable ["ACME_boxCoolerState",[_class,0,[[_bag,1799],[_fresh,0]],200]];
         _box setVariable ["fixtureCargo",[_bag,_fresh,"bandage","ACME_SpoiledBlood"]];
-        _boxes=[_box];_clock=205;
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", [_box]];_clock=205;
         call ACME_fnc_coolerBoxColdChainTick;
         private _cargo=_box getVariable "fixtureCargo";
         [!(_bag in _cargo) && {_fresh in _cargo} && {"bandage" in _cargo},"wrong cargo spoiled or lost"] call _check;
@@ -234,7 +232,7 @@ def test_box_tick_does_not_mutate_a_locked_or_retired_box(flag):
         _box setVariable ["ACME_boxCoolerState",_state];
         _box setVariable ["fixtureCargo",[_bag]];
         _box setVariable ["{flag}",true];
-        _boxes=[_box];_clock=10000;
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", [_box]];_clock=10000;
         call ACME_fnc_coolerBoxColdChainTick;
         [(_box getVariable "fixtureCargo") isEqualTo [_bag],"locked box cargo mutated"] call _check;
         [(_box getVariable "ACME_boxCoolerState") isEqualTo _state,"locked box state mutated"] call _check;
@@ -249,7 +247,8 @@ def test_generic_loose_age_catches_up_once_includes_corpses_and_excludes_cooler_
         [0] call ACME_fnc_bloodColdChainTick;
         _clock=200;[0] call ACME_fnc_bloodColdChainTick;
         private _exposure=_holder getVariable "ACME_bloodExposure";
-        [((_exposure # 0) # 0) # 2==200,"dead holder did not age by elapsed time"] call _check;
+        [((((_exposure # 0) # 0) # 2) + (_clock - (_exposure # 1))) == 200,"dead holder did not age by elapsed time"] call _check;
+        [_exposure # 1 == 0, "predictable aging republished the baseline"] call _check;
         [0] call ACME_fnc_bloodColdChainTick;
         [((_holder getVariable "ACME_bloodExposure") # 0) isEqualTo (_exposure # 0),"same-time nudge aged twice"] call _check;
         [!("box" in keys (missionNamespace getVariable "ACME_ccByHolder")),"generic tick ages deployed cooler"] call _check;
@@ -320,7 +319,7 @@ def test_native_box_take_read_reconciles_source_before_the_receiver_scan():
         _box setVariable ["ACME_boxCoolerState",[_class,-100,[[_bag,700]],0]];
         _box setVariable ["fixtureCargo",[]];
         _holder setVariable ["fixtureCargo",[_bag]];
-        _boxes=[_box];_units=[_holder];_clock=10;
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", [_box]];_units=[_holder];_clock=10;
         ["read",_holder,_bag,[7,1]] call ACME_fnc_bloodExposureBroker;
         [((_events # ((count _events)-1)) # 1) # 3==702,"native box take reset warm exposure"] call _check;
         [((_box getVariable "ACME_boxCoolerState") # 2) isEqualTo [],"source retained released bag"] call _check;
@@ -361,7 +360,7 @@ def test_cached_read_with_later_native_inventory_change_defers_one_frame_once():
     execute(fixture()+r'''
         _box setVariable ["ACME_boxCoolerState",[_class,-100,[[_bag,700]],0]];
         _box setVariable ["fixtureCargo",[_bag]];
-        _boxes=[_box];_units=[_holder];_clock=10;
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", [_box]];_units=[_holder];_clock=10;
         ["read",_holder,_bag,[7,1]] call ACME_fnc_bloodExposureBroker;
         private _count=count _events;
         _box setVariable ["fixtureCargo",[]];_holder setVariable ["fixtureCargo",[_bag]];
@@ -379,7 +378,7 @@ def test_earlier_generic_nudge_cannot_discover_a_box_take_as_fresh_blood():
     execute(fixture()+r'''
         _box setVariable ["ACME_boxCoolerState",[_class,-100,[[_bag,700]],0]];
         _box setVariable ["fixtureCargo",[]];_holder setVariable ["fixtureCargo",[_bag]];
-        _boxes=[_box];_units=[_holder];_clock=10;_frame=1;
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", [_box]];_units=[_holder];_clock=10;_frame=1;
         [0] call ACME_fnc_bloodColdChainTick;
         ["read",_holder,_bag,[7,1]] call ACME_fnc_bloodExposureBroker;
         [((_events # ((count _events)-1)) # 1) # 3==702,"earlier generic scan refreshed box take"] call _check;
@@ -391,7 +390,7 @@ def test_full_box_mixed_remove_and_admit_does_not_release_the_source_twice():
     execute(fixture()+r'''
         _box setVariable ["ACME_boxCoolerState",[_class,-100,[[_bag,900]],0]];
         _box setVariable ["fixtureCargo",[_fresh]];_holder setVariable ["fixtureCargo",[_bag]];
-        _boxes=[_box];_units=[_holder];_clock=10;_frame=1;
+        missionNamespace setVariable ["ACME_ccDeployedCoolers", [_box]];_units=[_holder];_clock=10;_frame=1;
         private _state=[_box,10] call ACME_fnc_coolerBoxReconcile;
         [(_state # 2) isEqualTo [[_fresh,0]],"new admission inherited removed bag exposure"] call _check;
         [(((_holder getVariable "ACME_bloodExposure") # 0) # 0) # 2==902,"receiver lost removed bag exposure"] call _check;
@@ -407,3 +406,29 @@ def test_native_fresh_blood_volume_does_not_read_donor_id_as_volume(volume, dono
     execute(fixture() + f'''
     [(["ACM_FreshBloodBag_{volume}_{donor}"] call ACME_fnc_coolerBagVolume)=={volume},"fresh donorID was parsed as bag volume"] call _check;
     ''')
+
+
+def test_deployed_cooler_registration_is_idempotent_and_prunes_deleted_objects():
+    track = adapt(read("coolerBoxRegister").replace("is3DEN", "false"))
+    execute(fixture() + "private _track = {" + track + "};" + r"""
+        [_box] call _track;
+        [_box] call _track;
+        private _registered = missionNamespace getVariable ["ACME_ccDeployedCoolers", []];
+        [_registered isEqualTo [_box], "spawn hook did not deduplicate the cooler"] call _check;
+        _registered pushBack objNull;
+        call ACME_fnc_coolerBoxColdChainTick;
+        [(missionNamespace getVariable "ACME_ccDeployedCoolers") isEqualTo [_box],
+            "the cooler tick retained a deleted object"] call _check;
+    """)
+
+
+def test_grouped_vehicle_cargo_preserves_bag_quantities():
+    execute(fixture() + r"""
+        _holder setVariable ["fixtureMan", false];
+        _holder setVariable ["fixtureCargo", [_bag, _bag, _fresh, "bandage", "bandage"]];
+        _vehicles = [_holder];
+        call ACME_fnc_bloodColdChainTick;
+        private _rows = (_holder getVariable "ACME_bloodExposure") select 0;
+        [count _rows == 3 && {({_x select 0 == _bag} count _rows) == 2},
+            "grouped cargo lost or invented blood units"] call _check;
+    """)

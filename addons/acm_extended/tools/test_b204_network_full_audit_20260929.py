@@ -346,8 +346,9 @@ def test_cold_chain_and_fridge_network_requests_are_debounced():
     poll = function("bloodFridgeMenuPoll")
     tick = function("bloodFridgeTick")
 
-    assert "ACME_ccNudgeSentAt" in init
-    assert "_nudgeNow - _nudgeLast >= 0.5" in init
+    assert '_bloodItems isNotEqualTo (_p getVariable ["ACME_ccNudgeItems", []])' in init
+    assert '["ACME_coldChainNudgePending", false]' in function("bloodColdChainNudge")
+    assert '}, [], 0.5] call CBA_fnc_waitAndExecute;' in function("bloodColdChainNudge")
     assert "(diag_tickTime - _last) < 0.4" in poll
     assert '["ACME_bf_viewTimeout", 0.9]' in tick
     assert '"ACME_worldSfx"' in tick

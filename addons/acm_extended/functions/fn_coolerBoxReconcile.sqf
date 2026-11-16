@@ -28,11 +28,12 @@ if (count _state != 4) then {
 private _advanced = [_state, _now] call ACME_fnc_coolerAdvance;
 if (_advanced isEqualTo []) exitWith {[]};
 private _counts = createHashMap;
+(getItemCargo _box) params [["_classes", []], ["_quantities", []]];
 {
     if (([_x] call ACME_fnc_coolerBagVolume) > 0) then {
-        _counts set [_x, (_counts getOrDefault [_x, 0]) + 1];
+        _counts set [_x, _quantities select _forEachIndex];
     };
-} forEach (itemCargo _box);
+} forEach _classes;
 private _byClass = createHashMap;
 {
     _x params ["_class", "_warm"];

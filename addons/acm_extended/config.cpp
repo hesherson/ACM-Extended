@@ -15,6 +15,15 @@ class Extended_PostInit_EventHandlers {
 };
 
 class Extended_InitPost_EventHandlers {
+    class ACME_BloodCoolerBox_CSWB1U {
+        class ACM_Extended {init = "_this call ACME_fnc_coolerBoxRegister";};
+    };
+    class ACME_BloodCoolerBox_CSWB2U {
+        class ACM_Extended {init = "_this call ACME_fnc_coolerBoxRegister";};
+    };
+    class ACME_BloodCoolerBox_CSWB4U {
+        class ACM_Extended {init = "_this call ACME_fnc_coolerBoxRegister";};
+    };
     class ACME_MedicalChest {
         class ACM_Extended {
             init = "if (isServer && {!is3DEN}) then {[ACME_fnc_medicalChestInit,_this] call CBA_fnc_execNextFrame;};";
@@ -2807,6 +2816,7 @@ class CfgFunctions {
             class coolerBoxApplyScale {};
             class coolerBoxPackUp {};
             class coolerBoxColdChainTick {};
+            class coolerBoxRegister {};
             class popClots {};
             class clotPopTick {};
             class cancelInfusionDraw {};

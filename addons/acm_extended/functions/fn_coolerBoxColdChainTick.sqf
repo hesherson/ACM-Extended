@@ -1,11 +1,18 @@
 /* B287: one server-side owner ages deployed cooler cargo. */
 if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};
 if (!isServer) exitWith {};
-private _spoilEnabled = (["spoil"] call ACME_fnc_bloodTiming);
-private _now = ([] call ACME_fnc_clinicalClock);
-private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
-    + (allMissionObjects "ACME_BloodCoolerBox_CSWB2U")
-    + (allMissionObjects "ACME_BloodCoolerBox_CSWB4U");
+private _registered = missionNamespace getVariable ["ACME_ccDeployedCoolers", []];
+if (_registered isEqualTo []) exitWith {};
+private _boxes = _registered select {!isNull _x};
+if (count _boxes != count _registered) then {
+    missionNamespace setVariable ["ACME_ccDeployedCoolers", _boxes];
+};
+if (_boxes isEqualTo []) exitWith {};
+private _perf = missionNamespace getVariable ["ACME_performance_enabled", false];
+private _perfStart = if (_perf) then {diag_tickTime} else {0};
+private _perfGeneration = if (_perf) then {(missionNamespace getVariable "ACME_performance_state") get "generation"} else {-1};
+private _spoilEnabled = ["spoil"] call ACME_fnc_bloodTiming;
+private _now = [] call ACME_fnc_clinicalClock;
 // Release from every box before any box acquires newly observed cargo. This
 // makes box-to-box movement independent of enumeration order.
 {[_x, _now, "release"] call ACME_fnc_coolerBoxReconcile;} forEach _boxes;
@@ -37,3 +44,5 @@ private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
         };
     };
 } forEach _boxes;
+
+if (_perf) then {["deployedCoolerTick", (diag_tickTime - _perfStart) * 1000, -1, _perfGeneration] call ACME_fnc_performanceRecord;};

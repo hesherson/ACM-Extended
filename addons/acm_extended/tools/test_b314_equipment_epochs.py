@@ -377,6 +377,7 @@ def blood_setup():
       private _boxState=["ACME_BloodCooler_CSWB1U",_clock,[],_clock];
       _medic setVariable ["ACME_bloodExposure",[[[_bag,500,20]],_clock]];
       ACME_bloodLooseSpoilTime=1800;
+      ACME_fnc_clinicalClock={_clock};
       ACME_fnc_coolerBagVolume={500};ACME_fnc_bloodColdChainTick={};
       ACME_fnc_coolerBoxReconcile={+_boxState};
       // Placement is a native boundary; record exact thermal values delivered to it.

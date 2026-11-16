@@ -1,5 +1,6 @@
 // Coalesce loadout bursts without ageing inventory a second time.
-if (!isServer || {missionNamespace getVariable ["ACME_coldChainNudgePending", false]}) exitWith {};
+if (!isServer || {!(["enabled"] call ACME_fnc_bloodTiming)}
+    || {missionNamespace getVariable ["ACME_coldChainNudgePending", false]}) exitWith {};
 ACME_coldChainNudgePending = true;
 [{
     ACME_coldChainNudgePending = false;

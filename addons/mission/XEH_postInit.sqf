@@ -28,7 +28,12 @@ GVAR(trainingHoldScanAt) = -1;
 [{
     if (CBA_missionTime >= GVAR(trainingHoldScanAt)) then {
         GVAR(trainingHoldScanAt) = CBA_missionTime + 10;
-        {if (_x getVariable ["ACME_trainingCrouchOnly",false]) then {[_x] call FUNC(trainingPatientHold);};} forEach allUnits;
+        private _registered = missionNamespace getVariable ["ACME_trainingHeldPatients", []];
+        {
+            if (local _x && {_x getVariable ["ACME_trainingCrouchOnly", false]} && {!(_x in _registered)}) then {
+                [_x] call FUNC(trainingPatientHold);
+            };
+        } forEach allUnits;
     };
     private _keep = [];
     {if ([_x] call FUNC(trainingPatientHoldTick)) then {_keep pushBack _x;};} forEach (+(missionNamespace getVariable ["ACME_trainingHeldPatients",[]]));

@@ -17,15 +17,16 @@ if !(isNil "_this") then {if (_this isEqualType []) then {_arguments = _this;};}
 private _excludeBox = _arguments param [1, objNull];
 if !((["enabled"] call ACME_fnc_bloodTiming)) exitWith {};  // the system toggle. fully off means this stops.
 if (!isServer) exitWith {};
+private _perf = missionNamespace getVariable ["ACME_performance_enabled", false];
+private _perfStart = if (_perf) then {diag_tickTime} else {0};
+private _perfGeneration = if (_perf) then {(missionNamespace getVariable "ACME_performance_state") get "generation"} else {-1};
 private _now = ([] call ACME_fnc_clinicalClock);
 private _custodyNow = serverTime;
 // Every entry path, including loadout nudges and the ordinary periodic scan,
 // must release deployed sources before discovering plain receiver inventory.
 // A FULL box reconciliation already released its own removals and excludes
 // that in-progress box while synchronizing newly admitted cargo.
-private _boxes = (allMissionObjects "ACME_BloodCoolerBox_CSWB1U")
-    + (allMissionObjects "ACME_BloodCoolerBox_CSWB2U")
-    + (allMissionObjects "ACME_BloodCoolerBox_CSWB4U");
+private _boxes = (missionNamespace getVariable ["ACME_ccDeployedCoolers", []]) select {!isNull _x};
 {
     if !(_x isEqualTo _excludeBox) then {[_x, _now, "release"] call ACME_fnc_coolerBoxReconcile;};
 } forEach _boxes;
@@ -39,14 +40,7 @@ private _cooFloat = missionNamespace getVariable ["ACME_ccCoolFloat", createHash
 private _volOf    = ACME_fnc_coolerBagVolume;
 private _isBag    = { params ["_c"]; (_c find "ACM_BloodBag_" == 0) || {_c find "ACM_FreshBloodBag_" == 0} };
 private _isCooler = { params ["_c"]; _c find "ACME_BloodCooler_" == 0 };
-private _snap     = {
-    params ["_h"];
-    if (_h isKindOf "CAManBase") then { (uniformItems _h) + (vestItems _h) + (backpackItems _h) }
-    else {
-        (getItemCargo _h) params [["_c", []], ["_n", []]];
-        private _o = []; { private _cc = _x; for "_i" from 1 to (_n param [_forEachIndex, 0]) do { _o pushBack _cc; }; } forEach _c; _o
-    }
-};
+
 
 // prune the expired floating ages.
 { private _c = _x; private _a = (_bagFloat get _c) select {(_custodyNow - (_x param [2,_x select 1])) < _ttl}; if (_a isEqualTo []) then { _bagFloat deleteAt _c; } else { _bagFloat set [_c, _a]; }; } forEach (keys _bagFloat);
@@ -65,9 +59,28 @@ private _data = [];
 {
     private _h = _x; private _nid = netId _h;
     private _rec = _store getOrDefault [_nid, [[], []]];
-    private _inv = [_h] call _snap;
-    private _cb = createHashMap; private _cc = createHashMap;
-    { private _it = _x; if ([_it] call _isBag) then { _cb set [_it, (_cb getOrDefault [_it, 0]) + 1]; } else { if ([_it] call _isCooler) then { _cc set [_it, (_cc getOrDefault [_it, 0]) + 1]; }; }; } forEach _inv;
+    private _cb = createHashMap;
+    private _cc = createHashMap;
+    if (_h isKindOf "CAManBase") then {
+        {
+            if ([_x] call _isBag) then {
+                _cb set [_x, (_cb getOrDefault [_x, 0]) + 1];
+            } else {
+                if ([_x] call _isCooler) then {_cc set [_x, (_cc getOrDefault [_x, 0]) + 1];};
+            };
+        } forEach ((uniformItems _h) + (vestItems _h) + (backpackItems _h));
+    } else {
+        // Keep native counts grouped by class. A crate with hundreds of
+        // unrelated supplies should cost one check per type.
+        (getItemCargo _h) params [["_classes", []], ["_quantities", []]];
+        {
+            if ([_x] call _isBag) then {
+                _cb set [_x, _quantities select _forEachIndex];
+            } else {
+                if ([_x] call _isCooler) then {_cc set [_x, _quantities select _forEachIndex];};
+            };
+        } forEach _classes;
+    };
     private _hasState = (count _cb > 0) || {count _cc > 0} || {!((_rec select 0) isEqualTo [])} || {!((_rec select 1) isEqualTo [])};
     if (_hasState) then {
         _data pushBack [_h, _nid, _cb, _cc, _rec select 0, _rec select 1];
@@ -97,15 +110,17 @@ private _data = [];
     {
         private _c = _x; private _need = (_cb get _c) - (_keptCnt getOrDefault [_c, 0]);
         if (_need > 0) then {
-            for "_i" from 1 to _need do {
-                private _w = 0; private _fa = _bagFloat getOrDefault [_c, []];
-                if (count _fa > 0) then {
-                    private _ranked = _fa apply {[(_x # 0) + ((_now - (_x # 1)) max 0), _x]};
-                    _ranked sort false;
-                    _w = (_ranked deleteAt 0) # 0;
-                    _bagFloat set [_c, _ranked apply {_x # 1}];
-                };
-                _final pushBack [_c, ([_c] call _volOf), _w, _now];
+            private _ages = _bagFloat getOrDefault [_c, []];
+            private _ranked = _ages apply {[(_x # 0) + ((_now - (_x # 1)) max 0), _x]};
+            _ranked sort false;
+            private _volume = [_c] call _volOf;
+            private _available = count _ranked;
+            for "_i" from 0 to (_need - 1) do {
+                private _warm = if (_i < _available) then {(_ranked # _i) # 0} else {0};
+                _final pushBack [_c, _volume, _warm, _now];
+            };
+            if (_available > 0) then {
+                _bagFloat set [_c, (_ranked select [_need min _available]) apply {_x # 1}];
             };
         };
     } forEach (keys _cb);
@@ -158,6 +173,7 @@ private _autofill = [];
 } forEach _autofill;
 
 // coverage, age and spoil.
+private _autoCover = missionNamespace getVariable ["ACME_coolerAutoCover", false];
 {
     _x params ["_h","_nid","_cb","_cc","_bagLedger","_coolLedger"];
     // Client inventory replication can lag its seed event. Keep the exact seed
@@ -206,10 +222,15 @@ private _autofill = [];
         _h setVariable ["ACME_bloodExposureSeedTokens", _tokens];
     };
     private _coverMl = 0;
-    { _x params ["_kc","_at"]; private _chain = ([_kc] call ACME_fnc_coolerColdChainTime); if (_chain <= 0 || {(_now - _at) < _chain}) then { _coverMl = _coverMl + getNumber (configFile >> "CfgWeapons" >> _kc >> "ACME_coolerCapacityMl"); }; } forEach _coolLedger;
-    // the true-container model: a cooler keeps cold only what is inside it, which is handled client-side, so loose
-    // blood warms.
-    if (!(missionNamespace getVariable ["ACME_coolerAutoCover", false])) then { _coverMl = 0; };
+    if (_autoCover) then {
+        {
+            _x params ["_cooler", "_started"];
+            private _chain = [_cooler] call ACME_fnc_coolerColdChainTime;
+            if (_chain <= 0 || {(_now - _started) < _chain}) then {
+                _coverMl = _coverMl + getNumber (configFile >> "CfgWeapons" >> _cooler >> "ACME_coolerCapacityMl");
+            };
+        } forEach _coolLedger;
+    };
     private _byVol = _bagLedger apply { [_x select 1, _x] }; _byVol sort false;
     private _keptMl = 0; private _kept = []; private _spoil = [];
     {
@@ -223,7 +244,27 @@ private _autofill = [];
     };
     _store set [_nid, [_kept, _coolLedger]];
     private _snapshot = [_kept apply {[_x # 0, _x # 1, _x # 2]}, _now];
-    if !((_h getVariable ["ACME_bloodExposure", []]) isEqualTo _snapshot) then {
+    private _prior = _h getVariable ["ACME_bloodExposure", []];
+    private _publish = _prior isNotEqualTo _snapshot;
+    // Readers already extrapolate loose blood exposure from the last sample.
+    // Compare with that prediction; refresh on a real change or when auto-cover can stop aging.
+    if (_publish && {!_autoCover} && {_prior isEqualType []} && {count _prior == 2}) then {
+        _prior params ["_previousRows", "_sampled"];
+        private _rows = _snapshot select 0;
+        if (_previousRows isEqualType [] && {count _previousRows == count _rows}
+            && {_sampled isEqualType 0} && {_sampled <= _now}) then {
+            private _elapsed = _now - _sampled;
+            _publish = false;
+            {
+                private _oldRow = _previousRows select _forEachIndex;
+                if (!(_oldRow isEqualType []) || {count _oldRow != 3}
+                    || {(_x select 0) != (_oldRow select 0)} || {(_x select 1) != (_oldRow select 1)}
+                    || {!((_oldRow select 2) isEqualType 0)}
+                    || {abs ((_x select 2) - ((_oldRow select 2) + _elapsed)) > 0.001}) exitWith {_publish = true;};
+            } forEach _rows;
+        };
+    };
+    if (_publish) then {
         _h setVariable ["ACME_bloodExposure", _snapshot, true];
     };
 } forEach _data;
@@ -235,3 +276,5 @@ missionNamespace setVariable ["ACME_ccByHolder", _store];
 missionNamespace setVariable ["ACME_ccBagFloat", _bagFloat];
 missionNamespace setVariable ["ACME_ccCoolFloat", _cooFloat];
 missionNamespace setVariable ["ACME_ccBrokerFrame", diag_frameNo];
+
+if (_perf) then {["bloodInventoryScan", (diag_tickTime - _perfStart) * 1000, -1, _perfGeneration] call ACME_fnc_performanceRecord;};

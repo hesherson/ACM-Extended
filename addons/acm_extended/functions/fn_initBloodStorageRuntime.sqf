@@ -157,16 +157,20 @@ if (isServer) then {
 // functions to be permitted.
 // Physical cooler tokens, rather than loadout-shape heuristics, own contents and clocks.
 ["loadout", {
-    // Loadout can fire several times during one arsenal/loadout transaction. Coalesce the client->server cold-chain
-    // nudge before it enters the network; the server already performs its own second-stage coalescing.
-    private _nudgeNow = diag_tickTime;
-    private _nudgeLast = uiNamespace getVariable ["ACME_ccNudgeSentAt", -1];
-    if (_nudgeLast < 0 || {_nudgeNow - _nudgeLast >= 0.5}) then {
-        uiNamespace setVariable ["ACME_ccNudgeSentAt", _nudgeNow];
-        remoteExecCall ["ACME_fnc_bloodColdChainNudge", 2];
+    private _p = ACE_player;
+    if (!isNull _p && {["enabled"] call ACME_fnc_bloodTiming}) then {
+        // The server only needs an early pass when loose blood/cooler counts changed.
+        private _bloodItems = ((uniformItems _p) + (vestItems _p) + (backpackItems _p)) select {
+            (_x find "ACM_BloodBag_") == 0 || {(_x find "ACM_FreshBloodBag_") == 0}
+                || {(_x find "ACME_BloodCooler_") == 0}
+        };
+        _bloodItems sort true;
+        if (_bloodItems isNotEqualTo (_p getVariable ["ACME_ccNudgeItems", []])) then {
+            _p setVariable ["ACME_ccNudgeItems", _bloodItems];
+            remoteExecCall ["ACME_fnc_bloodColdChainNudge", 2];
+        };
     };
     [{call ACME_fnc_coolerContentsTick;call ACME_fnc_coolerAutoStore;},[]] call CBA_fnc_execNextFrame;
-    private _p = ACE_player;
     if (!isNull _p) then {
         // ventilator boot re-arm. if the ventilator was reloaded, transferred or moved, and any loadout change is
         // signal enough that the device left and re-entered the kit, this re-arms the startup sequence so the next open
