@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE, DATA
+from build_hardigg_wear import paint_finish
 
 PREFIX = r"acm_extended\data\medical_chest\hardigg" + "\\"
 REGIONS = {**ATLAS_REGIONS, "inside": (1320, 1632, 704, 704), "lid_trim": (1320, 2368, 704, 768)}
@@ -93,7 +94,9 @@ def paint_uv(lod):
         center = points.mean(axis=0)
         is_lid = set(face["v"]) <= lid
         x, y, z = points.T
-        if is_lid and axis == 1 and normal[1] > 0 and center[1] > .143:
+        # The outer depth band includes the rib crowns, sides and groove transitions.
+        # Every patch in it uses the same front coordinates as the neighboring flat panel.
+        if is_lid and y.min() > .139:
             region, u, v = "lid", (.263 - x) / .526, (.832 - z) / .832
         elif is_lid:
             region, u, v = "lid_trim", (x + .263) / .526, (.832 - z) / .832
@@ -232,7 +235,7 @@ def build_textures(root, out, work, hemtt):
             for region in ("back", "right", "left", "top", "bottom", "inside"):
                 x, y, w, h = REGIONS[region]
                 tile = np.asarray(base.crop((x, y, x+w, y+h)), dtype=np.float32)
-                tinted = np.clip(tile * np.array([1.28, 1.43, 1.19]) + (12, 16, 10), 0, 255)
+                tinted = np.clip(tile * np.array([.61, .76, .64]), 0, 255)
                 base.paste(Image.fromarray(tinted.astype(np.uint8)), (x, y))
         if index == 11:
             blackout_lid(base)
@@ -243,6 +246,7 @@ def build_textures(root, out, work, hemtt):
             convert(texture, png)
             with Image.open(png) as image:
                 overlay = image.convert("RGBA")
+        paint_finish(overlay, index, REGIONS)
         base.paste(overlay, mask=overlay.getchannel("A"))
         export(base, f"case_{index}_co")
     shutil.copyfile(out / "case_0_co.paa", out / "case_co.paa")

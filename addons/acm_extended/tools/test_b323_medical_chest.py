@@ -716,4 +716,14 @@ def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
     closed = outside_faces(assets / "medchest.p3d", (0, 0))
     detached = outside_faces(assets / "hardigg_lid.p3d", (.1175, .416))
     assert len(closed) > 30 and closed == detached
+    # At least one projected face must follow an angled rib wall, across depth.
+    # Restricting the atlas to front-facing normals alone drops tape in the groove.
+    def rib_face(face):
+        a, b, c = face[:3]
+        ax, ay, az = (b[i] - a[i] for i in range(3))
+        bx, by, bz = (c[i] - a[i] for i in range(3))
+        return max(v[1] for v in face) - min(v[1] for v in face) > .001 and (
+            abs(az * bx - ax * bz) < max(abs(ay * bz - az * by), abs(ax * by - ay * bx))
+        )
+    assert any(rib_face(face) for face in closed)
     assert not outside_faces(assets / "medchest_open.p3d", (0, 0))
