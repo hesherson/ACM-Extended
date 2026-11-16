@@ -7,7 +7,9 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 from build_medical_chest_stencils import noise, tape_residue
-from build_medical_chest_variants import DESIGNS, WHITE_TAPE, contact_wear, paint_marker, residue, stamp
+from build_medical_chest_variants import (
+    DESIGNS, WHITE_TAPE, aerosol, contact_wear, paint_marker, residue, stamp,
+)
 
 FORM = Path(__file__).with_name("assets") / "hardigg_inventory_record.webp"
 # Lid-face center, length, width, rotation and opacity.
@@ -27,6 +29,12 @@ EXTRA_TAPE = {
     1: ((640, 1276), 237, 70, 6, (58, 61, 53)),
     10: ((390, 1088), 262, 76, -11, (118, 119, 104)),
     11: ((562, 1170), 248, 65, -5, (117, 119, 111)),
+}
+# Earlier markings, slightly misregistered beneath the current lid stencils.
+PREVIOUS_PAINT = {
+    3: ("SURG", (398, 803), 208, -3, .77),
+    6: ("SALINE", (600, 791), 138, -2, .69),
+    8: ("PLASMA", (557, 856), 148, -5, .64),
 }
 
 
@@ -144,6 +152,28 @@ def inventory_card(rng):
     return sheet
 
 
+def paint_underneath(lid, index):
+    text, position, height, angle, opacity = PREVIOUS_PAINT[index]
+    rng = random.Random(35913 + index)
+    font = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", height)
+    left, top, right, bottom = font.getbbox(text)
+    mask = Image.new("L", (right - left + 4, bottom - top + 4))
+    draw = ImageDraw.Draw(mask)
+    draw.text((2-left, 2-top), text, font=font, fill=255)
+    # Small bridges and patchy erasure leave remnants of the previous field stencil.
+    for y in (int(mask.height*.31), int(mask.height*.69)):
+        draw.line((0, y, mask.width, y+rng.randint(-3, 2)), fill=0, width=max(2, height//19))
+    paint = aerosol(mask, "black", rng, False, .95)
+    cloud = np.asarray(noise(paint.size, 32, rng), dtype=np.float32)/255
+    alpha = np.asarray(paint.getchannel("A"), dtype=np.float32)
+    alpha *= opacity * (.29 + .71*cloud)
+    paint.putalpha(Image.fromarray(alpha.astype(np.uint8)))
+    coat = Image.new("RGBA", lid.size)
+    stamp(coat, paint, position, angle)
+    coat.alpha_composite(lid)
+    return coat
+
+
 def paint_finish(overlay, index, lid_region):
     rng = random.Random(35600 + index * 31)
     lid_x, lid_y, width, height = lid_region
@@ -163,6 +193,9 @@ def paint_finish(overlay, index, lid_region):
         for pos, length, depth, angle, _, _ in tapes:
             stamp(mask, Image.new("RGBA",(length+25,depth+24),(255,255,255,255)), pos, angle)
         lid.paste(restore, mask=mask.getchannel("A"))
+
+    if index in PREVIOUS_PAINT:
+        lid = paint_underneath(lid, index)
 
     if 0 < index < 10:
         layout = DESIGNS[index-1]
