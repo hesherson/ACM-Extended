@@ -4,10 +4,11 @@
  * Arguments: 0: player, 1: SKED. Returns: bool.
  */
 params ["_player", "_litter"];
+private _bearers = _litter getVariable ["acme_sked_bearers", [objNull, objNull, objNull, objNull]];
 !isNull (_litter getVariable ["acme_sked_patient", objNull])
 && {isNull attachedTo _litter}
 && {isNull (_litter getVariable ["ace_common_owner", objNull])}
 && {!(_litter getVariable ["acme_sked_lifted", false])}
 && {isNull (_player getVariable ["acme_sked_bearing", objNull])}
 && {isNull objectParent _player}
-&& {((_litter getVariable ["acme_sked_bearers", [objNull, objNull, objNull, objNull]]) findIf {isNull _x}) >= 0}
+&& {({!isNull _x} count _bearers) < (([_litter] call acme_sked_fnc_bearerLimits) select 1)}

@@ -13,7 +13,8 @@ if (isNull _open || {!(_open isKindOf "ACME_SKED_Open")} || {!isNull attachedTo 
 private _posASL = getPosASL _open;
 private _dir = getDir _open;
 private _up = vectorUp _open;
-private _litter = createVehicle ["ACME_SKED_Wrapped", ASLToATL _posASL, [], 0, "CAN_COLLIDE"];
+private _class = getText (configOf _open >> "acmeLitterOccupied");
+private _litter = createVehicle [_class, ASLToATL _posASL, [], 0, "CAN_COLLIDE"];
 if (isNull _litter) exitWith {objNull};
 deleteVehicle _open;
 _litter setDir _dir;
@@ -23,8 +24,9 @@ _litter setVariable ["acme_sked_patient", _patient, true];
 _litter setVariable ["acme_sked_bearers", [objNull, objNull, objNull, objNull], true];
 _patient setVariable ["acme_sked_litter", _litter, true];
 [_patient] call acme_sked_fnc_srvDragOff;
-if (missionNamespace getVariable ["acme_sked_hpmkSqueeze", true]) then {
+if (_class == "ACME_SKED_Wrapped" && {missionNamespace getVariable ["acme_sked_hpmkSqueeze", true]}) then {
     [_patient, "hpmkSwap", [_patient, true]] call acme_sked_fnc_sendLocal;
 };
+["strapped", _litter, _patient, [_rescuer]] call acme_sked_fnc_traceTransport;
 [_patient, "attachLocal", [_patient, _litter]] call acme_sked_fnc_sendLocal;
 _litter

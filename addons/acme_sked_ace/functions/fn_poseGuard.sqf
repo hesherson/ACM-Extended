@@ -16,7 +16,14 @@ private _id = [{
         _patient setVariable ["acme_sked_guard", nil];
     };
     if (!isNull objectParent _patient || {_patient getVariable ["acme_sked_loading", false]}) exitWith {};
-    if (isNull attachedTo _patient) then {[_patient, _litter] call acme_sked_fnc_reattach};
+    private _expected = [_litter] call acme_sked_fnc_patientRoot;
+    if ((attachedTo _patient) isNotEqualTo _expected) then {
+        if ((_litter getVariable ["acme_sked_attach", []]) isEqualTo []) then {
+            [_patient, _litter, false] call acme_sked_fnc_align;
+        } else {
+            [_patient, _litter] call acme_sked_fnc_reattach;
+        };
+    };
     if (!alive _patient) exitWith {};
     private _anim = missionNamespace getVariable ["acme_sked_patientAnim", "unconsciousfaceup"];
     if ((toLowerANSI animationState _patient) isEqualTo (toLowerANSI _anim)) exitWith {_patient setVariable ["acme_sked_poseMiss", 0]};

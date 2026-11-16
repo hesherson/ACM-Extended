@@ -21,11 +21,23 @@ if (_action == "layOutItem") exitWith {
         if (!isNull _open) then {_actor removeItem "ACME_SKED_Item";};
     };
 };
+if (_action in ["foldTalon", "deployTalon"]) exitWith {
+    if (isNull _target || {_actor distance _target > 3.5}
+        || {!([_actor, _target] call acme_sked_fnc_canHandleEmpty)}) exitWith {};
+    private _fold = _action == "foldTalon";
+    if ((typeOf _target) != (["ACME_Talon_Folded", "ACME_Talon_Open"] select _fold)) exitWith {};
+    private _class = ["ACME_Talon_Open", "ACME_Talon_Folded"] select _fold;
+    private _replacement = [_class, getPosATL _target, getDir _target] call acme_sked_fnc_place;
+    if (!isNull _replacement) then {
+        deleteVehicle _target;
+        [_action, _replacement, _actor] call acme_sked_fnc_traceTransport;
+    };
+};
 if (_action in ["layOut", "pickUp", "rollUp"]) exitWith {
     if (isNull _target || {_actor distance _target > 3.5}
         || {!([_actor, _target] call acme_sked_fnc_canHandleEmpty)}) exitWith {};
     if (_action == "rollUp") then {
-        if !(_target isKindOf "ACME_SKED_Open") exitWith {};
+        if ((typeOf _target) != "ACME_SKED_Open") exitWith {};
         if (_actor canAdd "ACME_SKED_Item") exitWith {
             _actor addItem "ACME_SKED_Item";
             deleteVehicle _target;

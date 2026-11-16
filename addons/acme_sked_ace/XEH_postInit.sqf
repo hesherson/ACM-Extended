@@ -37,7 +37,8 @@ if (isServer) then {
         if !(_target isKindOf "ACME_SKED_Wrapped") exitWith {};
         private _patient = _target getVariable ["acme_sked_patient", objNull];
         if (isNull _patient) exitWith {};
-        [{[_this select 0, "reposition", _this select 1] call acme_sked_fnc_request}, [_unit, _target], 0.3] call CBA_fnc_waitAndExecute;
+        ["ACE drag changed", _target, _unit, [attachedTo _target, attachedTo _patient]] call acme_sked_fnc_traceTransport;
+        [_unit, "reposition", _target] call acme_sked_fnc_request;
         [{[_this select 0, "reposition", _this select 1] call acme_sked_fnc_request}, [_unit, _target], 0.8] call CBA_fnc_waitAndExecute;
     }] call CBA_fnc_addEventHandler;
 } forEach ["ace_dragging_startedDrag", "ace_dragging_stoppedDrag"];
@@ -51,6 +52,8 @@ if (isServer) then {
     if (!isNull (_unit getVariable ["acme_sked_bearing", objNull])) then {[_unit, "letGo"] call acme_sked_fnc_request};
     if (isNull (_unit getVariable ["acme_sked_litter", objNull])) exitWith {};
     [_unit, "stow"] call acme_sked_fnc_request;
+    // The server can see the seat change after the first request from the casualty owner.
+    [{[_this, "stow"] call acme_sked_fnc_request}, _unit, 0.8] call CBA_fnc_waitAndExecute;
 }] call CBA_fnc_addClassEventHandler;
 ["CAManBase", "GetOutMan", {
     params ["_unit"];

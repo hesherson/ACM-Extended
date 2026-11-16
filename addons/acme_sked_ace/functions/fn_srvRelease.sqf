@@ -14,7 +14,10 @@ _litter setVariable ["acme_sked_patient", objNull, true];
 if (isNull _patient) exitWith {};
 _patient setVariable ["acme_sked_litter", nil, true];
 if (_stow) exitWith {
+    _patient setVariable ["acme_sked_stowedOpen", getText (configOf _litter >> "acmeLitterOpen"), true];
     _patient setVariable ["acme_sked_stowed", true, true];
+    ["stowed", _litter, _patient, [objectParent _patient]] call acme_sked_fnc_traceTransport;
 };
+["unstrapped", _litter, _patient] call acme_sked_fnc_traceTransport;
 [_patient, "releaseLocal", [_patient, _litter]] call acme_sked_fnc_sendLocal;
 [_patient] call acme_sked_fnc_srvDragOn;

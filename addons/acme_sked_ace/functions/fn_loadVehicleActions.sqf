@@ -7,6 +7,11 @@ private _patient = _target getVariable ["acme_sked_patient", objNull];
 if (isNull _patient) exitWith {[]};
 ([_patient, 10] call ace_common_fnc_nearestVehiclesFreeSeat) apply {
     private _name = format ["%1 (%2 m)", getText ((configOf _x) >> "displayName"), (_player distance _x) toFixed 1];
+    if (_x isKindOf "vtx_H60_base") then {
+        private _preferred = [0, _x] call acme_sked_fnc_preferredLitter;
+        private _open = getText (configOf _target >> "acmeLitterOpen");
+        _name = _name + ([" - Talon II preferred", " - preferred litter"] select (_open == _preferred));
+    };
     private _action = [str _x, _name, "", {
         params ["_target", "_player", "_vehicle"];
         [_player, _target, _vehicle] call acme_sked_fnc_loadVehicle;

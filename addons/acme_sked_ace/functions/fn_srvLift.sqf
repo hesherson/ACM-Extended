@@ -7,11 +7,11 @@
 params ["_lead", "_litter"];
 if (!isServer || {isNull _litter} || {_litter getVariable ["acme_sked_lifted", false]} || {!isNull attachedTo _litter}
     || {!isNull (_litter getVariable ["ace_common_owner", objNull])}) exitWith {};
-private _slots = ["handle_lh", "handle_rh", "handle_lf", "handle_rf"];
+private _slots = getArray (configOf _litter >> "acmeLitterHandles");
 private _bearers = _litter getVariable ["acme_sked_bearers", []];
 private _i = _bearers find _lead;
 if (_i < 0 || {!((attachedTo _lead) isEqualTo _litter)}) exitWith {};
-if (({!isNull _x && {alive _x} && {(attachedTo _x) isEqualTo _litter}} count _bearers) < (missionNamespace getVariable ["acme_sked_bearersRequired", 2])) exitWith {};
+if (({!isNull _x && {alive _x} && {!(_x getVariable ["ACE_isUnconscious", false])} && {(attachedTo _x) isEqualTo _litter}} count _bearers) < (([_litter] call acme_sked_fnc_bearerLimits) select 0)) exitWith {};
 private _h = _litter selectionPosition (_slots select _i);
 private _z = missionNamespace getVariable ["acme_sked_liftHeight", 0.55];
 private _mass = getMass _litter;
@@ -23,6 +23,7 @@ _litter attachTo [_lead, [-(_h select 0), -(_h select 1), _z]];
 ["ace_common_setDir", [_litter, 0], _litter] call CBA_fnc_targetEvent;
 _litter setVariable ["acme_sked_lifted", true, true];
 _litter setVariable ["acme_sked_lead", _lead, true];
+["lifted", _litter, _lead, _bearers] call acme_sked_fnc_traceTransport;
 [_lead, "bearerLocal", [_lead, _litter, "lead", objNull, []]] call acme_sked_fnc_sendLocal;
 {
     if (!isNull _x && {!(_x isEqualTo _lead)}) then {

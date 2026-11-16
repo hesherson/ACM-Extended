@@ -5,12 +5,14 @@
  * Arguments: 0: casualty, 1: SKED (anything after is ignored).
  */
 params ["_patient", "_litter"];
-if (!local _patient || {isNull _litter}) exitWith {};
+if (!local _patient || {isNull _litter} || {!isNull objectParent _patient}
+    || {_patient getVariable ["acme_sked_loading", false]}) exitWith {};
 if !((_patient getVariable ["acme_sked_litter", objNull]) isEqualTo _litter) exitWith {};
 (_litter getVariable ["acme_sked_attach", []]) params [["_off", []], ["_dir", [0, 1, 0]], ["_up", [0, 0, 1]]];
 if (_off isEqualTo []) exitWith {};
-private _root = attachedTo _litter;
-if (isNull _root) exitWith {
+private _root = [_litter] call acme_sked_fnc_patientRoot;
+["patient reattach", _litter, _patient, [attachedTo _patient, _root]] call acme_sked_fnc_traceTransport;
+if (_root isEqualTo _litter) exitWith {
     _patient attachTo [_litter, _off];
     _patient setVectorDirAndUp [_dir, _up];
 };

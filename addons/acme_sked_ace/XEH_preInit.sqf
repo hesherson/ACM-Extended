@@ -2,7 +2,7 @@
 [
     "acme_sked_bearersRequired", "SLIDER",
     ["Rescuers to lift", "How many rescuers must hold a handle before the SKED can be lifted and carried."],
-    ["ACM Extended", "SKED"], [1, 4, 2, 0], 1
+    ["ACM Extended", "SKED"], [1, 2, 2, 0], 1
 ] call CBA_fnc_addSetting;
 [
     "acme_sked_allowConscious", "CHECKBOX",
@@ -50,3 +50,9 @@
         ["ACM Extended", "SKED"], [-0.3, 0.3, 0, 3], 1
     ] call CBA_fnc_addSetting;
 } forEach ["X", "Y", "Z"];
+
+[
+    "acme_sked_debug", "CHECKBOX",
+    ["Medical transport diagnostics", "Log transport handoffs to RPT and show the read-only audit in ACE Self Interaction."],
+    ["ACM Extended", "SKED"], false, 1
+] call CBA_fnc_addSetting;

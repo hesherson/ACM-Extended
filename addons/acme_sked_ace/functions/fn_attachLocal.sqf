@@ -11,12 +11,15 @@ if (alive _patient) then {
 };
 [{
     params ["_patient", "_litter"];
-    if (isNull _litter || {!((_patient getVariable ["acme_sked_litter", objNull]) isEqualTo _litter)}) exitWith {};
+    if (!local _patient || {isNull _litter} || {!isNull objectParent _patient}
+        || {_patient getVariable ["acme_sked_loading", false]}
+        || {!((_patient getVariable ["acme_sked_litter", objNull]) isEqualTo _litter)}) exitWith {};
     [_patient, _litter, false] call acme_sked_fnc_align;
     [{
         params ["_patient", "_litter"];
-        if (isNull _litter || {!((_patient getVariable ["acme_sked_litter", objNull]) isEqualTo _litter)}) exitWith {};
+        if (!local _patient || {isNull _litter} || {!isNull objectParent _patient} || {_patient getVariable ["acme_sked_loading", false]} || {!((_patient getVariable ["acme_sked_litter", objNull]) isEqualTo _litter)}) exitWith {};
         [_patient, _litter, true] call acme_sked_fnc_align;
+        ["patient aligned", _litter, _patient, [attachedTo _patient]] call acme_sked_fnc_traceTransport;
         [_patient] call acme_sked_fnc_poseGuard;
     }, [_patient, _litter], 0.3] call CBA_fnc_waitAndExecute;
 }, [_patient, _litter], 0.8] call CBA_fnc_waitAndExecute;

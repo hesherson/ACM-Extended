@@ -17,12 +17,15 @@ private _bearers = +(_litter getVariable ["acme_sked_bearers", []]);
 _litter setVariable ["acme_sked_bearers", _bearers, true];
 if (_litter getVariable ["acme_sked_lifted", false]) then {
     private _left = {!isNull _x && {alive _x}} count _bearers;
-    if (_left < (missionNamespace getVariable ["acme_sked_bearersRequired", 2]) || {(_litter getVariable ["acme_sked_lead", objNull]) isEqualTo _unit}) then {
+    if (_left < (([_litter] call acme_sked_fnc_bearerLimits) select 0) || {(_litter getVariable ["acme_sked_lead", objNull]) isEqualTo _unit}) then {
         [_litter] call acme_sked_fnc_srvSetDown;
     };
 };
-if (!isNull attachedTo _unit) then {detach _unit};
 if ((_bearers findIf {!isNull _x}) < 0) then {
-    [_litter, true, [0, 1.55, 0], 180, false, true] call ace_dragging_fnc_setDraggable;
+    private _cfg = configOf _litter;
+    [_litter, getNumber (_cfg >> "ace_dragging_canDrag") > 0,
+        getArray (_cfg >> "ace_dragging_dragPosition"), getNumber (_cfg >> "ace_dragging_dragDirection"),
+        false, true] call ace_dragging_fnc_setDraggable;
 };
+["handle released", _litter, _unit, _bearers] call acme_sked_fnc_traceTransport;
 [_unit, "bearerRelease", [_unit, _litter]] call acme_sked_fnc_sendLocal;

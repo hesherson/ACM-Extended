@@ -12,7 +12,8 @@ private _cal = [
     missionNamespace getVariable ["acme_sked_offsetY", 0],
     missionNamespace getVariable ["acme_sked_offsetZ", 0]
 ];
-private _target = (_litter selectionPosition "pt_spine3") vectorAdd _cal;
+private _point = getText (configOf _litter >> "acmeLitterChestPoint");
+private _target = (_litter selectionPosition [_point, "Memory"]) vectorAdd _cal;
 if (_correct) exitWith {
     (_litter getVariable ["acme_sked_attach", []]) params [["_off", []], ["_dir", [0, 1, 0]], ["_up", [0, 0, 1]]];
     if (_off isEqualTo [] || {!((attachedTo _patient) isEqualTo _litter)}) exitWith {};
@@ -41,6 +42,5 @@ private _dir = [_xb select 1, _yb select 1, _zb select 1];
 private _up = [_xb select 2, _yb select 2, _zb select 2];
 private _m = [_xb vectorDotProduct _sp3, _yb vectorDotProduct _sp3, _zb vectorDotProduct _sp3];
 private _off = _target vectorDiff _m;
-_patient attachTo [_litter, _off];
-_patient setVectorDirAndUp [_dir, _up];
 _litter setVariable ["acme_sked_attach", [_off, _dir, _up], true];
+[_patient, _litter] call acme_sked_fnc_reattach;

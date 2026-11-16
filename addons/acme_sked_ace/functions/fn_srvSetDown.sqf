@@ -15,10 +15,11 @@ _litter setPosATL [_pos select 0, _pos select 1, 0];
 ["ace_common_setMass", [_litter, _litter getVariable ["acme_sked_mass", 7]]] call CBA_fnc_globalEvent;
 _litter setVariable ["acme_sked_lifted", false, true];
 _litter setVariable ["acme_sked_lead", nil, true];
+["set down", _litter, objNull, [getPosATL _litter]] call acme_sked_fnc_traceTransport;
 [{
     params ["_litter"];
     if (isNull _litter || {_litter getVariable ["acme_sked_lifted", false]} || {!isNull attachedTo _litter}) exitWith {};
-    private _slots = ["handle_lh", "handle_rh", "handle_lf", "handle_rf"];
+    private _slots = getArray (configOf _litter >> "acmeLitterHandles");
     {
         if (!isNull _x) then {
             private _h = _litter selectionPosition (_slots select _forEachIndex);

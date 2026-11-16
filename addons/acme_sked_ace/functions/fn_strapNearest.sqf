@@ -8,7 +8,7 @@ if (isNull _patient) exitWith {};
 [15, [_player, _patient, _litter], {
     (_this select 0) params ["_player", "_patient", "_litter"];
     [_player, "strap", _patient, _litter] call acme_sked_fnc_request;
-}, {}, "Packaging casualty in SKED...", {
+}, {}, "Packaging casualty in litter...", {
     (_this select 0) params ["_player", "_patient", "_litter"];
     !isNull _litter && {[_patient] call acme_sked_fnc_validCasualty} && {_patient distance _litter < 3.5}
 }] call ace_common_fnc_progressBar;

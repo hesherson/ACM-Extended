@@ -7,7 +7,7 @@ params ["_litter"];
 if (!isServer || {isNull _litter}) exitWith {};
 private _pos = _litter modelToWorld [1.1, 0, 0];
 private _dir = getDir _litter;
-private _open = ["ACME_SKED_Open", _pos, _dir] call acme_sked_fnc_place;
+private _open = [getText (configOf _litter >> "acmeLitterOpen"), _pos, _dir] call acme_sked_fnc_place;
 if (isNull _open) exitWith {};
 [_litter, false] call acme_sked_fnc_srvRelease;
 deleteVehicle _litter;
