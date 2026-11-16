@@ -12,7 +12,7 @@ class CfgPatches {
         requiredVersion = 2.0;
         requiredAddons[] = {"A3_Data_F_AoW_Loadorder"};
         units[] = {"ACME_HPMK_Item_Ground", "ACME_HPMK_Pouch", "ACME_HPMK_Closed", "ACME_HPMK_Open", "ACME_HPMK_Rolled"};
-        weapons[] = {"ACME_HPMK_Item", "ACME_HPMK_Worn"};
+        weapons[] = {"ACME_HPMK_Item", "ACME_HPMK_Worn", "ACME_HPMK_Worn_Sked"};
     };
 };
 
@@ -69,6 +69,11 @@ class CfgWeapons {
             mass = 49;
             hiddenSelections[] = {};
             class HitpointsProtectionInfo {};
+        };
+    };
+    class ACME_HPMK_Worn_Sked: ACME_HPMK_Worn {
+        class ItemInfo: ItemInfo {
+            uniformModel = "\acme_hpmk\hpmk_worn_sked.p3d";
         };
     };
 };
