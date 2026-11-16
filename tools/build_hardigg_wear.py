@@ -32,9 +32,9 @@ EXTRA_TAPE = {
 }
 # Earlier markings, slightly misregistered beneath the current lid stencils.
 PREVIOUS_PAINT = {
-    3: ("SURG", (398, 803), 208, -3, .77),
-    6: ("SALINE", (600, 791), 138, -2, .69),
-    8: ("PLASMA", (557, 856), 148, -5, .64),
+    3: ("SURG", (398, 803), 208, -3, .41),
+    6: ("SALINE", (600, 791), 138, -2, .36),
+    8: ("PLASMA", (557, 856), 148, -5, .34),
 }
 
 
