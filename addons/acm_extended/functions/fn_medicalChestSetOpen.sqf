@@ -4,7 +4,6 @@ if (!isServer || {is3DEN} || {isRemoteExecuted && {_initial}}) exitWith {};
 private _cabinet = _chest getVariable ["ACME_medicalChestCabinet", objNull];
 private _cargo = _chest getVariable ["ACME_medicalChestCargo", objNull];
 private _lid = _chest getVariable ["ACME_medicalChestLid", objNull];
-private _marking = _chest getVariable ["ACME_medicalChestLidMarking", objNull];
 private _restPose = _chest getVariable ["ACME_medicalChestLidRest", []];
 private _seatPose = _chest getVariable ["ACME_medicalChestLidSeat", []];
 
@@ -16,8 +15,6 @@ if (!_opening && {_initial}) exitWith {
     _chest hideObjectGlobal false;
     deleteVehicle _cabinet;
     deleteVehicle _lid;
-    deleteVehicle _marking;
-    _chest setVariable ["ACME_medicalChestLidMarking", [_chest, _chest, true] call ACME_fnc_medicalChestLidMarking];
     _chest setVariable ["ACME_medicalChestCabinet", objNull, true];
     _chest setVariable ["ACME_medicalChestLid", objNull];
     _chest setVariable ["ACME_medicalChestLidRest", []];
@@ -28,14 +25,12 @@ if (!_opening && {_initial}) exitWith {
 };
 
 if (_opening) then {
-    private _class = if (_initial) then {"ACME_MedicalChest4Drawers"} else {
-        selectRandom ["ACME_MedicalChest4Drawers", "ACME_MedicalChest7Drawers"]
-    };
+    private _class = "ACME_MedicalChest8Drawers";
     _cabinet = createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"];
     if (isNull _cabinet) exitWith {};
-    private _cabinetPose = [_cabinet, _base, _heading, "cabinet", [0, 0, 1], _chest, false] call ACME_fnc_medicalChestPlace;
-    _seatPose = [_chest, _cabinetPose] call ACME_fnc_medicalChestLidSeat;
-    _lid = createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _seatPose select 0];
+    private _cabinetPose = [_cabinet, _base, _heading, "cabinet", [0, 0, 1], false] call ACME_fnc_medicalChestPlace;
+    _seatPose = [_cabinetPose] call ACME_fnc_medicalChestLidSeat;
+    _lid = createSimpleObject ["ACME_MedicalChestLid", _seatPose select 0];
     if (isNull _lid) exitWith {
         deleteVehicle _cabinet;
         _cabinet = objNull;
@@ -43,8 +38,8 @@ if (_opening) then {
     _cabinet allowDamage false;
     private _texture = (getObjectTextures _chest) param [0, ""];
     if (_texture != "") then {
-        _cabinet setObjectTextureGlobal ["camo_1", _texture];
-        _lid setObjectTextureGlobal ["camo_1", _texture];
+        _cabinet setObjectTextureGlobal ["camo", _texture];
+        _lid setObjectTextureGlobal ["camo", _texture];
     };
     _cabinet enableSimulationGlobal false;
     _cabinetPose params ["_cabinetPosition", "_cabinetDir", "_cabinetUp"];
@@ -58,22 +53,14 @@ if (_opening) then {
     [_cabinet, _drawerPlan, 0] call ACME_fnc_medicalChestDrawers;
     ([_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
     _seatPose params ["_seat", "_outward", "_lateral"];
-    private _coverHeading = (_outward select 0) atan2 (_outward select 1);
-    _restPose = [_lid, _side, _coverHeading, "lid", _normal, _chest, false] call ACME_fnc_medicalChestPlace;
-    private _faceY = ((_restPose select 1) vectorDotProduct (_restPose select 3)) > 0.5;
-    private _seatDir = [_lateral vectorMultiply -1, _outward] select _faceY;
-    private _seatUp = [_outward, _lateral] select _faceY;
-    _seatPose = [_seat, _seatDir, _seatUp, _outward, _lateral];
+    _restPose = [_lid, _side, _heading, "lid", _normal, false] call ACME_fnc_medicalChestPlace;
+    _seatPose = [_seat, _outward, [0, 0, 1], _outward, _lateral];
     ([_seatPose, _restPose] select _initial) params ["_position", "_dir", "_up"];
     _lid setVectorDirAndUp [_dir, _up];
     _lid setPosWorld _position;
-    deleteVehicle _marking;
-    _marking = [_lid, _chest, false] call ACME_fnc_medicalChestLidMarking;
-    diag_log format ["[ACME] Medical chest finish: %1, cabinet %2, lid %3, fitted marking %4", _texture,
+    diag_log format ["[ACME] Medical chest finish: %1, cabinet %2, lid %3", _texture,
         ((getObjectTextures _cabinet) param [0, ""]) isEqualTo _texture,
-        ((getObjectTextures _lid) param [0, ""]) isEqualTo _texture,
-        !isNull _marking];
-    _chest setVariable ["ACME_medicalChestLidMarking", _marking];
+        ((getObjectTextures _lid) param [0, ""]) isEqualTo _texture];
     _chest setVariable ["ACME_medicalChestLidRest", _restPose];
     _chest setVariable ["ACME_medicalChestLidSeat", _seatPose];
     _chest hideObjectGlobal true;
@@ -96,4 +83,4 @@ playSound3D [format ["acm_extended\sound\%1.ogg", _sound], objNull, false, getPo
 if (isNull _lid) exitWith {
     [ACME_fnc_medicalChestSetOpen, [_chest, false, _revision, true]] call CBA_fnc_execNextFrame;
 };
-[_chest, _cabinet, _lid, _marking, _cargo, _actor, _revision, _opening, _seatPose, _restPose] call ACME_fnc_medicalChestLidMotion;
+[_chest, _cabinet, _lid, _cargo, _actor, _revision, _opening, _seatPose, _restPose] call ACME_fnc_medicalChestLidMotion;

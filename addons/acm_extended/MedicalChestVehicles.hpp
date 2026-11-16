@@ -32,13 +32,33 @@
         }
 
 #define ACME_CHEST_TEXTURE_PATH(PATH) #PATH
-#define ACME_CHEST_TEXTURE(NUMBER) ACME_CHEST_TEXTURE_PATH(\acm_extended\data\medical_chest\variants\chest_##NUMBER##_baked_co.paa)
+#define ACME_CHEST_TEXTURE(NUMBER) ACME_CHEST_TEXTURE_PATH(\acm_extended\data\medical_chest\hardigg\case_##NUMBER##_co.paa)
+#define ACME_CHEST_DRAWER(NUMBER) class drawer_##NUMBER {source = "user"; animPeriod = 0.9; initPhase = 0;}
+#define ACME_CHEST_LATCH(NUMBER) class latch_##NUMBER {source = "user"; animPeriod = 1.4; initPhase = 1;}
 
-    class Land_PortableCabinet_01_closed_olive_F;
-    class Land_PortableCabinet_01_4drawers_olive_F;
-    class Land_PortableCabinet_01_7drawers_olive_F;
+    class ACME_MedicalChestVisual: Box_NATO_Ammo_F {
+        scope = 0;
+        scopeCurator = 0;
+        maximumLoad = 0;
+        transportMaxWeapons = 0;
+        transportMaxMagazines = 0;
+        transportMaxBackpacks = 0;
+        forceSupply = 0;
+        showWeaponCargo = 0;
+        supplyRadius = 0;
+        hiddenSelections[] = {"camo"};
+        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0)};
+        ace_dragging_canDrag = 0;
+        ace_dragging_canCarry = 0;
+        ace_cargo_canLoad = 0;
+        class TransportWeapons {};
+        class TransportMagazines {};
+        class TransportItems {};
+        class TransportBackpacks {};
+    };
 
-    class ACME_MedicalChest: Land_PortableCabinet_01_closed_olive_F {
+    class ACME_MedicalChest: ACME_MedicalChestVisual {
+        model = "\acm_extended\data\medical_chest\hardigg\medchest.p3d";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -82,9 +102,8 @@
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_08,8,"Medical Chest 08 (BLOOD)","blood");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_09,9,"Medical Chest 09 (Black Cross)","");
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_10,10,"Medical Chest 10 (Red Cross)","");
+    ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_11,11,"Medical Chest 11 (Black Lid)","");
 #undef ACME_MEDICAL_CHEST_RETEXTURE
-#undef ACME_CHEST_TEXTURE
-#undef ACME_CHEST_TEXTURE_PATH
 
     // An invisible model provides a live native Gear container inside the chest.
     class ACME_MedicalChestCargo: Box_NATO_Ammo_F {
@@ -112,17 +131,29 @@
         maximumLoad = 20000;
     };
 
-#define ACME_MEDICAL_CHEST_OPEN_VARIANT(NAME, BASE) \
-    class NAME: BASE { \
-        scope = 1; \
-        scopeCurator = 0; \
-        displayName = "Medical Chest"; \
-        ace_cargo_canLoad = 0; \
-        ace_dragging_canDrag = 0; \
-        ace_dragging_canCarry = 0; \
-        ACME_MEDICAL_CHEST_ACTIONS(ACME_CloseMedicalChest,"Close Medical Chest","[_target,_player,false] call ACME_fnc_medicalChestCanUse","[_target,_player,false] call ACME_fnc_medicalChestUse"); \
-    }
-    ACME_MEDICAL_CHEST_OPEN_VARIANT(ACME_MedicalChest4Drawers,Land_PortableCabinet_01_4drawers_olive_F);
-    ACME_MEDICAL_CHEST_OPEN_VARIANT(ACME_MedicalChest7Drawers,Land_PortableCabinet_01_7drawers_olive_F);
-#undef ACME_MEDICAL_CHEST_OPEN_VARIANT
+    class ACME_MedicalChest8Drawers: ACME_MedicalChestVisual {
+        scope = 1;
+        displayName = "Medical Chest";
+        model = "\acm_extended\data\medical_chest\hardigg\medchest_open.p3d";
+        class AnimationSources {
+            ACME_CHEST_DRAWER(1); ACME_CHEST_DRAWER(2); ACME_CHEST_DRAWER(3); ACME_CHEST_DRAWER(4);
+            ACME_CHEST_DRAWER(5); ACME_CHEST_DRAWER(6); ACME_CHEST_DRAWER(7); ACME_CHEST_DRAWER(8);
+            ACME_CHEST_LATCH(1); ACME_CHEST_LATCH(2); ACME_CHEST_LATCH(3); ACME_CHEST_LATCH(4);
+            ACME_CHEST_LATCH(5); ACME_CHEST_LATCH(6); ACME_CHEST_LATCH(7); ACME_CHEST_LATCH(8);
+        };
+        ACME_MEDICAL_CHEST_ACTIONS(ACME_CloseMedicalChest,"Close Medical Chest","[_target,_player,false] call ACME_fnc_medicalChestCanUse","[_target,_player,false] call ACME_fnc_medicalChestUse");
+    };
+
+    class ACME_MedicalChest4Drawers: ACME_MedicalChest8Drawers {};
+    class ACME_MedicalChest7Drawers: ACME_MedicalChest8Drawers {};
+
+    class ACME_MedicalChestLid: ACME_MedicalChestVisual {
+        scope = 1;
+        model = "\acm_extended\data\medical_chest\hardigg\hardigg_lid.p3d";
+    };
+
+#undef ACME_CHEST_LATCH
+#undef ACME_CHEST_DRAWER
+#undef ACME_CHEST_TEXTURE
+#undef ACME_CHEST_TEXTURE_PATH
 #undef ACME_MEDICAL_CHEST_ACTIONS

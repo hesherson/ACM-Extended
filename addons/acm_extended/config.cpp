@@ -536,7 +536,7 @@ class CfgPatches {
             "ACME_ModuleInflictTBI", "ACME_ModuleClearTBI", "ACME_ModuleInsertIV",
             "ACME_ModuleInflictEdema", "ACME_ModuleClearEdema",
             "ACME_MedicalChest_01", "ACME_MedicalChest_02", "ACME_MedicalChest_03", "ACME_MedicalChest_04", "ACME_MedicalChest_05",
-            "ACME_MedicalChest_06", "ACME_MedicalChest_07", "ACME_MedicalChest_08", "ACME_MedicalChest_09", "ACME_MedicalChest_10",
+            "ACME_MedicalChest_06", "ACME_MedicalChest_07", "ACME_MedicalChest_08", "ACME_MedicalChest_09", "ACME_MedicalChest_10", "ACME_MedicalChest_11",
             "ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"};
         weapons[] = {
             "ACME_HTSBag", "ACME_MagnesiumBag", "ACME_MannitolBag",
@@ -2328,7 +2328,6 @@ class CfgFunctions {
             class medicalChestDrawers {};
             class medicalChestLidSeat {};
             class medicalChestLidMotion {};
-            class medicalChestLidMarking {};
             class medicalChestView {};
             class medicalChestDrawerTick {};
             class medicalChestEndViewing {};

@@ -24,11 +24,8 @@ _chest addEventHandler ["Deleted", {
     {
         private _object = _chest getVariable [_x, objNull];
         if (!isNull _object) then {deleteVehicle _object;};
-    } forEach ["ACME_medicalChestCabinet", "ACME_medicalChestLid", "ACME_medicalChestLidMarking", "ACME_medicalChestCargo"];
+    } forEach ["ACME_medicalChestCabinet", "ACME_medicalChestLid", "ACME_medicalChestCargo"];
 }];
 if (_chest getVariable ["ACME_medicalChestStartOpen", false]) then {
     [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
-};
-if !((_chest getVariable "ACME_medicalChestState") select 1) then {
-    _chest setVariable ["ACME_medicalChestLidMarking", [_chest, _chest, true] call ACME_fnc_medicalChestLidMarking];
 };

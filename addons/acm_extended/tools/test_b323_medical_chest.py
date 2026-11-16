@@ -15,8 +15,6 @@ def request_fixture():
         "isMultiplayer": "false",
         "_lid setVectorDirAndUp [_dir, _up];": "_lid setVariable ['fixtureAxes', [_dir, _up]];",
         "_lid setPosWorld _position;": "_lid setVariable ['fixturePosition', _position];",
-        "_marking setVectorDirAndUp [_dir, _up];": "_marking setVariable ['fixtureAxes', [_dir, _up]];",
-        "_marking setPosWorld _position;": "_marking setVariable ['fixturePosition', _position];",
         "typeOf _cabinet": "'fixture cabinet'",
     }.items():
         assert engine in motion, engine
@@ -34,9 +32,7 @@ def request_fixture():
     }.items():
         view = view.replace(engine, stand_in)
         drawer_tick = drawer_tick.replace(engine, stand_in)
-    lid_base = adapt(read("medicalChestLidBase")).replace(
-        "0 boundingBoxReal _chest", "[[-.423,-.170,-.266],[.421,.163,.266]]"
-    )
+    lid_base = adapt(read("medicalChestLidBase"))
     replacements = {
         'isRemoteExecuted': '_remote',
         'is3DEN': '_eden',
@@ -46,14 +42,14 @@ def request_fixture():
         '_chest isKindOf "ACME_MedicalChest"': '_chest getVariable ["fixtureChest", false]',
         '_actor distance _target': '_distance',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
-        'createSimpleObject ["Land_PortableCabinet_01_lid_olive_F", _seatPose select 0]':
-            '(["Land_PortableCabinet_01_lid_olive_F"] call _spawn)',
+        'createSimpleObject ["ACME_MedicalChestLid", _seatPose select 0]':
+            '(["ACME_MedicalChestLid"] call _spawn)',
         '    _cabinet allowDamage false;': '',
         'getObjectTextures _chest': '[_chest getVariable "fixtureTexture"]',
         'getObjectTextures _cabinet': '[_cabinet getVariable "fixtureTexture"]',
         'getObjectTextures _lid': '[_lid getVariable "fixtureTexture"]',
-        '_cabinet setObjectTextureGlobal ["camo_1", _texture];': '_cabinet setVariable ["fixtureTexture", _texture];',
-        '_lid setObjectTextureGlobal ["camo_1", _texture];': '_lid setVariable ["fixtureTexture", _texture];',
+        '_cabinet setObjectTextureGlobal ["camo", _texture];': '_cabinet setVariable ["fixtureTexture", _texture];',
+        '_lid setObjectTextureGlobal ["camo", _texture];': '_lid setVariable ["fixtureTexture", _texture];',
         '    _cabinet enableSimulationGlobal false;': '    _cabinet setVariable ["fixtureFrozen", true];',
         '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
         '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
@@ -92,7 +88,6 @@ def request_fixture():
         private _cargo = missionNamespace;
         private _created = [];
         private _deleted = [];
-        private _marked = [];
         private _audio = [];
         private _placed = [];
         private _gearRequests = [];
@@ -117,37 +112,26 @@ def request_fixture():
         private _spawn = {
             params ["_class"];
             _created pushBack _class;
-            if (_class == "Land_PortableCabinet_01_lid_olive_F") exitWith {
+            if (_class == "ACME_MedicalChestLid") exitWith {
                 if (_failLid) then {objNull} else {parsingNamespace}
             };
             uiNamespace
         };
         _chest setVariable ["fixtureChest", true];
         _chest setVariable ["fixtureTexture", "fixture_body_co.paa"];
-        _chest setVariable ["ACME_medicalChestPlacement", [[20, 12, 0], 0]];
+        _chest setVariable ["ACME_medicalChestPlacement", [[20, 12, 0], 90]];
         _chest setVariable ["ACME_medicalChestState", [0, false]];
         _chest setVariable ["ACME_medicalChestCargo", _cargo];
         _cargo setVariable ["fixtureCargo", true];
         _cargo setVariable ["ACME_medicalChestAnchor", _chest];
         _cargo setVariable ["stock", ["ACM_IV_18g", "ACM_ACCUVAC"]];
-        private _fixtureLidFaceY = true;
         ACME_fnc_medicalChestPlace = {
             _placed pushBack _this;
-            private _restAxes = [[[-1,0,0],[0,0,1]], [[0,0,1],[1,0,0]]] select _fixtureLidFaceY;
-            [(_this select 1) vectorAdd [0,0,0.05], _restAxes select 0, _restAxes select 1, [0,0,1]]
+            [(_this select 1) vectorAdd [0,0,0.05], [0,0,1], [0,1,0], [0,0,1]]
         };
         ACME_fnc_medicalChestLidSeat = {[[20, 11.88, 0.43], [0,-1,0], [1,0,0]]};
         ACME_fnc_medicalChestDrawerPlan = { [["drawer"], [0.63], true]};
         ACME_fnc_medicalChestDrawers = {_drawers pushBack _this;};
-        ACME_fnc_medicalChestLidMarking = {
-            params ["_part", "_chest", "_closed"];
-            _marked pushBack [_part, _closed];
-            if (_closed) exitWith {missionNamespace};
-            private _marking = currentNamespace;
-            _marking setVariable ["fixturePosition", _part getVariable ["fixturePosition", []]];
-            _marking setVariable ["fixtureAxes", _part getVariable ["fixtureAxes", []]];
-            _marking
-        };
         CBA_fnc_addPerFrameHandler = {
             if (count (_this select 2) == 4) exitWith {_drawerMotion = _this; 31};
             _motion = _this;
@@ -169,7 +153,7 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [(_open getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture")
             && {(_lid getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture")},
             "cabinet or lid lost the closed chest's native albedo"] call _check;
-        [((_placed select 1 select 1) vectorDistance [20.82, 12, 0]) < .001 && {(_placed select 1 select 6) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
+        [((_placed select 1 select 1) vectorDistance [20.82, 12, 0]) < .001 && {(_placed select 1 select 5) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
         [(_open getVariable ["fixtureFrozen", false]) && {(_drawers select 0 select 2) == 0}, "cabinet was free to tip or drawers began open"] call _check;
@@ -178,7 +162,6 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         1.00 call _tickLid;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true] && {_hidden}, "opening did not publish the finished cabinet"] call _check;
         [_gearRequests isEqualTo [["ACME_medicalChestOpened", [_medic, _chest, _cargo, 1], _medic]], "open did not send exactly one Gear request to the initiating player"] call _check;
-        [_marked isEqualTo [[_lid, false]], "a cabinet body was given a separate marking"] call _check;
         _cargo setVariable ["stock", ["ACM_ACCUVAC", "ACE_tourniquet"]];
         [_open, _medic, false, 1] call _request;
         [_open, _medic, false, 1] call _request;
@@ -186,8 +169,6 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
             && {_events isEqualTo [["ACME_medicalChestClosing", [_cargo, 1]]]}, "closing swapped models or missed the Gear close signal"] call _check;
         1.00 call _tickLid;
         [(_chest getVariable "fixtureTexture") isEqualTo "fixture_body_co.paa", "closing changed the original finish"] call _check;
-        [_marked isEqualTo [[_lid, false], [_chest, true]] && {currentNamespace in _deleted},
-            "closing left the detached paint or omitted the fitted closed lid marking"] call _check;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [2,false] && {!_hidden}, "close left the chest open"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "old open replayed after the chest closed"] call _check;
@@ -229,17 +210,15 @@ def test_lid_only_request_and_inventory_request_offer_different_gear_behavior():
     ''')
 
 
-@pytest.mark.parametrize("face_y", [False, True])
-def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(face_y):
-    execute(request_fixture() + f'_fixtureLidFaceY = {str(face_y).lower()};' + r'''
+def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close():
+    execute(request_fixture() + r'''
         [_chest, _medic, true, 0] call _request;
         private _lid = _chest getVariable "ACME_medicalChestLid";
         private _cab = _chest getVariable "ACME_medicalChestCabinet";
-        private _marking = _chest getVariable "ACME_medicalChestLidMarking";
         private _start = _lid getVariable "fixturePosition";
-        private _upright = [[[-1,0,0],[0,-1,0]], [[0,-1,0],[1,0,0]]] select _fixtureLidFaceY;
-        private _flat = [[[-1,0,0],[0,0,1]], [[0,0,1],[1,0,0]]] select _fixtureLidFaceY;
-        private _faceIndex = [1,0] select _fixtureLidFaceY;
+        private _upright = [[0,-1,0],[0,0,1]];
+        private _flat = [[0,0,1],[0,1,0]];
+        private _faceIndex = 0;
         [abs ((_start select 1) - 11.88) < 0.001 && {(_lid getVariable "fixtureAxes") isEqualTo _upright},
             "the lid did not start seated"] call _check;
         private _sample = {
@@ -248,8 +227,6 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(fa
             private _axes = _lid getVariable "fixtureAxes";
             [(_lid getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture"),
                 "the lid lost its native paint during motion"] call _check;
-            [_pos isEqualTo (_marking getVariable "fixturePosition") && {_axes isEqualTo (_marking getVariable "fixtureAxes")},
-                "the fitted marking moved independently of the lid"] call _check;
             [_pos, _axes]
         };
         (0.10 call _sample) params ["_earlyPull", "_earlyAxes"];
@@ -292,39 +269,27 @@ def test_lid_clears_the_cabinet_before_turning_and_retraces_the_path_on_close(fa
     ''')
 
 
-@pytest.mark.parametrize("face_y", [False, True])
-@pytest.mark.parametrize("cabinet_bounds", [
-    "[[-.269,-.42175773,-.06175841],[.266,.42175987,.2130746]]",
-    "[[-.269,-.06175841,-.42175773],[.266,.2130746,.42175987]]",
-])
-def test_lid_pulls_away_from_the_drawers_and_lands_on_its_original_side(face_y, cabinet_bounds):
-    seat = adapt(read("medicalChestLidSeat")).replace("getPosWorld _chest", "_center")
-    base = adapt(read("medicalChestLidBase")).replace("0 boundingBoxReal _chest", "_closedBounds")
-    closed_bounds = ("[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y
-                     else "[[-.423,-.266,-.170],[.421,.266,.163]]")
-    execute(placement_fixture() + "private _seatLid = {" + seat + "}; private _lidBase = {" + base + "};" + rf"""
-        ACME_fnc_medicalChestGround = {{[_this select 0, [0, 0, 1]]}};
-        private _closedBounds = {closed_bounds};
-        private _bounds = {cabinet_bounds};
+def test_lid_starts_at_the_hardigg_seam_and_lands_on_the_original_side():
+    seat = adapt(read("medicalChestLidSeat"))
+    base = adapt(read("medicalChestLidBase"))
+    execute(placement_fixture() + "private _seatLid = {" + seat + "}; private _lidBase = {" + base + "};" + r'''
+        ACME_fnc_medicalChestGround = {[_this select 0, [0, 0, 1]]};
         private _anchor = [20, 12, 0];
-        private _center = _anchor vectorAdd [0, 0, .43];
-        {{
+        {
             private _heading = _x;
-            private _cabinetPose = [_medic, _anchor, _heading, "cabinet", [0,0,1], _patient, false] call _place;
-            ([_patient, _cabinetPose] call _seatLid) params ["_seat", "_outward", "_side"];
-            private _front = {("[sin _heading, cos _heading, 0]" if face_y else "[-cos _heading, sin _heading, 0]")};
-            private _expectedSide = {("[cos _heading, -sin _heading, 0]" if face_y else "[sin _heading, cos _heading, 0]")};
-            [(_outward vectorDotProduct _front) > .999 && {{abs (_outward select 2) < .0001}},
-                "first motion was not horizontally away from the drawer face"] call _check;
-            [abs (((_seat vectorDiff _center) vectorDotProduct _front) - .1222) < .0001,
-                "lid did not start at the drawer face"] call _check;
+            private _cabinet = [_medic, _anchor, _heading, "cabinet", [0,0,1], false] call _place;
+            ([_cabinet] call _seatLid) params ["_seat", "_outward", "_side"];
+            private _front = [-cos _heading, sin _heading, 0];
+            private _lateral = [sin _heading, cos _heading, 0];
+            [(_outward vectorDistance _front) < .0001 && {(_side vectorDistance _lateral) < .0001},
+                "pull or lateral axis rotated away from the new cover"] call _check;
+            [(_seat vectorDistance (_anchor vectorAdd (_front vectorMultiply .1175) vectorAdd [0,0,.416])) < .0001,
+                "the detached model did not begin at its original origin"] call _check;
             private _landing = ([_anchor, _heading, _patient, _medic] call _lidBase) select 0;
-            private _displacement = _landing vectorDiff _anchor;
-            [(_displacement vectorDistance (_expectedSide vectorMultiply .82)) < .0001
-                && {{abs (_displacement vectorDotProduct _outward) < .0001}},
-                "landing left the original side or lost the sideways travel"] call _check;
-        }} forEach [0, 90, 172, 270];
-    """)
+            [(_landing vectorDistance (_anchor vectorAdd (_lateral vectorMultiply .82))) < .0001,
+                "lid landed outside the original side placement"] call _check;
+        } forEach [0, 90, 172, 270];
+    ''')
 
 
 def test_lid_rises_over_a_step_in_its_release_path():
@@ -517,7 +482,7 @@ def test_mission_start_open_and_later_close_share_the_same_cargo():
         _remote = false;
         [_chest, true, 0, true] call ACME_fnc_medicalChestSetOpen;
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [1,true], "initial lid state was closed"] call _check;
-        [(_created select 0) isEqualTo "ACME_MedicalChest4Drawers", "initial drawer layout differs from Eden"] call _check;
+        [(_created select 0) isEqualTo "ACME_MedicalChest8Drawers", "initial drawer layout differs from Eden"] call _check;
         [(_drawers select 0 select 2) == 0 && {_motion isEqualTo []}
             && {_audio isEqualTo []} && {_gearRequests isEqualTo []}, "initialization animated the drawers or played audio"] call _check;
         [(_cargo getVariable "fixtureAttached") isEqualTo (_chest getVariable "ACME_medicalChestCabinet"), "open chest did not expose the live cargo"] call _check;
@@ -541,8 +506,7 @@ def test_eden_preview_is_local_and_uses_the_saved_state_and_live_assets():
     assert 'property = "ACME_medicalChestStartOpen"' in chest
     assert 'getVariable ["ACME_medicalChestStartOpen", false]' in init
     assert 'createSimpleObject [_class, _base, true]' in eden
-    assert '_x setObjectTexture ["camo_1", _texture]' in eden
-    assert '[_lid, _entity, !_open, true, _marking] call ACME_fnc_medicalChestLidMarking' in eden
+    assert '_x setObjectTexture ["camo", _texture]' in eden
     assert 'set3DENAttribute' not in eden and 'create3DENEntity' not in eden
     assert 'ACME_fnc_medicalChestStock' not in eden
 
@@ -561,7 +525,6 @@ def placement_fixture():
     source = read("medicalChestPlace")
     for engine, fixture in (
         ("0 boundingBoxReal _object", "_bounds"),
-        ("0 boundingBoxReal _closed", "_closedBounds"),
         ("_object setVectorDirAndUp [_dir, _up];", "_orient = [_dir, _up];"),
         ("_object setPosWorld", "_worldPosition ="),
     ):
@@ -571,70 +534,28 @@ def placement_fixture():
 
 
 @pytest.mark.parametrize("heading", [0, 90, 228])
-@pytest.mark.parametrize("face_y", [True, False])
-def test_cabinet_is_right_side_up_with_the_same_bearing_as_the_previous_open_pose(heading, face_y):
-    closed = "[[-.423,-.170,-.266],[.421,.163,.266]]" if face_y else "[[-.423,-.266,-.170],[.421,.266,.163]]"
-    cabinet = "[[-.266,-.170,-.421],[.266,.09,.423]]" if face_y else "[[-.266,-.423,-.170],[.266,.421,.09]]"
+def test_hardigg_cabinet_and_closed_chest_use_the_same_pose(heading):
     execute(placement_fixture() + f'''
-        private _heading = {heading};
-        private _closedBounds = {closed};
-        private _bounds = _closedBounds;
-        private _orient = [];
-        private _worldPosition = [];
-        [_medic, [0,0,1], _heading, "closed"] call _place;
-        _orient params ["_closedY", "_closedZ"];
-        [((_closedY vectorCrossProduct _closedZ) select 2) > .999, "closed case no longer stands on the wheel end"] call _check;
-        _bounds = {cabinet};
-        [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
-        _orient params ["_modelY", "_modelZ"];
-        private _oldFront = {"_closedY" if face_y else "_closedZ"};
-        [(_orient select {1 if face_y else 0}) isEqualTo {"[0,0,1]" if face_y else "[0,0,-1]"}, "cabinet still stacks the drawers upside down"] call _check;
-        [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999, "uprighting the drawers changed their bearing"] call _check;
-        [abs ((_worldPosition select 2) - 1.429) < 0.0001, "cabinet used the upside-down support edge"] call _check;
-        _bounds = _closedBounds;
-        [_medic, [0,0,1], _heading, "cabinet", [0,0,1], _patient] call _place;
-        [((_orient select {0 if face_y else 1}) vectorDotProduct _oldFront) < -.999 && {{(((_orient select 0) vectorCrossProduct (_orient select 1)) select 2) < -.999}}, "long-X cabinet was not flipped around its drawer face"] call _check;
-        [abs ((_worldPosition select 2) - 1.429) < .0001, "long-X cabinet used the wrong support edge"] call _check;
+        private _base = [20,12,1];
+        private _closed = [_patient, _base, {heading}, "closed", [0,0,1], false] call _place;
+        private _open = [_medic, _base, {heading}, "cabinet", [0,0,1], false] call _place;
+        [_closed isEqualTo _open && {{(_open select 0) isEqualTo _base}} && {{(_open select 2) isEqualTo [0,0,1]}},
+            "opening moved or tilted the case"] call _check;
     ''')
 
 
-@pytest.mark.parametrize("heading", [0, 90, 228])
-@pytest.mark.parametrize("front_extent", [0.0483144, 0.06175841])
-def test_rear_of_open_stock_cabinet_stays_aligned_with_closed_shell(heading, front_extent):
-    execute(placement_fixture() + f'''
-        private _closedBounds = [[-.423,-.17004767,-.266],[.421,.16343084,.266]];
-        private _bounds = [[-.269,-.42175773,-{front_extent}],[.266,.42175987,.2130746]];
-        private _orient = [];
-        private _worldPosition = [];
-        private _origin = [20,12,1];
-        [_medic, _origin, {heading}, "cabinet", [0,0,1], _patient] call _place;
-        private _forward = [sin {heading}, cos {heading}, 0];
-        private _rearShift = (_worldPosition vectorDiff _origin) vectorDotProduct _forward;
-        [abs (_rearShift - .04302693) < .0001, "rear of the open cabinet slipped backwards"] call _check;
-        [(_orient select 1) vectorDotProduct _forward < -.999, "native drawer front turned away"] call _check;
-        [.1222 + .11 - .04076026 > .2130746 - _rearShift,
-            "the reversed pull did not clear the cabinet shell for the sideways pass"] call _check;
-        [.82 - .2652 > .269, "the lid has insufficient lateral clearance for the tip"] call _check;
-    ''')
-
-
-@pytest.mark.parametrize("bounds,face_axis", [
-    ("[[-.4145,-.0408,-.265],[.4151,.0413,.265]]", 0),
-    ("[[-.4145,-.265,-.0408],[.4151,.265,.0413]]", 1),
-])
 @pytest.mark.parametrize("normal", ["[0,0,1]", "[0.3,0.2,0.9327]"])
-def test_lid_paint_faces_up_and_the_inner_face_follows_the_support(bounds, face_axis, normal):
+def test_hardigg_lid_paint_faces_up_and_the_inner_face_follows_the_support(normal):
     execute(placement_fixture() + f'''
-        private _closedBounds = [[-.423,-.170,-.266],[.421,.163,.266]];
-        private _bounds = {bounds};
+        private _bounds = [[-.270,-.048,-.423],[.270,.048,.423]];
         private _orient = [];
         private _worldPosition = [];
         private _normal = vectorNormalized {normal};
         private _base = [20,12,1];
-        [_medic, _base, 73, "lid", _normal, _patient] call _place;
-        private _modelNormal = _orient select {face_axis};
-        [(_modelNormal vectorDotProduct _normal) > .999, "lid failed to show the painted face"] call _check;
-        [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .0488) < .0001, "lid failed to rest at the height of its inner face"] call _check;
+        [_medic, _base, 73, "lid", _normal] call _place;
+        [((_orient select 0) vectorDotProduct _normal) > .999, "lid failed to show the painted face"] call _check;
+        [abs (((_worldPosition vectorDiff _base) vectorDotProduct _normal) - .056) < .0001,
+            "lid failed to rest at the height of its inner face"] call _check;
         [(_worldPosition select [0,2]) isEqualTo (_base select [0,2]), "sloped placement pulled the lid out of its sideways path"] call _check;
     ''')
 
@@ -746,49 +667,53 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
     config = (addon / "config.cpp").read_text()
     vehicles = (addon / "MedicalChestVehicles.hpp").read_text()
     assert 'units[] = {"ACME_MedicalChest"' in config
-    assert 'class ACME_MedicalChest: Land_PortableCabinet_01_closed_olive_F' in vehicles
-    assert 'ACME_MedicalChest4Drawers,Land_PortableCabinet_01_4drawers_olive_F' in vehicles
-    assert 'ACME_MedicalChest7Drawers,Land_PortableCabinet_01_7drawers_olive_F' in vehicles
+    assert 'class ACME_MedicalChest: ACME_MedicalChestVisual' in vehicles
+    assert 'class ACME_MedicalChest8Drawers: ACME_MedicalChestVisual' in vehicles
+    assert "ACME_CHEST_DRAWER(8)" in vehicles
     assert "hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0)}" in vehicles
     assert "hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(NUMBER)}" in vehicles
-    folder = addon / "data/medical_chest/variants"
-    for number in range(11):
+    folder = addon / "data/medical_chest/hardigg"
+    for number in range(12):
         if number:
             name = f"ACME_MedicalChest_{number:02d}"
             assert f'"{name}"' in config
             assert f"ACME_MEDICAL_CHEST_RETEXTURE({name},{number}," in vehicles
-        assert (folder / f"chest_{number}_baked_co.paa").read_bytes().startswith(b"\x01\xff")
+        assert (folder / f"case_{number}_co.paa").read_bytes().startswith(b"\x01\xff")
     for name in ("open", "close"):
         assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")
 
 
-def test_fitted_lid_uvs_increase_toward_the_viewers_right_in_arma():
-    folder = ROOT / "addons/acm_extended/data/medical_chest/variants"
-    models = sorted(folder.glob("*_lid.p3d"))
-    assert len(models) == 22
-    for model in models:
-        data = model.read_bytes()
+def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
+    def outside_faces(path, origin):
+        data = path.read_bytes()
         _, _, points, normals, faces, _ = struct.unpack_from("<6I", data, 16)
         offset = 40 + 16 * points + 12 * normals
-        checked = 0
+        artwork = set()
         for _ in range(faces):
+            count = struct.unpack_from("<I", data, offset)[0]
             corners = []
-            for i in range(3):
+            for i in range(count):
                 vertex, _, u, v = struct.unpack_from("<IIff", data, offset + 4 + 16 * i)
-                x, y, z = struct.unpack_from("<3f", data, 40 + 16 * vertex)
-                assert y > (.082 if "_closed_lid" in model.stem else .005), model
-                corners.append((x, z, u, v))
-            offset = data.index(b"\0\0", offset + 72) + 2
-            # Every triangle samples the outer lid region of the original artwork.
-            assert 8 / 4096 <= min(corner[3] for corner in corners)
-            assert max(corner[3] for corner in corners) <= 1608 / 4096
-            assert 8 / 2048 <= min(corner[2] for corner in corners)
-            assert max(corner[2] for corner in corners) <= 1008 / 2048
-            left, *_, right = sorted(corners, key=lambda corner: -corner[1])
-            if left[1] - right[1] > .001:
-                assert left[2] < right[2], model
-                checked += 1
-            low, *_, high = sorted(corners, key=lambda corner: corner[0])
-            if high[0] - low[0] > .001:
-                assert low[3] > high[3], model
-        assert checked > 30, model
+                x, z, y = struct.unpack_from("<3f", data, 40 + 16 * vertex)
+                corners.append((x, y + origin[0], z + origin[1], u, v))
+            key = offset + 72
+            first = data.index(b"\0", key)
+            second = data.index(b"\0", first + 1)
+            texture = data[key:first]
+            offset = second + 1
+            if not texture.endswith(b"case_co.paa"):
+                continue
+            if not all(8 / 2048 < c[3] < 1008 / 2048 and 8 / 4096 < c[4] < 1608 / 4096 for c in corners):
+                continue
+            assert all(c[1] > .139 for c in corners)
+            for x, _, z, u, v in corners:
+                assert abs(u - (11 + ((.263-x)/.526)*994)/2048) < .001
+                assert abs(v - (11 + ((.832-z)/.832)*1594)/4096) < .001
+            artwork.add(tuple(tuple(round(value, 5) for value in corner) for corner in corners))
+        return artwork
+
+    assets = ROOT / "addons/acm_extended/data/medical_chest/hardigg"
+    closed = outside_faces(assets / "medchest.p3d", (0, 0))
+    detached = outside_faces(assets / "hardigg_lid.p3d", (.1175, .416))
+    assert len(closed) > 30 and closed == detached
+    assert not outside_faces(assets / "medchest_open.p3d", (0, 0))

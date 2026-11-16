@@ -1,6 +1,5 @@
-/* Position the detached lid on the closed chest's cover plane. */
-params ["_chest", "_cabinetPose"];
-private _outward = _cabinetPose select 3;
-private _side = [0, 0, 1] vectorCrossProduct _outward;
-// Offset of the detached lid's origin from the closed chest's origin.
-[getPosWorld _chest vectorAdd (_outward vectorMultiply 0.1222), _outward, _side]
+/* This origin is the center of the detached lid in the assembled Hardigg model. */
+params ["_cabinetPose"];
+_cabinetPose params ["_base", "", "", "_outward"];
+private _position = _base vectorAdd (_outward vectorMultiply 0.1175) vectorAdd [0, 0, 0.416];
+[_position, _outward, _outward vectorCrossProduct [0, 0, 1]]
