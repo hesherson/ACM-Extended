@@ -33,6 +33,7 @@
 
 #define ACME_CHEST_TEXTURE_PATH(PATH) #PATH
 #define ACME_CHEST_TEXTURE(NUMBER) ACME_CHEST_TEXTURE_PATH(\acm_extended\data\medical_chest\hardigg\case_##NUMBER##_co.paa)
+#define ACME_CHEST_ARTWORK(NUMBER) ACME_CHEST_TEXTURE_PATH(\acm_extended\data\medical_chest\hardigg\lid_artwork_##NUMBER##_ca.paa)
 #define ACME_CHEST_DRAWER(NUMBER) class drawer_##NUMBER {source = "user"; animPeriod = 0.9; initPhase = 0;}
 #define ACME_CHEST_LATCH(NUMBER) class latch_##NUMBER {source = "user"; animPeriod = 1.4; initPhase = 1;}
 
@@ -63,7 +64,8 @@
         scopeCurator = 2;
         author = "mavis";
         displayName = "Medical Chest (Full Stock)";
-        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0)};
+        hiddenSelections[] = {"camo", "lid_artwork"};
+        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0), ACME_CHEST_ARTWORK(0)};
         editorCategory = "EdCat_Supplies";
         editorSubcategory = "ACM_core_EditorCategory";
         ace_dragging_canDrag = 0;
@@ -89,7 +91,7 @@
         scopeCurator = 2; \
         displayName = LABEL; \
         acmeChestVariant = NUMBER; \
-        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(NUMBER)}; \
+        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(NUMBER), ACME_CHEST_ARTWORK(NUMBER)}; \
         acmeChestStock = STOCK; \
     }
     ACME_MEDICAL_CHEST_RETEXTURE(ACME_MedicalChest_01,1,"Medical Chest 01 (MED CHEST 1)","");
@@ -140,6 +142,7 @@
             ACME_CHEST_DRAWER(5); ACME_CHEST_DRAWER(6); ACME_CHEST_DRAWER(7); ACME_CHEST_DRAWER(8);
             ACME_CHEST_LATCH(1); ACME_CHEST_LATCH(2); ACME_CHEST_LATCH(3); ACME_CHEST_LATCH(4);
             ACME_CHEST_LATCH(5); ACME_CHEST_LATCH(6); ACME_CHEST_LATCH(7); ACME_CHEST_LATCH(8);
+            ACME_CHEST_LATCH(9); ACME_CHEST_LATCH(10);
         };
         ACME_MEDICAL_CHEST_ACTIONS(ACME_CloseMedicalChest,"Close Medical Chest","[_target,_player,false] call ACME_fnc_medicalChestCanUse","[_target,_player,false] call ACME_fnc_medicalChestUse");
     };
@@ -150,10 +153,13 @@
     class ACME_MedicalChestLid: ACME_MedicalChestVisual {
         scope = 1;
         model = "\acm_extended\data\medical_chest\hardigg\hardigg_lid.p3d";
+        hiddenSelections[] = {"camo", "lid_artwork"};
+        hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0), ACME_CHEST_ARTWORK(0)};
     };
 
 #undef ACME_CHEST_LATCH
 #undef ACME_CHEST_DRAWER
+#undef ACME_CHEST_ARTWORK
 #undef ACME_CHEST_TEXTURE
 #undef ACME_CHEST_TEXTURE_PATH
 #undef ACME_MEDICAL_CHEST_ACTIONS

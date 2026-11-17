@@ -45,11 +45,12 @@ def request_fixture():
         'createSimpleObject ["ACME_MedicalChestLid", _seatPose select 0]':
             '(["ACME_MedicalChestLid"] call _spawn)',
         '    _cabinet allowDamage false;': '',
-        'getObjectTextures _chest': '[_chest getVariable "fixtureTexture"]',
+        'getObjectTextures _chest': '[_chest getVariable "fixtureTexture", _chest getVariable "fixtureArtwork"]',
         'getObjectTextures _cabinet': '[_cabinet getVariable "fixtureTexture"]',
-        'getObjectTextures _lid': '[_lid getVariable "fixtureTexture"]',
+        'getObjectTextures _lid': '[_lid getVariable "fixtureTexture", _lid getVariable "fixtureArtwork"]',
         '_cabinet setObjectTextureGlobal ["camo", _texture];': '_cabinet setVariable ["fixtureTexture", _texture];',
         '_lid setObjectTextureGlobal ["camo", _texture];': '_lid setVariable ["fixtureTexture", _texture];',
+        '_lid setObjectTextureGlobal ["lid_artwork", _artwork];': '_lid setVariable ["fixtureArtwork", _artwork];',
         '    _cabinet enableSimulationGlobal false;': '    _cabinet setVariable ["fixtureFrozen", true];',
         '    _cargo attachTo [_cabinet, [0, 0, 0]];': '    _cargo setVariable ["fixtureAttached", _cabinet];',
         '    detach _cargo;': '    _cargo setVariable ["fixtureAttached", objNull];',
@@ -119,6 +120,7 @@ def request_fixture():
         };
         _chest setVariable ["fixtureChest", true];
         _chest setVariable ["fixtureTexture", "fixture_body_co.paa"];
+        _chest setVariable ["fixtureArtwork", "fixture_lid_ca.paa"];
         _chest setVariable ["ACME_medicalChestPlacement", [[20, 12, 0], 90]];
         _chest setVariable ["ACME_medicalChestState", [0, false]];
         _chest setVariable ["ACME_medicalChestCargo", _cargo];
@@ -153,6 +155,8 @@ def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests()
         [(_open getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture")
             && {(_lid getVariable "fixtureTexture") isEqualTo (_chest getVariable "fixtureTexture")},
             "cabinet or lid lost the closed chest's native albedo"] call _check;
+        [(_lid getVariable "fixtureArtwork") isEqualTo "fixture_lid_ca.paa"
+            && {isNil {_open getVariable "fixtureArtwork"}}, "modeled artwork did not stay with the lid"] call _check;
         [((_placed select 1 select 1) vectorDistance [20.82, 12, 0]) < .001 && {(_placed select 1 select 5) isEqualTo false}, "lid used the cabinet footprint or remained upright"] call _check;
         [_chest, _medic, true, 0] call _request;
         [count _created == 2, "concurrent open spawned extra visuals"] call _check;
@@ -671,7 +675,7 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
     assert 'class ACME_MedicalChest8Drawers: ACME_MedicalChestVisual' in vehicles
     assert "ACME_CHEST_DRAWER(8)" in vehicles
     assert "hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(0)}" in vehicles
-    assert "hiddenSelectionsTextures[] = {ACME_CHEST_TEXTURE(NUMBER)}" in vehicles
+    assert "{ACME_CHEST_TEXTURE(NUMBER), ACME_CHEST_ARTWORK(NUMBER)}" in vehicles
     folder = addon / "data/medical_chest/hardigg"
     for number in range(12):
         if number:
@@ -679,12 +683,13 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
             assert f'"{name}"' in config
             assert f"ACME_MEDICAL_CHEST_RETEXTURE({name},{number}," in vehicles
         assert (folder / f"case_{number}_co.paa").read_bytes().startswith(b"\x01\xff")
+        assert (folder / f"lid_artwork_{number}_ca.paa").read_bytes().startswith(b"\x05\xff")
     for name in ("open", "close"):
         assert (addon / "sound" / f"medical_chest_{name}.ogg").read_bytes().startswith(b"OggS")
 
 
 def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
-    def outside_faces(path, origin):
+    def outside_faces(path, origin, mesh_tape=False):
         data = path.read_bytes()
         _, _, points, normals, faces, _ = struct.unpack_from("<6I", data, 16)
         offset = 40 + 16 * points + 12 * normals
@@ -701,6 +706,10 @@ def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
             second = data.index(b"\0", first + 1)
             texture = data[key:first]
             offset = second + 1
+            if mesh_tape:
+                if texture.endswith(b"lid_artwork_0_ca.paa"):
+                    artwork.add(tuple(tuple(round(value, 5) for value in corner) for corner in corners))
+                continue
             if not texture.endswith(b"case_co.paa"):
                 continue
             if not all(8 / 2048 < c[3] < 1008 / 2048 and 8 / 4096 < c[4] < 1608 / 4096 for c in corners):
@@ -727,6 +736,56 @@ def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
         )
     assert any(rib_face(face) for face in closed)
     assert not outside_faces(assets / "medchest_open.p3d", (0, 0))
+    attached = outside_faces(assets / "medchest.p3d", (0, 0), True)
+    assert len(attached) > 400
+    detached = outside_faces(assets / "hardigg_lid.p3d", (.1175, .416), True)
+    # Points are quantized independently in the MLOD files and can differ at a rounding boundary.
+    assert len(attached - detached) < len(attached) * .02
+    assert len(detached - attached) < len(detached) * .02
+    assert not outside_faces(assets / "medchest_open.p3d", (0, 0), True)
+
+
+def test_hardigg_has_four_latches_centered_on_each_long_seam():
+    from collections import Counter
+
+    def points_in_memory(path):
+        data = path.read_bytes()
+        lod_count, = struct.unpack_from("<I", data, 8)
+        offset = 12
+        for _ in range(lod_count):
+            points, normals, faces = struct.unpack_from("<3I", data, offset + 12)
+            vertices = [struct.unpack_from("<3f", data, offset + 28 + 16*i) for i in range(points)]
+            offset += 28 + 16*points + 12*normals
+            for _ in range(faces):
+                offset = data.index(b"\0", offset + 72) + 1
+                offset = data.index(b"\0", offset) + 1
+            assert data[offset:offset+4] == b"TAGG"
+            offset += 4
+            stations = []
+            while True:
+                start = offset + 1
+                end = data.index(b"\0", start)
+                name = data[start:end]
+                length, = struct.unpack_from("<I", data, end + 1)
+                offset = end + 5
+                if name == b"#EndOfFile#":
+                    break
+                if name.startswith(b"latch") and name.endswith(b"_pos"):
+                    stations.extend(vertices[i] for i in range(points) if data[offset+i])
+                offset += length
+            offset += 4
+            if stations:
+                return stations
+        return []
+
+    assets = ROOT / "addons/acm_extended/data/medical_chest/hardigg"
+    for name in ("medchest", "medchest_open"):
+        stations = points_in_memory(assets / f"{name}.p3d")
+        assert len(stations) == 10
+        side = [(x, z, y) for x, z, y in stations if abs(x) > .25]
+        assert Counter(x > 0 for x, _, _ in side) == {True: 4, False: 4}
+        assert len({round(y, 4) for _, _, y in side}) == 1
+        assert len({round(z, 4) for _, z, _ in side}) == 4
 
 
 def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
@@ -734,6 +793,8 @@ def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
     image = pytest.importorskip("PIL.Image")
     monkeypatch.syspath_prepend(str(ROOT / "tools"))
     from build_hardigg_wear import LONG_RESIDUE, paint_finish
+    from build_hardigg_lid_artwork import artwork
+    from build_hardigg_abrasion import wear_tile
     from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE
 
     assert len(LONG_RESIDUE) == 4
@@ -741,8 +802,13 @@ def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
     assert len({layout[4] for layout in LONG_RESIDUE.values()}) == 4
     horizontal = [layout for layout in LONG_RESIDUE.values() if abs(layout[3]) < 8]
     assert len(horizontal) == 1 and horizontal[0][0][1] > 1300
+    assert all(artwork(i) for i in range(12))
+    assert sum(piece.over_card for piece in artwork(2)) == 4
 
     x, y, width, height = ATLAS_REGIONS["lid"]
+    _, dullness, _ = wear_tile("lid", (width, height))
+    assert dullness[65:105, 50:105].mean() > .60
+    assert dullness[800:875, 450:550].mean() < .12
     for index in range(12):
         overlay = image.new("RGBA", ATLAS_SIZE)
         paint_finish(overlay, index, ATLAS_REGIONS["lid"])

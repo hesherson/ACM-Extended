@@ -36,11 +36,12 @@ if (_opening) then {
         _cabinet = objNull;
     };
     _cabinet allowDamage false;
-    private _texture = (getObjectTextures _chest) param [0, ""];
+    (getObjectTextures _chest) params [["_texture", ""], ["_artwork", ""]];
     if (_texture != "") then {
         _cabinet setObjectTextureGlobal ["camo", _texture];
         _lid setObjectTextureGlobal ["camo", _texture];
     };
+    if (_artwork != "") then {_lid setObjectTextureGlobal ["lid_artwork", _artwork];};
     _cabinet enableSimulationGlobal false;
     _cabinetPose params ["_cabinetPosition", "_cabinetDir", "_cabinetUp"];
     _cabinet setVectorDirAndUp [_cabinetDir, _cabinetUp];
@@ -58,9 +59,11 @@ if (_opening) then {
     ([_seatPose, _restPose] select _initial) params ["_position", "_dir", "_up"];
     _lid setVectorDirAndUp [_dir, _up];
     _lid setPosWorld _position;
-    diag_log format ["[ACME] Medical chest finish: %1, cabinet %2, lid %3", _texture,
+    private _lidTextures = getObjectTextures _lid;
+    diag_log format ["[ACME] Medical chest finish: %1, cabinet %2, lid %3, artwork %4", _texture,
         ((getObjectTextures _cabinet) param [0, ""]) isEqualTo _texture,
-        ((getObjectTextures _lid) param [0, ""]) isEqualTo _texture];
+        (_lidTextures param [0, ""]) isEqualTo _texture,
+        (_lidTextures param [1, ""]) isEqualTo _artwork];
     _chest setVariable ["ACME_medicalChestLidRest", _restPose];
     _chest setVariable ["ACME_medicalChestLidSeat", _seatPose];
     _chest hideObjectGlobal true;

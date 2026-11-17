@@ -37,8 +37,8 @@ if (_action == "remove" || {!(_entity isKindOf "ACME_MedicalChest")}) exitWith {
 };
 
 private _open = (_entity get3DENAttribute "ACME_medicalChestStartOpen") param [0, false];
-private _texture = (getObjectTextures _entity) param [0, ""];
-private _look = [typeOf _entity, _open, _texture];
+(getObjectTextures _entity) params [["_texture", ""], ["_artwork", ""]];
+private _look = [typeOf _entity, _open, _texture, _artwork];
 (_previews getOrDefault [_id, []]) params [
     ["_owner", objNull], ["_oldLook", []], ["_parts", []], ["_transform", []]
 ];
@@ -66,6 +66,7 @@ if (_replace) then {
         _x setVariable ["ACME_medicalChestEdenVisual", true];
         if (_texture != "") then {_x setObjectTexture ["camo", _texture];};
     } forEach _parts;
+    if (_artwork != "") then {(_parts select ([0, 1] select _open)) setObjectTexture ["lid_artwork", _artwork];};
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {

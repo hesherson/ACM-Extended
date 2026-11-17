@@ -5,17 +5,22 @@ import importlib.util
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE, DATA
+from build_hardigg_abrasion import wear_maps
+from build_hardigg_lid_artwork import add_lid_artwork, artwork, artwork_texture
 from build_hardigg_wear import paint_finish
 
 PREFIX = r"acm_extended\data\medical_chest\hardigg" + "\\"
 REGIONS = {**ATLAS_REGIONS, "inside": (1320, 1632, 704, 704), "lid_trim": (1320, 2368, 704, 768)}
 LID_ORIGIN = np.array((0.0, .1175, .416))
-GOUGES = ((.14, .241), (-.15, .416), (.16, .559), (-.13, .603))
+GOUGES = ((.14, .241), (-.15, .416), (.16, .559), (-.13, .603),
+          (.178, .721), (-.177, .721), (.218, .779), (-.218, .779),
+          (.201, .752), (-.228, .726), (.173, .531), (-.177, .366))
 
 
 def model_io(source):
@@ -35,10 +40,10 @@ def carve_gouges(lod):
             if len(ids) != 3 or not set(ids) <= lod["sels"]["camo"]:
                 continue
             positions = np.array([lod["verts"][j] for j in ids])
-            if np.max(abs(positions[:, 1] - sign * .15)) > .00001:
+            if np.min(positions[:, 1] * sign) < .145:
                 continue
             normal = np.cross(positions[1] - positions[0], positions[2] - positions[0])
-            if normal[1] * sign > .006:
+            if normal[1] * sign > .000006:
                 candidates.append((index, positions))
         for target in GOUGES:
             if not candidates:
@@ -49,9 +54,27 @@ def carve_gouges(lod):
             center = points.mean(axis=0)
             face = lod["faces"][index]
             outer = face["v"]
-            rim = center + (points - center) * .23
-            bottom = center + (points - center) * .08
-            bottom[:, 1] -= sign * .00125
+            edges = (points[1:] - points[0]).T
+            solve = np.linalg.pinv(edges)
+            longest = max((points[(i + 1) % 3] - points[i] for i in range(3)), key=np.linalg.norm)
+            direction = longest / np.linalg.norm(longest)
+            offsets = points - center
+            along = (offsets @ direction)[:, None] * direction
+            # Keep the elongated cut inside its original triangle even on a thin bevel.
+            shape = along + (offsets - along) * .36
+            weight = shape @ solve.T
+            weight = np.column_stack((-weight.sum(axis=1), weight))
+            scale = min(.23, .018 / np.linalg.norm(longest), .25 / max(-weight.min(), 1e-6))
+            rim = center + shape * scale
+            bottom = center + (rim - center) * .38
+            # Interpolate both UVs and the original smooth normals on the outer lip.
+            cut_uv = dict(zip(outer, face["uv"]))
+            original_uv = np.asarray(face["uv"])
+            weights = (np.concatenate((rim, bottom)) - points[0]) @ solve.T
+            new_uv = original_uv[0] + weights @ (original_uv[1:] - original_uv[0])
+            plane = np.cross(edges[:, 0], edges[:, 1])
+            widths = np.linalg.norm(np.cross(rim[1:] - rim[0], direction), axis=1)
+            bottom -= min(.00064, np.max(widths) * .23) * plane / np.linalg.norm(plane)
             selected = []
             for ring in (rim, bottom):
                 ids = list(range(len(lod["verts"]), len(lod["verts"]) + 3))
@@ -61,21 +84,38 @@ def carve_gouges(lod):
                         vertices.update(ids)
                 selected.append(ids)
             inner, floor = selected
+            cut_uv.update(zip(inner + floor, map(tuple, new_uv)))
+            source_normals = np.asarray([lod["normals"][i] for i in face["n"]])
+            smooth = source_normals[0] + weights[:3] @ (source_normals[1:] - source_normals[0])
+            smooth /= np.linalg.norm(smooth, axis=1, keepdims=True)
+            lip_normal = len(lod["normals"])
+            lod["normals"].extend(map(tuple, smooth))
+            cut_normals = dict(zip(outer + inner, face["n"] + list(range(lip_normal, lip_normal + 3))))
             fragments = []
             for outside, inside in ((outer, inner), (inner, floor)):
                 for i in range(3):
                     j = (i + 1) % 3
-                    for triangle in ((outside[i], outside[j], inside[j]), (outside[i], inside[j], inside[i])):
-                        fragments.append(triangle)
+                    a, b, c, d = outside[i], outside[j], inside[j], inside[i]
+                    pa, pb, pc, pd = np.array([lod["verts"][k] for k in (a, b, c, d)])
+                    # On a narrow bevel, the first diagonal can cross the concave lip.
+                    if np.cross(pb-pa, pc-pa) @ plane > 0 and np.cross(pc-pa, pd-pa) @ plane > 0:
+                        fragments.extend(((a, b, c), (a, c, d)))
+                    else:
+                        fragments.extend(((a, b, d), (b, c, d)))
             fragments.append(tuple(floor))
             # Flat normals across the tiny cut make its edges catch the light.
             for i, ids in enumerate(fragments):
                 coords = np.array([lod["verts"][j] for j in ids])
                 normal = np.cross(coords[1] - coords[0], coords[2] - coords[0])
-                normal /= np.linalg.norm(normal)
-                ni = len(lod["normals"])
-                lod["normals"].append(tuple(normal))
-                fragment = {**face, "v": list(ids), "n": [ni] * 3}
+                if normal @ plane <= 0:
+                    raise ValueError("A gouge fragment inverted the shell surface")
+                if i < 6:
+                    normals = [cut_normals[j] for j in ids]
+                else:
+                    normal /= np.linalg.norm(normal)
+                    normals = [len(lod["normals"])] * 3
+                    lod["normals"].append(tuple(normal))
+                fragment = {**face, "v": list(ids), "n": normals, "uv": [cut_uv[j] for j in ids]}
                 if i == 0:
                     lod["faces"][index] = fragment
                 else:
@@ -127,7 +167,7 @@ def split_lod(lod, loose):
             faces.append({**f, "v": [index[i] for i in f["v"]]})
     sels = {}
     for name, points in lod["sels"].items():
-        if loose and name not in ("camo", "Component02"):
+        if loose and name not in ("camo", "lid_artwork", "Component02"):
             continue
         selected = {index[i] for i in points if i in index}
         if selected:
@@ -140,15 +180,19 @@ def split_lod(lod, loose):
             "sharp": [(index[a], index[b]) for a, b in lod["sharp"] if a in index and b in index]}
 
 
-def build_models(root, out):
+def build_models(root, out, work, variants):
     io = model_io(root / "acme_medchest_src/build/mc_p3d.py")
-    model = root / "acme_medchest"
+    model = work / "hardigg_source"
+    subprocess.run([sys.executable, str(Path(__file__).with_name("build_hardigg_hardware.py")),
+                    str(root), str(model)], check=True)
     closed = io.read_p3d(model / "medchest.p3d")
     for lod in closed:
         lod["props"]["autocenter"] = "0"
         if lod["res"] < 1000:
-            carve_gouges(lod)
             paint_uv(lod)
+            if lod["res"] == 1:
+                carve_gouges(lod)
+            add_lid_artwork(lod, variants)
         for face in lod["faces"]:
             for key in ("tex", "mat"):
                 if face[key]:
@@ -162,17 +206,24 @@ def build_models(root, out):
             raise ValueError(f"Empty LOD in {name}")
         print(name, len(check), "LODs;", sum(len(lod["faces"]) for lod in check), "faces")
     cfg = (model / "model.cfg").read_text()
+    cfg = cfg.replace('sections[] = {"camo"};', 'sections[] = {"camo", "lid_artwork"};', 1)
+    lid_class = cfg.index("    class hardigg_lid:")
+    cfg = cfg[:lid_class] + cfg[lid_class:].replace('sections[] = {"camo"};',
+                                                  'sections[] = {"camo", "lid_artwork"};', 1)
     i = cfg.rfind("};")
-    cfg = cfg[:i] + "    class medchest_open: medchest {};\n" + cfg[i:]
+    cfg = cfg[:i] + '    class medchest_open: medchest { sections[] = {"camo"}; };\n' + cfg[i:]
     (out / "model.cfg").write_text(cfg)
-    for path in (model / "data").glob("*.rvmat"):
-        (out / path.name).write_text(path.read_text().replace("acme_medchest\\data\\", PREFIX))
-    return loose[0]
+    for path in (root / "acme_medchest/data").glob("*.rvmat"):
+        material = path.read_text().replace("acme_medchest\\data\\", PREFIX)
+        if path.name == "case.rvmat":
+            material = material.replace("{0.5, 0.5, 0.5, 1}", "{0.28, 0.28, 0.28, 1}")
+            material = material.replace("specularPower = 85;", "specularPower = 34;")
+            material = material.replace("fresnel(1.3,7)", "fresnel(1.38,0.4)")
+        (out / path.name).write_text(material)
 
 
-def make_atlas(source, normal=False):
-    color = (128, 128, 255) if normal else (64, 69, 47)
-    canvas = Image.new("RGB", ATLAS_SIZE, color)
+def make_atlas(source):
+    canvas = Image.new("RGB", ATLAS_SIZE, (64, 69, 47))
     tile = source.convert("RGB")
     for x, y, w, h in REGIONS.values():
         canvas.paste(tile.resize((w, h), Image.Resampling.LANCZOS), (x, y))
@@ -209,7 +260,7 @@ def yellow_stencil():
     return patch
 
 
-def build_textures(root, out, work, hemtt):
+def build_textures(root, out, work, hemtt, variants):
     textures = root / "acme_medchest_src/textures_png"
     folder = DATA / "variants"
 
@@ -224,9 +275,10 @@ def build_textures(root, out, work, hemtt):
 
     for name in ("alu_co", "alu_smdi", "black_co", "detail_co"):
         convert(textures / (name + ".png"), out / (name + ".paa"))
-    for name in ("case_nohq", "case_smdi"):
-        with Image.open(textures / (name + ".png")) as image:
-            export(make_atlas(image, normal=name.endswith("nohq")), name)
+    with Image.open(textures / "case_nohq.png") as image:
+        specular, normal, finish = wear_maps(REGIONS, ATLAS_SIZE, image)
+    export(specular, "case_smdi")
+    export(normal, "case_nohq")
     with Image.open(textures / "case_co.png") as source:
         olive = make_atlas(source)
     for index in range(12):
@@ -246,9 +298,11 @@ def build_textures(root, out, work, hemtt):
             convert(texture, png)
             with Image.open(png) as image:
                 overlay = image.convert("RGBA")
+        base.paste(finish, mask=finish.getchannel("A"))
         paint_finish(overlay, index, REGIONS["lid"])
         base.paste(overlay, mask=overlay.getchannel("A"))
         export(base, f"case_{index}_co")
+        export(artwork_texture(variants[index]), f"lid_artwork_{index}_ca")
     shutil.copyfile(out / "case_0_co.paa", out / "case_co.paa")
 
 
@@ -261,8 +315,9 @@ def main():
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     args.work.mkdir(parents=True, exist_ok=True)
-    build_models(args.source, args.output)
-    build_textures(args.source, args.output, args.work, args.hemtt)
+    variants = [artwork(index) for index in range(12)]
+    build_models(args.source.resolve(), args.output, args.work, variants)
+    build_textures(args.source, args.output, args.work, args.hemtt, variants)
 
 
 if __name__ == "__main__":

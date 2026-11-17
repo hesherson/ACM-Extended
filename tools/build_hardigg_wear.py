@@ -1,5 +1,4 @@
-"""Bake surface wear, damaged tape and a folded stock card onto the Hardigg UV atlas."""
-import math
+"""Author the Hardigg lid markings and the material art for modeled tape."""
 from pathlib import Path
 import random
 
@@ -45,71 +44,24 @@ def make_adhesive_visible(layer, opacity=1.0):
     return warmed
 
 
-def worn_tape(length, width, rng, color, damage):
-    """A fabric strip with a crumpled surface and an irregular torn or folded end."""
-    pad = 15
-    size = length + 2 * pad, width + 2 * pad
-    mask = Image.new("L", size)
-    edges = list(range(0, length, 6)) + [length]
-    top = [(pad + x, pad + round(math.sin(x / 24) * 2) + rng.randint(-3, 3)) for x in edges]
-    bottom = [(pad + x, pad + width + round(math.sin(x / 31) * 3) + rng.randint(-3, 3))
-              for x in reversed(edges)]
-    far_edge = [(pad + length + rng.randint(-6, 4), pad + y) for y in range(5, width, 5)]
-    near_edge = [(pad + rng.randint(-4, 4), pad + y) for y in range(width - 3, 3, -5)]
-    draw = ImageDraw.Draw(mask)
-    draw.polygon(top + far_edge + bottom + near_edge, fill=250)
-
-    if damage == "split":
-        # An exposed center channel narrows to a point inside the adhered strip.
-        y = pad + width * .5
-        tip = pad + length * .55
-        draw.polygon([(pad - 7, y - 8), (pad + length * .12, y - 10), (pad + length * .28, y - 4),
-                      (tip, y + 3), (pad + length * .30, y + 5), (pad + length * .13, y + 7),
-                      (pad - 7, y + 9)], fill=0)
-        draw.line([(pad + length * .13, y + 8), (pad + length * .29, y + 6), (tip, y + 3)], fill=113, width=2)
-    elif damage == "fold":
-        draw.polygon([(pad + length - 37, pad - 6), (pad + length + 12, pad - 6),
-                      (pad + length + 12, pad + width * .75)], fill=0)
-
-    yy, xx = np.indices((size[1], size[0]), dtype=np.float32)
+def tape_material(length, width, rng, color, label):
+    """The fabric coloring. The outline, folds and tears are built into the mesh."""
+    size = length, width
+    yy, xx = np.indices((width, length))
     cloth = (np.asarray(noise(size, 12, rng), dtype=np.float32) - 128) * .16
-    cloth += (np.asarray(noise(size, 2, rng), dtype=np.float32) - 128) * .07
+    cloth += (np.asarray(noise(size, 2, rng), dtype=np.float32) - 128) * .09
     cloth += (xx % 5 == 1) * 3.8 + (yy % 4 == 0) * 2.4
-    for _ in range(7):
-        anchor = rng.uniform(pad, pad + length)
-        slope = rng.uniform(-1.2, 1.2)
-        wrinkle = xx - anchor - slope * (yy-pad-width/2) + np.sin(yy/7) * 2
-        width_px = rng.uniform(1.8, 5)
-        cloth += np.exp(-((wrinkle - 2.4) / width_px)**2) * rng.uniform(13, 32)
-        cloth -= np.exp(-((wrinkle + 3.2) / width_px)**2) * rng.uniform(10, 25)
-    rgb = np.clip(np.asarray(color)[None, None, :] + cloth[:, :, None], 0, 255).astype(np.uint8)
-    tape = Image.fromarray(rgb).convert("RGBA")
-    tape.putalpha(mask)
-
-    edge_shade = Image.new("RGBA", size, (20, 18, 14))
-    offset = Image.new("L", size)
-    offset.paste(mask.filter(ImageFilter.GaussianBlur(2.4)), (2, 3))
-    edge_shade.putalpha(offset.point(lambda p: round(p * .59)))
-    edge_shade.alpha_composite(tape)
-    if damage in ("fold", "lift"):
-        draw = ImageDraw.Draw(edge_shade)
-        x = pad + length
-        y = pad + width
-        if damage == "fold":
-            draw.polygon([(x-39,pad+1),(x-15,pad+10),(x-8,pad+31),(x-43,pad+24)],
-                         fill=(132,125,104,241))
-            draw.line([(x-43,pad+24),(x-39,pad+1),(x-15,pad+10)], fill=(193,186,159,200), width=2)
-            draw.line([(x-43,pad+25),(x-8,pad+31)], fill=(29,28,23,210), width=3)
-        else:
-            draw.polygon([(x-35,y-5),(x-17,y-20),(x+3,y-16),(x-4,y+2),(x-26,y+6)],
-                         fill=(155,150,130,234))
-            draw.line([(x-35,y-5),(x-17,y-20),(x+3,y-16)], fill=(222,214,191,225), width=2)
-            draw.line([(x-28,y+7),(x-7,y+4),(x+1,y)], fill=(42,37,29,198), width=2)
-    return edge_shade
+    dirty_edges = np.exp(-np.minimum(yy, width - 1 - yy) / 5) * 12
+    rgb = np.clip(np.asarray(color) + (cloth - dirty_edges)[:, :, None], 0, 255)
+    tape = Image.fromarray(rgb.astype(np.uint8)).convert("RGBA")
+    if label:
+        stamp(tape, paint_marker(label, round(width * .48), (59, 55, 48), rng),
+              (length * .47, width * .52), 2)
+    return tape
 
 
-def inventory_card(rng):
-    """A printed field inventory folded into a sleeve with cloth tape on all four edges."""
+def inventory_card():
+    """A printed field inventory folded into a sleeve."""
     width, height = 490, 415
     sheet = Image.new("RGBA", (width + 76, height + 70))
     # The visible half shows the actual supplied form header and its first few inventory rows.
@@ -120,7 +72,6 @@ def inventory_card(rng):
     print_colors = ImageOps.colorize(form, (38, 43, 37), (212, 211, 188)).convert("RGBA")
 
     draw = ImageDraw.Draw(sheet)
-    draw.rounded_rectangle((32,31,32+width+12,31+height+13), radius=9, fill=(26,29,23,185))
     draw.rounded_rectangle((27,25,27+width+12,25+height+10), radius=8, fill=(178,183,164,248),
                            outline=(231,232,212,240), width=3)
     draw.polygon([(42,46),(width+25,42),(width+28,height+25),(47,height+28)], fill=(202,198,175,255))
@@ -141,15 +92,24 @@ def inventory_card(rng):
     light.line([(43,height+13),(width+23,height+13)], fill=(254,251,227,100), width=2)
     sheet.alpha_composite(gloss)
 
-    # Every side is independently taped. The tape overlaps both sleeve and bare lid.
-    for center, length, depth, angle, damage in (
-        ((275, 29), 460, 41, 1, "fold"),
-        ((275, height+34), 472, 42, -1, "split"),
-        ((33, 240), 361, 40, 90, "lift"),
-        ((width+33, 234), 378, 43, -89, "fold"),
-    ):
-        stamp(sheet, worn_tape(length, depth, rng, (127, 129, 119), damage), center, angle)
-    return sheet
+    return sheet.crop((27, 25, 27 + width + 12, 25 + height + 10))
+
+
+def original_tape(index):
+    black = DESIGNS[index - 1][8] if 0 < index <= len(DESIGNS) else ()
+    tapes = [(*strip, (47, 49, 46), "") for strip in black]
+    if index in WHITE_TAPE:
+        pos, length, width, angle, label = WHITE_TAPE[index]
+        tapes.append((pos, length, width, angle, (203, 198, 177), label))
+    return tapes
+
+
+def lid_tape(index):
+    tapes = original_tape(index)
+    if index in EXTRA_TAPE:
+        tapes.append((*EXTRA_TAPE[index], ""))
+    return [(*tape, ("fold", "lift", "split")[(index + i) % 3])
+            for i, tape in enumerate(tapes)]
 
 
 def paint_underneath(lid, index):
@@ -179,13 +139,7 @@ def paint_finish(overlay, index, lid_region):
     lid_x, lid_y, width, height = lid_region
     lid_bounds = (lid_x, lid_y, lid_x+width, lid_y+height)
     lid = overlay.crop(lid_bounds)
-    black_tape = DESIGNS[index-1][8] if 0 < index <= len(DESIGNS) else ()
-    white_tape = WHITE_TAPE.get(index)
-    tapes = [(pos, length, depth, angle, (47, 49, 46), "")
-             for pos, length, depth, angle in black_tape]
-    if white_tape:
-        pos, length, depth, angle, label = white_tape
-        tapes.append((pos, length, depth, angle, (203,198,177), label))
+    tapes = original_tape(index)
     if tapes:
         # Recover the existing wear under the old tape footprint before replacing it.
         restore = contact_wear("lid", lid.size, random.Random(32840 + index*173))
@@ -208,15 +162,4 @@ def paint_finish(overlay, index, lid_region):
         band = tape_residue(lid.size, [(center, length, depth, angle, .81)], 35690+index)
         lid.alpha_composite(make_adhesive_visible(band, opacity))
 
-    if index in EXTRA_TAPE:
-        tapes.append((*EXTRA_TAPE[index], ""))
-    for i, (pos, length, depth, angle, color, label) in enumerate(tapes):
-        damage = ("fold", "lift", "split")[(index+i) % 3]
-        tape = worn_tape(length, depth, rng, color, damage)
-        if label:
-            stamp(tape, paint_marker(label, round(depth*.48), (59,55,48), rng),
-                  (tape.width*.47, tape.height*.52), 2)
-        stamp(lid, tape, pos, angle)
-    if index == 2:
-        stamp(lid, inventory_card(rng), (528, 889), 2)
     overlay.paste(lid, lid_bounds[:2])
