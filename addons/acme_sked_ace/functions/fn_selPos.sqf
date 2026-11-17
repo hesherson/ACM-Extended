@@ -5,7 +5,8 @@
  * Arguments: 0: unit, 1: selection name. Returns: position.
  */
 params ["_unit", "_name"];
-private _p = _unit selectionPosition [_name, "FireGeometry", true];
-if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition [_name, "Memory", true];};
-if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition [_name, 0, true];};
+// The third element of this syntax is a return mode string, not a visual flag; the result is already animated.
+private _p = _unit selectionPosition [_name, "FireGeometry"];
+if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition [_name, "Memory"];};
+if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition _name;};
 _p

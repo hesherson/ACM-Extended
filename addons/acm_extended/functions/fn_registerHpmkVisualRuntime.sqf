@@ -140,8 +140,8 @@ if (hasInterface) then {
                 _visual hideObject true;
                 continue;
             };
-            private _pelvis = _patient modelToWorldVisualWorld (_patient selectionPosition ["pelvis", "FireGeometry", true]);
-            private _head = _patient modelToWorldVisualWorld (_patient selectionPosition ["head", "FireGeometry", true]);
+            private _pelvis = _patient modelToWorldVisualWorld (_patient selectionPosition ["pelvis", "FireGeometry"]);
+            private _head = _patient modelToWorldVisualWorld (_patient selectionPosition ["head", "FireGeometry"]);
             private _litter = _patient getVariable ["acme_sked_litter", objNull];
             private _up = if (isNull _litter) then {surfaceNormal getPosATL _patient} else {vectorUpVisual _litter};
             private _axis = _head vectorDiff _pelvis;
