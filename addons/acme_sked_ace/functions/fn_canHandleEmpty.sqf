@@ -7,5 +7,6 @@ params ["_player", "_obj"];
 alive _player
 && {isNull objectParent _player}
 && {isNull attachedTo _obj}
+&& {!(_obj getVariable ["acme_talon_busy", false])}
 && {isNull (_obj getVariable ["ace_common_owner", objNull])}
 && {isNull (_obj getVariable ["acme_sked_patient", objNull])}

@@ -16,10 +16,8 @@ class B28Regression(unittest.TestCase):
         for state in ('wrapped','exposed'):
             test_mobile_fallback_drops_once_and_clears_only_hpmk_state(state)
     def test_wrapped_blanket_is_local_simple_object(self):
-        # Historical ID retained. Patient-worn world blankets were deliberately disabled;
-        # only dropped anchors receive a client-local visual. Do not reintroduce an old visual.
-        from test_historical_state_cleanup import test_only_dropped_anchor_visuals_are_registered_and_pickup_remains_scoped
-        test_only_dropped_anchor_visuals_are_registered_and_pickup_remains_scoped()
+        from test_historical_state_cleanup import test_hpmk_visuals_are_local_and_pickup_remains_scoped
+        test_hpmk_visuals_are_local_and_pickup_remains_scoped()
     def test_obtunded_default_fallback_is_off(self):
         for n in ('obtundedTick','obtundedAuto','consciousnessBudget'):
             self.assertNotIn('getVariable ["ACME_sys_obtunded", true]',src(n))

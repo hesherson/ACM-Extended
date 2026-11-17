@@ -1,6 +1,6 @@
 // stage 2 of the HPMK: wrap the prepped kit, taking the state from prepped to wrapped. this is where passive
-// rewarming begins, because ACME_hpmk_on going true drives fn_hpmktick. wrapped casualties do not receive a
-// world blanket object; only a later dropped HPMK uses a collision-free visual anchor. the kit
+// rewarming begins, because ACME_hpmk_on going true drives fn_hpmktick and the client renders the shell.
+// Only a later dropped HPMK uses a shared pickup anchor. The kit
 // was already taken out at prep, so nothing is removed here.
 // passive external rewarming retains the body heat of the patient to let a stable patient drift their core temp
 // back up, and it does little for an unstable or non-perfusing patient, which is clinically correct, because that
@@ -35,8 +35,7 @@ if ((_patient getVariable ["ACME_hpmk_state", ""]) == "wrapped") exitWith {
     ["This patient is already wrapped in an HPMK.", 2, _medic] call ACME_fnc_netNotice;
 };
 
-// Kill any legacy attached/networked blanket anchor before committing the wrapped state. Current HPMKs use no
-// world object on the casualty, so stale state from an older build must never participate in collision physics.
+// Retire any old network anchor before committing the state for the collision-free local shell.
 ["ACME_hpmkKillBlanket", [_patient]] call CBA_fnc_serverEvent;
 
 [_patient, "wrapped", true, false] call ACME_fnc_hpmkStateCommit;

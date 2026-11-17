@@ -25,6 +25,7 @@ class CfgFunctions {
             class auditTransport {};
             class bearerLimits {};
             class patientRoot {};
+            class patientPose {};
             class preferredLitter {};
             class traceTransport {};
             class applyLocal {};
@@ -74,7 +75,10 @@ class CfgFunctions {
             class srvUnstrap {};
             class strapIn {};
             class strapNearest {};
+            class strapActions {};
             class takeHandle {};
+            class talonSteps {};
+            class talonTransition {};
             class unstrap {};
             class unstrapLitter {};
             class validCasualty {};
@@ -144,10 +148,11 @@ class CfgVehicles {
                 distance = 3;
                 condition = "true";
                 class acme_sked_strapNearest {
-                    displayName = "Strap casualty in";
+                    displayName = "Load casualty";
                     icon = "\acme_sked\data\ui\icon_sked_ca.paa";
                     condition = "[_player, _target] call acme_sked_fnc_canStrapNearest";
-                    statement = "[_player, _target] call acme_sked_fnc_strapNearest";
+                    statement = "";
+                    insertChildren = "[_target, _player] call acme_sked_fnc_strapActions";
                 };
                 class acme_sked_rollUp {
                     displayName = "Roll up SKED";
@@ -193,6 +198,18 @@ class CfgVehicles {
     // Self actions: lay out a SKED from the inventory; for a rescuer on a handle, lift, set down, let go.
     class Man;
     class CAManBase: Man {
+        class ACE_Actions {
+            class ACE_MainActions {
+                class acme_sked_loadAtHips {
+                    displayName = "Load into nearby SKED";
+                    selection = "pelvis";
+                    distance = 3.5;
+                    icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                    condition = "[_player, _target] call acme_sked_fnc_canStrapIn && {!isNull ([_target, true] call acme_sked_fnc_findLitter)}";
+                    statement = "[_player, [_target, true] call acme_sked_fnc_findLitter, _target] call acme_sked_fnc_strapNearest";
+                };
+            };
+        };
         class ACE_SelfActions {
             class ACE_Equipment {
                 class acme_sked_layOutItem {
@@ -241,7 +258,7 @@ class CfgVehicles {
 class ace_medical_treatment_actions {
     class BasicBandage;
     class ACME_SKED_StrapIn: BasicBandage {
-        displayName = "Strap into SKED";
+        displayName = "Load into nearby litter";
         displayNameProgress = "Packaging casualty in litter...";
         icon = "\acme_sked\data\ui\icon_sked_ca.paa";
         category = "advanced";

@@ -3,6 +3,28 @@ from test_menu_death_lifecycle import ROOT, adapt, execute
 SKED = ROOT / "addons/acme_sked_ace"
 
 
+def test_handle_claim_does_not_attach_or_drive_the_provider():
+    for fn in ("bearerLocal", "srvTakeHandle", "srvLift", "srvSetDown"):
+        source = (SKED / f"functions/fn_{fn}.sqf").read_text()
+        assert "_unit attachTo" not in source
+        assert "[_unit, _litter, \"follow\"" not in source
+    claim = (SKED / "functions/fn_bearerLocal.sqf").read_text()
+    assert '[_unit, "letGo"] call acme_sked_fnc_request' in claim
+
+
+def test_talon_steps_preserve_each_endpoint_and_handle_order():
+    import re
+
+    source = (SKED / "functions/fn_talonSteps.sqf").read_text()
+    fold, unfold = source.split("11.40]")
+    for mode, state, last in ((fold, 1, "fold"), (unfold, 0, "handles")):
+        steps = [(kind, float(phase)) for kind, phase in re.findall(r'\["(fold|handles)",\s*([\d.]+)', mode)]
+        assert len(steps) == (13 if state else 14)
+        assert steps[-1] == (last, state)
+        assert len([phase for kind, phase in steps if kind == "handles"]) == 4
+        assert [phase for kind, phase in steps if kind == "fold"][-1] == state
+
+
 def test_server_checks_actor_ownership_and_distance_before_strapping():
     source = (SKED / "functions/fn_request.sqf").read_text()
     replacements = {

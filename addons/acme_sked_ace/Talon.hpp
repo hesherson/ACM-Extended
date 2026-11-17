@@ -14,6 +14,10 @@
         ace_dragging_carryPosition[] = {0, 1.4, 0.8};
         ace_dragging_carryDirection = 0;
         ace_cargo_size = 2;
+        class AnimationSources {
+            class fold {source = "user"; animPeriod = 12; initPhase = 0;};
+            class handles {source = "user"; animPeriod = 4; initPhase = 0;};
+        };
         class ACE_Actions: ACE_Actions {
             class ACE_MainActions: ACE_MainActions {
                 displayName = "Talon II";

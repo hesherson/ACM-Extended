@@ -7,7 +7,8 @@
 params ["_unit"];
 !isNull _unit
 && {isNull objectParent _unit}
-&& {isNull attachedTo _unit}
+&& {isNull attachedTo _unit || {(_unit getVariable ["ACME_headElevated", false])
+    && {(attachedTo _unit) isEqualTo (_unit getVariable ["ACME_headElev_helper", objNull])}}}
 && {isNull (_unit getVariable ["acme_sked_litter", objNull])}
 && {!(_unit getVariable ["acme_sked_stowed", false])}
 && {isNull (_unit getVariable ["ace_common_owner", objNull])}

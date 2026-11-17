@@ -47,11 +47,11 @@ if (hasInterface) then {
 
 
 // HPMK blanket visuals, client-side.
-// Wrapped casualties deliberately receive no blanket world object at all. The HPMK remains a clinical/state
-// treatment only while it is on a patient. Dropped HPMKs retain their existing local visual and shared pickup anchor.
+// These display meshes never participate in gameplay physics or modify a patient's gear or position.
 if (hasInterface) then {
     ACME_hpmk_visuals = createHashMap;         // dropped anchor netId -> local simple object
-    ACME_hpmk_wrappedVisuals = createHashMap;  // retained inert for compatibility; patient visuals are disabled
+    ACME_hpmk_wrappedVisuals = createHashMap;
+    ACME_hpmk_nextVisualId = 0;
     [{
         private _class = missionNamespace getVariable ["ACME_hpmk_blanketClass", ""];
         private _feature = missionNamespace getVariable ["ACME_sys_hpmk", true];
@@ -94,4 +94,66 @@ if (hasInterface) then {
             };
         } forEach (keys ACME_hpmk_visuals);
     }, 1, []] call CBA_fnc_addPerFrameHandler;
+    [{
+        private _wanted = createHashMap;
+        if (missionNamespace getVariable ["ACME_sys_hpmk", true]) then {
+            {
+                private _state = _x getVariable ["ACME_hpmk_state", ""];
+                if (_state in ["wrapped", "exposed"] && {isNull objectParent _x}
+                    && {!(vest _x in ["ACME_HPMK_Worn", "ACME_HPMK_Worn_Sked"])}) then {
+                    private _id = _x getVariable ["ACME_hpmk_localVisualId", -1];
+                    if (_id < 0) then {
+                        _id = ACME_hpmk_nextVisualId;
+                        ACME_hpmk_nextVisualId = _id + 1;
+                        _x setVariable ["ACME_hpmk_localVisualId", _id];
+                    };
+                    _wanted set [_id, [_x, _state]];
+                };
+            } forEach (nearestObjects [positionCameraToWorld [0,0,0], ["CAManBase"], 55]);
+        };
+        {
+            (ACME_hpmk_wrappedVisuals get _x) params ["_patient", "_visual", "_state"];
+            if !((_wanted getOrDefault [_x, []]) isEqualTo [_patient, _state] && {!isNull _visual}) then {
+                deleteVehicle _visual;
+                ACME_hpmk_wrappedVisuals deleteAt _x;
+            };
+        } forEach (keys ACME_hpmk_wrappedVisuals);
+        {
+            if !(_x in ACME_hpmk_wrappedVisuals) then {
+                _y params ["_patient", "_state"];
+                private _path = ["acme_hpmk\hpmk_patient_wrapped.p3d", "acme_hpmk\hpmk_patient_exposed.p3d"]
+                    select (_state == "exposed");
+                private _visual = createSimpleObject [_path, getPosWorldVisual _patient, true];
+                if (!isNull _visual) then {
+                    _visual setPhysicsCollisionFlag false;
+                    _visual hideObject true;
+                    ACME_hpmk_wrappedVisuals set [_x, [_patient, _visual, _state]];
+                };
+            };
+        } forEach _wanted;
+    }, .75, []] call CBA_fnc_addPerFrameHandler;
+    [{
+        {
+            _y params ["_patient", "_visual", "_state"];
+            if (isNull _patient || {isNull _visual}) then {continue;};
+            if (!isNull objectParent _patient || {(_patient getVariable ["ACME_hpmk_state", ""]) != _state}) then {
+                _visual hideObject true;
+                continue;
+            };
+            private _pelvis = _patient modelToWorldVisualWorld (_patient selectionPosition ["pelvis", "FireGeometry", true]);
+            private _head = _patient modelToWorldVisualWorld (_patient selectionPosition ["head", "FireGeometry", true]);
+            private _litter = _patient getVariable ["acme_sked_litter", objNull];
+            private _up = if (isNull _litter) then {surfaceNormal getPosATL _patient} else {vectorUpVisual _litter};
+            private _axis = _head vectorDiff _pelvis;
+            private _flat = _axis vectorDiff (_up vectorMultiply (_axis vectorDotProduct _up));
+            if (vectorMagnitude _flat < .25) then {_visual hideObject true; continue;};
+            private _dir = vectorNormalized _flat;
+            private _position = (_pelvis vectorAdd (_dir vectorMultiply .035)) vectorDiff (_up vectorMultiply .105);
+            if (vectorDirVisual _visual distance _dir > .004 || {vectorUpVisual _visual distance _up > .004}) then {
+                _visual setVectorDirAndUp [_dir, _up];
+            };
+            if (getPosWorldVisual _visual distance _position > .004) then {_visual setPosWorld _position;};
+            if (isObjectHidden _visual) then {_visual hideObject false;};
+        } forEach ACME_hpmk_wrappedVisuals;
+    }, .05, []] call CBA_fnc_addPerFrameHandler;
 };

@@ -101,22 +101,21 @@ def test_client_cannot_execute_server_blanket_fallback():
     ''')
 
 
-def test_only_dropped_anchor_visuals_are_registered_and_pickup_remains_scoped():
+def test_hpmk_visuals_are_local_and_pickup_remains_scoped():
     text=(F/'fn_registerHpmkVisualRuntime.sqf').read_text()
     tokens=lex(text); identifiers={t.value for t in tokens if t.kind=='ident'}
-    assert text.count('createSimpleObject [')==1
+    assert text.count('createSimpleObject [')==2
     assert 'createSimpleObject [_model, [0,0,0], true]' in text
     assert 'getPosWorldVisual _anchor' in text
     assert '"ACME_hpmk_isBlanket", false' in text
     assert '"ACME_hpmk_dropped", false' in text
-    # The one-time server seed and tracking event legitimately name patients.
-    # The visual worker must still use dropped anchors only, with no patient scan.
     visual=text[text.index('ACME_hpmk_visuals = createHashMap;'):]
     visual_identifiers={t.value for t in lex(visual) if t.kind=='ident'}
-    assert '_patient' not in visual_identifiers and 'allUnits' not in visual_identifiers
+    assert 'allUnits' not in visual_identifiers
+    assert 'nearestObjects [positionCameraToWorld [0,0,0], ["CAManBase"], 55]' in visual
+    assert '_visual setPhysicsCollisionFlag false' in visual
     assert not any(t.value=='allUnits' for t in lex((F/'fn_hpmkBlanketTick.sqf').read_text()))
     assert 'attachTo' not in identifiers and 'createVehicle' not in identifiers
-    # No patient-follow loop is reinstated merely to meet B28's old expectation.
     assert 'ACME_hpmk_wrappedVisuals = createHashMap;' in text
 
 

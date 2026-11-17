@@ -25,13 +25,21 @@ private _id = [{
         };
     };
     if (!alive _patient) exitWith {};
-    private _anim = missionNamespace getVariable ["acme_sked_patientAnim", "unconsciousfaceup"];
+    private _anim = [_patient] call acme_sked_fnc_patientPose;
     if ((toLowerANSI animationState _patient) isEqualTo (toLowerANSI _anim)) exitWith {_patient setVariable ["acme_sked_poseMiss", 0]};
     private _miss = (_patient getVariable ["acme_sked_poseMiss", 0]) + 1;
     _patient setVariable ["acme_sked_poseMiss", _miss];
     if (_miss >= 3 && {CBA_missionTime > (_patient getVariable ["acme_sked_poseAt", -100]) + 10}) then {
         _patient setVariable ["acme_sked_poseAt", CBA_missionTime];
         [_patient, _anim, 2] call ace_common_fnc_doAnimation;
+        [{
+            params ["_patient", "_litter"];
+            if (local _patient && {!isNull _litter} && {isNull objectParent _patient}
+                && {!(_patient getVariable ["acme_sked_loading", false])}
+                && {(_patient getVariable ["acme_sked_litter", objNull]) isEqualTo _litter}) then {
+                [_patient, _litter] call acme_sked_fnc_align;
+            };
+        }, [_patient, _litter], .35] call CBA_fnc_waitAndExecute;
     };
 }, 1, [_patient]] call CBA_fnc_addPerFrameHandler;
 _patient setVariable ["acme_sked_guard", _id];

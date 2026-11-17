@@ -18,9 +18,7 @@ private _off = [
 private _eye = positionCameraToWorld [0, 0, 0];
 private _want = [];
 if (_show) then {
-    _want = (allUnits + allDeadMen) select {
-        (_x distance _eye) < _range && {"ACME_SKED_Item" in (items _x)}
-    };
+    _want = (nearestObjects [_eye, ["CAManBase"], _range]) select {"ACME_SKED_Item" in items _x};
 };
 // Take it off whoever no longer carries one (or has gone).
 private _shown = missionNamespace getVariable ["acme_sked_slung", []];

@@ -9,6 +9,7 @@
 params ["_rescuer", "_patient", "_open"];
 if (!isServer) exitWith {objNull};
 if (isNull _open || {!(_open isKindOf "ACME_SKED_Open")} || {!isNull attachedTo _open}
+    || {_open getVariable ["acme_talon_busy", false]}
     || {!isNull (_open getVariable ["ace_common_owner", objNull])} || {!([_patient] call acme_sked_fnc_validCasualty)}) exitWith {objNull};
 private _posASL = getPosASL _open;
 private _dir = getDir _open;

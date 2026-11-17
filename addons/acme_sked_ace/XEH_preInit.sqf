@@ -12,7 +12,7 @@
 [
     "acme_sked_patientAnim", "EDITBOX",
     ["Casualty pose", "Animation a strapped casualty is held in (lying on the back, arms at the sides)."],
-    ["ACM Extended", "SKED"], "unconsciousfaceup", 1
+    ["ACM Extended", "SKED"], "ACM_LyingState", 1
 ] call CBA_fnc_addSetting;
 [
     "acme_sked_liftHeight", "SLIDER",

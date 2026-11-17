@@ -64,6 +64,12 @@ class CfgVehicles {
         };
     };
 
+    // Some curator and mission item spawners pass the inventory classname to createVehicle.
+    class ACME_SKED_Item: ACME_SKED_Item_Ground {
+        scope = 1;
+        scopeCurator = 0;
+    };
+
     // Base for the three SKED objects. The ACE properties are read only when ACE is loaded.
     class ACME_SKED_Base: ThingX {
         scope = 0;

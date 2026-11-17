@@ -1,6 +1,5 @@
 /*
- * Server: give a rescuer the free handle nearest them. They stand at it, facing the head end, attached to
- * the SKED (done where they are local) until they lift, set down or let go. ACE drag of the SKED is off
+ * Server: reserve the free handle nearest the rescuer. ACE drag of the SKED is off
  * while anyone holds a handle.
  * Arguments: 0: rescuer, 1: SKED.
  */
@@ -15,7 +14,7 @@ private _best = -1;
 private _bestD = 1e9;
 {
     if (isNull (_bearers select _forEachIndex)) then {
-        private _d = _unit distance (_litter modelToWorld (_litter selectionPosition _x));
+        private _d = _unit distance (_litter modelToWorld (_litter selectionPosition [_x, "Memory"]));
         if (_d < _bestD) then {_bestD = _d; _best = _forEachIndex};
     };
 } forEach _slots;
@@ -25,5 +24,4 @@ _litter setVariable ["acme_sked_bearers", _bearers, true];
 _unit setVariable ["acme_sked_bearing", _litter, true];
 ["handle claimed", _litter, _unit, [_slots select _best]] call acme_sked_fnc_traceTransport;
 [_litter, false, nil, nil, nil, true] call ace_dragging_fnc_setDraggable;
-private _h = _litter selectionPosition (_slots select _best);
-[_unit, "bearerLocal", [_unit, _litter, "hold", _litter, [_h select 0, _h select 1, 0]]] call acme_sked_fnc_sendLocal;
+[_unit, "bearerLocal", [_unit, _litter, "hold"]] call acme_sked_fnc_sendLocal;

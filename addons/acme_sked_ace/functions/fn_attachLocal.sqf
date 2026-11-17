@@ -6,8 +6,13 @@
  */
 params ["_patient", "_litter"];
 if (!local _patient || {isNull _litter}) exitWith {};
+if ((_patient getVariable ["acme_sked_litter", objNull]) isNotEqualTo _litter) exitWith {};
+// Lower supported Semi-Fowler first, including its existing carrier custody and collision cleanup.
+if (_patient getVariable ["ACME_headElevated", false]) then {
+    ["ACME_headElev_transportDown", [_patient]] call CBA_fnc_localEvent;
+};
 if (alive _patient) then {
-    [_patient, missionNamespace getVariable ["acme_sked_patientAnim", "unconsciousfaceup"], 2] call ace_common_fnc_doAnimation;
+    [_patient, [_patient] call acme_sked_fnc_patientPose, 2] call ace_common_fnc_doAnimation;
 };
 [{
     params ["_patient", "_litter"];

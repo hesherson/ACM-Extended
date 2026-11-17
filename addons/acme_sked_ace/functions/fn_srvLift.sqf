@@ -10,27 +10,22 @@ if (!isServer || {isNull _litter} || {_litter getVariable ["acme_sked_lifted", f
 private _slots = getArray (configOf _litter >> "acmeLitterHandles");
 private _bearers = _litter getVariable ["acme_sked_bearers", []];
 private _i = _bearers find _lead;
-if (_i < 0 || {!((attachedTo _lead) isEqualTo _litter)}) exitWith {};
-if (({!isNull _x && {alive _x} && {!(_x getVariable ["ACE_isUnconscious", false])} && {(attachedTo _x) isEqualTo _litter}} count _bearers) < (([_litter] call acme_sked_fnc_bearerLimits) select 0)) exitWith {};
-private _h = _litter selectionPosition (_slots select _i);
+if (_i < 0 || {!([_lead] call acme_sked_fnc_canLift)}) exitWith {};
+private _h = _litter selectionPosition [_slots select _i, "Memory"];
+private _hold = _lead vectorWorldToModel (_litter vectorModelToWorld _h);
+private _facing = _lead vectorWorldToModel (vectorDir _litter);
+_facing set [2, 0];
 private _z = missionNamespace getVariable ["acme_sked_liftHeight", 0.55];
 private _mass = getMass _litter;
 if (_mass <= 1) then {_mass = _litter getVariable ["ace_dragging_originalMass", 7]};
 _litter setVariable ["acme_sked_mass", _mass, true];
-detach _lead;
 ["ace_common_setMass", [_litter, 1e-12]] call CBA_fnc_globalEvent;
-_litter attachTo [_lead, [-(_h select 0), -(_h select 1), _z]];
-["ace_common_setDir", [_litter, 0], _litter] call CBA_fnc_targetEvent;
+_litter attachTo [_lead, [-(_hold select 0), -(_hold select 1), _z]];
+_litter setVectorDirAndUp [vectorNormalized _facing, [0, 0, 1]];
 _litter setVariable ["acme_sked_lifted", true, true];
 _litter setVariable ["acme_sked_lead", _lead, true];
 ["lifted", _litter, _lead, _bearers] call acme_sked_fnc_traceTransport;
-[_lead, "bearerLocal", [_lead, _litter, "lead", objNull, []]] call acme_sked_fnc_sendLocal;
-{
-    if (!isNull _x && {!(_x isEqualTo _lead)}) then {
-        private _hi = _litter selectionPosition (_slots select _forEachIndex);
-        [_x, "bearerLocal", [_x, _litter, "follow", _lead, [(_hi select 0) - (_h select 0), (_hi select 1) - (_h select 1), 0]]] call acme_sked_fnc_sendLocal;
-    };
-} forEach _bearers;
+[_lead, "bearerLocal", [_lead, _litter, "lead"]] call acme_sked_fnc_sendLocal;
 private _patient = _litter getVariable ["acme_sked_patient", objNull];
 if (!isNull _patient) then {
     [{[_this select 0, "reattach", _this] call acme_sked_fnc_sendLocal}, [_patient, _litter], 0.4] call CBA_fnc_waitAndExecute;

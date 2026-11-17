@@ -21,3 +21,4 @@ if (alive _patient) then {
     [_patient, _anim, 2] call ace_common_fnc_doAnimation;
 };
 [_patient, false] call acme_sked_fnc_hpmkSwap;
+["ACME_headElev_transportUp", [_patient]] call CBA_fnc_localEvent;

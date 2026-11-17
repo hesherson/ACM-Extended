@@ -5,6 +5,7 @@
  * Arguments: 0: unit, 1: selection name. Returns: position.
  */
 params ["_unit", "_name"];
-private _p = _unit selectionPosition [_name, "FireGeometry"];
-if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition _name};
+private _p = _unit selectionPosition [_name, "FireGeometry", true];
+if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition [_name, "Memory", true];};
+if (_p isEqualTo [0, 0, 0]) then {_p = _unit selectionPosition [_name, 0, true];};
 _p

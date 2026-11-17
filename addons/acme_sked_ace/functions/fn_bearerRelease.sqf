@@ -8,7 +8,7 @@ if (!local _unit || {!isNull _current && {_current isNotEqualTo _released}}) exi
 private _parent = _unit getVariable ["acme_sked_bearerParent", objNull];
 if (!isNull _parent && {(attachedTo _unit) isEqualTo _parent}) then {detach _unit;};
 _unit setVariable ["acme_sked_bearerParent", nil];
+private _watch = _unit getVariable ["acme_sked_bearerWatch", -1];
+if (_watch >= 0) then {[_watch] call CBA_fnc_removePerFrameHandler;};
+_unit setVariable ["acme_sked_bearerWatch", nil];
 [_unit, "forceWalk", "acme_sked", false] call ace_common_fnc_statusEffect_set;
-if (alive _unit && {lifeState _unit in ["HEALTHY", "INJURED"]}) then {
-    [_unit, "AmovPercMstpSnonWnonDnon", 1] call ace_common_fnc_doAnimation;
-};
