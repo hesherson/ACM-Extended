@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "SurgicalAirway_defines.hpp"
 
 class GVAR(SurgicalAirway_Dialog) {
@@ -58,12 +59,12 @@ class GVAR(SurgicalAirway_Dialog) {
         class TopText: RscText {
             idc = -1;
             style = ST_CENTER;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             x = QUOTE(safeZoneX);
             y = QUOTE(safeZoneY);
             w = QUOTE(safeZoneW);
             h = QUOTE(safeZoneH / 10);
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
             text = CSTRING(SurgicalAirway_ActionProgress);
             lineSpacing = 0;
@@ -198,7 +199,7 @@ class GVAR(SurgicalAirway_Dialog) {
             y = QUOTE(SURGICAL_AIRWAY_BUTTON_SCALPEL_Y);
             w = QUOTE(ACM_SURGICAL_AIRWAY_POS_W_INV(0.115));
             h = QUOTE(ACM_SURGICAL_AIRWAY_POS_H_INV(0.115));
-            colorBackground[] = {0,0,0,0.7};
+            colorBackground[] = ACM_UI_PANEL(0.7);
         };
 
         class Inventory_Hook_ImageBG: Inventory_Scalpel_ImageBG {

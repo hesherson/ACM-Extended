@@ -27,6 +27,11 @@ if (_isY) then {
     if (_service != "") then {_lines pushBack format ["%1 in progress: %2 mL reserved",_service,round _reserved];};
     if (_primed && {_dirty} && {!_blood} && {_service == ""}) then {_lines pushBack "Flush required before the next unit";};
 };
+{
+    if ((toLowerANSI (_x param [1, ""])) == toLowerANSI _part && {(_x param [4,-1]) == _site} && {(_x param [5,false]) isEqualTo _iv}) then {
+        _lines pushBack format ["%1: %2 added",[_x param [11, ""],true] call ACME_fnc_infusionName,[_x param [11, ""],_x param [13,0]] call ACME_fnc_formatDose];
+    };
+} forEach (_patient getVariable ["ACME_infusion_BagMedications",[]]);
 private _thermalLines = [];
 {
     ([_patient,_part,_x] call ACME_fnc_transfusionBagPresentation) params ["_label","_color","_thermal","_role","_flowing"];
@@ -42,11 +47,6 @@ private _thermalLines = [];
 // One downstream device has one status even though either connected bag can pass through it.
 private _warmingThermal = _thermalLines select {(_x find "Warming") >= 0};
 _lines append (if (_warmingThermal isEqualTo []) then {_thermalLines} else {_warmingThermal});
-{
-    if ((toLowerANSI (_x param [1, ""])) == toLowerANSI _part && {(_x param [4,-1]) == _site} && {(_x param [5,false]) isEqualTo _iv}) then {
-        _lines pushBack format ["%1: %2 added",[_x param [11, ""]] call ACME_fnc_infusionName,[_x param [11, ""],_x param [13,0]] call ACME_fnc_formatDose];
-    };
-} forEach (_patient getVariable ["ACME_infusion_BagMedications",[]]);
 
 private _cuffs = _patient getVariable ["ACME_piCuffs",createHashMap];
 {

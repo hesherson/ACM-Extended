@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "SyringeDraw_defines.hpp"
 
 class GVAR(SyringeDraw_Dialog) {
@@ -70,12 +71,12 @@ class GVAR(SyringeDraw_Dialog) {
         class TopText: RscText {
             idc = IDC_SYRINGEDRAW_TEXT;
             style = ST_CENTER;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             x = QUOTE(ACM_UI_CANVAS_X);
             y = QUOTE(safeZoneY);
             w = QUOTE(ACM_UI_CANVAS_W);
             h = QUOTE(safeZoneH / 10);
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
             text = CSTRING(Syringe_NoMedicationSelected);
             lineSpacing = 0;
@@ -131,12 +132,12 @@ class GVAR(SyringeDraw_Dialog) {
         };
         class Button_Draw: RscButton {
             text = CSTRING(Syringe_Draw);
-            colorText[] = {1,1,1,1};
-            colorDisabled[] = {1,1,1,0.1};
-            colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0.1};
-            colorBackgroundActive[] = {0,0,0,1};
-            colorFocused[] = {0,0,0,1};
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.1);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(0.1);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
             colorBorder[] = {0,0,0,0};
             soundClick[] = {};
             soundEnter[] = {};
@@ -149,7 +150,7 @@ class GVAR(SyringeDraw_Dialog) {
             w = QUOTE(ACM_UI_CANVAS_W / 24);
             h = QUOTE(safeZoneH / 30);
             shadow = 0;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = QUOTE(GUI_GRID_H * NORMALIZE_SIZEEX);
             onButtonClick = QUOTE([0] call FUNC(Syringe_Draw_Button));
             tooltip = "";
@@ -202,12 +203,13 @@ class GVAR(SyringeDraw_Dialog) {
             w = QUOTE(ACM_UI_CANVAS_W / 6.5);
             h = QUOTE(safeZoneH / 2.5);
             rowHeight = QUOTE(safeZoneH / 20);
-            colorText[] = {1,1,1,1};
-            colorSelect[] = {0,0,0,1};
-            colorSelect2[] = {0,0,0,1};
-            colorBackground[] = {0,0,0,0.1};
-            colorSelectBackground[] = {0.7,0.7,0.7,1};
-            colorSelectBackground2[] = {0.7,0.7,0.7,1};
+            font = ACM_UI_FONT;
+            colorText[] = ACM_UI_INK(1);
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_SURFACE(0.92);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
             sizeEx = QUOTE(GUI_GRID_H * 0.9 * NORMALIZE_SIZEEX);
             class Items {};
         };

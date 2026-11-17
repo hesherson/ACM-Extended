@@ -108,7 +108,7 @@ private _btnW = (_contentW - (_gap * ((count _nav)-1))) / (count _nav);
 private _navCtrls = [];
 {
     _x params ["_label","_key","_eh"];
-    private _b = _display ctrlCreate ["RscButton", -1];
+    private _b = _display ctrlCreate ["ACME_ThemeButton", -1];
     _b ctrlSetPosition [_contentX + (_forEachIndex * (_btnW + _gap)), _navY, _btnW, _navH];
     _b ctrlSetText _label;
     _b ctrlSetTextColor [0.92,0.95,1,1];

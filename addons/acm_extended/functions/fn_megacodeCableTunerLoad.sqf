@@ -74,7 +74,7 @@ private _mkSlider = {
 [3, 2, "Rope slack",       "slack",    0,  1.5, _slack,           3] call _mkSlider;
 [3, 3, "Rope segments",    "seg",      0,   63, _seg,             0] call _mkSlider;
 
-private _btn = _display ctrlCreate ["RscButton", -1];
+private _btn = _display ctrlCreate ["ACME_ThemeButton", -1];
 _btn ctrlSetPosition [_mX + (_cw*2) + (_colGap*2), _top + (_rowH * 3) + 0.004, _cw, _rowH*0.46];
 _btn ctrlSetText "DONE";
 _btn ctrlSetBackgroundColor (["selected", 1] call ACME_fnc_a11yColor);

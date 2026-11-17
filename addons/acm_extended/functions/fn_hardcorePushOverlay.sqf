@@ -1,3 +1,4 @@
+#include "\x\acm\addons\main\ui_theme.hpp"
 /* B125: persistent one-handed syringe HUD.
    Flow state never depends on menu visibility. The visual syringe now lives on a dedicated RscTitles display with
    static picture controls so the barrel/plunger/backbit cannot disappear when dynamically-created picture controls
@@ -121,7 +122,7 @@ if (!isNull _hud) then {
     _bar ctrlSetAngle [90,0.5,0.5];
 
     _panel ctrlSetPosition [_tx,_ty,_tw,_th];
-    _panel ctrlSetBackgroundColor [0.02,0.03,0.06,0.90];
+    _panel ctrlSetBackgroundColor (ACM_UI_PANEL_RGB + [0.90]);
     _txt ctrlSetPosition [_tx,_ty + _th*0.08,_tw,_th*0.84];
     _txt ctrlSetFontHeight (_th*0.46);
     _txt ctrlSetStructuredText parseText format [

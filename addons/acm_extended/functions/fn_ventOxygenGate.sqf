@@ -1,3 +1,4 @@
+#include "\x\acm\addons\main\ui_theme.hpp"
 /* Compatibility entry point for integrations that used the B276 warning.
    Enrichment requires a verified source attached to this physical ventilator;
    carrying a cylinder alone never authorizes it. The native O2 page uses its
@@ -37,13 +38,13 @@ private _left = _uiX + (_uiW - _w) / 2;
 private _top = _uiY + (_uiH - _h) / 2;
 private _bg = _prompt ctrlCreate ["RscText", 1000];
 _bg ctrlSetPosition [_left, _top, _w, _h];
-_bg ctrlSetBackgroundColor [0.04, 0.04, 0.04, 0.98];
+_bg ctrlSetBackgroundColor (ACM_UI_PANEL_RGB + [0.98]);
 _bg ctrlCommit 0;
 private _message = _prompt ctrlCreate ["RscText", 1001];
 _message ctrlSetPosition [_left + _w * 0.06, _top + _h * 0.12, _w * 0.88, _h * 0.31];
 _message ctrlSetText "An O2 tank is required.";
 _message ctrlCommit 0;
-private _accept = _prompt ctrlCreate ["RscButton", 1002];
+private _accept = _prompt ctrlCreate ["ACME_ThemeButton", 1002];
 _accept ctrlSetPosition [_left + _w * 0.30, _top + _h * 0.58, _w * 0.40, _h * 0.29];
 _accept ctrlSetText "OK";
 _accept ctrlCommit 0;

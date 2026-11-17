@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "Stethoscope_defines.hpp"
 
 class GVAR(Stethoscope_Dialog) {
@@ -144,12 +145,12 @@ class GVAR(Stethoscope_Dialog) {
         class TopText: RscText {
             idc = -1;
             style = ST_CENTER;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             x = QUOTE(safeZoneX);
             y = QUOTE(safeZoneY);
             w = QUOTE(safeZoneW);
             h = QUOTE(safeZoneH / 10);
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
             text = "Hold left mouse to listen and drag. Release to lift the bell.";
             lineSpacing = 0;
@@ -188,6 +189,11 @@ class GVAR(Stethoscope_Dialog) {
             onButtonClick = "[] call ACME_fnc_stethoscopeFlip;";
             colorBackground[] = {0.14, 0.20, 0.30, 0.90};
             colorText[] = {0.93, 0.89, 0.80, 1};
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         class Bell: RscPicture {
             idc = IDC_STETHOSCOPE_BELL;

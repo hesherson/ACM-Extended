@@ -1,5 +1,5 @@
 /* B277 read-only card view model. Medical artwork, labels and selection values remain owned by native lists. */
-params ["_list","_row"];
+params ["_list","_row",["_fullMedicationDetails",false]];
 private _name = _list lbText _row;
 private _detail = "";
 private _line = "";
@@ -11,6 +11,7 @@ private _vial = _list lbPictureRight _row;
 private _fraction = -1;
 private _flowing = false;
 private _total = 0;
+private _medicationDetails = "";
 private _idc = ctrlIDC _list;
 if (_idc in [86004,86129]) then {
     private _patient = missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
@@ -66,8 +67,15 @@ if (_idc in [86004,86129]) then {
         _name = [_meds apply {_x param [11,""]}] call ACME_fnc_infusionTitle;
         if (_role != "") then {_name = _name + " [PiB]";};
         if ((_label find "[Y]") >= 0) then {_name = _name + " [Y]";};
-        private _doses = _meds apply {format ["%1 %2 added",[_x param [11,""]] call ACME_fnc_infusionName,[_x param [11,""],_x param [13,0]] call ACME_fnc_formatDose]};
-        _detail = format ["%1 mL / %2",round _remaining,_doses joinString " + "];
+        if (_fullMedicationDetails) then {
+            _medicationDetails = (_meds apply {
+                private _medication = _x param [11,""];
+                format ["%1 %2 added",[_medication,true] call ACME_fnc_infusionName,[_medication,_x param [13,0]] call ACME_fnc_formatDose]
+            }) joinString (toString [10]);
+        } else {
+            private _doses = _meds apply {format ["%1 %2 added",[_x param [11,""]] call ACME_fnc_infusionName,[_x param [11,""],_x param [13,0]] call ACME_fnc_formatDose]};
+            _detail = format ["%1 mL / %2",round _remaining,_doses joinString " + "];
+        };
         if (_vial == "") then {_vial = getText (configFile >> "CfgWeapons" >> ([(_meds select 0) param [11,""]] call ACME_fnc_vialClass) >> "picture");};
     };
     private _isY = [_patient,_part,_bag param [4,true],_bag param [3,-1]] call ACME_fnc_isYLineAccess;
@@ -112,4 +120,6 @@ if (_idc in [86004,86129]) then {
         _status = "Prepared";
     };
 };
-[_name,_detail,_status,_thermal,_color,_icon,_vial,_fraction,_total,_flowing]
+private _result = [_name,_detail,_status,_thermal,_color,_icon,_vial,_fraction,_total,_flowing];
+if (_fullMedicationDetails) then {_result pushBack _medicationDetails;};
+_result

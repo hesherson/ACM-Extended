@@ -1,3 +1,4 @@
+#include "\x\acm\addons\main\ui_theme.hpp"
 /* Local technician-code entry. The child display contains no patient simulation.
    The accepted code unlocks only its parent panel; the normal item confirmation remains required. */
 disableSerialization;
@@ -18,13 +19,13 @@ private _left = _uiX + (_uiW - _w) / 2;
 private _top = safeZoneY + (safeZoneH - _h) / 2;
 private _bg = _prompt ctrlCreate ["RscText", 1000];
 _bg ctrlSetPosition [_left, _top, _w, _h];
-_bg ctrlSetBackgroundColor [0.04, 0.05, 0.06, 0.98];
+_bg ctrlSetBackgroundColor (ACM_UI_PANEL_RGB + [0.98]);
 _bg ctrlCommit 0;
 private _title = _prompt ctrlCreate ["RscText", 1001];
 _title ctrlSetPosition [_left + _w * 0.05, _top + _h * 0.04, _w * 0.90, _h * 0.19];
 _title ctrlSetText "TECHNICIAN ACCESS";
 _title ctrlCommit 0;
-private _edit = _prompt ctrlCreate ["RscEdit", 1002];
+private _edit = _prompt ctrlCreate ["ACME_ThemeEdit", 1002];
 _edit ctrlSetPosition [_left + _w * 0.05, _top + _h * 0.27, _w * 0.90, _h * 0.20];
 _edit ctrlSetText "";
 _edit ctrlCommit 0;
@@ -61,7 +62,7 @@ private _submit = {
     ["Access granted for this panel. Select the item again to confirm.", 2.5] call ace_common_fnc_displayTextStructured;
 };
 _prompt setVariable ["ACME_vent_techSubmit", _submit];
-private _accept = _prompt ctrlCreate ["RscButton", 1004];
+private _accept = _prompt ctrlCreate ["ACME_ThemeButton", 1004];
 _accept ctrlSetPosition [_left + _w * 0.05, _top + _h * 0.74, _w * 0.42, _h * 0.20];
 _accept ctrlSetText "UNLOCK";
 _accept ctrlCommit 0;
@@ -69,7 +70,7 @@ _accept ctrlAddEventHandler ["ButtonClick", {
     private _prompt = ctrlParent (_this select 0);
     [_prompt] call (_prompt getVariable ["ACME_vent_techSubmit", {}]);
 }];
-private _cancel = _prompt ctrlCreate ["RscButton", 1005];
+private _cancel = _prompt ctrlCreate ["ACME_ThemeButton", 1005];
 _cancel ctrlSetPosition [_left + _w * 0.53, _top + _h * 0.74, _w * 0.42, _h * 0.20];
 _cancel ctrlSetText "CANCEL";
 _cancel ctrlCommit 0;

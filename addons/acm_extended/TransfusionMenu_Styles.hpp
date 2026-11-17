@@ -18,7 +18,7 @@ class ACME_TransfusionActionButton: RscButton {
     borderSize = 0;
     style = 2;
     shadow = 0;
-    font = "RobotoCondensed";
+    font = ACM_UI_FONT;
     sizeEx = "safeZoneH * 0.020";
     x = "safeZoneX - 1";
     y = "safeZoneY - 1";
@@ -34,7 +34,7 @@ class ACME_TransfusionCaption: RscText {
     text = "";
     colorText[] = {0.76,0.76,0.76,1};
     colorBackground[] = {0,0,0,0};
-    font = "RobotoCondensed";
+    font = ACM_UI_FONT;
     sizeEx = "safeZoneH * 0.017";
     shadow = 0;
     x = "safeZoneX - 1";

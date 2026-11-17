@@ -25,6 +25,10 @@ button { font: inherit; }
 .acme-medical-surface .name { color: var(--color-clinical,var(--color-native-label)); }
 .acme-medical-surface .warming { color: var(--color-warming); }
 .acme-medical-surface .piggyback .status { color: var(--color-piggyback); }
+.acme-medical-surface .status-values { display: inline-flex; max-width: 100%; vertical-align: top; }
+.acme-medical-surface .role-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.acme-medical-surface .flow-status { flex: none; color: var(--color-ink-secondary); }
+.acme-medical-surface .role-status + .flow-status::before { content: ''; display: inline-block; height: .75em; margin-inline: .55em; border-inline-start: 1px solid var(--color-focus); }
 .acme-medical-surface .track { height: var(--track-height); background: var(--color-track); }
 .acme-medical-surface .fill { height: 100%; background: var(--color-fill); }
 .acme-medical-surface .volume { font-variant-numeric: tabular-nums; }

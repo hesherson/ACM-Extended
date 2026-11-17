@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "..\main\script_build.hpp"
 // extended event handlers, matching the ACM and ACE convention. these are inlined from the former
 // cfgeventhandlers.hpp, so the build has no #include to drop in.
@@ -3803,6 +3804,15 @@ class RscCombo;
 class RscXSliderH;
 class RscEdit;
 
+class ACME_ThemeButton: RscButton {
+    ACM_UI_BUTTON_COLORS
+};
+class ACME_ThemeEdit: RscEdit {
+    colorText[] = ACM_UI_INK(1);
+    colorBackground[] = ACM_UI_SURFACE(1);
+    font = ACM_UI_FONT;
+};
+
 #include "TransfusionMenu_Styles.hpp"
 #include "ReactMedical_Controls.hpp"
 
@@ -3864,6 +3874,7 @@ class ACM_circulation_SyringeDraw_Dialog {
             soundEnter[] = {"\a3\ui_f\data\sound\rscbutton\soundEnter", 0.09, 1};
             soundPush[] = {"\a3\ui_f\data\sound\rscbutton\soundPush", 0.09, 1};
             soundEscape[] = {"\a3\ui_f\data\sound\rscbutton\soundEscape", 0.09, 1};
+            ACM_UI_BUTTON_COLORS
         };
         class Button_Inject: Button_Draw {
             soundClick[] = {"\a3\ui_f\data\sound\rscbutton\soundClick", 0.09, 1};
@@ -3976,8 +3987,8 @@ class ACME_RollerClamp_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 2.55)";
             w = "safeZoneW / 2.33";
             h = "safeZoneH / 1.28";
-            colorBackground[] = {0,0,0,0.78};
-            colorText[] = {1,1,1,1};
+            colorBackground[] = ACM_UI_PANEL(0.78);
+            colorText[] = ACM_UI_INK(1);
         };
         class ACME_ClampBG: RscPicture {
             idc = 86201;
@@ -4027,9 +4038,9 @@ class ACME_RollerClamp_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 2.75)";
             w = "safeZoneW / 3.3";
             h = "safeZoneH / 24";
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 34";
             style = 2;
             shadow = 0;
@@ -4052,16 +4063,16 @@ class ACME_RollerClamp_Dialog {
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 2.85)";
             w = "safeZoneW / 10.5";
             h = "safeZoneH / 26";
-            colorText[] = {1,1,1,1};
-            colorDisabled[] = {1,1,1,0.25};
-            colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0.35};
-            colorBackgroundActive[] = {0.12,0.12,0.12,1};
-            colorFocused[] = {0,0,0,1};
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.25);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(0.35);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
             colorBorder[] = {0,0,0,0};
             style = 2;
             shadow = 0;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 50";
             action = "call ACME_fnc_cycleDropSet";
             tooltip = "Cycle drop set: 10, 15, 20, or 60 gtt/mL";
@@ -4092,13 +4103,14 @@ class ACME_SK_RightText: RscText {
 
 class ACME_SK_StyledList: RscListBox {
     rowHeight = "safeZoneH / 20";
-    colorText[] = {1,1,1,1};
+    colorText[] = ACM_UI_INK(1);
     colorSelect[] = {0,0,0,1};
     colorSelect2[] = {0,0,0,1};
-    colorBackground[] = {0,0,0,0.1};
+    colorBackground[] = ACM_UI_SURFACE(0.1);
     colorSelectBackground[] = {0.7,0.7,0.7,1};
     colorSelectBackground2[] = {0.7,0.7,0.7,1};
     sizeEx = "(safeZoneH / 20) * 0.5";
+    font = ACM_UI_FONT;
 };
 // B71 dedicated syringe-tag menu: dark medication-list-style panel with tighter rows so every
 // full clinical-purpose label fits in one long dropdown without clipping.
@@ -4112,10 +4124,10 @@ class ACME_SK_TagList: ACME_SK_StyledList {
 class ACME_SK_NameEdit: RscEdit {
     style = 0;
     maxChars = 25;
-    colorText[] = {1,1,1,1};
+    colorText[] = ACM_UI_INK(1);
     colorSelection[] = {0.7,0.7,0.7,1};
-    colorBackground[] = {0.02,0.02,0.02,0.85};
-    font = "RobotoCondensed";
+    colorBackground[] = ACM_UI_SURFACE(0.85);
+    font = ACM_UI_FONT;
     sizeEx = "safeZoneH / 44";
     autocomplete = "";
 };
@@ -4151,23 +4163,23 @@ class ACME_SK_TagText: RscText {
 };
 
 class ACME_SK_StyledLabel: RscText {
-    colorText[] = {1,1,1,1};
-    colorBackground[] = {0,0,0,0.35};
+    colorText[] = ACM_UI_SECONDARY(1);
+    colorBackground[] = ACM_UI_PANEL(0.35);
     style = 2;
-    font = "RobotoCondensed";
+    font = ACM_UI_FONT;
     sizeEx = "safeZoneH / 40";
 };
 // narc box body-picker buttons, the view toggle and the route toggle. they are plain dark styled buttons.
 // RscButton is already forward-declared earlier with the other base controls, so there is no re-declaration
 // here.
 class ACME_SK_StyledButton: RscButton {
-    colorBackground[] = {0.05,0.05,0.05,0.65};
-    colorBackgroundActive[] = {0.28,0.28,0.28,0.90};
-    colorBackgroundDisabled[] = {0,0,0,0.30};
-    colorFocused[] = {0.05,0.05,0.05,0.65};
-    colorText[] = {1,1,1,1};
-    colorDisabled[] = {1,1,1,0.30};
-    font = "RobotoCondensed";
+    colorBackground[] = ACM_UI_SURFACE(0.65);
+    colorBackgroundActive[] = ACM_UI_HOVER(0.90);
+    colorBackgroundDisabled[] = ACM_UI_PANEL(0.30);
+    colorFocused[] = ACM_UI_ACTIVE(0.65);
+    colorText[] = ACM_UI_INK(1);
+    colorDisabled[] = ACM_UI_MUTED(0.30);
+    font = ACM_UI_FONT;
     sizeEx = "safeZoneH / 44";
     borderSize = 0;
 };
@@ -4231,7 +4243,7 @@ class ACME_ChestSeal_Dialog {
         class CS_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
-            text = ""; colorBackground[] = {0, 0, 0, 0.55};
+            text = ""; colorBackground[] = ACM_UI_PANEL(0.55);
         };
         class CS_Body: RscPicture {
             idc = 86401;
@@ -4287,7 +4299,7 @@ class ACME_ChestSeal_Dialog {
             x = "safezoneX + safezoneW * 0.80"; y = "safezoneY + safezoneH * 0.40";
             w = "safezoneW * 0.10"; h = "safezoneH * 0.18";
             text = "";
-            colorBackground[] = {0, 0, 0, 0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class CS_SlotLogo: RscPicture {
             idc = 86422;
@@ -4330,7 +4342,7 @@ class ACME_ChestSeal_Dialog {
             idc = 86430;
             x = 0; y = 0; w = 0; h = 0;
             text = "";
-            colorBackground[] = {0, 0, 0, 0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class CS_SpearSlotLogo: RscPicture {
             idc = 86432;
@@ -4372,6 +4384,11 @@ class ACME_ChestSeal_Dialog {
             onButtonClick = "[] call ACME_fnc_chestSealFlip";
             colorBackground[] = {0.14, 0.20, 0.30, 0.90};
             colorText[] = {0.93, 0.89, 0.80, 1};
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         // this was the rake and feel mode toggle. the hands moved onto the mouse buttons, where lmb rakes and RMB is
         // the feeler, so the toggle is gone. because RMB no longer closes the dialog, this slot becomes the explicit
@@ -4380,8 +4397,13 @@ class ACME_ChestSeal_Dialog {
             idc = 86427;
             text = "Close";
             onButtonClick = "[86400] call ACME_fnc_minigameClose;";
-            colorBackground[] = {0.13, 0.22, 0.17, 0.90};
+            colorBackground[] = ACM_UI_SURFACE(0.90);
             colorText[] = {0.93, 0.89, 0.80, 1};
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         class CS_Cancel: RscButton {
             idc = 86425;
@@ -4391,6 +4413,11 @@ class ACME_ChestSeal_Dialog {
             action = "[86400] call ACME_fnc_minigameClose;";
             colorBackground[] = {0.30, 0.10, 0.10, 0.85};
             colorText[] = {0.93, 0.89, 0.80, 1};
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
     };
 };
@@ -4511,7 +4538,7 @@ class ACME_Thoracostomy_Dialog {
         class Thora_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
-            text = ""; colorBackground[] = {0, 0, 0, 0.55};
+            text = ""; colorBackground[] = ACM_UI_PANEL(0.55);
         };
         class Thora_Body: RscPicture {
             idc = 86601;
@@ -4540,9 +4567,13 @@ class ACME_Thoracostomy_Dialog {
             tooltip = "Switch between the right and left chest";
             onButtonClick = "[] call ACME_fnc_thoraFlip";
             colorText[] = {0.93, 0.89, 0.80, 1};
-            colorBackground[] = {0, 0, 0, 0.85};
+            colorBackground[] = ACM_UI_SURFACE(0.85);
             colorBackgroundActive[] = {1, 1, 1, 0.06};
             sizeEx = "0.026 * safezoneH";
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         class Thora_Close: RscButton {
             idc = -1;
@@ -4554,9 +4585,13 @@ class ACME_Thoracostomy_Dialog {
             // thoracostomy and would stop working silently. an unclosable panel ends a session.
             onButtonClick = "[86600] call ACME_fnc_minigameClose;";
             colorText[] = {0.93, 0.89, 0.80, 1};
-            colorBackground[] = {0, 0, 0, 0.85};
+            colorBackground[] = ACM_UI_SURFACE(0.85);
             colorBackgroundActive[] = {1, 1, 1, 0.06};
             sizeEx = "0.028 * safezoneH";
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
     };
 };
@@ -4568,8 +4603,8 @@ class ACME_Thoracostomy_Dialog {
 // tracks the fingertip. fn_ivminigameinit positions all the controls at runtime, and the limb and band
 // textures swap per selected site.
 class ACME_IV_ToolLabel: RscText {
-    style=2; font="RobotoCondensed"; sizeEx="0.018 * safezoneH";
-    colorText[]={0.90,0.95,1,1}; colorBackground[]={0,0,0,0};
+    style=2; font = ACM_UI_FONT; sizeEx="0.018 * safezoneH";
+    colorText[]=ACM_UI_SECONDARY(1); colorBackground[]={0,0,0,0};
 };
 class ACME_IV_ToolButton: RscButton {
     colorText[] = {0,0,0,0}; colorBackground[] = {0,0,0,0};
@@ -4588,7 +4623,7 @@ class ACME_IVMinigame_Dialog {
         class IV_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
-            text = ""; colorBackground[] = {0, 0, 0, 0.62};
+            text = ""; colorBackground[] = ACM_UI_PANEL(0.62);
         };
         // limb silhouette, front or rear. the texture and rect are set at init.
         class IV_Limb: RscPictureKeepAspect {
@@ -4675,7 +4710,7 @@ class ACME_IVMinigame_Dialog {
         };
         class IV_BandSlotBG: RscText {
             idc = 86530; x = 0; y = 0; w = 0; h = 0; text = "";
-            colorBackground[] = {0.10, 0.13, 0.17, 0.92};
+            colorBackground[] = ACM_UI_PANEL(0.92);
         };
         class IV_BandSlotLogo: RscPictureKeepAspect {
             idc = 86531; x = 0; y = 0; w = 0; h = 0;
@@ -4703,7 +4738,7 @@ class ACME_IVMinigame_Dialog {
         };
         class IV_PadBG: RscText {
             idc = 86535; x = 0; y = 0; w = 0; h = 0; text = "";
-            colorBackground[] = {0.10, 0.13, 0.17, 0.92};
+            colorBackground[] = ACM_UI_PANEL(0.92);
         };
         class IV_PadLogo: RscPictureKeepAspect {
             idc = 86536; x = 0; y = 0; w = 0; h = 0;
@@ -4725,7 +4760,7 @@ class ACME_IVMinigame_Dialog {
         };
         class IV_G14BG: RscText {
             idc = 86540; x = 0; y = 0; w = 0; h = 0; text = "";
-            colorBackground[] = {0.10, 0.13, 0.17, 0.92};
+            colorBackground[] = ACM_UI_PANEL(0.92);
         };
         // Back-to-front stock layers. Keep the real inventory logo after every duplicate.
         class IV_G14Fan4: RscPictureKeepAspect {
@@ -4804,8 +4839,13 @@ class ACME_IVMinigame_Dialog {
             w = "safezoneW * 0.12"; h = "safezoneH * 0.05";
             text = "Flip (Front/Back)";
             onButtonClick = "[] call ACME_fnc_ivMinigameFlip";
-            colorBackground[] = {0.14, 0.18, 0.24, 0.90};
+            colorBackground[] = ACM_UI_SURFACE(0.90);
             colorText[] = {0.85, 0.92, 1, 1};
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         // remove an existing iv. click this, then click a placed catheter hub to pull it.
         class IV_Cancel: RscButton {
@@ -4816,6 +4856,11 @@ class ACME_IVMinigame_Dialog {
             action = "[] call ACME_fnc_ivMinigameDone";
             colorBackground[] = {0.30, 0.10, 0.10, 0.85};
             colorText[] = {0.93, 0.89, 0.80, 1};
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         // cursor-following item sprites. they are defined last, so the carried band, needle and pad render on top of
         // the buttons and everything else. they stay hidden unless something is held, and are positioned at the cursor
@@ -4936,8 +4981,8 @@ class ACME_SyringeKit_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 2.5)";
             w = "safeZoneW / 2.17";
             h = "safeZoneH / 1.25";
-            colorBackground[] = {0,0,0,0.84};
-            colorText[] = {1,1,1,1};
+            colorBackground[] = ACM_UI_PANEL(0.84);
+            colorText[] = ACM_UI_INK(1);
         };
         class ACME_SK_Title: RscText {
             idc = 86311;
@@ -4946,9 +4991,9 @@ class ACME_SyringeKit_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 2.5)";
             w = "safeZoneW / 2.17";
             h = "safeZoneH / 20";
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 30";
             style = 2;
             shadow = 0;
@@ -5031,9 +5076,9 @@ class ACME_SyringeKit_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 3)";
             w = "safeZoneW / 7";
             h = "safeZoneH / 28";
-            colorText[] = {0.8,0.8,0.8,1};
+            colorText[] = ACM_UI_SECONDARY(1);
             colorBackground[] = {0,0,0,0};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 44";
             style = 0;
         };
@@ -5069,9 +5114,9 @@ class ACME_SyringeKit_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 3)";
             w = "safeZoneW / 8";
             h = "safeZoneH / 22";
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 28";
             style = 2;
             shadow = 0;
@@ -5083,9 +5128,9 @@ class ACME_SyringeKit_Dialog {
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 3.4)";
             w = "safeZoneW / 2.17";
             h = "safeZoneH / 22";
-            colorText[] = {0.85,0.85,0.85,1};
-            colorBackground[] = {0,0,0,0.4};
-            font = "RobotoCondensed";
+            colorText[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_PANEL(0.4);
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 46";
             style = 2;
             shadow = 0;
@@ -5097,16 +5142,16 @@ class ACME_SyringeKit_Dialog {
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 2.8)";
             w = "safeZoneW / 8";
             h = "safeZoneH / 22";
-            colorText[] = {1,1,1,1};
-            colorDisabled[] = {1,1,1,0.25};
-            colorBackground[] = {0,0,0,1};
-            colorBackgroundDisabled[] = {0,0,0,0.35};
-            colorBackgroundActive[] = {0.12,0.12,0.12,1};
-            colorFocused[] = {0,0,0,1};
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.25);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(0.35);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
             colorBorder[] = {0,0,0,0};
             style = 2;
             shadow = 0;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH / 46";
             action = "";
             tooltip = "Expel down to the plunger and lock that as the saline base.";
@@ -5448,7 +5493,7 @@ class ACME_HangBag_Tuner {
             y = "safeZoneY + 0.035";
             w = 0.42;
             h = 0.90;
-            colorBackground[] = {0,0,0,0.88};
+            colorBackground[] = ACM_UI_PANEL(0.88);
         };
         class Title: RscText {
             idc = -1;
@@ -5531,7 +5576,7 @@ class ACME_HangBag_Tuner {
             w = 0.395;
             h = 0.055;
             sizeEx = 0.019;
-            colorText[] = {0.82,0.82,0.82,1};
+            colorText[] = ACM_UI_SECONDARY(1);
         };
         class Report: RscButton {
             idc = -1;
@@ -5542,6 +5587,7 @@ class ACME_HangBag_Tuner {
             h = 0.04;
             action = "[] call ACME_fnc_hangBagTuneReport";
             tooltip = "Show exact right-hand bag and patient-end line values";
+            ACM_UI_BUTTON_COLORS
         };
         class Close: Report {
             text = "DONE";
@@ -5568,7 +5614,7 @@ class ACME_HeadElev_Tuner {
             y = "safeZoneY + 0.035";
             w = 0.42;
             h = 0.79;
-            colorBackground[] = {0,0,0,0.88};
+            colorBackground[] = ACM_UI_PANEL(0.88);
         };
         class Title: RscText {
             idc = -1;
@@ -5654,7 +5700,7 @@ class ACME_HeadElev_Tuner {
             w = 0.395;
             h = 0.055;
             sizeEx = 0.019;
-            colorText[] = {0.82,0.82,0.82,1};
+            colorText[] = ACM_UI_SECONDARY(1);
         };
         class Report: RscButton {
             idc = -1;
@@ -5665,6 +5711,7 @@ class ACME_HeadElev_Tuner {
             h = 0.04;
             action = "[] call ACME_fnc_headElevTuneReport";
             tooltip = "Show exact tilt/pivot/lift values";
+            ACM_UI_BUTTON_COLORS
         };
         class Close: RscButton {
             idc = -1;
@@ -5675,6 +5722,7 @@ class ACME_HeadElev_Tuner {
             h = 0.04;
             action = "closeDialog 0";
             tooltip = "Close the tuner";
+            ACM_UI_BUTTON_COLORS
         };
     };
 };
@@ -5697,7 +5745,7 @@ class ACME_IVModule_Dialog {
             y = 0.5 - 0.20;
             w = 0.44;
             h = 0.40;
-            colorBackground[] = {0,0,0,0.90};
+            colorBackground[] = ACM_UI_PANEL(0.90);
         };
         class Title: RscText {
             idc = -1;
@@ -5746,7 +5794,7 @@ class ACME_IVModule_Dialog {
             w = 0.42;
             h = 0.03;
             sizeEx = 0.020;
-            colorText[] = {0.75,0.75,0.75,1};
+            colorText[] = ACM_UI_MUTED(1);
         };
     };
     class controls {
@@ -5759,6 +5807,13 @@ class ACME_IVModule_Dialog {
             w = 0.13;
             h = 0.175;
             sizeEx = 0.024;
+            colorText[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            font = ACM_UI_FONT;
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         class SiteList: RscListBox {
             idc = 87902;
@@ -5770,6 +5825,13 @@ class ACME_IVModule_Dialog {
             w = 0.13;
             h = 0.175;
             sizeEx = 0.024;
+            colorText[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            font = ACM_UI_FONT;
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         class GaugeList: RscListBox {
             idc = 87903;
@@ -5778,6 +5840,13 @@ class ACME_IVModule_Dialog {
             w = 0.13;
             h = 0.175;
             sizeEx = 0.024;
+            colorText[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            font = ACM_UI_FONT;
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         class BtnConfirm: RscButton {
             idc = -1;
@@ -5788,6 +5857,12 @@ class ACME_IVModule_Dialog {
             h = 0.04;
             colorBackground[] = {0.12,0.28,0.16,1};
             action = "call ACME_fnc_zeusIVDialogConfirm";
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         class BtnCancel: RscButton {
             idc = -1;
@@ -5796,8 +5871,14 @@ class ACME_IVModule_Dialog {
             y = 0.5 + 0.135;
             w = 0.165;
             h = 0.04;
-            colorBackground[] = {0.20,0.20,0.20,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             action = "closeDialog 0";
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
     };
 };
@@ -5819,7 +5900,7 @@ class ACME_TBIModule_Dialog {
             y = 0.5 - 0.16;
             w = 0.36;
             h = 0.32;
-            colorBackground[] = {0,0,0,0.90};
+            colorBackground[] = ACM_UI_PANEL(0.90);
         };
         class Title: RscText {
             idc = -1;
@@ -5865,6 +5946,13 @@ class ACME_TBIModule_Dialog {
             w = 0.34;
             h = 0.075;
             sizeEx = 0.026;
+            colorText[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            font = ACM_UI_FONT;
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         class BtnConfirm: RscButton {
             idc = -1;
@@ -5875,6 +5963,12 @@ class ACME_TBIModule_Dialog {
             h = 0.04;
             colorBackground[] = {0.30,0.12,0.12,1};
             action = "call ACME_fnc_zeusTBIDialogConfirm";
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         class BtnCancel: RscButton {
             idc = -1;
@@ -5883,8 +5977,14 @@ class ACME_TBIModule_Dialog {
             y = 0.5 + 0.115;
             w = 0.165;
             h = 0.04;
-            colorBackground[] = {0.15,0.15,0.15,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             action = "closeDialog 2";
+            colorText[] = ACM_UI_INK(1);
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
     };
 };
@@ -5904,19 +6004,19 @@ class ACME_BloodFridgeContents_Dialog {
     enableSimulation = 1;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_bfc_dlg', _this select 0]; call ACME_fnc_bloodFridgeContentsFill;";
     class controlsBackground {
-        class BG: RscText { idc = -1; x = 0.5 - 0.22; y = 0.5 - 0.28; w = 0.44; h = 0.56; colorBackground[] = {0.03,0.03,0.05,0.94}; };
-        class Header: RscText { idc = -1; x = 0.5 - 0.22; y = 0.5 - 0.28; w = 0.44; h = 0.045; colorBackground[] = {0.30,0.10,0.10,1}; };
-        class Title: RscText { idc = -1; text = "BLOOD FRIDGE"; x = 0.5 - 0.205; y = 0.5 - 0.277; w = 0.30; h = 0.04; sizeEx = 0.032; colorText[] = {0.95,0.90,0.85,1}; };
-        class Sub: RscText { idc = 87621; text = ""; x = 0.5 - 0.205; y = 0.5 - 0.228; w = 0.41; h = 0.03; sizeEx = 0.022; colorText[] = {0.70,0.72,0.78,1}; };
+        class BG: RscText { idc = -1; x = 0.5 - 0.22; y = 0.5 - 0.28; w = 0.44; h = 0.56; colorBackground[] = ACM_UI_PANEL(0.94); };
+        class Header: RscText { idc = -1; x = 0.5 - 0.22; y = 0.5 - 0.28; w = 0.44; h = 0.045; colorBackground[] = ACM_UI_SURFACE(1); };
+        class Title: RscText { idc = -1; text = "BLOOD FRIDGE"; x = 0.5 - 0.205; y = 0.5 - 0.277; w = 0.30; h = 0.04; sizeEx = 0.032; colorText[] = ACM_UI_INK(1); };
+        class Sub: RscText { idc = 87621; text = ""; x = 0.5 - 0.205; y = 0.5 - 0.228; w = 0.41; h = 0.03; sizeEx = 0.022; colorText[] = ACM_UI_MUTED(1); };
         class HdrType: RscText { idc = -1; text = "TYPE"; x = 0.5 - 0.205; y = 0.5 - 0.192; w = 0.12; h = 0.028; sizeEx = 0.020; colorText[] = {0.55,0.60,0.68,1}; };
         class HdrQty:  RscText { idc = -1; text = "UNITS"; x = 0.5 - 0.055; y = 0.5 - 0.192; w = 0.08; h = 0.028; sizeEx = 0.020; colorText[] = {0.55,0.60,0.68,1}; };
         class HdrVol:  RscText { idc = -1; text = "VOLUME"; x = 0.5 + 0.035; y = 0.5 - 0.192; w = 0.10; h = 0.028; sizeEx = 0.020; colorText[] = {0.55,0.60,0.68,1}; };
-        class Rule: RscText { idc = -1; x = 0.5 - 0.205; y = 0.5 - 0.166; w = 0.41; h = 0.002; colorBackground[] = {0.35,0.38,0.44,1}; };
+        class Rule: RscText { idc = -1; x = 0.5 - 0.205; y = 0.5 - 0.166; w = 0.41; h = 0.002; colorBackground[] = ACM_UI_RULE(1); };
     };
     class controls {
         class ListC: RscStructuredText { idc = 87622; x = 0.5 - 0.205; y = 0.5 - 0.158; w = 0.41; h = 0.30; size = 0.028; };
         class Foot: RscStructuredText { idc = 87623; x = 0.5 - 0.205; y = 0.5 + 0.152; w = 0.41; h = 0.08; size = 0.024; };
-        class BtnClose: RscButton { idc = -1; text = "Close"; x = 0.5 + 0.025; y = 0.5 + 0.238; w = 0.18; h = 0.038; colorBackground[] = {0.15,0.15,0.15,1}; action = "closeDialog 0"; };
+        class BtnClose: RscButton { idc = -1; text = "Close"; x = 0.5 + 0.025; y = 0.5 + 0.238; w = 0.18; h = 0.038; colorBackground[] = ACM_UI_SURFACE(1); action = "closeDialog 0"; colorText[] = ACM_UI_INK(1); colorDisabled[] = ACM_UI_MUTED(0.65); colorBackgroundActive[] = ACM_UI_HOVER(1); colorBackgroundDisabled[] = ACM_UI_PANEL(1); colorFocused[] = ACM_UI_ACTIVE(1); font = ACM_UI_FONT; };
     };
 };
 
@@ -5926,7 +6026,7 @@ class ACME_BloodFridge_Dialog {
     enableSimulation = 1;
     onLoad = "[_this select 0] call ACME_fnc_minigameInputInstall; uiNamespace setVariable ['ACME_bf_dlg', _this select 0]; ((_this select 0) displayCtrl 87604) setVariable ['on', true]; { private _c = (_this select 0) displayCtrl (_x select 0); _c sliderSetRange [(_x select 1), (_x select 2)]; _c sliderSetPosition (_x select 3); } forEach [[87601,0,40,6],[87602,0,40,2],[87603,0,40,0],[87605,0,72,24],[87606,0,59,0]];";
     class controlsBackground {
-        class BG: RscText { idc = -1; x = 0.5 - 0.20; y = 0.5 - 0.24; w = 0.40; h = 0.48; colorBackground[] = {0,0,0,0.90}; };
+        class BG: RscText { idc = -1; x = 0.5 - 0.20; y = 0.5 - 0.24; w = 0.40; h = 0.48; colorBackground[] = ACM_UI_PANEL(0.90); };
         class Title: RscText { idc = -1; text = "PLACE BLOOD FRIDGE"; x = 0.5 - 0.19; y = 0.5 - 0.23; w = 0.38; h = 0.035; sizeEx = 0.030; colorText[] = {0.85,0.30,0.30,1}; };
         class LOPos: RscText { idc = -1; text = "O+ units";  x = 0.5 - 0.19; y = 0.5 - 0.185; w = 0.24; h = 0.03; sizeEx = 0.024; };
         class LONeg: RscText { idc = -1; text = "O- units";  x = 0.5 - 0.19; y = 0.5 - 0.130; w = 0.24; h = 0.03; sizeEx = 0.024; };
@@ -5942,13 +6042,13 @@ class ACME_BloodFridge_Dialog {
         class VONeg: RscText { idc = 87612; text = "2"; x = 0.5 + 0.12; y = 0.5 - 0.130; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
         class SOther: RscXSliderH { idc = 87603; x = 0.5 - 0.19; y = 0.5 - 0.050; w = 0.30; h = 0.028; onSliderPosChanged = "((uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87613) ctrlSetText str (round (_this select 1));"; };
         class VOther: RscText { idc = 87613; text = "0"; x = 0.5 + 0.12; y = 0.5 - 0.075; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
-        class BtnRestock: RscButton { idc = 87604; text = "Yes"; x = 0.5 + 0.05; y = 0.5 - 0.020; w = 0.14; h = 0.032; colorBackground[] = {0.15,0.35,0.15,1}; action = "private _c = (uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87604; private _on = !(_c getVariable ['on', true]); _c setVariable ['on', _on]; _c ctrlSetText (['No','Yes'] select _on); _c ctrlSetBackgroundColor ([[0.35,0.15,0.15,1],[0.15,0.35,0.15,1]] select _on);"; };
+        class BtnRestock: RscButton { idc = 87604; text = "Yes"; x = 0.5 + 0.05; y = 0.5 - 0.020; w = 0.14; h = 0.032; colorBackground[] = {0.15,0.35,0.15,1}; action = "private _c = (uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87604; private _on = !(_c getVariable ['on', true]); _c setVariable ['on', _on]; _c ctrlSetText (['No','Yes'] select _on); _c ctrlSetBackgroundColor ([[0.35,0.15,0.15,1],[0.15,0.35,0.15,1]] select _on);"; colorText[] = ACM_UI_INK(1); colorDisabled[] = ACM_UI_MUTED(0.65); colorBackgroundActive[] = ACM_UI_HOVER(1); colorBackgroundDisabled[] = ACM_UI_PANEL(1); colorFocused[] = ACM_UI_ACTIVE(1); font = ACM_UI_FONT; };
         class SHours: RscXSliderH { idc = 87605; x = 0.5 - 0.19; y = 0.5 + 0.060; w = 0.30; h = 0.028; onSliderPosChanged = "((uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87615) ctrlSetText str (round (_this select 1));"; };
         class VHours: RscText { idc = 87615; text = "24"; x = 0.5 + 0.12; y = 0.5 + 0.035; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
         class SMins: RscXSliderH { idc = 87606; x = 0.5 - 0.19; y = 0.5 + 0.115; w = 0.30; h = 0.028; onSliderPosChanged = "((uiNamespace getVariable 'ACME_bf_dlg') displayCtrl 87616) ctrlSetText str (round (_this select 1));"; };
         class VMins: RscText { idc = 87616; text = "0"; x = 0.5 + 0.12; y = 0.5 + 0.090; w = 0.07; h = 0.03; sizeEx = 0.026; colorText[] = {0.85,0.95,1,1}; };
-        class BtnApply: RscButton { idc = -1; text = "Place"; x = 0.5 + 0.02; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.30,0.12,0.12,1}; action = "call ACME_fnc_bloodFridgeDialogConfirm"; };
-        class BtnCancel: RscButton { idc = -1; text = "Cancel"; x = 0.5 - 0.19; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.15,0.15,0.15,1}; action = "closeDialog 2"; };
+        class BtnApply: RscButton { idc = -1; text = "Place"; x = 0.5 + 0.02; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = {0.30,0.12,0.12,1}; action = "call ACME_fnc_bloodFridgeDialogConfirm"; colorText[] = ACM_UI_INK(1); colorDisabled[] = ACM_UI_MUTED(0.65); colorBackgroundActive[] = ACM_UI_HOVER(1); colorBackgroundDisabled[] = ACM_UI_PANEL(1); colorFocused[] = ACM_UI_ACTIVE(1); font = ACM_UI_FONT; };
+        class BtnCancel: RscButton { idc = -1; text = "Cancel"; x = 0.5 - 0.19; y = 0.5 + 0.170; w = 0.18; h = 0.04; colorBackground[] = ACM_UI_SURFACE(1); action = "closeDialog 2"; colorText[] = ACM_UI_INK(1); colorDisabled[] = ACM_UI_MUTED(0.65); colorBackgroundActive[] = ACM_UI_HOVER(1); colorBackgroundDisabled[] = ACM_UI_PANEL(1); colorFocused[] = ACM_UI_ACTIVE(1); font = ACM_UI_FONT; };
     };
 };
 
@@ -6049,18 +6149,21 @@ class ACME_VentPic: RscPicture {
 };
 
 class ACME_VentText: RscText {
+    font = ACM_UI_FONT;
     shadow = 0;
 };
 // center-aligned variant, st_center, for text that must sit centerd in its rect. that is the name lines of the
 // alarm popup, which are created dynamically through ctrlcreate and need the horizontal centring the base
 // RscText does not give.
 class ACME_VentTextC: RscText {
+    font = ACM_UI_FONT;
     shadow = 0;
     style = 2;
 };
 // right-aligned variant, st_right, for the left scale numbers of the graph, so they sit flush to the left of
 // the plot box with their right edge against the box, instead of being drawn under its edge.
 class ACME_VentTextR: RscText {
+    font = ACM_UI_FONT;
     shadow = 0;
     style = 1;
 };
@@ -6078,7 +6181,7 @@ class ACME_Ventilator_Dialog {
         class Dim: ACME_VentText {
             idc = 87709;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
-            colorBackground[] = {0,0,0,0.82};
+            colorBackground[] = ACM_UI_PANEL(0.82);
         };
         class Face: RscPicture {
             idc = 87701;
@@ -6114,7 +6217,7 @@ class ACME_Ventilator_Dialog {
         class ScreenBG: ACME_VentText {
             idc = 87710;
             x = 0.4; y = 0.4; w = 0.2; h = 0.18;
-            colorBackground[] = {0.02,0.03,0.04,1};
+            colorBackground[] = ACM_UI_PANEL(1);
         };
         class TitleBar: ACME_VentText { idc = 87711; x=0.4;y=0.4;w=0.2;h=0.02; colorBackground[]={0.92,0.92,0.89,1}; };
         class BottomBar: ACME_VentText { idc = 87715; x=0.4;y=0.4;w=0.2;h=0.02; colorBackground[]={0.92,0.92,0.89,1}; };
@@ -6133,26 +6236,26 @@ class ACME_Ventilator_Dialog {
         // it is fully transparent rather than black, because an opaque black box would blank the plug on a black
         // block.
         class TitleAlarmBox: ACME_VentText { idc = 87714; style=2; x=0.4;y=0.4;w=0.03;h=0.014; colorBackground[]={0,0,0,0}; };
-        class LblBPM: ACME_VentText  { idc = 87720; text="BPM"; x=0.4;y=0.4;w=0.06;h=0.03; colorText[]={0.90,0.90,0.90,1}; colorBackground[]={0,0,0,0}; sizeEx=0.028; };
-        class ValBPM: ACME_VentText  { idc = 87721; text="12 (11)"; x=0.4;y=0.4;w=0.12;h=0.03; colorText[]={1,1,1,1}; colorBackground[]={0,0,0,0}; sizeEx=0.030; };
-        class LblMV: ACME_VentText   { idc = 87722; text="M.V"; x=0.4;y=0.4;w=0.06;h=0.03; colorText[]={0.90,0.90,0.90,1}; colorBackground[]={0,0,0,0}; sizeEx=0.028; };
+        class LblBPM: ACME_VentText  { idc = 87720; text="BPM"; x=0.4;y=0.4;w=0.06;h=0.03; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; sizeEx=0.028; };
+        class ValBPM: ACME_VentText  { idc = 87721; text="12 (11)"; x=0.4;y=0.4;w=0.12;h=0.03; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; sizeEx=0.030; };
+        class LblMV: ACME_VentText   { idc = 87722; text="M.V"; x=0.4;y=0.4;w=0.06;h=0.03; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; sizeEx=0.028; };
         class ValMV: ACME_VentText   { idc = 87723; text="07.49"; x=0.4;y=0.4;w=0.12;h=0.03; colorText[]={0.56,0.84,1,1}; colorBackground[]={0,0,0,0}; sizeEx=0.030; };
-        class LblVT: ACME_VentText   { idc = 87724; text="VTi"; x=0.4;y=0.4;w=0.06;h=0.03; colorText[]={0.90,0.90,0.90,1}; colorBackground[]={0,0,0,0}; sizeEx=0.028; };
+        class LblVT: ACME_VentText   { idc = 87724; text="VTi"; x=0.4;y=0.4;w=0.06;h=0.03; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; sizeEx=0.028; };
         class ValVTBox: ACME_VentText{ idc = 87725; x=0.4;y=0.4;w=0.12;h=0.03; colorBackground[]={0,0,0,0}; };
-        class ValVT: ACME_VentText   { idc = 87726; text="0681"; x=0.4;y=0.4;w=0.12;h=0.03; colorText[]={1,1,1,1}; colorBackground[]={0,0,0,0}; sizeEx=0.030; };
-        class RowParams: ACME_VentText { idc = 87727; text="PEEP 5.0        I:E 1:2.0"; x=0.4;y=0.4;w=0.2;h=0.025; colorText[]={0.80,0.80,0.80,1}; colorBackground[]={0,0,0,0}; sizeEx=0.022; };
+        class ValVT: ACME_VentText   { idc = 87726; text="0681"; x=0.4;y=0.4;w=0.12;h=0.03; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; sizeEx=0.030; };
+        class RowParams: ACME_VentText { idc = 87727; text="PEEP 5.0        I:E 1:2.0"; x=0.4;y=0.4;w=0.2;h=0.025; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; sizeEx=0.022; };
         // the auto-PEEP figure of PEEP and the i:e ratio, split out of the PEEP row into their own fixed-position
         // controls. they used to be one formatted string, so the moment auto-PEEP appeared the whole line grew and
         // pushed i:e off the end of the screen. separate controls at a fixed x cannot push each other.
-        class RowAutoPeep: ACME_VentText { idc = 87767; text=""; x=0.4;y=0.4;w=0.10;h=0.03; style=0; colorText[]={0.80,0.80,0.80,1}; colorBackground[]={0,0,0,0}; };
-        class RowIE:       ACME_VentText { idc = 87768; text=""; x=0.4;y=0.4;w=0.20;h=0.03; style=0; colorText[]={0.80,0.80,0.80,1}; colorBackground[]={0,0,0,0}; };
-        class GaugeFrame: ACME_VentText { idc = 87730; x=0.4;y=0.4;w=0.02;h=0.14; colorBackground[]={0.05,0.06,0.07,1}; };
+        class RowAutoPeep: ACME_VentText { idc = 87767; text=""; x=0.4;y=0.4;w=0.10;h=0.03; style=0; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; };
+        class RowIE:       ACME_VentText { idc = 87768; text=""; x=0.4;y=0.4;w=0.20;h=0.03; style=0; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; };
+        class GaugeFrame: ACME_VentText { idc = 87730; x=0.4;y=0.4;w=0.02;h=0.14; colorBackground[]=ACM_UI_PANEL(1); };
         class GaugeGreen: ACME_VentText { idc = 87731; x=0.4;y=0.4;w=0.02;h=0.05; colorBackground[]={0.23,0.56,0.29,1}; };
         class GaugeBlue: ACME_VentText  { idc = 87732; x=0.4;y=0.4;w=0.02;h=0.04; colorBackground[]={0.12,0.45,0.75,1}; };
         // pressure scale to the left of the gauge. it runs 0 to 50 cmH2O in tens, and each step is a numeral plus a
         // short tick mark, like the real device. it is positioned at init, and shown and hidden with the live
         // screen.
-        class GaugeLbl50: ACME_VentText { idc = 87733; x=0.4;y=0.4;w=0.03;h=0.02; colorText[]={1,1,1,1}; colorBackground[]={0,0,0,0}; style=1; text="50"; };
+        class GaugeLbl50: ACME_VentText { idc = 87733; x=0.4;y=0.4;w=0.03;h=0.02; colorText[]=ACM_UI_INK(1); colorBackground[]={0,0,0,0}; style=1; text="50"; };
         class GaugeLbl40: GaugeLbl50 { idc = 87734; text="40"; };
         class GaugeLbl30: GaugeLbl50 { idc = 87735; text="30"; };
         class GaugeLbl20: GaugeLbl50 { idc = 87736; text="20"; };
@@ -6179,11 +6282,13 @@ class ACME_Ventilator_Dialog {
             soundPush[] = {"", 0, 1};
             soundClick[] = {"", 0, 1};
             soundEscape[] = {"", 0, 1};
-            colorText[] = {0.92,0.92,0.92,1};
+            colorText[] = ACM_UI_INK(1);
             colorFocused[] = {0,0,0,0};
             colorBackgroundActive[] = {0,0,0,0};
-            colorDisabled[] = {0.92,0.92,0.92,1};
+            colorDisabled[] = ACM_UI_MUTED(1);
             colorBackgroundDisabled[] = {0,0,0,0};
+            colorBackground[] = ACM_UI_SURFACE(1);
+            font = ACM_UI_FONT;
         };
         class BtnAlarm: ACME_VentBtn { idc = 87740; text=""; x=0.4;y=0.4;w=0.04;h=0.03; colorBackground[]={0,0,0,0}; };
         // selection highlight box behind the alarm icon. an RscText background renders reliably, unlike a button
@@ -6197,7 +6302,7 @@ class ACME_Ventilator_Dialog {
         // the ventway sparrow status box is the small black square in the header, right of the battery. it shows t for
         // a patient trigger, z for zeroing transducers, or c for cough. it is a black box with a white glyph, as on
         // the device.
-        class VentStatusBox: ACME_VentText { idc = 87766; text=""; x=0.4;y=0.4;w=0.03;h=0.03; style=2; colorText[]={1,1,1,1}; colorBackground[]={0,0,0,0}; };
+        class VentStatusBox: ACME_VentText { idc = 87766; text=""; x=0.4;y=0.4;w=0.03;h=0.03; style=2; colorText[]=ACM_UI_SECONDARY(1); colorBackground[]={0,0,0,0}; };
         class TxtAlarmCount: ACME_VentText { idc = 87765; text="(0)"; x=0.4;y=0.4;w=0.04;h=0.03; style=0; colorText[]={0.10,0.10,0.10,1}; colorBackground[]={0,0,0,0}; };
         class BtnGraph: ACME_VentBtn { idc = 87742; text=""; x=0.4;y=0.4;w=0.04;h=0.03; colorBackground[]={0,0,0,0}; colorFocused[]={0,0,0,0}; };
         class HlGraph: ACME_VentText { idc = 87749; text=""; x=0.4;y=0.4;w=0.03;h=0.03; colorBackground[]={0,0,0,0}; };
@@ -6215,13 +6320,13 @@ class ACME_Ventilator_Dialog {
         // device, so a player scrolls to move the selection and middle-clicks to select. it is positioned under the
         // device face at init.
         class HintScrollIco: RscPictureKeepAspect { idc = 87770; text="\z\ace\addons\interaction\UI\mouse_scroll_ca.paa"; x=0.4;y=0.4;w=0.03;h=0.03; colorText[]={1,1,1,0.9}; };
-        class HintScrollTxt: ACME_VentText { idc = 87771; text="Scroll: Move Selection"; x=0.4;y=0.4;w=0.20;h=0.03; colorText[]={0.9,0.9,0.9,1}; colorBackground[]={0,0,0,0}; sizeEx=0.030; };
+        class HintScrollTxt: ACME_VentText { idc = 87771; text="Scroll: Move Selection"; x=0.4;y=0.4;w=0.20;h=0.03; colorText[]=ACM_UI_SECONDARY(1); colorBackground[]={0,0,0,0}; sizeEx=0.030; };
         class HintSelIco: RscPictureKeepAspect { idc = 87772; text="\z\ace\addons\interaction\UI\mouse_scroll_ca.paa"; x=0.4;y=0.4;w=0.03;h=0.03; colorText[]={1,1,1,0.9}; };
-        class HintSelTxt: ACME_VentText { idc = 87773; text="Middle Click: Select"; x=0.4;y=0.4;w=0.20;h=0.03; colorText[]={0.9,0.9,0.9,1}; colorBackground[]={0,0,0,0}; sizeEx=0.030; };
+        class HintSelTxt: ACME_VentText { idc = 87773; text="Middle Click: Select"; x=0.4;y=0.4;w=0.20;h=0.03; colorText[]=ACM_UI_SECONDARY(1); colorBackground[]={0,0,0,0}; sizeEx=0.030; };
         // a keycap, not an icon. ACE's ui set has no "F" glyph, and borrowing the scroll wheel for it was wrong. it is
         // drawn as a bordered letter, which also means any rebind reads correctly.
-        class HintFlipIco: ACME_VentTextC { idc = 87776; text="F"; x=0.4;y=0.4;w=0.03;h=0.03; colorText[]={0.95,0.97,1,1}; colorBackground[]={1,1,1,0.14}; sizeEx=0.026; };
-        class HintFlipTxt: ACME_VentText { idc = 87777; text="Flip Device"; x=0.4;y=0.4;w=0.20;h=0.03; colorText[]={0.9,0.9,0.9,1}; colorBackground[]={0,0,0,0}; sizeEx=0.030; };
+        class HintFlipIco: ACME_VentTextC { idc = 87776; text="F"; x=0.4;y=0.4;w=0.03;h=0.03; colorText[]=ACM_UI_SECONDARY(1); colorBackground[]={1,1,1,0.14}; sizeEx=0.026; };
+        class HintFlipTxt: ACME_VentText { idc = 87777; text="Flip Device"; x=0.4;y=0.4;w=0.20;h=0.03; colorText[]=ACM_UI_SECONDARY(1); colorBackground[]={0,0,0,0}; sizeEx=0.030; };
         // reverse side. these are two invisible hit zones over the battery hatch and the power button, positioned from
         // the annotated reference. they are transparent buttons rather than pictures, so they take hover and click.
         // the bounds are fully invisible. every color state is zeroed, not the resting one alone, because RscButton
@@ -6238,8 +6343,8 @@ class ACME_Ventilator_Dialog {
         class RevPower: RevBattery { idc = 87779; w=0.05; };
         // hover tooltip and the swap banner. they are drawn on the device rather than the screen, because the screen is
         // not facing the medic while any of this happens.
-        class RevTip:  ACME_VentTextC { idc = 88000; text=""; x=0.4;y=0.4;w=0.2;h=0.03; colorText[]={0.95,0.97,1,1}; colorBackground[]={0,0,0,0.72}; sizeEx=0.030; };
-        class RevBanner: ACME_VentTextC { idc = 88001; text=""; x=0.4;y=0.4;w=0.3;h=0.04; colorText[]={0,0.988,0.992,1}; colorBackground[]={0,0,0,0.78}; sizeEx=0.036; };
+        class RevTip:  ACME_VentTextC { idc = 88000; text=""; x=0.4;y=0.4;w=0.2;h=0.03; colorText[]=ACM_UI_INK(1); colorBackground[]=ACM_UI_PANEL(0.72); sizeEx=0.030; };
+        class RevBanner: ACME_VentTextC { idc = 88001; text=""; x=0.4;y=0.4;w=0.3;h=0.04; colorText[]={0,0.988,0.992,1}; colorBackground[]=ACM_UI_PANEL(0.78); sizeEx=0.036; };
 
         // generic list screen, reused by weight, mode, interface, connect, menu and params. it has a title label, up to
         // 6 selectable rows, and a nav strip with confirm, home, back and next. fn_ventpanelshowscreen positions and
@@ -6273,9 +6378,9 @@ class ACME_Ventilator_Dialog {
         // style 0 is left, matching ListTitle. it was style 2, so PRESSURE and FLOW rendered centerd in the same field
         // every other title is left aligned in, which is why they sat noticeably right of the rest.
         class GraphTitle: ACME_VentText { idc = 87800; text="PRESSURE"; x=0.4;y=0.4;w=0.2;h=0.02; colorText[]={0.05,0.05,0.05,1}; colorBackground[]={0,0,0,0}; style=0; sizeEx=0.02; };
-        class GraphField: ACME_VentText { idc = 87801; x=0.4;y=0.4;w=0.2;h=0.1; colorBackground[]={0.02,0.03,0.05,1}; };
+        class GraphField: ACME_VentText { idc = 87801; x=0.4;y=0.4;w=0.2;h=0.1; colorBackground[]=ACM_UI_PANEL(1); };
         class GraphAxis: ACME_VentText { idc = 87802; x=0.4;y=0.4;w=0.2;h=0.001; colorBackground[]={0.35,0.38,0.42,1}; };  // zero line.
-        class BtnClose: RscButton { shadow = 0; idc = 87775; text="Close"; x="safezoneX + safezoneW - 0.12"; y="safezoneY + 0.02"; w=0.10; h=0.035; colorBackground[]={0.15,0.15,0.15,0.9}; colorBackgroundActive[]={0.15,0.15,0.15,0.9}; colorFocused[]={0.15,0.15,0.15,0.9}; soundEnter[]={"",0,1}; soundPush[]={"",0,1}; soundClick[]={"",0,1}; soundEscape[]={"",0,1}; action="closeDialog 0"; };
+        class BtnClose: RscButton { shadow = 0; idc = 87775; text="Close"; x="safezoneX + safezoneW - 0.12"; y="safezoneY + 0.02"; w=0.10; h=0.035; colorBackground[]=ACM_UI_SURFACE(0.9); colorBackgroundActive[]=ACM_UI_HOVER(0.9); colorFocused[]=ACM_UI_ACTIVE(0.9); soundEnter[]={"",0,1}; soundPush[]={"",0,1}; soundClick[]={"",0,1}; soundEscape[]={"",0,1}; action="closeDialog 0"; colorText[] = ACM_UI_INK(1); colorDisabled[] = ACM_UI_MUTED(0.65); colorBackgroundDisabled[] = ACM_UI_PANEL(1); font = ACM_UI_FONT; };
     };
 };
 
@@ -6297,7 +6402,7 @@ class ACME_Laryngoscopy_Dialog {
         class LG_Dim: RscText {
             idc = -1;
             x = "safezoneX"; y = "safezoneY"; w = "safezoneW"; h = "safezoneH";
-            colorBackground[] = {0,0,0,0.72};
+            colorBackground[] = ACM_UI_PANEL(0.72);
         };
         // layered airway scene. these are full-canvas rgba layers from the laryngoscopy art bundle, all pinned to the
         // same square rect, because the registration matches, with keepaspect so nothing distorts on ultrawide. the
@@ -6547,7 +6652,7 @@ class ACME_Laryngoscopy_Dialog {
             style = 2;
             x = "safezoneX"; y = "safezoneY + safezoneH * 0.09"; w = "safezoneW"; h = "safezoneH * 0.04";
             text = "";
-            colorText[] = {0.82,0.82,0.82,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
             sizeEx = "0.026 * safezoneH";
         };
@@ -6577,7 +6682,7 @@ class ACME_Laryngoscopy_Dialog {
             idc = 87860;
             x = "safezoneX + safezoneW * 0.82"; y = "safezoneY + safezoneH * 0.30";
             w = "safezoneW * 0.08"; h = "safezoneH * 0.16";
-            colorBackground[] = {0,0,0,0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class LG_ScopeLogo: RscPictureKeepAspect {
             idc = 87861;
@@ -6608,7 +6713,7 @@ class ACME_Laryngoscopy_Dialog {
             idc = 87864;
             x = "safezoneX + safezoneW * 0.82"; y = "safezoneY + safezoneH * 0.50";
             w = "safezoneW * 0.08"; h = "safezoneH * 0.16";
-            colorBackground[] = {0,0,0,0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class LG_TubeLogo: RscPictureKeepAspect {
             idc = 87865;
@@ -6639,7 +6744,7 @@ class ACME_Laryngoscopy_Dialog {
             idc = 87870;
             x = "safezoneX + safezoneW * 0.82"; y = "safezoneY + safezoneH * 0.70";
             w = "safezoneW * 0.08"; h = "safezoneH * 0.16";
-            colorBackground[] = {0,0,0,0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class LG_SyrLogo: RscPictureKeepAspect {
             idc = 87871;
@@ -6670,7 +6775,7 @@ class ACME_Laryngoscopy_Dialog {
             idc = 87874;
             x = "safezoneX + safezoneW * 0.82"; y = "safezoneY + safezoneH * 0.86";
             w = "safezoneW * 0.08"; h = "safezoneH * 0.16";
-            colorBackground[] = {0,0,0,0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class LG_ColLogo: RscPictureKeepAspect {
             idc = 87875;
@@ -6701,7 +6806,7 @@ class ACME_Laryngoscopy_Dialog {
             idc = 87880;
             x = "safezoneX + safezoneW * 0.82"; y = "safezoneY + safezoneH * 0.86";
             w = "safezoneW * 0.08"; h = "safezoneH * 0.16";
-            colorBackground[] = {0,0,0,0.85};
+            colorBackground[] = ACM_UI_PANEL(0.85);
         };
         class LG_SucLogo: RscPictureKeepAspect {
             idc = 87881;
@@ -6735,6 +6840,11 @@ class ACME_Laryngoscopy_Dialog {
             colorBackground[] = {0.30,0.10,0.10,0.85};
             colorText[] = {0.93,0.89,0.80,1};
             action = "closeDialog 0";
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
     };
 };
@@ -6745,14 +6855,14 @@ class ACME_Laryngoscopy_Dialog {
 // of each category, is built at runtime by ACME_fnc_megacodePanelLoad and _megacodemenu.
 class ACME_MC_MenuBtn: RscButton {
     idc = -1;
-    colorText[] = {0.92,0.95,1,1};
-    colorDisabled[] = {1,1,1,0.25};
-    colorBackground[] = {0.10,0.13,0.18,1};
-    colorBackgroundDisabled[] = {0.06,0.07,0.09,1};
+    colorText[] = ACM_UI_INK(1);
+    colorDisabled[] = ACM_UI_MUTED(0.25);
+    colorBackground[] = ACM_UI_SURFACE(1);
+    colorBackgroundDisabled[] = ACM_UI_PANEL(1);
     colorBackgroundActive[] = {0.16,0.42,0.58,1};
-    colorFocused[] = {0.12,0.16,0.22,1};
+    colorFocused[] = ACM_UI_ACTIVE(1);
     colorBorder[] = {0,0,0,0};
-    font = "PuristaBold";
+    font = ACM_UI_FONT;
     sizeEx = "safeZoneH * 0.022";
     style = 2;
     shadow = 0;
@@ -6776,7 +6886,7 @@ class ACME_Megacode_Panel {
             y = "safeZoneY + safeZoneH * 0.075";
             w = "(safeZoneH*0.85*1.61)";
             h = "safeZoneH * 0.85";
-            colorBackground[] = {0.02,0.03,0.05,0.97};
+            colorBackground[] = ACM_UI_PANEL(0.97);
         };
         class MC_TitleBar: RscText {
             idc = -1;
@@ -6785,10 +6895,10 @@ class ACME_Megacode_Panel {
             y = "safeZoneY + safeZoneH * 0.075";
             w = "(safeZoneH*0.85*1.61)";
             h = "safeZoneH * 0.045";
-            colorBackground[] = {0.07,0.10,0.14,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             colorText[] = {0.50,0.85,1,1};
             sizeEx = "safeZoneH * 0.026";
-            font = "PuristaBold";
+            font = ACM_UI_FONT;
         };
         class MC_WaveBG: RscText {
             idc = -1;
@@ -6797,7 +6907,7 @@ class ACME_Megacode_Panel {
             y = "safeZoneY + safeZoneH*0.075 + safeZoneH*0.050";
             w = "(safeZoneH*0.85*1.61)*0.605";
             h = "safeZoneH*0.85*0.50 + 0.004";
-            colorBackground[] = {0,0,0,1};
+            colorBackground[] = ACM_UI_PANEL(1);
         };
         class MC_VitalsBG: MC_WaveBG {
             x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + (safeZoneH*0.85*1.61)*0.625 - 0.004";
@@ -6891,7 +7001,7 @@ class ACME_MC_CableTuner {
             y = "safeZoneY + safeZoneH * 0.685";
             w = "safeZoneW * 0.90";
             h = "safeZoneH * 0.300";
-            colorBackground[] = {0.02,0.03,0.05,0.97};
+            colorBackground[] = ACM_UI_PANEL(0.97);
         };
         class CT_TitleBar: RscText {
             idc = -1;
@@ -6900,10 +7010,10 @@ class ACME_MC_CableTuner {
             y = "safeZoneY + safeZoneH * 0.685";
             w = "safeZoneW * 0.90";
             h = "safeZoneH * 0.034";
-            colorBackground[] = {0.07,0.10,0.14,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             colorText[] = {0.50,0.85,1,1};
             sizeEx = "safeZoneH * 0.024";
-            font = "PuristaBold";
+            font = ACM_UI_FONT;
         };
     };
     class Controls {};
@@ -6928,7 +7038,7 @@ class ACME_CoolerManager_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 2.9)";
             w = "safeZoneW / 2.5";
             h = "safeZoneH / 1.55";
-            colorBackground[] = {0.04,0.06,0.09,0.94};
+            colorBackground[] = ACM_UI_PANEL(0.94);
         };
         // thin red rule under the header. it is the field-kit identity bar.
         class ACME_CLR_HeaderRule: RscText {
@@ -6949,7 +7059,7 @@ class ACME_CoolerManager_Dialog {
             h = "safeZoneH / 22";
             colorText[] = {0.92,0.24,0.24,1};
             colorBackground[] = {0,0,0,0};
-            font = "PuristaBold";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.032";
             style = 0;
             shadow = 0;
@@ -6965,7 +7075,7 @@ class ACME_CoolerManager_Dialog {
             h = "safeZoneH / 20";
             colorText[] = {0.55,0.88,1,1};
             colorBackground[] = {0.07,0.13,0.18,0.85};
-            font = "PuristaBold";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.026";
             style = 2;
             shadow = 0;
@@ -6979,7 +7089,7 @@ class ACME_CoolerManager_Dialog {
             h = "safeZoneH / 30";
             colorText[] = {0.70,0.80,0.90,1};
             colorBackground[] = {0,0,0,0};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.022";
             style = 0;
             shadow = 0;
@@ -6994,7 +7104,7 @@ class ACME_CoolerManager_Dialog {
             h = "safeZoneH / 30";
             colorText[] = {0.50,0.85,1,1};
             colorBackground[] = {0,0,0,0};
-            font = "PuristaBold";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.021";
             shadow = 0;
         };
@@ -7007,7 +7117,7 @@ class ACME_CoolerManager_Dialog {
             h = "safeZoneH / 30";
             colorText[] = {0.90,0.70,0.40,1};
             colorBackground[] = {0,0,0,0};
-            font = "PuristaBold";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.021";
             shadow = 0;
         };
@@ -7021,6 +7131,13 @@ class ACME_CoolerManager_Dialog {
             h = "safeZoneH * 0.028";
             sizeEx = "safeZoneH * 0.021";
             onLBSelChanged = "if (!((_this select 0) getVariable ['ACME_filling',false])) then {uiNamespace setVariable ['ACME_CLR_Id',(_this select 0) lbData (_this select 1)]; call ACME_fnc_coolerRefresh;};";
+            colorText[] = ACM_UI_INK(1);
+            colorBackground[] = ACM_UI_SURFACE(1);
+            font = ACM_UI_FONT;
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         // fn_coolerrefresh builds the slot bay grid at runtime into this group, with the count set to the cooler
         // capacity, so the panel always shows exactly as many bays as the cooler holds. 1u gives 1, 2u gives 2 and 4u
@@ -7044,7 +7161,12 @@ class ACME_CoolerManager_Dialog {
             h = 0.001;
             colorBackground[] = {0,0,0,0};
             sizeEx = "safeZoneH * 0.001";
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
+            colorText[] = ACM_UI_INK(1);
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         class ACME_CLR_ListOut: RscListBox {
             idc = 87411;
@@ -7052,9 +7174,14 @@ class ACME_CoolerManager_Dialog {
             y = "safeZoneY + (safeZoneH / 2) - (safeZoneH / 4.7)";
             w = "safeZoneW * 0.158";
             h = "safeZoneH / 2.7";
-            colorBackground[] = {0.02,0.04,0.07,0.9};
+            colorBackground[] = ACM_UI_SURFACE(0.9);
             sizeEx = "safeZoneH * 0.021";
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
+            colorText[] = ACM_UI_INK(1);
+            colorSelect[] = ACM_UI_INK(1);
+            colorSelect2[] = ACM_UI_INK(1);
+            colorSelectBackground[] = ACM_UI_ACTIVE(1);
+            colorSelectBackground2[] = ACM_UI_ACTIVE(1);
         };
         class ACME_CLR_Unload: RscButton {
             idc = 87412;
@@ -7065,10 +7192,14 @@ class ACME_CoolerManager_Dialog {
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 4.6)";
             w = "safeZoneW * 0.2016";
             h = "safeZoneH / 26";
-            colorBackground[] = {0.16,0.20,0.24,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             colorText[] = {0.85,0.95,1,1};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.021";
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
         };
         class ACME_CLR_Load: RscButton {
             idc = 87413;
@@ -7079,10 +7210,14 @@ class ACME_CoolerManager_Dialog {
             y = "safeZoneY + (safeZoneH / 2) + (safeZoneH / 4.6)";
             w = "safeZoneW * 0.158";
             h = "safeZoneH / 26";
-            colorBackground[] = {0.16,0.20,0.24,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             colorText[] = {0.85,0.95,1,1};
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.021";
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
         };
         class ACME_CLR_Deploy: RscButton {
             idc = 87423;
@@ -7092,9 +7227,14 @@ class ACME_CoolerManager_Dialog {
             y = "safeZoneY + safeZoneH * 0.765";
             w = "safeZoneW * 0.376";
             h = "safeZoneH / 28";
-            colorBackground[] = {0.16,0.20,0.24,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             colorText[] = {0.85,0.95,1,1};
             sizeEx = "safeZoneH * 0.021";
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
+            font = ACM_UI_FONT;
         };
         class ACME_CLR_Close: RscButton {
             idc = 87414;
@@ -7105,10 +7245,14 @@ class ACME_CoolerManager_Dialog {
             w = "safeZoneW / 2.5";
             h = "safeZoneH / 24";
             colorBackground[] = {0.45,0.12,0.12,1};
-            colorText[] = {1,1,1,1};
-            font = "PuristaBold";
+            colorText[] = ACM_UI_INK(1);
+            font = ACM_UI_FONT;
             sizeEx = "safeZoneH * 0.024";
             style = 2;
+            colorDisabled[] = ACM_UI_MUTED(0.65);
+            colorBackgroundActive[] = ACM_UI_HOVER(1);
+            colorBackgroundDisabled[] = ACM_UI_PANEL(1);
+            colorFocused[] = ACM_UI_ACTIVE(1);
         };
     };
 };

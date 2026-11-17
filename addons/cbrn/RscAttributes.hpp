@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 class RscControlsGroup;
 class RscControlsGroupNoScrollbars;
 class RscText;
@@ -47,7 +48,7 @@ class GVAR(RscCreateHazardZone): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(1));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class List_HazardType: RscCombo {
                             idc = IDC_MODULE_CREATE_HAZARDZONE_LIST;
@@ -168,7 +169,7 @@ class GVAR(RscCreateChemicalDevice): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(1));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class List_HazardType: RscCombo {
                             idc = IDC_MODULE_CREATE_CHEMICALDEVICE_LIST;

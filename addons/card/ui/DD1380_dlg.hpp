@@ -1,3 +1,4 @@
+#include "..\..\main\ui_theme.hpp"
 #include "ui_macros.hpp"
 #include "idc_macros.hpp"
 #ifdef GUI_GRID_W
@@ -30,11 +31,11 @@ class DD1380_RscButton : RscButton {
 	colorFocused[] = {0,0,0,0};
 };
 class DD1380_RscCheckBox : RscCheckBox {
-	color[] = COLOR_BLACK;
-	colorFocused[] = COLOR_BLACK;
-	colorHover[] = COLOR_BLACK;
-	colorPressed[] = COLOR_BLACK;
-	colorDisabled[] = COLOR_BLACK;
+	color[] = ACM_UI_DARK_INK(1);
+	colorFocused[] = ACM_UI_DARK_INK(1);
+	colorHover[] = ACM_UI_DARK_INK(1);
+	colorPressed[] = ACM_UI_DARK_INK(1);
+	colorDisabled[] = ACM_UI_DARK_INK(1);
 	shadow = 0;
 };
 class DD1380_RscEdit: RscEdit {
@@ -42,7 +43,7 @@ class DD1380_RscEdit: RscEdit {
 	//w = QUOTE(PXTOSCREEN_W(DD1380_GUI_DH9_OSD_ELEMENT_STD_W));
 	//h = QUOTE(PXTOSCREEN_H(DD1380_GUI_DH9_OSD_ELEMENT_STD_H));
 	font = QUOTE(BiroScriptPlus);
-	colorText[] = COLOR_BLACK;
+	colorText[] = ACM_UI_DARK_INK(1);
 	sizeEx = QUOTE(PXTOSCREEN_H(36));
 	colorBackground[] = COLOR_TRANSPARENT;
 	shadow = 0;
@@ -52,7 +53,7 @@ class DD1380_RscText: RscText {
 	//w = QUOTE(PXTOSCREEN_W(DD1380_GUI_DH9_OSD_ELEMENT_STD_W));
 	//h = QUOTE(PXTOSCREEN_H(DD1380_GUI_DH9_OSD_ELEMENT_STD_H));
 	font = QUOTE(BiroScriptPlus);
-	colorText[] = COLOR_BLACK;
+	colorText[] = ACM_UI_DARK_INK(1);
 	sizeEx = QUOTE(PXTOSCREEN_H(42));
 	colorBackground[] = COLOR_TRANSPARENT;
 	shadow = 0;

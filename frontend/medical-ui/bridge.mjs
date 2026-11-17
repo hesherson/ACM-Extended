@@ -25,6 +25,7 @@ export function validState(s) {
       || !text(c.name,512) || !c.name || !text(c.detail,1024) || !text(c.status,128) || !text(c.thermal,128)
       || !text(c.icon,512) || !text(c.vial,512) || typeof c.selected !== 'boolean'
       || (c.flowing !== undefined && typeof c.flowing !== 'boolean')
+      || (c.medicationDetails !== undefined && !text(c.medicationDetails,4096))
       || !Array.isArray(c.color) || c.color.length !== 4 || !c.color.every(x => Number.isFinite(x) && x >= 0 && x <= 1)
       || !Number.isFinite(c.fraction) || c.fraction < -1 || c.fraction > 1
       || !Array.isArray(c.marks) || c.marks.length > 11 || !c.marks.every(m => Array.isArray(m) && m.length === 2

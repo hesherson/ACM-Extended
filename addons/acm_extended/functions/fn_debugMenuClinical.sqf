@@ -1,3 +1,4 @@
+#include "\x\acm\addons\main\ui_theme.hpp"
 // The single ACME debug overlay. Clinical, treatment and transport state share one patient and one toggle.
 // B221 restores B218 presentation helpers; data additions and the missing-color fix stay intact.
 disableSerialization;
@@ -28,7 +29,7 @@ private _control = {
     _c
 };
 private _ctrlB = ["ACME_DebugMenuBackdrop"] call _control;
-_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.74];
+_ctrlB ctrlSetBackgroundColor (ACM_UI_PANEL_RGB + [0.74]);
 _ctrlB ctrlEnable false;
 private _ctrlH = ["ACME_DebugMenuCtrl"] call _control;
 private _ctrlT = ["ACME_DebugMenuCtrlTop", false] call _control;

@@ -1,3 +1,4 @@
+#include "\x\acm\addons\main\ui_theme.hpp"
 // populate the cooler manager. the left side is a slot-bay grid built at runtime to exactly match the unit capacity
 // of the cooler, where 1u gives 1 bay, 2u gives 2 and 4u gives 4, so the carry count is unmistakable at a glance.
 // each bay is either filled, with blood-bag art and a unit label in warm red, or an empty outline, a cold-blue
@@ -150,7 +151,7 @@ for "_s" from 0 to (_cap - 1) do {
     private _num = _dlg ctrlCreate ["RscText", -1, _grp];
     _num ctrlSetPosition [_bx - _gx + (_cellW * 0.03), _by - _gy + (_cellH * 0.03), _cellW * 0.3, _cellH * 0.18];
     _num ctrlSetText format ["%1", _s + 1];
-    _num ctrlSetFont "PuristaBold";
+    _num ctrlSetFont ACM_UI_FONT;
     _num ctrlSetTextColor (if (_filled) then { ["blood", 1] call ACME_fnc_a11yColor } else { ["cool", 1] call ACME_fnc_a11yColor });
     _num ctrlSetFontHeight (_cellH * 0.16);
     _num ctrlCommit 0;

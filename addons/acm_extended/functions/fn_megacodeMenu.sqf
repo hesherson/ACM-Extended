@@ -29,7 +29,7 @@ private _mkLabel = {
 };
 private _mkBtn = {
     params ["_x","_y","_w","_h","_txt","_key","_eh",["_active",false]];
-    private _b = _disp ctrlCreate ["RscButton",-1];
+    private _b = _disp ctrlCreate ["ACME_ThemeButton",-1];
     _b ctrlSetPosition [_x,_y,_w,_h]; _b ctrlSetText _txt; _b ctrlSetTextColor [0.92,0.95,1,1];
     _b ctrlSetBackgroundColor (if (_active) then {[0.18,0.45,0.62,1]} else {[0.10,0.12,0.16,1]});
     _b ctrlSetFontHeight (_h*0.42); _b setVariable ["mc_key",_key]; _b ctrlAddEventHandler ["ButtonClick",_eh]; _b ctrlCommit 0;

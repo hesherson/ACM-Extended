@@ -22,15 +22,26 @@ function Texture({path,className}) {
 }
 const keys = {ArrowUp:200,ArrowDown:208,PageUp:201,PageDown:209,Home:199,End:207};
 function Card({card,enabled,layout,fontScale}) {
-  const geometry=cardLayout(layout,card,fontScale);
+  const hasFlow = card.fraction >= 0 && typeof card.flowing === 'boolean';
+  const flow = hasFlow ? (enabled ? (card.flowing ? 'Flowing' : 'No flow') : 'Unknown') : '';
+  const status = hasFlow && ['Running','Paused'].includes(card.status) ? '' : card.status;
+  const geometry=cardLayout(layout,{...card,status:status || flow},fontScale);
   const piggyback = card.name.includes('[PiB]');
+  const medicationCount = card.medicationDetails?.split('\n').filter(Boolean).length || 0;
+  const detail = medicationCount ? `${card.detail} · ${medicationCount} ${medicationCount === 1 ? 'med' : 'meds'}` : card.detail;
   return <button type="button" className={`card ${card.selected?'selected':''} ${piggyback?'piggyback':''} ${card.fraction>=0?'with-track':''}`}
     style={{...geometry.root,gridRow:card.slot+1}} aria-pressed={card.selected} disabled={!enabled}
-    title={[card.name,card.detail,card.status,card.thermal].filter(Boolean).join('\n')} onClick={()=>store.select(card.token)}>
+    title={[card.name,card.detail,status,flow && `Flow: ${flow}`,card.thermal,card.medicationDetails].filter(Boolean).join('\n')}
+    onClick={()=>store.select(card.token)}>
     <div className="fluid-icon" style={geometry.icon}><Texture path={card.icon}/></div>
     <div className="name caption" style={{...geometry.name,'--color-clinical':`rgba(${card.color.slice(0,3).map(v=>v*255).join(',')},${card.color[3]})`}}>{card.name}</div>
-    {card.detail && <div className="detail caption" style={geometry.detail}>{card.detail}</div>}
-    {card.status && <div className="status caption" style={geometry.status}>{card.status}</div>}
+    {detail && <div className="detail caption" style={geometry.detail}>{detail}</div>}
+    {(status || flow) && <div className="status caption" style={geometry.status}>
+      <span className="status-values">
+        {status && <span className="role-status">{status}</span>}
+        {flow && <span className="flow-status" aria-label={`Flow: ${flow}`}>{flow}</span>}
+      </span>
+    </div>}
     {card.thermal && <div className={`thermal caption ${card.thermal.includes('Warming')?'warming':''}`} style={geometry.thermal}>{card.thermal}</div>}
     <div className="vial-icon" style={geometry.vial}><Texture path={card.vial}/></div>
     {card.fraction>=0 && <div className="volume" style={geometry.volume} role="progressbar" aria-label={`${card.name} remaining volume`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={card.fraction*100}>

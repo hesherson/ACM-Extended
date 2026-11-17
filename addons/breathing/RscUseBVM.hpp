@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "UseBVM_defines.hpp"
 
 class RscTitles
@@ -15,12 +16,12 @@ class RscTitles
             class TopText: RscText {
                 idc = IDC_USEBVM_TOPTEXT;
                 style = ST_CENTER;
-                font = "RobotoCondensed";
+                font = ACM_UI_FONT;
                 x = QUOTE(safeZoneX);
                 y = QUOTE(safeZoneY);
                 w = QUOTE(safeZoneW);
                 h = QUOTE(safeZoneH / 10);
-                colorText[] = {1,1,1,1};
+                colorText[] = ACM_UI_INK(1);
                 colorBackground[] = {0,0,0,0};
                 text = CSTRING(BVM_UsingBVM);
                 lineSpacing = 0;

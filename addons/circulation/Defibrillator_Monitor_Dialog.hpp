@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "Defibrillator_defines.hpp"
 
 class GVAR(Lifepak_Monitor_Dialog) {
@@ -14,7 +15,7 @@ class GVAR(Lifepak_Monitor_Dialog) {
             y = QUOTE(ACM_AED_pxToScreen_Y((AED_TOPLEFT_Y - 20)));
             w = QUOTE(ACM_AED_pxToScreen_W(1000));
             h = QUOTE(ACM_AED_pxToScreen_H(700));
-            colorBackground[] = {0,0,0,1};
+            colorBackground[] = ACM_UI_PANEL(1);
         };
         class Black_Background2: Black_Background {};
         class VitalsSection_Background: RscText {
@@ -23,7 +24,7 @@ class GVAR(Lifepak_Monitor_Dialog) {
             y = QUOTE(ACM_AED_pxToScreen_Y(AED_TOPLEFT_Y)); // 900
             w = QUOTE(ACM_AED_pxToScreen_W(180));
             h = QUOTE(ACM_AED_pxToScreen_H(550));
-            colorBackground[] = {0.18,0.26,0.29,1};
+            colorBackground[] = ACM_UI_SURFACE(1);
             text = "";
         };
         class HR_Vitals_Background: RscText {
@@ -32,7 +33,7 @@ class GVAR(Lifepak_Monitor_Dialog) {
             y = QUOTE(ACM_AED_pxToScreen_Y(VitalsBG_Spacing_Y(0)));
             w = QUOTE(ACM_AED_pxToScreen_W(180));
             h = QUOTE(ACM_AED_pxToScreen_H(140));
-            colorBackground[] = {0,0,0,1};
+            colorBackground[] = ACM_UI_PANEL(1);
         };
         class SpO2_Vitals_Background: HR_Vitals_Background {
             idc = -1;
@@ -67,7 +68,7 @@ class GVAR(Lifepak_Monitor_Dialog) {
             h = QUOTE(ACM_AED_pxToScreen_H(25));
             colorBackground[] = {0,0,0,0};
             colorText[] = HR_COLOR;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             shadow = 0;
             type = 0;
             style = 0;
@@ -267,7 +268,7 @@ class GVAR(Lifepak_Monitor_Dialog) {
             y = QUOTE(ACM_AED_pxToScreen_Y((AED_CO_SCALE_Y(1) + 10)));
             w = QUOTE(ACM_AED_pxToScreen_W(30));
             h = QUOTE(ACM_AED_pxToScreen_H(20));
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             shadow = 0;
             type = 0;
             style = 1;

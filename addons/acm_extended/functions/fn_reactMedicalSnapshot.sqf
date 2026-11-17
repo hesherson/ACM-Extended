@@ -24,8 +24,8 @@ private _cards = [];
     private _row = _x;
     private _identity = _identities select _slot;
     if (_row >= 0 && {_identity isNotEqualTo []}) then {
-        private _data = [_list,_row] call ACME_fnc_transfusionCardData;
-        _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction","_total",["_flowing",false]];
+        private _data = [_list,_row,true] call ACME_fnc_transfusionCardData;
+        _data params ["_name","_detail","_status","_thermal","_color","_icon","_vial","_fraction","_total","_flowing","_medicationDetails"];
         if (_name != "") then {
             private _token = format ["row:%1:%2",_revision,_slot];
             _rows set [_token,_identity];
@@ -33,7 +33,8 @@ private _cards = [];
                 ["slot",_slot],["token",_token],["name",_name select [0,512]],
                 ["detail",_detail select [0,1024]],["status",_status select [0,128]],["thermal",_thermal select [0,128]],
                 ["color",_color],["icon",_icon select [0,512]],["vial",_vial select [0,512]],
-                ["flowing",_flowing],["fraction",_fraction],["marks",[_total] call ACME_fnc_transfusionGraduations],
+                ["flowing",_flowing],["medicationDetails",_medicationDetails select [0,4096]],
+                ["fraction",_fraction],["marks",[_total] call ACME_fnc_transfusionGraduations],
                 ["selected",(lbCurSel _list) == _row]
             ];
         };

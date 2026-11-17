@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 class RscControlsGroup;
 class RscControlsGroupNoScrollbars;
 class RscText;
@@ -47,7 +48,7 @@ class GVAR(RscSetBloodVolume): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(1));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class Slider_BloodVolume: RscXSliderH {
                             idc = IDC_MODULE_SET_BLOOD_VOLUME_BLOODVOLUME;
@@ -109,7 +110,7 @@ class GVAR(RscInflictCardiacArrest): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(3));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class List_TargetRhythm: ctrlToolbox {
                             idc = IDC_MODULE_INFLICT_CARDIAC_ARREST_LIST;
@@ -153,7 +154,7 @@ class GVAR(RscInflictChestInjury): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(3));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class List_InjuryType: ctrlToolbox {
                             idc = IDC_MODULE_INFLICT_CHEST_INJURY_LIST;
@@ -197,7 +198,7 @@ class GVAR(RscGivePain): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(1));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class Slider_PainAmount: RscXSliderH {
                             idc = IDC_MODULE_GIVE_PAIN_SLIDER;
@@ -241,7 +242,7 @@ class GVAR(RscSetOxygen): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(1));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class Slider_OxygenSaturation: RscXSliderH {
                             idc = IDC_MODULE_SET_OXYGEN_SLIDER;
@@ -285,7 +286,7 @@ class GVAR(RscSetBloodType): RscDisplayAttributes {
                             y = 0;
                             w = QUOTE(W_PART(10));
                             h = QUOTE(H_PART(5));
-                            colorBackground[] = {0,0,0,0.5};
+                            colorBackground[] = ACM_UI_PANEL(0.5);
                         };
                         class List_BloodType: ctrlToolbox {
                             idc = IDC_MODULE_SET_BLOODTYPE_LIST;

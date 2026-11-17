@@ -1,3 +1,4 @@
+#include "..\main\ui_theme.hpp"
 #include "MeasureBP_defines.hpp"
 
 class GVAR(MeasureBP_Dialog)
@@ -72,12 +73,12 @@ class GVAR(MeasureBP_Dialog)
         class TopText: RscText {
             idc = -1;
             style = ST_CENTER;
-            font = "RobotoCondensed";
+            font = ACM_UI_FONT;
             x = QUOTE(safeZoneX);
             y = QUOTE(safeZoneY);
             w = QUOTE(safeZoneW);
             h = QUOTE(safeZoneH / 10);
-            colorText[] = {1,1,1,1};
+            colorText[] = ACM_UI_INK(1);
             colorBackground[] = {0,0,0,0};
             text = CSTRING(MeasureBP_Measuring);
             lineSpacing = 0;
