@@ -4,7 +4,7 @@
  */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_respawnClinicalReset;};
+    isNil {private _r = _this call ACME_fnc_respawnClinicalReset; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params [["_newUnit", objNull, [objNull]], ["_issuedAt", -1, [0]]];
@@ -44,6 +44,7 @@ private _alreadyActive = damage _newUnit > 0
     || {_newUnit getVariable ["ace_medical_inCardiacArrest", false]}
     || {_newUnit getVariable ["ACE_isUnconscious", false]}
     || {_newUnit getVariable ["ACME_obtunded", false]}
+    || {_newUnit getVariable ["ACME_confused", false]}
     || {_newUnit getVariable ["ACME_hpmk_on", false]}
     || {_newUnit getVariable ["ACME_nrb_on", false]}
     || {_newUnit getVariable ["ACME_vent_onPatient", false]}
@@ -69,6 +70,8 @@ if (_alreadyActive) exitWith {
 _newUnit setVariable ["ACME_respawnResetComplete", true, true];
 [_newUnit] call ACME_fnc_clearAllAilments;
 [_newUnit, false, false, "", -1, true] call ACME_fnc_obtundedStateCommit;
+_newUnit setVariable ["ACME_confused", false, true];
+_newUnit setVariable ["ACME_confused_manual", false, true];
 _newUnit setVariable ["ACME_obtunded_forcedBack", false, true];
 [_newUnit, 0, true, false] call ACME_fnc_rhythmActiveCommit;
 _newUnit setVariable ["ACME_rhythm_targetHR", 0, true];

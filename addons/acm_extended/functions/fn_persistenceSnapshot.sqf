@@ -1,6 +1,6 @@
 /* Atomic local equipment checkpoint, compatible with CBA_fnc_setLoadout.
  * [] means retry. This captures one unit, not an atomic multi-owner world save. */
-if (canSuspend) exitWith {private _result = []; isNil {_result = _this call ACME_fnc_persistenceSnapshot;}; _result};
+if (canSuspend) exitWith {private _result = []; isNil {private _r = _this call ACME_fnc_persistenceSnapshot; if (!isNil "_r") then {_result = _r;};}; _result};
 params ["_unit"];
 if (isNull _unit || {!local _unit} || {!(_unit isKindOf "CAManBase")}) exitWith {[]};
 _unit setVariable ["ACME_persistenceBlockReason","",false];

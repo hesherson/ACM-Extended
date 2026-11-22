@@ -5,7 +5,7 @@
  */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_ventBatteryExchange;};
+    isNil {private _r = _this call ACME_fnc_ventBatteryExchange; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params [["_operation", "apply", [""]], ["_request", [], [[]]], ["_decision", [], [[]]], ["_serverVerified", false, [false]]];

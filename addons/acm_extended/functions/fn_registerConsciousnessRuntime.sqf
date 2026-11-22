@@ -6,6 +6,12 @@ if (hasInterface) then {
     // physiological auto-obtundation evaluates locally owned player units on a slow cadence.
     [{call ACME_fnc_obtundedAuto}, 1.5, []] call CBA_fnc_addPerFrameHandler;
     [{call ACME_fnc_consciousnessBudget}, 1, []] call CBA_fnc_addPerFrameHandler;
+    // B391: the confused level below obtundation, and garbled speech for both (ACRE2 Babel)
+    [{call ACME_fnc_confusedAuto}, 1.5, []] call CBA_fnc_addPerFrameHandler;
+    [{call ACME_fnc_confusedTick}, 0, []] call CBA_fnc_addPerFrameHandler;
+    [{call ACME_fnc_conscSpeech}, 0.5, []] call CBA_fnc_addPerFrameHandler;
+    // every client prepares Babel when it is first asked; a player joining later gets the JIP copy of the event
+    ["ACME_babelEnsure", {call ACME_fnc_babelEnsure;}] call CBA_fnc_addEventHandler;
 };
 
 // Shared wrapping audio follows ACE's actual start/end events on every machine.

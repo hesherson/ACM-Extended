@@ -1,5 +1,5 @@
 /* Equipment-only checkpoint. [] means busy/invalid; never save it as an empty store. */
-if (canSuspend) exitWith {private _result = []; isNil {_result = _this call ACME_fnc_equipmentSnapshot;}; _result};
+if (canSuspend) exitWith {private _result = []; isNil {private _r = _this call ACME_fnc_equipmentSnapshot; if (!isNil "_r") then {_result = _r;};}; _result};
 params ["_holder"];
 if (isNull _holder || {!local _holder}) exitWith {[]};
 private _restoreJournal = _holder getVariable ["ACME_equipmentRestoreJournal",[]];

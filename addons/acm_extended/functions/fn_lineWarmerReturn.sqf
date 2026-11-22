@@ -2,7 +2,7 @@
  * public owner certificate binds this one device to this recipient and deadline. */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_lineWarmerReturn;};
+    isNil {private _r = _this call ACME_fnc_lineWarmerReturn; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params ["_patient", "_medic", "_id", "_issued", ["_attempt", 0, [0]]];

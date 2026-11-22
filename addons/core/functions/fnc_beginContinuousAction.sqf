@@ -25,6 +25,11 @@
  * Public: No
  */
 
+// B390: the per-frame worker is registered before OnStart runs and treats an unfinished start as a cancel. From a
+// scheduled caller the start can be suspended in between (createDialog), and the worker then closed the new dialog
+// at once. The whole start runs unscheduled.
+if (canSuspend) exitWith {private _started = false; isNil {private _r = _this call FUNC(beginContinuousAction); if (!isNil "_r") then {_started = _r;};}; _started};
+
 params [
     "_args", "_onStart", "_onCancel", "_perFrame",
     ["_allowProne", false],
@@ -38,7 +43,7 @@ _suppressProviderAnim = _suppressProviderAnim || {!(missionNamespace getVariable
 // Preserve native exclusivity. An incoming provider's absent heartbeat says nothing about the current owner.
 // The existing reconciliation pass recovers the recorded controller through its own cancellation callback.
 if (isNull _medic || {isNull _patient} || {!local _medic} || {!alive _medic}
-    || {IS_UNCONSCIOUS(_medic)} || {GVAR(ContinuousAction_Active)}
+    || {IS_UNCONSCIOUS(_medic)} || {missionNamespace getVariable [QGVAR(ContinuousAction_Active), false]}
     || {!([_medic,_patient] call ACME_fnc_patientInteractionContact)}) exitWith {false};
 
 // Bind only a session started by the local controlled unit. AI/local scripted

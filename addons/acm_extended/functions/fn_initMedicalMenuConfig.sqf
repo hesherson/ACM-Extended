@@ -80,6 +80,7 @@ ACME_menuGroups = [
         "Induce/Clear Peri-Arrest Shock",
         "Induce/Clear Over-Resuscitation (debug)",
         "Induce/Clear Obtunded Back (debug)",
+        "Induce/Clear Confused (debug)",
         "Induce/Clear Obtunded Prone (debug)",
         "Obtunded BACK pose only (debug)",
         "Force Shake (debug)",

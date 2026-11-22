@@ -4,9 +4,10 @@ params ["_unit", "_item", ["_consume", true]];
 if (_unit getVariable ["ACME_persistenceFrozen", false]) exitWith {objNull};
 private _source = objNull;
 isNil {
-    ([_unit, _item] call ACME_fnc_ivStartKitStock) params ["_contents", "_kits"];
-    if (_kits isEqualTo []) exitWith {};
-    if (_consume) then {_contents deleteAt (_contents find _item);};
+    private _stock = [_unit, _item] call ACME_fnc_ivStartKitStock;
+    if (_stock isEqualTo []) exitWith {};
+    private _kits = [];
+    {_kits pushBackUnique (_x select 0);} forEach _stock;
 
     private _containers = [uniformContainer _unit, vestContainer _unit, backpackContainer _unit];
     {
@@ -16,6 +17,9 @@ isNil {
             private _index = _cargo findIf {_x in _kits};
             if (_index >= 0) then {
                 private _kit = _cargo select _index;
+                // what this kit holds (catheters of its own gauge), less the item taken from it now
+                private _contents = +(getArray (configFile >> "CfgWeapons" >> _kit >> "ACME_ivStartKitContents"));
+                if (_consume) then {_contents deleteAt (_contents find _item);};
                 private _before = {_x == _kit} count _cargo;
                 _container addItemCargoGlobal [_kit, -1];
                 if (({_x == _kit} count (itemCargo _container)) == _before - 1) then {

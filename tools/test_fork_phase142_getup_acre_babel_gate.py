@@ -75,7 +75,11 @@ def test_current_phase142_getup_acre_babel_gate():
     for name in ('acreBabbleInit','acreBabbleSet','acreBabbleTick','initAcreBabbleRuntime'):
         assert not (ROOT/'addons/acm_extended/functions'/f'fn_{name}.sqf').exists()
         assert not _has(read('addons/acm_extended/config.cpp'), f'class {name} {{}};')
+    # B391: garbled speech for confused/obtunded players is back as its own runtime (fn_babelEnsure, fn_conscSpeech);
+    # obtundation itself (fn_obtunded*) still never touches Babel.
     for path in (ROOT/'addons/acm_extended/functions').glob('*.sqf'):
+        if path.name in ('fn_babelEnsure.sqf','fn_conscSpeech.sqf','fn_babelEnsureRequest.sqf'):
+            continue
         tokens=lex(path.read_text())
         babel_calls=[t.value for t in tokens if t.kind=='ident' and
                      (t.value.lower().startswith('acre_api_fnc_babel') or t.value.lower().startswith('acme_fnc_acrebabble'))]
@@ -84,7 +88,7 @@ def test_current_phase142_getup_acre_babel_gate():
     assert 'private _effectiveMute = _mute' in voice
     assert 'ACME_sys_obtunded' in voice and 'ACME_obtunded' in voice
     assert 'TFAR_fnc_setForbiddenToSpeak' in voice
-    print('PASS: owner-local Get Up repair and no return of retired synthetic Babel')
+    print('PASS: owner-local Get Up repair; Babel only in the B391 speech runtime')
 
 
 if __name__ == "__main__":

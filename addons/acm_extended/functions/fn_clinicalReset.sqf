@@ -133,6 +133,9 @@ _patient forceWalk _preservedLegXStat;
 // Phase 67: the reset half of persistence uses the same owners as live mutation and restore.
 [_patient, "", true, false] call ACME_fnc_hpmkStateCommit;
 [_patient, false, false, "", -1, true] call ACME_fnc_obtundedStateCommit;
+// B391: the confused state ends with the reset too
+_patient setVariable ["ACME_confused", false, true];
+_patient setVariable ["ACME_confused_manual", false, true];
 [_patient, 0, true, false, true] call ACME_fnc_blastLungStateCommit;
 [_patient, "CLEAR", "CLEAR", "CLEAR", true] call ACME_fnc_blastLungEpisodeCommit;
 [_patient, objNull, objNull, true, false, true] call ACME_fnc_blastLungArdsCommit;

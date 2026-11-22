@@ -17,4 +17,5 @@
 
 params ["_patient"];
 
-_patient setVariable [QGVAR(AirwayObstructionVomit_Count), (round(2 + random 2)), true];
+// (B387: rolled by the unit's own machine only and sent to all; every machine rolling its own raced)
+if (local _patient) then {_patient setVariable [QGVAR(AirwayObstructionVomit_Count), (round(2 + random 2)), true];};

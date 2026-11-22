@@ -3,7 +3,7 @@
  * terminal decisions follow patient locality and survive clinical resets. */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_lineWarmerCommit;};
+    isNil {private _r = _this call ACME_fnc_lineWarmerCommit; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params [

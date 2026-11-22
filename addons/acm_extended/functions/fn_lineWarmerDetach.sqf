@@ -3,7 +3,7 @@
  * Removal deletes custody before replying, so a duplicate cannot return it twice. */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_lineWarmerDetach;};
+    isNil {private _r = _this call ACME_fnc_lineWarmerDetach; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params ["_patient", "_part", "_iv", "_site", ["_recipient", objNull, [objNull]]];

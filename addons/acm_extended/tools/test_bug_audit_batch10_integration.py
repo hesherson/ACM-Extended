@@ -18,20 +18,27 @@ def source(name: str) -> str:
     return read(F / f"fn_{name}.sqf")
 
 
-def test_removed_acre_babel_runtime_does_not_reappear():
-    needles = (
-        "acreBabble",
-        "AcreBabble",
-        "ACME_acre_",
-        "ACME_Common",
-        "acre_api_fnc_babel",
-        "acre_sys_core_languages",
-    )
+def test_retired_acre_babel_runtime_does_not_reappear():
+    # The retired synthetic Babel runtime (acreBabble*, ACME_acre_*, ACME_Common) stays gone. B391 garbled speech for
+    # confused/obtunded players lives in fn_babelEnsure / fn_conscSpeech only, and never replaces a mission's languages.
+    needles = ("acreBabble", "AcreBabble", "ACME_acre_", "ACME_Common")
     runtime = [ROOT / "config.cpp", *F.glob("*.sqf")]
     for path in runtime:
         text = read(path)
         for needle in needles:
             assert needle not in text, f"{needle} survived in {path.relative_to(ROOT)}"
+    allowed = {"fn_babelEnsure.sqf", "fn_conscSpeech.sqf", "fn_babelEnsureRequest.sqf"}
+    for path in F.glob("*.sqf"):
+        if path.name in allowed:
+            continue
+        text = read(path)
+        assert "acre_api_fnc_babel" not in text, f"Babel call outside the speech runtime: {path.name}"
+    ensure = source("babelEnsure")
+    assert 'if !("acme_garbled" in _keys)' in ensure
+    assert "if (_keys isEqualTo []) then {" in ensure  # spoken languages are only set when the mission has none
+    speech = source("conscSpeech")
+    assert '["acme_garbled"] call acre_api_fnc_babelSetSpeakingLanguage' in speech
+    assert 'ACME_babelSaved' in speech
 
 
 def test_debug_circulation_reads_authoritative_state_hashmap():

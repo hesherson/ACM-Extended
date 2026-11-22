@@ -54,7 +54,7 @@ class ACEGVAR(medical_treatment,actions) {
     class ATNA_Autoinjector: Morphine {
         displayName = ECSTRING(CBRN,ATNAAutoinjector);
         displayNameProgress = ECSTRING(CBRN,ATNAAutoinjector_Progress);
-        medicRequired = QGVAR(allowATNAAutoinjector);
+        medicRequired = QEGVAR(cbrn,allowATNAAutoinjector); // (the setting is the CBRN addon's: ACM_cbrn_allowATNAAutoinjector. B386)
         items[] = {"ACME_Autoinjector_ATNA"};
         treatmentLocations = TREATMENT_LOCATIONS_ALL;
         litter[] = {{"ACE_MedicalLitter_atropine"}};
@@ -63,7 +63,7 @@ class ACEGVAR(medical_treatment,actions) {
     class Midazolam_Autoinjector: ATNA_Autoinjector {
         displayName = ECSTRING(CBRN,MidazolamAutoinjector);
         displayNameProgress = ECSTRING(CBRN,MidazolamAutoinjector_Progress);
-        medicRequired = QGVAR(allowMidazolamAutoinjector);
+        medicRequired = QEGVAR(cbrn,allowMidazolamAutoinjector);
         items[] = {"ACME_Autoinjector_Midazolam"};
         ACM_menuIcon = "ACM_Midazolam_Autoinjector";
     };

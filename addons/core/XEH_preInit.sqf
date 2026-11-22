@@ -6,6 +6,9 @@ PREP_RECOMPILE_START;
 #include "XEH_PREP.hpp"
 PREP_RECOMPILE_END;
 
+// B390: read before the first continuous action sets it (the first one of a session failed on it)
+GVAR(ContinuousAction_Active) = false;
+
 #define ACM_SETTINGS_CATEGORY LLSTRING(Category)
 
 //ACEGVAR(medical,STATE_MACHINE) = (configFile >> "ACM_StateMachine") call CBA_statemachine_fnc_createFromConfig;

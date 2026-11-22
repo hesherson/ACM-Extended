@@ -543,7 +543,7 @@ class CfgPatches {
             // zeus enumerates units[]. a module that is not in this list does not exist as far as the curator is
             // concerned, however correctly it is built and whatever its scopecurator says. these five were fully
             // implemented and completely unreachable.
-            "ACME_ModuleInflictBlastLung", "ACME_ModuleInflictJunctional", "ACME_ModuleInduceObtundation",
+            "ACME_ModuleInflictBlastLung", "ACME_ModuleInflictJunctional", "ACME_ModuleInduceObtundation", "ACME_ModuleInduceConfusion",
             "ACME_ModuleInflictTBI", "ACME_ModuleClearTBI", "ACME_ModuleInsertIV",
             "ACME_ModuleInflictEdema", "ACME_ModuleClearEdema",
             "ACME_MedicalChest_01", "ACME_MedicalChest_02", "ACME_MedicalChest_03", "ACME_MedicalChest_04", "ACME_MedicalChest_05",
@@ -1622,22 +1622,36 @@ class ACME_Vial_Fentanyl: ACE_ItemCore {
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 0.1; };
     };
 
+    // One kit per catheter gauge: two catheters of that gauge, a BOA band, Tegaderm, a saline lock and a 10 mL flush.
+    // (B389: the 14/16/20G kits used to be copies of the 18G one, under its name and with its contents.)
     class ACME_IVStartKit_18g: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         scopeArsenal = 2;
+        scopeCurator = 2;
         author = "mavis";
-        displayName = "IV Start Kit";
+        displayName = "IV Start Kit (18G)";
         descriptionShort = "Two 18G IV catheters, a BOA band, Tegaderm, a saline lock and a 10 mL saline flush. Opens when you use a supply.";
         ACME_ivStartKitContents[] = {"ACME_IV_18g", "ACME_IV_18g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACME_SalineFlush_10"};
         picture = "\acm_extended\ui\items\iv_start_kit_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
     };
-    // Keep the historical classnames for existing loadouts and supply crates.
-    class ACME_IVStartKit_14g: ACME_IVStartKit_18g { scopeArsenal = 0; };
-    class ACME_IVStartKit_16g: ACME_IVStartKit_18g { scopeArsenal = 0; };
-    class ACME_IVStartKit_20g: ACME_IVStartKit_18g { scopeArsenal = 0; };
+    class ACME_IVStartKit_14g: ACME_IVStartKit_18g {
+        displayName = "IV Start Kit (14G)";
+        descriptionShort = "Two 14G IV catheters, a BOA band, Tegaderm, a saline lock and a 10 mL saline flush. Opens when you use a supply.";
+        ACME_ivStartKitContents[] = {"ACME_IV_14g", "ACME_IV_14g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACME_SalineFlush_10"};
+    };
+    class ACME_IVStartKit_16g: ACME_IVStartKit_18g {
+        displayName = "IV Start Kit (16G)";
+        descriptionShort = "Two 16G IV catheters, a BOA band, Tegaderm, a saline lock and a 10 mL saline flush. Opens when you use a supply.";
+        ACME_ivStartKitContents[] = {"ACME_IV_16g", "ACME_IV_16g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACME_SalineFlush_10"};
+    };
+    class ACME_IVStartKit_20g: ACME_IVStartKit_18g {
+        displayName = "IV Start Kit (20G)";
+        descriptionShort = "Two 20G IV catheters, a BOA band, Tegaderm, a saline lock and a 10 mL saline flush. Opens when you use a supply.";
+        ACME_ivStartKitContents[] = {"ACME_IV_20g", "ACME_IV_20g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACME_SalineFlush_10"};
+    };
 
     // The administration line can be installed on a completed IV and receive bags.
     class ACME_IVLine: ACE_ItemCore {
@@ -3208,6 +3222,13 @@ class CfgFunctions {
             class obtundedStateCommit {};
             class debugObtundedBack {};
             class obtundedAuto {};
+            class confusedSet {};
+            class confusedAuto {};
+            class confusedTick {};
+            class conscSpeech {};
+            class babelEnsure {};
+            class babelEnsureRequest {};
+            class setConfused {};
             class consciousnessBudget {};
             class toggleHypothermia {};
             class readCoreTemp {};
@@ -3435,6 +3456,7 @@ class CfgFunctions {
             class zeusInflictJunctional {};
             class zeusInflictJunctionalLocal {};
             class zeusInduceObtundation {};
+            class zeusInduceConfusion {};
             class zeusInflictBlastLung {};
             class zeusInflictEdema {};
             class zeusClearEdema {};
@@ -8291,7 +8313,14 @@ class CfgVehicles {
         portrait = "\a3\ui_f\data\IGUI\Cfg\Actions\heal_ca.paa";
         class Arguments {};
         class ModuleDescription {
-            description = "Toggles the awake-but-down obtunded (back) state on the targeted casualty. Players get the full input-lock and blur experience; AI are placed in the locked back pose. Drop again to clear it.";
+            description = "Toggles the obtunded (semi-conscious) state on the targeted player: awake but impaired, blurred and darkening vision, muffled hearing, falls when sprinting, garbled speech (ACRE2 Babel) or muted speech (TFAR). Players only. Drop again to clear it.";
+        };
+    };
+    class ACME_ModuleInduceConfusion: ACME_ModuleInduceObtundation {
+        displayName = "Induce / Clear Confusion";
+        function = "ACME_fnc_zeusInduceConfusion";
+        class ModuleDescription {
+            description = "Toggles the confused state on the targeted player: awake and moving, but their speech comes out garbled to everyone (ACRE2 Babel, voice and radio) and their vision swims. Drop again to clear it.";
         };
     };
 
@@ -10550,6 +10579,10 @@ class ace_medical_treatment_actions {
         callbackFailure = "";
         callbackProgress = "";
         items[] = {};
+    };
+    class ACME_ToggleConfused: ACME_ToggleObtunded {
+        displayName = "Induce/Clear Confused (debug)";
+        callbackSuccess = "_this call ACME_fnc_setConfused";
     };
     class ACME_ToggleObtundedProne: ACME_ToggleObtunded {
         displayName = "Induce/Clear Obtunded Prone (debug)";

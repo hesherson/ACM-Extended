@@ -9,7 +9,7 @@
 // boundary when an owner or extension calls this helper from scheduled code.
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_hangBagRestoreWeapons; false};
+    isNil {private _r = _this call ACME_fnc_hangBagRestoreWeapons; if (!isNil "_r") then {_result = _r;}; false};
     _result
 };
 params [

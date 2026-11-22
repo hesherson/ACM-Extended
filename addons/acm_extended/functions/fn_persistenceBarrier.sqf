@@ -4,7 +4,7 @@
  * ["end",lease] -> bool. A watchdog releases all flags after the bounded lease.
  * The mission MUST quiesce external ACE/native gameplay and physical transfers;
  * this lease fences ACME admissions, not the engine or other mods. */
-if (canSuspend) exitWith {private _result = false; isNil {_result = _this call ACME_fnc_persistenceBarrier;}; _result};
+if (canSuspend) exitWith {private _result = false; isNil {private _r = _this call ACME_fnc_persistenceBarrier; if (!isNil "_r") then {_result = _r;};}; _result};
 params ["_mode","_value",["_captures",[]],["_timeout",30]];
 if (!isServer) exitWith {if (_mode == "begin") then {""} else {false}};
 private _all = missionNamespace getVariable ["ACME_persistenceBarriers",createHashMap];

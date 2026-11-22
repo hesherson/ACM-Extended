@@ -7,7 +7,9 @@ private _count = if (!isNil "efak_medical_fnc_countItem" && {_unit isKindOf "CAM
     [_unit, _item] call ace_common_fnc_getCountOfItem
 };
 if (_includeStartKits) then {
-    ([_unit, _item] call ACME_fnc_ivStartKitStock) params ["_contents", "_kits"];
-    _count = _count + (({_x == _item} count _contents) * count _kits);
+    {
+        _x params ["", "_contents"];
+        _count = _count + ({_x == _item} count _contents);
+    } forEach ([_unit, _item] call ACME_fnc_ivStartKitStock);
 };
 _count

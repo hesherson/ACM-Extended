@@ -1,6 +1,6 @@
 /* Server persistence adapter. [] means busy/invalid, never an empty stock.
  * Restock progress is a remaining in-game duration, independent of mission date. */
-if (canSuspend) exitWith {private _result = []; isNil {_result = _this call ACME_fnc_bloodFridgeSnapshot;}; _result};
+if (canSuspend) exitWith {private _result = []; isNil {private _r = _this call ACME_fnc_bloodFridgeSnapshot; if (!isNil "_r") then {_result = _r;};}; _result};
 params ["_fridge"];
 if (!isServer || {isNull _fridge} || {!(_fridge getVariable ["ACME_bloodFridge",false])}) exitWith {[]};
 if (count (_fridge getVariable ["ACME_bf_takers",createHashMap]) > 0) exitWith {[]};

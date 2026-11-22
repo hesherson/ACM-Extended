@@ -2,7 +2,7 @@
  * return the warmer while moving either Y/PiB branch to the destination access. */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_lineWarmerMove;};
+    isNil {private _r = _this call ACME_fnc_lineWarmerMove; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params ["_patient", "_fromPart", "_fromIV", "_fromSite", "_toPart", "_toIV", "_toSite"];

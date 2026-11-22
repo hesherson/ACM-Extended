@@ -397,13 +397,25 @@ private _settings = [
     //    simple back-stuck state with one posture and no time cap.
     [
         "ACME_sys_obtunded", "CHECKBOX",
-        ["1. Obtundation [BETA]", "The master switch for everything below. A semi-conscious, awake-but-down state: the casualty is awake and cannot get up, rather than being unconscious. BETA and off by default, because it takes over posture, input and vision and touches more of the player experience than any other system in the addon. Try it on a small group before a full mission. OFF: nothing enters the state, nothing maintains it, and the black-screen cap does not run. A casualty already obtunded is released. Takes effect immediately."],
+        ["1. Obtundation [BETA]", "The master switch for everything below. Two impaired-but-awake levels below full consciousness: CONFUSED (moving, disoriented, garbled speech) and OBTUNDED (semi-conscious: blurred and darkening vision, muffled hearing, falls when sprinting, a slow Get Up, garbled or muted speech). BETA and off by default, because it changes vision, hearing and speech more than any other system in the addon. Try it on a small group before a full mission. OFF: nothing enters the state, nothing maintains it, and the black-screen cap does not run. A casualty already obtunded is released. Takes effect immediately."],
         [_cTrau, "2. Obtundation"],
         false, 1, { call ACME_fnc_obtundedMasterChanged; }
     ],
     [
         "ACME_obtunded_autoEnable", "CHECKBOX",
         ["2. Automatic entry from vitals", "Requires 1. Obtundation. Lets a casualty's own SpO2 and MAP put them into the state. OFF: the system still runs, and only a Zeus module or the debug toggle can trigger it. The five entry settings below tune this."],
+        [_cTrau, "2. Obtundation"],
+        true, 1, {}
+    ],
+    [
+        "ACME_confused_autoEnable", "CHECKBOX",
+        ["2a. Confusion from vitals", "Requires 1. Obtundation. A milder level before obtundation: awake and moving, but disoriented, with garbled speech and swimming vision. Entered at SpO2 below 93 % or MAP below 72 mmHg held for 10 s; left at SpO2 95 % and MAP 75 mmHg. Obtundation and unconsciousness take over from it. OFF: only the Zeus module or the debug toggle confuses a player."],
+        [_cTrau, "2. Obtundation"],
+        true, 1, {}
+    ],
+    [
+        "ACME_conscBabel", "CHECKBOX",
+        ["2b. Garbled speech (ACRE2 Babel)", "A confused or obtunded player's speech, by voice and by radio, comes out garbled to everyone through ACRE2 Babel; a lucid moment speaks clearly, and their own language comes back when they recover. A mission's own Babel languages are kept. Nothing is changed in ACRE until someone is impaired. Without ACRE2 this does nothing (TFAR: the obtunded are muted as before)."],
         [_cTrau, "2. Obtundation"],
         true, 1, {}
     ],

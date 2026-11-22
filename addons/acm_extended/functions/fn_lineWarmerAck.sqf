@@ -2,7 +2,7 @@
  * published escrow permits recovery after NPC/provider-locality transfer. */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_lineWarmerAck;};
+    isNil {private _r = _this call ACME_fnc_lineWarmerAck; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params ["_patient", "_medic", "_id", "_accepted", "_receipt", ["_message", "", [""]], ["_attempt", 0, [0]]];

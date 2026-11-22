@@ -3,7 +3,7 @@
  */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call ACME_fnc_ventBatteryAck;};
+    isNil {private _r = _this call ACME_fnc_ventBatteryAck; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params [["_request", [], [[]]], ["_accepted", false, [false]], ["_returned", -1, [0]], ["_hops", 0, [0]], ["_confirmedClaim", [], [[]]]];

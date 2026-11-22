@@ -3,7 +3,7 @@
  * a previously detached/returned identity can never be recreated by old JSON. */
 if (canSuspend) exitWith {
     private _result = [];
-    isNil {_result = _this call ACME_fnc_lineWarmerRestore;};
+    isNil {private _r = _this call ACME_fnc_lineWarmerRestore; if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params ["_patient", ["_incoming", createHashMap], ["_incomingCustody", createHashMap], ["_epoch", -1], ["_phase", "prepare"]];

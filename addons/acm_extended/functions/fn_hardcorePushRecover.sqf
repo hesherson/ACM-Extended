@@ -3,7 +3,7 @@
  * A missing ACK remains unresolved; only its exact receipt can restore a rejected
  * aliquot. The unsent tail is known not to have reached medicationRequest.
  */
-if (canSuspend) exitWith {private _result = false; isNil {_result = _this call ACME_fnc_hardcorePushRecover;}; _result};
+if (canSuspend) exitWith {private _result = false; isNil {private _r = _this call ACME_fnc_hardcorePushRecover; if (!isNil "_r") then {_result = _r;};}; _result};
 params ["_medic",["_session","",[""]],["_requestId","",[""]],["_meta",[],[[]]],["_accepted",false,[false]]];
 if (isNull _medic || {!local _medic}) exitWith {false};
 private _retired = missionNamespace getVariable ["ACME_HCMedPushRetiredJobs",[]];

@@ -14,10 +14,16 @@ private _seen = [];
     private _row = +_x;
     private _size = _row param [1, 0, [0]];
     private _drug = _row param [2, 0, [0]];
-    private _saline = _row param [4, 0, [0]];
+    // (B390: a short row was padded with "" below, so its saline slot became text and its component list a string:
+    // later commits and dialogs errored, and the push of a syringe from the Narc Box stopped at its components.
+    // Each field is padded with a value of its own type, and the two typed fields are repaired on stored rows.)
+    private _defaults = ["", 0, 0, "", 0, [], "", "", "", "", "", "", "", ""];
+    while {count _row < 14} do {_row pushBack (_defaults select (count _row));};
+    if !((_row select 4) isEqualType 0) then {_row set [4, 0];};
+    if !((_row select 5) isEqualType []) then {_row set [5, []];};
+    private _saline = _row select 4;
     if !(_size in [1,3,5,10] && {finite _drug} && {_drug >= 0} && {finite _saline} && {_saline >= 0}
         && {_drug + _saline > 0} && {_drug + _saline <= _size + 0.001}) then {continue};
-    while {count _row < 14} do {_row pushBack "";};
     private _sid = _row param [11, "", [""]];
     if (_sid == "" || {_sid in _seen}) then {
         _serial = _serial + 1;

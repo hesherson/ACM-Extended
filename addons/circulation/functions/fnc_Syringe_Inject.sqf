@@ -69,7 +69,9 @@ if (!_nativePresent && {_capturedAmmo < 0} && {_inventoryIdx >= 0}) exitWith {
     } else {missionNamespace getVariable ["ACME_syringe_imDeliverySec",3]};
     private _emptyItems = if (_returnSyringe) then {[format ["ACME_Syringe_%1",_size]]} else {[]};
     private _label = localize (format ["STR_ACM_Circulation_Medication_%1",_classname]);
-    [_medic,_request,ACME_fnc_skInventoryInjectClaim,[_medic,_patient,_bodyPart,[[_routeClass,_conc*_ml,_iv,_label,_seconds]],-2,_row,[],_row,_request,_emptyItems]] call ACME_fnc_inventoryLedgerClaim;
+    // (B390: claimed as a delivery, as the other syringe pushes are. Without it the server opened no delivery journal
+    // and silently dropped the BEGIN: a syringe moved into the narc box was reserved for ever and never given.)
+    [_medic,_request,ACME_fnc_skInventoryInjectClaim,[_medic,_patient,_bodyPart,[[_routeClass,_conc*_ml,_iv,_label,_seconds]],-2,_row,[],_row,_request,_emptyItems],true] call ACME_fnc_inventoryLedgerClaim;
 };
 
 private _itemClassname = "";

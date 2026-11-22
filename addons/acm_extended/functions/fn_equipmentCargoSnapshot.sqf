@@ -1,6 +1,6 @@
 /* Restart-safe removed-carrier cargo: native contents and each container's opaque ledgers.
  * This tree belongs to the patient checkpoint; do not also save its holder independently. */
-if (canSuspend) exitWith {private _result = []; isNil {_result = _this call ACME_fnc_equipmentCargoSnapshot;}; _result};
+if (canSuspend) exitWith {private _result = []; isNil {private _r = _this call ACME_fnc_equipmentCargoSnapshot; if (!isNil "_r") then {_result = _r;};}; _result};
 params ["_container",["_depth",0]];
 if (isNull _container || {_depth > 8}) exitWith {[]};
 if (!local _container) exitWith {[]};

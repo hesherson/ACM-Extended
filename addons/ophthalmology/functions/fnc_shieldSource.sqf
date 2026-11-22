@@ -5,7 +5,7 @@
  */
 if (canSuspend) exitWith {
     private _result = false;
-    isNil {_result = _this call FUNC(shieldSource);};
+    isNil {private _r = _this call FUNC(shieldSource); if (!isNil "_r") then {_result = _r;};};
     _result
 };
 params ["_mode",["_args",[]]];
