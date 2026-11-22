@@ -27,7 +27,7 @@ if (!isNull _dlgVial) then {
     {if (_y > (["limit", _x, _y, _dlgVial] call ACME_fnc_vialSession) + 0.0005) then {_sessionOK = false;};} forEach _needByMed;
 };
 if (!_sessionOK) exitWith {false};
-private _barrel = format ["ACM_Syringe_%1", _cap];
+private _barrel = format ["ACME_Syringe_%1", _cap];
 if !([ACE_player, _components, _barrel, !(missionNamespace getVariable ["ACM_circulation_reusableSyringe", false])] call ACME_fnc_medicationTakeSources) exitWith {
     ["Insufficient source solution or an empty syringe. Nothing was consumed or saved.", 3, ACE_player] call ace_common_fnc_displayTextStructured;
     false

@@ -1,9 +1,11 @@
 // HRS-I outside: crinkled coyote laminate with ripstop. Tiles every 0.60 m.
-ambient[] = {1, 1, 1, 1};
-diffuse[] = {1, 1, 1, 1};
+// (The real shell is a dark coyote olive. Tried in game, five materials side by side: how dark the cloth looks
+// follows its picture's own middle value, not shine or reflection; the picture was darkened for it.)
+ambient[] = {0.82, 0.82, 0.80, 1};
+diffuse[] = {0.82, 0.82, 0.80, 1};
 forcedDiffuse[] = {0, 0, 0, 0};
 emmisive[] = {0, 0, 0, 1};
-specular[] = {0.6, 0.6, 0.6, 1};
+specular[] = {0.16, 0.15, 0.13, 1};
 specularPower = 45;
 PixelShaderID = "Super";
 VertexShaderID = "Super";

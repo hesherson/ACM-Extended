@@ -42,7 +42,7 @@ if (_iv && !([_patient, _bodyPart, 0] call FUNC(hasIV)) && !([_patient, _bodyPar
 // registration ACK. Leave that raw direct-push path intact rather than upgrading
 // its magazine during the very action which is about to consume it.
 private _inventoryRows = _medic getVariable ["ACME_narcStore",[]];
-private _nativeClass = format ["ACM_Syringe_%1_%2",_size,_classname];
+private _nativeClass = format ["ACME_Syringe_%1_%2",_size,_classname];
 private _capturedAmmo = -1;
 if !(_preparedReceipt isEqualTo []) then {
     if ((_preparedReceipt param [0,""]) == _nativeClass) then {_capturedAmmo = _preparedReceipt param [1,-1,[0]];} else {_capturedAmmo = 0;};
@@ -67,7 +67,7 @@ if (!_nativePresent && {_capturedAmmo < 0} && {_inventoryIdx >= 0}) exitWith {
             max (missionNamespace getVariable ["ACME_syringe_pushMinSec",1.5]))
             min (missionNamespace getVariable ["ACME_syringe_pushMaxSec",10])
     } else {missionNamespace getVariable ["ACME_syringe_imDeliverySec",3]};
-    private _emptyItems = if (_returnSyringe) then {[format ["ACM_Syringe_%1",_size]]} else {[]};
+    private _emptyItems = if (_returnSyringe) then {[format ["ACME_Syringe_%1",_size]]} else {[]};
     private _label = localize (format ["STR_ACM_Circulation_Medication_%1",_classname]);
     [_medic,_request,ACME_fnc_skInventoryInjectClaim,[_medic,_patient,_bodyPart,[[_routeClass,_conc*_ml,_iv,_label,_seconds]],-2,_row,[],_row,_request,_emptyItems]] call ACME_fnc_inventoryLedgerClaim;
 };
@@ -85,7 +85,7 @@ if (_iv) then {
     _actionString = LLSTRING(Syringe_Pushed);
 };
 
-_itemClassname = format ["ACM_Syringe_%1_%2", _size, _classname];
+_itemClassname = format ["ACME_Syringe_%1_%2", _size, _classname];
 
 private _dose = 0;
 
@@ -137,7 +137,7 @@ private _si = _drawn findIf {(_x param [0,""]) == _classname && {(_x param [1,0]
     && {(_x param [13,"",[""]]) != "inventoryB279"}};
 private _refundRows = [];
 if (_si >= 0) then {_refundRows pushBack (_drawn deleteAt _si);[_medic,_drawn] call ACME_fnc_narcStoreCommit;};
-private _empty = if (_returnSyringe) then {[format ["ACM_Syringe_%1",_size]]} else {[]};
+private _empty = if (_returnSyringe) then {[format ["ACME_Syringe_%1",_size]]} else {[]};
 
 private _concentrationDose = _medicationConcentration * (_dose / 100);
 

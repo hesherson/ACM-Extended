@@ -8,7 +8,7 @@
 // ACM's own repositioning animations, matched loosely because they appear with suffixes and variants.
 // the recovery position cancels head elevation. the rest only suspend it and it returns afterward.
 ACME_headElev_acmCancelAnims = ["acm_recoveryposition"];
-ACME_headElev_acmYieldAnims  = ["acm_genericcontinuous", "acm_pronecontinuous", "acm_lyingstate", "acm_cpr", "acm_cpr_stop"];
+ACME_headElev_acmYieldAnims  = ["acm_genericcontinuous", "acm_pronecontinuous", "acm_lyingstate", "acme_litter_side", "acm_cpr", "acm_cpr_stop", "acme_cpr", "acme_cpr_l", "acme_cpr_in", "acme_cpr_in_l", "acme_cpr_hold", "acme_cpr_out"];
 
 // fentanyl as RSI pretreatment.
 // laryngoscopy is a noxious stimulus. the sympathetic response to it drives ICP up in a head injury, and

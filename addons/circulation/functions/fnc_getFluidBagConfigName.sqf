@@ -24,7 +24,7 @@ params ["_isACE", "_type", "_volume", ["_bloodType", -1], ["_noPrefix", false]];
 private _prefix = "";
 
 if !(_noPrefix) then {
-    _prefix = ["ACM_", "ACE_"] select _isACE;
+    _prefix = ["ACME_", "ACE_"] select _isACE;
 };
 
 if (_isACE) exitWith {

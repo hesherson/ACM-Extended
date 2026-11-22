@@ -84,7 +84,7 @@ private _fnStockInfo = {
         private _directCount = [_holder, _physicalClass] call ACME_fnc_vialItemCount;
         if (_med == "EpinephrineCardiac") then {
             _directCount = ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount)
-                + ([_holder, "ACM_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
+                + ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
         };
         private _cap = [_med] call ACME_fnc_vialCapacity;
         if (_directCount > 0 && {_cap > 0}) then {
@@ -167,7 +167,7 @@ private _fnStockInfo = {
             private _value = _list lbValue _i;
             private _data = _list lbData _i;
             private _item = switch (_kind) do {
-                case "size": {format ["ACM_Syringe_%1", _value]};
+                case "size": {format ["ACME_Syringe_%1", _value]};
                 case "flush": {_data};
                 default {""};
             };

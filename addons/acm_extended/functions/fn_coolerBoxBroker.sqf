@@ -240,7 +240,7 @@ if (_mode == "pack") exitWith {
     if ((_kit>=0 && {_kit != (_owner getVariable ["ACME_equipmentKitEpoch",0])})
         || {_locality>=0 && {_locality != (_owner getVariable ["ACME_providerLocalityEpoch",0])}}) exitWith {[false,"The cooler pickup was cancelled because control or equipment changed."] call _reply;};
     // Leave unrelated cargo untouched. Packing is available after it is removed.
-    private _other=(itemCargo _box) select {((_x find "ACM_BloodBag_") != 0) && {(_x find "ACM_FreshBloodBag_") != 0} && {(_x find "ACME_SpoiledBlood")!=0}};
+    private _other=(itemCargo _box) select {((_x find "ACME_BloodBag_") != 0) && {(_x find "ACME_FreshBloodBag_") != 0} && {(_x find "ACME_SpoiledBlood")!=0}};
     if (_other isNotEqualTo [] || {weaponCargo _box isNotEqualTo []} || {magazineCargo _box isNotEqualTo []} || {backpackCargo _box isNotEqualTo []}) exitWith {
         [false,"Remove unrelated cargo before picking up the cooler."] call _reply;
     };
@@ -289,7 +289,7 @@ if (_capacity<=0 || {_usedMl>_capacity} || {(["spoil"] call ACME_fnc_bloodTiming
     ["The cooler contents changed during pickup. Remove excess or spoiled blood before trying again."] call _abort;
 };
 private _cargo=itemCargo _box;
-private _other=_cargo select {((_x find "ACM_BloodBag_") != 0) && {(_x find "ACM_FreshBloodBag_") != 0} && {(_x find "ACME_SpoiledBlood")!=0}};
+private _other=_cargo select {((_x find "ACME_BloodBag_") != 0) && {(_x find "ACME_FreshBloodBag_") != 0} && {(_x find "ACME_SpoiledBlood")!=0}};
 // If external code inserted unrelated cargo during the handshake, retain that
 // real container. Its cooler shell is retired and cannot issue another token.
 {_box addItemCargoGlobal [_x select 0,-1];} forEach (_state select 2);

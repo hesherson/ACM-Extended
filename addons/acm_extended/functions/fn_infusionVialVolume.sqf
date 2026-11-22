@@ -7,5 +7,4 @@ private _open = (_holder getVariable ["ACME_infusion_openVials", createHashMap])
 if (_open > 0 && {_open <= (missionNamespace getVariable ["ACME_vialDiscardResidualMl",0.0105])}) then {_open = 0;};
 private _vial = [_med] call ACME_fnc_vialClass;
 private _sealed = [_holder, _vial] call ACME_fnc_vialItemCount;
-if (_med == "EpinephrineCardiac") then {_sealed = _sealed + ([_holder, "ACM_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);};
 (_open max 0) + _cap * _sealed

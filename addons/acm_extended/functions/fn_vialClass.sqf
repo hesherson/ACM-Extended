@@ -5,5 +5,5 @@
 params [["_med", "", [""]]];
 if (_med == "") exitWith {""};
 if (_med == "EpinephrineCardiac") exitWith {"ACME_Vial_EpinephrineCardiac"};
-if (_med == "Dimercaprol") exitWith {"ACM_Ampule_Dimercaprol"};
-format ["ACM_Vial_%1", _med]
+if (_med == "Dimercaprol") exitWith {"ACME_Ampule_Dimercaprol"};
+format ["ACME_Vial_%1", _med]

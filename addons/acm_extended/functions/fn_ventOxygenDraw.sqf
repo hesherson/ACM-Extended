@@ -31,7 +31,7 @@ private _ok=_available;
 if (_kind=="probe") then {
     // A last paid charge remains usable even after the full cylinder becomes an empty item.
     if (!_ok && {_sourceNear} && {(_patient getVariable ["ACME_vent_o2Credit",0])>0}
-        && {([_source,"ACM_OxygenTank_425_Empty"] call ACME_fnc_itemCount)>0}) then {_ok=true;};
+        && {([_source,"ACME_OxygenTank_425_Empty"] call ACME_fnc_itemCount)>0}) then {_ok=true;};
 } else {
     _ok=false;
     if (_available) then {
@@ -42,10 +42,10 @@ if (_kind=="probe") then {
             _remaining=(_remaining-1) max 0;
             _ok=true;
         } else {
-            private _left=[_source,"ACM_OxygenTank_425"] call efak_medical_fnc_drawCharge;
+            private _left=[_source,"ACME_OxygenTank_425"] call efak_medical_fnc_drawCharge;
             _ok=_left>=0;
             _remaining=_left max 0;
-            if (_left==0) then {[_source,"ACM_OxygenTank_425_Empty"] call ace_common_fnc_addToInventory;};
+            if (_left==0) then {[_source,"ACME_OxygenTank_425_Empty"] call ace_common_fnc_addToInventory;};
         };
     };
 };

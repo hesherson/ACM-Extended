@@ -5,6 +5,16 @@ private _localGrant = missionNamespace getVariable [QGVAR(CPR_LocalGrant),[]];
 if (isMultiplayer && {_capturedGrant isEqualTo []}) then {_capturedGrant = +_localGrant;};
 private _sameGrant = !isMultiplayer || {count _capturedGrant == 6 && {_capturedGrant isEqualTo _localGrant}};
 private _ownsMedic = _sameGrant && {!isNull _medic} && {(_medic getVariable [QGVAR(CPR_Epoch), -1]) == _epoch};
+// B373: the provider was attached to the casualty for the compressions.
+if (!isNull _medic && {local _medic}) then {
+    private _held = _medic getVariable [QGVAR(CPR_Attached), objNull];
+    if (!isNull _held && {_held isEqualTo _patient || {isNull _patient}}) then {
+        if ((attachedTo _medic) in [_held, _medic getVariable [QGVAR(CPR_Anchor), _held]]) then {detach _medic;};
+        _medic setVariable [QGVAR(CPR_Attached), objNull, false];
+        _medic setVariable [QGVAR(CPR_Anchor), objNull, false];
+        _medic setVariable [QGVAR(CPR_Align), [], false];
+    };
+};
 private _ownsLocal = _sameGrant && {(missionNamespace getVariable [QGVAR(CPR_LocalSession), []]) isEqualTo [_medic, _patient, _epoch]};
 if (_ownsMedic || {_ownsLocal && {!isNull _medic} && {local _medic}
     && {(_medic getVariable [QGVAR(CPR_Epoch), -1]) == -1}}) then {

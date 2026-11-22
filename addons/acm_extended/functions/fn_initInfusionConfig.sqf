@@ -1,7 +1,7 @@
 // this appends our bags to ACM's fluid candidate list. our xeh_postinit runs after ACM's because of
 // requiredaddons, so the arrays exist. the isnil guard is a safeguard.
 if (!isNil "ACM_circulation_Fluids_Array" && {!isNil "ACM_circulation_Fluids_Array_Data"}) then {
-    private _items = ["ACM_EsmololBag", "ACME_HTSBag", "ACME_MagnesiumBag", "ACME_MannitolBag", "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100", "ACME_SalineBag_50", "ACME_SalineBag_100"];
+    private _items = ["ACME_EsmololBag", "ACME_HTSBag", "ACME_MagnesiumBag", "ACME_MannitolBag", "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100", "ACME_SalineBag_50", "ACME_SalineBag_100"];
     private _data  = ["EsmololIV_250", "HTSIV_250", "MagnesiumIV_50", "MannitolIV_500", "PlasmaLyteIV_1000", "PlasmaLyteIV_500", "PlasmaLyteIV_250", "PlasmaLyteIV_100", "SalineIV_50", "SalineIV_100"];
     {
         private _item = _x;
@@ -84,7 +84,7 @@ ACME_flushReqMeds = ["Adenosine", "Amiodarone", "CalciumGluconate", "CalciumChlo
 // esmolol is 2500 mg in 250 ml, which gives 10 mg/ml for rate control in AFib-RVR and atrial tach.
 // HTS is 3 percent in 250 ml for osmotherapy. its mg value is nominal because volume drives the effect.
 ACME_infusion_PremixedBags = createHashMapFromArray [
-    ["ACM_EsmololBag", ["Esmolol", 2500, 250]]
+    ["ACME_EsmololBag", ["Esmolol", 2500, 250]]
 ];
 
 ACME_infusion_minPulseDose = createHashMapFromArray [

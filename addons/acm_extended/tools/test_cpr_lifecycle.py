@@ -168,7 +168,7 @@ def execute(scenario, runtime=False):
                 if (_id >= 0) then {
                     private _thisEventHandler = _id;
                     private _thisEvent = "AnimDone";
-                    [_medic, "ACM_CPR"] call (_anims select _id);
+                    [_medic, "ACME_CPR"] call (_anims select _id);
                 };
                 _duringSwitch = false;
             };
@@ -267,7 +267,7 @@ def test_escape_during_entry_cannot_start_delayed_compressions():
         call _start;
         ["ACM_circulation_CPRCancel_EscapeID"] call _key; call _tick;
         call _enter; call _freed;
-        [count _anims == 0 && {!("ACM_CPR" in _moves)}, "cancelled entry started compressions"] call _check;
+        [count _anims == 0 && {!("ACME_CPR" in _moves)}, "cancelled entry started compressions"] call _check;
     ''')
 
 
@@ -277,7 +277,7 @@ def test_pause_disables_animdone_before_switch_then_resume_and_stop(airway):
         call _start; call _enter;
         _fireAnimOnSwitch = true;
         ["ACM_circulation_CPRToggle_MouseID"] call _key; call _tick;
-        [(_moves select (count _moves - 1)) == "ACM_CPR_Stop", "pause restarted CPR"] call _check;
+        [(_moves select (count _moves - 1)) == "ACME_CPR_Hold", "pause restarted CPR"] call _check;
         [[_medic, _patient] call ACM_circulation_fnc_cprSessionValid, "paused patient released"] call _check;
         _fireAnimOnSwitch = false;
         ["ACM_circulation_CPRToggle_MouseID"] call _key; call _tick;
@@ -294,7 +294,7 @@ def test_delayed_animdone_and_input_cannot_restart_stopped_episode():
         call _cancel;
         private _count = count _moves;
         private _thisEventHandler = 0; private _thisEvent = "AnimDone";
-        [_medic, "ACM_CPR"] call _oldAnim;
+        [_medic, "ACME_CPR"] call _oldAnim;
         call _oldToggle;
         call _freed;
         [count _moves == _count, "stopped callback restarted animation"] call _check;

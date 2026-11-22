@@ -1,16 +1,16 @@
 #include "..\main\script_macros.hpp"
-class ACM_MedicalMenu_ActionButton_ACM_AED;
-class ACM_MedicalMenu_ActionButton_L_ACM_AED;
-class ACM_MedicalMenu_ActionButton_ACME_TempusPro_Item: ACM_MedicalMenu_ActionButton_ACM_AED {
+class ACM_MedicalMenu_ActionButton_ACME_AED;
+class ACM_MedicalMenu_ActionButton_L_ACME_AED;
+class ACM_MedicalMenu_ActionButton_ACME_TempusPro_Item: ACM_MedicalMenu_ActionButton_ACME_AED {
     textureNoShortcut = "\acme_tempus\data\tempus_icon_ca.paa";
 };
-class ACM_MedicalMenu_ActionButton_L_ACME_TempusPro_Item: ACM_MedicalMenu_ActionButton_L_ACM_AED {
+class ACM_MedicalMenu_ActionButton_L_ACME_TempusPro_Item: ACM_MedicalMenu_ActionButton_L_ACME_AED {
     textureNoShortcut = "\acme_tempus\data\tempus_icon_ca.paa";
 };
-class ACM_MedicalMenu_ActionButton_ACME_TempusLS_Item: ACM_MedicalMenu_ActionButton_ACM_AED {
+class ACM_MedicalMenu_ActionButton_ACME_TempusLS_Item: ACM_MedicalMenu_ActionButton_ACME_AED {
     textureNoShortcut = "\acme_tempusls\data\tempusls_icon_ca.paa";
 };
-class ACM_MedicalMenu_ActionButton_L_ACME_TempusLS_Item: ACM_MedicalMenu_ActionButton_L_ACM_AED {
+class ACM_MedicalMenu_ActionButton_L_ACME_TempusLS_Item: ACM_MedicalMenu_ActionButton_L_ACME_AED {
     textureNoShortcut = "\acme_tempusls\data\tempusls_icon_ca.paa";
 };
 

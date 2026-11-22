@@ -9,7 +9,7 @@ call ACME_fnc_skPendingTagCommit;
 
 private _cap=uiNamespace getVariable ["ACME_SK_WasteCap",10];
 private _nsMl=uiNamespace getVariable ["ACME_SK_WasteNS",0];
-private _flushClass=uiNamespace getVariable ["ACME_SK_WasteFlushClass","ACM_SalineFlush_10"];
+private _flushClass=uiNamespace getVariable ["ACME_SK_WasteFlushClass","ACME_SalineFlush_10"];
 private _totalDrug=0;
 private _valid=(_cap isEqualType 0) && {finite _cap} && {_cap==10} && {(_nsMl isEqualType 0)} && {finite _nsMl} && {_nsMl>=0};
 {

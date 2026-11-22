@@ -37,7 +37,7 @@ if ((random 100) < _heavyPercent) then {
     private _shieldItem = _unit getVariable [QGVAR(eyeShieldItem),""];
     private _shieldIndex = _unit getVariable [QGVAR(eyeShieldIndex),-1];
     private _shieldActive = _shieldIndex in [0,1]
-        && {_shieldItem == (["kat_eyecovers_right","kat_eyecovers_left"] select _shieldIndex)}
+        && {_shieldItem == (["ACME_EyeCover_Right","ACME_EyeCover_Left"] select _shieldIndex)}
         && {(hmd _unit) == _shieldItem};
     private _shieldProtection = 0.90;
 

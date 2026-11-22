@@ -16,10 +16,10 @@ private _count = {
     [_medic, uiNamespace getVariable ["ACME_IV_Patient", objNull], _item] call ACME_fnc_treatmentSupplyCount
 };
 private _nBand = ["ACME_NARBOA"] call _count;
-private _n14   = ["ACM_IV_14g"]  call _count;
-private _n16   = ["ACM_IV_16g"]  call _count;
-private _n18   = ["ACM_IV_18g"]  call _count;
-private _n20   = ["ACM_IV_20g"]  call _count;
+private _n14   = ["ACME_IV_14g"]  call _count;
+private _n16   = ["ACME_IV_16g"]  call _count;
+private _n18   = ["ACME_IV_18g"]  call _count;
+private _n20   = ["ACME_IV_20g"]  call _count;
 
 // the labels are "<name> xN", dimmed to 0.30 alpha when empty.
 private _setLbl = {
@@ -59,7 +59,7 @@ if (uiNamespace getVariable ["ACME_IV_EJMode", false]) then {
         case "dressing": {["TEGADERM","ACME_Tegaderm"]};
         case "line": {["IV TUBING","ACME_IVLine"]};
         case "lock": {["SALINE LOCK","ACME_SalineLock"]};
-        default {["10 mL FLUSH","ACM_SalineFlush_10"]};
+        default {["10 mL FLUSH","ACME_SalineFlush_10"]};
     };
     private _stock=[_data select 1] call _count;
     [_pic,_held==_tool,_stock] call ACME_fnc_traySlotState;

@@ -259,12 +259,12 @@ private _actionIndex = 0;
         private _baseIcon = ['None', _menuIcon] select (_menuIcon != '');
         if ((_baseIcon select [0, 2]) == 'L_') then { _baseIcon = _baseIcon select [2]; };
 
-        // ACM's treatment actions use lowercase item class spelling for the IVs, ACM_IV_16g and ACM_IV_14g, and ACM's gui
-        // action-button classes are declared with an uppercase g, ACM_IV_16G and ACM_IV_14G.
+        // ACM's treatment actions use lowercase item class spelling for the IVs, ACME_IV_16g and ACME_IV_14g, and ACM's gui
+        // action-button classes are declared with an uppercase g, ACME_IV_16G and ACME_IV_14G.
         // do not create case-only alias classes in config.cpp, because arma config member names collide on case.
         switch (_baseIcon) do {
-            case 'ACM_IV_16g': { _baseIcon = 'ACM_IV_16G'; };
-            case 'ACM_IV_14g': { _baseIcon = 'ACM_IV_14G'; };
+            case 'ACME_IV_16g': { _baseIcon = 'ACME_IV_16G'; };
+            case 'ACME_IV_14g': { _baseIcon = 'ACME_IV_14G'; };
         };
 
         private _buttonClass = format ['ACM_MedicalMenu_ActionButton_%1', _baseIcon];

@@ -26,4 +26,6 @@ if (_public && {_deduplicate}) then {
     _patient setVariable ["ACME_hpmk_state", _state, _public];
     _patient setVariable ["ACME_hpmk_on", _on, _public];
 };
+// what he wears and how he lies follow the state
+[_patient] call ACME_fnc_hpmkDress;
 _state

@@ -2,7 +2,8 @@ class CfgWeapons {
     class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
 
-    class ACM_Moxifloxacin_SinglePack: ACE_ItemCore {
+    class ACME_Moxifloxacin_SinglePack: ACE_ItemCore {
+        dlc = "ACM_Extended";
         author = "mavis";
         authors[] = {"mavis", "Inferno"};
         scope = 1;

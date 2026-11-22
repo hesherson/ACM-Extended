@@ -12,7 +12,7 @@ class CfgPatches {
         requiredVersion = 2.0;
         requiredAddons[] = {"A3_Data_F_AoW_Loadorder"};
         units[] = {"ACME_HPMK_Item_Ground", "ACME_HPMK_Pouch", "ACME_HPMK_Closed", "ACME_HPMK_Open", "ACME_HPMK_Rolled"};
-        weapons[] = {"ACME_HPMK_Item", "ACME_HPMK_Worn", "ACME_HPMK_Worn_Sked"};
+        weapons[] = {"ACME_HPMK_Item", "ACME_HPMK_Worn", "ACME_HPMK_Worn_Sked", "ACME_HPMK_Worn_Open", "ACME_HPMK_Worn_Open_Sked"};
     };
 };
 
@@ -37,6 +37,7 @@ class CfgWeapons {
 
     // Inventory item: the sealed kit, 4 lb 14 oz.
     class ACME_HPMK_Item: ItemCore {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         author = "mavis";
@@ -53,6 +54,7 @@ class CfgWeapons {
     // the casualty's own vest, backpack and headgear and give them back. The contents of the casualty's
     // vest move into the shell, so medics can still reach them. Not in the arsenal.
     class ACME_HPMK_Worn: Vest_Camo_Base {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         scopeCurator = 0;
@@ -71,9 +73,25 @@ class CfgWeapons {
             class HitpointsProtectionInfo {};
         };
     };
+    // In a SKED: the same shell with its foot end kept inside the SKED's foot cover.
     class ACME_HPMK_Worn_Sked: ACME_HPMK_Worn {
         class ItemInfo: ItemInfo {
             uniformModel = "\acme_hpmk\hpmk_worn_sked.p3d";
+        };
+    };
+    // Chest and left arm uncovered, the cover folded over to the casualty's right.
+    class ACME_HPMK_Worn_Open: ACME_HPMK_Worn {
+        displayName = "HPMK-I (on casualty, chest exposed)";
+        descriptionShort = "Insulated heat reflective shell round a casualty, opened over the chest.";
+        class ItemInfo: ItemInfo {
+            uniformModel = "\acme_hpmk\hpmk_worn_open.p3d";
+        };
+    };
+    // The same in a SKED: held inside the sled, as the closed one is.
+    class ACME_HPMK_Worn_Open_Sked: ACME_HPMK_Worn_Open {
+        displayName = "HPMK-I (on casualty in a SKED, chest exposed)";
+        class ItemInfo: ItemInfo {
+            uniformModel = "\acme_hpmk\hpmk_worn_open_sked.p3d";
         };
     };
 };
@@ -84,6 +102,7 @@ class CfgVehicles {
 
     // Ground holder for the inventory item, for placement in Eden and Zeus.
     class ACME_HPMK_Item_Ground: Item_Base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -93,7 +112,7 @@ class CfgVehicles {
         vehicleClass = "Items";
         class TransportItems {
             class _xx_ACME_HPMK_Item {
-                name = "ACM_HPMK";
+                name = "ACME_HPMK";
                 count = 1;
             };
         };
@@ -101,6 +120,7 @@ class CfgVehicles {
 
     // Physics prop. The kit as issued, vacuum packed.
     class ACME_HPMK_Pouch: ThingX {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";

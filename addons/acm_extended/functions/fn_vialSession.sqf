@@ -56,7 +56,6 @@ if (_openNow > 0 && {_openNow <= _discardResidual}) then {
     _openNow = 0;
 };
 private _sealedNow = [_holder, _vialClass] call ACME_fnc_vialItemCount;
-if (_med == "EpinephrineCardiac") then {_sealedNow = _sealedNow + ([_holder, "ACM_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);};
 private _sessions = _display getVariable ["ACME_SK_VialSessions", createHashMap];
 private _entry = _sessions getOrDefault [_med, []];
 

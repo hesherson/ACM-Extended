@@ -104,7 +104,8 @@ def test_client_cannot_execute_server_blanket_fallback():
 def test_hpmk_visuals_are_local_and_pickup_remains_scoped():
     text=(F/'fn_registerHpmkVisualRuntime.sqf').read_text()
     tokens=lex(text); identifiers={t.value for t in tokens if t.kind=='ident'}
-    assert text.count('createSimpleObject [')==2
+    # B380: only a dropped blanket is drawn here; a wrapped casualty wears the shell (ACME_fnc_hpmkDress)
+    assert text.count('createSimpleObject [')==1
     assert 'createSimpleObject [_model, [0,0,0], true]' in text
     assert 'getPosWorldVisual _anchor' in text
     assert '"ACME_hpmk_isBlanket", false' in text
@@ -112,11 +113,11 @@ def test_hpmk_visuals_are_local_and_pickup_remains_scoped():
     visual=text[text.index('ACME_hpmk_visuals = createHashMap;'):]
     visual_identifiers={t.value for t in lex(visual) if t.kind=='ident'}
     assert 'allUnits' not in visual_identifiers
-    assert 'nearestObjects [positionCameraToWorld [0,0,0], ["CAManBase"], 55]' in visual
-    assert '_visual setPhysicsCollisionFlag false' in visual
+    assert 'nearestObjects' not in visual_identifiers
     assert not any(t.value=='allUnits' for t in lex((F/'fn_hpmkBlanketTick.sqf').read_text()))
     assert 'attachTo' not in identifiers and 'createVehicle' not in identifiers
-    assert 'ACME_hpmk_wrappedVisuals = createHashMap;' in text
+    assert 'ACME_hpmk_wrappedVisuals' not in text
+    assert '[_patient] call ACME_fnc_hpmkDress;' in (F/'fn_hpmkStateCommit.sqf').read_text()
 
 
 def pp_adapter(text):

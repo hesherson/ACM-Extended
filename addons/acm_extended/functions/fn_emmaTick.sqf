@@ -18,7 +18,7 @@ if (!isNull _supplyPatient && {_player distance _supplyPatient > 5}) then {_supp
 
 // the BVM route stays tied to the medic's own inventory and device.
 private _bvmAttached = _player getVariable ["ACME_emma_bvmAttached", false];
-if (_bvmAttached && {([_player, _supplyPatient, "ACM_EMMA"] call ACME_fnc_treatmentSupplyCount) <= 0}) then {
+if (_bvmAttached && {([_player, _supplyPatient, "ACME_EMMA"] call ACME_fnc_treatmentSupplyCount) <= 0}) then {
     _bvmAttached = false;
     [_player, "ACME_emma_bvmAttached", false] call ACME_fnc_setVarNet;
     _player setVariable ["ACME_emma_lastPatient", objNull];

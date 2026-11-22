@@ -189,7 +189,7 @@ if (_inventoryBacked && {!_journalReady}) exitWith {
 };
 private _magClass = ""; private _magContainer = objNull;
 if (!_virtual && {!_inventoryBacked}) then {
-    _magClass = format ["ACM_Syringe_%1_%2",_size,_med];
+    _magClass = format ["ACME_Syringe_%1_%2",_size,_med];
     private _ammo = round (_drug*100);
     {
         if (!isNull _x && {((magazinesAmmoCargo _x) findIf {(_x select 0) == _magClass && {(_x select 1) == _ammo}}) >= 0}) exitWith {_magContainer=_x;};

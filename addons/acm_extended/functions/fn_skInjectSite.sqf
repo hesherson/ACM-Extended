@@ -1,6 +1,6 @@
 // the narc box body view: inject the selected drawn syringe into the clicked body part, using the current route,
 // which is vascular iv or io, or im. _this is [bodypart]. it consumes both the filled syringe magazine, because
-// syringe_inject removes the ACM_Syringe_<size>_<med> the draw created, and the matching ACME_narcStore record
+// syringe_inject removes the ACME_Syringe_<size>_<med> the draw created, and the matching ACME_narcStore record
 // kept here.
 params ["_bodyPart", ["_pushSec", 3], ["_confirmedEpiMl", -1, [0]]];
 if !(_pushSec isEqualType 0 && {finite _pushSec} && {_pushSec > 0}) then {_pushSec = 3;};
@@ -112,7 +112,7 @@ if ((_refundRow param [13,"",[""]]) == "inventoryB279") exitWith {
 };
 // Compounds are virtual entries whose vial inventory was consumed at commit. Single drugs are physical magazines.
 if (!_virtual) then {
-    private _magClass = format ["ACM_Syringe_%1_%2", _size, _med];
+    private _magClass = format ["ACME_Syringe_%1_%2", _size, _med];
     private _ammo = round (_amt * 100);
     private _container = objNull;
     {

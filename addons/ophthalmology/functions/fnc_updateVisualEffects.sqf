@@ -36,7 +36,7 @@ private _eyeInjuries = _player getVariable [QGVAR(eyeInjuries), [1, 1]];
 private _shieldItem = _player getVariable [QGVAR(eyeShieldItem),""];
 private _shieldIndex = _player getVariable [QGVAR(eyeShieldIndex),-1];
 if (_shieldIndex in [0,1]
-    && {_shieldItem == (["kat_eyecovers_right","kat_eyecovers_left"] select _shieldIndex)}
+    && {_shieldItem == (["ACME_EyeCover_Right","ACME_EyeCover_Left"] select _shieldIndex)}
     && {(hmd _player) == _shieldItem}) then {
     [([17102,17103] select _shieldIndex)] call FUNC(showEyeShieldOverlay);
 } else {

@@ -16,6 +16,8 @@ private _minMAP = missionNamespace getVariable ["ACME_hpmk_minMAP", 60];
     private _u = _x;
     if (isNull _u || {!alive _u} || {!(_u getVariable ["ACME_hpmk_on", false])}) then { continue };
     if !(local _u) then { continue };
+    // the shell is on him and he lies as it is made (put back if something took either away)
+    [_u] call ACME_fnc_hpmkDress;
     private _now = CBA_missionTime;
     private _dt = ((_now - (_u getVariable ["ACME_hpmk_lastTickLocal", _now - 5])) max 0) min 10;
     _u setVariable ["ACME_hpmk_lastTickLocal", _now, false];

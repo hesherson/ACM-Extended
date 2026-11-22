@@ -15,14 +15,16 @@ def test_handle_claim_does_not_attach_or_drive_the_provider():
 def test_talon_steps_preserve_each_endpoint_and_handle_order():
     import re
 
+    # B373: only the handles are animated. The authored fold garbles in the engine, so the models are swapped.
     source = (SKED / "functions/fn_talonSteps.sqf").read_text()
-    fold, unfold = source.split("11.40]")
-    for mode, state, last in ((fold, 1, "fold"), (unfold, 0, "handles")):
+    fold, unfold = source.split("2.45]")
+    for mode, state in ((fold, 1), (unfold, 0)):
         steps = [(kind, float(phase)) for kind, phase in re.findall(r'\["(fold|handles)",\s*([\d.]+)', mode)]
-        assert len(steps) == (13 if state else 14)
-        assert steps[-1] == (last, state)
-        assert len([phase for kind, phase in steps if kind == "handles"]) == 4
-        assert [phase for kind, phase in steps if kind == "fold"][-1] == state
+        assert len(steps) == 4
+        assert all(kind == "handles" for kind, _ in steps)
+        assert steps[-1] == ("handles", state)
+        phases = [phase for _, phase in steps]
+        assert phases == sorted(phases, reverse=not state)
 
 
 def test_server_checks_actor_ownership_and_distance_before_strapping():

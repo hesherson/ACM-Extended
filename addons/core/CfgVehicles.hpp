@@ -41,117 +41,121 @@
 
 class CfgVehicles {
     class ACE_medicalSupplyCrate;
-    class ACM_MedicalSupplyCrate_Basic: ACE_medicalSupplyCrate {
+    class ACME_MedicalSupplyCrate_Basic: ACE_medicalSupplyCrate {
+        dlc = "ACM_Extended";
         displayName = CSTRING(MedicalSupplyCrate_Basic_Display);
-        author = "Blue";
+        author = "mavis";
         editorCategory = "EdCat_Supplies";
         editorSubcategory = QGVAR(EditorCategory);
         /*hiddenSelections[] = {"camo"};
         hiddenSelectionsTextures[] = {QPATHTOF(data\supplyBox.paa)};*/
         class TransportMagazines {
-            ADDMAGAZINE(ACM_Paracetamol,4);
-            ADDMAGAZINE(ACM_AmmoniaInhalant,4);
-            ADDMAGAZINE(ACM_Inhaler_Penthrox,5);
+            ADDMAGAZINE(ACME_Paracetamol,4);
+            ADDMAGAZINE(ACME_AmmoniaInhalant,4);
+            ADDMAGAZINE(ACME_Inhaler_Penthrox,5);
         };
         class TransportItems {
             // Catastrophic Bleeding
-            ADDITEM(ACM_PressureBandage,50);
-            ADDITEM(ACM_EmergencyTraumaDressing,20);
-            ADDITEM(ACM_ElasticWrap,40);
+            ADDITEM(ACME_PressureBandage,50);
+            ADDITEM(ACME_EmergencyTraumaDressing,20);
+            ADDITEM(ACME_ElasticWrap,40);
             ADDITEM(ACE_tourniquet,24);
             // Airway
-            ADDITEM(ACM_OPA,10);
-            ADDITEM(ACM_NPA,10);
-            ADDITEM(ACM_SuctionBag,5);
+            ADDITEM(ACME_OPA,10);
+            ADDITEM(ACME_NPA,10);
+            ADDITEM(ACME_SuctionBag,5);
             // Breathing
-            ADDITEM(ACM_ChestSeal,10);
-            ADDITEM(ACM_PocketBVM,2);
-            ADDITEM(ACM_NCDKit,5);
+            ADDITEM(ACME_ChestSeal,10);
+            ADDITEM(ACME_PocketBVM,2);
+            ADDITEM(ACME_NCDKit,5);
             // Disability
             ADDITEM(ACE_morphine,10);
-            ADDITEM(ACM_SAMSplint,10);
+            ADDITEM(ACME_SAMSplint,10);
             // Other
-            ADDITEM(ACM_Spray_Naloxone,10);
+            ADDITEM(ACME_Spray_Naloxone,10);
         };
     };
-    class ACM_MedicalSupplyCrate_Advanced: ACM_MedicalSupplyCrate_Basic {
+    ACME_ITEM_ALIAS(ACM_MedicalSupplyCrate_Basic,ACME_MedicalSupplyCrate_Basic);
+    class ACME_MedicalSupplyCrate_Advanced: ACME_MedicalSupplyCrate_Basic {
         displayName = CSTRING(MedicalSupplyCrate_Advanced_Display);
         class TransportMagazines {
-            ADDMAGAZINE(ACM_Paracetamol,8);
-            ADDMAGAZINE(ACM_AmmoniaInhalant,8);
-            ADDMAGAZINE(ACM_Inhaler_Penthrox,8);
-            ADDMAGAZINE(ACM_OxygenTank_425,2);
+            ADDMAGAZINE(ACME_Paracetamol,8);
+            ADDMAGAZINE(ACME_AmmoniaInhalant,8);
+            ADDMAGAZINE(ACME_Inhaler_Penthrox,8);
+            ADDMAGAZINE(ACME_OxygenTank_425,2);
         };
         class TransportItems {
             // Catastrophic Bleeding
-            ADDITEM(ACM_PressureBandage,60);
-            ADDITEM(ACM_EmergencyTraumaDressing,30);
-            ADDITEM(ACM_ElasticWrap,60);
+            ADDITEM(ACME_PressureBandage,60);
+            ADDITEM(ACME_EmergencyTraumaDressing,30);
+            ADDITEM(ACME_ElasticWrap,60);
             ADDITEM(ACE_tourniquet,16);
             // Airway
-            ADDITEM(ACM_IGel,20);
-            ADDITEM(ACM_ACCUVAC,5);
-            ADDITEM(ACM_OPA,10);
-            ADDITEM(ACM_NPA,10);
-            ADDITEM(ACM_SuctionBag,10);
-            ADDITEM(ACM_CricKit,10);
+            ADDITEM(ACME_IGel,20);
+            ADDITEM(ACME_ACCUVAC,5);
+            ADDITEM(ACME_OPA,10);
+            ADDITEM(ACME_NPA,10);
+            ADDITEM(ACME_SuctionBag,10);
+            ADDITEM(ACME_CricKit,10);
             // Breathing
-            ADDITEM(ACM_Stethoscope,4);
-            ADDITEM(ACM_ChestSeal,20);
-            ADDITEM(ACM_BVM,4);
-            ADDITEM(ACM_NCDKit,10);
-            ADDITEM(ACM_PulseOximeter,5);
-            ADDITEM(ACM_ThoracostomyKit,5);
-            ADDITEM(ACM_ChestTubeKit,5);
+            ADDITEM(ACME_Stethoscope,4);
+            ADDITEM(ACME_ChestSeal,20);
+            ADDITEM(ACME_BVM,4);
+            ADDITEM(ACME_NCDKit,10);
+            ADDITEM(ACME_PulseOximeter,5);
+            ADDITEM(ACME_ThoracostomyKit,5);
+            ADDITEM(ACME_ChestTubeKit,5);
             // Circulation
-            ADDITEM(ACM_AED,3);
-            ADDITEM(ACM_PressureCuff,3);
-            ADDITEM(ACM_IV_16g,25);
-            ADDITEM(ACM_IV_14g,15);
-            ADDITEM(ACM_Syringe_1,5);
-            ADDITEM(ACM_Syringe_3,5);
-            ADDITEM(ACM_Syringe_5,5);
-            ADDITEM(ACM_Syringe_10,2);
-            ADDITEM(ACM_IO_FAST,15);
-            ADDITEM(ACM_IO_EZ,15);
-            ADDITEM(ACM_Vial_Epinephrine,10);
-            ADDITEM(ACM_Vial_Esmolol,10);
-            ADDITEM(ACM_Vial_TXA,10);
-            ADDITEM(ACM_Vial_Amiodarone,10);
-            ADDITEM(ACM_Vial_Atropine,10);
-            ADDITEM(ACM_BloodBag_ON_1000,10);
-            ADDITEM(ACM_BloodBag_ON_500,10);
-            ADDITEM(ACM_BloodBag_ON_250,10);
+            ADDITEM(ACME_AED,3);
+            ADDITEM(ACME_PressureCuff,3);
+            ADDITEM(ACME_IV_16g,25);
+            ADDITEM(ACME_IV_14g,15);
+            ADDITEM(ACME_Syringe_1,5);
+            ADDITEM(ACME_Syringe_3,5);
+            ADDITEM(ACME_Syringe_5,5);
+            ADDITEM(ACME_Syringe_10,2);
+            ADDITEM(ACME_IO_FAST,15);
+            ADDITEM(ACME_IO_EZ,15);
+            ADDITEM(ACME_Vial_Epinephrine,10);
+            ADDITEM(ACME_Vial_Esmolol,10);
+            ADDITEM(ACME_Vial_TXA,10);
+            ADDITEM(ACME_Vial_Amiodarone,10);
+            ADDITEM(ACME_Vial_Atropine,10);
+            ADDITEM(ACME_BloodBag_ON_1000,10);
+            ADDITEM(ACME_BloodBag_ON_500,10);
+            ADDITEM(ACME_BloodBag_ON_250,10);
             ADDITEM(ACE_plasmaIV,10);
             ADDITEM(ACE_plasmaIV_500,10);
             ADDITEM(ACE_plasmaIV_250,10);
             ADDITEM(ACE_salineIV,10);
             ADDITEM(ACE_salineIV_500,10);
             ADDITEM(ACE_salineIV_250,10);
-            ADDITEM(ACM_FieldBloodTransfusionKit_250,5);
-            ADDITEM(ACM_FieldBloodTransfusionKit_500,5);
-            ADDITEM(ACM_Vial_CalciumChloride,10);
+            ADDITEM(ACME_FieldBloodTransfusionKit_250,5);
+            ADDITEM(ACME_FieldBloodTransfusionKit_500,5);
+            ADDITEM(ACME_Vial_CalciumChloride,10);
             // Disability
             ADDITEM(ACE_morphine,5);
-            ADDITEM(ACM_Vial_Morphine,10);
-            ADDITEM(ACM_Vial_Ketamine,10);
-            ADDITEM(ACM_Vial_Fentanyl,10);
-            ADDITEM(ACM_Vial_Lidocaine,10);
-            ADDITEM(ACM_Vial_Ondansetron,10);
-            ADDITEM(ACM_Lozenge_Fentanyl,10);
-            ADDITEM(ACM_SAMSplint,10);
+            ADDITEM(ACME_Vial_Morphine,10);
+            ADDITEM(ACME_Vial_Ketamine,10);
+            ADDITEM(ACME_Vial_Fentanyl,10);
+            ADDITEM(ACME_Vial_Lidocaine,10);
+            ADDITEM(ACME_Vial_Ondansetron,10);
+            ADDITEM(ACME_Lozenge_Fentanyl,10);
+            ADDITEM(ACME_SAMSplint,10);
             // Other
-            ADDITEM(ACM_Spray_Naloxone,10);
+            ADDITEM(ACME_Spray_Naloxone,10);
             ADDITEM(ACE_personalAidKit,1);
             ADDITEM(ACE_surgicalKit,2);
             ADDITEM(ACE_bodyBag,5);
             ADDITEM(ACE_suture,60);
-            ADDITEM(ACM_Vial_Ertapenem,10);
+            ADDITEM(ACME_Vial_Ertapenem,10);
         };
     };
-    class ACM_CBRN_SupplyCrate: ACE_medicalSupplyCrate {
+    ACME_ITEM_ALIAS(ACM_MedicalSupplyCrate_Advanced,ACME_MedicalSupplyCrate_Advanced);
+    class ACME_CBRN_SupplyCrate: ACE_medicalSupplyCrate {
+        dlc = "ACM_Extended";
         displayName = ECSTRING(CBRN,SupplyCrate_Display);
-        author = "Blue";
+        author = "mavis";
         editorCategory = "EdCat_Supplies";
         editorSubcategory = QGVAR(EditorCategory);
         /*hiddenSelections[] = {"camo"};
@@ -159,22 +163,24 @@ class CfgVehicles {
         class TransportMagazines {};
         class TransportItems {
             // Treatment
-            ADDITEM(ACM_Autoinjector_ATNA,30);
-            ADDITEM(ACM_Autoinjector_Midazolam,10);
-            //ADDITEM(ACM_Ampule_Dimercaprol,10);
+            ADDITEM(ACME_Autoinjector_ATNA,30);
+            ADDITEM(ACME_Autoinjector_Midazolam,10);
+            //ADDITEM(ACME_Ampule_Dimercaprol,10);
             // Other
-            ADDITEM(ACM_GasMaskFilter,30);
+            ADDITEM(ACME_GasMaskFilter,30);
         };
     };
-    class ACM_CBRN_PPE_SupplyCrate: ACM_CBRN_SupplyCrate {
+    ACME_ITEM_ALIAS(ACM_CBRN_SupplyCrate,ACME_CBRN_SupplyCrate);
+    class ACME_CBRN_PPE_SupplyCrate: ACME_CBRN_SupplyCrate {
         displayName = ECSTRING(CBRN,SupplyCrate_PPE_Display);
         class TransportItems {
             ADDITEM(U_C_CBRN_Suit_01_Blue_F,10);
             ADDITEM(G_AirPurifyingRespirator_02_black_F,10);
             ADDITEM(ChemicalDetector_01_watch_F,2);
-            ADDITEM(ACM_GasMaskFilter,10);
+            ADDITEM(ACME_GasMaskFilter,10);
         };
     };
+    ACME_ITEM_ALIAS(ACM_CBRN_PPE_SupplyCrate,ACME_CBRN_PPE_SupplyCrate);
 
     class Man;
     class CAManBase: Man {
@@ -205,7 +211,7 @@ class CfgVehicles {
                 exceptions[] = {"isNotInside", "isNotSitting"};
                 class ACM_AED_Interactions {
                     displayName = ECSTRING(circulation,AED_Short);
-                    condition = QUOTE(([ARR_2(_player,'ACM_AED')] call ACME_fnc_itemCount) > 0);
+                    condition = QUOTE(([ARR_2(_player,'ACME_AED')] call ACME_fnc_itemCount) > 0);
                     statement = "";
                     exceptions[] = {"isNotInside", "isNotSitting"};
                     showDisabled = 0;

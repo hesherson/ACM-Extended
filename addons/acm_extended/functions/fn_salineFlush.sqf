@@ -13,7 +13,7 @@ private _flush = _medic getVariable ["ACME_flush_State", []];  // [volumeml, was
 switch (_mode) do {
 
     case "prep": {
-        private _receipt = [_medic,_patient,["ACM_SalineFlush_10"]] call ACME_fnc_treatmentSupplyTake;
+        private _receipt = [_medic,_patient,["ACME_SalineFlush_10"]] call ACME_fnc_treatmentSupplyTake;
         if (_receipt isEqualTo []) exitWith {
             ["No 10 mL saline flush in inventory.", 2, _medic] call ace_common_fnc_displayTextStructured;
         };
@@ -70,7 +70,7 @@ switch (_mode) do {
     // even if no med was pending, because a plain post-med or post-site flush is still valid.
     case "flushLine": {
         if (isNull _patient || {!local _medic}) exitWith {};
-        if (([_medic,_patient,"ACM_SalineFlush_10"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {};
+        if (([_medic,_patient,"ACME_SalineFlush_10"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {};
         private _site = _args param [1, -2];
         private _present = if (_site >= 0) then {[_patient, _bodyPart, 0, _site] call ACM_circulation_fnc_hasIV} else {
             if (_site == -1) then {[_patient, _bodyPart, 0] call ACM_circulation_fnc_hasIO} else {
@@ -78,7 +78,7 @@ switch (_mode) do {
             }
         };
         if (!_present || {_medic distance _patient > 5 && {isNull objectParent _medic || {objectParent _medic != objectParent _patient}}}) exitWith {};
-        private _receipt = [_medic,_patient,["ACM_SalineFlush_10"]] call ACME_fnc_treatmentSupplyTake;
+        private _receipt = [_medic,_patient,["ACME_SalineFlush_10"]] call ACME_fnc_treatmentSupplyTake;
         if (_receipt isEqualTo []) exitWith {};
         [_medic, _patient, _bodyPart, [], "flush", _site, [[],[],[],[_receipt]]] call ACME_fnc_medicationRequest;
         [_patient, "activity", "%1 flushed %2 IV/IO access", [[_medic, false, true] call ace_common_fnc_getName, _bodyPart]] call ace_medical_treatment_fnc_addToLog;

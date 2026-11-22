@@ -13,13 +13,13 @@ class CfgPatches {
             QGVAR(Eden_ChemicalDevice)
         };
         weapons[] = {
-            "ACM_GasMaskFilter",
-            "ACM_Autoinjector_ATNA",
-            "ACM_Autoinjector_Midazolam"
+            "ACME_GasMaskFilter",
+            "ACME_Autoinjector_ATNA",
+            "ACME_Autoinjector_Midazolam"
         };
         magazines[] = {
-            "ACM_Mortar_Shell_8Rnd_CS",
-            "ACM_Mortar_Shell_8Rnd_Chlorine"
+            "ACME_Mortar_Shell_8Rnd_CS",
+            "ACME_Mortar_Shell_8Rnd_Chlorine"
         };
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

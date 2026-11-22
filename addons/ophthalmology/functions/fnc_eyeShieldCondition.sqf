@@ -10,4 +10,4 @@ if !(_eyeInjuries isEqualType [] && {count _eyeInjuries == 2}
     && {(_eyeInjuries findIf {!(_x isEqualType 0) || {!finite _x}}) == -1}) exitWith {false};
 private _needs = ({_x < 0.999} count _eyeInjuries) > 0;
 private _shield = hmd _patient;
-_needs && {!(_shield in ["kat_eyecovers_left","kat_eyecovers_right","kat_eyecovers"])}
+_needs && {!(_shield in ["ACME_EyeCover_Left","ACME_EyeCover_Right","ACME_EyeCover"])}

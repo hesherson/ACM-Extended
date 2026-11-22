@@ -16,7 +16,6 @@ private _open = (_map getOrDefault [_med, 0]) max 0;
 if (_open > 0 && {_open <= (missionNamespace getVariable ["ACME_vialDiscardResidualMl",0.0105])}) then {_open = 0;};
 private _primary = if (_physicalClass != "") then {_physicalClass} else {[_med] call ACME_fnc_vialClass};
 private _sealed = [_holder, _primary] call ACME_fnc_vialItemCount;
-if (_med == "EpinephrineCardiac") then {_sealed = _sealed + ([_holder, "ACM_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);};
 private _total = _open + ((_sealed max 0) * _cap);
 private _left = (_total - (_reservedMl max 0)) max 0;
 if (_left <= 0.000001) exitWith {[0,0,_cap,0,_sealed,_open]};

@@ -92,14 +92,14 @@ if (_finishTime > 0) exitWith {
                 };
                 case QEGVAR(airway,handleSuctionLocal): {
                     if (_usedItem == "") then {
-                        _usedItem = "ACM_SuctionBag";
+                        _usedItem = "ACME_SuctionBag";
                     };
 
                     [_target, "activity", ACELSTRING(medical_treatment,Activity_usedItem), [[_healer, false, true] call ACEFUNC(common,getName), LELSTRING(airway,SuctionBag_Short)]] call ACEFUNC(medical_treatment,addToLog);
                 };
                 case QEGVAR(breathing,applyChestSealLocal): {
                     if (_usedItem == "") then {
-                        _usedItem = "ACM_ChestSeal";
+                        _usedItem = "ACME_ChestSeal";
                     };
 
                     [_target, LELSTRING(breathing,ChestSeal)] call ACEFUNC(medical_treatment,addToTriageCard);
@@ -111,13 +111,13 @@ if (_finishTime > 0) exitWith {
                             "ACE_morphine"
                         };
                         case "naloxone": {
-                            "ACM_Spray_Naloxone"
+                            "ACME_Spray_Naloxone"
                         };
                         case "penthrox": {
-                            "ACM_Inhaler_Penthrox"
+                            "ACME_Inhaler_Penthrox"
                         };
                         case "paracetamol": {
-                            "ACM_Paracetamol"
+                            "ACME_Paracetamol"
                         };
                     };
 

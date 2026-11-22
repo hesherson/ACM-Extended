@@ -34,6 +34,7 @@ class CfgWeapons {
 
     // Inventory item. The ground model is the ventilator with nothing connected.
     class ACME_VentwaySparrow_Item: ItemCore {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         author = "mavis";
@@ -55,6 +56,7 @@ class CfgVehicles {
 
     // Ground holder for the inventory item, for placement in Eden and Zeus.
     class ACME_VentwaySparrow_Item_Ground: Item_Base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -72,6 +74,7 @@ class CfgVehicles {
 
     // Physics prop. Nothing connected.
     class ACME_VentwaySparrow_Bare: ThingX {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";

@@ -10,8 +10,8 @@ if (isNull _player || {_player isNotEqualTo (call ACME_fnc_controlledProvider)})
 switch (_key) do {
     // a saline flush is a 10 ml prefilled barrel, so force size 10 and load it full, with the plunger all the way up.
     case "Saline": {
-        if (([_player, "ACM_SalineFlush_10"] call ACME_fnc_itemCount) < 1) exitWith {
-            ["No prefilled saline flush (ACM_SalineFlush_10) in your kit."] call ACME_fnc_syringeKitInfo;
+        if (([_player, "ACME_SalineFlush_10"] call ACME_fnc_itemCount) < 1) exitWith {
+            ["No prefilled saline flush (ACME_SalineFlush_10) in your kit."] call ACME_fnc_syringeKitInfo;
             lbSetCurSel [_ctrl, -1];
         };
         uiNamespace setVariable ["ACME_SK_Size", 10];

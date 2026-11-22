@@ -15,7 +15,7 @@ def test_old_animdone_cannot_restart_cpr_after_away_back_transfer():
         _medic setVariable ["ACME_providerLocalityEpoch",2];
         private _thisEvent = "AnimDone";
         private _thisEventHandler = _handler;
-        [_medic,"ACM_CPR"] call _oldCallback;
+        [_medic,"ACME_CPR"] call _oldCallback;
         [count _moves == _movesBefore, "old AnimDone restarted CPR"] call _check;
         [_handler in _removedAnims, "old AnimDone handler was not retired"] call _check;
         [(_medic getVariable ["ACM_circulation_CPR_AnimEH",0]) == -1,
@@ -31,8 +31,8 @@ def test_matching_owner_animdone_still_reasserts_cpr():
         private _before = count _moves;
         private _thisEvent = "AnimDone";
         private _thisEventHandler = _handler;
-        [_medic,"ACM_CPR"] call _callback;
-        [count _moves == _before + 1 && {(_moves select ((count _moves)-1)) == "ACM_CPR"},
+        [_medic,"ACME_CPR"] call _callback;
+        [count _moves == _before + 1 && {(_moves select ((count _moves)-1)) == "ACME_CPR"},
             "matching owner lost CPR animation repeat"] call _check;
         [!(_handler in _removedAnims), "matching owner handler retired early"] call _check;
     """)

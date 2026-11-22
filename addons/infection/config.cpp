@@ -7,7 +7,7 @@ class CfgPatches {
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {};
-        magazines[] = {"ACM_Moxifloxacin"};
+        magazines[] = {"ACME_Moxifloxacin"};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
             "ACM_core",

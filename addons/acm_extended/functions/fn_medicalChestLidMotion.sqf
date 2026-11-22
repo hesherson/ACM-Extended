@@ -64,8 +64,25 @@ private _apply = {
     private _slideEnd = _pullEnd + _slideDuration;
     private _turnEnd = _slideEnd + _turnDuration;
     private _duration = _turnEnd + _settleDuration;
-    private _finished = _elapsed >= _duration;
-    private _t = if (_opening) then {_elapsed min _duration} else {(_duration - _elapsed) max 0};
+    // The ten latches come off one after the other before the lid moves, the last one inside two seconds; a
+    // closing chest runs the same line backward, so they go on again after the lid is seated.
+    private _latchTime = 1.9;
+    private _latchEach = 0.5;
+    private _latchStep = (_latchTime - _latchEach) / 9;
+    private _whole = _latchTime + _duration;
+    private _finished = _elapsed >= _whole;
+    private _line = if (_opening) then {_elapsed min _whole} else {(_whole - _elapsed) max 0};
+    private _t = (_line - _latchTime) max 0;
+    private _latchPhases = _cabinet getVariable ["ACME_medicalChestLatchPhases", [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]];
+    for "_number" from 1 to 10 do {
+        private _phase = ((_line - (_number - 1) * _latchStep) / _latchEach) max 0 min 1;
+        _phase = _phase * _phase * (3 - 2 * _phase);
+        if (abs (_phase - (_latchPhases select (_number - 1))) > 0.002 || {_finished}) then {
+            _latchPhases set [_number - 1, _phase];
+            _cabinet animateSource [format ["latch_%1", _number], _phase, true];
+        };
+    };
+    _cabinet setVariable ["ACME_medicalChestLatchPhases", _latchPhases];
     private _ease = {
         params ["_fraction"];
         _fraction = _fraction max 0 min 1;

@@ -9,7 +9,7 @@ if !(_receipt isEqualType [] && {count _receipt==4}
 private _item=switch (_action) do {
     case "extension":{"ACME_IVExtension"};case "dressing":{"ACME_Tegaderm"};
     case "line":{"ACME_IVLine"};case "lock":{"ACME_SalineLock"};
-    case "flush":{"ACM_SalineFlush_10"};case "field14":{"ACM_IV_14g"};case "field16":{"ACM_IV_16g"};default{""};
+    case "flush":{"ACME_SalineFlush_10"};case "field14":{"ACME_IV_14g"};case "field16":{"ACME_IV_16g"};default{""};
 };
 if (_item=="" || {(_receipt select 1)!=_item}) exitWith {0};
 private _bindings=_medic getVariable ["ACME_IV_SupplyBindings",[]];

@@ -5,7 +5,7 @@ class CfgPatches {
     class ADDON {
         ACME_BUILD_CONFIG("core");
         name = COMPONENT_NAME;
-        units[] = {"ACM_MedicalSupplyCrate_Basic", "ACM_MedicalSupplyCrate_Advanced"};
+        units[] = {"ACME_MedicalSupplyCrate_Basic", "ACME_MedicalSupplyCrate_Advanced"};
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

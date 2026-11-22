@@ -7,7 +7,7 @@ if ((_m getVariable ["ACME_fbtkPending",[]]) isNotEqualTo []) exitWith {false};
 private _list=_d displayCtrl 86005;private _i=lbCurSel _list;
 if (_i<0) exitWith {false};
 private _class=((_list lbData _i) splitString "|") param [0,""];
-if !(_class in ["ACM_FieldBloodTransfusionKit_250","ACM_FieldBloodTransfusionKit_500"]) exitWith {false};
+if !(_class in ["ACME_FieldBloodTransfusionKit_250","ACME_FieldBloodTransfusionKit_500"]) exitWith {false};
 private _p=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Target",objNull];
 private _part=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart",""];
 private _iv=missionNamespace getVariable ["ACM_circulation_TransfusionMenu_SelectIV",true];

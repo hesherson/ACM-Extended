@@ -13,36 +13,46 @@ class CfgPatches {
 };
 class CfgWeapons {
     class ACE_ItemCore;
-    class ACM_SuctionBag;
+    class ACME_SuctionBag;
     class ACME_Ventilator: ACE_ItemCore {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_ventway\ventway_bare.p3d";
         picture = "\acme_ventway\data\ui\icon_ventway_ca.paa";
         hiddenSelections[] = {"camo", "screen", "screen_fio2"};
         hiddenSelectionsTextures[] = {"\acme_ventway\data\ventway_body_co.paa", "\acme_ventway\data\ventway_screen_off_co.paa", "\acme_ventway\data\ventway_screen_off_co.paa"};
     };
-    class ACM_ACCUVAC: ACM_SuctionBag {
+    class ACME_ACCUVAC: ACME_SuctionBag {
         model = "\acme_accuvac\accuvac_rescue.p3d";
         picture = "\acme_accuvac\data\ui\icon_accuvac_ca.paa";
         hiddenSelections[] = {"camo", "cover"};
         hiddenSelectionsTextures[] = {"\acme_accuvac\data\accuvac_body_co.paa", "\acme_accuvac\data\accuvac_cover_co.paa"};
     };
-    class ACM_HPMK: ACE_ItemCore {
+    class ACME_HPMK: ACE_ItemCore {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_hpmk\hpmk_pouch.p3d";
         picture = "\acme_hpmk\data\ui\icon_hpmk_ca.paa";
     };
     class ACME_BloodCooler_CSWB1U: ACE_ItemCore {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_bloodcooler\bloodcooler1u_closed.p3d";
         picture = "\acme_bloodcooler\data\ui\icon_bloodcooler1u_ca.paa";
         hiddenSelections[] = {"camo"};
         hiddenSelectionsTextures[] = {"\acme_bloodcooler\data\bloodcooler_camo_co.paa"};
     };
     class ACME_BloodCooler_CSWB2U: ACE_ItemCore {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_bloodcooler\bloodcooler2u_closed.p3d";
         picture = "\acme_bloodcooler\data\ui\icon_bloodcooler2u_ca.paa";
         hiddenSelections[] = {"camo"};
         hiddenSelectionsTextures[] = {"\acme_bloodcooler\data\bloodcooler_camo_co.paa"};
     };
     class ACME_BloodCooler_CSWB4U: ACE_ItemCore {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_bloodcooler\bloodcooler4u_closed.p3d";
         picture = "\acme_bloodcooler\data\ui\icon_bloodcooler4u_ca.paa";
         hiddenSelections[] = {"camo"};
@@ -71,6 +81,7 @@ class CfgVehicles {
     };
     class Items_base_F;
     class ACME_TempusPro_Mount: Items_base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         displayName = "Tempus Pro Field Mount";
@@ -89,6 +100,8 @@ class CfgVehicles {
     class Box_NATO_Ammo_F;
     class Box_NATO_Wps_F;
     class ACME_BloodCoolerBox_CSWB1U: Box_NATO_Ammo_F {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_bloodcooler\bloodcooler1u_closed.p3d";
         hiddenSelections[] = {"camo"};
         hiddenSelectionsTextures[] = {"\acme_bloodcooler\data\bloodcooler_camo_co.paa"};
@@ -96,6 +109,8 @@ class CfgVehicles {
         ACME_modelScale = 1;
     };
     class ACME_BloodCoolerBox_CSWB2U: Box_NATO_Ammo_F {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_bloodcooler\bloodcooler2u_closed.p3d";
         hiddenSelections[] = {"camo"};
         hiddenSelectionsTextures[] = {"\acme_bloodcooler\data\bloodcooler_camo_co.paa"};
@@ -103,6 +118,8 @@ class CfgVehicles {
         ACME_modelScale = 1;
     };
     class ACME_BloodCoolerBox_CSWB4U: Box_NATO_Wps_F {
+        author = "mavis";
+        dlc = "ACM_Extended";
         model = "\acme_bloodcooler\bloodcooler4u_closed.p3d";
         hiddenSelections[] = {"camo"};
         hiddenSelectionsTextures[] = {"\acme_bloodcooler\data\bloodcooler_camo_co.paa"};

@@ -1,6 +1,7 @@
 // Registered medical litter collection is available to every player.
 call ACME_fnc_registerMedicalLitterRuntime;
 call ACME_fnc_inventoryLedgerInit;
+call ACME_fnc_initItemClassRuntime;
 call ACME_fnc_registerMedicalChestRuntime;
 // Phase 37: fork version/network bootstrap, chest-seal/vent custody and owner initialization.
 call ACME_fnc_initForkStartupRuntime;
@@ -220,6 +221,13 @@ call ACME_fnc_initProcedureEnvironmentConfig;
 
 // Phase 24: HPMK blanket reconciliation, pickup interaction and client visual runtime.
 call ACME_fnc_registerHpmkVisualRuntime;
+
+// What is seen on and under the casualties near the camera: an airway adjunct on the face, the HPMK laid out
+// under one who is prepped for it (fn_casualtyVisualTick.sqf). On this machine for itself.
+if (hasInterface) then {
+    ACME_casualtyVisuals = createHashMap;
+    [{call ACME_fnc_casualtyVisualTick}, 0.5, []] call CBA_fnc_addPerFrameHandler;
+};
 
 // Phase 25: Chest-seal collaborative cursor/tool presence events.
 call ACME_fnc_registerChestSealPresenceRuntime;

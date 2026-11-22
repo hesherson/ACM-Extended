@@ -12,8 +12,8 @@ if (_sid == "" || {(_prepared param [0,""]) != _sid} || {(_prepared param [15,""
     || {_components isEqualTo []}) exitWith {false};
 if (_type == "ACME_Propofol") exitWith {
     _kind == "propofol" && {_carrierVolume == 50} && {_volume == 50}
-        && {(_set param [1,""]) == "ACM_Vial_Propofol"}
-        && {(_prepared param [1,""]) == "ACM_Vial_Propofol"}
+        && {(_set param [1,""]) == "ACME_Vial_Propofol"}
+        && {(_prepared param [1,""]) == "ACME_Vial_Propofol"}
         && {(_set param [2,""]) == "ACME_PropofolIV_50"}
         && {(_set param [9,0]) == 50}
         && {(_prepared param [17,""]) == "propofol-bottle"}
@@ -21,6 +21,6 @@ if (_type == "ACME_Propofol") exitWith {
 };
 _type == "Saline" && {_kind != "propofol"}
     && {(_prepared param [17,""]) != "propofol-bottle"}
-    && {(_prepared param [1,""]) != "ACM_Vial_Propofol"}
-    && {(_set param [1,""]) != "ACM_Vial_Propofol"}
+    && {(_prepared param [1,""]) != "ACME_Vial_Propofol"}
+    && {(_set param [1,""]) != "ACME_Vial_Propofol"}
     && {(_components findIf {(_x param [0,""]) == "Propofol"}) < 0}

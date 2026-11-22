@@ -78,7 +78,7 @@ private _fluidsArrayData = +GVAR(Fluids_Array_Data);
 // after postInit; that previously made Extended crystalloid bags (notably Plasma-Lyte) vanish from the menu even
 // though the item and physiology were valid. Keep item/data pairs aligned every time the inventory list is built.
 private _extendedFluids = [
-    ["ACM_EsmololBag", "EsmololIV_250"],
+    ["ACME_EsmololBag", "EsmololIV_250"],
     ["ACME_HTSBag", "HTSIV_250"],
     ["ACME_MagnesiumBag", "MagnesiumIV_50"],
     ["ACME_MannitolBag", "MannitolIV_500"],
@@ -88,7 +88,7 @@ private _extendedFluids = [
     ["ACME_PlasmaLyteBag_100", "PlasmaLyteIV_100"],
     ["ACME_SalineBag_50", "SalineIV_50"],
     ["ACME_SalineBag_100", "SalineIV_100"],
-    ["ACM_Vial_Propofol", "ACME_PropofolIV_50"]
+    ["ACME_Vial_Propofol", "ACME_PropofolIV_50"]
 ];
 {
     _x params ["_item", "_fluidData"];
@@ -136,7 +136,7 @@ if (count _activeFreshBloodList > 0) then {
     private _cfg = configFile >> "CfgWeapons" >> _x;
     if ((getNumber (_cfg >> "uniqueBag")) <= 0) then { continue; };
     private _parts = _x splitString "_";
-    if (count _parts < 4 || {(_parts select 0) != "ACM"} || {(_parts select 1) != "FreshBloodBag"}) then { continue; };
+    if (count _parts < 4 || {(_parts select 0) != "ACME"} || {(_parts select 1) != "FreshBloodBag"}) then { continue; };
     private _volume = parseNumber (_parts select 2);
     private _id = parseNumber (_parts select 3);
     if !(_volume in [250, 500] && {_id > 0}) then { continue; };

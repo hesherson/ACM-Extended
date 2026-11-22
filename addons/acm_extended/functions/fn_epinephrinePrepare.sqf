@@ -7,7 +7,7 @@ if (_reservedFlush && {!(_reserved isEqualTo [9, 1, false])}) exitWith {false};
 private _funded = if (_reservedFlush) then {
     [_medic,1] call ACME_fnc_epinephrineTakeSource
 } else {
-    [_medic,[["EpinephrineCardiac",1]],"ACM_SalineFlush_10",true] call ACME_fnc_medicationTakeSources
+    [_medic,[["EpinephrineCardiac",1]],"ACME_SalineFlush_10",true] call ACME_fnc_medicationTakeSources
 };
 if (!_funded) exitWith {false};
 if (_reservedFlush) then {_medic setVariable ["ACME_flush_State", [], true];};

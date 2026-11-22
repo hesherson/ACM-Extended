@@ -26,7 +26,7 @@ TRACE_3("splint",_medic,_patient,_bodyPart);
 private _item = "ACE_splint";
 
 if (_classname isEqualTo "ApplySAMSplint") then {
-    _item = "ACM_SAMSplint";
+    _item = "ACME_SAMSplint";
 };
 
 [_patient, _item] call ACEFUNC(medical_treatment,addToTriageCard);

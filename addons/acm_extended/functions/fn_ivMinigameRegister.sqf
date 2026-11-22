@@ -75,7 +75,7 @@ if (_gauge == 20) then { _type = 6; };  // 20g, the smallest bore and the slowes
 // Older in-progress snapshots used to take their catheter at seating.
 private _funded = uiNamespace getVariable ["ACME_IV_InsFunded", false];
 private _receipt = if (_funded) then {[]} else {
-    [_medic, _patient, [format ["ACM_IV_%1g", _gauge]]] call ACME_fnc_treatmentSupplyTake
+    [_medic, _patient, [format ["ACME_IV_%1g", _gauge]]] call ACME_fnc_treatmentSupplyTake
 };
 if (!_funded && {_receipt isEqualTo []}) exitWith {
     ["No catheter available.", 2, _medic] call ace_common_fnc_displayTextStructured;

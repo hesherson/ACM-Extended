@@ -13,5 +13,7 @@ if (isNil {_patient getVariable "acme_sked_prevDrag"}) then {
         _patient getVariable ["ace_dragging_carryDirection", 195]
     ], true];
 };
-[_patient, false, nil, nil, nil, true] call ace_dragging_fnc_setDraggable;
-[_patient, false, nil, nil, nil, true] call ace_dragging_fnc_setCarryable;
+// ACE needs a real position and direction here: with nil and a global call it throws before it sets anything.
+(_patient getVariable "acme_sked_prevDrag") params ["", "_dragPos", "_dragDir", "", "_carryPos", "_carryDir"];
+[_patient, false, _dragPos, _dragDir, false, true] call ace_dragging_fnc_setDraggable;
+[_patient, false, _carryPos, _carryDir, false, true] call ace_dragging_fnc_setCarryable;

@@ -8,7 +8,7 @@ if (!(_mode in ["apply","cancel","query","proofQuery","proof","settled","retire"
 _request params ["_patient","_medic","_id","_epoch","_kit","_medicKit","_locality","_deadline","_receipt","_source","_eyeIndex","_period"];
 if (isNull _patient || {!(_id isEqualType "")}
     || {!(_receipt isEqualType [])} || {count _receipt != 4}
-    || {(_receipt select 1) != "kat_eyecovers"} || {!((_receipt select 3) isEqualType "")}
+    || {(_receipt select 1) != "ACME_EyeCover"} || {!((_receipt select 3) isEqualType "")}
     || {_id != ("ocular-shield:" + (_receipt select 3))}
     || {!(_eyeIndex in [0,1])} || {!(_deadline isEqualType 0)} || {!finite _deadline}
     || {!(_period isEqualType [])} || {count _period != 2}) exitWith {};
@@ -167,7 +167,7 @@ if (_accepted) then {
     _accepted = (_eyes select _eyeIndex) < 0.999;
 };
 if (_accepted) then {
-    private _shieldItem = ["kat_eyecovers_right","kat_eyecovers_left"] select _eyeIndex;
+    private _shieldItem = ["ACME_EyeCover_Right","ACME_EyeCover_Left"] select _eyeIndex;
     private _existingHmd = hmd _patient;
     if (_existingHmd != "" && {_existingHmd != _shieldItem}) then {
         _patient unlinkItem _existingHmd;

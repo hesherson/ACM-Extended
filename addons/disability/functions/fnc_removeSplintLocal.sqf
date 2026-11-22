@@ -43,7 +43,7 @@ if (_reFracture && ((_patient getVariable [QGVAR(Fracture_State), [0,0,0,0,0,0]]
 };
 
 if (_medic isEqualTo objNull) then {
-    [_patient, "ACM_SAMsplint"] call ACEFUNC(common,addToInventory);
+    [_patient, "ACME_SAMsplint"] call ACEFUNC(common,addToInventory);
 } else {
-    [_medic, "ACM_SAMsplint"] call ACEFUNC(common,addToInventory);
+    [_medic, "ACME_SAMsplint"] call ACEFUNC(common,addToInventory);
 };

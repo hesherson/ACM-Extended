@@ -2,6 +2,7 @@
  * Explicit offlineGameMinutes defaults to paused. Replays never refill consumed stock. */
 if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_bloodFridgeRestore;}; _ok};
 params ["_fridge","_snapshot",["_offlineGameMinutes",0],["_offlineSeconds",0]];
+_snapshot = _snapshot call ACME_fnc_itemDataCanonical;
 if (!isServer || {isNull _fridge} || {!([_snapshot] call ACME_fnc_bloodFridgeSnapshotValid)}) exitWith {false};
 if !(_offlineGameMinutes isEqualType 0 && {finite _offlineGameMinutes} && {_offlineGameMinutes >= 0} && {_offlineGameMinutes <= 1e9}) exitWith {false};
 if !(_offlineSeconds isEqualType 0 && {finite _offlineSeconds} && {_offlineSeconds >= 0} && {_offlineSeconds <= 1e9}) exitWith {false};

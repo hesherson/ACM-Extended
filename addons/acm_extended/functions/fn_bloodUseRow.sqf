@@ -10,7 +10,7 @@ private _index=switch (_kind) do {case "used":{10};case "prepared":{12};default 
 private _meta=_out param [_index,[]];
 if (_mode=="get") exitWith {_meta};
 private _blood=if (_kind=="prepared") then {
-    private _class=_out param [1,""];(_class find "ACM_BloodBag_")==0 || {(_class find "ACM_FreshBloodBag_")==0}
+    private _class=_out param [1,""];(_class find "ACME_BloodBag_")==0 || {(_class find "ACME_FreshBloodBag_")==0}
         || {(_class find "ACE_bloodIV")==0} || {(_out param [8,""]) in ["blood","yset"]}
 } else {(_out param [[0,1] select (_kind=="used"),""]) in ["Blood","FreshBlood"]};
 private _freshExpired = false;

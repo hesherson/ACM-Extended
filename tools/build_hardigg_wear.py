@@ -3,11 +3,12 @@ from pathlib import Path
 import random
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
+from build_hardigg_sheet import STENCIL_MOVED
 from build_medical_chest_stencils import noise, tape_residue
 from build_medical_chest_variants import (
-    DESIGNS, WHITE_TAPE, aerosol, contact_wear, paint_marker, residue, stamp,
+    DESIGNS, GHOST_STENCILS, WHITE_TAPE, aerosol, contact_wear, cross_mask, label_mask, residue, stamp,
 )
 
 FORM = Path(__file__).with_name("assets") / "hardigg_inventory_record.webp"
@@ -44,51 +45,51 @@ def make_adhesive_visible(layer, opacity=1.0):
     return warmed
 
 
-def tape_material(length, width, rng, color, label):
+def tape_material(length, width, rng, color, label, glyphs):
     """The fabric coloring. The outline, folds and tears are built into the mesh."""
     size = length, width
-    yy, xx = np.indices((width, length))
-    cloth = (np.asarray(noise(size, 12, rng), dtype=np.float32) - 128) * .16
-    cloth += (np.asarray(noise(size, 2, rng), dtype=np.float32) - 128) * .09
-    cloth += (xx % 5 == 1) * 3.8 + (yy % 4 == 0) * 2.4
+    yy = np.indices((width, length))[0]
+    cloth = (np.asarray(noise(size, 18, rng), dtype=np.float32) - 128) * .09
     dirty_edges = np.exp(-np.minimum(yy, width - 1 - yy) / 5) * 12
     rgb = np.clip(np.asarray(color) + (cloth - dirty_edges)[:, :, None], 0, 255)
     tape = Image.fromarray(rgb.astype(np.uint8)).convert("RGBA")
     if label:
-        stamp(tape, paint_marker(label, round(width * .48), (59, 55, 48), rng),
-              (length * .47, width * .52), 2)
+        mask = label_mask((label,), round(width * .45), 6, rng, glyphs)
+        ink = Image.new("RGBA", mask.size, (59, 55, 48, 0))
+        ink.putalpha(mask)
+        stamp(tape, ink, (length * .47, width * .52), 2)
     return tape
 
 
-def inventory_card():
+def inventory_card(handwriting, quantity):
     """A printed field inventory folded into a sleeve."""
-    width, height = 490, 415
+    width, height = 490, 197
     sheet = Image.new("RGBA", (width + 76, height + 70))
     # The visible half shows the actual supplied form header and its first few inventory rows.
     with Image.open(FORM) as ref:
         x, y = ref.size
-        form = ImageOps.grayscale(ref.crop((round(.049*x), round(.039*y), round(.951*x), round(.432*y))))
-    form = form.resize((width-30, height-32), Image.Resampling.LANCZOS)
+        form = ImageOps.grayscale(ref.crop((round(.049*x), round(.039*y), round(.951*x), round(.282*y))))
+    form = form.resize((width-30, height-23), Image.Resampling.LANCZOS)
     print_colors = ImageOps.colorize(form, (38, 43, 37), (212, 211, 188)).convert("RGBA")
 
     draw = ImageDraw.Draw(sheet)
-    draw.rounded_rectangle((27,25,27+width+12,25+height+10), radius=8, fill=(178,183,164,248),
-                           outline=(231,232,212,240), width=3)
+    draw.rounded_rectangle((27,25,27+width+12,25+height+10), radius=8, fill=(178,183,164,255),
+                           outline=(211,216,199,255), width=2)
     draw.polygon([(42,46),(width+25,42),(width+28,height+25),(47,height+28)], fill=(202,198,175,255))
     draw.line((52,height+20,width+19,height+15), fill=(103,102,80,190), width=3)
     sheet.alpha_composite(print_colors, (43, 38))
     draw = ImageDraw.Draw(sheet)
-    pen = ImageFont.truetype("C:/Windows/Fonts/segoepr.ttf", 17)
-    for position, note in (((52, 100), "MED 02 / AID DET"), ((59, 192), "GAUZE"),
-                           ((61, 218), "IV SETS"), ((59, 244), "NPA"),
-                           ((401, 191), "18"), ((402, 218), "12"), ((401, 243), "8")):
-        draw.text(position, note, font=pen, fill=(53, 66, 77, 239))
+    pen = ImageFont.truetype(str(handwriting), 24)
+    count_pen = ImageFont.truetype(str(quantity), 24)
+    for position, note in (((53, 83), "MED 02 / AID DET"), ((59, 135), "GAUZE"),
+                           ((61, 154), "IV SETS"), ((59, 174), "NPA"),
+                           ((408, 135), "18"), ((409, 154), "12"), ((408, 174), "8")):
+        draw.text(position, note, font=count_pen if note.isdecimal() else pen, fill=(52, 62, 71, 255))
 
     gloss = Image.new("RGBA", sheet.size)
     light = ImageDraw.Draw(gloss)
-    light.polygon([(58,41),(109,39),(273,height+19),(250,height+18)], fill=(245,251,238,32))
-    light.line([(44,252),(219,253),(324,249),(width+17,247)], fill=(250,248,231,99), width=2)
-    light.line([(44,254),(219,255),(324,251),(width+17,249)], fill=(67,62,47,65), width=3)
+    light.polygon([(58,41),(78,40),(225,height+19),(206,height+18)], fill=(245,251,238,17))
+    light.line([(44,137),(219,138),(324,136),(width+17,135)], fill=(246,246,226,34), width=2)
     light.line([(43,height+13),(width+23,height+13)], fill=(254,251,227,100), width=2)
     sheet.alpha_composite(gloss)
 
@@ -112,44 +113,54 @@ def lid_tape(index):
             for i, tape in enumerate(tapes)]
 
 
-def paint_underneath(lid, index):
-    text, position, height, angle, opacity = PREVIOUS_PAINT[index]
-    rng = random.Random(35913 + index)
-    font = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", height)
-    left, top, right, bottom = font.getbbox(text)
-    mask = Image.new("L", (right - left + 4, bottom - top + 4))
-    draw = ImageDraw.Draw(mask)
-    draw.text((2-left, 2-top), text, font=font, fill=255)
-    # Small bridges and patchy erasure leave remnants of the previous field stencil.
-    for y in (int(mask.height*.31), int(mask.height*.69)):
-        draw.line((0, y, mask.width, y+rng.randint(-3, 2)), fill=0, width=max(2, height//19))
-    paint = aerosol(mask, "black", rng, False, .95)
-    cloud = np.asarray(noise(paint.size, 32, rng), dtype=np.float32)/255
-    alpha = np.asarray(paint.getchannel("A"), dtype=np.float32)
-    alpha *= opacity * (.29 + .71*cloud)
-    paint.putalpha(Image.fromarray(alpha.astype(np.uint8)))
-    coat = Image.new("RGBA", lid.size)
-    stamp(coat, paint, position, angle)
-    coat.alpha_composite(lid)
-    return coat
+def worn_paint(mask, color, rng, overspray, coverage):
+    paint = aerosol(mask, color, rng, False, coverage)
+    padded = Image.new("L", paint.size)
+    padded.paste(mask, (64, 53))
+    if color == "black":
+        inner = padded.filter(ImageFilter.MinFilter(15))
+        edge = ImageChops.subtract(padded, inner).filter(ImageFilter.GaussianBlur(1.5))
+        loss = ImageChops.multiply(edge, noise(paint.size, 12, rng).point(lambda value: min(245, 50 + value)))
+        paint.putalpha(ImageChops.subtract(paint.getchannel("A"), loss))
+    haze = ImageChops.subtract(padded.filter(ImageFilter.GaussianBlur(8 + overspray * 8)), padded)
+    haze = ImageChops.multiply(haze, noise(paint.size, 5, rng))
+    diffuse = Image.new("RGBA", paint.size, paint.convert("RGB").getpixel((64, 53)))
+    diffuse.putalpha(haze.point(lambda value: min(130, value * overspray)))
+    diffuse.alpha_composite(paint)
+    return diffuse
 
 
-def paint_finish(overlay, index, lid_region):
+def stencil_in_valley(lid, lines, center, height, angle, color, rng, glyphs, haze, strength):
+    # Four molded ribs centered at z=.700, .517, .333 and .150 m, each 48 mm wide.
+    valleys = ((107, 198), (306, 551), (659, 904), (1012, 1257), (1365, 1510))
+    lo, hi = min(valleys, key=lambda band: abs(sum(band)/2 - center[1]))
+    mask = label_mask(lines, height, 11, rng, glyphs)
+    paint = worn_paint(mask, color, rng, haze, strength)
+    paint = paint.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
+    box = paint.getbbox()
+    paint = paint.crop(box)
+    scale = min(1, (hi-lo) / paint.height, 772 / paint.width)
+    if scale < 1:
+        paint = paint.resize((round(paint.width*scale), round(paint.height*scale)), Image.Resampling.LANCZOS)
+    x = max(110, min(890-paint.width, round(center[0]-paint.width/2)))
+    y = max(lo, min(hi-paint.height, round(center[1]-paint.height/2)))
+    lid.alpha_composite(paint, (x, y))
+
+
+def paint_finish(overlay, index, regions, glyphs):
     rng = random.Random(35600 + index * 31)
-    lid_x, lid_y, width, height = lid_region
-    lid_bounds = (lid_x, lid_y, lid_x+width, lid_y+height)
-    lid = overlay.crop(lid_bounds)
-    tapes = original_tape(index)
-    if tapes:
-        # Recover the existing wear under the old tape footprint before replacing it.
-        restore = contact_wear("lid", lid.size, random.Random(32840 + index*173))
-        mask = Image.new("RGBA", lid.size)
-        for pos, length, depth, angle, _, _ in tapes:
-            stamp(mask, Image.new("RGBA",(length+25,depth+24),(255,255,255,255)), pos, angle)
-        lid.paste(restore, mask=mask.getchannel("A"))
-
-    if index in PREVIOUS_PAINT:
-        lid = paint_underneath(lid, index)
+    for region in ("lid", "back", "right", "left", "top", "bottom"):
+        x, y, width, height = regions[region]
+        layer = contact_wear(region, (width, height), rng)
+        if region in ("right", "left") or (region == "top" and index != 10):
+            size = 118 if region != "top" else 103
+            pos = (452, 793) if region != "top" else (803, 458)
+            cross = cross_mask(411+index, size, size, True)
+            stamp(layer, worn_paint(cross, "red" if index == 10 else "black", rng, .15, 1.04),
+                  pos, rng.uniform(-10, 9))
+        overlay.alpha_composite(layer, (x, y))
+    lid_x, lid_y, width, height = regions["lid"]
+    lid = Image.new("RGBA", (width, height))
 
     if 0 < index < 10:
         layout = DESIGNS[index-1]
@@ -162,4 +173,27 @@ def paint_finish(overlay, index, lid_region):
         band = tape_residue(lid.size, [(center, length, depth, angle, .81)], 35690+index)
         lid.alpha_composite(make_adhesive_visible(band, opacity))
 
-    overlay.paste(lid, lid_bounds[:2])
+    if index in PREVIOUS_PAINT:
+        text, pos, height, angle, opacity = PREVIOUS_PAINT[index]
+        stencil_in_valley(lid, (text,), pos, height, angle, "black", rng, glyphs, .22, opacity)
+    if index in GHOST_STENCILS:
+        text, pos, height, angle, color = GHOST_STENCILS[index]
+        if index == 2:
+            pos = (575, 1148)
+        stencil_in_valley(lid, (text,), pos, height, angle, color, rng, glyphs, .32, .32)
+    if index == 2:
+        stencil_in_valley(lid, ("F8105",), (460, 430), 103, 3, "white", rng, glyphs, .25, .90)
+    elif index in (0, 11):
+        stencil_in_valley(lid, ("MED CHEST",), (500, 780), 122, -3, "yellow", rng, glyphs,
+                          .33 if index == 0 else .84, 1.15)
+    else:
+        lines, color, center, height, angle, *_ = DESIGNS[index-1]
+        center = STENCIL_MOVED.get(index, center)            # out from under the inventory sheet
+        for row, line in enumerate(lines):
+            pos = (center[0], center[1]+row*350)
+            stencil_in_valley(lid, (line,), pos, height, angle, color, rng, glyphs,
+                              (.18, .43, .78, .29)[index % 4], 1.10)
+        if index == 9:
+            cross = cross_mask(334, 280, 296, True)
+            stamp(lid, worn_paint(cross, "black", rng, .27, 1.14), (527, 788), -7)
+    overlay.alpha_composite(lid, (lid_x, lid_y))

@@ -9,11 +9,19 @@ def test_source_contract():
     # The shell is a local display only. Dropped blankets remain supported.
     import re
     code=re.sub(r'/\*.*?\*/|//[^\n]*','',vis,flags=re.S)
-    assert 'ACME_hpmk_wrappedVisuals = createHashMap;' in code
+    # B380: a wrapped casualty wears the shell (a vest bound to his bones, ACME_fnc_hpmkDress); nothing is laid
+    # over him any more, so there is nothing that could be attached to him or move him.
+    assert 'ACME_hpmk_wrappedVisuals' not in code
+    assert 'hpmk_patient_' not in code
     for forbidden in ('attachTo', '_patient setPos', '_patient setVector', 'createVehicle'):
         assert forbidden not in code,forbidden
-    assert 'createSimpleObject [_path, getPosWorldVisual _patient, true]' in code
-    assert '_visual setPhysicsCollisionFlag false' in code
+    dress=(R/'addons/acm_extended/functions/fn_hpmkDress.sqf').read_text()
+    dress=re.sub(r'/\*.*?\*/|//[^\n]*','',dress,flags=re.S)
+    assert '_patient setUnitLoadout [_lo, false]' in dress
+    for forbidden in ('attachTo', '_patient setPos', '_patient setVector'):
+        assert forbidden not in dress,forbidden
+    commit=(R/'addons/acm_extended/functions/fn_hpmkStateCommit.sqf').read_text()
+    assert '[_patient] call ACME_fnc_hpmkDress;' in commit
     assert 'call ACME_fnc_hpmkBlanketTick' in code
     assert 'attachTo [_p' not in server
     spawn=(R/'addons/acm_extended/functions/fn_hpmkSpawnBlanket.sqf').read_text()

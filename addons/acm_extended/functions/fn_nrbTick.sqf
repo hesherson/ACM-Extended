@@ -28,7 +28,7 @@ private _minRR = missionNamespace getVariable ["ACME_nrb_minRR", 1];
 private _fullRR = missionNamespace getVariable ["ACME_nrb_fullEffectRR", 12];
 private _minAirway = missionNamespace getVariable ["ACME_nrb_minAirway", 0.05];
 private _minBreathing = missionNamespace getVariable ["ACME_nrb_minBreathing", 0.05];
-// ACM_OxygenTank_425 is a 425 l cylinder modeled as 283 reserve units, at count=283, so each
+// ACME_OxygenTank_425 is a 425 l cylinder modeled as 283 reserve units, at count=283, so each
 // useoxygentankreserve unit is about 1.5 l. spend a unit each time that many liters have flowed, so at the
 // default 15 l/min that is 1 unit every 6 s, or 10 units a minute, exactly matching ACM's own BVM
 // consumption.
@@ -91,7 +91,7 @@ private _fnc_stopSfx = {
     if !(_u getVariable ["ACME_nrb_hasO2", false]) then {[_u, -1, -1, false, true, true] call ACME_fnc_nrbStateCommit;};
     // the oxygen draw from the tank of the medic, metered at _flowLPM.
     if (_u getVariable ["ACME_nrb_hasO2", false]) then {
-        // ACM_OxygenTank_425 is 425 l over 283 reserve units, so spend a unit each _litersPerUnit, about 1.5 l, that
+        // ACME_OxygenTank_425 is 425 l over 283 reserve units, so spend a unit each _litersPerUnit, about 1.5 l, that
         // flows. the fractional liters accumulate each 0.5 s tick.
         private _request = _u getVariable ["ACME_nrb_drawPending", []];
         // A lost acknowledgement cannot grant unlimited unaccounted oxygen. Keep retrying

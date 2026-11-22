@@ -26,18 +26,18 @@ if ((_patient getVariable ["ACME_lido_seizureState", ""]) == "active") exitWith 
 };
 
 private _item = LLSTRING(OPA);
-private _classname = "ACM_OPA";
+private _classname = "ACME_OPA";
 private _airwayItem = _patient getVariable [QGVAR(AirwayItem_Oral), ""];
 
 switch (_type) do {
     case "NPA": {
         _item = LLSTRING(NPA);
-        _classname = "ACM_NPA";
+        _classname = "ACME_NPA";
         _airwayItem = _patient getVariable [QGVAR(AirwayItem_Nasal), ""];
     };
     case "SGA": {
         _item = LLSTRING(IGel);
-        _classname = "ACM_IGel";
+        _classname = "ACME_IGel";
     };
     default {};
 };

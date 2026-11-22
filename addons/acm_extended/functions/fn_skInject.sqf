@@ -99,7 +99,7 @@ _flushList ctrlSetPosition [_leftX, _flushTopY, _listW, _flushListH];
 _flushList ctrlCommit 0;
 lbClear _flushList;
 private _fi = _flushList lbAdd "Saline Flush (10 mL)";
-_flushList lbSetData [_fi, "ACM_SalineFlush_10"];
+_flushList lbSetData [_fi, "ACME_SalineFlush_10"];
 _flushList ctrlAddEventHandler ["LBSelChanged", {_this call ACME_fnc_skPickFlush}];
 
 // B60: the old Drawn list stays retired. The persistent carousel now shares the center of the dialog with the

@@ -1,7 +1,8 @@
 class CfgMagazines {
     class CA_Magazine;
 
-    class KAT_Eyewasher: CA_Magazine {
+    class ACME_Eyewasher: CA_Magazine {
+        dlc = "ACM_Extended";
         author = "mavis";
         authors[] = {"Katalam", "Inferno"};
         scope = 2;

@@ -7,9 +7,9 @@ class CfgPatches {
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {
-            "ACM_PressureBandage",
-            "ACM_EmergencyTraumaDressing",
-            "ACM_ElasticWrap"
+            "ACME_PressureBandage",
+            "ACME_EmergencyTraumaDressing",
+            "ACME_ElasticWrap"
         };
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

@@ -4,7 +4,7 @@
 params ["_medic", ["_patient", objNull]];
 if (isNull _medic) exitWith {};
 
-if (([_medic, _patient, "ACM_EMMA"] call ACME_fnc_treatmentSupplyCount) <= 0) exitWith {
+if (([_medic, _patient, "ACME_EMMA"] call ACME_fnc_treatmentSupplyCount) <= 0) exitWith {
     ["You do not have an EMMA.", 2, _medic] call ace_common_fnc_displayTextStructured;
 };
 

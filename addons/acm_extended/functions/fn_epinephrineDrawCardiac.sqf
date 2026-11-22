@@ -10,11 +10,11 @@ if (_type != 0) exitWith {["Draw the cardiac syringe, then select a real IV/IO i
 private _size = missionNamespace getVariable ["ACM_circulation_SyringeDraw_Size", 10];
 private _ml = (round ((missionNamespace getVariable ["ACM_circulation_SyringeDraw_DrawnAmount", 0]) * 100)) / 100;
 if (!(_size in [1,3,5,10]) || {_ml <= 0} || {_ml > _size}) exitWith {};
-private _empty = format ["ACM_Syringe_%1", _size];
+private _empty = format ["ACME_Syringe_%1", _size];
 if !([_medic,[["EpinephrineCardiac",_ml]],_empty,!(missionNamespace getVariable ["ACM_circulation_reusableSyringe",false])] call ACME_fnc_medicationTakeSources) exitWith {
     ["Not enough 1:10,000 epinephrine or an empty syringe is missing.",3,_medic] call ace_common_fnc_displayTextStructured;
 };
-private _class = format ["ACM_Syringe_%1_EpinephrineCardiac", _size];
+private _class = format ["ACME_Syringe_%1_EpinephrineCardiac", _size];
 private _result = [_medic, _class, "", round (_ml * 100)] call ace_common_fnc_addToInventory;
 if !(_result param [0, false]) exitWith {
     [] call ACME_fnc_skWasteEnd;

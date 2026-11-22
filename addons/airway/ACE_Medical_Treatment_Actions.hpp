@@ -69,12 +69,12 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         medicRequired = QGVAR(allowSuctionBag);
         treatmentTime = QUOTE([_patient] call FUNC(getSuctionTime));
-        items[] = {"ACM_SuctionBag"};
+        items[] = {"ACME_SuctionBag"};
         consumeItem = 1;
         condition = QUOTE(GVAR(enable) && (!(_patient call ACEFUNC(common,isAwake)) || (_patient getVariable [ARR_2(QQGVAR(AirwayObstructionVomit_State),0)]) > 0 || (_patient getVariable [ARR_2(QQGVAR(AirwayObstructionBlood_State),0)]) > 0));
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,0)] call FUNC(handleSuction));
         ACM_cancelRecovery = 1;
-        ACM_menuIcon = "ACM_SuctionBag";
+        ACM_menuIcon = "ACME_SuctionBag";
     };
     class UseAccuvac: UseSuctionBag {
         displayName = CSTRING(UseACCUVAC);
@@ -82,10 +82,10 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         medicRequired = QGVAR(allowACCUVAC);
         treatmentTime = QUOTE([_patient] call FUNC(getSuctionTime));
-        items[] = {"ACM_ACCUVAC"};
+        items[] = {"ACME_ACCUVAC"};
         consumeItem = 0;
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,1)] call FUNC(handleSuction));
-        ACM_menuIcon = "ACM_ACCUVAC";
+        ACM_menuIcon = "ACME_ACCUVAC";
     };
 
     class InsertOPA: CheckAirway {
@@ -94,12 +94,12 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         medicRequired = QGVAR(allowOPA);
         treatmentTime = QGVAR(treatmentTimeOPA);
-        items[] = {"ACM_OPA"};
+        items[] = {"ACME_OPA"};
         consumeItem = 1;
         condition = QUOTE(GVAR(enable) && !(_patient call ACEFUNC(common,isAwake)) && (_patient getVariable [ARR_2(QQGVAR(AirwayItem_Oral),'')] == ''));
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,'OPA')] call FUNC(insertAirwayItem));
         ACM_cancelRecovery = 1;
-        ACM_menuIcon = "ACM_OPA";
+        ACM_menuIcon = "ACME_OPA";
     };
     class InsertNPA: InsertOPA {
         displayName = CSTRING(InsertNPA);
@@ -107,10 +107,10 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         medicRequired = QGVAR(allowNPA);
         treatmentTime = QGVAR(treatmentTimeNPA);
-        items[] = {"ACM_NPA"};
+        items[] = {"ACME_NPA"};
         condition = QUOTE(GVAR(enable) && !(_patient call ACEFUNC(common,isAwake)) && (_patient getVariable [ARR_2(QQGVAR(AirwayItem_Nasal),'')] == ''));
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,'NPA')] call FUNC(insertAirwayItem));
-        ACM_menuIcon = "ACM_NPA";
+        ACM_menuIcon = "ACME_NPA";
     };
     class InsertIGel: InsertOPA {
         displayName = CSTRING(InsertIGel);
@@ -118,9 +118,9 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         medicRequired = QGVAR(allowSGA);
         treatmentTime = QGVAR(treatmentTimeSGA);
-        items[] = {"ACM_IGel"};
+        items[] = {"ACME_IGel"};
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,'SGA')] call FUNC(insertAirwayItem));
-        ACM_menuIcon = "ACM_IGel";
+        ACM_menuIcon = "ACME_IGel";
     };
 
     class RemoveOPA: CheckAirway {
@@ -153,11 +153,11 @@ class ACEGVAR(medical_treatment,actions) {
         treatmentLocations = TREATMENT_LOCATIONS_ALL;
         medicRequired = QGVAR(allowSurgicalAirway);
         treatmentTime = 0.001;
-        items[] = {"ACM_CricKit"};
+        items[] = {"ACME_CricKit"};
         consumeItem = 1;
         condition = QUOTE(GVAR(enable) && [ARR_2(_medic,_patient)] call FUNC(canEstablishSurgicalAirway));
         callbackSuccess = QFUNC(establishSurgicalAirway);
         ACM_cancelRecovery = 1;
-        ACM_menuIcon = "ACM_CricKit";
+        ACM_menuIcon = "ACME_CricKit";
     };
 };

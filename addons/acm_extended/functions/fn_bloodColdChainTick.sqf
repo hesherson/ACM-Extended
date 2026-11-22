@@ -40,7 +40,7 @@ private _bagFloat = missionNamespace getVariable ["ACME_ccBagFloat", createHashM
 private _cooFloat = missionNamespace getVariable ["ACME_ccCoolFloat", createHashMap];
 
 private _volOf    = ACME_fnc_coolerBagVolume;
-private _isBag    = { params ["_c"]; (_c find "ACM_BloodBag_" == 0) || {_c find "ACM_FreshBloodBag_" == 0} };
+private _isBag    = { params ["_c"]; (_c find "ACME_BloodBag_" == 0) || {_c find "ACME_FreshBloodBag_" == 0} };
 private _isCooler = { params ["_c"]; _c find "ACME_BloodCooler_" == 0 };
 
 
@@ -168,7 +168,7 @@ private _autofill = [];
                 _final pushBack [_c, _start];
                 if (_fresh) then {
                     private _bags = floor ((getNumber (configFile >> "CfgWeapons" >> _c >> "ACME_coolerCapacityMl")) / 500);
-                    if (_bags > 0 && {missionNamespace getVariable ["ACME_coolerAutoFill", false]}) then { _autofill pushBack [_h, format ["ACM_BloodBag_%1_500", _fillType], _bags]; };
+                    if (_bags > 0 && {missionNamespace getVariable ["ACME_coolerAutoFill", false]}) then { _autofill pushBack [_h, format ["ACME_BloodBag_%1_500", _fillType], _bags]; };
                 };
             };
         };

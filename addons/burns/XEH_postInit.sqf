@@ -69,7 +69,7 @@ GVAR(postInitRegistered) = true;
     private _woundNames = ACEGVAR(medical_damage,woundClassNames);
     private _partKey = toLowerANSI _bodyPart;
     private _open = (_patient getVariable [VAR_OPEN_WOUNDS, createHashMap]) getOrDefault [_partKey, []];
-    if (_bandageClass in ["ACM_SilverNylonDressing", "ACM_BurnCream"]) exitWith {
+    if (_bandageClass in ["ACME_SilverNylonDressing", "ACME_BurnCream"]) exitWith {
         private _parts = ["head","body","leftarm","rightarm","leftleg","rightleg"];
         private _idx = _parts find _partKey;
         if (_idx >= 0) then {

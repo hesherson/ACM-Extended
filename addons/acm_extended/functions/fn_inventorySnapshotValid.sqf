@@ -56,7 +56,7 @@ private _rowValid = {
         if (([1,2,3,4,5,6,8] findIf {!((_body select _x) isEqualType "")}) >= 0
             || {(_body select 5) != ""} || {!((_body select 7) isEqualType true)}) exitWith {false};
         if (([9,10] findIf {_x < count _body && {!((_body select _x) isEqualType 0) || {(_body select _x) < 0}}}) >= 0) exitWith {false};
-        private _fresh = ((_body select 1) find "ACM_FreshBloodBag_") == 0 || {((_body select 2) find "FreshBloodBag_") == 0};
+        private _fresh = ((_body select 1) find "ACME_FreshBloodBag_") == 0 || {((_body select 2) find "FreshBloodBag_") == 0};
         if (_fresh && {count _body < 12}) exitWith {false};
         private _meta = _body param [11,[]];
         private _validFresh = {

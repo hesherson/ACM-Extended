@@ -189,11 +189,11 @@ if (_heldSeal) exitWith {
         private _wx = (_mx - _bx) / _bw;
         private _wy = (_my - _by) / _bh;
         if (([_wx] call _isFiniteNumber) && {[_wy] call _isFiniteNumber}) then {
-            _queued = ["waste", [_side, _wx, _wy], "ACM_ChestSeal"] call ACME_fnc_chestSealRequest;
+            _queued = ["waste", [_side, _wx, _wy], "ACME_ChestSeal"] call ACME_fnc_chestSealRequest;
         };
         if (!_queued) exitWith {false};
         uiNamespace setVariable ["ACME_CS_Held", false];
-        uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, uiNamespace getVariable ["ACME_CS_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount}];
+        uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, uiNamespace getVariable ["ACME_CS_Patient", objNull], "ACME_ChestSeal"] call ACME_fnc_treatmentSupplyCount}];
         ["Seal misplaced. center it directly over the found hole.", 2.5, (uiNamespace getVariable ["ACME_CS_Medic", objNull]), 13] call ace_common_fnc_displayTextStructured;
         [] call ACME_fnc_chestSealRefreshSlot;
         [] call ACME_fnc_chestSealRender;

@@ -7,9 +7,10 @@ class CfgWeapons {
         descriptionShort = CSTRING(UniversalSplint_Desc);
         scope = 1;
     };
-    class ACM_SAMSplint: ACE_splint {
+    class ACME_SAMSplint: ACE_splint {
+        dlc = "ACM_Extended";
         scope = 2;
-        author = "Blue";
+        author = "mavis";
         picture = QPATHTOF(ui\samsplint.paa);
         displayName = CSTRING(SAMSplint);
         descriptionShort = CSTRING(SAMSplint_Desc);

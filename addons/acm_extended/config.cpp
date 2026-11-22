@@ -1,5 +1,6 @@
 #include "..\main\ui_theme.hpp"
 #include "..\main\script_build.hpp"
+#include "..\main\item_aliases.hpp"
 // extended event handlers, matching the ACM and ACE convention. these are inlined from the former
 // cfgeventhandlers.hpp, so the build has no #include to drop in.
 // preinit registers the CBA settings. postinit starts the runtime of the addon.
@@ -550,9 +551,9 @@ class CfgPatches {
             "ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"};
         weapons[] = {
             "ACME_HTSBag", "ACME_MagnesiumBag", "ACME_MannitolBag",
-            "ACM_EsmololBag", "ACM_Vial_Norepinephrine", "ACM_Vial_Ceftriaxone", "ACM_Vial_Rocuronium", "ACM_Vial_Sugammadex",
-            "ACM_IV_18g", "ACM_IV_20g", "ACM_SalineFlush_10", "ACME_Vial_EpinephrineCardiac",
-            "ACM_Thermometer", "ACM_NRBMask", "ACM_HPMK", "ACM_EMMA", "ACM_CombatGauze", "ACME_NARSPEAR", "ACME_XStat", "ACME_Ventilator", "ACME_VentBattery", "ACME_Laryngoscope", "ACME_ETTube",
+            "ACME_EsmololBag", "ACME_Vial_Norepinephrine", "ACME_Vial_Ceftriaxone", "ACME_Vial_Rocuronium", "ACME_Vial_Sugammadex",
+            "ACME_IV_18g", "ACME_IV_20g", "ACME_SalineFlush_10", "ACME_Vial_EpinephrineCardiac",
+            "ACME_Thermometer", "ACME_NRBMask", "ACME_HPMK", "ACME_EMMA", "ACME_CombatGauze", "ACME_NARSPEAR", "ACME_XStat", "ACME_Ventilator", "ACME_VentBattery", "ACME_Laryngoscope", "ACME_ETTube",
             "ACME_HTSBullet", "ACME_MannitolVial",
             "ACME_VentBattery_0", "ACME_VentBattery_1", "ACME_VentBattery_2", "ACME_VentBattery_3", "ACME_VentBattery_4",
             "ACME_VentBattery_5", "ACME_VentBattery_6", "ACME_VentBattery_7", "ACME_VentBattery_8", "ACME_VentBattery_9",
@@ -576,7 +577,7 @@ class CfgPatches {
             "ACME_VentBattery_95", "ACME_VentBattery_96", "ACME_VentBattery_97", "ACME_VentBattery_98", "ACME_VentBattery_99",
             "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500", "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100",
             "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_Spray_Esketamine",
-            "ACM_Vial_Phentolamine", "ACM_Vial_Hyaluronidase", "ACM_Vial_CalciumGluconate", "ACM_Vial_Propofol", "ACM_Vial_Midazolam", "ACM_Vial_Fentanyl",
+            "ACME_Vial_Phentolamine", "ACME_Vial_Hyaluronidase", "ACME_Vial_CalciumGluconate", "ACME_Vial_Propofol", "ACME_Vial_Midazolam", "ACME_Vial_Fentanyl",
             "ACME_IVLine", "ACME_IVExtension", "ACME_Tegaderm", "ACME_SalineLock", "ACME_YTubing", "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_NARBOA", "ACME_AAJT_S", "ACME_SpoiledBlood", "ACME_SpoiledBlood_250", "ACME_SpoiledBlood_500", "ACME_SpoiledBlood_1000",
             "ACME_BloodCooler_CSWB1U", "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U",
             "ACME_IVStartKit_14g", "ACME_IVStartKit_16g", "ACME_IVStartKit_18g", "ACME_IVStartKit_20g"
@@ -620,15 +621,15 @@ class CfgPatches {
 class CfgMods {
     class ACM_Extended {
         dir = "@ACM Extended";
-        name = "ACM Extended";
+        name = "ACME";
         picture = "\acm_extended\ui\ACME_logo.paa";
         logo = "\acm_extended\ui\ACME_logo.paa";
         logoOver = "\acm_extended\ui\ACME_logo.paa";
         logoSmall = "\acm_extended\ui\ACME_logo_small.paa";
         hidePicture = 0;
         hideName = 0;
-        tooltip = "ACM Extended";
-        tooltipOwned = "ACM Extended";
+        tooltip = "ACME";
+        tooltipOwned = "ACME";
         actionName = "";
         action = "";
         overview = "ACM Extended";
@@ -643,9 +644,9 @@ class CfgMods {
 // ACME_infusion_premixedByType.
 // the paracetamol magazines, the carried and usable items, are renamed to acetaminophen. this is display only.
 // the medication classname and effect stay paracetamol, so all ACM logic is untouched.
-// a partial override, such as class ACM_Paracetamol { displayname=..; }, keeps the class's own properties and
+// a partial override, such as class ACME_Paracetamol { displayname=..; }, keeps the class's own properties and
 // drops the CA_Magazine-inherited defaults, namesound, displayNameShort and the rest. that surfaced as a
-// cascade of "No entry .../ACM_Paracetamol.<prop>" popups. we re-derive from CA_Magazine instead and copy
+// cascade of "No entry .../ACME_Paracetamol.<prop>" popups. we re-derive from CA_Magazine instead and copy
 // ACM's full property set plus the base defaults, so nothing inherited is ever missing. ACM's children,
 // ammoniainhalant, inhaler_penthrox and syringe_10_epinephrine, inherit from this and pick up the same
 // complete chain.
@@ -654,6 +655,7 @@ class CfgMagazines {
     // Native magazine ammo carries an opaque non-recycled identity, never medication volume.
     // Hidden from Arsenal: default ammo is deliberately outside the valid token range.
     class ACME_PreparedIVSet: CA_Magazine {
+        dlc = "ACM_Extended";
         scope = 1; author = "mavis"; displayName = "Prepared IV Set";
         picture = "\acm_extended\ui\items\iv_line_qtts_ca.paa";
         descriptionShort = "Prepared fluid bag and administration line. Contents are retained when moved through Gear.";
@@ -784,9 +786,10 @@ class CfgMagazines {
         picture = "\acm_extended\ui\items\goldenhour_cswb4u_ca.paa";
         mass = 75;
     };
-    class ACM_Paracetamol: CA_Magazine {
+    class ACME_Paracetamol: CA_Magazine {
+        dlc = "ACM_Extended";
         scope = 2;
-        author = "Blue";
+        author = "mavis";
         picture = "\x\ACM\addons\circulation\ui\paracetamol_ca.paa";
         displayName = "Acetaminophen";
         displayNameShort = "APAP";
@@ -797,7 +800,7 @@ class CfgMagazines {
         count = 10;
         mass = 0.3;
     };
-    class ACM_Paracetamol_DoublePack: ACM_Paracetamol {
+    class ACME_Paracetamol_DoublePack: ACME_Paracetamol {
         scope = 1;
         picture = "\x\ACM\addons\circulation\ui\paracetamol_doublepack_ca.paa";
         displayName = "Acetaminophen (Double Pack)";
@@ -811,17 +814,17 @@ class CfgMagazines {
     // that covers epinephrine, morphine, ketamine, amiodarone, lidocaine, TXA, fentanyl, ondansetron,
     // CalciumChloride, esmolol, ertapenem, atropine, adenosine and dimercaprol. it does not generate them for the
     // four drugs we added: norepinephrine, midazolam, CalciumGluconate and ceftriaxone. when ACM's draw and inject
-    // path builds the class string ACM_Syringe_<size>_<drug>, in fnc_syringe_preparefinish line 37 and
+    // path builds the class string ACME_Syringe_<size>_<drug>, in fnc_syringe_preparefinish line 37 and
     // fnc_syringe_inject, the magazine does not exist. ace_common_fnc_addToInventory then falls back to spawning a
     // GroundWeaponHolder for the missing class and the engine throws "Bad vehicle type".
-    // these definitions mirror ACM's own macro. they inherit ACM_Syringe_10_Epinephrine, which carries scope=1,
+    // these definitions mirror ACM's own macro. they inherit ACME_Syringe_10_Epinephrine, which carries scope=1,
     // ACE_isMedicalItem, ACE_asItem and acm_issyringe=1, and override the picture, displayname, count and mass
     // only. the count is the drug volume times 100, so 10 ml is 1000 and 1 ml is 100, the same as ACM.
     // acm_issyringe=1 is inherited, so ACM's xeh_postinit syringe scan, acm_syringes_*, picks these up
     // automatically and the drugs become fully drawable and pushable with no further wiring.
-    class ACM_Syringe_10_Epinephrine;  // ACM base, forward-declared so the inherits below resolve to the real class.
+    class ACME_Syringe_10_Epinephrine;  // ACM base, forward-declared so the inherits below resolve to the real class.
 
-    class ACM_Syringe_10_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_EpinephrineCardiac: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -830,7 +833,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_EpinephrineCardiac: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -839,7 +842,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_EpinephrineCardiac: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -848,7 +851,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_EpinephrineCardiac: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_EpinephrineCardiac: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -858,7 +861,7 @@ class CfgMagazines {
         mass = 1;
     };
 
-    class ACM_Syringe_10_Norepinephrine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Norepinephrine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -867,7 +870,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Norepinephrine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Norepinephrine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -876,7 +879,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Norepinephrine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Norepinephrine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -885,7 +888,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Norepinephrine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Norepinephrine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -899,7 +902,7 @@ class CfgMagazines {
     // norepinephrine and epinephrine. injected locally at the extravasation site it reverses the ischemic
     // vasoconstriction. it draws and injects like any vial, and the vesicant eh handles the extravasation reversal
     // when the classname "Phentolamine" is delivered peripherally.
-    class ACM_Syringe_10_Phentolamine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Phentolamine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -908,7 +911,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Phentolamine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Phentolamine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -917,7 +920,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Phentolamine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Phentolamine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -926,7 +929,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Phentolamine: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Phentolamine: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -940,7 +943,7 @@ class CfgMagazines {
     // disperse and absorb. it is the reversal agent for hyperosmolar and non-catecholamine extravasation, from
     // calcium, hypertonic saline, mannitol, amiodarone, magnesium and esmolol. the vesicant eh handles the
     // reversal when the classname "Hyaluronidase" is delivered peripherally.
-    class ACM_Syringe_10_Hyaluronidase: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Hyaluronidase: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -949,7 +952,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Hyaluronidase: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Hyaluronidase: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -958,7 +961,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Hyaluronidase: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Hyaluronidase: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -967,7 +970,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Hyaluronidase: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Hyaluronidase: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -977,7 +980,7 @@ class CfgMagazines {
         mass = 1;
     };
 
-    class ACM_Syringe_10_Midazolam: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Midazolam: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -986,7 +989,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Midazolam: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Midazolam: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -995,7 +998,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Midazolam: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Midazolam: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -1004,7 +1007,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Midazolam: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Midazolam: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -1014,7 +1017,7 @@ class CfgMagazines {
         mass = 1;
     };
 
-    class ACM_Syringe_10_Rocuronium: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Rocuronium: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -1023,7 +1026,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Rocuronium: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Rocuronium: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -1032,7 +1035,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Rocuronium: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Rocuronium: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -1041,7 +1044,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Rocuronium: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Rocuronium: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -1051,11 +1054,11 @@ class CfgMagazines {
         mass = 1;
     };
 
-    // sugammadex syringes. the narc box and draw system instantiate ACM_Syringe_<size>_<drug> directly, so every
+    // sugammadex syringes. the narc box and draw system instantiate ACME_Syringe_<size>_<drug> directly, so every
     // size the draw list offers must exist as a real class or the game throws "Bad vehicle type". the vial is 500
     // mg in 5 ml, so 5 ml is the full-vial draw. all four sizes are provided because the medic can draw a partial
     // volume, and with sugammadex the volume drawn is the dose. 16 mg/kg needs multiple full vials.
-    class ACM_Syringe_10_Sugammadex: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Sugammadex: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -1064,7 +1067,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Sugammadex: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Sugammadex: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -1073,7 +1076,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Sugammadex: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Sugammadex: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -1082,7 +1085,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Sugammadex: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Sugammadex: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -1092,7 +1095,7 @@ class CfgMagazines {
         mass = 1;
     };
 
-    class ACM_Syringe_10_CalciumGluconate: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_CalciumGluconate: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -1101,7 +1104,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_CalciumGluconate: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_CalciumGluconate: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -1110,7 +1113,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_CalciumGluconate: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_CalciumGluconate: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -1119,7 +1122,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_CalciumGluconate: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_CalciumGluconate: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -1131,7 +1134,7 @@ class CfgMagazines {
 
     // propofol syringes. it is a sedative-hypnotic at 500 mg in 50 ml, or 10 mg/ml. it draws and pushes, and the
     // infusion route waits on the syringe pump. it is half of ketofol, with ketamine.
-    class ACM_Syringe_10_Propofol: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Propofol: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -1140,7 +1143,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Propofol: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Propofol: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -1149,7 +1152,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Propofol: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Propofol: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -1158,7 +1161,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Propofol: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Propofol: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -1168,7 +1171,7 @@ class CfgMagazines {
         mass = 1;
     };
 
-    class ACM_Syringe_10_Ceftriaxone: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_10_Ceftriaxone: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_10_ca.paa";
@@ -1177,7 +1180,7 @@ class CfgMagazines {
         count = 1000;
         mass = 2.6;
     };
-    class ACM_Syringe_5_Ceftriaxone: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_5_Ceftriaxone: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_5_ca.paa";
@@ -1186,7 +1189,7 @@ class CfgMagazines {
         count = 500;
         mass = 1.7;
     };
-    class ACM_Syringe_3_Ceftriaxone: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_3_Ceftriaxone: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_3_ca.paa";
@@ -1195,7 +1198,7 @@ class CfgMagazines {
         count = 300;
         mass = 1.2;
     };
-    class ACM_Syringe_1_Ceftriaxone: ACM_Syringe_10_Epinephrine {
+    class ACME_Syringe_1_Ceftriaxone: ACME_Syringe_10_Epinephrine {
         author = "mavis";
         dlc = "ACM_Extended";
         picture = "\x\ACM\addons\circulation\ui\syringe_1_ca.paa";
@@ -1210,10 +1213,10 @@ class CfgMagazines {
 class CfgWeapons {
     class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
-    class ACM_NCDKit;
+    class ACME_NCDKit;
     // rename paracetamol to acetaminophen, the same drug under its us name. we override the display name only.
     // the medication classname and effect stay "Paracetamol", so all ACM logic is untouched.
-    class ACM_Paracetamol_SinglePack { displayName = "Acetaminophen (Single Pack)"; };
+    class ACME_Paracetamol_SinglePack { author = "mavis"; dlc = "ACM_Extended"; displayName = "Acetaminophen (Single Pack)"; };
     class ACME_HTSBag: ACE_ItemCore {
         author = "mavis";
         dlc = "ACM_Extended";
@@ -1403,8 +1406,8 @@ class CfgWeapons {
 
     // norepinephrine, levophed, vial. it belongs to the vial family.
     // Dedicated cardiac-strength source. Existing Epinephrine remains 1 mg/mL (1:1,000).
-    class ACM_Vial_Epinephrine;
-    class ACME_Vial_EpinephrineCardiac: ACM_Vial_Epinephrine {
+    class ACME_Vial_Epinephrine;
+    class ACME_Vial_EpinephrineCardiac: ACME_Vial_Epinephrine {
         dlc = "ACM_Extended";
         scope = 2;
         scopeArsenal = 2;
@@ -1417,14 +1420,8 @@ class CfgWeapons {
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 1; };
     };
     // Hidden compatibility alias for old missions/loadouts. New arsenals and the Narc Box use ACME_.
-    class ACM_Vial_EpinephrineCardiac: ACME_Vial_EpinephrineCardiac {
-        author = "mavis";
-        dlc = "ACM_Extended";
-        scope = 1;
-        scopeArsenal = 0;
-    };
 
-    class ACM_Vial_Norepinephrine: ACE_ItemCore {
+    class ACME_Vial_Norepinephrine: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1441,7 +1438,7 @@ class CfgWeapons {
     // phentolamine vial. it is an alpha-adrenergic blocker and the antidote for vasopressor extravasation, from
     // norepinephrine and epinephrine. injected at the affected peripheral site it reverses the ischemic
     // vasoconstriction and the tissue recovers. it draws and pushes like any vial.
-    class ACM_Vial_Phentolamine: ACE_ItemCore {
+    class ACME_Vial_Phentolamine: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1459,7 +1456,7 @@ class CfgWeapons {
     // extravasation, from calcium, hypertonic saline, mannitol, amiodarone, magnesium and esmolol. injected around
     // the site it lets the trapped drug disperse and absorb, so the tissue recovers. it draws and pushes like any
     // vial.
-    class ACM_Vial_Hyaluronidase: ACE_ItemCore {
+    class ACME_Vial_Hyaluronidase: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1479,7 +1476,7 @@ class CfgWeapons {
     // onset is about 45 to 60 s and the duration about 30 to 45 min. paralysis without adequate sedation on board
     // is the cardinal RSI error, an awake paralysis. ACME_fnc_rocuroniumTick drives the effect, not ACM's pain and
     // vitals model.
-    class ACM_Vial_Rocuronium: ACE_ItemCore {
+    class ACME_Vial_Rocuronium: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1498,7 +1495,7 @@ class CfgWeapons {
     // 3 min. it reverses the paralysis only. it is not a sedative and it does not undo awareness. a patient
     // paralyzed while awake was awake for it, see ACME_roc_awarenessEvent, and a reversal afterwards does not
     // change that. the effect is dose-dependent. see ACME_fnc_sugammadexTick.
-    class ACM_Vial_Sugammadex: ACE_ItemCore {
+    class ACME_Vial_Sugammadex: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1516,7 +1513,7 @@ class CfgWeapons {
     // it is delivered as Ertapenem_IV, see ACME_infusion_deliveryClassOverride, so it satisfies ACM's evac
     // antibiotic gate, because getMedicationCount counts the recorded classname, and it carries the same effect.
     // the vial relabels it as ceftriaxone in the inventory and the draw list.
-    class ACM_Vial_Ceftriaxone: ACE_ItemCore {
+    class ACME_Vial_Ceftriaxone: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1533,7 +1530,7 @@ class CfgWeapons {
     // calcium gluconate vial, the gentle calcium salt. it delivers the same calcium count as calcium chloride when
     // infused, because it routes to CalciumChloride_IV, and it is never vesicant. the harsh peripheral-push
     // penalty lives on calcium chloride only. it is about 1 g in 10 ml, a 10 percent solution.
-    class ACM_Vial_CalciumGluconate: ACE_ItemCore {
+    class ACME_Vial_CalciumGluconate: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1550,7 +1547,7 @@ class CfgWeapons {
     // propofol vial, a sedative-hypnotic known as milk of amnesia. it is 500 mg in 50 ml, or 10 mg/ml. it pushes
     // and draws, and the infusion, or maintenance, route waits on the syringe pump. it pairs with ketamine to make
     // ketofol.
-    class ACM_Vial_Propofol: ACE_ItemCore {
+    class ACME_Vial_Propofol: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1566,7 +1563,7 @@ class CfgWeapons {
 
     // midazolam vial, a benzodiazepine sedative. ACM ships an im midazolam only, so we add an iv variant,
     // Midazolam_IV below, that can be pushed and infused iv. it is 5 mg in 5 ml.
-    class ACM_Vial_Midazolam: ACE_ItemCore {
+    class ACME_Vial_Midazolam: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1579,7 +1576,7 @@ class CfgWeapons {
             mass = 0.3;
         };
     };
-class ACM_Vial_Fentanyl: ACE_ItemCore {
+class ACME_Vial_Fentanyl: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1632,7 +1629,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         author = "mavis";
         displayName = "IV Start Kit";
         descriptionShort = "Two 18G IV catheters, a BOA band, Tegaderm, a saline lock and a 10 mL saline flush. Opens when you use a supply.";
-        ACME_ivStartKitContents[] = {"ACM_IV_18g", "ACM_IV_18g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACM_SalineFlush_10"};
+        ACME_ivStartKitContents[] = {"ACME_IV_18g", "ACME_IV_18g", "ACME_NARBOA", "ACME_Tegaderm", "ACME_SalineLock", "ACME_SalineFlush_10"};
         picture = "\acm_extended\ui\items\iv_start_kit_ca.paa";
         ACE_isMedicalItem = 1;
         class ItemInfo: CBA_MiscItem_ItemInfo { mass = 3; };
@@ -1735,7 +1732,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // ACME_premixedBag marks it for the auto-attach loop, fn_syncpremixedbags, which layers esmolol rate control
     // on the active bag. the premixed content is declared in ACME_infusion_PremixedBags and premixedbytype, in
     // fn_postInit.
-    class ACM_EsmololBag: ACE_salineIV_250 {
+    class ACME_EsmololBag: ACE_salineIV_250 {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1754,25 +1751,29 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // formatfluidbagname(type,volume), which is ace_<lowertype>iv_<vol>. with distinct fluid types, esmolol and
     // hts at 250 ml, the active bags resolve to these, which gives the correct name and icon instead of a generic
     // saline label. scope is 1, so they are never offered from inventory.
-    class ACE_esmololIV_250: ACE_salineIV_250 {
+    class ACME_EsmololIV_250: ACE_salineIV_250 {
+        dlc = "ACM_Extended";
         scope = 1;
         author = "mavis";
         displayName = "Esmolol 2500mg/250ml (10mg/ml)";
         picture = "\acm_extended\ui\items\esmololbagiv_ca.paa";
     };
-    class ACE_htsIV_250: ACE_salineIV_250 {
+    class ACME_HTSIV_250: ACE_salineIV_250 {
+        dlc = "ACM_Extended";
         scope = 1;
         author = "mavis";
         displayName = "Hypertonic Saline 3% (250ml)";
         picture = "\acm_extended\ui\items\htsiv_ca.paa";
     };
-    class ACE_mannitolIV_500: ACE_salineIV_500 {
+    class ACME_MannitolIV_500: ACE_salineIV_500 {
+        dlc = "ACM_Extended";
         scope = 1;
         author = "mavis";
         displayName = "Mannitol 20% (500ml)";
         picture = "\acm_extended\ui\items\mannitolbag_iv_ca.paa";
     };
-    class ACE_magnesiumIV_50: ACE_salineIV_250 {
+    class ACME_MagnesiumIV_50: ACE_salineIV_250 {
+        dlc = "ACM_Extended";
         scope = 1;
         author = "mavis";
         displayName = "Magnesium Sulfate (2g / 50ml)";
@@ -1782,7 +1783,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // calcium chloride 10 percent, 1 g in 10 ml. it covers citrate and hypocalcemia.
 
     // 18g iv catheter. it is a smaller-bore peripheral line with a slower flow.
-    class ACM_IV_18g: ACE_ItemCore {
+    class ACME_IV_18g: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1803,11 +1804,13 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // the parent is RESTATED on each reopen. that merges with ACM's class and keeps its displayName,
     // descriptionShort, ACE_isMedicalItem and ItemInfo mass. a bare reopen with no parent can replace the class
     // with a stub instead, which is how RemoveTourniquet was broken for two builds.
-    // ACM_IV_14g inherits ACM_IV_16g and sets its own picture, so repointing 16g alone would not reach it.
-    class ACM_IV_16g: ACE_ItemCore {
+    // ACME_IV_14g inherits ACME_IV_16g and sets its own picture, so repointing 16g alone would not reach it.
+    class ACME_IV_16g: ACE_ItemCore {
+        author = "mavis";
+        dlc = "ACM_Extended";
         picture = "\acm_extended\ui\items\iv_16g_ca.paa";
     };
-    class ACM_IV_14g: ACM_IV_16g {
+    class ACME_IV_14g: ACME_IV_16g {
         descriptionShort = "Large-bore peripheral IV. Wrist placement requires an extremely accurate central stick or the vein blows.";
         picture = "\acm_extended\ui\items\iv_14g_ca.paa";
     };
@@ -1815,7 +1818,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // All carried gauges can be attempted at the wrist. A 14g requires a precise central stick.
     // the path is a SINGLE backslash, like every other texture path in this file. a python heredoc writes a
     // doubled backslash and ArmA then reports Picture not found even though the PAA is packed correctly.
-    class ACM_IV_20g: ACE_ItemCore {
+    class ACME_IV_20g: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1829,7 +1832,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     };
 
     // prefilled 10 ml saline flush. it is the push-dose epi base.
-    class ACM_SalineFlush_10: ACE_ItemCore {
+    class ACME_SalineFlush_10: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1844,7 +1847,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
 
     // core thermometer, a reusable tool. it is the only way to read the core temperature. it is reusable, so it
     // must be in the inventory and is never consumed. a condition gates it and items[] is empty.
-    class ACM_Thermometer: ACE_ItemCore {
+    class ACME_Thermometer: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1858,7 +1861,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     };
 
     // non-rebreather mask, a reusable o2 tool. it gives high-flow oxygen with a continuous flow sfx.
-    class ACM_NRBMask: ACE_ItemCore {
+    class ACME_NRBMask: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1870,7 +1873,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
             mass = 2;
         };
     };
-    class ACM_HPMK: ACE_ItemCore {
+    class ACME_HPMK: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1884,7 +1887,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
         };
     };
     // EMMA mainstream capnograph. it attaches inline on a BVM, and the HUD reads out while a medic ventilates.
-    class ACM_EMMA: ACE_ItemCore {
+    class ACME_EMMA: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1900,7 +1903,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     // it is stage 1 of the two-stage junctional treatment: pack the wound across 15 s, then secure it with a
     // pressure bandage across another 15 s. it is a proper ACE medical item, so it sits in the medical
     // inventory.
-    class ACM_CombatGauze: ACE_ItemCore {
+    class ACME_CombatGauze: ACE_ItemCore {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -1915,7 +1918,7 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
     };
 
     // NAR SPEAR decompression needle. it has the same inventory characteristics as ACM's NCD kit.
-    class ACME_NARSPEAR: ACM_NCDKit {
+    class ACME_NARSPEAR: ACME_NCDKit {
         dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
@@ -2048,6 +2051,8 @@ class ACM_Vial_Fentanyl: ACE_ItemCore {
             mass = 75;
         };
     };
+
+    // Compatibility for legacy inventory and loadouts.
 };
 
 // iv fluid classes for the premixed bags. ACM resolves the type and volume of a bag from ace_medical_treatment
@@ -2330,9 +2335,12 @@ class CfgFunctions {
             class medicalChestInit {};
             class medicalChestPlace {};
             class medicalChestGround {};
+            class medicalChestRest {};
+            class medicalChestSeat {};
             class medicalChestLidBase {};
             class medicalChestEden {};
             class medicalChestSetOpen {};
+            class medicalChestCabinetClass {};
             class medicalChestStock {};
             class medicalChestDrawerPlan {};
             class medicalChestDrawers {};
@@ -3293,6 +3301,9 @@ class CfgFunctions {
             class ivExtravasationCheck {};
             class hpmkTick {};
             class hpmkStateCommit {};
+            class hpmkDress {};
+            class hpmkPose {};
+            class casualtyVisualTick {};
             class hpmkBlanketTick {};
             class hpmkSpawnBlanket {};
             class nrbTick {};
@@ -3675,6 +3686,10 @@ class CfgFunctions {
             class vialMedication {};
             class vialItemCount {};
             class itemCount {};
+            class itemClassCanonical {};
+            class itemDataCanonical {};
+            class itemCargoMigrate {};
+            class initItemClassRuntime {};
             class itemTake {};
             class itemList {};
             class vialCapacity {};
@@ -7845,6 +7860,7 @@ class CfgVehicles {
     // store blood nor go red. the 1u and 2u therefore share the ammo-box look for now.
     class Box_NATO_Wps_F;
     class ACME_BloodCoolerBox_CSWB1U: Box_NATO_Ammo_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -7877,6 +7893,7 @@ class CfgVehicles {
         };
     };
     class ACME_BloodCoolerBox_CSWB2U: Box_NATO_Ammo_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -7909,6 +7926,7 @@ class CfgVehicles {
         };
     };
     class ACME_BloodCoolerBox_CSWB4U: Box_NATO_Wps_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -8034,7 +8052,7 @@ class CfgVehicles {
                     };
                     class ACME_SyringeKit_PushEpi {
                         displayName = "Draw Push-Dose Epi (10 mcg/mL)";
-                        condition = "(([_player, 'ACM_SalineFlush_10'] call ACME_fnc_itemCount) > 0) && {([_player, 'EpinephrineCardiac'] call ACME_fnc_infusionVialVolume) >= 1}";
+                        condition = "(([_player, 'ACME_SalineFlush_10'] call ACME_fnc_itemCount) > 0) && {([_player, 'EpinephrineCardiac'] call ACME_fnc_infusionVialVolume) >= 1}";
                         statement = "[_player, _player, '', ['pushDoseOneShot']] call ACME_fnc_salineFlush";
                         exceptions[] = {"isNotInside", "isNotSitting"};
                         showDisabled = 1;
@@ -8374,17 +8392,19 @@ class CfgVehicles {
     class Fridge_01_open_F;
 
     class ACME_BloodFridge_Closed: Fridge_01_closed_F {
+        dlc = "ACM_Extended";
         scope = 1;  // spawned by the module only. the module is the placement surface.
         scopeCurator = 0;
         displayName = "Blood Fridge (Stocked)";
-        author = "PILLAR";
+        author = "mavis";
         FRIDGE_ACTIONS;
     };
     class ACME_BloodFridge_Open: Fridge_01_open_F {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeCurator = 0;
         displayName = "Blood Fridge (Open)";
-        author = "PILLAR";
+        author = "mavis";
         FRIDGE_ACTIONS;
     };
 
@@ -8426,7 +8446,7 @@ class CfgVehicles {
 // item icons option is on, which is ACM's default, an action whose ACM_menuIcon has no matching button class
 // makes ctrlcreate fail. the button is then never created and the action silently never appears in its
 // category. our NRB and HPMK actions set ACM_menuIcon, so we must supply the matching button classes, with the
-// icon through textureNoShortcut, exactly as ACM does for its own items in gui/actionbuttons.hpp. ACM_AED
+// icon through textureNoShortcut, exactly as ACM does for its own items in gui/actionbuttons.hpp. ACME_AED
 // already has a button class in ACM.
 // on left-aligning all medical-menu button text, which was centerd: ACM's stock medical-menu button is
 // ACE-centerd and is used as-is by default, and our per-action icon buttons below inherit it. left alignment
@@ -8439,10 +8459,10 @@ class CfgVehicles {
 // published patient state where needed.
 
 class ACM_MedicalMenu_ActionButton_None;
-class ACM_MedicalMenu_ActionButton_ACM_NRBMask: ACM_MedicalMenu_ActionButton_None {
+class ACM_MedicalMenu_ActionButton_ACME_NRBMask: ACM_MedicalMenu_ActionButton_None {
     textureNoShortcut = "\acm_extended\ui\items\nrbmask_ca.paa";
 };
-class ACM_MedicalMenu_ActionButton_ACM_HPMK: ACM_MedicalMenu_ActionButton_None {
+class ACM_MedicalMenu_ActionButton_ACME_HPMK: ACM_MedicalMenu_ActionButton_None {
     textureNoShortcut = "\acm_extended\ui\items\HPMK_ca.paa";
 };
 // AAJT-s treatment-action icon. ACM's medical menu renders the icon of an action from the textureNoShortcut of
@@ -8454,7 +8474,7 @@ class ACM_MedicalMenu_ActionButton_ACME_AAJT: ACM_MedicalMenu_ActionButton_None 
 class ACM_MedicalMenu_ActionButton_ACME_Ventilator: ACM_MedicalMenu_ActionButton_None {
     textureNoShortcut = "\acm_extended\ui\vent\ventway_sparrow_robust_icon_ca.paa";
 };
-class ACM_MedicalMenu_ActionButton_ACM_EMMA: ACM_MedicalMenu_ActionButton_None {
+class ACM_MedicalMenu_ActionButton_ACME_EMMA: ACM_MedicalMenu_ActionButton_None {
     textureNoShortcut = "\acm_extended\ui\emma\emma_etco2_ca.paa";
 };
 class ACM_MedicalMenu_ActionButton_ACME_iGel_Remove: ACM_MedicalMenu_ActionButton_None {
@@ -8519,40 +8539,40 @@ class ACM_MedicalMenu_ActionButton_ACE_adenosine;
 class ACM_MedicalMenu_ActionButton_ACE_epinephrine;
 class ACM_MedicalMenu_ActionButton_CPR;
 class ACM_MedicalMenu_ActionButton_ACE_morphine;
-class ACM_MedicalMenu_ActionButton_ACM_OPA;
-class ACM_MedicalMenu_ActionButton_ACM_IGel;
-class ACM_MedicalMenu_ActionButton_ACM_NPA;
-class ACM_MedicalMenu_ActionButton_ACM_SuctionBag;
-class ACM_MedicalMenu_ActionButton_ACM_ACCUVAC;
-class ACM_MedicalMenu_ActionButton_ACM_CricKit;
-class ACM_MedicalMenu_ActionButton_ACM_ChestSeal;
-class ACM_MedicalMenu_ActionButton_ACM_PulseOximeter;
-class ACM_MedicalMenu_ActionButton_ACM_Stethoscope;
-class ACM_MedicalMenu_ActionButton_ACM_NCDKit;
-class ACM_MedicalMenu_ActionButton_ACM_ChestTubeKit;
-class ACM_MedicalMenu_ActionButton_ACM_ThoracostomyKit;
-class ACM_MedicalMenu_ActionButton_ACM_PocketBVM;
-class ACM_MedicalMenu_ActionButton_ACM_BVM;
-class ACM_MedicalMenu_ActionButton_ACM_AED;
-class ACM_MedicalMenu_ActionButton_ACM_PressureCuff;
+class ACM_MedicalMenu_ActionButton_ACME_OPA;
+class ACM_MedicalMenu_ActionButton_ACME_IGel;
+class ACM_MedicalMenu_ActionButton_ACME_NPA;
+class ACM_MedicalMenu_ActionButton_ACME_SuctionBag;
+class ACM_MedicalMenu_ActionButton_ACME_ACCUVAC;
+class ACM_MedicalMenu_ActionButton_ACME_CricKit;
+class ACM_MedicalMenu_ActionButton_ACME_ChestSeal;
+class ACM_MedicalMenu_ActionButton_ACME_PulseOximeter;
+class ACM_MedicalMenu_ActionButton_ACME_Stethoscope;
+class ACM_MedicalMenu_ActionButton_ACME_NCDKit;
+class ACM_MedicalMenu_ActionButton_ACME_ChestTubeKit;
+class ACM_MedicalMenu_ActionButton_ACME_ThoracostomyKit;
+class ACM_MedicalMenu_ActionButton_ACME_PocketBVM;
+class ACM_MedicalMenu_ActionButton_ACME_BVM;
+class ACM_MedicalMenu_ActionButton_ACME_AED;
+class ACM_MedicalMenu_ActionButton_ACME_PressureCuff;
 // the two IV rows are NOT forward-declared here. they are modified further down instead, and a name may appear
 // only ONCE in a scope: declaring it and then reopening it is two mentions and the engine rejects the file.
 // see the block below ACM_MedicalMenu_ActionButton_ACM_Midazolam_Autoinjector.
-class ACM_MedicalMenu_ActionButton_ACM_IO_FAST;
-class ACM_MedicalMenu_ActionButton_ACM_IO_EZ;
-class ACM_MedicalMenu_ActionButton_ACM_Syringe_10;
-class ACM_MedicalMenu_ActionButton_ACM_Syringe_5;
-class ACM_MedicalMenu_ActionButton_ACM_Syringe_3;
-class ACM_MedicalMenu_ActionButton_ACM_Syringe_1;
-class ACM_MedicalMenu_ActionButton_ACM_Spray_Naloxone;
-class ACM_MedicalMenu_ActionButton_ACM_Paracetamol;
-class ACM_MedicalMenu_ActionButton_ACM_AmmoniaInhalant;
-class ACM_MedicalMenu_ActionButton_ACM_Inhaler_Penthrox;
-class ACM_MedicalMenu_ActionButton_ACM_Lozenge_Fentanyl;
-class ACM_MedicalMenu_ActionButton_ACM_PressureBandage;
-class ACM_MedicalMenu_ActionButton_ACM_EmergencyTraumaDressing;
-class ACM_MedicalMenu_ActionButton_ACM_ElasticWrap;
-class ACM_MedicalMenu_ActionButton_ACM_SAMSplint;
+class ACM_MedicalMenu_ActionButton_ACME_IO_FAST;
+class ACM_MedicalMenu_ActionButton_ACME_IO_EZ;
+class ACM_MedicalMenu_ActionButton_ACME_Syringe_10;
+class ACM_MedicalMenu_ActionButton_ACME_Syringe_5;
+class ACM_MedicalMenu_ActionButton_ACME_Syringe_3;
+class ACM_MedicalMenu_ActionButton_ACME_Syringe_1;
+class ACM_MedicalMenu_ActionButton_ACME_Spray_Naloxone;
+class ACM_MedicalMenu_ActionButton_ACME_Paracetamol;
+class ACM_MedicalMenu_ActionButton_ACME_AmmoniaInhalant;
+class ACM_MedicalMenu_ActionButton_ACME_Inhaler_Penthrox;
+class ACM_MedicalMenu_ActionButton_ACME_Lozenge_Fentanyl;
+class ACM_MedicalMenu_ActionButton_ACME_PressureBandage;
+class ACM_MedicalMenu_ActionButton_ACME_EmergencyTraumaDressing;
+class ACM_MedicalMenu_ActionButton_ACME_ElasticWrap;
+class ACM_MedicalMenu_ActionButton_ACME_SAMSplint;
 class ACM_MedicalMenu_ActionButton_ACM_ATNA_Autoinjector;
 class ACM_MedicalMenu_ActionButton_ACM_Midazolam_Autoinjector;
 
@@ -8580,12 +8600,12 @@ class ACM_MedicalMenu_ActionButton_ACM_Midazolam_Autoinjector;
 // ACM generates these two from a macro whose entire body is textureNoShortcut, at gui/ActionButtons.hpp:36
 // and :37, so a modify carrying textureNoShortcut alone replaces the only property either one has.
 //
-// NOTE THE CASE. the button class is ACM_IV_16G with a capital G and the inventory item is ACM_IV_16g with a
+// NOTE THE CASE. the button class is ACME_IV_16G with a capital G and the inventory item is ACME_IV_16g with a
 // small one. overrides/fn_updateActions.sqf:221 to 225 carries the map between the two spellings.
-class ACM_MedicalMenu_ActionButton_ACM_IV_16G {
+class ACM_MedicalMenu_ActionButton_ACME_IV_16G {
     textureNoShortcut = "\acm_extended\ui\items\iv_16g_ca.paa";
 };
-class ACM_MedicalMenu_ActionButton_ACM_IV_14G {
+class ACM_MedicalMenu_ActionButton_ACME_IV_14G {
     textureNoShortcut = "\acm_extended\ui\items\iv_14g_ca.paa";
 };
 
@@ -8614,45 +8634,45 @@ ACME_LBTN(ACE_adenosine);
 ACME_LBTN(ACE_epinephrine);
 ACME_LBTN(CPR);
 ACME_LBTN(ACE_morphine);
-ACME_LBTN(ACM_OPA);
-ACME_LBTN(ACM_IGel);
-ACME_LBTN(ACM_NPA);
-ACME_LBTN(ACM_SuctionBag);
-ACME_LBTN(ACM_ACCUVAC);
-ACME_LBTN(ACM_CricKit);
-ACME_LBTN(ACM_ChestSeal);
-ACME_LBTN(ACM_PulseOximeter);
-ACME_LBTN(ACM_Stethoscope);
-ACME_LBTN(ACM_NCDKit);
-ACME_LBTN(ACM_ChestTubeKit);
-ACME_LBTN(ACM_ThoracostomyKit);
-ACME_LBTN(ACM_PocketBVM);
-ACME_LBTN(ACM_BVM);
-ACME_LBTN(ACM_AED);
-ACME_LBTN(ACM_PressureCuff);
-ACME_LBTN(ACM_IV_16G);
-ACME_LBTN(ACM_IV_14G);
-ACME_LBTN(ACM_IO_FAST);
-ACME_LBTN(ACM_IO_EZ);
-ACME_LBTN(ACM_Syringe_10);
-ACME_LBTN(ACM_Syringe_5);
-ACME_LBTN(ACM_Syringe_3);
-ACME_LBTN(ACM_Syringe_1);
-ACME_LBTN(ACM_Spray_Naloxone);
-ACME_LBTN(ACM_Paracetamol);
-ACME_LBTN(ACM_AmmoniaInhalant);
-ACME_LBTN(ACM_Inhaler_Penthrox);
-ACME_LBTN(ACM_Lozenge_Fentanyl);
-ACME_LBTN(ACM_PressureBandage);
-ACME_LBTN(ACM_EmergencyTraumaDressing);
-ACME_LBTN(ACM_ElasticWrap);
-ACME_LBTN(ACM_SAMSplint);
+ACME_LBTN(ACME_OPA);
+ACME_LBTN(ACME_IGel);
+ACME_LBTN(ACME_NPA);
+ACME_LBTN(ACME_SuctionBag);
+ACME_LBTN(ACME_ACCUVAC);
+ACME_LBTN(ACME_CricKit);
+ACME_LBTN(ACME_ChestSeal);
+ACME_LBTN(ACME_PulseOximeter);
+ACME_LBTN(ACME_Stethoscope);
+ACME_LBTN(ACME_NCDKit);
+ACME_LBTN(ACME_ChestTubeKit);
+ACME_LBTN(ACME_ThoracostomyKit);
+ACME_LBTN(ACME_PocketBVM);
+ACME_LBTN(ACME_BVM);
+ACME_LBTN(ACME_AED);
+ACME_LBTN(ACME_PressureCuff);
+ACME_LBTN(ACME_IV_16G);
+ACME_LBTN(ACME_IV_14G);
+ACME_LBTN(ACME_IO_FAST);
+ACME_LBTN(ACME_IO_EZ);
+ACME_LBTN(ACME_Syringe_10);
+ACME_LBTN(ACME_Syringe_5);
+ACME_LBTN(ACME_Syringe_3);
+ACME_LBTN(ACME_Syringe_1);
+ACME_LBTN(ACME_Spray_Naloxone);
+ACME_LBTN(ACME_Paracetamol);
+ACME_LBTN(ACME_AmmoniaInhalant);
+ACME_LBTN(ACME_Inhaler_Penthrox);
+ACME_LBTN(ACME_Lozenge_Fentanyl);
+ACME_LBTN(ACME_PressureBandage);
+ACME_LBTN(ACME_EmergencyTraumaDressing);
+ACME_LBTN(ACME_ElasticWrap);
+ACME_LBTN(ACME_SAMSplint);
 ACME_LBTN(ACM_ATNA_Autoinjector);
 ACME_LBTN(ACM_Midazolam_Autoinjector);
-ACME_LBTN(ACM_NRBMask);
-ACME_LBTN(ACM_HPMK);
+ACME_LBTN(ACME_NRBMask);
+ACME_LBTN(ACME_HPMK);
 ACME_LBTN(ACME_AAJT);
-ACME_LBTN(ACM_EMMA);
+ACME_LBTN(ACME_EMMA);
 ACME_LBTN(ACME_iGel_Remove);
 ACME_LBTN(ACME_IV_18g);
 ACME_LBTN(ACME_IV_20g);
@@ -8858,7 +8878,7 @@ class ace_medical_treatment_actions {
         icon = "";
         medicRequired = "ACM_airway_allowOPA";
         treatmentTime = "ACM_airway_treatmentTimeOPA";
-        items[] = {"ACM_OPA"};
+        items[] = {"ACME_OPA"};
         consumeItem = 1;
         condition = "ACM_airway_enable && !(_patient call ace_common_fnc_isAwake) && (_patient getVariable ['ACM_airway_AirwayItem_Oral','']) == '' && !(_patient getVariable ['ACME_ETT_Inserted', false]) && !(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false])";
         callbackSuccess = "[_medic, _patient, 'OPA'] call ACM_airway_fnc_insertAirwayItem";
@@ -8866,7 +8886,7 @@ class ace_medical_treatment_actions {
         ACM_cancelRecovery = 0;
         ACM_rollToBack = 0;
         ACME_neverRollToBack = 1;
-        ACM_menuIcon = "ACM_OPA";
+        ACM_menuIcon = "ACME_OPA";
     };
     class InsertNPA: InsertOPA {
         displayName = "$STR_ACM_Airway_InsertNPA";
@@ -8874,10 +8894,10 @@ class ace_medical_treatment_actions {
         icon = "";
         medicRequired = "ACM_airway_allowNPA";
         treatmentTime = "ACM_airway_treatmentTimeNPA";
-        items[] = {"ACM_NPA"};
+        items[] = {"ACME_NPA"};
         condition = "ACM_airway_enable && !(_patient call ace_common_fnc_isAwake) && (_patient getVariable ['ACM_airway_AirwayItem_Nasal','']) == '' && !(_patient getVariable ['ACME_ETT_Inserted', false]) && !(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false])";
         callbackSuccess = "[_medic, _patient, 'NPA'] call ACM_airway_fnc_insertAirwayItem";
-        ACM_menuIcon = "ACM_NPA";
+        ACM_menuIcon = "ACME_NPA";
     };
     class InsertIGel: InsertOPA {
         displayName = "$STR_ACM_Airway_InsertIGel";
@@ -8885,14 +8905,14 @@ class ace_medical_treatment_actions {
         icon = "";
         medicRequired = "ACM_airway_allowSGA";
         treatmentTime = "ACM_airway_treatmentTimeSGA";
-        items[] = {"ACM_IGel"};
+        items[] = {"ACME_IGel"};
         condition = "ACM_airway_enable && !(_patient call ace_common_fnc_isAwake) && (_patient getVariable ['ACM_airway_AirwayItem_Oral','']) == '' && !(_patient getVariable ['ACME_ETT_Inserted', false]) && !(_patient getVariable ['ACM_airway_SurgicalAirway_TubeInserted', false]) && !(_patient getVariable ['ACME_nrb_on', false])";
         callbackSuccess = "[_medic, _patient, 'SGA'] call ACM_airway_fnc_insertAirwayItem";
         // Fitted i-gels permit recovery; inserting one still uses its existing supine access.
         ACM_cancelRecovery = 1;
         ACM_rollToBack = 1;
         ACME_neverRollToBack = 0;
-        ACM_menuIcon = "ACM_IGel";
+        ACM_menuIcon = "ACME_IGel";
     };
     // CPR remains entirely native ACM. ACME does not restate its condition, callback or continuous-action behavior.
 
@@ -8989,7 +9009,7 @@ class ace_medical_treatment_actions {
         consumeItem = 0;
         condition = "[_patient, _bodyPart, 4] call ACM_circulation_fnc_hasIO";
         callbackSuccess = "[_medic, _patient, _bodyPart, 4, false, false] call ACM_circulation_fnc_setIV";
-        ACM_menuIcon = "ACM_IO_FAST";
+        ACM_menuIcon = "ACME_IO_FAST";
     };
     class ACME_RemoveIO_EZ: ACME_RemoveIO_FAST1 {
         displayName = "$STR_ACM_Circulation_RemoveIO_EZ";
@@ -8997,7 +9017,7 @@ class ace_medical_treatment_actions {
         allowedSelections[] = {"LeftArm", "RightArm", "LeftLeg", "RightLeg"};
         condition = "[_patient, _bodyPart, 3] call ACM_circulation_fnc_hasIO";
         callbackSuccess = "[_medic, _patient, _bodyPart, 3, false, false] call ACM_circulation_fnc_setIV";
-        ACM_menuIcon = "ACM_IO_EZ";
+        ACM_menuIcon = "ACME_IO_EZ";
     };
 
     class InsertIO_FAST1: InsertIV_16_Upper {
@@ -9182,7 +9202,7 @@ class ace_medical_treatment_actions {
         // condition double-gates the action in a way that can make it unusable even with the kit present. one gate, in
         // the condition, is correct here.
         items[] = {};
-        ACM_menuIcon = "ACM_ThoracostomyKit";
+        ACM_menuIcon = "ACME_ThoracostomyKit";
         ACM_cancelRecovery = 1;
     };
     // the same action, shown once a thoracostomy is already present. it is relabeled "Adjust Thoracostomy" and
@@ -9204,12 +9224,12 @@ class ace_medical_treatment_actions {
     class ACME_InsertChestTube: ACME_PerformThoracostomy {
         displayName = "Insert Chest Tube";
         displayNameProgress = "Opening thoracostomy...";
-        items[] = {"ACM_ChestTubeKit"};
+        items[] = {"ACME_ChestTubeKit"};
         consumeItem = 0;
         condition = "([_medic, 'ACME_InsertChestTube'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) == 1} && {(((_patient getVariable ['ACME_thora_open_left', '']) == 'finger') && {!(_patient getVariable ['ACME_thora_closed_left', false])} && {!(_patient getVariable ['ACME_thora_sealed_left', false])}) || (((_patient getVariable ['ACME_thora_open_right', '']) == 'finger') && {!(_patient getVariable ['ACME_thora_closed_right', false])} && {!(_patient getVariable ['ACME_thora_sealed_right', false])})}}";
         // re-opens the thoracostomy mini-game so the medic can place the tube, or continue, with the saved state.
         callbackSuccess = "[_this select 0, _this select 1, _this select 2] call ACME_fnc_thoraOpen";
-        ACM_menuIcon = "ACM_ChestTubeKit";
+        ACM_menuIcon = "ACME_ChestTubeKit";
             medicRequired = "ACME_skillChestTube";
     };
     class ACME_DrainFluid_ACCUVAC: ACME_PerformThoracostomy {
@@ -9219,16 +9239,16 @@ class ace_medical_treatment_actions {
         consumeItem = 0;
         condition = "([_medic, 'ACME_DrainFluid_ACCUVAC'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) in [2,3]}} && {[_medic,_patient] call ACME_fnc_equipmentUseAccuvac}";
         callbackSuccess = "[_this select 0, _this select 1, 'drain', 1] call ACME_fnc_thoraAftercare";
-        ACM_menuIcon = "ACM_ACCUVAC";
+        ACM_menuIcon = "ACME_ACCUVAC";
             medicRequired = "ACM_breathing_allowThoracostomy";
     };
     class ACME_DrainFluid_SuctionBag: ACME_DrainFluid_ACCUVAC {
         displayName = "Drain Fluid (Suction Bag)";
         treatmentTime = 8;
-        items[] = {"ACM_SuctionBag"};
+        items[] = {"ACME_SuctionBag"};
         consumeItem = 0;
         callbackSuccess = "[_this select 0, _this select 1, 'drain', 0] call ACME_fnc_thoraAftercare";
-        ACM_menuIcon = "ACM_SuctionBag";
+        ACM_menuIcon = "ACME_SuctionBag";
             condition = "([_medic, 'ACME_DrainFluid_SuctionBag'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) in [2,3]}}";
     };
     class ACME_ResealChestTube: ACME_PerformThoracostomy {
@@ -9236,7 +9256,7 @@ class ace_medical_treatment_actions {
         displayNameProgress = "Resealing chest tube...";
         condition = "([_medic, 'ACME_ResealChestTube'] call ACME_fnc_procedureActionAllowed) && {!isNull _patient && {(_patient getVariable ['ACM_breathing_Thoracostomy_State', 0]) == 3}}";
         callbackSuccess = "[_this select 0, _this select 1, 'reseal'] call ACME_fnc_thoraAftercare";
-        ACM_menuIcon = "ACM_ChestTubeKit";
+        ACM_menuIcon = "ACME_ChestTubeKit";
             medicRequired = "ACM_breathing_allowThoracostomy";
     };
     class ACME_CloseIncision: ACME_PerformThoracostomy {
@@ -9297,8 +9317,8 @@ class ace_medical_treatment_actions {
         animationMedicSelf = "";
         animationMedicSelfProne = "";
         consumeItem = 0;
-        ACM_menuIcon = "ACM_ChestSeal";
-        items[] = {"ACM_ChestSeal"};
+        ACM_menuIcon = "ACME_ChestSeal";
+        items[] = {"ACME_ChestSeal"};
     };
 
     // burp the seal. it sits directly under apply chest seal, which is where a medic would look for it, and
@@ -9432,7 +9452,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 3;
         allowedSelections[] = {"Head","Body"};
-        condition = "([_medic, _patient, 'ACM_Thermometer'] call ACME_fnc_treatmentSupplyCount) > 0";
+        condition = "([_medic, _patient, 'ACME_Thermometer'] call ACME_fnc_treatmentSupplyCount) > 0";
         callbackSuccess = "_this call ACME_fnc_checkTemperature";
         callbackFailure = "";
         callbackProgress = "";
@@ -9532,13 +9552,13 @@ class ace_medical_treatment_actions {
         animationMedicProne = "";
         animationMedicSelf = "";
         animationMedicSelfProne = "";
-        items[] = {"ACM_CombatGauze"};
+        items[] = {"ACME_CombatGauze"};
         consumeItem = 1;
         icon = "\acm_extended\ui\items\combat_gauze_ca.paa";
     };
     class ACME_WrapJunctional: CheckPulse {
         displayName = "Dress Junctional Wound";
-        ACM_menuIcon = "ACM_PressureBandage";
+        ACM_menuIcon = "ACME_PressureBandage";
         displayNameProgress = "Dressing junctional wound...";
         category = "bandage";
         treatmentLocations[] = {"All"};
@@ -9554,7 +9574,7 @@ class ace_medical_treatment_actions {
         animationMedicProne = "";
         animationMedicSelf = "";
         animationMedicSelfProne = "";
-        items[] = {"ACM_PressureBandage","ACM_ElasticWrap"};
+        items[] = {"ACME_PressureBandage","ACME_ElasticWrap"};
         consumeItem = 1;
         icon = "\x\acm\addons\damage\ui\pressurebandage.paa";
     };
@@ -9592,7 +9612,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         animationMedic = "";
         items[] = {};
-        ACM_menuIcon = "ACM_AED";
+        ACM_menuIcon = "ACME_AED";
     };
 
     // iv placement mini-game launcher. it lives in the advanced treatments section and opens the feel-for-the-vein
@@ -9614,7 +9634,7 @@ class ace_medical_treatment_actions {
         allowedSelections[] = {"LeftArm","RightArm","LeftLeg","RightLeg"};
         // there is no needle-type gate. the action is always available, subject to the clinical caninsertiv check
         // below, and the mini-game itself gates needle grabbing on the per-gauge count. any size therefore works
-        // whatever number or kind you carry. previously items[]={"ACM_IV_16g"} hard-required a 16g to even open it.
+        // whatever number or kind you carry. previously items[]={"ACME_IV_16g"} hard-required a 16g to even open it.
         items[] = {};
         // ALWAYS AVAILABLE. there is no clinical gate on this action and there must not be one.
         // it used to read canInsertIV on each of the three access sites and show only while one of them was free.
@@ -10048,14 +10068,14 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 1;
         allowedSelections[] = {"Head"};
-        condition = "(missionNamespace getVariable ['ACME_sys_nrb', true]) && {[_patient] call ACME_fnc_nrbAirwayCompatible} && {!(_patient getVariable ['ACME_nrb_on', false]) && {([_medic, _patient, 'ACM_NRBMask'] call ACME_fnc_treatmentSupplyCount) > 0}}";
+        condition = "(missionNamespace getVariable ['ACME_sys_nrb', true]) && {[_patient] call ACME_fnc_nrbAirwayCompatible} && {!(_patient getVariable ['ACME_nrb_on', false]) && {([_medic, _patient, 'ACME_NRBMask'] call ACME_fnc_treatmentSupplyCount) > 0}}";
         callbackSuccess = "_this call ACME_fnc_nrbApply";
         callbackFailure = "";
         callbackProgress = "";
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {};
         icon = "\acm_extended\ui\items\nrbmask_ca.paa";
-        ACM_menuIcon = "ACM_NRBMask";
+        ACM_menuIcon = "ACME_NRBMask";
     };
     class ACME_RemoveNRB: CheckAirway {
         // CheckAirway forces a crouch through its callbackStart now. this restates an empty one so this action
@@ -10077,7 +10097,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\items\nrbmask_ca.paa";
-        ACM_menuIcon = "ACM_NRBMask";
+        ACM_menuIcon = "ACME_NRBMask";
     };
     class ACME_PrepHPMK: CheckPulse {
         displayName = "Prep HPMK";
@@ -10087,7 +10107,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 5.699;
         allowedSelections[] = {"Body"};
-        condition = "!(_patient isEqualTo _medic) && {(_patient getVariable ['ACE_isUnconscious', false]) || {(stance _patient) == 'PRONE'} || {_patient getVariable ['ACM_core_Lying_State', false]}} && {(missionNamespace getVariable ['ACME_sys_hpmk', true]) && {((_patient getVariable ['ACME_hpmk_state', '']) == '') && {([_medic, _patient, 'ACM_HPMK'] call ACME_fnc_treatmentSupplyCount) > 0}}}";
+        condition = "!(_patient isEqualTo _medic) && {(_patient getVariable ['ACE_isUnconscious', false]) || {(stance _patient) == 'PRONE'} || {_patient getVariable ['ACM_core_Lying_State', false]}} && {(missionNamespace getVariable ['ACME_sys_hpmk', true]) && {((_patient getVariable ['ACME_hpmk_state', '']) == '') && {([_medic, _patient, 'ACME_HPMK'] call ACME_fnc_treatmentSupplyCount) > 0}}}";
         callbackStart = "params ['_medic','_patient']; if (!isNull _patient) then {[_patient, 5.699] call ACME_fnc_markImportantSfx}; if (!isNull _medic) then {[_medic, 'ACM_HPMK_Wrap'] call ACME_fnc_worldSfxNearby}";
         callbackSuccess = "_this call ACME_fnc_hpmkPrep";
         callbackFailure = "";
@@ -10096,7 +10116,7 @@ class ace_medical_treatment_actions {
         ACME_normalSpeedAnimation = 1;
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
-        ACM_menuIcon = "ACM_HPMK";
+        ACM_menuIcon = "ACME_HPMK";
     };
     class ACME_WrapHPMK: CheckPulse {
         displayName = "Wrap in HPMK";
@@ -10115,7 +10135,7 @@ class ace_medical_treatment_actions {
         ACME_normalSpeedAnimation = 1;
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
-        ACM_menuIcon = "ACM_HPMK";
+        ACM_menuIcon = "ACME_HPMK";
     };
     class ACME_UnwrapHPMK: CheckPulse {
         displayName = "Unwrap HPMK";
@@ -10134,7 +10154,7 @@ class ace_medical_treatment_actions {
         ACME_normalSpeedAnimation = 1;
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
-        ACM_menuIcon = "ACM_HPMK";
+        ACM_menuIcon = "ACME_HPMK";
     };
     // partially expose chest. it shows directly under "Unwrap HPMK" while the patient is fully wrapped. it opens
     // the chest and left arm for care, while the right arm and the legs stay wrapped, and passive rewarming keeps
@@ -10155,7 +10175,7 @@ class ace_medical_treatment_actions {
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
-        ACM_menuIcon = "ACM_HPMK";
+        ACM_menuIcon = "ACME_HPMK";
     };
     // cover chest. it re-seals a partially exposed chest back to fully wrapped.
     class ACME_CoverChestHPMK: CheckPulse {
@@ -10174,7 +10194,7 @@ class ace_medical_treatment_actions {
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
-        ACM_menuIcon = "ACM_HPMK";
+        ACM_menuIcon = "ACME_HPMK";
     };
     class ACME_RemoveHPMK: CheckPulse {
         displayName = "Remove HPMK";
@@ -10191,7 +10211,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\items\HPMK_ca.paa";
-        ACM_menuIcon = "ACM_HPMK";
+        ACM_menuIcon = "ACME_HPMK";
     };
     class ACME_AttachEMMA: CheckPulse {
         displayName = "Attach EMMA to My BVM";
@@ -10202,14 +10222,14 @@ class ace_medical_treatment_actions {
         allowSelfTreatment = 1;
         treatmentTime = 0.5;
         allowedSelections[] = {"Head"};
-        condition = "!(_medic getVariable ['ACME_emma_bvmAttached', false]) && {([_medic, _patient, 'ACM_EMMA'] call ACME_fnc_treatmentSupplyCount) > 0}";
+        condition = "!(_medic getVariable ['ACME_emma_bvmAttached', false]) && {([_medic, _patient, 'ACME_EMMA'] call ACME_fnc_treatmentSupplyCount) > 0}";
         callbackStart = "params ['_medic']; if (!isNull _medic) then {[_medic, 'ACME_EMMA_Attach'] call ACME_fnc_worldSfxNearby}";
         callbackSuccess = "_this call ACME_fnc_emmaAttach";
         callbackFailure = "";
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\emma\emma_etco2_ca.paa";
-        ACM_menuIcon = "ACM_EMMA";
+        ACM_menuIcon = "ACME_EMMA";
     };
     // the EMMA on an et tube.
     // it is a separate pair from the i-gel actions rather than a widened condition on them, because the medic
@@ -10234,7 +10254,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\emma\emma_etco2_ca.paa";
-        ACM_menuIcon = "ACM_EMMA";
+        ACM_menuIcon = "ACME_EMMA";
     };
     class ACME_RemoveEMMAETT: ACME_AttachEMMAETT {
         displayName = "Remove EMMA from ETT";
@@ -10260,7 +10280,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\emma\emma_etco2_ca.paa";
-        ACM_menuIcon = "ACM_EMMA";
+        ACM_menuIcon = "ACME_EMMA";
     };
     class ACME_RemoveEMMAIGel: CheckPulse {
         displayName = "Remove EMMA from their i-gel";
@@ -10278,7 +10298,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\emma\emma_etco2_ca.paa";
-        ACM_menuIcon = "ACM_EMMA";
+        ACM_menuIcon = "ACME_EMMA";
     };
     class ACME_RemoveEMMA: CheckPulse {
         displayName = "Remove EMMA from My BVM";
@@ -10296,7 +10316,7 @@ class ace_medical_treatment_actions {
         callbackProgress = "";
         items[] = {};
         icon = "\acm_extended\ui\emma\emma_etco2_ca.paa";
-        ACM_menuIcon = "ACM_EMMA";
+        ACM_menuIcon = "ACME_EMMA";
     };
 
     // re-open the suction actions of ACM so both open the airway screen in suction mode instead of running a timed
@@ -10337,7 +10357,7 @@ class ace_medical_treatment_actions {
     class UseAccuvac: UseSuctionBag {
         displayName = "Use ACCUVAC";
         displayNameProgress = "Setting up ACCUVAC...";
-        ACM_menuIcon = "ACM_ACCUVAC";
+        ACM_menuIcon = "ACME_ACCUVAC";
         medicRequired = "ACM_airway_allowACCUVAC";
         treatmentTime = 0.1;
         items[] = {};
@@ -10365,7 +10385,7 @@ class ace_medical_treatment_actions {
         callbackSuccess = "_this call ACME_fnc_administerCalcium";
         callbackFailure = "";
         callbackProgress = "";
-        items[] = {"ACM_Vial_CalciumGluconate"};
+        items[] = {"ACME_Vial_CalciumGluconate"};
         animationMedic = "AinvPknlMstpSnonWnonDr_medic4";
     };
     // magnesium sulfate, 2 g in 50 ml. it is first-line for torsades and polymorphic vt. the bolus ACE-menu action
@@ -10421,7 +10441,7 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 8;
         allowedSelections[] = {"Body"};
-        condition = "([_medic, _patient, 'ACM_Thermometer'] call ACME_fnc_treatmentSupplyCount) > 0";
+        condition = "([_medic, _patient, 'ACME_Thermometer'] call ACME_fnc_treatmentSupplyCount) > 0";
         callbackSuccess = "_this call ACME_fnc_readCoreTemp";
         callbackFailure = "";
         callbackProgress = "";

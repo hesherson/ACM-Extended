@@ -13,7 +13,7 @@ if !(_blanket getVariable ["ACME_hpmk_dropped", false]) exitWith {};
 _blanket setVariable ["ACME_hpmk_dropped", false, true];
 
 // return a reusable HPMK to the picker. additem is fine on the local player.
-if (!isNull _player && {alive _player}) then { _player addItem "ACM_HPMK"; };
+if (!isNull _player && {alive _player}) then { _player addItem "ACME_HPMK"; };
 
 // the blanket is a server-owned global object, from a createvehicle in the server-only blanket tick, so delete it
 // on the server.

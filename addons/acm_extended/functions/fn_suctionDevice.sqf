@@ -51,7 +51,7 @@ if (_type == 0) exitWith {
         // than naming a class, because three separate places used to test for an ACCUVAC by name and a medic holding
         // only a suction bag failed all three: the tray showed no device, the grab was refused, and the per-frame
         // check took the tool back out of their hand. the manual suction screen drew nothing at all as a result.
-        ["item",        "ACM_SuctionBag"],
+        ["item",        "ACME_SuctionBag"],
         // per squeeze rather than per second: the clearance a single squeeze buys, by fluid type. vomit is thicker, so a
         // squeeze moves less of it.
         // it is tuned so a full mouth takes 12 squeezes of vomit, 9 of blood and 6 of thin secretions: slow enough that the
@@ -78,7 +78,7 @@ createHashMapFromArray [
     ["sfxStart",   "ACM_Suction_SoundSource"],
     ["sfxOff",     "ACM_Suction_Off"],
     ["acmType",    1],
-    ["item",       "ACM_ACCUVAC"],  // see the note on the bulb profile above.
+    ["item",       "ACME_ACCUVAC"],  // see the note on the bulb profile above.
     ["drainMult",  1],
     ["ready",      true]
 ]

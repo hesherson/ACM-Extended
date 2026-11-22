@@ -14,7 +14,7 @@ if (isNull _medic || {isNull _patient}) exitWith {false};
 
 // Reserve once on the treating provider's machine; ACE chooses patient/provider/vehicle supply.
 if (!_inventoryTaken) then {
-    _supplyReceipt = [_medic, _patient, ["ACM_HPMK"]] call ACME_fnc_treatmentSupplyTake;
+    _supplyReceipt = [_medic, _patient, ["ACME_HPMK"]] call ACME_fnc_treatmentSupplyTake;
     _inventoryTaken = !(_supplyReceipt isEqualTo []);
 };
 if (!_inventoryTaken) exitWith {false};

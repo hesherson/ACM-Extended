@@ -18,14 +18,14 @@ private _restock = (_display displayCtrl 87604) getVariable ["on", true];
 
 // build the stock spec, skipping zero counts.
 private _pairs = [
-    ["ACM_BloodBag_O_500",   _oPos],
-    ["ACM_BloodBag_ON_500",  _oNeg],
-    ["ACM_BloodBag_A_500",   _other],
-    ["ACM_BloodBag_AN_500",  _other],
-    ["ACM_BloodBag_B_500",   _other],
-    ["ACM_BloodBag_BN_500",  _other],
-    ["ACM_BloodBag_AB_500",  _other],
-    ["ACM_BloodBag_ABN_500", _other]
+    ["ACME_BloodBag_O_500",   _oPos],
+    ["ACME_BloodBag_ON_500",  _oNeg],
+    ["ACME_BloodBag_A_500",   _other],
+    ["ACME_BloodBag_AN_500",  _other],
+    ["ACME_BloodBag_B_500",   _other],
+    ["ACME_BloodBag_BN_500",  _other],
+    ["ACME_BloodBag_AB_500",  _other],
+    ["ACME_BloodBag_ABN_500", _other]
 ];
 private _stock = [];
 {

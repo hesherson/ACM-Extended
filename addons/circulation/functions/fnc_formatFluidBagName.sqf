@@ -24,12 +24,12 @@ private _typeLower = toLowerANSI _type;
 // as ACE_plasmalyteIV_500, which do not exist as inventory items. That made a hung Plasma-Lyte bag render as an
 // empty row and also made generic detach/return paths resolve the wrong class.
 private _extendedInventoryClass = switch (true) do {
-    case (_typeLower == "acme_propofol"): {"ACM_Vial_Propofol"};
+    case (_typeLower == "acme_propofol"): {"ACME_Vial_Propofol"};
     case (_typeLower == "plasmalyte" && {_targetVolume >= 1000}): {"ACME_PlasmaLyteBag"};
     case (_typeLower == "plasmalyte" && {_targetVolume == 500}): {"ACME_PlasmaLyteBag_500"};
     case (_typeLower == "plasmalyte" && {_targetVolume == 250}): {"ACME_PlasmaLyteBag_250"};
     case (_typeLower == "plasmalyte" && {_targetVolume == 100}): {"ACME_PlasmaLyteBag_100"};
-    case (_typeLower == "esmolol" && {_targetVolume == 250}): {"ACM_EsmololBag"};
+    case (_typeLower == "esmolol" && {_targetVolume == 250}): {"ACME_EsmololBag"};
     case (_typeLower == "hts" && {_targetVolume == 250}): {"ACME_HTSBag"};
     case (_typeLower == "magnesium" && {_targetVolume == 50}): {"ACME_MagnesiumBag"};
     case (_typeLower == "mannitol" && {_targetVolume == 500}): {"ACME_MannitolBag"};

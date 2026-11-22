@@ -1,7 +1,8 @@
 class CfgMagazines {
     class SmokeShell;
-    class ACM_Grenade_CS: SmokeShell {
-        author = AUTHOR;
+    class ACME_Grenade_CS: SmokeShell {
+        dlc = "ACM_Extended";
+        author = "mavis";
         displayName = CSTRING(CS_Grenade);
         displayNameShort = CSTRING(CS_Grenade);
         picture = QPATHTOF(ui\grenade_cs_ca.paa);
@@ -12,8 +13,9 @@ class CfgMagazines {
     };
 
     class 1Rnd_Smoke_Grenade_shell;
-    class ACM_Grenade_Shell_CS: 1Rnd_Smoke_Grenade_shell {
-        author = AUTHOR;
+    class ACME_Grenade_Shell_CS: 1Rnd_Smoke_Grenade_shell {
+        dlc = "ACM_Extended";
+        author = "mavis";
         displayName = CSTRING(CS_Shell_40mm);
         displayNameShort = CSTRING(CS_Shell_40mm);
         picture = QPATHTOF(ui\40mm_cs_ca.paa);
@@ -23,23 +25,24 @@ class CfgMagazines {
     };
 
     class 8Rnd_82mm_Mo_Smoke_white;
-    class ACM_Mortar_Shell_8Rnd_CS: 8Rnd_82mm_Mo_Smoke_white {
-        author = AUTHOR;
+    class ACME_Mortar_Shell_8Rnd_CS: 8Rnd_82mm_Mo_Smoke_white {
+        dlc = "ACM_Extended";
+        author = "mavis";
         displayName = CSTRING(CS_Shell_82mm);
         displayNameShort = CSTRING(CS_Shell_82mm_Short);
         ammo = "ACM_Mortar_Shell_CS_A";
     };
-    class ACM_Mortar_Shell_8Rnd_Chlorine: ACM_Mortar_Shell_8Rnd_CS {
+    class ACME_Mortar_Shell_8Rnd_Chlorine: ACME_Mortar_Shell_8Rnd_CS {
         displayName = CSTRING(Chlorine_Shell_82mm);
         displayNameShort = CSTRING(Chlorine_Shell_82mm_Short);
         ammo = "ACM_Mortar_Shell_Chlorine_A";
     };
-    class ACM_Mortar_Shell_8Rnd_Sarin: ACM_Mortar_Shell_8Rnd_CS {
+    class ACME_Mortar_Shell_8Rnd_Sarin: ACME_Mortar_Shell_8Rnd_CS {
         displayName = CSTRING(Sarin_Shell_82mm);
         displayNameShort = CSTRING(Sarin_Shell_82mm_Short);
         ammo = "ACM_Mortar_Shell_Sarin_A";
     };
-    class ACM_Mortar_Shell_8Rnd_Lewisite: ACM_Mortar_Shell_8Rnd_CS {
+    class ACME_Mortar_Shell_8Rnd_Lewisite: ACME_Mortar_Shell_8Rnd_CS {
         displayName = CSTRING(Lewisite_Shell_82mm);
         displayNameShort = CSTRING(Lewisite_Shell_82mm_Short);
         ammo = "ACM_Mortar_Shell_Lewisite_A";

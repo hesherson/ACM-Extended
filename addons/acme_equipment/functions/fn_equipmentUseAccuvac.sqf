@@ -10,7 +10,7 @@ private _supplier = objNull;
 if (!_deployed && {isNull (_patient getVariable ["ACME_eq_accu",objNull])}) then {
     private _sources = [_medic,_patient] call ACME_fnc_treatmentSupplyOrder;
     private _index = _sources findIf {alive _x && {!(_x getVariable ["ACME_persistenceFrozen",false])}
-        && {([_x,"ACM_ACCUVAC"] call ACME_fnc_itemCount) > 0}};
+        && {([_x,"ACME_ACCUVAC"] call ACME_fnc_itemCount) > 0}};
     if (_index >= 0) then {_supplier = _sources select _index;};
 };
 if (!_deployed && {isNull _supplier}) exitWith {false};

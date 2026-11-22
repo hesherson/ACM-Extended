@@ -13,7 +13,7 @@ if (_provider getVariable ["ACE_isUnconscious",false] || {_provider getVariable 
 if (!isNull _patient && {_patient getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
 private _devicePatient=if (isNull _device) then {objNull} else {_device getVariable ["ACME_eq_patient",objNull]};
 if (!isNull _devicePatient && {_devicePatient getVariable ["ACME_persistenceFrozen",false]}) exitWith {};
-private _types=createHashMapFromArray [["pro",["ACME_TempusPro_Item","ACME_TempusPro"]],["ls",["ACME_TempusLS_Item","ACME_TempusLS"]],["accu",["ACM_ACCUVAC","ACME_AccuvacRescue"]]];
+private _types=createHashMapFromArray [["pro",["ACME_TempusPro_Item","ACME_TempusPro"]],["ls",["ACME_TempusLS_Item","ACME_TempusLS"]],["accu",["ACME_ACCUVAC","ACME_AccuvacRescue"]]];
 if !(_kind in _types) exitWith {};
 private _sensorIndices = switch (_kind) do {
     case "pro": {[-1,0,1,2,3,4]};

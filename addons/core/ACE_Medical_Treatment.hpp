@@ -128,7 +128,7 @@ class ACE_ADDON(Medical_Treatment) {
 
         // MDF burns integration. Silver nylon is effective across burn depths;
         // cream is intentionally limited to superficial burns.
-        class ACM_SilverNylonDressing: FieldDressing {
+        class ACME_SilverNylonDressing: FieldDressing {
             class Burn1Minor { effectiveness = 8; reopeningChance = 0.1; reopeningMinDelay = 600; reopeningMaxDelay = 1200; };
             class Burn1Medium: Burn1Minor {};
             class Burn1Large: Burn1Minor {};
@@ -139,7 +139,7 @@ class ACE_ADDON(Medical_Treatment) {
             class Burn3Medium: Burn3Minor {};
             class Burn3Large: Burn3Minor {};
         };
-        class ACM_BurnCream: BasicBandage {
+        class ACME_BurnCream: BasicBandage {
             effectiveness = 0;
             class Burn1Minor { effectiveness = 6; reopeningChance = 0; reopeningMinDelay = 0; reopeningMaxDelay = 0; };
             class Burn1Medium: Burn1Minor {};

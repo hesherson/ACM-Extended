@@ -17,4 +17,4 @@
 
 params ["_unit"];
 
-[_unit, "ACM_GasMaskFilter"] call ACEFUNC(common,hasItem);
+[_unit, "ACME_GasMaskFilter"] call ACEFUNC(common,hasItem);

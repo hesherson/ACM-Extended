@@ -7,7 +7,7 @@ private _lid = _chest getVariable ["ACME_medicalChestLid", objNull];
 private _restPose = _chest getVariable ["ACME_medicalChestLidRest", []];
 private _seatPose = _chest getVariable ["ACME_medicalChestLidSeat", []];
 
-(_chest getVariable "ACME_medicalChestPlacement") params ["_base", "_heading"];
+(_chest getVariable "ACME_medicalChestPlacement") params ["_base", "_heading", ["_ground", [0, 0, 1]]];
 if (!_opening && {_initial}) exitWith {
     // Keep the same cargo, and move it out of native Gear reach while shut.
     detach _cargo;
@@ -25,17 +25,24 @@ if (!_opening && {_initial}) exitWith {
 };
 
 if (_opening) then {
-    private _class = "ACME_MedicalChest8Drawers";
+    private _class = [_chest] call ACME_fnc_medicalChestCabinetClass;
     _cabinet = createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"];
     if (isNull _cabinet) exitWith {};
-    private _cabinetPose = [_cabinet, _base, _heading, "cabinet", [0, 0, 1], false] call ACME_fnc_medicalChestPlace;
+    private _cabinetPose = [_cabinet, _base, _heading, "cabinet", _ground, false] call ACME_fnc_medicalChestPlace;
     _seatPose = [_cabinetPose] call ACME_fnc_medicalChestLidSeat;
-    _lid = createSimpleObject ["ACME_MedicalChestLid", _seatPose select 0];
+    private _lidClass = getText (configOf _chest >> "acmeChestLidClass");
+    _lid = createSimpleObject [[_lidClass, "ACME_MedicalChestLid"] select (_lidClass == ""), _seatPose select 0];
     if (isNull _lid) exitWith {
         deleteVehicle _cabinet;
         _cabinet = objNull;
     };
     _cabinet allowDamage false;
+    // The cabinet's latches hang open by default. A chest that is being opened starts with them shut: the lid
+    // motion takes them off one by one before the lid leaves.
+    if (!_initial) then {
+        for "_number" from 1 to 10 do {_cabinet animateSource [format ["latch_%1", _number], 0, true];};
+        _cabinet setVariable ["ACME_medicalChestLatchPhases", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+    };
     (getObjectTextures _chest) params [["_texture", ""], ["_artwork", ""]];
     if (_texture != "") then {
         _cabinet setObjectTextureGlobal ["camo", _texture];
@@ -53,9 +60,11 @@ if (_opening) then {
     private _drawerPlan = [_cabinet] call ACME_fnc_medicalChestDrawerPlan;
     [_cabinet, _drawerPlan, 0] call ACME_fnc_medicalChestDrawers;
     ([_base, _heading, _chest, _lid] call ACME_fnc_medicalChestLidBase) params ["_side", "_normal"];
-    _seatPose params ["_seat", "_outward", "_lateral"];
+    _seatPose params ["_seat", "_outward", "_lateral", ["_caseUp", [0, 0, 1]]];
     _restPose = [_lid, _side, _heading, "lid", _normal, false] call ACME_fnc_medicalChestPlace;
-    _seatPose = [_seat, _outward, [0, 0, 1], _outward, _lateral];
+    _seatPose = [_seat, _outward, _caseUp, _outward, _lateral];
+    // (where the cabinet was put: the watch in fn_medicalChestInit.sqf compares against this)
+    _chest setVariable ["ACME_medicalChestCabinetSeated", [_cabinetPosition, _cabinetDir]];
     ([_seatPose, _restPose] select _initial) params ["_position", "_dir", "_up"];
     _lid setVectorDirAndUp [_dir, _up];
     _lid setPosWorld _position;

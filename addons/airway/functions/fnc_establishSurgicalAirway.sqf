@@ -127,7 +127,7 @@ if (_patient getVariable [QGVAR(SurgicalAirway_InProgress), false]) exitWith {
 
     if !(_patient getVariable [QGVAR(SurgicalAirway_State), false]) then {
         if (_incisionCount == 0) then {
-            [_medic, "ACM_CricKit"] call ACEFUNC(common,addToInventory);
+            [_medic, "ACME_CricKit"] call ACEFUNC(common,addToInventory);
         } else {
             for "_i" from 1 to _incisionCount do {
                 [_patient, 1, "head", "incision", _medic] call ACEFUNC(medical,addDamageToUnit);

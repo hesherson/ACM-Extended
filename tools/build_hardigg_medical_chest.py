@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
 """Build the supplied Hardigg chest with independent lid UVs and a lidless cabinet."""
 import argparse
+from copy import deepcopy
 import importlib.util
+import math
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image
 
 from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE, DATA
 from build_hardigg_abrasion import wear_maps
 from build_hardigg_lid_artwork import add_lid_artwork, artwork, artwork_texture
 from build_hardigg_wear import paint_finish
+import build_hardigg_fittings as fittings
+import build_hardigg_surface as surface
+import build_hardigg_tape as tape
+import build_medical_chest_inserts as inserts
+from build_medical_chest_stencils import stencil_glyphs
 
 PREFIX = r"acm_extended\data\medical_chest\hardigg" + "\\"
-REGIONS = {**ATLAS_REGIONS, "inside": (1320, 1632, 704, 704), "lid_trim": (1320, 2368, 704, 768)}
+REGIONS = {
+    **ATLAS_REGIONS, "inside": (1320, 1632, 704, 704),
+    "lid_left": (1320, 2368, 112, 704), "lid_right": (1444, 2368, 112, 704),
+    "lid_top": (1570, 2368, 454, 112), "lid_bottom": (1570, 2492, 454, 112),
+}
 LID_ORIGIN = np.array((0.0, .1175, .416))
 GOUGES = ((.14, .241), (-.15, .416), (.16, .559), (-.13, .603),
           (.178, .721), (-.177, .721), (.218, .779), (-.218, .779),
@@ -136,10 +147,22 @@ def paint_uv(lod):
         x, y, z = points.T
         # The outer depth band includes the rib crowns, sides and groove transitions.
         # Every patch in it uses the same front coordinates as the neighboring flat panel.
-        if is_lid and y.min() > .139:
+        on_rib_panel = abs(center[0]) < .205 and .064 < center[2] < .768
+        front_facing = normal[1] > .69 * np.linalg.norm(normal)
+        if is_lid and y.min() > .139 and (on_rib_panel or front_facing):
             region, u, v = "lid", (.263 - x) / .526, (.832 - z) / .832
+        elif is_lid and (normal[1] >= 0 or (center[1] > .088 and axis != 1)):
+            # Unwrap the shoulder on a diagonal across its depth and inward roll.
+            # The two components increase together from the seam towards the face.
+            if abs(normal[0]) > abs(normal[2]):
+                region = "lid_right" if center[0] > 0 else "lid_left"
+                u, v = (y - .074 + .265 - abs(x)) / .133, (.832 - z) / .832
+            else:
+                region = "lid_top" if center[2] > .416 else "lid_bottom"
+                end = .832 - z if center[2] > .416 else z - .018
+                u, v = (.263 - x) / .526, (y - .074 + end) / .133
         elif is_lid:
-            region, u, v = "lid_trim", (x + .263) / .526, (.832 - z) / .832
+            region, u, v = "inside", (x + .263) / .526, (.832 - z) / .832
         elif axis == 1 and normal[1] < 0 and center[1] < -.13:
             region, u, v = "back", (x + .263) / .526, (.832 - z) / .832
         elif axis == 0 and abs(center[0]) > .217 and normal[0] * center[0] > 0:
@@ -153,6 +176,42 @@ def paint_uv(lod):
         left, top, width, height = REGIONS[region]
         face["uv"] = list(zip((left + 3 + np.clip(u, 0, 1) * (width - 6)) / ATLAS_SIZE[0],
                               1 - (top + 3 + np.clip(v, 0, 1) * (height - 6)) / ATLAS_SIZE[1]))
+
+
+def fix_plaque_uv(lod):
+    # The plaque occupies the left half of the detail atlas below drawers 1–4.
+    for face in lod["faces"]:
+        if face["tex"].endswith("detail_co.paa") and all(
+            0 <= u <= .5 and 1 - 1248/2048 <= v <= 1 - 768/2048 for u, v in face["uv"]
+        ):
+            face["uv"] = [(.5 - u, v) for u, v in face["uv"]]
+
+
+def rounded_shadow(kit, geo, source):
+    vertices, faces, selections = [], [], {}
+
+    def add(part, bone=""):
+        start = len(vertices)
+        vertices.extend(part.v)
+        if bone:
+            selections.setdefault(bone, set()).update(range(start, len(vertices)))
+        for polygon in part.f:
+            a, *others = [start + i for i in polygon]
+            for b, c in zip(others, others[1:]):
+                faces.append(dict(v=[a, b, c], n=[0, 0, 0], uv=[(0, 0)] * 3, tex="", mat=""))
+
+    add(kit.rbox((-.263, -.153, .018), (.263, .073, .831), .028, 3))
+    add(kit.rbox((-.262, .075, .018), (.262, .152, .831), .028, 3), "lid")
+    for height in (.150, .333, .517, .700):
+        add(kit.rbox((-.176, .141, height-.021), (.176, .160, height+.021), .008, 2), "lid")
+    for side in (-1, 1):
+        x = side * .24
+        add(kit.cyl((x-.012, -.120, .036), (x+.012, -.120, .036), .035, n=10))
+    for index in range(1, 9):
+        low, high = geo.drawer_z(index)
+        add(kit.rbox((-.216, -.120, low), (.216, .068, high), .003, 2), f"drawer{index}")
+    return {**source, "verts": vertices, "faces": faces, "sels": selections, "sharp": [],
+            "normals": [(0., 0., 1.)]}
 
 
 def split_lod(lod, loose):
@@ -181,37 +240,72 @@ def split_lod(lod, loose):
 
 
 def build_models(root, out, work, variants):
-    io = model_io(root / "acme_medchest_src/build/mc_p3d.py")
+    source = root / "acme_medchest_src/build"
+    io = model_io(source / "mc_p3d.py")
+    sys.path.insert(0, str(source))
+    import mc_geo as geo
+    import mc_kit as kit
     model = work / "hardigg_source"
     subprocess.run([sys.executable, str(Path(__file__).with_name("build_hardigg_hardware.py")),
                     str(root), str(model)], check=True)
     closed = io.read_p3d(model / "medchest.p3d")
-    for lod in closed:
+    for index, lod in enumerate(closed):
+        if lod["res"] == io.LOD_SHADOW:
+            lod = closed[index] = rounded_shadow(kit, geo, lod)
         lod["props"]["autocenter"] = "0"
         if lod["res"] < 1000:
             paint_uv(lod)
+            surface.inner_uv(lod)
+            surface.moulded(lod)
+            fix_plaque_uv(lod)
             if lod["res"] == 1:
                 carve_gouges(lod)
-            add_lid_artwork(lod, variants)
+        if math.isclose(lod["res"], io.LOD_MEMORY, rel_tol=1e-6):
+            lod["sels"]["chest_actions"] = {len(lod["verts"])}
+            lod["verts"].append((0., .167, .416))
         for face in lod["faces"]:
             for key in ("tex", "mat"):
                 if face[key]:
                     face[key] = PREFIX + face[key].rsplit("\\", 1)[-1]
+        if lod["res"] < 1000:
+            # Latches, handles, wheels and feet go on their own atlas; the first LOD records their relief.
+            closed[index] = fittings.fit(lod, geo, kit, record=lod["res"] == 1)
+    closed = [fittings.rig(lod) for lod in closed]              # latch hinges to where the real drum is
     cabinet = [split_lod(lod, False) for lod in closed]
-    loose = [split_lod(lod, True) for lod in closed if lod["sels"].get("lid")]
-    for name, lods in (("medchest", closed), ("medchest_open", cabinet), ("hardigg_lid", loose)):
-        io.write_p3d(out / (name + ".p3d"), lods)
-        check = io.read_p3d(out / (name + ".p3d"))
-        if any(not lod["verts"] for lod in check):
-            raise ValueError(f"Empty LOD in {name}")
-        print(name, len(check), "LODs;", sum(len(lod["faces"]) for lod in check), "faces")
+    cabinet = [fittings.bolted(lod, geo, kit) if lod["res"] == 1 else lod for lod in cabinet]
+    for lod in cabinet:
+        if math.isclose(lod["res"], io.LOD_MEMORY, rel_tol=1e-6):
+            lod["verts"][next(iter(lod["sels"]["chest_actions"]))] = (0., .081, .416)
+    cabinet = inserts.padlocked(io, kit, geo, cabinet)
+    io.write_p3d(out / "medchest_open.p3d", cabinet)
+    io.write_p3d(out / "medchest_open_4.p3d", inserts.four_drawer(io, kit, geo, cabinet))
+    for index, pieces in enumerate(variants):
+        textured = [deepcopy(lod) if lod["res"] < 1000 else lod for lod in closed]
+        for lod in textured:
+            if lod["res"] < 1000:
+                fittings.weather(lod, geo, index)
+                first_art = len(lod["faces"])
+                add_lid_artwork(lod, (pieces,))
+                for face in lod["faces"][first_art:]:
+                    face["tex"] = PREFIX + f"lid_artwork_{index}_ca.paa"
+                    face["mat"] = PREFIX + f"lid_artwork_{index}.rvmat"
+        loose = [split_lod(lod, True) for lod in textured if lod["sels"].get("lid")]
+        suffix = f"_{index}" if index else ""
+        io.write_p3d(out / f"medchest{suffix}.p3d", textured)
+        io.write_p3d(out / f"hardigg_lid{suffix}.p3d", loose)
+        print(f"Hardigg finish {index}: {len(pieces)} fitted artwork pieces")
     cfg = (model / "model.cfg").read_text()
     cfg = cfg.replace('sections[] = {"camo"};', 'sections[] = {"camo", "lid_artwork"};', 1)
     lid_class = cfg.index("    class hardigg_lid:")
     cfg = cfg[:lid_class] + cfg[lid_class:].replace('sections[] = {"camo"};',
                                                   'sections[] = {"camo", "lid_artwork"};', 1)
     i = cfg.rfind("};")
-    cfg = cfg[:i] + '    class medchest_open: medchest { sections[] = {"camo"}; };\n' + cfg[i:]
+    derived = ['    class medchest_open: medchest { sections[] = {"camo"}; };',
+               '    class medchest_open_4: medchest { sections[] = {"camo"}; };']
+    for index in range(1, len(variants)):
+        derived.extend((f"    class medchest_{index}: medchest {{}};",
+                        f"    class hardigg_lid_{index}: hardigg_lid {{}};"))
+    cfg = cfg[:i] + "\n".join(derived) + "\n" + cfg[i:]
     (out / "model.cfg").write_text(cfg)
     for path in (root / "acme_medchest/data").glob("*.rvmat"):
         material = path.read_text().replace("acme_medchest\\data\\", PREFIX)
@@ -223,15 +317,19 @@ def build_models(root, out, work, variants):
 
 
 def make_atlas(source):
-    canvas = Image.new("RGB", ATLAS_SIZE, (64, 69, 47))
-    tile = source.convert("RGB")
+    canvas = Image.new("RGB", ATLAS_SIZE, (43, 63, 50))
+    pixels = np.asarray(source.convert("RGB"), dtype=np.float32)
+    luminance = pixels @ np.array([.2126, .7152, .0722])
+    contrast = (luminance - np.median(luminance)) * .64
+    colors = np.clip(np.array([43, 63, 50]) + contrast[..., None], 0, 255)
+    tile = Image.fromarray(colors.astype(np.uint8))
     for x, y, w, h in REGIONS.values():
         canvas.paste(tile.resize((w, h), Image.Resampling.LANCZOS), (x, y))
     return canvas
 
 
 def blackout_lid(image):
-    for region in ("lid", "lid_trim"):
+    for region in ("lid", "lid_left", "lid_right", "lid_top", "lid_bottom"):
         x, y, w, h = REGIONS[region]
         tile = np.asarray(image.crop((x, y, x+w, y+h)), dtype=np.float32)
         luminance = tile @ np.array([.2126, .7152, .0722])
@@ -240,29 +338,8 @@ def blackout_lid(image):
         image.paste(Image.fromarray(black), (x, y))
 
 
-def yellow_stencil():
-    patch = Image.new("RGBA", ATLAS_SIZE)
-    mask = Image.new("L", (1000, 1600))
-    font = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 130)
-    draw = ImageDraw.Draw(mask)
-    draw.text((100, 826), "MED CHEST", font=font, fill=234, stroke_width=1)
-    values = np.asarray(mask).copy()
-    noise = np.random.default_rng(240).random(values.shape)
-    values[noise < .13] = 0
-    values = (values * (.66 + noise * .34)).astype(np.uint8)
-    dust = mask.filter(ImageFilter.GaussianBlur(6)).point(lambda a: a * .22)
-    color = Image.new("RGBA", mask.size, (236, 185, 53, 0))
-    color.putalpha(dust)
-    core = Image.new("RGBA", mask.size, (243, 195, 52, 0))
-    core.putalpha(Image.fromarray(values))
-    color.alpha_composite(core)
-    patch.paste(color, REGIONS["lid"][:2])
-    return patch
-
-
-def build_textures(root, out, work, hemtt, variants):
+def build_textures(root, out, work, hemtt, variants, glyphs):
     textures = root / "acme_medchest_src/textures_png"
-    folder = DATA / "variants"
 
     def convert(src, dst):
         dst.unlink(missing_ok=True)
@@ -273,8 +350,10 @@ def build_textures(root, out, work, hemtt, variants):
         image.save(png)
         convert(png, out / (name + ".paa"))
 
-    for name in ("alu_co", "alu_smdi", "black_co", "detail_co"):
+    for name in ("alu_co", "alu_smdi", "black_co"):
         convert(textures / (name + ".png"), out / (name + ".paa"))
+    # The detail atlas also carries the four drawer fronts and the padlock faces.
+    export(inserts.paint_detail(textures / "detail_co.png"), "detail_co")
     with Image.open(textures / "case_nohq.png") as image:
         specular, normal, finish = wear_maps(REGIONS, ATLAS_SIZE, image)
     export(specular, "case_smdi")
@@ -287,23 +366,22 @@ def build_textures(root, out, work, hemtt, variants):
             for region in ("back", "right", "left", "top", "bottom", "inside"):
                 x, y, w, h = REGIONS[region]
                 tile = np.asarray(base.crop((x, y, x+w, y+h)), dtype=np.float32)
-                tinted = np.clip(tile * np.array([.61, .76, .64]), 0, 255)
+                tinted = np.clip(tile * np.array([.80, .89, .84]), 0, 255)
                 base.paste(Image.fromarray(tinted.astype(np.uint8)), (x, y))
         if index == 11:
             blackout_lid(base)
-            overlay = yellow_stencil()
-        else:
-            texture = folder / ("chest_0_open_ca.paa" if index == 0 else f"chest_{index}_ca.paa")
-            png = work / texture.with_suffix(".png").name
-            convert(texture, png)
-            with Image.open(png) as image:
-                overlay = image.convert("RGBA")
+        overlay = Image.new("RGBA", ATLAS_SIZE)
         base.paste(finish, mask=finish.getchannel("A"))
-        paint_finish(overlay, index, REGIONS["lid"])
+        paint_finish(overlay, index, REGIONS, glyphs)
         base.paste(overlay, mask=overlay.getchannel("A"))
         export(base, f"case_{index}_co")
-        export(artwork_texture(variants[index]), f"lid_artwork_{index}_ca")
+        tape.export(variants[index], index, out, work, hemtt, artwork_texture(variants[index]))
     shutil.copyfile(out / "case_0_co.paa", out / "case_co.paa")
+    # The shell textures proper come from the mesh-driven surface builder. It keeps the markings painted above
+    # and replaces the base plastic, wear, normal, specular and ambient shadow maps.
+    fittings.build(out, work / "fittings", hemtt)
+    import build_hardigg_surface
+    build_hardigg_surface.build(out, work / "surface", hemtt, glyphs)
 
 
 def main():
@@ -312,12 +390,16 @@ def main():
     parser.add_argument("--output", type=Path, default=DATA / "hardigg")
     parser.add_argument("--work", required=True, type=Path)
     parser.add_argument("--hemtt", default="hemtt")
+    parser.add_argument("--stencil", type=Path, default=Path(__file__).with_name("assets") / "hardigg_stencil.png")
+    parser.add_argument("--handwriting", type=Path, help="No longer used: build_hardigg_sheet.py has its own fonts")
+    parser.add_argument("--quantity-font", type=Path, help="No longer used")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     args.work.mkdir(parents=True, exist_ok=True)
-    variants = [artwork(index) for index in range(12)]
+    glyphs = stencil_glyphs(args.stencil)
+    variants = [artwork(index, glyphs, args.handwriting, args.quantity_font) for index in range(12)]
     build_models(args.source.resolve(), args.output, args.work, variants)
-    build_textures(args.source, args.output, args.work, args.hemtt, variants)
+    build_textures(args.source, args.output, args.work, args.hemtt, variants, glyphs)
 
 
 if __name__ == "__main__":

@@ -310,7 +310,7 @@ def test_prepared_chest_launch_enters_actual_native_cpr_and_keeps_lease_until_ca
       [_medic getVariable ["ACM_circulation_isPerformingCPR",false],"real native CPR never acquired provider"] call _check;
       [count _watches==1 && {count _leaseRequests==0},"carrier restored or re-acquired during handoff"] call _check;
       call _enter;
-      ["ACM_CPR" in _moves,"real CPR did not enter compressions"] call _check;
+      ["ACME_CPR" in _moves,"real CPR did not enter compressions"] call _check;
       private _watch=_watches select 0;
       [!((_watch select 2) call (_watch select 0)),"carrier watcher released active CPR"] call _check;
       call _cancel;call _freed;

@@ -32,7 +32,7 @@ private _validRow = {
         if (isNil {_entry select 0} || {isNil {_entry select 1}}) exitWith {false};
         _entry params ["_bag","_warm"];
         if !(_bag isEqualType "" && {count _bag <= 128} && {_warm isEqualType 0} && {finite _warm} && {_warm >= 0}) exitWith {false};
-        if !((_bag find "ACM_BloodBag_") == 0 || {(_bag find "ACM_FreshBloodBag_") == 0} || {(_bag find "ACME_SpoiledBlood")==0}) exitWith {false};
+        if !((_bag find "ACME_BloodBag_") == 0 || {(_bag find "ACME_FreshBloodBag_") == 0} || {(_bag find "ACME_SpoiledBlood")==0}) exitWith {false};
         if !(isClass (configFile >> "CfgWeapons" >> _bag)) exitWith {false};
         private _volume = [_bag] call ACME_fnc_coolerBagVolume;
         _ml = _ml + _volume;

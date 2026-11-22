@@ -28,5 +28,5 @@ _pressureCuffState set [(_partIndex - 2), _state];
 _patient setVariable [QGVAR(PressureCuff_Placement), _pressureCuffState, true];
 
 if !(_state) then {
-    [_medic, "ACM_PressureCuff"] call ACEFUNC(common,addToInventory);
+    [_medic, "ACME_PressureCuff"] call ACEFUNC(common,addToInventory);
 };

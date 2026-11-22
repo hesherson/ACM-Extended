@@ -13,7 +13,7 @@
  * None
  *
  * Example:
- * [player, "ACM_Paracetamol", 10, 2] call ACM_core_fnc_splitMedicationPack;
+ * [player, "ACME_Paracetamol", 10, 2] call ACM_core_fnc_splitMedicationPack;
  *
  * Public: No
  */

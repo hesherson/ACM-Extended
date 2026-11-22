@@ -3,7 +3,8 @@ class CfgMagazines {
 
     // Silver nylon dressing - the proper burn dressing (used as a normal bandage; effectiveness in the
     // ACM_core Bandaging config). Using any other dressing on a 2nd/3rd-degree burn costs pain.
-    class ACM_SilverNylonDressing: CA_Magazine {
+    class ACME_SilverNylonDressing: CA_Magazine {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         authors[] = {"INFERNO", "mavis"};
@@ -17,7 +18,7 @@ class CfgMagazines {
     };
 
     // Burn cream - alternative treatment for 1st-degree burns only.
-    class ACM_BurnCream: ACM_SilverNylonDressing {
+    class ACME_BurnCream: ACME_SilverNylonDressing {
         picture = QPATHTOF(ui\cream.paa);
         displayName = CSTRING(BurnCream);
         descriptionShort = CSTRING(BurnCream_Desc);

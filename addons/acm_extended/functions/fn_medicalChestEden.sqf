@@ -43,19 +43,24 @@ private _look = [typeOf _entity, _open, _texture, _artwork];
     ["_owner", objNull], ["_oldLook", []], ["_parts", []], ["_transform", []]
 ];
 private _heading = getDir _entity;
-private _base = [getPosWorld _entity, [_entity], 0.3, 2, true] call ACME_fnc_medicalChestGround;
+// (as the mission's chest will stand: on its four feet, leaning with the ground: fn_medicalChestRest.sqf)
+(0 boundingBoxReal _entity) params ["_boxMin", "_boxMax"];
+([getPosWorld _entity, [_entity], _heading,
+    [(((_boxMax select 0) - (_boxMin select 0)) / 2 - 0.03) max 0.1, (((_boxMax select 1) - (_boxMin select 1)) / 2 - 0.03) max 0.1], true]
+    call ACME_fnc_medicalChestRest) params ["_base", "_ground"];
 private _lidSupport = if (_open) then {
     [_base, _heading, _entity, objNull, true] call ACME_fnc_medicalChestLidBase
 } else {[]};
-private _next = [_base, _heading, _lidSupport];
+private _next = [_base, _heading, _lidSupport, _ground];
 private _replace = _entity isNotEqualTo _owner || {_look isNotEqualTo _oldLook}
     || {(_parts findIf {isNull _x}) >= 0};
 if (_replace) then {
     [_id] call _remove;
-    private _class = if (_open) then {"ACME_MedicalChest8Drawers"} else {typeOf _entity};
+    private _class = if (_open) then {[_entity] call ACME_fnc_medicalChestCabinetClass} else {typeOf _entity};
     _parts = [createSimpleObject [_class, _base, true]];
     if (_open) then {
-        _parts pushBack (createSimpleObject ["ACME_MedicalChestLid", _lidSupport select 0, true]);
+        private _lidClass = getText (configOf _entity >> "acmeChestLidClass");
+        _parts pushBack (createSimpleObject [[_lidClass, "ACME_MedicalChestLid"] select (_lidClass == ""), _lidSupport select 0, true]);
     };
     if ((_parts findIf {isNull _x}) >= 0) exitWith {
         {deleteVehicle _x;} forEach _parts;
@@ -70,7 +75,7 @@ if (_replace) then {
 };
 if (_parts isEqualTo []) exitWith {};
 if (_replace || {_next isNotEqualTo _transform}) then {
-    [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open] call ACME_fnc_medicalChestPlace;
+    [_parts select 0, _base, _heading, ["closed", "cabinet"] select _open, _ground] call ACME_fnc_medicalChestPlace;
     if (_open) then {
         _lidSupport params ["_side", "_normal"];
         [_parts select 1, _side, _heading, "lid", _normal] call ACME_fnc_medicalChestPlace;

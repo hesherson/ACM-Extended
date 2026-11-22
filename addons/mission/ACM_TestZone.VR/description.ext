@@ -1,5 +1,6 @@
 author			= "Blue";
-onLoadName		= "ACM Testing Zone";
+briefingName	= "ACME Testing Zone";
+onLoadName		= "ACME Testing Zone";
 onLoadMission	= "";
 
 briefing = 0;

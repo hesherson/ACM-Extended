@@ -7,14 +7,14 @@ class CfgPatches {
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {
-            "ACM_ChestSeal",
-            "ACM_PulseOximeter",
-            "ACM_Stethoscope",
-            "ACM_NCDKit",
-            "ACM_ChestTubeKit",
-            "ACM_ThoracostomyKit",
-            "ACM_PocketBVM",
-            "ACM_BVM"
+            "ACME_ChestSeal",
+            "ACME_PulseOximeter",
+            "ACME_Stethoscope",
+            "ACME_NCDKit",
+            "ACME_ChestTubeKit",
+            "ACME_ThoracostomyKit",
+            "ACME_PocketBVM",
+            "ACME_BVM"
         };
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

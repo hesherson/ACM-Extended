@@ -8,7 +8,7 @@ private _list = _display displayCtrl 86005;
 private _row = lbCurSel _list;
 if (_row < 0) exitWith {};
 private _class = ((_list lbData _row) splitString "|") param [0, ""];
-if (_class != "ACM_Vial_Propofol") exitWith {};
+if (_class != "ACME_Vial_Propofol") exitWith {};
 if (count (missionNamespace getVariable ["ACME_spikingActive", []]) > 0) exitWith {};
 
 private _medic = ACE_player;
@@ -46,7 +46,7 @@ private _release = {
 };
 private _begin = {
     params ["_medic", "_patient", "_mode", "_vehicle", "_holder", "_token", "_release"];
-    missionNamespace setVariable ["ACME_spikingActive", ["ACM_Vial_Propofol", diag_tickTime + 1.6]];
+    missionNamespace setVariable ["ACME_spikingActive", ["ACME_Vial_Propofol", diag_tickTime + 1.6]];
     call ACME_fnc_updateTransfusionControls;
     [{
     params ["_medic", "_patient", "_mode", "_vehicle", "_holder", "_token", "_release"];
@@ -69,7 +69,7 @@ private _begin = {
     };
     private _preparedIndex = -1;
     isNil {
-        private _bottleReceipt = [_medic, _patient, "ACM_Vial_Propofol", _mode, _vehicle] call ACME_fnc_transfusionTakeSelected;
+        private _bottleReceipt = [_medic, _patient, "ACME_Vial_Propofol", _mode, _vehicle] call ACME_fnc_transfusionTakeSelected;
         if (_bottleReceipt isNotEqualTo []) then {
             private _lineReceipt = [_medic, _patient, ["ACME_IVLine"]] call ACME_fnc_treatmentSupplyTake;
             if (_lineReceipt isEqualTo []) then {
@@ -79,10 +79,10 @@ private _begin = {
                 missionNamespace setVariable ["ACME_propofolBottleSerial", _serial];
                 private _uid = format ["propofol-bottle:%1:%2:%3", clientOwner, netId _medic, _serial];
                 private _duration = (missionNamespace getVariable ["ACME_infusion_defaultDurationSeconds", createHashMap]) getOrDefault ["Propofol", 1800];
-                private _entry = [_uid, "ACM_Vial_Propofol", "ACME_PropofolIV_50", "Propofol", 500,
+                private _entry = [_uid, "ACME_Vial_Propofol", "ACME_PropofolIV_50", "Propofol", 500,
                     _duration, ACME_infusion_defaultDropSet, 0, 0, CBA_missionTime, 50,
                     0, _medic, objNull, [["Propofol", 500, 1]], _uid, 50, "propofol-bottle"];
-                private _set = [_uid, "ACM_Vial_Propofol", "ACME_PropofolIV_50", "", "", "",
+                private _set = [_uid, "ACME_Vial_Propofol", "ACME_PropofolIV_50", "", "", "",
                     [_entry] call ACME_fnc_formatPreparedLabel, false, "propofol", 50, 0];
                 private _sets = _medic getVariable ["ACME_preparedIVSets", []];
                 private _prepared = _medic getVariable ["ACME_infusion_PreparedBags", []];
@@ -112,7 +112,7 @@ private _begin = {
 };
 if (_holder isEqualTo _medic) exitWith {[_medic, _patient, _mode, _vehicle, _holder, "", _release] call _begin;};
 
-missionNamespace setVariable ["ACME_spikingActive", ["ACM_Vial_Propofol", diag_tickTime + 3]];
+missionNamespace setVariable ["ACME_spikingActive", ["ACME_Vial_Propofol", diag_tickTime + 3]];
 private _leaseReady = [_medic, _holder] call ACME_fnc_vialLeaseEnsure;
 // Switching away from an old/expired holder releases it on the first ensure
 // call. Start this holder's request now rather than waiting for a second click.

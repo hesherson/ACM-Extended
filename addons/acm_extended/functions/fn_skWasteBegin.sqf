@@ -4,7 +4,7 @@
 // handler modeled on ACM's syringe_draw loop lets you click the plunger and drag it up to waste saline, and
 // committing locks the floor and flips to the draw stage, in fn_skwastecommit.
 // call it as [_flushClass] call ACME_fnc_skWasteBegin.
-params [["_flushClass", "ACM_SalineFlush_10"]];
+params [["_flushClass", "ACME_SalineFlush_10"]];
 disableSerialization;
 private _acmeCanvas = call ACME_fnc_uiCanvas;
 _acmeCanvas params ["_uiX", "_uiY", "_uiW", "_uiH"];

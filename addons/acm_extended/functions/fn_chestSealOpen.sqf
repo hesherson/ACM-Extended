@@ -3,7 +3,7 @@ if (isNull _patient || {isNull _medic} || {!local _medic} || {!alive _medic}
     || {_medic getVariable ["ACE_isUnconscious", false]}) exitWith {};
 
 if !(missionNamespace getVariable ["ACME_sys_chestSeal", true]) exitWith {
-    private _item = ["ACM_ChestSeal", "ACME_NARSPEAR"] select (_startTool == "spear");
+    private _item = ["ACME_ChestSeal", "ACME_NARSPEAR"] select (_startTool == "spear");
     private _receipt = [_medic, _patient, [_item]] call ACME_fnc_treatmentSupplyTake;
     if (_receipt isEqualTo []) exitWith {};
     [_receipt, false] call ACME_fnc_treatmentSupplyRefund;

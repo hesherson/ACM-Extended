@@ -7,12 +7,12 @@ class CfgPatches {
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {
-            "ACM_OPA",
-            "ACM_IGel",
-            "ACM_NPA",
-            "ACM_SuctionBag",
-            "ACM_ACCUVAC",
-            "ACM_CricKit"
+            "ACME_OPA",
+            "ACME_IGel",
+            "ACME_NPA",
+            "ACME_SuctionBag",
+            "ACME_ACCUVAC",
+            "ACME_CricKit"
         };
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

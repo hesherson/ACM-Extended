@@ -136,7 +136,7 @@ if (_held isEqualTo "finger") exitWith {
         && {diag_tickTime - (_pending select 3) < 15}) exitWith {false};
     private _kit = [_medic, _patient] call ACME_fnc_thoraKitItem;
     if (_kit == "") exitWith {false};
-    private _usedKit = _kit == "ACM_ThoracostomyKit";
+    private _usedKit = _kit == "ACME_ThoracostomyKit";
     private _supplyReceipt = [];
     if (_usedKit) then {
         // Respect ACE shared equipment and fail before creating a completed tract.
@@ -169,7 +169,7 @@ if (_held in ["seal", "tube"]) exitWith {
         private _pendingSeal = uiNamespace getVariable ["ACME_Thora_SealPending", []];
         if (count _pendingSeal >= 5 && {(_pendingSeal select 0) isEqualTo _patient}
             && {(_pendingSeal select 2) == ([_patient] call ACME_fnc_clinicalEpoch)}) exitWith {false};
-        private _receipt = [_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake;
+        private _receipt = [_medS, _patient, ["ACME_ChestSeal"]] call ACME_fnc_treatmentSupplyTake;
         if (_receipt isEqualTo []) exitWith {
             ["No chest seal available.", 2] call ace_common_fnc_displayTextStructured;
             false
@@ -186,7 +186,7 @@ if (_held in ["seal", "tube"]) exitWith {
     private _tubeMedic = uiNamespace getVariable ["ACME_Thora_Medic", objNull];
     if (_patient getVariable [format ["ACME_thora_closed_%1", _side], false]) exitWith {false};
     if (!(([_tubeMedic] call ACME_fnc_thoraClosureMode) select 2)) exitWith {false};
-    private _tubeReceipt = [_tubeMedic, _patient, ["ACM_ChestTubeKit"]] call ACME_fnc_treatmentSupplyTake;
+    private _tubeReceipt = [_tubeMedic, _patient, ["ACME_ChestTubeKit"]] call ACME_fnc_treatmentSupplyTake;
     if (_tubeReceipt isEqualTo []) exitWith {false};
     [_tubeReceipt, false] call ACME_fnc_treatmentSupplyRefund;
     [_patient, _side, "sealed", false] call ACME_fnc_thoraSideStateCommit;

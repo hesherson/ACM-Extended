@@ -112,10 +112,11 @@ class CfgWeapons {
     class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
     class ACME_TempusLS_Item : ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeArsenal = 2;
         scopeCurator = 2;
-        author = "ACME";
+        author = "mavis";
         displayName = "Tempus LS Defibrillator";
         ACE_isMedicalItem = 1;
         descriptionShort = "Defibrillator, pacer and ECG monitor";
@@ -142,9 +143,10 @@ class CfgRemoteExec {
 class CfgVehicles {
     class Items_base_F;
     class ACME_TempusLS : Items_base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
-        author = "ACME";
+        author = "mavis";
         displayName = "Tempus LS Defibrillator";
         model = "\acme_tempusls\data\tempus_ls.p3d";
         icon = "iconObject_1x1";

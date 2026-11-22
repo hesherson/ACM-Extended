@@ -2,9 +2,10 @@ class CfgWeapons {
     class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
 
-    class ACM_ChestSeal: ACE_ItemCore {
+    class ACME_ChestSeal: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
-        author = "Blue";
+        author = "mavis";
         picture = QPATHTOF(ui\chestseal_ca.paa);
         displayName = CSTRING(ChestSeal);
         descriptionShort = CSTRING(ChestSeal_Desc);
@@ -14,7 +15,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_PulseOximeter: ACM_ChestSeal {
+    class ACME_PulseOximeter: ACME_ChestSeal {
         picture = QPATHTOF(ui\pulseoximeter_ca.paa);
         displayName = CSTRING(PulseOximeter);
         descriptionShort = CSTRING(PulseOximeter_Desc);
@@ -23,7 +24,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_Stethoscope: ACM_ChestSeal {
+    class ACME_Stethoscope: ACME_ChestSeal {
         picture = QPATHTOF(ui\stethoscope_ca.paa);
         displayName = CSTRING(Stethoscope);
         descriptionShort = CSTRING(Stethoscope_Desc);
@@ -32,7 +33,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_NCDKit: ACM_ChestSeal {
+    class ACME_NCDKit: ACME_ChestSeal {
         picture = QPATHTOF(ui\ncdkit_ca.paa);
         displayName = CSTRING(NCDKit);
         descriptionShort = CSTRING(NCDKit_Desc);
@@ -41,7 +42,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_ChestTubeKit: ACM_ChestSeal {
+    class ACME_ChestTubeKit: ACME_ChestSeal {
         picture = QPATHTOF(ui\chestTubeKit_ca.paa);
         displayName = CSTRING(ChestTubeKit);
         descriptionShort = CSTRING(ChestTubeKit_Desc);
@@ -50,7 +51,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_ThoracostomyKit: ACM_ChestSeal {
+    class ACME_ThoracostomyKit: ACME_ChestSeal {
         picture = QPATHTOF(ui\thoracostomyKit_ca.paa);
         displayName = CSTRING(ThoracostomyKit);
         descriptionShort = CSTRING(ThoracostomyKit_Desc);
@@ -59,7 +60,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_PocketBVM: ACM_ChestSeal {
+    class ACME_PocketBVM: ACME_ChestSeal {
         picture = QPATHTOF(ui\pocketBVM_ca.paa);
         displayName = CSTRING(PocketBVM);
         descriptionShort = CSTRING(PocketBVM_Desc);
@@ -68,7 +69,7 @@ class CfgWeapons {
         };
     };
 
-    /*class ACM_PocketBVM_Packed: ACM_PocketBVM {
+    /*class ACM_PocketBVM_Packed: ACME_PocketBVM {
         picture = QPATHTOF(ui\pocketbvm_p_ca.paa);
         displayName = "Pocket BVM (Packaged)";
         descriptionShort = "desc short";
@@ -78,7 +79,7 @@ class CfgWeapons {
         };
     };*/
 
-    class ACM_BVM: ACM_PocketBVM {
+    class ACME_BVM: ACME_PocketBVM {
         picture = QPATHTOF(ui\bvm_ca.paa);
         displayName = CSTRING(BVM);
         descriptionShort = CSTRING(BVM_Desc);
@@ -87,7 +88,7 @@ class CfgWeapons {
         };
     };
 
-    class ACM_OxygenTank_425_Empty: ACM_ChestSeal {
+    class ACME_OxygenTank_425_Empty: ACME_ChestSeal {
         scope = 1;
         picture = QPATHTOF(ui\oxygentank_ca.paa);
         displayName = CSTRING(OxygenTank_425_Empty);

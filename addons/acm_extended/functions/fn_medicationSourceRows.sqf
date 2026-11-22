@@ -35,7 +35,7 @@ private _source = [];
 if (_source isEqualTo []) then {
     {
         _source pushBackUnique (configName _x);
-    } forEach ("getNumber (_x >> 'ACM_isVial') > 0" configClasses (configFile >> "CfgWeapons"));
+    } forEach ("getNumber (_x >> 'ACM_isVial') > 0 && {getText (_x >> 'ACME_itemReplacement') == ''}" configClasses (configFile >> "CfgWeapons"));
 };
 
 private _allowedMeds = [];
@@ -72,7 +72,7 @@ private _seenMed = [];
     private _sealed = [_holder, _class] call ACME_fnc_vialItemCount;
     if (_med == "EpinephrineCardiac") then {
         _sealed = ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount)
-            + ([_holder, "ACM_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
+            + ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
     };
     private _openMl = (_open getOrDefault [_med, 0]) max 0;
     if (_sealed <= 0 && {_openMl <= 0.000001}) then {continue};

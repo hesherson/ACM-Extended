@@ -5,7 +5,7 @@
 params ["_medic", "_med", "_ml", "_size"];
 if (!local _medic || {_med == ""} || {_ml <= 0} || {!finite _ml} || {!(_size in [1,3,5,10])} || {_ml > _size + 0.001}) exitWith {[]};
 
-private _syringe = format ["ACM_Syringe_%1", _size];
+private _syringe = format ["ACME_Syringe_%1", _size];
 private _reusable = missionNamespace getVariable ["ACM_circulation_reusableSyringe", false];
 
 // ACME_fnc_medicationTakeSources is the Narc Box's validated exact-source debit. A one-component batch is

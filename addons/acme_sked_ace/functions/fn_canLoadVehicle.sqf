@@ -8,4 +8,6 @@ private _patient = _litter getVariable ["acme_sked_patient", objNull];
 !isNull _patient
 && {alive _patient}
 && {[_player, _litter] call acme_sked_fnc_canUnstrapLitter}
-&& {([_patient, 10] call ace_common_fnc_nearestVehiclesFreeSeat) isNotEqualTo []}
+&& {([_patient, 10] call ace_common_fnc_nearestVehiclesFreeSeat) isNotEqualTo []
+    // or a vehicle that takes the litter itself on its cabin floor
+    || {([_litter] call acme_sked_fnc_vehicleLitterNear) isNotEqualTo []}}

@@ -17,7 +17,7 @@ private _opened = !isNull _medic && {!isNull _patient} && {
     (uiNamespace getVariable ["ACME_suction_bagOwner", []]) isEqualTo [_medic, _patient]
 };
 private _accuN = [0,1] select ([_medic,_patient] call ACME_fnc_equipmentUseAccuvac);
-private _bagN = if (isNull _medic) then {0} else {[_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount};
+private _bagN = if (isNull _medic) then {0} else {[_medic, _patient, "ACME_SuctionBag"] call ACME_fnc_treatmentSupplyCount};
 private _type = -1;
 private _requested = if (uiNamespace getVariable ["ACME_suction_standalone", false]) then {
     uiNamespace getVariable ["ACME_suction_requestedType", -1]

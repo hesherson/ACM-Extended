@@ -9,7 +9,7 @@ def test_source_contract():
      'initHangBagRuntime':('fn_initHangBagRuntime.sqf','ACME_treatmentPoseSync'),
      'initHpmkCoreRuntime':('fn_initHpmkCoreRuntime.sqf','ACME_fnc_hpmkTick'),
      'initProcedureEnvironmentConfig':('fn_initProcedureEnvironmentConfig.sqf','ACME_darkness_bleachByColor'),
-     'registerHpmkVisualRuntime':('fn_registerHpmkVisualRuntime.sqf','ACME_hpmk_wrappedVisuals'),
+     'registerHpmkVisualRuntime':('fn_registerHpmkVisualRuntime.sqf','ACME_hpmk_visuals'),
     }
     for fn,(file,token) in helpers.items():
         p=ROOT/'addons/acm_extended/functions'/file

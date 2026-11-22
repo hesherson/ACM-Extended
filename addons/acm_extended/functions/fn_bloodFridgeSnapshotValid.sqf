@@ -21,7 +21,7 @@ private _validStock = {
         _x params ["_class","_count"];
         if !(_class isEqualType "" && {count _class <= 128} && {!(_class in _seen)}
             && {_count isEqualType 0} && {finite _count} && {_count >= 0} && {_count == floor _count} && {_count <= 1e6}) exitWith {_ok = false;};
-        if !((_class find "ACM_BloodBag_") == 0 || {(_class find "ACM_FreshBloodBag_") == 0}) exitWith {_ok = false;};
+        if !((_class find "ACME_BloodBag_") == 0 || {(_class find "ACME_FreshBloodBag_") == 0}) exitWith {_ok = false;};
         if !(isClass (configFile >> "CfgWeapons" >> _class)) exitWith {_ok = false;};
         _seen set [_class,true];
     } forEach _rows;

@@ -43,7 +43,7 @@ if (_type == "FBTK") then {
     _tol = (_tol max 0) min 5;
     if (_remainingVolume >= ((_volume - _tol) max 0)) then {_returnVolume = _volume;};
 };
-private _itemClass = if (_type == "FBTK" && {_returnVolume <= 0}) then {format ["ACM_FieldBloodTransfusionKit_%1", _volume]} else {[_type, _returnVolume, _bloodType] call FUNC(formatFluidBagName)};
+private _itemClass = if (_type == "FBTK" && {_returnVolume <= 0}) then {format ["ACME_FieldBloodTransfusionKit_%1", _volume]} else {[_type, _returnVolume, _bloodType] call FUNC(formatFluidBagName)};
 private _itemName = getText (configFile >> "CfgWeapons" >> _itemClass >> "displayName");
 private _epoch = [_patient] call ACME_fnc_clinicalEpoch;
 private _serial = 1 + (missionNamespace getVariable ["ACME_resourceReturnRequestSerial",0]);

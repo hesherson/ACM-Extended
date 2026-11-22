@@ -7,7 +7,7 @@ class CfgPatches {
         name = COMPONENT_NAME;
         units[] = {};
         weapons[] = {
-            "ACM_SAMSplint"
+            "ACME_SAMSplint"
         };
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

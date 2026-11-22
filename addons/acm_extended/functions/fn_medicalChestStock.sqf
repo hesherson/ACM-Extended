@@ -4,11 +4,11 @@ private _catalog = missionNamespace getVariable "ACME_medicalChestCatalog";
 if (isNil "_catalog") then {
     private _filter = "isClass _x && {getNumber (_x >> 'scope') > 0}
         && {getNumber (_x >> 'ACE_isMedicalItem') == 1 || {getNumber (_x >> 'ACM_isVial') > 0}
-            || {(toLowerANSI configName _x) find 'acm_bloodbag_' == 0}}
+            || {(toLowerANSI configName _x) find 'acme_bloodbag_' == 0}}
         && {getNumber (_x >> 'ace_arsenal_hide') != 1}
         && {getText (_x >> 'ACME_inventoryKind') == ''}
         && {getNumber (_x >> 'uniqueBag') == 0}
-        && {(toLowerANSI configName _x) find 'acm_freshbloodbag_' != 0}
+        && {(toLowerANSI configName _x) find 'acme_freshbloodbag_' != 0}
         && {if (isNumber (_x >> 'scopeArsenal')) then {getNumber (_x >> 'scopeArsenal') == 2}
             else {getNumber (_x >> 'scope') == 2}}";
     _catalog = ["CfgWeapons", "CfgMagazines", "CfgVehicles"] apply {
@@ -18,10 +18,11 @@ if (isNil "_catalog") then {
 };
 
 private _equipment = [
-    "ACM_AED", "ACM_ACCUVAC", "ACM_BVM", "ACM_PocketBVM", "ACM_EMMA", "ACM_HPMK",
-    "ACME_TempusPro_Item", "ACME_TempusLS_Item", "ACME_Ventilator", "ACM_OxygenTank_425",
+    "ACME_AED", "ACME_ACCUVAC", "ACME_BVM", "ACME_PocketBVM", "ACME_EMMA", "ACME_HPMK",
+    "ACME_TempusPro_Item", "ACME_TempusLS_Item", "ACME_Ventilator", "ACME_OxygenTank_425",
     "ACME_BloodWarmer", "ACME_PressureInfuser", "ACME_BloodCooler_CSWB1U",
-    "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U", "ACE_surgicalKit", "ACE_personalAidKit"
+    "ACME_BloodCooler_CSWB2U", "ACME_BloodCooler_CSWB4U", "ACE_surgicalKit", "ACE_personalAidKit",
+    "ACME_Laryngoscope", "ACME_PulseOximeter", "ACME_Stethoscope"
 ];
 private _airway = ["_opa", "_npa", "igel", "ettube", "crickit", "suction", "accuvac", "bvm", "ventilat",
     "ventbattery", "ventcircuit", "oxygen", "nrbmask", "emma", "laryng", "bougie", "pulseoximeter", "stethoscope"];
@@ -29,7 +30,7 @@ private _dressings = ["bandage", "dressing", "packing", "gauze", "tourniquet", "
     "elastic", "woundclot", "quikclot", "fielddressing", "suture", "surgicalkit"];
 private _access = ["ivline", "ivextension", "ivstartkit", "salinelock", "salineflush", "_iv_", "_io_", "alcoholwipe",
     "tourniquet", "pressureinfuser", "bloodwarmer"];
-private _emptySyringes = ["ACM_Syringe_1", "ACM_Syringe_3", "ACM_Syringe_5", "ACM_Syringe_10"];
+private _emptySyringes = ["ACME_Syringe_1", "ACME_Syringe_3", "ACME_Syringe_5", "ACME_Syringe_10"];
 private _blood = ["bloodbag", "bloodiv", "bloodcooler", "transfusion", "bloodtype", "bloodtest", "bloodwarmer", "plasmaiv", "plasmabag"];
 private _wanted = switch (_profile) do {
     case "airway": {_airway};
@@ -55,7 +56,9 @@ private _supplyCount = {
     if (_wanted isNotEqualTo [] && {_wanted findIf {_name find _x >= 0} < 0}
         && {!(_emptySyringe && {_profile in ["blood", "fluids", "surgery"]})}) exitWith {0};
     if (_isBackpack || {_item in _equipment}) exitWith {4};
-    if (_profile != "") exitWith {8};
+    // A specialty chest resupplies four medics: three of each consumable apiece, one device apiece.
+    // The inventory sheets on the lids (tools/build_hardigg_sheet.py) are written to these numbers.
+    if (_profile != "") exitWith {12};
     [8, 24] select (_emptySyringe || {(_dressings + _access) findIf {_name find _x >= 0} >= 0})
 };
 {

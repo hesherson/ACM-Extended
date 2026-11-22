@@ -1,9 +1,10 @@
 class CfgMagazines {
     class CA_Magazine;
 
-    class ACM_OxygenTank_425: CA_Magazine {
+    class ACME_OxygenTank_425: CA_Magazine {
+        dlc = "ACM_Extended";
         scope = 2;
-        author = "Blue";
+        author = "mavis";
         picture = QPATHTOF(ui\oxygentank_ca.paa);
         displayName = CSTRING(OxygenTank_425);
         descriptionShort = CSTRING(OxygenTank_425_Desc);

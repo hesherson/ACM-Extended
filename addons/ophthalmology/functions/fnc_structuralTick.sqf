@@ -17,7 +17,7 @@ private _injured = ({_x < 0.999} count _eyes) > 0;
 private _shieldItem = _patient getVariable [QGVAR(eyeShieldItem),""];
 private _shieldIndex = _patient getVariable [QGVAR(eyeShieldIndex),-1];
 private _shieldActive = _shieldIndex in [0,1]
-    && {_shieldItem == (["kat_eyecovers_right","kat_eyecovers_left"] select _shieldIndex)}
+    && {_shieldItem == (["ACME_EyeCover_Right","ACME_EyeCover_Left"] select _shieldIndex)}
     && {(hmd _patient) == _shieldItem};
 private _permanent = _patient getVariable [QGVAR(ocularPermanent),false];
 

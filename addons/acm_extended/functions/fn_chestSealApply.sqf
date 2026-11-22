@@ -6,7 +6,7 @@ if (_idx < 0 || {_idx >= count _holes}) exitWith {};
 private _hole = _holes select _idx;
 if (_hole select 4) exitWith {};
 private _key = [_hole] call ACME_fnc_chestSealKey;
-if !(["seal", _key, "ACM_ChestSeal"] call ACME_fnc_chestSealRequest) exitWith {};
+if !(["seal", _key, "ACME_ChestSeal"] call ACME_fnc_chestSealRequest) exitWith {};
 (_holes select _idx) set [4, true];
 uiNamespace setVariable ["ACME_CS_Holes", _holes];
 uiNamespace setVariable ["ACME_CS_Held", false];
@@ -14,7 +14,7 @@ uiNamespace setVariable ["ACME_CS_Held", false];
 private _medic = uiNamespace getVariable ["ACME_CS_Medic", objNull];
 private _patient = uiNamespace getVariable ["ACME_CS_Patient", objNull];
 uiNamespace setVariable ["ACME_CS_SealsLeft",
-    [_medic, _patient, "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount];
+    [_medic, _patient, "ACME_ChestSeal"] call ACME_fnc_treatmentSupplyCount];
 
 // AinvPknlMstpSnonWnonDnon_medic3 is reserved ONLY for physically applying a seal.
 // Any previous placement worker is retired before the new seal owns its 2.65 s window.

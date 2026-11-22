@@ -43,7 +43,7 @@ if (!_piggybackAllowed) exitWith {[ACE_player,"Select a fluid bag for the connec
 
 // Direct emulsion bottles enter Prepared Infusions with their own administration
 // line. They never enter the generic saline-bag spike or Y-refill paths.
-if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};
+if (_class == "ACME_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};
 
 // the FBTK, the field blood transfusion kit, is not a blood product to pre-stage and it is not a y set. it is
 // hung as a single bag that collects the patient's own blood, then becomes a usable blood unit when removed.

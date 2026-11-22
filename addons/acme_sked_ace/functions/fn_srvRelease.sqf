@@ -11,6 +11,9 @@ if (!isServer || {isNull _litter}) exitWith {};
 } forEach (_litter getVariable ["acme_sked_bearers", []]);
 private _patient = _litter getVariable ["acme_sked_patient", objNull];
 _litter setVariable ["acme_sked_patient", objNull, true];
+// the picture of their pack on their legs goes with the litter
+private _bag = _litter getVariable ["acme_sked_bag", objNull];
+if (!isNull _bag) then {deleteVehicle _bag;};
 if (isNull _patient) exitWith {};
 _patient setVariable ["acme_sked_litter", nil, true];
 if (_stow) exitWith {
@@ -19,5 +22,7 @@ if (_stow) exitWith {
     ["stowed", _litter, _patient, [objectParent _patient]] call acme_sked_fnc_traceTransport;
 };
 ["unstrapped", _litter, _patient] call acme_sked_fnc_traceTransport;
-[_patient, "releaseLocal", [_patient, _litter]] call acme_sked_fnc_sendLocal;
+// The server's own copy of what they wore goes with the order, in case the copy on the casualty is gone.
+private _gear = if (isNil "acme_sked_gearKept") then {[]} else {acme_sked_gearKept getVariable [netId _patient, []]};
+[_patient, "releaseLocal", [_patient, _litter, _gear]] call acme_sked_fnc_sendLocal;
 [_patient] call acme_sked_fnc_srvDragOn;

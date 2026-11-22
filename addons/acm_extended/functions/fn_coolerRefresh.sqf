@@ -81,7 +81,7 @@ private _added = 0;
     private _it = _x;
     if !(_it in _seen) then {
         _seen pushBack _it;
-        if ((_it find "ACM_BloodBag_") == 0 || {(_it find "ACM_FreshBloodBag_") == 0}) then {
+        if ((_it find "ACME_BloodBag_") == 0 || {(_it find "ACME_FreshBloodBag_") == 0}) then {
             private _i = _lout lbAdd (getText (configFile >> "CfgWeapons" >> _it >> "displayName"));
             _lout lbSetData [_i, _it];
             private _pic = getText (configFile >> "CfgWeapons" >> _it >> "picture");

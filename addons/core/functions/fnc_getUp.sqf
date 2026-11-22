@@ -77,6 +77,7 @@ private _obtunded = (missionNamespace getVariable ["ACME_sys_obtunded", false])
 private _releaseAnims = [
     "ainjppnemstpsnonwrfldnon",
     "acm_lyingstate",
+    "acme_litter_side",
     "unconscious",
     "deadstate",
     toLower (missionNamespace getVariable ["ACME_obtunded_fixedAnim", "ACME_ObtundedBack"]),

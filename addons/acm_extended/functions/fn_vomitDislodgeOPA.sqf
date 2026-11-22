@@ -48,7 +48,7 @@ if (((_patient getVariable ["ACM_airway_AirwayItem_Oral", ""]) isEqualTo "OPA"))
     private _near = _patient getVariable ["ACME_ETT_Medic", objNull];
     if (isNull _near) then { _near = _patient };
     if (local _near && {_near isKindOf "CAManBase"} && {alive _near}) then {
-        [_near, "ACM_OPA"] call ace_common_fnc_addToInventory;
+        [_near, "ACME_OPA"] call ace_common_fnc_addToInventory;
     };
     if (hasInterface && {!isNull ACE_player} && {(ACE_player distance _patient) < 12}) then {
         ["The OPA was expelled by the vomit.", 2] call ace_common_fnc_displayTextStructured;

@@ -7,10 +7,8 @@
 // The literal missionNamespace key "ACM_MEDICATION_VIALS" used by B45-B47 was never consumed by ACM.
 private _acmVials = +(missionNamespace getVariable ["ACM_circulation_MedicationVialList", []]);
 if (_acmVials isEqualTo []) then {
-    _acmVials = ("getNumber (_x >> 'ACM_isVial') > 0" configClasses (configFile >> "CfgWeapons")) apply {configName _x};
+    _acmVials = ("getNumber (_x >> 'ACM_isVial') > 0 && {getText (_x >> 'ACME_itemReplacement') == ''}" configClasses (configFile >> "CfgWeapons")) apply {configName _x};
 };
-// Hide the deprecated cardiac-epi alias from presentation while preserving compatibility in the stock counter.
-_acmVials = _acmVials - ["ACM_Vial_EpinephrineCardiac"];
 _acmVials pushBackUnique "ACME_Vial_EpinephrineCardiac";
 [[["medicationVialList", +_acmVials]]] call ACM_circulation_fnc_setLocalUiState;
 missionNamespace setVariable ["ACME_medicationVialRegistryFull", +_acmVials];

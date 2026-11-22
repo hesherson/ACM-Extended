@@ -145,7 +145,7 @@ _sizes lbSetCurSel 3;  // "10 mL".
 private _autoLoaded = false;
 if (uiNamespace getVariable ["ACME_SK_AutoSaline", false]) then {
     uiNamespace setVariable ["ACME_SK_AutoSaline", false];
-    if (([_medic, "ACM_SalineFlush_10"] call ACME_fnc_itemCount) >= 1) then {
+    if (([_medic, "ACME_SalineFlush_10"] call ACME_fnc_itemCount) >= 1) then {
         // the full saline-flush state, set explicitly. it mirrors the saline case of fn_syringekitsource.
         uiNamespace setVariable ["ACME_SK_Size", 10];
         uiNamespace setVariable ["ACME_SK_Source", "Saline"];
@@ -159,7 +159,7 @@ if (uiNamespace getVariable ["ACME_SK_AutoSaline", false]) then {
         ["10 mL flush loaded. Push plunger DOWN to your volume, then Waste."] call ACME_fnc_syringeKitInfo;
     } else {
         _sources lbSetCurSel -1;
-        ["No prefilled saline flush (ACM_SalineFlush_10) in your kit. Pick a source on the left."] call ACME_fnc_syringeKitInfo;
+        ["No prefilled saline flush (ACME_SalineFlush_10) in your kit. Pick a source on the left."] call ACME_fnc_syringeKitInfo;
     };
 };
 if (!_autoLoaded) then {

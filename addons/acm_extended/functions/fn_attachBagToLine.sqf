@@ -32,8 +32,8 @@ private _pairValid = _fi >= 0 && {(_fad param [_fi, ""]) == _action};
 private _portableFresh = [];
 if (_fresh) then {
     private _id = parseNumber (_freshParts param [2, "-1"]);
-    private _freshClass = if (_id == 0) then {format ["ACM_FreshBloodBag_%1", _volume]}
-        else {format ["ACM_FreshBloodBag_%1_%2", _volume, _id]};
+    private _freshClass = if (_id == 0) then {format ["ACME_FreshBloodBag_%1", _volume]}
+        else {format ["ACME_FreshBloodBag_%1_%2", _volume, _id]};
     _pairValid = count _freshParts == 3 && {_volume in [250, 500]} && {_id >= 0}
         && {_id <= 512} && {str _volume == (_freshParts select 1)} && {str _id == (_freshParts select 2)}
         && {_class == _freshClass};

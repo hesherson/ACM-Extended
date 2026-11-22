@@ -2,9 +2,10 @@ class CfgWeapons {
     class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
 
-    class ACM_PressureBandage: ACE_ItemCore {
+    class ACME_PressureBandage: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
-        author = "Blue";
+        author = "mavis";
         model = QACEPATHTOF(medical_treatment,data\bandage.p3d);
         picture = QPATHTOF(ui\pressurebandage.paa);
         displayName = CSTRING(PressureBandage);
@@ -14,7 +15,7 @@ class CfgWeapons {
             mass = 0.6;
         };
     };
-    class ACM_EmergencyTraumaDressing: ACM_PressureBandage {
+    class ACME_EmergencyTraumaDressing: ACME_PressureBandage {
         picture = QPATHTOF(ui\etd.paa);
         displayName = CSTRING(EmergencyTraumaDressing);
         descriptionShort = CSTRING(EmergencyTraumaDressing_Desc);
@@ -22,7 +23,7 @@ class CfgWeapons {
             mass = 2;
         };
     };
-    class ACM_ElasticWrap: ACM_PressureBandage {
+    class ACME_ElasticWrap: ACME_PressureBandage {
         picture = QACEPATHTOF(medical_treatment,ui\elasticbandage_ca.paa);
         displayName = CSTRING(ElasticWrap);
         descriptionShort = CSTRING(ElasticWrap_Desc);

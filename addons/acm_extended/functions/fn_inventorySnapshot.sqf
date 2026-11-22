@@ -54,7 +54,7 @@ private _valid = true;
         // Fresh-blood class suffixes name a mission-local donor registry slot.
         // Capture immutable donor data now; never re-resolve that old slot after
         // restart, where the numeric ID can belong to an unrelated donor.
-        private _fresh = ((_set param [1,""]) find "ACM_FreshBloodBag_") == 0
+        private _fresh = ((_set param [1,""]) find "ACME_FreshBloodBag_") == 0
             || {((_set param [2,""]) find "FreshBloodBag_") == 0};
         if (_fresh) then {
             private _meta = _set param [11,[]];

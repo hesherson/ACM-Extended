@@ -920,10 +920,10 @@ if (!isNull _ctrlSpike) then {
         // is a direct reserve refill. blood shows "Unit running" while one is up and needs a flush when the line is
         // dirty, and saline shows "Reserve set" while a live reserve is still hanging. it is grayed during a spike
         // beat.
-        private _txt = if (_selClass == "ACM_Vial_Propofol") then {"Spike Bottle"} else {"Spike Bag"};
+        private _txt = if (_selClass == "ACME_Vial_Propofol") then {"Spike Bottle"} else {"Spike Bag"};
         private _en = (_selClass != "");
         if (_isSpikingSel) then {
-            _txt = if (_selClass == "ACM_Vial_Propofol") then {"Spiking Bottle..."} else {"Spiking Bag..."};
+            _txt = if (_selClass == "ACME_Vial_Propofol") then {"Spiking Bottle..."} else {"Spiking Bag..."};
             _en = false;
         } else {
             if (_selIsBlood && _lineYd) then {
@@ -959,7 +959,7 @@ if (!isNull _ctrlSpike) then {
             _txt = "IV required";
             _en = false;
         };
-        if (_selClass == "ACM_Vial_Propofol") then {
+        if (_selClass == "ACME_Vial_Propofol") then {
             _en = _en && {(count _spikingActive) == 0}
                 && {([ACE_player,_targetPatient,"ACME_IVLine"] call ACME_fnc_treatmentSupplyCount) > 0};
             _ctrlSpike ctrlSetTooltip "Spike an unopened 50 mL propofol bottle with one IV line. It becomes a Prepared Infusion.";
@@ -1094,7 +1094,7 @@ if (!isNull _ctrlRightList
         private _state=[_x select 1] call ACME_fnc_coolerAdvance;
         {
             _x params ["_bc","_warm"];
-            if (_bc find "ACM_BloodBag_"==0 && {!((["spoil"] call ACME_fnc_bloodTiming)) || {_warm<([_bc] call ACME_fnc_bloodWarmLimit)}}) then {_want set [_bc,(_want getOrDefault [_bc,0])+1];};
+            if (_bc find "ACME_BloodBag_"==0 && {!((["spoil"] call ACME_fnc_bloodTiming)) || {_warm<([_bc] call ACME_fnc_bloodWarmLimit)}}) then {_want set [_bc,(_want getOrDefault [_bc,0])+1];};
         } forEach (_state select 2);
     } forEach _rows;
 
@@ -1106,7 +1106,7 @@ if (!isNull _ctrlRightList
         private _bx = _x;
         if (_bx getVariable ["ACME_coolerRetired",false]) then {continue;};
         {
-            if ((_x find "ACM_BloodBag_") == 0) then { _want set [_x, (_want getOrDefault [_x, 0]) + 1]; };
+            if ((_x find "ACME_BloodBag_") == 0) then { _want set [_x, (_want getOrDefault [_x, 0]) + 1]; };
         } forEach (itemCargo _bx);
     } forEach (if (_ownInventory && {!_selectingSalineInventoryB274} && {!_selectingPiggyback}) then {nearestObjects [ACE_player, ["ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"], 4.5]} else {[]});
 

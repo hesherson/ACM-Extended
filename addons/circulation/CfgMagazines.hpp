@@ -2,7 +2,7 @@
 #define SYRINGE_FORMAT_DESC(med,amount) QUOTE(format [ARR_3(C_LLSTRING(Syringe_PreparedWith),##amount##,C_LLSTRING(Medication_##med##))])
 
 #define PREPARE_SYRINGE(c,m,amount,med,name,desc) \
-    class DOUBLES(ACM_Syringe_##amount##,med): ACM_Syringe_10_Epinephrine { \
+    class DOUBLES(ACME_Syringe_##amount##,med): ACME_Syringe_10_Epinephrine { \
         picture = QPATHTOF(ui\syringe_##amount##_ca.paa); \
         displayName = name; \
         descriptionShort = desc; \
@@ -17,9 +17,10 @@ class CfgMagazines {
         scope = 1;
     };
 
-    class ACM_Paracetamol: CA_Magazine {
+    class ACME_Paracetamol: CA_Magazine {
+        dlc = "ACM_Extended";
         scope = 2;
-        author = "Blue";
+        author = "mavis";
         picture = QPATHTOF(ui\paracetamol_ca.paa);
         displayName = CSTRING(Paracetamol);
         descriptionShort = CSTRING(Paracetamol_Desc);
@@ -29,7 +30,7 @@ class CfgMagazines {
         mass = 0.3;
     };
 
-    class ACM_Paracetamol_DoublePack: ACM_Paracetamol {
+    class ACME_Paracetamol_DoublePack: ACME_Paracetamol {
         scope = 1;
         picture = QPATHTOF(ui\paracetamol_doublepack_ca.paa);
         displayName = CSTRING(Paracetamol_DoublePack);
@@ -37,14 +38,14 @@ class CfgMagazines {
         mass = 0.06;
     };
 
-    class ACM_AmmoniaInhalant: ACM_Paracetamol {
+    class ACME_AmmoniaInhalant: ACME_Paracetamol {
         picture = QPATHTOF(ui\inhalant_ammonia_ca.paa);
         displayName = CSTRING(AmmoniaInhalant);
         descriptionShort = CSTRING(AmmoniaInhalant_Desc);
         count = 8;
     };
 
-    class ACM_Inhaler_Penthrox: ACM_Paracetamol {
+    class ACME_Inhaler_Penthrox: ACME_Paracetamol {
         picture = QPATHTOF(ui\inhaler_penthrox_ca.paa);
         displayName = CSTRING(Inhaler_Penthrox);
         descriptionShort = CSTRING(Inhaler_Penthrox_Desc);
@@ -52,7 +53,7 @@ class CfgMagazines {
         mass = 2.2;
     };
 
-    class ACM_Syringe_10_Epinephrine: ACM_Paracetamol {
+    class ACME_Syringe_10_Epinephrine: ACME_Paracetamol {
         scope = 1;
         picture = QPATHTOF(ui\syringe_10_ca.paa);
         displayName = __EVAL(call compile SYRINGE_FORMAT_DISPLAY(Epinephrine,10));

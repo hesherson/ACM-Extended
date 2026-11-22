@@ -32,7 +32,7 @@ if (_state isEqualTo []) then {
     private _contents = [];
     private _fill = missionNamespace getVariable ["ACME_coolerFillType","ON"];
     private _capacity = floor (getNumber (configFile >> "CfgWeapons" >> _base >> "ACME_coolerCapacityMl") / 500);
-    for "_i" from 1 to _capacity do {_contents pushBack [format ["ACM_BloodBag_%1_500",_fill],0];};
+    for "_i" from 1 to _capacity do {_contents pushBack [format ["ACME_BloodBag_%1_500",_fill],0];};
     _state = [_base,([] call ACME_fnc_clinicalClock),_contents,([] call ACME_fnc_clinicalClock)];
 } else {_state = [_state,([] call ACME_fnc_clinicalClock)] call ACME_fnc_coolerAdvance;};
 private _sequence = (missionNamespace getVariable ["ACME_coolerIssueSequence",0])+1;

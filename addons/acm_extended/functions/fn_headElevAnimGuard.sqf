@@ -44,7 +44,7 @@ _patient setVariable ["ACME_headElev_lastAnim", _anim];
 // the repositioning set of ACM. it is matched loosely, because these appear with suffixes and variants.
 private _cancelOn = missionNamespace getVariable ["ACME_headElev_acmCancelAnims", ["acm_recoveryposition"]];
 private _yieldOn  = missionNamespace getVariable ["ACME_headElev_acmYieldAnims",
-    ["acm_genericcontinuous", "acm_pronecontinuous", "acm_lyingstate", "acm_cpr", "acm_cpr_stop"]];
+    ["acm_genericcontinuous", "acm_pronecontinuous", "acm_lyingstate", "acme_litter_side", "acm_cpr", "acm_cpr_stop", "acme_cpr", "acme_cpr_l", "acme_cpr_in", "acme_cpr_in_l", "acme_cpr_hold", "acme_cpr_out"]];
 
 if (_cancelOn findIf { _anim find _x >= 0 } >= 0) exitWith {
     // their airway is being managed by the position now, so ours steps aside completely.

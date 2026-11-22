@@ -89,10 +89,11 @@ class CfgWeapons {
     class ACE_ItemCore;
     class CBA_MiscItem_ItemInfo;
     class ACME_TempusPro_Item : ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeArsenal = 2;
         scopeCurator = 2;
-        author = "ACME";
+        author = "mavis";
         displayName = "Tempus Pro Monitor";
         ACE_isMedicalItem = 1;
         descriptionShort = "Patient monitor";
@@ -113,9 +114,10 @@ class CfgRemoteExec {
 class CfgVehicles {
     class Items_base_F;
     class ACME_TempusPro : Items_base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
-        author = "ACME";
+        author = "mavis";
         displayName = "Tempus Pro Monitor";
         model = "\acme_tempus\data\tempus_pro.p3d";
         icon = "iconObject_1x1";

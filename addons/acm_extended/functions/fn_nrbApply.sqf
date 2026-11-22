@@ -1,7 +1,7 @@
 // apply a non-rebreather mask, an NRB, to a patient. it is reusable equipment: it requires the mask in inventory
 // and does not consume it. placement takes about 1 s, the treatmenttime on ACME_ApplyNRB.
 // the oxygen requirement: an NRB is useless without an o2 source, so by default you cannot place it unless the
-// provider carries an ACM oxygen tank, ACM_OxygenTank_425, with reserve. with no tank the attempt is refused with
+// provider carries an ACM oxygen tank, ACME_OxygenTank_425, with reserve. with no tank the attempt is refused with
 // a prompt and nothing goes on.
 // the NRB-hardcore setting, ACME_hcEff_nrb, flips this: there is no prompt, and a no-o2 mask still goes on and
 // stays silent and gives no SpO2 support.
@@ -19,7 +19,7 @@ if !([_patient] call ACME_fnc_nrbAirwayCompatible) exitWith {
 };
 
 // Recheck reusable mask possession at completion, then retain the actual cylinder donor.
-if (([_medic, _patient, "ACM_NRBMask"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {};
+if (([_medic, _patient, "ACME_NRBMask"] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {};
 private _oxygenSource = [_medic, _patient] call ACME_fnc_nrbOxygenSource;
 private _hasO2 = !isNull _oxygenSource;
 

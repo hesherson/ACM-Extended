@@ -42,7 +42,7 @@ class ACEGVAR(medical_treatment,actions) {
 
     class EyeWasher: EyeWash {
         displayName = CSTRING(eyewasher_display_item);
-        items[] = {"KAT_Eyewasher"};
+        items[] = {"ACME_Eyewasher"};
     };
 
     class EyeShield: EyeWash {
@@ -51,7 +51,7 @@ class ACEGVAR(medical_treatment,actions) {
         medicRequired = QGVAR(eyeshield_medic_required);
         treatmentTime = QGVAR(eyeshield_treatment_time);
         items[] = {
-            "kat_eyecovers"
+            "ACME_EyeCover"
         };
         condition = QFUNC(eyeShieldCondition);
         // The native ocular transaction reserves a funded ACE/EFAK receipt in callbackStart.

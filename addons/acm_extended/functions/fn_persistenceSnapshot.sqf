@@ -16,8 +16,8 @@ private _equipment = [_unit] call ACME_fnc_equipmentSnapshot;
 private _blood = [_unit] call ACME_fnc_bloodExposureSnapshot;
 // Native fresh-blood class IDs require a separate global donor-registry
 // checkpoint. A local CBA kit cannot prove which donor a restarted ID names.
-if (((str _native) find "ACM_FreshBloodBag_") >= 0 || {((str _coolers) find "ACM_FreshBloodBag_") >= 0}
-    || {((str _equipment) find "ACM_FreshBloodBag_") >= 0}) exitWith {
+if (((str _native) find "ACME_FreshBloodBag_") >= 0 || {((str _coolers) find "ACME_FreshBloodBag_") >= 0}
+    || {((str _equipment) find "ACME_FreshBloodBag_") >= 0}) exitWith {
     _unit setVariable ["ACME_persistenceBlockReason","native fresh blood requires the mission donor-registry adapter",false];
     []
 };

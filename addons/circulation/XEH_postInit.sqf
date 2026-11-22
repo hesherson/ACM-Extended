@@ -73,23 +73,23 @@ GVAR(Fluids_Array_Data) = FLUIDS_ARRAY_DATA;
     {
         private _entry = format ["BloodBag_%1_%2", _bloodType, _x];
         GVAR(Fluids_Array_Data) pushBack _entry;
-        GVAR(Fluids_Array) pushBack format ["ACM_%1", _entry];
+        GVAR(Fluids_Array) pushBack format ["ACME_%1", _entry];
     } forEach [1000,500,250];
 } forEach ["O","ON","A","AN","B","BN","AB","ABN"];
 
 GVAR(Fluids_Array) append FBTK_ARRAY;
 GVAR(Fluids_Array_Data) append FBTK_ARRAY_DATA;
 
-["ACE_bloodIV", "ACM_BloodBag_ON_1000"] call ACEFUNC(common,registerItemReplacement);
-["ACE_bloodIV_500", "ACM_BloodBag_ON_500"] call ACEFUNC(common,registerItemReplacement);
-["ACE_bloodIV_250", "ACM_BloodBag_ON_250"] call ACEFUNC(common,registerItemReplacement);
+["ACE_bloodIV", "ACME_BloodBag_ON_1000"] call ACEFUNC(common,registerItemReplacement);
+["ACE_bloodIV_500", "ACME_BloodBag_ON_500"] call ACEFUNC(common,registerItemReplacement);
+["ACE_bloodIV_250", "ACME_BloodBag_ON_250"] call ACEFUNC(common,registerItemReplacement);
 
 // Syringes
 
-ACM_SYRINGES_10 = ['ACM_Syringe_10'];
-ACM_SYRINGES_5 = ['ACM_Syringe_5'];
-ACM_SYRINGES_3 = ['ACM_Syringe_3'];
-ACM_SYRINGES_1 = ['ACM_Syringe_1'];
+ACM_SYRINGES_10 = ['ACME_Syringe_10'];
+ACM_SYRINGES_5 = ['ACME_Syringe_5'];
+ACM_SYRINGES_3 = ['ACME_Syringe_3'];
+ACM_SYRINGES_1 = ['ACME_Syringe_1'];
 
 { // Filled Syringes
     private _size = getNumber (_x >> "count");
@@ -102,7 +102,7 @@ ACM_SYRINGES_1 = ['ACM_Syringe_1'];
     };
 
     _targetArray pushBack (configName _x);
-} forEach ("getNumber (_x >> 'ACM_isSyringe') > 0" configClasses (configFile >> "CfgMagazines"));
+} forEach ("getNumber (_x >> 'ACM_isSyringe') > 0 && {getText (_x >> 'ACME_itemReplacement') == ''}" configClasses (configFile >> "CfgMagazines"));
 
 // Vials
 
@@ -110,7 +110,7 @@ ACM_MEDICATION_VIALS = [];
 
 { // Medication Vials
     ACM_MEDICATION_VIALS pushBack (configName _x);
-} forEach ("getNumber (_x >> 'ACM_isVial') > 0" configClasses (configFile >> "CfgWeapons"));
+} forEach ("getNumber (_x >> 'ACM_isVial') > 0 && {getText (_x >> 'ACME_itemReplacement') == ''}" configClasses (configFile >> "CfgWeapons"));
 
 // Fresh whole blood registry. The server is authoritative for ID allocation and keeps one compatibility seed at
 // ID 0; usable inventory classes are IDs 1..512. Clients explicitly request a snapshot on postInit/JIP rather than
@@ -123,7 +123,7 @@ if (hasInterface || isServer) then {
     [QGVAR(updateFreshBloodBagName), {
         params ["_size", "_id", ["_bloodTypeNet", -1]];
 
-        private _classname = format ["ACM_FreshBloodBag_%1_%2", _size, _id];
+        private _classname = format ["ACME_FreshBloodBag_%1_%2", _size, _id];
         private _freshEntry = [_id] call FUNC(getFreshBloodEntry);
         private _bloodType = if (_freshEntry isEqualType [] && {count _freshEntry >= 3}) then {_freshEntry param [2, -1]} else {_bloodTypeNet};
         if (_bloodType < 0) exitWith {};

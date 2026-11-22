@@ -68,7 +68,7 @@ private _ok = true;
         };
     };
     if (_mode == "remove" && {_type == "FBTK"} && {_returned <= 0}) then {
-        private _class = format ["ACM_FieldBloodTransfusionKit_%1",_volume];
+        private _class = format ["ACME_FieldBloodTransfusionKit_%1",_volume];
         if !(isClass (configFile >> "CfgWeapons" >> _class)) exitWith {_ok = false;};
         _products pushBack ["item",_class];
     };

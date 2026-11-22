@@ -32,11 +32,11 @@ switch (_usedItem) do {
     case "ACE_epinephrine": {
         _dose = 0.3; // Autoinjector has dose of 0.3mg
     };
-    case "ACM_Autoinjector_ATNA": {
+    case "ACME_Autoinjector_ATNA": {
         _classname = "Atropine";
         _dose = 2;
     };
-    case "ACM_Autoinjector_Midazolam": {
+    case "ACME_Autoinjector_Midazolam": {
         _classname = "Midazolam";
         _dose = 10;
     };

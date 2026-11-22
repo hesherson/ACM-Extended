@@ -5,8 +5,8 @@ switch (_operation) do {
     case "drain": {
         if !(_device in [0, 1]) exitWith {};
         if (_device == 0) then {
-            private _used = [_medic, _patient, ["ACM_SuctionBag"]] call ace_medical_treatment_fnc_useItem;
-            if ((_used param [1, ""]) != "ACM_SuctionBag") then {_device = -1;};
+            private _used = [_medic, _patient, ["ACME_SuctionBag"]] call ace_medical_treatment_fnc_useItem;
+            if ((_used param [1, ""]) != "ACME_SuctionBag") then {_device = -1;};
         } else {
             [_medic,_patient,{
                 params ["_medic","_patient"];

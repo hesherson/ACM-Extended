@@ -18,4 +18,4 @@
 
 params ["_unit", "_vehicle"];
 
-(([_unit, "ACM_OxygenTank_425_Empty"] call ACME_fnc_itemCount) > 0) && ([_vehicle] call ACEFUNC(medical_treatment,isMedicalVehicle));
+(([_unit, "ACME_OxygenTank_425_Empty"] call ACME_fnc_itemCount) > 0) && ([_vehicle] call ACEFUNC(medical_treatment,isMedicalVehicle));

@@ -34,33 +34,33 @@ class ACEGVAR(medical_treatment,actions) {
         treatmentTime = 0.001;
         allowedSelections[] = {"Body"};
         allowSelfTreatment = 0;
-        items[] = {"ACM_Stethoscope"};
+        items[] = {"ACME_Stethoscope"};
         consumeItem = 0;
         condition = "true";
         callbackSuccess = QFUNC(useStethoscope);
         ACME_neverRollToBack = 1;
         ACME_suppressNativeTreatmentAnim = 1;
-        ACM_menuIcon = "ACM_Stethoscope";
+        ACM_menuIcon = "ACME_Stethoscope";
     };
     class UseBVM: UseStethoscope {
         displayName = CSTRING(UseBVM);
         icon = "";
         allowedSelections[] = {"Head"};
-        items[] = {"ACM_BVM","ACM_PocketBVM"};
+        items[] = {"ACME_BVM","ACME_PocketBVM"};
         condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM));
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,false)] call FUNC(useBVM));
         ACME_neverRollToBack = 0;
         ACME_suppressNativeTreatmentAnim = 0;
         ACM_cancelRecovery = 1;
-        ACM_menuIcon = "ACM_BVM";
+        ACM_menuIcon = "ACME_BVM";
     };
     class UseBVM_Oxygen: UseBVM {
         displayName = CSTRING(UseBVM_Oxygen);
         treatmentLocations = TREATMENT_LOCATIONS_FACILITIES;
-        items[] = {"ACM_BVM"};
+        items[] = {"ACME_BVM"};
         condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM) && {[ARR_3(_medic,_patient,'facility')] call ACME_fnc_bvmOxygenSourceAllowed});
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,true)] call FUNC(useBVM));
-        ACM_menuIcon = "ACM_BVM";
+        ACM_menuIcon = "ACME_BVM";
     };
     class UseBVM_VehicleOxygen: UseBVM_Oxygen {
         displayName = CSTRING(UseBVM_VehicleOxygen);
@@ -70,7 +70,7 @@ class ACEGVAR(medical_treatment,actions) {
     class UseBVM_PortableOxygen: UseBVM_Oxygen {
         displayName = CSTRING(UseBVM_PortableOxygen);
         treatmentLocations = TREATMENT_LOCATIONS_ALL;
-        items[] = {"ACM_BVM"};
+        items[] = {"ACME_BVM"};
         condition = QUOTE([ARR_2(_medic,_patient)] call FUNC(canUseBVM) && {[ARR_3(_medic,_patient,'portable')] call ACME_fnc_bvmOxygenSourceAllowed});
         callbackSuccess = QUOTE([ARR_4(_medic,_patient,true,true)] call FUNC(useBVM));
     };
@@ -84,12 +84,12 @@ class ACEGVAR(medical_treatment,actions) {
         treatmentTime = 5;
         allowedSelections[] = {"Body"};
         allowSelfTreatment = 1;
-        items[] = {"ACM_ChestSeal"};
+        items[] = {"ACME_ChestSeal"};
         consumeItem = 1;
         condition = QUOTE(GVAR(pneumothoraxEnabled) && !(_patient getVariable [ARR_2(QQGVAR(ChestSeal_State),false)]) && _patient getVariable [ARR_2(QQGVAR(ChestInjury_State),false)]);
         callbackSuccess = QFUNC(applyChestSeal);
         ACM_cancelRecovery = 1;
-        ACM_menuIcon = "ACM_ChestSeal";
+        ACM_menuIcon = "ACME_ChestSeal";
     };
 
     class PerformNCD: ApplyChestSeal {
@@ -100,12 +100,12 @@ class ACEGVAR(medical_treatment,actions) {
         medicRequired = QGVAR(allowNCD);
         treatmentTime = 5;
         allowSelfTreatment = 0;
-        items[] = {"ACM_NCDKit"};
+        items[] = {"ACME_NCDKit"};
         consumeItem = 1;
         condition = QUOTE(GVAR(pneumothoraxEnabled) && _patient getVariable [ARR_2(QQGVAR(ChestInjury_State),false)]);
         callbackSuccess = QFUNC(performNCD);
         ACM_cancelRecovery = 1;
-        ACM_menuIcon = "ACM_NCDKit";
+        ACM_menuIcon = "ACME_NCDKit";
     };
 
     class PerformThoracostomy: ApplyChestSeal {
@@ -126,10 +126,10 @@ class ACEGVAR(medical_treatment,actions) {
 
     class PerformThoracostomy_Kit: PerformThoracostomy {
         displayName = CSTRING(PerformThoracostomy_Kit);
-        items[] = {"ACM_ThoracostomyKit"};
+        items[] = {"ACME_ThoracostomyKit"};
         consumeItem = 1;
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,true)] call FUNC(Thoracostomy_start));
-        ACM_menuIcon = "ACM_ThoracostomyKit";
+        ACM_menuIcon = "ACME_ThoracostomyKit";
     };
 
     class InsertChestTube: PerformThoracostomy {
@@ -138,11 +138,11 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         treatmentTime = 5;
         allowSelfTreatment = 0;
-        items[] = {"ACM_ChestTubeKit"};
+        items[] = {"ACME_ChestTubeKit"};
         consumeItem = 1;
         condition = QUOTE(GVAR(pneumothoraxEnabled) && (_patient getVariable [ARR_2(QQGVAR(Thoracostomy_State),0)]) == 1);
         callbackSuccess = QFUNC(Thoracostomy_insertChestTube);
-        ACM_menuIcon = "ACM_ChestTubeKit";
+        ACM_menuIcon = "ACME_ChestTubeKit";
     };
 
     class ResealChestTube: InsertChestTube {
@@ -161,20 +161,20 @@ class ACEGVAR(medical_treatment,actions) {
         icon = "";
         treatmentTime = 5;
         allowSelfTreatment = 0;
-        items[] = {"ACM_ACCUVAC"};
+        items[] = {"ACME_ACCUVAC"};
         consumeItem = 0;
         condition = QUOTE(GVAR(pneumothoraxEnabled) && [ARR_1(_patient)] call ACME_fnc_thoraHasTube);
         callbackSuccess = QUOTE([ARR_2(_medic,_patient)] call FUNC(Thoracostomy_drain));
-        ACM_menuIcon = "ACM_ACCUVAC";
+        ACM_menuIcon = "ACME_ACCUVAC";
     };
     class DrainFluid_SuctionBag: DrainFluid_ACCUVAC {
         displayName = CSTRING(DrainFluid_SuctionBag);
         icon = "";
         treatmentTime = 8;
-        items[] = {"ACM_SuctionBag"};
+        items[] = {"ACME_SuctionBag"};
         consumeItem = 1;
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,0)] call FUNC(Thoracostomy_drain));
-        ACM_menuIcon = "ACM_SuctionBag";
+        ACM_menuIcon = "ACME_SuctionBag";
     };
 
     class CloseIncision: PerformThoracostomy {
@@ -198,11 +198,11 @@ class ACEGVAR(medical_treatment,actions) {
         medicRequired = 0;
         treatmentTime = 2;
         allowedSelections[] = {"LeftArm","RightArm"};
-        items[] = {"ACM_PulseOximeter"};
+        items[] = {"ACME_PulseOximeter"};
         consumeItem = 1;
         condition = QFUNC(canPlacePulseOximeter);
         callbackSuccess = QUOTE([ARR_3(_medic,_patient,_bodyPart)] call FUNC(setPulseOximeter));
-        ACM_menuIcon = "ACM_PulseOximeter";
+        ACM_menuIcon = "ACME_PulseOximeter";
     };
     class RemovePulseOximeter: PlacePulseOximeter {
         displayName = CSTRING(RemovePulseOximeter);

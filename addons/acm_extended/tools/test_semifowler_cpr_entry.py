@@ -40,7 +40,7 @@ def test_cancel_during_patient_lower_never_starts_compressions(cancel_key):
         call _tick;
         call _enter;
         call _freed;
-        [count _anims == 0 && {!("ACM_CPR" in _moves)}, "cancelled lower started CPR later"] call _check;
+        [count _anims == 0 && {!("ACME_CPR" in _moves)}, "cancelled lower started CPR later"] call _check;
         [_reopens == 1, "cancelled lower did not reopen medical menu"] call _check;
     ''')
 
@@ -58,7 +58,7 @@ def test_interruption_during_lower_retires_cpr_entry(interruption):
         call _tick;
         call _enter;
         call _freed;
-        [count _anims == 0 && {!("ACM_CPR" in _moves)}, "invalid lower started compressions"] call _check;
+        [count _anims == 0 && {!("ACME_CPR" in _moves)}, "invalid lower started compressions"] call _check;
     ''')
 
 

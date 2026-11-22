@@ -78,7 +78,7 @@ private _fnc_doCPRAnimation = {
     if (isNull _medic || {!local _medic}
         || {(_medic getVariable [QGVAR(CPR_Epoch), -1]) != _epoch}
         || {!(_medic getVariable [QGVAR(CPR_Loop), false])}) exitWith {};
-    [QACEGVAR(common,switchMove), [_medic, "ACM_CPR"]] call CBA_fnc_globalEvent;
+    [QACEGVAR(common,switchMove), [_medic, (_medic getVariable [QGVAR(CPR_Moves), ["ACME_CPR_In", "ACME_CPR"]]) select 1]] call CBA_fnc_globalEvent;
 };
 
 // A reservation keeps chest custody during preparation, but must not deliver compressions before entry finishes.
@@ -113,12 +113,12 @@ if ((_chestHandoff param [0, objNull, [objNull]]) isEqualTo _patient) then {
 };
 
 private _uniqueItems = [_medic, 0] call ACME_fnc_itemList;
-private _itemIndex = _uniqueItems findIf {_x == "ACM_BVM"};
+private _itemIndex = _uniqueItems findIf {_x == "ACME_BVM"};
 if (_itemIndex < 0) then {
-    _itemIndex = _uniqueItems findIf {_x == "ACM_PocketBVM"};
-    GVAR(MedicHasBVMType) = "ACM_PocketBVM";
+    _itemIndex = _uniqueItems findIf {_x == "ACME_PocketBVM"};
+    GVAR(MedicHasBVMType) = "ACME_PocketBVM";
 } else {
-    GVAR(MedicHasBVMType) = "ACM_BVM";
+    GVAR(MedicHasBVMType) = "ACME_BVM";
 };
 GVAR(MedicHasBVM) = _itemIndex >= 0;
 if !(GVAR(MedicHasBVM)) then {GVAR(MedicHasBVMType) = "";};
@@ -157,9 +157,39 @@ private _initialAnimation = animationState _medic;
 private _startDelay = 2;
 GVAR(loopCPR) = false;
 
+// B373: authored compressions. Their hands meet the sternum from one place beside the chest only, so the
+// provider is brought there while kneeling down: [entry state, loop state], and the slide to the place.
+// The place is inside the collision shape of the casualty: a free provider put there is thrown back and knocked
+// out (measured in game, 2026-11-17). So the provider is attached to the casualty for the episode, which also
+// keeps the hands on the chest if the casualty is moved. fnc_cprCleanupLocal detaches.
+private _cprMoves = ["ACME_CPR_In", "ACME_CPR"];
+private _alignUntil = 0;
+_medic setVariable [QGVAR(CPR_Align), [], false];
+_medic setVariable [QGVAR(CPR_Entry), [], false];
 if (_notInVehicle) then {
     if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
-        [_medic, "AinvPknlMstpSnonWnonDnon_AinvPknlMstpSnonWnonDnon_medic", 1] call ACEFUNC(common,doAnimation);
+        private _spot = if (isNil QFUNC(cprSpot) || {!isNull attachedTo _medic}) then {[]} else {[_medic, _patient] call FUNC(cprSpot)};
+        if (_spot isNotEqualTo []) then {
+            _spot params ["_spotPos", "_spotDir", "_spotLoop", "_spotEntry", ["_spotHold", "ACME_CPR_Hold"], ["_spotOut", "ACME_CPR_Out"]];
+            _cprMoves = [_spotEntry, _spotLoop, _spotHold, _spotOut];
+            // (B385: to what the casualty lies on when he is fixed to it, a litter: a unit attached to something
+            // that is itself attached plays its animations at twice their speed, measured in game 2026-11-21:
+            // 217 compressions a minute on the Talon II, 111 on the ground and when attached to the litter itself.)
+            private _anchor = _patient;
+            while {!isNull attachedTo _anchor} do {_anchor = attachedTo _anchor;};
+            private _from = _anchor worldToModel (ASLToAGL getPosASL _medic);
+            private _to = _anchor worldToModel (ASLToAGL _spotPos);
+            _to set [2, _from select 2];
+            private _fromDir = (getDir _medic) - (getDir _anchor);
+            _alignUntil = CBA_missionTime + 0.9 + ((_from distance2D _to) / 1.4);
+            _medic attachTo [_anchor, _from];
+            _medic setDir _fromDir;
+            _medic setVariable [QGVAR(CPR_Attached), _patient, false];
+            _medic setVariable [QGVAR(CPR_Anchor), _anchor, false];
+            _medic setVariable [QGVAR(CPR_Align), [_epoch, _from, _fromDir, _to, _spotDir - (getDir _anchor), CBA_missionTime + 0.15, _alignUntil], false];
+        };
+        if (currentWeapon _medic != "") then {[_medic] call ACEFUNC(weaponselect,putWeaponAway);};
+        [_medic, "AmovPknlMstpSnonWnonDnon", 1] call ACEFUNC(common,doAnimation);
     };
     GVAR(loopCPR) = true;
     _medic setVariable [QGVAR(CPR_Loop), true, false];
@@ -171,7 +201,8 @@ if (_initialAnimation in ["amovpercmstpsnonwnondnon", "amovpknlmstpsnonwnondnon_
     _startDelay = 1.8;
 };
 
-private _readyAt = CBA_missionTime + _startDelay;
+private _readyAt = (CBA_missionTime + _startDelay) max _alignUntil;
+_medic setVariable [QGVAR(CPR_Moves), _cprMoves, false];
 private _CPRStartTime = _readyAt;
 // The provider replica may be stale. Ask the owner to confirm flat even on an apparently supine patient.
 private _needsLower = true;
@@ -227,11 +258,15 @@ private _controller = [{
         if (_notInVehicle && {!_medicCondition} && {_medic isEqualTo (call ACME_fnc_controlledProvider)} && {isNull objectParent _medic}) then {
             [QACEGVAR(common,setAnimSpeedCoef), [_medic, 1]] call CBA_fnc_globalEvent;
             _medic setUnitPos "AUTO";
-            // Play the release, then queue a controllable native idle. medicEnd alone can stop at its last frame.
+            // Play the release, then queue a controllable native idle. The exit alone can stop at its last frame.
+            // Before the entry there are no hands on the chest to take off: the provider is already in the kneel.
             if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
-                [_medic, "AinvPknlMstpSnonWnonDnon_medicEnd", 2] call ACEFUNC(common,doAnimation);
+                if (((_medic getVariable [QGVAR(CPR_Entry), []]) param [0, -1]) == _epoch) then {
+                    [_medic, (_medic getVariable [QGVAR(CPR_Moves), []]) param [3, "ACME_CPR_Out"], 2] call ACEFUNC(common,doAnimation);
+                };
                 [_medic, "AmovPknlMstpSnonWnonDnon", 0] call ACEFUNC(common,doAnimation);
             };
+            _medic setVariable [QGVAR(CPR_Align), [], false];
         };
 
         if (_started && {!isNull _patient}) then {
@@ -272,8 +307,20 @@ private _controller = [{
         _args set [10, _lowerRetries - 1];
     };
 
+    // B373: bring the kneeling provider to the place beside the chest, smoothly, before the hands come down.
+    private _align = _medic getVariable [QGVAR(CPR_Align), []];
+    if (_align isNotEqualTo []) then {
+        _align params ["_alignEpoch", "_alignFrom", "_alignFromDir", "_alignTo", "_alignToDir", "_alignStart", "_alignEnd"];
+        if (_alignEpoch != _epoch) exitWith {_medic setVariable [QGVAR(CPR_Align), [], false];};
+        private _k = linearConversion [_alignStart, _alignEnd, CBA_missionTime, 0, 1, true];
+        private _ease = _k * _k * (3 - 2 * _k);
+        _medic attachTo [_medic getVariable [QGVAR(CPR_Anchor), _patient], vectorLinearConversion [0, 1, _ease, _alignFrom, _alignTo, true]];
+        _medic setDir (_alignFromDir + _ease * ((((_alignToDir - _alignFromDir) mod 360) + 540) mod 360 - 180));
+        if (_k >= 1) then {_medic setVariable [QGVAR(CPR_Align), [], false];};
+    };
+
     // Entry completes once. Install exactly one AnimDone loop owner for this episode. Resuming compressions later only
-    // requests ACM_CPR again; it never registers another event handler.
+    // requests the compression loop again; it never registers another event handler.
     if ((_medic getVariable [QGVAR(CPR_StartedEpoch), -1]) != _epoch) then {
         if (CBA_missionTime < _readyAt) exitWith {};
         if (_needsLower) then {
@@ -287,6 +334,16 @@ private _controller = [{
             _args set [7, false];
         };
         if (_needsLower) exitWith {};
+
+        // B373: the hands come down on the sternum first (1.2 s). Compressions count from the end of that.
+        private _animated = _notInVehicle && {missionNamespace getVariable ["ACME_interventionAnimations", true]};
+        private _entry = _medic getVariable [QGVAR(CPR_Entry), []];
+        if (_animated && {(_entry param [0, -1]) != _epoch}) exitWith {
+            if (currentWeapon _medic != "") then {[_medic] call ACEFUNC(weaponselect,putWeaponAway);};
+            _medic setVariable [QGVAR(CPR_Entry), [_epoch, CBA_missionTime + 1.22], false];
+            [QACEGVAR(common,switchMove), [_medic, (_medic getVariable [QGVAR(CPR_Moves), ["ACME_CPR_In", "ACME_CPR"]]) select 0]] call CBA_fnc_globalEvent;
+        };
+        if (_animated && {CBA_missionTime < (_entry param [1, 0])}) exitWith {};
 
         _CPRStartTime = CBA_missionTime;
         _args set [4, _CPRStartTime];
@@ -322,7 +379,13 @@ private _controller = [{
             private _patient = _medic getVariable [QGVAR(CPR_Patient), objNull];
             if (isNull _patient || {!alive _medic}
                 || {!((_patient getVariable [QGVAR(CPR_Medic), objNull]) isEqualTo _medic)}) exitWith {};
-            [QACEGVAR(common,switchMove), [_medic, "ACM_CPR"]] call CBA_fnc_globalEvent;
+            // The loop is 67 s long. Start it again only when it or its entry ended, or when the provider was
+            // thrown out of it; another animation that ends in between must not reset the stroke.
+            private _loopMove = (_medic getVariable [QGVAR(CPR_Moves), ["ACME_CPR_In", "ACME_CPR"]]) select 1;
+            if ((toLowerANSI _anim) in ["acme_cpr", "acme_cpr_l", "acme_cpr_in", "acme_cpr_in_l"]
+                || {(toLowerANSI animationState _medic) != (toLowerANSI _loopMove)}) then {
+                [QACEGVAR(common,switchMove), [_medic, _loopMove]] call CBA_fnc_globalEvent;
+            };
         }];
         _medic setVariable [QGVAR(CPR_AnimEH), _animEH, false];
         };
@@ -349,12 +412,12 @@ private _controller = [{
 
     if (_cprChanged || _bvmChanged) then {
         private _uniqueItems = [_medic, 0] call ACME_fnc_itemList;
-        private _itemIndex = _uniqueItems findIf {_x == "ACM_BVM"};
+        private _itemIndex = _uniqueItems findIf {_x == "ACME_BVM"};
         if (_itemIndex < 0) then {
-            _itemIndex = _uniqueItems findIf {_x == "ACM_PocketBVM"};
-            GVAR(MedicHasBVMType) = "ACM_PocketBVM";
+            _itemIndex = _uniqueItems findIf {_x == "ACME_PocketBVM"};
+            GVAR(MedicHasBVMType) = "ACME_PocketBVM";
         } else {
-            GVAR(MedicHasBVMType) = "ACM_BVM";
+            GVAR(MedicHasBVMType) = "ACME_BVM";
         };
         GVAR(MedicHasBVM) = _itemIndex >= 0;
         if !(GVAR(MedicHasBVM)) then {GVAR(MedicHasBVMType) = "";};
@@ -373,7 +436,7 @@ private _controller = [{
             } else {
                 _medic setVariable [QGVAR(CPR_Loop), false, false];
                 if (_cprChanged) then {
-                    if (_notInVehicle && {missionNamespace getVariable ["ACME_interventionAnimations", true]}) then {[QACEGVAR(common,switchMove), [_medic, "ACM_CPR_Stop"]] call CBA_fnc_globalEvent;};
+                    if (_notInVehicle && {missionNamespace getVariable ["ACME_interventionAnimations", true]}) then {[QACEGVAR(common,switchMove), [_medic, (_medic getVariable [QGVAR(CPR_Moves), []]) param [2, "ACME_CPR_Hold"]]] call CBA_fnc_globalEvent;};
                     [LLSTRING(CPR_Paused), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
                 };
                 [LLSTRING(CPR_Stop), LLSTRING(CPR_Continue), (["", LLSTRING(CPR_SwapToBVM)] select (GVAR(MedicHasBVM) && isNull (_patient getVariable [QEGVAR(breathing,BVM_Medic), objNull])))] call ACEFUNC(interaction,showMouseHint);
@@ -402,7 +465,7 @@ private _controller = [{
                 } else {
                     _medic setVariable [QGVAR(CPR_Loop), false, false];
                     if (_cprChanged) then {
-                        if (_notInVehicle && {missionNamespace getVariable ["ACME_interventionAnimations", true]}) then {[QACEGVAR(common,switchMove), [_medic, "ACM_CPR_Stop"]] call CBA_fnc_globalEvent;};
+                        if (_notInVehicle && {missionNamespace getVariable ["ACME_interventionAnimations", true]}) then {[QACEGVAR(common,switchMove), [_medic, (_medic getVariable [QGVAR(CPR_Moves), []]) param [2, "ACME_CPR_Hold"]]] call CBA_fnc_globalEvent;};
                         [LLSTRING(CPR_Paused), 1.5, _medic] call ACEFUNC(common,displayTextStructured);
                     };
                     [LLSTRING(CPR_Stop), LLSTRING(CPR_Continue), (["", LLSTRING(CPR_SwapToBVM)] select (GVAR(MedicHasBVM) && isNull (_patient getVariable [QEGVAR(breathing,BVM_Medic), objNull])))] call ACEFUNC(interaction,showMouseHint);

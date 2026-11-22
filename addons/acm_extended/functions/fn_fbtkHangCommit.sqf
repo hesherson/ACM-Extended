@@ -5,7 +5,7 @@ if (isNull _p || {!local _p} || {isNull _m}) exitWith {false};
 if !(_token isEqualType "" && {_token!=""} && {count _token<=128}
     && {_deadline isEqualType 0} && {finite _deadline}
     && {_epoch isEqualType 0} && {_part isEqualType ""} && {_site in [0,1,2]}
-    && {_class in ["ACM_FieldBloodTransfusionKit_250","ACM_FieldBloodTransfusionKit_500"]}) exitWith {false};
+    && {_class in ["ACME_FieldBloodTransfusionKit_250","ACME_FieldBloodTransfusionKit_500"]}) exitWith {false};
 private _fingerprint=[_m,_part,_site,_class,_epoch,_deadline];
 private _cache=+(_p getVariable ["ACME_fbtkReceipts",[]]);
 _cache=_cache select {(_x param [4,0])>=serverTime};
@@ -30,7 +30,7 @@ if (count _cache<128 && {_deadline>=serverTime} && {_deadline<=serverTime+12}
         private _before=+(_p getVariable ["ACM_circulation_IV_Bags",createHashMap]);
         private _oldBags=+(_before getOrDefault [_part,[]]);
         private _uids=_oldBags apply {_x param [8,""]};
-        private _capacity=if (_class=="ACM_FieldBloodTransfusionKit_250") then {250} else {500};
+        private _capacity=if (_class=="ACME_FieldBloodTransfusionKit_250") then {250} else {500};
         private _pi=ACME_infusion_bodyParts find _part;
         private _type=[_p,true,_pi,_site] call ACM_circulation_fnc_getAccessType;
         [_p,_part,format ["FieldBloodTransfusionKit_%1",_capacity],_type,true,_site,false,true] call ace_medical_treatment_fnc_ivBagLocal;

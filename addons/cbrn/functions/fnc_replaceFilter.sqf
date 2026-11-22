@@ -25,7 +25,7 @@ if (!(isNull _unit) && !([_target] call FUNC(canReplaceFilter))) exitWith {
         params ["_args"];
         _args params ["_target", "_unit"];
 
-        _unit removeItem "ACM_GasMaskFilter";
+        _unit removeItem "ACME_GasMaskFilter";
         _target setVariable [QGVAR(Filter_State), DEFAULT_FILTER_CONDITION];
 
         [LLSTRING(GasMask_ReplaceFilter_Complete), 1.5, _unit] call ACEFUNC(common,displayTextStructured);
@@ -38,7 +38,7 @@ _target call ACEFUNC(common,goKneeling);
     params ["_args"];
     _args params ["_target"];
 
-    _target removeItem "ACM_GasMaskFilter";
+    _target removeItem "ACME_GasMaskFilter";
     _target setVariable [QGVAR(Filter_State), DEFAULT_FILTER_CONDITION];
 
     [LLSTRING(GasMask_ReplaceFilter_Complete), 1.5, _target] call ACEFUNC(common,displayTextStructured);

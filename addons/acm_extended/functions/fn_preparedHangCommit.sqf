@@ -92,7 +92,7 @@ if (_kind == "bagOnly" && {_carrierType in ["", "FBTK", "ACME_Propofol", "ACME_S
 };
 // A direct bottle must use the medicated prepared-attach transaction. A missing
 // or late PreparedBags replica must never fall back to a plain, running carrier.
-if (_kind == "propofol" || {_bloodClass == "ACM_Vial_Propofol"}
+if (_kind == "propofol" || {_bloodClass == "ACME_Vial_Propofol"}
     || {_carrierType == "ACME_Propofol"}) exitWith {
     [false, "Select the propofol bottle in Prepared Infusions and use Give Infusion. The bottle was not consumed."] call _finish;
 };

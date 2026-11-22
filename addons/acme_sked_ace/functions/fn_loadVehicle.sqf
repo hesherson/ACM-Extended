@@ -5,6 +5,8 @@
  * Arguments: 0: player, 1: SKED, 2: vehicle.
  */
 params ["_player", "_litter", "_vehicle"];
+// a rescuer who drags this litter lets go of it first
+if ((_litter getVariable ["acme_drag_by", objNull]) isEqualTo _player) then {[_player, true] call acme_sked_fnc_dragStop;};
 [6, [_player, _litter, _vehicle], {
     (_this select 0) params ["_player", "_litter", "_vehicle"];
     private _patient = _litter getVariable ["acme_sked_patient", objNull];

@@ -326,7 +326,7 @@ missionNamespace setVariable ["ACME_yBuildingActive", diag_tickTime + 2.5];
         private _receipts = [_medic,_target,_requirements] call ACME_fnc_treatmentSupplyTakeMany;
         if (_receipts isEqualTo []) exitWith {_notice = "A Y-set component is no longer available. Build canceled; used bags are kept.";};
 
-// the nominal full volume, parsed from the class suffix, such as ACM_BloodBag_..._500 or ACE_salineIV_500, where
+// the nominal full volume, parsed from the class suffix, such as ACME_BloodBag_..._500 or ACE_salineIV_500, where
 // a bare ace_salineiv is 1000. it is a label only, so an odd class name harmlessly defaults to 1000.
 private _fnc_vol = {
     params ["_cls"];

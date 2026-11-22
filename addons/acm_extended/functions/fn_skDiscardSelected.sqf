@@ -13,7 +13,7 @@ _entry params [["_med","",[""]],["_size",10,[0]],["_amt",0,[0]]];
 private _kind = _entry param [6,"",[""]];
 private _virtual = _kind in ["compoundB13","dilutionB13","epiMixB12"];
 if (!_virtual && {_med != ""} && {_amt > 0}) then {
-    private _magClass = format ["ACM_Syringe_%1_%2",_size,_med];
+    private _magClass = format ["ACME_Syringe_%1_%2",_size,_med];
     private _ammo = round (_amt * 100);
     private _container = objNull;
     {

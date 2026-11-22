@@ -9,7 +9,7 @@ class CfgPatches {
         name = "ACM Extended SKED: litter";
         author = "mavis";
         requiredVersion = 2.0;
-        requiredAddons[] = {"acme_sked", "acme_talon", "cba_main", "ace_common", "ace_interact_menu", "ace_interaction", "ace_dragging", "ace_medical_treatment"};
+        requiredAddons[] = {"acme_sked", "acme_talon", "cba_main", "ace_common", "ace_interact_menu", "ace_interaction", "ace_dragging", "ace_medical_treatment", "A3_Structures_F_Mil_Helipads"};
         skipWhenMissingDependencies = 1;
         units[] = {"ACME_Talon_Open", "ACME_Talon_Folded"};
         weapons[] = {};
@@ -26,6 +26,39 @@ class CfgFunctions {
             class bearerLimits {};
             class patientRoot {};
             class patientPose {};
+            class placeLocal {};
+            class gearDrop {};
+            class gearHide {};
+            class gearShow {};
+            class carryBand {};
+            class carryBandEnd {};
+            class carryCan {};
+            class carryNear {};
+            class carryRearLocal {};
+            class carryRearStop {};
+            class carrySrvBegin {};
+            class carrySrvEnd {};
+            class dragAction {};
+            class dragCan {};
+            class dragDustLocal {};
+            class dragSoundLocal {};
+            class dragFree {};
+            class dragGround {};
+            class dragLie {};
+            class dragLocal {};
+            class dragOnto {};
+            class dragPace {};
+            class dragSrvBegin {};
+            class dragSrvEnd {};
+            class dragStart {};
+            class dragStop {};
+            class dragStrapAim {};
+            class dragStrapClass {};
+            class paceApply {};
+            class orientLocal {};
+            class placeAbort {};
+            class strapBegin {};
+            class strapAbort {};
             class preferredLitter {};
             class traceTransport {};
             class applyLocal {};
@@ -53,6 +86,7 @@ class CfgFunctions {
             class loadLocal {};
             class loadVehicle {};
             class loadVehicleActions {};
+            class menuPos {};
             class pickUp {};
             class place {};
             class poseGuard {};
@@ -62,17 +96,25 @@ class CfgFunctions {
             class selPos {};
             class setDown {};
             class slungUpdate {};
+            class slideCan {};
+            class slideLocal {};
             class srvDragOff {};
             class srvDragOn {};
             class srvLetGo {};
             class srvLift {};
             class srvLoad {};
+            class stageHpmk {};
             class srvRelease {};
             class srvRestore {};
             class srvSetDown {};
             class srvStow {};
             class srvTakeHandle {};
             class srvUnstrap {};
+            class strapAnim {};
+            class strapArcs {};
+            class strapProgress {};
+            class strapStage {};
+            class strapFit {};
             class strapIn {};
             class strapNearest {};
             class strapActions {};
@@ -81,6 +123,11 @@ class CfgFunctions {
             class talonTransition {};
             class unstrap {};
             class unstrapLitter {};
+            class vehicleLitter {};
+            class vehicleLitterClear {};
+            class vehicleLitterNear {};
+            class vehicleLitterSpot {};
+            class srvVehicleLitter {};
             class validCasualty {};
         };
     };
@@ -104,11 +151,60 @@ class Extended_PostInit_EventHandlers {
     };
 };
 
+// Poses of a casualty on a litter (tools/build_litter_poses.py). The trunk and head are those of ACM_LyingState;
+// only the limbs differ.
+class CfgMovesBasic;
+class CfgMovesMaleSdr: CfgMovesBasic {
+    class States {
+        class ainjppnemstpsnonwrfldnon;
+        class ACME_Litter_Side: ainjppnemstpsnonwrfldnon {
+            file = "\acme_sked_ace\anim\acme_litter_side.rtm";
+            speed = -100;
+            looped = 1;
+            disableWeapons = 1;
+            disableWeaponsLong = 1;
+            showWeaponAim = 0;
+            canPullTrigger = 0;
+            duty = 0.2;
+            limitGunMovement = 0;
+            aiming = "aimingNo";
+            aimingBody = "aimingUpNo";
+            head = "headNo";
+            ConnectTo[] = {};
+            forceAim = 1;
+            InterpolateTo[] = {};
+        };
+        // A casualty who is dragged by the collar (tools/build_drag_poses.py): the pose, held, and the same
+        // with loose limbs, one second long, while he is moved.
+        class ACME_Drag_Rest: ACME_Litter_Side {
+            file = "\acme_sked_ace\anim\acme_drag_rest.rtm";
+        };
+        class ACME_Drag_Limp: ACME_Litter_Side {
+            file = "\acme_sked_ace\anim\acme_drag_limp.rtm";
+            speed = -1.05;
+        };
+    };
+};
+
 class CBA_Extended_EventHandlers;
 class CfgVehicles {
     class ThingX;
+    class NonStrategic;
+    // What a dragged thing hangs on while it follows the rescuer (fn_dragLocal.sqf): static, invisible, nothing
+    // to collide with. (Not a helipad class, though it borrows the invisible helipad's model: AI pilots land on
+    // helipads.)
+    class ACME_DragCarrier: NonStrategic {
+        author = "mavis";
+        scope = 1;
+        scopeCurator = 0;
+        displayName = "";
+        model = "\A3\Structures_F\Mil\Helipads\HelipadEmpty_F.p3d";
+        destrType = "DestructNo";
+    };
     // ACE reads the drag, carry and cargo properties at init through CBA's extended event handlers.
     class ACME_SKED_Base: ThingX {
+        author = "mavis";
+        dlc = "ACM_Extended";
         class EventHandlers {
             class CBA_Extended_EventHandlers: CBA_Extended_EventHandlers {};
         };
@@ -142,9 +238,21 @@ class CfgVehicles {
     };
     class ACME_SKED_Open: ACME_SKED_Base {
         class ACE_Actions {
+            // "Drag" is on the handle of the tow strap: a node of its own at the strap's end (memory point "tow"),
+            // away from the litter's menu in its middle.
+            class acme_drag_strap {
+                displayName = "Drag";
+                icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                selection = "tow";
+                distance = 2.5;
+                condition = "[_player, _target] call acme_sked_fnc_dragCan";
+                statement = "[_player, _target] call acme_sked_fnc_dragStart";
+            };
             class ACE_MainActions {
                 displayName = "SKED";
                 selection = "center";
+                // (over the litter, not on its deck among the casualty's own points: fn_menuPos.sqf)
+                position = "[_target, 'mid'] call acme_sked_fnc_menuPos";
                 distance = 3;
                 condition = "true";
                 class acme_sked_strapNearest {
@@ -160,14 +268,40 @@ class CfgVehicles {
                     condition = "[_player, _target] call acme_sked_fnc_canHandleEmpty";
                     statement = "[_player, _target] call acme_sked_fnc_rollUp";
                 };
+                // An HPMK laid out ready on the empty litter: who is loaded onto it next is wrapped in it at once
+                // (fn_stageHpmk.sqf). The Talon II has these two from here.
+                class acme_sked_stageHpmk {
+                    displayName = "Stage HPMK";
+                    icon = "\acm_extended\ui\items\HPMK_ca.paa";
+                    condition = "!(_target getVariable ['acme_sked_hpmkStaged', false]) && {'ACME_HPMK' in (items _player)} && {getText (configOf _target >> 'acmeHpmkStaged') != ''} && {[_player, _target] call acme_sked_fnc_canHandleEmpty}";
+                    statement = "[_player, _target, 'start'] call acme_sked_fnc_stageHpmk";
+                };
+                class acme_sked_unstageHpmk {
+                    displayName = "Take staged HPMK";
+                    icon = "\acm_extended\ui\items\HPMK_ca.paa";
+                    condition = "(_target getVariable ['acme_sked_hpmkStaged', false]) && {[_player, _target] call acme_sked_fnc_canHandleEmpty}";
+                    statement = "[_player, _target, 'start'] call acme_sked_fnc_stageHpmk";
+                };
             };
         };
     };
     class ACME_SKED_Wrapped: ACME_SKED_Base {
         class ACE_Actions {
+            // "Drag" is on the handle of the tow strap: a node of its own at the strap's end (memory point "tow"),
+            // away from the litter's menu in its middle.
+            class acme_drag_strap {
+                displayName = "Drag";
+                icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                selection = "tow";
+                distance = 2.5;
+                condition = "[_player, _target] call acme_sked_fnc_dragCan";
+                statement = "[_player, _target] call acme_sked_fnc_dragStart";
+            };
             class ACE_MainActions {
                 displayName = "SKED";
                 selection = "center";
+                // (over the litter, not on its deck among the casualty's own points: fn_menuPos.sqf)
+                position = "[_target, 'mid'] call acme_sked_fnc_menuPos";
                 distance = 3;
                 condition = "true";
                 class acme_sked_takeHandle {
@@ -182,6 +316,12 @@ class CfgVehicles {
                     condition = "[_player, _target] call acme_sked_fnc_canLoadVehicle";
                     statement = "";
                     insertChildren = "_this call acme_sked_fnc_loadVehicleActions";
+                };
+                class acme_sked_unloadVehicle {
+                    displayName = "Unload litter";
+                    icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                    condition = "!isNull (_target getVariable ['acme_sked_inVehicle', objNull])";
+                    statement = "[_player, _target, _target getVariable ['acme_sked_inVehicle', objNull], false] call acme_sked_fnc_vehicleLitter";
                 };
                 class acme_sked_unstrapObj {
                     displayName = "Unstrap casualty";
@@ -200,6 +340,19 @@ class CfgVehicles {
     class CAManBase: Man {
         class ACE_Actions {
             class ACE_MainActions {
+                class acme_drag {
+                    displayName = "Drag behind you";
+                    condition = "[_player, _target] call acme_sked_fnc_dragCan";
+                    statement = "[_player, _target] call acme_sked_fnc_dragStart";
+                };
+                // on the rescuer who drags a litter by its head end: take its foot end (the litter itself is
+                // claimed by him while he drags it, and ACE shows nobody else its menu)
+                class acme_carry {
+                    displayName = "Lift the foot end of the litter";
+                    icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                    condition = "[_player, _target getVariable ['acme_drag_target', objNull]] call acme_sked_fnc_carryCan";
+                    statement = "[_player, 'carryRear', _target getVariable ['acme_drag_target', objNull]] call acme_sked_fnc_request";
+                };
                 class acme_sked_loadAtHips {
                     displayName = "Load into nearby SKED";
                     selection = "pelvis";
@@ -211,6 +364,18 @@ class CfgVehicles {
             };
         };
         class ACE_SelfActions {
+            class acme_carry_take {
+                displayName = "Lift the foot end of the litter";
+                icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                condition = "!isNull ([_player] call acme_sked_fnc_carryNear)";
+                statement = "[_player, 'carryRear', [_player] call acme_sked_fnc_carryNear] call acme_sked_fnc_request";
+            };
+            class acme_carry_letGo {
+                displayName = "Set the foot end down";
+                icon = "\acme_sked\data\ui\icon_sked_ca.paa";
+                condition = "!isNull (_player getVariable ['acme_carry_litter', objNull])";
+                statement = "[_player, true] call acme_sked_fnc_carryRearStop";
+            };
             class ACE_Equipment {
                 class acme_sked_layOutItem {
                     displayName = "Lay out SKED";
@@ -218,6 +383,12 @@ class CfgVehicles {
                     condition = "[_player] call acme_sked_fnc_canLayOutItem";
                     statement = "[_player] call acme_sked_fnc_layOutItem";
                 };
+            };
+            class acme_drag_letGo {
+                displayName = "Let go";
+                condition = "!isNil {_player getVariable 'acme_drag_state'}";
+                statement = "[_player, true] call acme_sked_fnc_dragStop";
+                exceptions[] = {"isNotDragging", "isNotCarrying", "acme_sked_notBearing"};
             };
             class acme_sked_diagnostics {
                 displayName = "Audit nearby medical transport";
@@ -268,8 +439,13 @@ class ace_medical_treatment_actions {
         allowSelfTreatment = 0;
         allowedSelections[] = {"Body"};
         treatmentLocations = 0;
-        treatmentTime = 15;
+        treatmentTime = 10;
         condition = "[_medic, _patient] call acme_sked_fnc_canStrapIn";
+        // The casualty is laid on the litter while the timer runs; a broken off timer leaves them lying on it.
+        callbackStart = "acme_sked_fnc_strapBegin";
+        // the medic's animation lasts as long as the timer
+        callbackProgress = "acme_sked_fnc_strapProgress";
+        callbackFailure = "acme_sked_fnc_strapAbort";
         callbackSuccess = "acme_sked_fnc_strapIn";
         litter[] = {};
     };
@@ -278,6 +454,9 @@ class ace_medical_treatment_actions {
         displayNameProgress = "Unstrapping...";
         treatmentTime = 8;
         condition = "[_medic, _patient] call acme_sked_fnc_canUnstrap";
+        callbackStart = "";
+        callbackProgress = "";
+        callbackFailure = "";
         callbackSuccess = "acme_sked_fnc_unstrap";
     };
 };

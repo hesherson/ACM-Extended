@@ -32,7 +32,7 @@ private _viewer = _medic;
 uiNamespace setVariable ["ACME_CS_presenceViewer", _viewer];
 if (!isNull _viewer) then { _viewer setVariable ["ACME_CS_viewing", _patient, true]; };
 ACME_CS_presence = createHashMap;
-uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, uiNamespace getVariable ["ACME_CS_Patient", objNull], "ACM_ChestSeal"] call ACME_fnc_treatmentSupplyCount}];
+uiNamespace setVariable ["ACME_CS_SealsLeft", if (isNull _medic) then {0} else {[_medic, uiNamespace getVariable ["ACME_CS_Patient", objNull], "ACME_ChestSeal"] call ACME_fnc_treatmentSupplyCount}];
 uiNamespace setVariable ["ACME_CS_SpearsLeft", if (isNull _medic) then {0} else {[_medic, uiNamespace getVariable ["ACME_CS_Patient", objNull], "ACME_NARSPEAR"] call ACME_fnc_treatmentSupplyCount}];
 uiNamespace setVariable ["ACME_CS_Side", "front"];
 uiNamespace setVariable ["ACME_CS_Dragging", false];

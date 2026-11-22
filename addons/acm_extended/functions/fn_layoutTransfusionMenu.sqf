@@ -295,11 +295,11 @@ if (_valid && {_partIdx >= 0}) then {
         private _fieldGauge = _accessory param [5,0];
         _accessText = if (_fieldGauge > 0) then {format ["%1G field IV",_fieldGauge]} else {format ["%1G IV",_gauge]};
         if (_accessory param [0,false]) then {_accessText = _accessText + " + extension";};
-        _iconClass = format ["ACM_IV_%1g",if (_fieldGauge > 0) then {_fieldGauge} else {_gauge}];
+        _iconClass = format ["ACME_IV_%1g",if (_fieldGauge > 0) then {_fieldGauge} else {_gauge}];
     } else {
         private _type = (_patient getVariable ["ACM_circulation_IO_Placement",[]]) param [_partIdx,0];
         _accessText = ["EZ-IO","FAST1 IO"] select (_type == 4);
-        _iconClass = ["ACM_IO_EZ","ACM_IO_FAST"] select (_type == 4);
+        _iconClass = ["ACME_IO_EZ","ACME_IO_FAST"] select (_type == 4);
     };
 };
 [_accessKind,"text",_accessText] call ACME_fnc_transfusionUiSet;

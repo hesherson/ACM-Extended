@@ -18,6 +18,7 @@ if (missionNamespace getVariable ["ACME_interventionAnimations", true]) then {
     _move = format ["AinvP%1MstpSlayW%2Dnon_medicOther", _pose, _weapon];
     if (weaponLowered _player && {currentWeapon _player != ""}) then {_player action ["WeaponInHand", _player];};
     [_player, _move, 1] call ace_common_fnc_doAnimation;
+    _player setVariable ["acme_strap_animAt", CBA_missionTime];
 };
 private _finishMove = {
     params ["_player", "_move"];
@@ -27,16 +28,21 @@ private _finishMove = {
         [_player, "", 2] call ace_common_fnc_doAnimation;
     };
 };
-[15, [_player, _patient, _litter, _move, _finishMove], {
+// The casualty is laid on the litter while the timer runs; a broken off timer leaves them lying there.
+[_player, "strapBegin", _patient, _litter] call acme_sked_fnc_request;
+[10, [_player, _patient, _litter, _move, _finishMove], {
     (_this select 0) params ["_player", "_patient", "_litter", "_move", "_finishMove"];
     [_player, _move] call _finishMove;
     [_player, "strap", _patient, _litter] call acme_sked_fnc_request;
 }, {
-    (_this select 0) params ["_player", "", "", "_move", "_finishMove"];
+    (_this select 0) params ["_player", "_patient", "_litter", "_move", "_finishMove"];
     [_player, _move] call _finishMove;
+    [_player, "strapAbort", _patient, _litter] call acme_sked_fnc_request;
 }, "Packaging casualty in litter...", {
-    (_this select 0) params ["_player", "_patient", "_litter"];
+    (_this select 0) params ["_player", "_patient", "_litter", "_move"];
+    // his animation lasts as long as the timer (fn_strapAnim.sqf)
+    if (_move != "") then {[_player, _move] call acme_sked_fnc_strapAnim;};
     !isNull _litter && {[_player, _litter] call acme_sked_fnc_canHandleEmpty}
-        && {_player distance _patient <= 3.5} && {_patient distance _litter <= 3.5}
+        && {_player distance _patient <= 4} && {_patient distance _litter <= 3.5}
         && {[_patient] call acme_sked_fnc_validCasualty}
 }] call ace_common_fnc_progressBar;

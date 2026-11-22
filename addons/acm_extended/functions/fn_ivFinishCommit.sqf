@@ -87,7 +87,7 @@ if (_phase=="begin") exitWith {
             _plan=[false,"A 10 mL saline flush is required.","",0];
         };
         if (_field) then {
-            private _item=if (_action=="field14") then {"ACM_IV_14g"} else {"ACM_IV_16g"};
+            private _item=if (_action=="field14") then {"ACME_IV_14g"} else {"ACME_IV_16g"};
             if (_supplyState!=1 || {count _receipt!=4} || {(_receipt param [1,""])!=_item} || {(_receipt param [3,""])==""}
                 || {(_history findIf {(_x param [9,""])==(_receipt param [3,""]) && {_x param [6,false]}})>=0}) then {
                 _plan=[false,"The selected catheter is not available.","",0];

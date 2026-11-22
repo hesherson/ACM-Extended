@@ -54,21 +54,21 @@ private _accessSiteHint = "";
 private _givePain = 0;
 private _giveComplication = false;
 private _successChance = 1;
-private _classname = "ACM_IV_16g";
+private _classname = "ACME_IV_16g";
 
 switch (_type) do {
     case ACM_IV_14G_M: {
         _hintType = LLSTRING(IV_14g);
-        _classname = "ACM_IV_14g";
+        _classname = "ACME_IV_14g";
     };
     case ACM_IO_FAST1_M: {
         _hintType = LLSTRING(IO_FAST1);
-        _classname = "ACM_IO_FAST";
+        _classname = "ACME_IO_FAST";
         _givePain = 0.31;
     };
     case ACM_IO_EZ_M: {
         _hintType = LLSTRING(IO_EZ);
-        _classname = "ACM_IO_EZ";
+        _classname = "ACME_IO_EZ";
         _givePain = 0.31;
     };
     default {};

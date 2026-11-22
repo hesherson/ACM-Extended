@@ -21,7 +21,8 @@ if (!_leaseValid) exitWith {false};
 private _cap = [_med] call ACME_fnc_vialCapacity;
 if (_cap <= 0) exitWith {false};
 private _vial = [_med] call ACME_fnc_vialClass;
-private _legacyVial = if (_med == "EpinephrineCardiac") then {"ACM_Vial_EpinephrineCardiac"} else {""};
+// (there was a second, deprecated vial class for cardiac epinephrine under the old item names; B378 has one)
+private _legacyVial = "";
 private _map = _holder getVariable ["ACME_infusion_openVials", createHashMap];
 private _open = (_map getOrDefault [_med, 0]) max 0;
 private _sealedPrimary = [_holder, _vial] call ACME_fnc_vialItemCount;

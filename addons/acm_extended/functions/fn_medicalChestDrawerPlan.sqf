@@ -1,10 +1,12 @@
 /* Cabinet animation names come from the live assets. Each drawer gets an
    independent extension, with one drawer visibly farther out than the rest. */
 params ["_cabinet"];
+// A padlocked drawer is named by the cabinet class and never slides out.
+private _locked = (getArray (configOf _cabinet >> "acmeChestLockedDrawers")) apply {toLowerANSI _x};
 private _isDrawer = {
     params ["_name"];
     _name = toLowerANSI _name;
-    (_name find "drawer") >= 0 && {(_name find "hide") < 0} && {(_name find "lock") < 0}
+    (_name find "drawer") >= 0 && {(_name find "hide") < 0} && {(_name find "lock") < 0} && {!(_name in _locked)}
 };
 private _sources = configProperties [
     configOf _cabinet >> "AnimationSources", "isClass _x && {getText (_x >> 'source') == 'user'}", true

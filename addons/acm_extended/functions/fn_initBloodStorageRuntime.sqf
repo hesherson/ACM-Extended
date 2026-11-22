@@ -162,7 +162,7 @@ if (isServer) then {
     if (!isNull _p && {["enabled"] call ACME_fnc_bloodTiming}) then {
         // The server only needs an early pass when loose blood/cooler counts changed.
         private _bloodItems = ((uniformItems _p) + (vestItems _p) + (backpackItems _p)) select {
-            (_x find "ACM_BloodBag_") == 0 || {(_x find "ACM_FreshBloodBag_") == 0}
+            (_x find "ACME_BloodBag_") == 0 || {(_x find "ACME_FreshBloodBag_") == 0}
                 || {(_x find "ACME_BloodCooler_") == 0}
         };
         _bloodItems sort true;

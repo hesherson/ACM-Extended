@@ -125,10 +125,10 @@ if (_mode == "start") exitWith {
     private _period = if (local _patient) then {[clientOwner,_patient getVariable ["ACME_providerLocalityEpoch",0]]}
         else {_patient getVariable ["ACME_vent_batterySwapOwnerPeriod",[]]};
     if (count _period != 2) exitWith {""};
-    private _receipt = [_medic,_patient,["kat_eyecovers"]] call ACME_fnc_treatmentSupplyTake;
+    private _receipt = [_medic,_patient,["ACME_EyeCover"]] call ACME_fnc_treatmentSupplyTake;
     if (count _receipt != 4) exitWith {""};
     private _stock = missionNamespace getVariable ["ACME_supplyReceipts",createHashMap];
-    if ((_receipt select 1) != "kat_eyecovers"
+    if ((_receipt select 1) != "ACME_EyeCover"
         || {!((_stock getOrDefault [_receipt select 3,[]]) isEqualTo _receipt)}) exitWith {""};
     private _eyes = _patient getVariable [QGVAR(eyeInjuries),[1,1]];
     private _index = [1,0] select ((_eyes select 0) <= (_eyes select 1));

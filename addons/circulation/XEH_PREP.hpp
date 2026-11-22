@@ -131,6 +131,7 @@ PREP(cprSessionValid);
 PREP(cprRelease);
 PREP(cprCleanupLocal);
 PREP(cprRetireAnimLocal);
+PREP(cprSpot);
 PREP(registerCPRRuntime);
 
 PREP(freshBloodGrant);

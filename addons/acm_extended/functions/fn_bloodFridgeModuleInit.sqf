@@ -18,14 +18,14 @@ private _resolveStock = {
     private _defONeg  = missionNamespace getVariable ["ACME_bf_defONeg", 2];
     private _defOther = missionNamespace getVariable ["ACME_bf_defOther", 0];
     private _types = [
-        ["ONeg",  "ACM_BloodBag_ON_500",  _defONeg],
-        ["OPos",  "ACM_BloodBag_O_500",   _defOPos],
-        ["ANeg",  "ACM_BloodBag_AN_500",  _defOther],
-        ["APos",  "ACM_BloodBag_A_500",   _defOther],
-        ["BNeg",  "ACM_BloodBag_BN_500",  _defOther],
-        ["BPos",  "ACM_BloodBag_B_500",   _defOther],
-        ["ABNeg", "ACM_BloodBag_ABN_500", _defOther],
-        ["ABPos", "ACM_BloodBag_AB_500",  _defOther]
+        ["ONeg",  "ACME_BloodBag_ON_500",  _defONeg],
+        ["OPos",  "ACME_BloodBag_O_500",   _defOPos],
+        ["ANeg",  "ACME_BloodBag_AN_500",  _defOther],
+        ["APos",  "ACME_BloodBag_A_500",   _defOther],
+        ["BNeg",  "ACME_BloodBag_BN_500",  _defOther],
+        ["BPos",  "ACME_BloodBag_B_500",   _defOther],
+        ["ABNeg", "ACME_BloodBag_ABN_500", _defOther],
+        ["ABPos", "ACME_BloodBag_AB_500",  _defOther]
     ];
     private _stock = [];
     {

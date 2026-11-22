@@ -199,6 +199,6 @@ ACE_player addEventHandler ["AnimDone", {
     };
 }];
 
-["ACE_splint", "ACM_SAMSplint"] call ACEFUNC(common,registerItemReplacement);
+["ACE_splint", "ACME_SAMSplint"] call ACEFUNC(common,registerItemReplacement);
 
 call FUNC(registerContinuousRuntime);

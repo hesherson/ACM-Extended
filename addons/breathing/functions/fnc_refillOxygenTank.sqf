@@ -17,7 +17,7 @@
 
 params ["_unit"];
 
-if !([_unit, "ACM_OxygenTank_425_Empty"] call ACME_fnc_itemTake) exitWith {};
+if !([_unit, "ACME_OxygenTank_425_Empty"] call ACME_fnc_itemTake) exitWith {};
 
 _unit call ACEFUNC(common,goKneeling);
 
@@ -25,12 +25,12 @@ _unit call ACEFUNC(common,goKneeling);
     params ["_args"];
     _args params ["_unit"];
 
-    [_unit, "ACM_OxygenTank_425"] call ACEFUNC(common,addToInventory);
+    [_unit, "ACME_OxygenTank_425"] call ACEFUNC(common,addToInventory);
     [LSTRING(RefillOxygenTank_Complete), 1.5, _unit] call ACEFUNC(common,displayTextStructured);
 }, {
     params ["_args"];
     _args params ["_unit"];
 
-    [_unit, "ACM_OxygenTank_425_Empty"] call ACEFUNC(common,addToInventory);
+    [_unit, "ACME_OxygenTank_425_Empty"] call ACEFUNC(common,addToInventory);
     [LSTRING(RefillOxygenTank_Cancelled), 1.5, _unit] call ACEFUNC(common,displayTextStructured);
 }, LSTRING(RefillOxygenTank_Progress)] call ACEFUNC(common,progressBar);

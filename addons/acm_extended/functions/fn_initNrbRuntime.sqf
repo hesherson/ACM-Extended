@@ -15,7 +15,7 @@ ACME_nrb_minAirway      = 0.05;  // blocked airway = no useful oxygen uptake
 ACME_nrb_minBreathing   = 0.05;  // no effective ventilation = no useful oxygen uptake
 ACME_nrb_maxDistance    = 6;  // m the applying medic can move before the mask is yanked, in the AED style.
 ACME_nrb_flowLPM        = 15;  // l/min the NRB draws from the medic's tank while flowing
-ACME_nrb_tankCapacityL  = 425;  // ACM_OxygenTank_425 nominal cylinder size in l, from the ACM source.
+ACME_nrb_tankCapacityL  = 425;  // ACME_OxygenTank_425 nominal cylinder size in l, from the ACM source.
 ACME_nrb_tankUnits      = 283;  // reserve units in a full tank, the CfgMagazines count, from the ACM source.
 // 425/283 is about 1.5 l per reserve unit. at 15 l/min that is 1 unit every 6 s, which matches ACM's BVM. the
 // tank lasts about 28 min.

@@ -43,7 +43,7 @@ if (_type == "FreshBlood") then {
         _freshMetadata = ["freshV1", _donor select 3, _donor select 4, _donor select 2];
         private _capacity = if (_original == 250 || {_remaining <= 250 && {_original != 500}}) then {250} else {500};
         if (_remaining <= _capacity) then {
-            _class = if (_freshId == 0) then {format ["ACM_FreshBloodBag_%1", _capacity]} else {format ["ACM_FreshBloodBag_%1_%2", _capacity, _freshId]};
+            _class = if (_freshId == 0) then {format ["ACME_FreshBloodBag_%1", _capacity]} else {format ["ACME_FreshBloodBag_%1_%2", _capacity, _freshId]};
             _action = format ["FreshBloodBag_%1_%2", _capacity, _freshId];
             if (!isClass (configFile >> "CfgWeapons" >> _class)) then {_class = "";};
         };

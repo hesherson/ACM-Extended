@@ -10,8 +10,8 @@ if (isNull _display) exitWith {};
 private _patient = _display getVariable ["ACME_SK_ReturnPatient", objNull];
 if (isNull _patient) then { _patient = ACE_player; };
 
-private _flushClass = uiNamespace getVariable ["ACME_SK_SelFlush", "ACM_SalineFlush_10"];
-if (_flushClass isEqualTo "") then { _flushClass = "ACM_SalineFlush_10"; };
+private _flushClass = uiNamespace getVariable ["ACME_SK_SelFlush", "ACME_SalineFlush_10"];
+if (_flushClass isEqualTo "") then { _flushClass = "ACME_SalineFlush_10"; };
 
 if (([ACE_player, _patient, _flushClass] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
     ["No 10 mL saline flush in inventory.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;

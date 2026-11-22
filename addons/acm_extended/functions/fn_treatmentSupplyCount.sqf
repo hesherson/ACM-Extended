@@ -2,7 +2,7 @@
    This is eligibility only; treatmentSupplyTake checks again at the actual debit. */
 params ["_medic", "_patient", "_item", ["_includeStartKits", true]];
 private _total = 0;
-if (_item=="ACM_ACCUVAC" && {!isNil "ACME_fnc_equipmentAvailable"} && {[_medic,_patient] call ACME_fnc_equipmentAvailable}) then {_total=1;};
+if (_item=="ACME_ACCUVAC" && {!isNil "ACME_fnc_equipmentAvailable"} && {[_medic,_patient] call ACME_fnc_equipmentAvailable}) then {_total=1;};
 private _vehicles = [];
 {
     _total = _total + ([_x, _item, _includeStartKits] call ACME_fnc_itemCount);

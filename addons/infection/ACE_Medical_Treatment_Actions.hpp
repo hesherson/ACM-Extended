@@ -5,8 +5,8 @@ class ACEGVAR(medical_treatment,actions) {
     class Moxifloxacin: Paracetamol {
         displayName         = CSTRING(UseMoxifloxacin);
         displayNameProgress = CSTRING(UseMoxifloxacin_Progress);
-        items[]             = {"ACM_Moxifloxacin_SinglePack","ACM_Moxifloxacin"};
-        ACM_menuIcon        = "ACM_Paracetamol";
+        items[]             = {"ACME_Moxifloxacin_SinglePack","ACME_Moxifloxacin"};
+        ACM_menuIcon        = "ACME_Paracetamol";
     };
 
     class CheckWound: CheckPulse {

@@ -7,7 +7,7 @@ TRACE_1("fullHealLocal",_patient);
 if (isNull _patient || {!local _patient}) exitWith {};
 
 private _shield = hmd _patient;
-if (_shield in ["kat_eyecovers_left","kat_eyecovers_right","kat_eyecovers"]) then {
+if (_shield in ["ACME_EyeCover_Left","ACME_EyeCover_Right","ACME_EyeCover"]) then {
     _patient unlinkItem _shield;
     [_patient,_shield] call ACEFUNC(common,addToInventory);
 };

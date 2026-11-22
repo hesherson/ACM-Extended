@@ -8,8 +8,8 @@ class CfgPatches {
         units[] = {};
         weapons[] = {};
         magazines[] = {
-            "ACM_SilverNylonDressing",
-            "ACM_BurnCream"
+            "ACME_SilverNylonDressing",
+            "ACME_BurnCream"
         };
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {

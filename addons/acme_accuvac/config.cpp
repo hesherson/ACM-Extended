@@ -34,6 +34,7 @@ class CfgWeapons {
 
     // Inventory item. 5.1 kg with canister, tubing, Yankauer and accessory bag.
     class ACME_AccuvacRescue_Item: ItemCore {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         author = "mavis";
@@ -55,6 +56,7 @@ class CfgVehicles {
 
     // Ground holder for the inventory item, for placement in Eden and Zeus.
     class ACME_AccuvacRescue_Item_Ground: Item_Base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -64,7 +66,7 @@ class CfgVehicles {
         vehicleClass = "Items";
         class TransportItems {
             class _xx_ACME_AccuvacRescue_Item {
-                name = "ACM_ACCUVAC";
+                name = "ACME_ACCUVAC";
                 count = 1;
             };
         };
@@ -72,6 +74,7 @@ class CfgVehicles {
 
     // Physics prop: the unit with tubing and Yankauer, as placed in the field.
     class ACME_AccuvacRescue: ThingX {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";

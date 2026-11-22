@@ -11,7 +11,8 @@ class CfgWeapons {
     class ACE_bloodIV;  // the ACE base for iv fluid bags, medical-tagged.
     class ACE_salineIV_250;  // the ACE 250 ml saline bag, the carrier base for our premixed drips.
     // the norepinephrine, or levophed, vial. it is in the vial family.
-    class ACM_Vial_Norepinephrine: ACE_ItemCore {
+    class ACME_Vial_Norepinephrine: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "Norepinephrine (4mg/4ml)";
@@ -48,7 +49,8 @@ class CfgWeapons {
     // ACME_premixedBag marks it for the auto-attach loop, fn_syncpremixedbags, which layers esmolol rate control on
     // the active bag. the premixed content is declared in ACME_infusion_PremixedBags and premixedbytype, in
     // fn_postInit.
-    class ACM_EsmololBag: ACE_salineIV_250 {
+    class ACME_EsmololBag: ACE_salineIV_250 {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "Esmolol 2500mg/250ml (10mg/ml)";
@@ -66,13 +68,15 @@ class CfgWeapons {
     // formatfluidbagname(type,volume), which is ace_<lowertype>iv_<vol>. with distinct fluid types, esmolol and hts
     // at 250 ml, the active bags resolve to these, which gives the correct name and icon instead of a generic saline
     // label. scope is 1, so they are never offered from inventory.
-    class ACE_esmololIV_250: ACE_salineIV_250 {
+    class ACME_EsmololIV_250: ACE_salineIV_250 {
+        dlc = "ACM_Extended";
         scope = 1;
         author = "mavis";
         displayName = "Esmolol 2500mg/250ml (10mg/ml)";
         picture = "\acm_extended\ui\items\esmololbagiv_ca.paa";
     };
-    class ACE_htsIV_250: ACE_salineIV_250 {
+    class ACME_HTSIV_250: ACE_salineIV_250 {
+        dlc = "ACM_Extended";
         scope = 1;
         author = "mavis";
         displayName = "Hypertonic Saline 3% (250ml)";
@@ -106,7 +110,8 @@ class CfgWeapons {
     };
 
     // the 18g iv catheter: a smaller-bore peripheral line with a slower flow.
-    class ACM_IV_18g: ACE_ItemCore {
+    class ACME_IV_18g: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "18g IV";
@@ -119,7 +124,8 @@ class CfgWeapons {
     };
 
     // the prefilled 10 ml saline flush, the push-dose epi base.
-    class ACM_SalineFlush_10: ACE_ItemCore {
+    class ACME_SalineFlush_10: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "Saline Flush (10ml)";
@@ -134,7 +140,8 @@ class CfgWeapons {
     // the core thermometer, a reusable tool. it is the only way to read the core temperature.
     // it is reusable, so it must be in the inventory and is never consumed. it is gated through a condition with an
     // empty items[].
-    class ACM_Thermometer: ACE_ItemCore {
+    class ACME_Thermometer: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "Core Thermometer";
@@ -147,7 +154,8 @@ class CfgWeapons {
     };
 
     // the non-rebreather mask, a reusable o2 tool. it gives high-flow oxygen with a continuous flow sfx.
-    class ACM_NRBMask: ACE_ItemCore {
+    class ACME_NRBMask: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "Non-Rebreather Mask";
@@ -158,7 +166,8 @@ class CfgWeapons {
             mass = 2;
         };
     };
-    class ACM_HPMK: ACE_ItemCore {
+    class ACME_HPMK: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "NAR HPMK";
@@ -171,7 +180,8 @@ class CfgWeapons {
         };
     };
     // the EMMA mainstream capnograph. it attaches inline on a BVM, and the HUD reads out while ventilating.
-    class ACM_EMMA: ACE_ItemCore {
+    class ACME_EMMA: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         displayName = "EMMA Capnograph";
@@ -185,7 +195,8 @@ class CfgWeapons {
     // combat gauze, hemostatic packing for junctional hemorrhage.
     // it is stage 1 of the two-stage junctional treatment: pack the wound over 15 s, then secure it with a pressure
     // bandage over another 15 s. it is a proper ACE medical item, so it sits in the medical inventory.
-    class ACM_CombatGauze: ACE_ItemCore {
+    class ACME_CombatGauze: ACE_ItemCore {
+        dlc = "ACM_Extended";
         scope = 2;
         author = "mavis";
         model = "\z\ace\addons\medical_treatment\data\bandage.p3d";

@@ -9,7 +9,7 @@ if (isNull _patient) exitWith {  };
 // Keep an unspent manual bag in inventory until the first squeeze.
 if (isNull _medic || {!local _medic}) exitWith {};
 if (_type == 1 && {!([_medic,_patient] call ACME_fnc_equipmentAvailable)}) exitWith {};
-private _item = ["ACM_SuctionBag", "ACM_ACCUVAC"] select _type;
+private _item = ["ACME_SuctionBag", "ACME_ACCUVAC"] select _type;
 if (([_medic, _patient, _item] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {["No suction device carried.", 2] call ace_common_fnc_displayTextStructured;};
 uiNamespace setVariable ["ACME_suction_bagOwner", []];
 uiNamespace setVariable ["ACME_suction_resume", []];

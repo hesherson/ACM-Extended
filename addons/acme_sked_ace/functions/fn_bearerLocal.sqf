@@ -12,6 +12,9 @@ private _watch = [{
         [_id] call CBA_fnc_removePerFrameHandler;
         _unit setVariable ["acme_sked_bearerWatch", nil];
     };
-    if (_unit distance _litter > 3.5) then {[_unit, "letGo"] call acme_sked_fnc_request;};
+    // he walked away from it, or took something else up with ACE: he lets go
+    if (_unit distance _litter > 3.5 || {_unit getVariable ["ace_dragging_isDragging", false]} || {_unit getVariable ["ace_dragging_isCarrying", false]}) then {
+        [_unit, "letGo"] call acme_sked_fnc_request;
+    };
 }, 0.5, [_unit, _litter]] call CBA_fnc_addPerFrameHandler;
 _unit setVariable ["acme_sked_bearerWatch", _watch];

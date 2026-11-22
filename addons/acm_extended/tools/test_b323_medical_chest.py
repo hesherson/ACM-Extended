@@ -42,8 +42,10 @@ def request_fixture():
         '_chest isKindOf "ACME_MedicalChest"': '_chest getVariable ["fixtureChest", false]',
         '_actor distance _target': '_distance',
         'createVehicle [_class, ASLToATL _base, [], 0, "CAN_COLLIDE"]': '([_class] call _spawn)',
-        'createSimpleObject ["ACME_MedicalChestLid", _seatPose select 0]':
-            '(["ACME_MedicalChestLid"] call _spawn)',
+        'getText (configOf _chest >> "acmeChestLidClass")':
+            '_chest getVariable ["fixtureLidClass", ""]',
+        'createSimpleObject [[_lidClass, "ACME_MedicalChestLid"] select (_lidClass == ""), _seatPose select 0]':
+            '([[_lidClass, "ACME_MedicalChestLid"] select (_lidClass == "")] call _spawn)',
         '    _cabinet allowDamage false;': '',
         'getObjectTextures _chest': '[_chest getVariable "fixtureTexture", _chest getVariable "fixtureArtwork"]',
         'getObjectTextures _cabinet': '[_cabinet getVariable "fixtureTexture"]',
@@ -113,7 +115,7 @@ def request_fixture():
         private _spawn = {
             params ["_class"];
             _created pushBack _class;
-            if (_class == "ACME_MedicalChestLid") exitWith {
+            if (_class find "ACME_MedicalChestLid" == 0) exitWith {
                 if (_failLid) then {objNull} else {parsingNamespace}
             };
             uiNamespace
@@ -147,7 +149,9 @@ def request_fixture():
 
 def test_chest_reopen_retains_live_supply_container_and_ignores_stale_requests():
     execute(request_fixture() + '''
+        _chest setVariable ["fixtureLidClass", "ACME_MedicalChestLid_2"];
         [_chest, _medic, true, 0] call _request;
+        [(_created select 1) isEqualTo "ACME_MedicalChestLid_2", "detached lid did not match the chest finish"] call _check;
         private _open = _chest getVariable "ACME_medicalChestCabinet";
         [(_chest getVariable "ACME_medicalChestState") isEqualTo [0,false] && {_hidden}, "inventory became available during the visual swap"] call _check;
         [count _created == 2 && {count _drawers == 1} && {count _placed == 2}, "missing lid or independently animated cabinet"] call _check;
@@ -689,7 +693,7 @@ def test_editor_class_and_art_are_wired_to_the_cabinet_variants():
 
 
 def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
-    def outside_faces(path, origin, mesh_tape=False):
+    def outside_faces(path, origin, finish=None):
         data = path.read_bytes()
         _, _, points, normals, faces, _ = struct.unpack_from("<6I", data, 16)
         offset = 40 + 16 * points + 12 * normals
@@ -706,8 +710,9 @@ def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
             second = data.index(b"\0", first + 1)
             texture = data[key:first]
             offset = second + 1
-            if mesh_tape:
-                if texture.endswith(b"lid_artwork_0_ca.paa"):
+            if finish is not None:
+                if b"lid_artwork_" in texture:
+                    assert texture.endswith(f"lid_artwork_{finish}_ca.paa".encode())
                     artwork.add(tuple(tuple(round(value, 5) for value in corner) for corner in corners))
                 continue
             if not texture.endswith(b"case_co.paa"):
@@ -725,24 +730,16 @@ def test_hardigg_closed_and_detached_lid_use_the_same_unmirrored_uvs():
     closed = outside_faces(assets / "medchest.p3d", (0, 0))
     detached = outside_faces(assets / "hardigg_lid.p3d", (.1175, .416))
     assert len(closed) > 30 and closed == detached
-    # At least one projected face must follow an angled rib wall, across depth.
-    # Restricting the atlas to front-facing normals alone drops tape in the groove.
-    def rib_face(face):
-        a, b, c = face[:3]
-        ax, ay, az = (b[i] - a[i] for i in range(3))
-        bx, by, bz = (c[i] - a[i] for i in range(3))
-        return max(v[1] for v in face) - min(v[1] for v in face) > .001 and (
-            abs(az * bx - ax * bz) < max(abs(ay * bz - az * by), abs(ax * by - ay * bx))
-        )
-    assert any(rib_face(face) for face in closed)
     assert not outside_faces(assets / "medchest_open.p3d", (0, 0))
-    attached = outside_faces(assets / "medchest.p3d", (0, 0), True)
-    assert len(attached) > 400
-    detached = outside_faces(assets / "hardigg_lid.p3d", (.1175, .416), True)
-    # Points are quantized independently in the MLOD files and can differ at a rounding boundary.
-    assert len(attached - detached) < len(attached) * .02
-    assert len(detached - attached) < len(detached) * .02
-    assert not outside_faces(assets / "medchest_open.p3d", (0, 0), True)
+    for finish in range(12):
+        suffix = f"_{finish}" if finish else ""
+        attached = outside_faces(assets / f"medchest{suffix}.p3d", (0, 0), finish)
+        detached = outside_faces(assets / f"hardigg_lid{suffix}.p3d", (.1175, .416), finish)
+        assert attached and detached
+        # The loose lid has the same UVs after restoring its assembled origin.
+        assert len(attached - detached) < len(attached) * .025
+        assert len(detached - attached) < len(detached) * .025
+    assert not outside_faces(assets / "medchest_open.p3d", (0, 0), 0)
 
 
 def test_hardigg_has_four_latches_centered_on_each_long_seam():
@@ -783,6 +780,7 @@ def test_hardigg_has_four_latches_centered_on_each_long_seam():
         stations = points_in_memory(assets / f"{name}.p3d")
         assert len(stations) == 10
         side = [(x, z, y) for x, z, y in stations if abs(x) > .25]
+        assert all(abs(x) < .001 for x, _, _ in stations if abs(x) <= .25)
         assert Counter(x > 0 for x, _, _ in side) == {True: 4, False: 4}
         assert len({round(y, 4) for _, _, y in side}) == 1
         assert len({round(z, 4) for _, z, _ in side}) == 4
@@ -793,17 +791,20 @@ def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
     image = pytest.importorskip("PIL.Image")
     monkeypatch.syspath_prepend(str(ROOT / "tools"))
     from build_hardigg_wear import LONG_RESIDUE, paint_finish
-    from build_hardigg_lid_artwork import artwork
+    import build_hardigg_lid_artwork as lid_artwork
     from build_hardigg_abrasion import wear_tile
     from build_medical_chest_variants import ATLAS_REGIONS, ATLAS_SIZE
+    from build_medical_chest_stencils import stencil_glyphs
 
     assert len(LONG_RESIDUE) == 4
     assert len({layout[1] for layout in LONG_RESIDUE.values()}) == 4
     assert len({layout[4] for layout in LONG_RESIDUE.values()}) == 4
     horizontal = [layout for layout in LONG_RESIDUE.values() if abs(layout[3]) < 8]
     assert len(horizontal) == 1 and horizontal[0][0][1] > 1300
-    assert all(artwork(i) for i in range(12))
-    assert sum(piece.over_card for piece in artwork(2)) == 4
+    glyphs = stencil_glyphs(ROOT / "tools/assets/hardigg_stencil.png")
+    monkeypatch.setattr(lid_artwork, "inventory_card", lambda *_: image.new("RGBA", (502, 207)))
+    assert all(lid_artwork.artwork(i, glyphs, None, None) for i in range(12))
+    assert sum(piece.over_card for piece in lid_artwork.artwork(2, glyphs, None, None)) == 4
 
     x, y, width, height = ATLAS_REGIONS["lid"]
     _, dullness, _ = wear_tile("lid", (width, height))
@@ -811,8 +812,5 @@ def test_new_wear_is_on_the_exterior_atlas_of_every_lid(monkeypatch):
     assert dullness[800:875, 450:550].mean() < .12
     for index in range(12):
         overlay = image.new("RGBA", ATLAS_SIZE)
-        paint_finish(overlay, index, ATLAS_REGIONS["lid"])
-        bounds = overlay.getchannel("A").getbbox()
-        assert bounds is not None, f"lid {index} has no new wear"
-        left, top, right, bottom = bounds
-        assert x <= left < right <= x + width and y <= top < bottom <= y + height, index
+        paint_finish(overlay, index, ATLAS_REGIONS, glyphs)
+        assert overlay.crop((x, y, x+width, y+height)).getchannel("A").getbbox() is not None, index

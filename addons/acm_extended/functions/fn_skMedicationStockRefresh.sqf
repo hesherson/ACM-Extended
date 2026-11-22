@@ -61,7 +61,7 @@ for "_i" from 0 to ((lbSize _list) - 1) do {
         private _directCount = [_holder, _physicalClass] call ACME_fnc_vialItemCount;
         if (_med == "EpinephrineCardiac") then {
             _directCount = ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount)
-                + ([_holder, "ACM_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
+                + ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
         };
         private _cap = [_med] call ACME_fnc_vialCapacity;
         if (_directCount > 0 && {_cap > 0}) then {

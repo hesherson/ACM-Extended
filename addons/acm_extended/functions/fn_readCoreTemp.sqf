@@ -1,4 +1,4 @@
-// the core-temperature readout for the ACM_Thermometer tool. it fires after the roughly 8 s active-use action
+// the core-temperature readout for the ACME_Thermometer tool. it fires after the roughly 8 s active-use action
 // completes.
 // it reads the core temp of the patient, ACME_hypo_temp, the source of truth of the hypothermia system and the same
 // value fn_circhandle and fn_togglehypothermia use, and reports it to the medic with a clinical band.
@@ -9,7 +9,7 @@ params ["_medic", "_patient"];
 if (isNull _medic || {isNull _patient}) exitWith {};
 // B33: the alternate exact-temperature action uses the same reusable device.
 // The action condition alone cannot cover a tool dropped during treatment.
-if (([_medic, _patient, "ACM_Thermometer"] call ACME_fnc_treatmentSupplyCount) <= 0) exitWith {};
+if (([_medic, _patient, "ACME_Thermometer"] call ACME_fnc_treatmentSupplyCount) <= 0) exitWith {};
 
 private _t = _patient getVariable ["ACME_hypo_temp", 37];
 private _band = switch (true) do {

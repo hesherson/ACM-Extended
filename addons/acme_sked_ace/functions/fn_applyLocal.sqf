@@ -4,6 +4,11 @@ if (if (isRemoteExecuted) then {remoteExecutedOwner != 2} else {!isServer}) exit
 if (isNull _unit || {!local _unit} || {(_args param [0, objNull]) isNotEqualTo _unit}) exitWith {};
 switch (_action) do {
     case "attachLocal": {_args call acme_sked_fnc_attachLocal;};
+    case "placeLocal": {_args call acme_sked_fnc_placeLocal;};
+    case "dragLocal": {_args call acme_sked_fnc_dragLocal;};
+    case "carryRearLocal": {_args call acme_sked_fnc_carryRearLocal;};
+    case "carryRearStop": {_args call acme_sked_fnc_carryRearStop;};
+    case "placeAbort": {_args call acme_sked_fnc_placeAbort;};
     case "reattach": {_args call acme_sked_fnc_reattach;};
     case "releaseLocal": {_args call acme_sked_fnc_releaseLocal;};
     case "hpmkSwap": {_args call acme_sked_fnc_hpmkSwap;};

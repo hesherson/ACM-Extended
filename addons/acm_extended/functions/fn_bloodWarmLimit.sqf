@@ -1,7 +1,7 @@
 /* For live loose/cooler rows, donor identity preserves the collection clock even while refrigerated.
  * Prepared/hung rows carry their own post-spike deadline and donor metadata. */
 params ["_class"];
-if ((_class find "ACM_FreshBloodBag_") != 0) exitWith {["warm"] call ACME_fnc_bloodTiming};
+if ((_class find "ACME_FreshBloodBag_") != 0) exitWith {["warm"] call ACME_fnc_bloodTiming};
 if !(["real"] call ACME_fnc_bloodTiming) exitWith {["warm"] call ACME_fnc_bloodTiming};
 private _limit = ["fresh"] call ACME_fnc_bloodTiming;
 private _parts = _class splitString "_";

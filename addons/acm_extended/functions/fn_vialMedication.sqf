@@ -1,7 +1,7 @@
 /* Convert a drawable ACM medication container classname back to its medication key without assuming ACM_ vs ACME_.
    B42 keeps the complete medication suffix rather than selecting one underscore-delimited token. That matters for
    medication keys that contain underscores, and it also preserves ACM's legacy Dimercaprol ampule, which inherits
-   ACM_isVial = 1 even though its physical class is ACM_Ampule_Dimercaprol rather than ACM_Vial_*.
+   ACM_isVial = 1 even though its physical class is ACME_Ampule_Dimercaprol rather than ACME_Vial_*.
 */
 params [["_class", "", [""]]];
 if (_class == "") exitWith {""};

@@ -1,0 +1,53 @@
+author = "ACM Extended";
+briefingName = "ACME Multiplayer Acceptance";
+onLoadName = "ACME Debugging";
+onLoadMission = "Treat, package, carry and evacuate a casualty. Record results at the QA table.";
+disabledAI = 1;
+respawn = 3;
+respawnDelay = 5;
+respawnOnStart = -1;
+briefing = 0;
+debriefing = 0;
+enableDebugConsole = 1;
+enableDebugConsoleSP = 1;
+
+class Header {
+    gameType = "Coop";
+    minPlayers = 1;
+    maxPlayers = 4;
+};
+
+class Params {
+    class ACMEQA_Workload {
+        title = "Workload";
+        values[] = {0, 1, 2, 3, 4};
+        texts[] = {"Functional lanes", "24 AI / 0 unconscious", "24 AI / 1 unconscious", "24 AI / 5 unconscious", "24 AI / 10 unconscious"};
+        default = 0;
+    };
+    class ACMEQA_AutoCapture {
+        title = "Automatic server capture after 30 s warm-up";
+        values[] = {0, 1};
+        texts[] = {"Off", "120 seconds"};
+        default = 0;
+    };
+    class ACMEQA_Hatchet {
+        title = "Optional Hatchet MH-60 seat-loading lane";
+        values[] = {0, 1};
+        texts[] = {"Off", "Use Hatchet if loaded"};
+        default = 0;
+    };
+};
+
+class CfgFunctions {
+    class ACMEQA {
+        class Acceptance {
+            file = "functions";
+            class cases {};
+            class preparePatient {};
+            class snapshot {};
+            class capture {};
+            class setupServer {};
+            class setupPlayer {};
+        };
+    };
+};

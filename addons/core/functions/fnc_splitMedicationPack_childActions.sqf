@@ -23,7 +23,7 @@ private _containers = [uniformContainer _unit, vestContainer _unit, backpackCont
 
 private _actions = [];
 {
-    _targetItems append ((magazinesAmmoCargo _x) select {(_x select 0) in ["ACM_Paracetamol"]});
+    _targetItems append ((magazinesAmmoCargo _x) select {(_x select 0) in ["ACME_Paracetamol"]});
 } forEach _containers;
 
 {

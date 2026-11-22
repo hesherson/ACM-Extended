@@ -31,4 +31,4 @@ if (isNil QGVAR(recoveryRollEH)) then {
 
 ["ace_unconscious", LINKFUNC(onUnconscious)] call CBA_fnc_addEventHandler;
 
-["ACM_GuedelTube", "ACM_OPA"] call ACEFUNC(common,registerItemReplacement); // TODO remove after 1.5
+["ACM_GuedelTube", "ACME_OPA"] call ACEFUNC(common,registerItemReplacement); // TODO remove after 1.5

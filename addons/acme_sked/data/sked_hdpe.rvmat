@@ -3,7 +3,8 @@ ambient[] = {1, 1, 1, 1};
 diffuse[] = {1, 1, 1, 1};
 forcedDiffuse[] = {0, 0, 0, 0};
 emmisive[] = {0, 0, 0, 1};
-specular[] = {0.55, 0.55, 0.55, 1};
+// (was 0.55: in low sun the lit plastic washed out to cream, seen in game 2026-11-18)
+specular[] = {0.22, 0.22, 0.22, 1};
 specularPower = 75;
 PixelShaderID = "Super";
 VertexShaderID = "Super";

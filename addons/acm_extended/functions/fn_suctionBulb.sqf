@@ -48,7 +48,7 @@ switch (_mode) do {
         private _medic = uiNamespace getVariable ["ACME_laryngo_medic", objNull];
         if (isNull _medic || {!local _medic}) exitWith {};
         if !((uiNamespace getVariable ["ACME_suction_bagOwner", []]) isEqualTo [_medic, _pat]) then {
-            private _receipt = [_medic, _pat, ["ACM_SuctionBag"]] call ACME_fnc_treatmentSupplyTake;
+            private _receipt = [_medic, _pat, ["ACME_SuctionBag"]] call ACME_fnc_treatmentSupplyTake;
             if (_receipt isNotEqualTo []) then {
                 [_receipt, false] call ACME_fnc_treatmentSupplyRefund;
                 uiNamespace setVariable ["ACME_suction_bagOwner", [_medic, _pat]];

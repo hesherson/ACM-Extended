@@ -46,12 +46,12 @@ if (_isPropofolBottle) then {
     private _sets = _medic getVariable ["ACME_preparedIVSets", []];
     private _si = _sets findIf {(_x param [0, ""]) == (_prepared param [0, ""])};
     private _set = if (_si >= 0) then {_sets select _si} else {[]};
-    _ok = _ok && {_customStaged} && {_item == "ACM_Vial_Propofol"}
+    _ok = _ok && {_customStaged} && {_item == "ACME_Vial_Propofol"}
         && {_action == "ACME_PropofolIV_50"} && {_carrierVolume == 50}
         && {(_prepared param [17, ""]) == "propofol-bottle"}
         && {(_prepared param [10, 0]) == 50}
         && {_components isEqualTo [["Propofol", 500, 1]]}
-        && {(_set param [1, ""]) == "ACM_Vial_Propofol"}
+        && {(_set param [1, ""]) == "ACME_Vial_Propofol"}
         && {(_set param [2, ""]) == "ACME_PropofolIV_50"}
         && {(_set param [8, ""]) == "propofol"}
         && {(_set param [9, 0]) == 50};

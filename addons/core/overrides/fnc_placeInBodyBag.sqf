@@ -56,11 +56,11 @@ if ((_tourniquetCount + _pulseOximeterCount + _pressureCuffCount) > 0) then {
     };
 
     for "_i" from 1 to _pulseOximeterCount do {
-        [_medic, "ACM_PulseOximeter"] call ACEFUNC(common,addToInventory);
+        [_medic, "ACME_PulseOximeter"] call ACEFUNC(common,addToInventory);
     };
 
     for "_i" from 1 to _pressureCuffCount do {
-        [_medic, "ACM_PressureCuff"] call ACEFUNC(common,addToInventory);
+        [_medic, "ACME_PressureCuff"] call ACEFUNC(common,addToInventory);
     };
 
     [LLSTRING(BodyBagReturnedItems), 2, _medic] call ACEFUNC(common,displayTextStructured);

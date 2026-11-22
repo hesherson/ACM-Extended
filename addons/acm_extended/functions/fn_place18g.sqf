@@ -16,7 +16,7 @@ if (isNull _patient) exitWith {};
 // success, and only consume the catheter as a confirmed stick, when an 18g actually landed at the site. a failed
 // stick lets the message of setiv stand and wastes the catheter, like ACM.
 if (!isNil "ACM_circulation_fnc_setIV") then {
-    if !([_medic, "ACM_IV_18g"] call ACME_fnc_itemTake) exitWith {
+    if !([_medic, "ACME_IV_18g"] call ACME_fnc_itemTake) exitWith {
         ["No 18G catheter in inventory.", 2, _medic] call ace_common_fnc_displayTextStructured;
     };
     [_medic, _patient, _bodyPart, 5, true, true, _accessSite] call ACM_circulation_fnc_setIV;

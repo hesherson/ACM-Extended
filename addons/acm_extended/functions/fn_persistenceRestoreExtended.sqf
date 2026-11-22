@@ -5,6 +5,10 @@ if (canSuspend) exitWith {private _ok = false; isNil {_ok = _this call ACME_fnc_
 params ["_unit","_metadata",["_timeout",30],["_tick",false]];
 if (isNull _unit || {!local _unit} || {!(_metadata isEqualType createHashMap)}
     || {!(_timeout isEqualType 0)} || {!finite _timeout} || {_timeout < 0} || {_timeout > 3600}) exitWith {false};
+if (!_tick) then {
+    [_unit] call ACME_fnc_itemCargoMigrate;
+    _metadata = _metadata call ACME_fnc_itemDataCanonical;
+};
 private _marked = "ACME_checkpoint_v1" in _metadata;
 private _ok = !_marked || {(_metadata get "ACME_checkpoint_v1") isEqualTo [1,true]};
 if (_marked) then {

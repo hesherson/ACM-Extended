@@ -30,7 +30,7 @@ ACME_NA2_ownerInstalled = true;
 ["ACME_hpmkReturnItem", {
     params [["_receiver", objNull, [objNull]]];
     if (!isNull _receiver && {local _receiver}) then {
-        [_receiver, "ACM_HPMK"] call ace_common_fnc_addToInventory;
+        [_receiver, "ACME_HPMK"] call ace_common_fnc_addToInventory;
     };
 }] call CBA_fnc_addEventHandler;
 ["ACME_ettReturnTube", {

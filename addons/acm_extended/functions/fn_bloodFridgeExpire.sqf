@@ -8,7 +8,7 @@ private _expiry = ["fridge"] call ACME_fnc_bloodTiming;
 if (_age >= _expiry) exitWith {_fridge setVariable ["ACME_bf_stock",[],true];};
 private _kept = _stock select {
     private _class = _x select 0;
-    (_class find "ACM_FreshBloodBag_") != 0
+    (_class find "ACME_FreshBloodBag_") != 0
         || {_age < (["fresh"] call ACME_fnc_bloodTiming) && {([_class] call ACME_fnc_bloodWarmLimit) > 0}}
 };
 if (_kept isNotEqualTo _stock) then {_fridge setVariable ["ACME_bf_stock",_kept,true];};

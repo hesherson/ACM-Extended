@@ -10,17 +10,17 @@ private _stock = if (isNull _fridge) then { [] } else { _fridge getVariable ["AC
 
 // the display names, in the order a medic thinks about them: the universal donor first, then the rest.
 private _names = createHashMapFromArray [
-    ["ACM_BloodBag_ON_500",  ["O NEG", "universal donor"]],
-    ["ACM_BloodBag_O_500",   ["O POS", ""]],
-    ["ACM_BloodBag_AN_500",  ["A NEG", ""]],
-    ["ACM_BloodBag_A_500",   ["A POS", ""]],
-    ["ACM_BloodBag_BN_500",  ["B NEG", ""]],
-    ["ACM_BloodBag_B_500",   ["B POS", ""]],
-    ["ACM_BloodBag_ABN_500", ["AB NEG", ""]],
-    ["ACM_BloodBag_AB_500",  ["AB POS", "universal recipient"]]
+    ["ACME_BloodBag_ON_500",  ["O NEG", "universal donor"]],
+    ["ACME_BloodBag_O_500",   ["O POS", ""]],
+    ["ACME_BloodBag_AN_500",  ["A NEG", ""]],
+    ["ACME_BloodBag_A_500",   ["A POS", ""]],
+    ["ACME_BloodBag_BN_500",  ["B NEG", ""]],
+    ["ACME_BloodBag_B_500",   ["B POS", ""]],
+    ["ACME_BloodBag_ABN_500", ["AB NEG", ""]],
+    ["ACME_BloodBag_AB_500",  ["AB POS", "universal recipient"]]
 ];
-private _order = ["ACM_BloodBag_ON_500","ACM_BloodBag_O_500","ACM_BloodBag_AN_500","ACM_BloodBag_A_500",
-                  "ACM_BloodBag_BN_500","ACM_BloodBag_B_500","ACM_BloodBag_ABN_500","ACM_BloodBag_AB_500"];
+private _order = ["ACME_BloodBag_ON_500","ACME_BloodBag_O_500","ACME_BloodBag_AN_500","ACME_BloodBag_A_500",
+                  "ACME_BloodBag_BN_500","ACME_BloodBag_B_500","ACME_BloodBag_ABN_500","ACME_BloodBag_AB_500"];
 
 private _have = createHashMap;
 { _x params ["_cls", "_n"]; _have set [_cls, ((_have getOrDefault [_cls, 0]) + _n)]; } forEach _stock;

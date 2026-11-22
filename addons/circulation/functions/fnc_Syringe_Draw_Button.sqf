@@ -59,7 +59,7 @@ if (_type > 0) then {
         };
         private _pendingId = format ["nativePush:%1:%2:%3",clientOwner,diag_tickTime,_drawAmmo];
         private _pending = _drawMedic getVariable ["ACME_nativeSyringePending",[]];
-        private _drawClass = format ["ACM_Syringe_%1_%2",_drawSize,_drawMed];
+        private _drawClass = format ["ACME_Syringe_%1_%2",_drawSize,_drawMed];
         _pending pushBack [_drawClass,_drawAmmo,_pendingId,diag_tickTime + _pushSec + 30];
         _drawMedic setVariable ["ACME_nativeSyringePending",_pending,false];
         private _drawReceipt = [_drawClass,_drawAmmo,_pendingId];

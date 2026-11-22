@@ -33,7 +33,7 @@ private _containerString = ["uniform", "vest", "backpack"];
     {
         _x params ["_magClassname", "_magCount"];
 
-        if (_magClassname == "ACM_OxygenTank_425" && {_magCount > 0}) then {
+        if (_magClassname == "ACME_OxygenTank_425" && {_magCount > 0}) then {
             _targetMags pushBack _magCount;
         };
     } forEach _mags;
@@ -46,14 +46,14 @@ private _containerString = ["uniform", "vest", "backpack"];
 
         private _targetAmmoCount = (_targetMags select 0);
 
-        _container addMagazineAmmoCargo ["ACM_OxygenTank_425", -1, _targetAmmoCount];
+        _container addMagazineAmmoCargo ["ACME_OxygenTank_425", -1, _targetAmmoCount];
 
         private _newCount = _targetAmmoCount - 1;
 
         if (_newCount < 1) then {
-            [_unit, "ACM_OxygenTank_425_Empty", (_containerString select _forEachIndex)] call ACEFUNC(common,addToInventory);
+            [_unit, "ACME_OxygenTank_425_Empty", (_containerString select _forEachIndex)] call ACEFUNC(common,addToInventory);
         } else {
-            _container addMagazineAmmoCargo ["ACM_OxygenTank_425", 1, _newCount];
+            _container addMagazineAmmoCargo ["ACME_OxygenTank_425", 1, _newCount];
             _return = true;
         };
     };
@@ -62,10 +62,10 @@ private _containerString = ["uniform", "vest", "backpack"];
 // No loose tank: one packed in an Enhanced First Aid Kits kit is drawn from right inside the kit, where it
 // stays opened. drawCharge answers the units left in it, -1 when no kit holds a tank.
 if (!_found && {!isNil "efak_medical_fnc_drawCharge"}) then {
-    private _left = [_unit, "ACM_OxygenTank_425"] call efak_medical_fnc_drawCharge;
+    private _left = [_unit, "ACME_OxygenTank_425"] call efak_medical_fnc_drawCharge;
 
     if (_left == 0) then {
-        [_unit, "ACM_OxygenTank_425_Empty"] call ACEFUNC(common,addToInventory);
+        [_unit, "ACME_OxygenTank_425_Empty"] call ACEFUNC(common,addToInventory);
     };
 
     _return = _left >= 1;

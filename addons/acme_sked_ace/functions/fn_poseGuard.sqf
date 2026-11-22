@@ -1,8 +1,8 @@
 /*
  * Where the casualty is local: once a second, keep a strapped casualty on the SKED, and in the pose. The
- * pose is put back only after it has been wrong for three checks running, and then at most every 10 s,
- * so a pose that does not hold (ACE or the engine overriding it) costs one global animation change every
- * 10 s, not every second. Stops by itself when they leave the SKED.
+ * pose is put back after it has been wrong for two checks running, and then at most every 4 s, so a pose
+ * that does not hold (ACE or the engine overriding it) costs one global animation change every 4 s, not
+ * every second. Stops by itself when they leave the SKED.
  * Arguments: 0: casualty.
  */
 params ["_patient"];
@@ -24,12 +24,14 @@ private _id = [{
             [_patient, _litter] call acme_sked_fnc_reattach;
         };
     };
+    // the litter's straps sit on what he wears now (bare, or the HPMK)
+    [_litter] call acme_sked_fnc_strapFit;
     if (!alive _patient) exitWith {};
     private _anim = [_patient] call acme_sked_fnc_patientPose;
     if ((toLowerANSI animationState _patient) isEqualTo (toLowerANSI _anim)) exitWith {_patient setVariable ["acme_sked_poseMiss", 0]};
     private _miss = (_patient getVariable ["acme_sked_poseMiss", 0]) + 1;
     _patient setVariable ["acme_sked_poseMiss", _miss];
-    if (_miss >= 3 && {CBA_missionTime > (_patient getVariable ["acme_sked_poseAt", -100]) + 10}) then {
+    if (_miss >= 2 && {CBA_missionTime > (_patient getVariable ["acme_sked_poseAt", -100]) + 4}) then {
         _patient setVariable ["acme_sked_poseAt", CBA_missionTime];
         [_patient, _anim, 2] call ace_common_fnc_doAnimation;
         [{

@@ -30,7 +30,7 @@ private _downed = (_patient getVariable ["ACE_isUnconscious", false])
 if (!_downed) exitWith {};
 
 private _as = toLowerANSI animationState _patient;
-if (_as in ["acm_lyingstate", "acm_recoveryposition", "acm_cpr", "acm_cpr_stop", "acm_genericcontinuous", "acm_pronecontinuous"]) exitWith {};
+if (_as in ["acm_lyingstate", "acme_litter_side", "acm_recoveryposition", "acm_cpr", "acm_cpr_stop", "acme_cpr", "acme_cpr_l", "acme_cpr_in", "acme_cpr_in_l", "acme_cpr_hold", "acme_cpr_out", "acm_genericcontinuous", "acm_pronecontinuous"]) exitWith {};
 
 // Animated shoulder/head/pelvis geometry gives us a cheap side-on detector. Supine and prone both have a strong
 // vertical chest-normal component; the accidental ragdoll-on-the-side state is near zero.

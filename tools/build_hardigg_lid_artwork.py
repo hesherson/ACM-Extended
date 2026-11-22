@@ -7,14 +7,15 @@ import random
 
 import numpy as np
 from PIL import Image
-
-from build_hardigg_wear import inventory_card, lid_tape, tape_material
+from build_hardigg_sheet import SHEETS, sheet, strips
+from build_hardigg_tape import SCALE, lift, tape_image
+from build_hardigg_wear import inventory_card, lid_tape
 
 ATLAS_SIZE = 2048
 TILE_SIZE = 512
 FRONT_SCALE = np.array((.526 / 1000, .832 / 1600))
-CARD_CENTER = (528, 889)
-CARD_ANGLE = 2
+CARD_CENTER = (528, 785)
+CARD_ANGLE = 1
 TEXTURE = "lid_artwork_0_ca.paa"
 
 
@@ -31,34 +32,41 @@ class Piece:
     damage: str
     tile: tuple
     over_card: bool = False
+    size: tuple = None                                       # in lid pixels; the image holds SCALE texels for each
+    maps: dict = None                                        # tape: its normal map, specular map and relief
+    card: tuple = None                                       # the sheet a strip holds: centre, turn, half size
 
 
-def artwork(index):
-    """Allocate one padded atlas tile per chest design, all sharing one model section."""
+def artwork(index, glyphs, handwriting, quantity):
+    """Lay the pieces of one chest design out on its own atlas, SCALE texels for each lid pixel."""
     rng = random.Random(36400 + index * 31)
-    images = [(pos, angle, tape_material(length, width, rng, color, label), damage, False)
-              for pos, length, width, angle, color, label, damage in lid_tape(index)]
-    if index == 2:
-        images.insert(0, (CARD_CENTER, CARD_ANGLE, inventory_card(), "sleeve", False))
-        # Independently modeled strips overlap the sleeve and follow the lid ribs.
-        for offset, length, width, angle, damage in (
-            ((-6, -210), 479, 41, 1, "fold"), ((4, 207), 472, 42, -1, "split"),
-            ((-248, -1), 385, 40, 90, "lift"), ((246, -5), 385, 43, -89, "fold"),
-        ):
-            center = tuple(rotated(np.array(offset), CARD_ANGLE, CARD_CENTER))
-            images.append((center, CARD_ANGLE + angle,
-                           tape_material(length, width, rng, (127, 129, 119), ""), damage, True))
-    offset_x, offset_y = index % 4 * TILE_SIZE, index // 4 * TILE_SIZE
+    images = []
+    spec = SHEETS.get(index)
+    for order, (pos, length, width, angle, color, label, damage) in enumerate(lid_tape(index)):
+        if spec:                                             # tape that lay where the inventory sheet is now
+            pos = spec.get("moved", {}).get(order, pos)
+        tape = tape_image(length, width, rng, color, label, glyphs, damage)
+        images.append((pos, angle, tape["image"], damage, False, (length, width), tape, None))
+    if spec:
+        made = sheet(index)
+        centre, turn = spec["place"]
+        card = (centre, turn, made["size"][0] / 2 + 6, made["size"][1] / 2 + 4)
+        images.insert(0, (centre, turn, made["image"], "sleeve", False, made["size"], made, None))
+        # Independently modeled strips overlap the sheet and follow the lid ribs.
+        for offset, length, width, angle, damage, colour in strips(index):
+            center = tuple(rotated(np.array(offset), turn, centre))
+            tape = tape_image(round(length), width, rng, colour, "", glyphs, damage)
+            images.append((center, turn + angle, tape["image"], damage, True, (round(length), width), tape, card))
     x = y = 12
     row_height = 0
     pieces = []
-    for pos, angle, image, damage, over_card in images:
-        width, height = (round(n * .64) for n in image.size)
-        if x + width + 12 > TILE_SIZE:
+    for pos, angle, image, damage, over_card, size, maps, card in images:
+        width, height = (round(n * SCALE) for n in size)
+        if x + width + 12 > ATLAS_SIZE:
             x, y, row_height = 12, y + row_height + 12, 0
-        if y + height + 12 > TILE_SIZE:
-            raise ValueError(f"Lid artwork tile {index} exceeds its atlas allocation")
-        pieces.append(Piece(pos, angle, image, damage, (offset_x + x, offset_y + y, width, height), over_card))
+        if y + height + 12 > ATLAS_SIZE:
+            raise ValueError(f"Lid artwork of finish {index} exceeds its atlas")
+        pieces.append(Piece(pos, angle, image, damage, (x, y, width, height), over_card, size, maps, card))
         row_height = max(row_height, height)
         x += width + 12
     return pieces
@@ -115,7 +123,7 @@ class LidSurface:
 
 
 def piece_mesh(piece, surface, detail):
-    width, height = piece.image.size
+    width, height = piece.size or piece.image.size
     tape = piece.damage != "sleeve"
     step = (10, 19, 34)[detail - 1]
     # The molded ribs run horizontally. The sleeve needs the same vertical fit as
@@ -131,20 +139,15 @@ def piece_mesh(piece, surface, detail):
 
     for column, u in enumerate(columns):
         for row, v in enumerate(rows):
-            across = v
-            if split and column < tear_end:
-                # A tapering gap with uneven fibers, cut into the actual mesh.
-                opening = .14 * (1 - u / columns[tear_end]) * (1 + .25 * math.sin(u * 61))
-                across += (-1 if row <= middle else 1) * opening * (1 - abs(v * 2 - 1))
+            # A ripped tip is a tear in the picture of the strip (build_hardigg_tape.py), not a gap in the mesh.
             px = (u - .5) * width
-            py = (across - .5) * height
-            if tape:
-                px += (math.sin(v * 26 + u * 6) + math.sin(v * 67)) * 2.3 * abs(2*u-1)**8
-                py += (math.sin(u * 57 + v) + math.sin(u * 103 - v * 3)) * 1.35 * abs(2*v-1)**4
-            distance = .00075
+            py = (v - .5) * height
+            distance = .0011
             if tape:
                 wrinkle = max(0, math.sin(u * 38 + v * 5 + .4 * math.sin(v * 9)))**7
-                distance += .0011 * wrinkle * (.35 + .65 * math.sin(v * math.pi))
+                distance += .0006 * wrinkle * math.sin(v * math.pi)
+                if piece.maps and "relief" in piece.maps:    # the swell under each pucker of the strip
+                    distance += lift(piece.maps["relief"], u, v)
                 tip = max(0, (u - .82) / .18)
                 if piece.damage == "lift":
                     distance += .009 * tip**2 * (.28 + .72 * v)
@@ -153,18 +156,19 @@ def piece_mesh(piece, surface, detail):
                     px -= .12 * width * roll**2
                     distance += .007 * roll**1.5
                 if split:
-                    distance += .003 * max(0, 1 - 2*u) * math.exp(-((v-.5)/.21)**2)
+                    distance += .0018 * max(0, 1 - 2*u) * math.exp(-((v-.5)/.21)**2)
             else:
-                crease = v - .54 + .034 * (u - .5)
-                distance += .0028 * math.exp(-(crease / .047)**2)
-                distance += .0020 * v**8 * abs(2*u-1)**6
+                place, slope, rise = piece.maps["fold"] if piece.maps else (.54, .034, .00038)
+                crease = v - place + slope * (u - .5)
+                distance += rise * math.exp(-(crease / .047)**2)
             design_x, design_y = rotated(np.array((px, py)), piece.angle, piece.center)
             x, z = np.array((.263, .832)) - np.array((design_x, design_y)) * FRONT_SCALE
-            if piece.over_card:
-                card_x, card_y = rotated(np.array((design_x, design_y)), -CARD_ANGLE,
-                                         -np.array(rotated(np.array(CARD_CENTER), -CARD_ANGLE, (0, 0))))
-                if abs(card_x) < 257 and abs(card_y) < 217:
-                    distance += .0026 + .0020 * math.exp(-((card_y + .034*card_x - 17) / 21)**2)
+            if piece.over_card:                              # raised where it lies on the sheet it holds
+                centre, turn, half_w, half_h = piece.card
+                card_x, card_y = rotated(np.array((design_x, design_y)), -turn,
+                                         -np.array(rotated(np.array(centre), -turn, (0, 0))))
+                if abs(card_x) < half_w and abs(card_y) < half_h:
+                    distance += .0012
             points.append((x, surface.depth(x, z) + distance, z))
             uv.append(((atlas_x + .65 + u * (atlas_w - 1.3)) / ATLAS_SIZE,
                        1 - (atlas_y + .65 + v * (atlas_h - 1.3)) / ATLAS_SIZE))
@@ -172,8 +176,6 @@ def piece_mesh(piece, surface, detail):
     stride = len(rows)
     for i in range(len(columns) - 1):
         for j in range(stride - 1):
-            if split and i < tear_end and j == middle:
-                continue
             a = i * stride + j
             b = a + stride
             faces.extend(((a, a + 1, b), (a + 1, b + 1, b)))
@@ -199,7 +201,9 @@ def piece_mesh(piece, surface, detail):
     faces.extend((b, a, a + front_count, b + front_count) for a, b in sorted(edges))
     used = sorted({i for face in faces for i in face})
     indices = {old: new for new, old in enumerate(used)}
-    return [points[i] for i in used], [uv[i] for i in used], [tuple(indices[i] for i in face) for face in faces]
+    front = 2 * (len(columns) - 1) * (stride - 1)            # the faces of the face of the piece come first
+    return ([points[i] for i in used], [uv[i] for i in used], [tuple(indices[i] for i in face) for face in faces],
+            front)
 
 
 def add_lid_artwork(lod, variants):
@@ -207,19 +211,34 @@ def add_lid_artwork(lod, variants):
     selected = lod["sels"].setdefault("lid_artwork", set())
     for pieces in variants:
         for piece in pieces:
-            points, uv, faces = piece_mesh(piece, surface, round(lod["res"]))
+            points, uv, faces, front = piece_mesh(piece, surface, round(lod["res"]))
             start = len(lod["verts"])
             lod["verts"].extend(points)
             vertices = set(range(start, start + len(points)))
             selected.update(vertices)
             lod["sels"]["lid"].update(vertices)
-            for ids in faces:
-                a, b, c = np.array([points[i] for i in ids[:3]])
+            # The face of a piece is smooth, so that its normal map can do the creasing; edges and backing are flat.
+            positions = np.asarray(points)
+            flat, smooth = {}, np.zeros((len(points), 3))
+            for k, ids in enumerate(faces):
+                a, b, c = positions[list(ids[:3])]
                 normal = np.cross(b - a, c - a)
                 length = np.linalg.norm(normal)
                 if length < 1e-11:
                     continue
-                normal_index = len(lod["normals"])
-                lod["normals"].append(tuple(normal / length))
-                lod["faces"].append(dict(v=[start + i for i in ids], n=[normal_index] * len(ids),
+                flat[k] = normal / length
+                if k < front:
+                    smooth[list(ids)] += normal
+            first_normal = len(lod["normals"])
+            lengths = np.linalg.norm(smooth, axis=1, keepdims=True)
+            lod["normals"].extend(map(tuple, np.where(lengths > 0, smooth / np.maximum(lengths, 1e-20), (0., 1., 0.)).tolist()))
+            for k, ids in enumerate(faces):
+                if k not in flat:
+                    continue
+                if k < front:
+                    normals = [first_normal + i for i in ids]
+                else:
+                    normals = [len(lod["normals"])] * len(ids)
+                    lod["normals"].append(tuple(flat[k]))
+                lod["faces"].append(dict(v=[start + i for i in ids], n=normals,
                                          uv=[uv[i] for i in ids], tex=TEXTURE, mat=""))

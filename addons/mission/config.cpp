@@ -39,6 +39,12 @@ class CfgMissions {
             overviewPicture = "x\ACM\addons\main\logo.paa";
             overviewText = "#1 Malpractice Simulator™";
         };
+        class ACME_Debugging
+        {
+            directory = QPATHTOF(ACME_Debugging.VR);
+            overviewPicture = "x\ACM\addons\main\logo.paa";
+            overviewText = "Repeatable medical and transport checks with a QA table and RPT logging.";
+        };
     };
     class MPMissions
     {

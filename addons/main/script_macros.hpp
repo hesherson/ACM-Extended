@@ -394,7 +394,7 @@
 #define FLUIDS_ARRAY ['ACE_salineIV','ACE_plasmaIV','ACE_salineIV_500','ACE_plasmaIV_500','ACE_salineIV_250','ACE_plasmaIV_250']
 #define FLUIDS_ARRAY_DATA ['salineIV','plasmaIV','salineIV_500','plasmaIV_500','salineIV_250','plasmaIV_250']
 
-#define FBTK_ARRAY ['ACM_FieldBloodTransfusionKit_500','ACM_FieldBloodTransfusionKit_250']
+#define FBTK_ARRAY ['ACME_FieldBloodTransfusionKit_500','ACME_FieldBloodTransfusionKit_250']
 #define FBTK_ARRAY_DATA ['FieldBloodTransfusionKit_500','FieldBloodTransfusionKit_250']
 
 // Damage

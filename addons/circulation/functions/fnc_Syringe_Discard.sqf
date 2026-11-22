@@ -54,12 +54,12 @@ private _containers = [uniformContainer _medic, vestContainer _medic, backpackCo
     params ["_args"];
     _args params ["_medic", "_medication", "_size"];
 
-    [_medic, (format ["ACM_Syringe_%1", _size])] call ACEFUNC(common,addToInventory);
+    [_medic, (format ["ACME_Syringe_%1", _size])] call ACEFUNC(common,addToInventory);
     [LSTRING(Syringe_Discard_Complete), 2, _medic] call ACEFUNC(common,displayTextStructured);
 }, {
     params ["_args"];
     _args params ["_medic", "_medication", "_size", "_amount"];
 
-    [_medic, (format ["ACM_Syringe_%1_%2", _size, _medication]), "", _amount] call ACEFUNC(common,addToInventory);
+    [_medic, (format ["ACME_Syringe_%1_%2", _size, _medication]), "", _amount] call ACEFUNC(common,addToInventory);
 }, (format [LLSTRING(Syringe_Discard_Progress), _medication, _size]), {true}, ["isNotInside", "isNotSwimming", "isNotInZeus"]] call ACEFUNC(common,progressBar);
 

@@ -48,6 +48,7 @@ class CfgWeapons {
 
     // Inventory item, 1 unit. The ground model is the closed cooler.
     class ACME_BloodCooler1U_Item: ItemCore {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         author = "mavis";
@@ -64,6 +65,7 @@ class CfgWeapons {
 
     // Inventory item, 2 unit. The ground model is the closed cooler.
     class ACME_BloodCooler2U_Item: ItemCore {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         author = "mavis";
@@ -80,6 +82,7 @@ class CfgWeapons {
 
     // Inventory item, 4 unit. The ground model is the closed cooler.
     class ACME_BloodCooler4U_Item: ItemCore {
+        dlc = "ACM_Extended";
         scope = 1;
         scopeArsenal = 0;
         author = "mavis";
@@ -101,6 +104,7 @@ class CfgVehicles {
 
     // Ground holder for the 1 unit item, for placement in Eden and Zeus.
     class ACME_BloodCooler1U_Item_Ground: Item_Base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -118,6 +122,7 @@ class CfgVehicles {
 
     // Physics prop, 1 unit, closed.
     class ACME_BloodCooler1U_Closed: ThingX {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -141,6 +146,7 @@ class CfgVehicles {
 
     // Ground holder for the 2 unit item, for placement in Eden and Zeus.
     class ACME_BloodCooler2U_Item_Ground: Item_Base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -158,6 +164,7 @@ class CfgVehicles {
 
     // Physics prop, 2 unit, closed.
     class ACME_BloodCooler2U_Closed: ThingX {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -181,6 +188,7 @@ class CfgVehicles {
 
     // Ground holder for the 4 unit item, for placement in Eden and Zeus.
     class ACME_BloodCooler4U_Item_Ground: Item_Base_F {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";
@@ -198,6 +206,7 @@ class CfgVehicles {
 
     // Physics prop, 4 unit, closed.
     class ACME_BloodCooler4U_Closed: ThingX {
+        dlc = "ACM_Extended";
         scope = 2;
         scopeCurator = 2;
         author = "mavis";

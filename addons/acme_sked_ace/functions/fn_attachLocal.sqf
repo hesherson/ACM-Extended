@@ -11,8 +11,18 @@ if ((_patient getVariable ["acme_sked_litter", objNull]) isNotEqualTo _litter) e
 if (_patient getVariable ["ACME_headElevated", false]) then {
     ["ACME_headElev_transportDown", [_patient]] call CBA_fnc_localEvent;
 };
-if (alive _patient) then {
-    [_patient, [_patient] call acme_sked_fnc_patientPose, 2] call ace_common_fnc_doAnimation;
+// A casualty who was laid on the litter during the timer is in the pose already and only changes litter.
+private _pose = [_patient, _litter] call acme_sked_fnc_patientPose;
+private _posed = (toLowerANSI animationState _patient) == (toLowerANSI _pose);
+if (alive _patient && {!_posed}) then {
+    [_patient, _pose, 2, true] call ace_common_fnc_doAnimation;
+};
+_patient setVariable ["acme_sked_placeToken", (_patient getVariable ["acme_sked_placeToken", 0]) + 1];
+[_patient, _litter] call acme_sked_fnc_gearHide;
+if (_posed || {!alive _patient}) exitWith {
+    [_patient, _litter, false] call acme_sked_fnc_align;
+    ["patient aligned", _litter, _patient, [attachedTo _patient]] call acme_sked_fnc_traceTransport;
+    [_patient] call acme_sked_fnc_poseGuard;
 };
 [{
     params ["_patient", "_litter"];

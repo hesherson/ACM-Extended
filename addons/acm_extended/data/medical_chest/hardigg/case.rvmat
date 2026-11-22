@@ -37,7 +37,7 @@ class Stage3 {
     };
 };
 class Stage4 {
-    texture = "#(argb,8,8,3)color(1,1,1,1,AS)";
+    texture = "acm_extended\data\medical_chest\hardigg\case_as.paa";
     uvSource = "tex";
     class uvTransform {
         aside[] = {1, 0, 0};

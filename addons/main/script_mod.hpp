@@ -4,6 +4,7 @@
 #define AUTHOR "Blue"
 
 #include "script_version.hpp"
+#include "item_aliases.hpp"
 
 #define VERSION     MAJOR.MINOR
 #define VERSION_STR MAJOR.MINOR.PATCH.BUILD

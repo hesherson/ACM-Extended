@@ -13,7 +13,7 @@ if !((_display getVariable ["ACME_SK_Return", []]) isEqualTo []) exitWith {};
 if (_index < 0) exitWith {};
 
 private _flushClass = _ctrl lbData _index;
-if (_flushClass isEqualTo "") then { _flushClass = "ACM_SalineFlush_10"; };
+if (_flushClass isEqualTo "") then { _flushClass = "ACME_SalineFlush_10"; };
 
 if (([ACE_player, uiNamespace getVariable ["ACME_SK_Patient",objNull], _flushClass] call ACME_fnc_treatmentSupplyCount) < 1) exitWith {
     ["No 10 mL saline flush in inventory.", 2, ACE_player, 13] call ace_common_fnc_displayTextStructured;

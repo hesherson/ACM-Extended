@@ -21,4 +21,4 @@ private _text=switch _state do {
     default {"No oxygen tank · Room air"};
 };
 if (_attached && {!_usable} && {_state in ["READY","DRAWING"]}) then {_text="Checking oxygen supply · Room air";};
-[_attached,_usable,_liters,"ACM_OxygenTank_425",_text]
+[_attached,_usable,_liters,"ACME_OxygenTank_425",_text]

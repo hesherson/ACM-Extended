@@ -22,7 +22,7 @@ private _receipt = [];
 if (_usesStock) then {
     private _medic = uiNamespace getVariable ["ACME_IV_Medic", objNull];
     private _patient = uiNamespace getVariable ["ACME_IV_Patient", objNull];
-    _receipt = [_medic, _patient, [format ["ACM_IV_%1g", _gauge]]] call ACME_fnc_treatmentSupplyTake;
+    _receipt = [_medic, _patient, [format ["ACME_IV_%1g", _gauge]]] call ACME_fnc_treatmentSupplyTake;
 };
 if (_usesStock && {_receipt isEqualTo []}) exitWith {
     (_dlg displayCtrl 86503) ctrlSetText "No catheter available.";

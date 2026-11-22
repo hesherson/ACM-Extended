@@ -35,7 +35,7 @@ if (_state && (([_patient, _bodyPart, 3] call FUNC(hasAED)) || [_patient, _bodyP
     };
 
     [_hint, 2, _medic] call ACEFUNC(common,displayTextStructured);
-    [_medic, "ACM_PressureCuff"] call ACEFUNC(common,addToInventory);
+    [_medic, "ACME_PressureCuff"] call ACEFUNC(common,addToInventory);
 };
 
 if !(_state) then {

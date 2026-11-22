@@ -12,7 +12,7 @@ private _protected = [];
 private _represented = [];
 {
     if ((_x param [13,"",[""]]) != "inventoryB279" && {(_x param [6,"",[""]]) == ""}) then {
-        _represented pushBack [format ["ACM_Syringe_%1_%2",_x param [1,10],_x param [0,""]],round ((_x param [2,0]) * 100)];
+        _represented pushBack [format ["ACME_Syringe_%1_%2",_x param [1,10],_x param [0,""]],round ((_x param [2,0]) * 100)];
     };
 } forEach _rows;
 {
@@ -24,7 +24,7 @@ private _represented = [];
         private _cfg = configFile >> "CfgMagazines" >> _class;
         if (_ammo <= 0 || {getNumber (_cfg >> "ACM_isSyringe") != 1}) then {continue};
         private _parts = _class splitString "_";
-        if (count _parts < 4 || {(_parts select 0) != "ACM"} || {(_parts select 1) != "Syringe"}) then {continue};
+        if (count _parts < 4 || {(_parts select 0) != "ACME"} || {(_parts select 1) != "Syringe"}) then {continue};
         private _size = parseNumber (_parts select 2);
         private _med = _parts select 3;
         if !(_size in [1,3,5,10] && {_ammo <= _size * 100}) then {continue};
