@@ -1,5 +1,6 @@
 // work out what kind of fluid the bag we are raising holds, so the in-hand bag reads correctly: blood, in red,
-// plasma, in amber, or fluid, clear, which is the saline, crystalloid and medication default.
+// plasma, in amber, Plasma-Lyte (clear, its own label: "plasmalyte"), or fluid, clear, which is the saline, crystalloid
+// and medication default.
 // it reads the actual hung bags of the patient, from ACM_circulation_IV_Bags, where the body part maps to
 // [[_bagType, _volume, _accessType, _accessSite, _iv, _bloodType], ...].
 // a blood bag carries a _bloodType, and blood and plasma also show in the _bagType. it defaults to fluid if nothing
@@ -34,6 +35,6 @@ private _bt = if (_bagType isEqualType "") then { toLower _bagType } else { toLo
 private _hasBloodType = (_bloodType isEqualType "" && {_bloodType != ""}) || {_bloodType isEqualType 0 && {_bloodType >= 0}};  // B395: ACM blood types are 0 (O) to 7; -1 means none
 if ((_bt find "blood" >= 0) || {_hasBloodType}) exitWith { "blood" };
 // (Plasma-Lyte is a clear crystalloid, not plasma: B395)
-if (_bt find "plasmalyte" >= 0) exitWith { "fluid" };
+if (_bt find "plasmalyte" >= 0) exitWith { "plasmalyte" };  // its own bag label (data\iv_bag); a clear line
 if (_bt find "plasma" >= 0) exitWith { "plasma" };
 "fluid"

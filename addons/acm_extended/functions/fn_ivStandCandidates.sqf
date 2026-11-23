@@ -10,7 +10,7 @@ private _parts = _stand getVariable ["ACME_ivStand_parts", ["", ""]];
 private _limbs = createHashMapFromArray [["leftarm", "left arm"], ["rightarm", "right arm"], ["leftleg", "left leg"],
     ["rightleg", "right leg"], ["body", "chest"], ["head", "head"]];
 private _fluidLabel = {
-    switch (_this) do {case "blood": {"blood"}; case "plasma": {"plasma"}; default {"fluids"};}
+    switch (_this) do {case "blood": {"blood"}; case "plasma": {"plasma"}; case "plasmalyte": {"Plasma-Lyte"}; default {"fluids"};}
 };
 if (_mode == "down") exitWith {
     private _out = [];

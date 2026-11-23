@@ -77,7 +77,9 @@ private _bagModel = getText (configFile >> "CfgVehicles" >> _bagModelClass >> "m
 // saline or plasma showed with the model's own blood texture.
 if (_bagModel != "") then {_bagModel = _bagModelClass;};
 private _bag = if (_bagModel != "") then { createSimpleObject [_bagModel, [0,0,0], true] } else { objNull };
-private _bagTexture = format ["\z\ace\addons\medical_treatment\data\IVBag_%1_%2ml_ca.paa", _texFluid, _vol];
+private _bagTexture = if (_fluidType == "plasmalyte") then {
+    format ["\acm_extended\data\iv_bag\IVBag_plasmalyte_%1ml_ca.paa", _vol]  // B396: Plasma-Lyte's own label (tools/build_plasmalyte_bag.py)
+} else {format ["\z\ace\addons\medical_treatment\data\IVBag_%1_%2ml_ca.paa", _texFluid, _vol]};
 if (!isNull _bag) then { _bag setObjectTexture [0, _bagTexture]; };
 _medic setVariable ["ACME_hang_FluidType", _fluidType, true];
 // the per-volume hand placement, from the live tuner. the bag euler is shared across volumes.

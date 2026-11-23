@@ -96,8 +96,8 @@ switch (_mode) do {
         private _fluid = [_patient, _part] call ACME_fnc_hangBagFluidType;
         private _vol = if (_volume <= 375) then {250} else {if (_volume <= 750) then {500} else {1000}};
         private _modelClass = switch (_vol) do {case 250: {"ACME_IVBagObject_250"}; case 1000: {"ACME_IVBagObject_1000"}; default {"ACME_IVBagObject"};};
-        private _tex = format ["\z\ace\addons\medical_treatment\data\IVBag_%1_%2ml_ca.paa",
-            switch (_fluid) do {case "blood": {"blood"}; case "plasma": {"plasma"}; default {"saline"};}, _vol];
+        private _tex = if (_fluid == "plasmalyte") then {format ["\acm_extended\data\iv_bag\IVBag_plasmalyte_%1ml_ca.paa", _vol]} else {
+            format ["\z\ace\addons\medical_treatment\data\IVBag_%1_%2ml_ca.paa", switch (_fluid) do {case "blood": {"blood"}; case "plasma": {"plasma"}; default {"saline"};}, _vol]};
         private _ropeClass = switch (_fluid) do {
             case "blood": {"ACME_IVLine_Rope_Blood"};
             case "plasma": {"ACME_IVLine_Rope_Plasma"};
