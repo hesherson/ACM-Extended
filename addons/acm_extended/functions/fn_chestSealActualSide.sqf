@@ -20,6 +20,10 @@ if (isNull _patient) exitWith {_fallback};
 if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
     _patient getVariable ["ACME_CS_facing", _fallback]
 };
+// B394: sitting up (Semi-Fowler, not laid flat for the moment) he faces front by construction (the lift starts only
+// from supine). The body geometry of the sitting pose was read as "back" in game, and chest access then rolled
+// him "to the front" before Check Breathing.
+if ((_patient getVariable ["ACME_headElevated", false]) && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {"front"};
 
 private _as = toLowerANSI animationState _patient;
 private _faceUpState = toLowerANSI (missionNamespace getVariable ["ACME_uncon_faceUp", "ACM_LyingState"]);

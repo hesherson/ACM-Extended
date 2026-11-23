@@ -64,8 +64,19 @@ class QuietOutput(unittest.TestCase):
             'functions/fn_bloodFridgeReceive.sqf':1,
             # Startup build identity plus capped changed-state native input observation.
             'functions/fn_initForkStartupRuntime.sqf':1,
+            'functions/fn_ivStandServer.sqf':2,
             'functions/fn_manualPlateCarrierAbortRemoval.sqf':1,
             'functions/fn_manualPlateCarrierAutoReturn.sqf':1,
+            # Routine traces below are emitted only while ACME_debug_enabled is on
+            # (see test_routine_rpt_lines_sit_behind_the_debug_check).
+            'functions/fn_medicalChestDrawerPlan.sqf':1,
+            'functions/fn_medicalChestDrawerTick.sqf':1,
+            'functions/fn_medicalChestLidMotion.sqf':4,
+            'functions/fn_medicalChestSetOpen.sqf':1,
+            'functions/fn_reactMedicalFallback.sqf':1,
+            'functions/fn_reactMedicalOpen.sqf':1,
+            'functions/fn_reactMedicalTick.sqf':1,
+            'functions/fn_reconcileProviderContinuousPose.sqf':1,
             'functions/fn_compatCheck.sqf':2,
             'functions/fn_cprAfterChestPrep.sqf':1,
             'functions/fn_debugDumpToClipboard.sqf':1,
@@ -79,6 +90,8 @@ class QuietOutput(unittest.TestCase):
             # historical_source expands the startup callee here as well; one native startup line.
             'functions/fn_postInit.sqf':6,
             'functions/fn_preparedAttachLocal.sqf':1,
+            # Persistence loaded/restored/saved lines, all behind the debug check.
+            'functions/fn_persistServer.sqf':3,
             'functions/fn_providerStateReconcile.sqf':3,
             'functions/fn_registerChestAccessVestRuntime.sqf':1,
             'functions/fn_registerMedicalMenuOpenRuntime.sqf':4,
@@ -99,6 +112,50 @@ class QuietOutput(unittest.TestCase):
         from test_b280_transfusion_native_input import assert_native_input_diagnostics_bounded, assert_startup_identity_log_is_outside_callbacks
         assert_native_input_diagnostics_bounded()
         assert_startup_identity_log_is_outside_callbacks()
+    def test_routine_rpt_lines_sit_behind_the_debug_check(self):
+        # Every routine/trace diag_log must sit directly inside `if (<debug check>) then {` so a normal
+        # session writes nothing. Failure reports are deliberately absent from this table (they stay on).
+        # (file relative to addons/, message fragment of the diag_log that must be gated)
+        gated = {
+            'acm_extended/functions/fn_medicalChestDrawerPlan.sqf': ['No drawer animations'],
+            'acm_extended/functions/fn_medicalChestDrawerTick.sqf': ['Medical chest drawers'],
+            'acm_extended/functions/fn_medicalChestLidMotion.sqf': ['lid path', 'lid motion interrupted', 'chest opened', 'chest closed'],
+            'acm_extended/functions/fn_medicalChestSetOpen.sqf': ['chest finish'],
+            'acm_extended/functions/fn_reactMedicalFallback.sqf': ['Native fallback'],
+            'acm_extended/functions/fn_reactMedicalOpen.sqf': ['Native fallback'],
+            'acm_extended/functions/fn_reactMedicalTick.sqf': ['cards visible'],
+            'acm_extended/functions/fn_reconcileProviderContinuousPose.sqf': ['Recovering unowned provider pose'],
+            'acm_extended/functions/fn_initForkStartupRuntime.sqf': ['[ACME BUILD]'],
+            'acm_extended/functions/fn_compatCheck.sqf': ['[ACME COMPAT] OK'],
+            'acm_extended/functions/fn_expansionRegisterRuntime.sqf': ['Batch 3 registered'],
+            'acm_extended/functions/fn_megacodeModuleInit.sqf': ['Spawned %1'],
+            'acm_extended/functions/fn_megacodePanelLoad.sqf': ['Panel opened'],
+            'acm_extended/functions/fn_updateTransfusionControls.sqf': ['[ACME B280 TX]'],
+            'acm_extended/functions/fn_providerStateReconcile.sqf': ['stale provider ContinuousAction', 'stale treatment preflight', 'stale Direct Pressure claim'],
+            'acm_extended/functions/fn_transientStateReconcile.sqf': ['repaired:'],
+            'acm_extended/functions/fn_registerChestAccessVestRuntime.sqf': ['timer ended'],
+            'acm_extended/functions/fn_persistServer.sqf': ['PERSIST] loaded', 'PERSIST] restored', 'PERSIST] saved'],
+            'acm_extended/functions/fn_networkCompatNotice.sqf': ['[ACME NETWORK COMPAT]'],
+            'core/overrides/fnc_treatment.sqf': ['remapped legacy action', 'launch denied', 'preparing patient', 'preparation aborted', 'Prep timeout'],
+            'core/functions/fnc_reconcileWake.sqf': ['CONSCIOUSNESS REPAIR'],
+            'core/functions/fnc_carrierRetireToWorld.sqf': ['retired carrier recovery retained'],
+            'acme_atak/functions/fn_batdokAction.sqf': ['[ACME] BATDOK: '],
+            'acme_sked_ace/XEH_postInit.sqf': ['SKED assets and ACE transport actions registered'],
+            'mission/functions/fnc_moduleInitElevationOverride_Eden.sqf': ['[ACME][Elevation] World='],
+        }
+        addons = R.parent
+        for rel, fragments in gated.items():
+            text = (addons / rel).read_text(encoding='utf-8-sig')
+            for fragment in fragments:
+                with self.subTest(file=rel, line=fragment):
+                    at = text.index(fragment)
+                    start = text.rindex('diag_log', 0, at)
+                    before = text[max(0, start - 160):start].rstrip()
+                    self.assertRegex(before, r'debugEnabled[^;]*then\s*\{$')
+        dump = (R / 'functions/fn_debugDumpToClipboard.sqf').read_text(encoding='utf-8-sig')
+        self.assertLess(dump.index('if !(call ACME_fnc_debugEnabled) exitWith'), dump.index('diag_log'))
+        radius = (R.parent / 'cbrn/functions/fnc_showRadius.sqf').read_text(encoding='utf-8-sig')
+        self.assertLess(radius.index('ACME_fnc_debugEnabled'), radius.index('drawIcon3D'))
     def test_scan_finds_quoted_config_callback(self):
         self.assertEqual(logs('onLoad = "diag_log \'message\';";',True),['diag_log'])
     def test_scan_ignores_comments_and_messages(self):

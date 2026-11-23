@@ -6,7 +6,7 @@
 class CfgPatches {
     class acme_bloodcooler {
         ACME_BUILD_CONFIG("acme_bloodcooler");
-        name = "ACM Extended Blood Cooler";
+        name = "ACME Blood Cooler";
         author = "mavis";
         requiredVersion = 2.0;
         // Load after all vanilla content and after the ACE blood bag models.
@@ -18,7 +18,7 @@ class CfgPatches {
 
 class CfgEditorCategories {
     class ACME_EdCat_Medical {
-        displayName = "ACM Extended";
+        displayName = "ACME";
     };
 };
 

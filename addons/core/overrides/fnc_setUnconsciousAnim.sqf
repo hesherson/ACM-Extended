@@ -78,7 +78,13 @@ if (_isUnconscious) then {
         TRACE_1("onfoot - playing standard anim",_unit);
 
         if (_unit getVariable [QGVAR(WasTreated), false] || _unit getVariable [QGVAR(Lying_State), false]) then {
-            [QACEGVAR(common,switchMove), [_unit, "ACM_LyingState"]] call CBA_fnc_globalEvent;
+            // B393: waking keeps a pose another system owns: sitting up (Semi-Fowler), the HPMK wrap, a litter, or a
+            // provider's animation lease. Only a casualty nobody holds is laid in the plain lying pose.
+            private _held = ((_unit getVariable ["ACME_headElevated", false]) && {!(_unit getVariable ["ACME_headElev_Suspended", false])})
+                || {(_unit getVariable ["ACME_hpmk_state", ""]) in ["wrapped", "exposed"]}
+                || {!isNull attachedTo _unit}
+                || {!isNil "ACME_fnc_patientAnimHeld" && {[_unit] call ACME_fnc_patientAnimHeld}};
+            if (!_held) then {[QACEGVAR(common,switchMove), [_unit, "ACM_LyingState"]] call CBA_fnc_globalEvent;};
 
             [{
                 params ["_unit","_poseTicket"];

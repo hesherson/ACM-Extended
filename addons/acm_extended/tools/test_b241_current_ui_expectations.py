@@ -49,7 +49,7 @@ def current_finish_tray_contract(refresh,tray):
         ('lock','SALINE LOCK','ACME_SalineLock'),
     ):
         assert has(refresh,f'case "{tool}": {{["{label}","{item}"]}};')
-    assert has(refresh,'default {["10 mL FLUSH","ACM_SalineFlush_10"]};')
+    assert has(refresh,'default {["10 mL FLUSH","ACME_SalineFlush_10"]};')
     assert has(refresh,'private _stock=[_data select 1] call _count;')
     assert has(refresh,'[_pic,_held==_tool,_stock] call ACME_fnc_traySlotState;')
     assert has(refresh,'_label ctrlSetText format ["%1  x%2",_data select 0,_stock];')

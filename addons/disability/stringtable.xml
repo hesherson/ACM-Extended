@@ -2,7 +2,7 @@
 <Project name="ACM">
     <Package name="Disability">
         <Key ID="STR_ACM_Disability_Category">
-            <English>ACM: Disability</English>
+            <English>ACME: Disability</English>
             <French>ACM : Restrictions de mouvement</French>
             <Spanish>ACM: Discapacidad</Spanish>
             <Polish>ACM: Ograniczenia ruchowe</Polish>

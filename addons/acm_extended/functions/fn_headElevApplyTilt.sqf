@@ -26,7 +26,10 @@ private _motionOwnsCollision = _motionToken != "" && {(_motionLock param [0, ""]
     && {(_motionLock param [4, -1]) > serverTime};
 if (_m > 0 && {!_motionOwnsCollision}) then {[_patient, true] call ACME_fnc_headElevCollision;};
 
-if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {
+// B393: a casualty wrapped in the HPMK keeps the one pose the shell is made for (fn_hpmkPose.sqf): his head is raised
+// in the care he gets, not in his animation, so the two never take turns over his body. Unwrapped, the lift is played.
+if (!(missionNamespace getVariable ["ACME_interventionAnimations", true])
+    || {(_patient getVariable ["ACME_hpmk_state", ""]) in ["wrapped", "exposed"]}) exitWith {
     _patient setVariable ["ACME_headElev_noAnimation", true, true];
     _patient setVariable ["ACME_headElev_visualActive", false, true];
     true

@@ -10,15 +10,21 @@ class B26Corrected(unittest.TestCase):
             assert_release_identity()
     def test_cardiac_vial_uses_acme_class_and_user_picture(self):
         c=read('config.cpp')
-        self.assertIn('class ACME_Vial_EpinephrineCardiac: ACM_Vial_Epinephrine', c)
+        # One item set since the ACME_ rename: the cardiac vial derives from ACME_Vial_Epinephrine and has no ACM_ alias.
+        self.assertIn('class ACME_Vial_EpinephrineCardiac: ACME_Vial_Epinephrine', c)
         self.assertIn('vial_epinephrine_1_10000_ca.paa', c)
         self.assertIn('scopeArsenal = 2;', c)
-        self.assertIn('class ACM_Vial_EpinephrineCardiac: ACME_Vial_EpinephrineCardiac', c)
+        self.assertNotIn('class ACM_Vial_EpinephrineCardiac', c)
         self.assertTrue((ROOT/'ui/items/vial_epinephrine_1_10000_ca.paa').exists())
     def test_runtime_vial_list_uses_acme_item(self):
         p=read('functions/fn_postInit.sqf')
         self.assertIn('pushBackUnique "ACME_Vial_EpinephrineCardiac"', p)
-        self.assertIn('_acmVials = _acmVials - ["ACM_Vial_EpinephrineCardiac"]', p)
+        self.assertNotIn('ACM_Vial_EpinephrineCardiac', p)  # the alias the old list subtracted no longer exists
+    def test_cardiac_vial_stock_is_counted_once(self):
+        # The rename turned ACME_+ACM_ cardiac vial counts into ACME_+ACME_, which counts every sealed vial twice.
+        once='[_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount'
+        doubled=sorted(p.name for p in (ROOT/'functions').glob('*.sqf') if p.read_text(encoding='utf-8-sig').count(once)>1)
+        self.assertEqual(doubled, [], 'cardiac epinephrine vials are summed twice')
     def test_vial_resolver_handles_acme_prefix(self):
         c=read('config.cpp')
         self.assertIn('class vialClass {};', c)

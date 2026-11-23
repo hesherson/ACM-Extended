@@ -275,6 +275,12 @@ def test_medical_runtime_does_not_introduce_full_unit_loadout_setters():
     for file in F.glob('*.sqf'):
         for t in lex(file.read_text()):
             if t.kind=='ident' and t.value.lower() in prohibited: hits.append((file.name,t.value))
+    # B366-B385 HPMK: the shell is worn as a vest, so a living casualty is re-dressed with ONE raw setUnitLoadout of
+    # his own current loadout (vest/helmet/NVG slots only). A raw setter emits no CBA_loadoutSet, so it never
+    # reaches the explicit kit-replacement boundary (registerEquipmentKitRuntime) this test protects.
+    hpmk=('fn_hpmkDress.sqf','setUnitLoadout')
+    assert hits.count(hpmk)<=1
+    hits=[h for h in hits if h!=hpmk]
     assert hits==[]
 
 

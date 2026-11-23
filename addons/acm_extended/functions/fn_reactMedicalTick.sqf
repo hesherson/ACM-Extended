@@ -29,7 +29,7 @@ private _visible = _shown && {_painted} && {_hasCards};
 [_browser,"enable",_visible] call ACME_fnc_transfusionUiSet;
 if (_visible && {!(_display getVariable ["ACME_reactVisibleLogged",false])}) then {
     _display setVariable ["ACME_reactVisibleLogged",true];
-    diag_log "[ACME TRANSFUSION UI] React fluid cards visible";
+    if (call ACME_fnc_debugEnabled) then {diag_log "[ACME TRANSFUSION UI] React fluid cards visible";};
 };
 _display setVariable ["ACME_reactActive",_painted];
 if (!_shown) exitWith {};

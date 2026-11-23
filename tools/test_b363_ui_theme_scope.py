@@ -42,9 +42,19 @@ def baseline(path):
     )
 
 
+# The Megacode Kelly instructor panel was redesigned on purpose after B363: its whole layout is built at runtime
+# (fn_megacodePanelLoad / fn_megacodeMenu) and its dialog class is now empty, so its static geometry is left out of
+# this comparison. Everything else in config.cpp is still held to the baseline.
+MEGACODE_PANEL = re.compile(r"(?s)// megacode kelly, the instructor control panel\..*?(?=// megacode laptop cable tuner\.)")
+
+
+def geometry(text):
+    return GEOMETRY.findall(MEGACODE_PANEL.sub("", text, count=1))
+
+
 @pytest.mark.parametrize("path", NATIVE)
 def test_native_geometry_and_handlers_keep_their_original_definitions(path):
-    assert GEOMETRY.findall(source(path)) == GEOMETRY.findall(baseline(path))
+    assert geometry(source(path)) == geometry(baseline(path))
 
 
 @pytest.mark.parametrize("path", DEVICES)

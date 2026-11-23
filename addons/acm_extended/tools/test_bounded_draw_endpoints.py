@@ -21,7 +21,7 @@ def block(text, marker):
 
 
 def assert_native_endpoints(native, tick):
-    drag=block(native,'if (GVAR(SyringeDraw_Moving)) then {')
+    drag=block(native,'if (GVAR(SyringeDraw_Moving) && {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) then {')
     assert contains(drag,'["limit", _acmeMed, GVAR(SyringeDraw_DrawnAmount), _acmeDisplay] call ACME_fnc_vialSession')
     assert contains(drag,'_effectiveMax = (_effectiveMax max 0) min _size;')
     assert contains(drag,'if ((_effectiveMax - _amountDrawn) <= 0.015 && {_newY >= _bottomLimit - (2 * pixelH)}) then {_amountDrawn = _effectiveMax;};')
@@ -34,7 +34,7 @@ def assert_native_endpoints(native, tick):
 
 
 def native_code():
-    text=block(NATIVE.read_text(),'if (GVAR(SyringeDraw_Moving)) then {')
+    text=block(NATIVE.read_text(),'if (GVAR(SyringeDraw_Moving) && {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) then {')
     text=re.sub(r'private _ctrlPlunger = [^;]+;', 'private _ctrlPlunger=1;',text)
     text=re.sub(r'private _ctrlPlungerVisual = [^;]+;', 'private _ctrlPlungerVisual=2;',text)
     text=text.replace('getResolution','[0,0,0,0,0,0.55]').replace('getMousePosition','_mouse')

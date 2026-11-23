@@ -14,7 +14,9 @@ def test_transfusion_nav_uses_pulsing_backings():
     c=read('config.cpp')
     assert 'ctrlCreate ["RscText",86952]' in s
     assert 'ctrlCreate ["RscText",86953]' in s
-    assert 'diag_tickTime * 220' in s
+    # B296 replaced the pulsing backing with a steady accessibility-blue one (same as Narc Box / Body Map).
+    assert 'diag_tickTime * 220' not in s
+    assert '["info", 0.52] call ACME_fnc_a11yColor' in s and '} forEach [86952,86953];' in s
     assert 'class ACME_TX_PageButton: ACME_SK_PulseButton' in c
 
 def test_clean_hub_has_no_iv_bruise_or_track():

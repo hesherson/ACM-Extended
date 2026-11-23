@@ -16,7 +16,7 @@ if (_arg isEqualType []) then {
 if (_msg isEqualTo "") exitWith {};
 
 // an mm:ss mission-time stamp.
-private _sec = floor time;
+private _sec = floor CBA_missionTime;  // the synced mission clock, the same on every machine and for late joiners.
 private _ss  = _sec % 60;
 private _stamp = format ["%1:%2", floor (_sec / 60), (if (_ss < 10) then {format ["0%1", _ss]} else {str _ss})];
 

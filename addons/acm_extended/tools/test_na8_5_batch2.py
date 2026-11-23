@@ -56,8 +56,8 @@ class SuctionSource(unittest.TestCase):
         s=sqf('suctionSelectDevice')
         self.assertIn('ACME_laryngo_medic',s)
         self.assertIn('[_medic,_patient] call ACME_fnc_equipmentUseAccuvac',s)
-        self.assertIn('[_medic, _patient, "ACM_SuctionBag"] call ACME_fnc_treatmentSupplyCount',s)
-        self.assertNotIn('[_patient, "ACM_ACCUVAC"]',s)
+        self.assertIn('[_medic, _patient, "ACME_SuctionBag"] call ACME_fnc_treatmentSupplyCount',s)
+        self.assertNotIn('[_patient, "ACME_ACCUVAC"]',s)
     def test_accuvac_precedes_bag(self):
         s=sqf('suctionSelectDevice')
         self.assertIn('if (_accuN > 0) then {_type = 1;} else',s)
@@ -80,7 +80,7 @@ class SuctionSource(unittest.TestCase):
     def test_last_bag_is_not_consumed_by_action(self):
         block=read('config.cpp').split('class UseSuctionBag: CheckAirway {',1)[1].split('class UseAccuvac:',1)[0]
         self.assertIn('consumeItem = 0;',block)
-        self.assertIn('[_medic, _pat, ["ACM_SuctionBag"]] call ACME_fnc_treatmentSupplyTake',sqf('suctionBulb'))
+        self.assertIn('[_medic, _pat, ["ACME_SuctionBag"]] call ACME_fnc_treatmentSupplyTake',sqf('suctionBulb'))
     def test_consumption_is_verified_and_session_bound(self):
         s=sqf('suctionBulb')
         self.assertIn('!local _medic',s)
@@ -145,7 +145,8 @@ class FlushSource(unittest.TestCase):
     def test_flush_forces_size_before_native_closure_capture(self):
         s=sqf('skOpenDraw')
         self.assertLess(s.index('if (_flushClass != "") then {_size = 10;}'),s.index('call ACM_circulation_fnc_Syringe_Draw'))
-        self.assertIn('[ACE_player, if (_infusion) then {objNull} else {_patient}, _bodyPart, _size] call ACM_circulation_fnc_Syringe_Draw;',s)
+        # B305 adds a fifth native-ready hook argument (_ready); the forced flush size is still the fourth.
+        self.assertIn('[ACE_player, if (_infusion) then {objNull} else {_patient}, _bodyPart, _size, _ready] call ACM_circulation_fnc_Syringe_Draw;',s)
         # The injector now also captures its launch ownership and cleanup.
         # Inspect the actual CBA arguments so extra lifecycle fields cannot
         # weaken the original guarantee that the selected flush is captured.

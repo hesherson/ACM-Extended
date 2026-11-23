@@ -31,7 +31,7 @@ _bag params [["_bagType", ""], "", "", "", "", ["_bloodType", ""]];
 // The tests below use find, which is a substring search, so the quotes did not break them.
 // The value is normalised anyway, because the next person to use it with an equality test would be caught.
 private _bt = if (_bagType isEqualType "") then { toLower _bagType } else { toLower (str _bagType) };
-private _hasBloodType = (_bloodType isEqualType "" && {_bloodType != ""}) || {_bloodType isEqualType 0 && {_bloodType != 0}};
+private _hasBloodType = (_bloodType isEqualType "" && {_bloodType != ""}) || {_bloodType isEqualType 0 && {_bloodType >= 0}};  // B395: ACM blood types are 0 (O) to 7; -1 means none
 if ((_bt find "blood" >= 0) || {_hasBloodType}) exitWith { "blood" };
 if (_bt find "plasma" >= 0) exitWith { "plasma" };
 "fluid"

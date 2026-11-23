@@ -69,10 +69,10 @@ if (_opening) then {
     _lid setVectorDirAndUp [_dir, _up];
     _lid setPosWorld _position;
     private _lidTextures = getObjectTextures _lid;
-    diag_log format ["[ACME] Medical chest finish: %1, cabinet %2, lid %3, artwork %4", _texture,
+    if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME] Medical chest finish: %1, cabinet %2, lid %3, artwork %4", _texture,
         ((getObjectTextures _cabinet) param [0, ""]) isEqualTo _texture,
         (_lidTextures param [0, ""]) isEqualTo _texture,
-        (_lidTextures param [1, ""]) isEqualTo _artwork];
+        (_lidTextures param [1, ""]) isEqualTo _artwork];};
     _chest setVariable ["ACME_medicalChestLidRest", _restPose];
     _chest setVariable ["ACME_medicalChestLidSeat", _seatPose];
     _chest hideObjectGlobal true;

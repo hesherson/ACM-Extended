@@ -96,7 +96,7 @@ class ChestLayout(unittest.TestCase):
         self.assertNotIn('alive _patient', action)
         self.assertIn('(_patient isKindOf "CAManBase")', source("chestSealCanApply"))
         self.assertNotIn('alive _patient', source("chestSealCanApply"))
-        self.assertIn('items[] = {"ACM_ChestSeal"};', action)
+        self.assertIn('items[] = {"ACME_ChestSeal"};', action)
         self.assertIn('consumeItem = 0;', action)
 
     def test_corpse_open_keeps_discrete_owner_state_and_animation_guards(self):

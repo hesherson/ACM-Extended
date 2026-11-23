@@ -5,7 +5,7 @@ class CfgPatches {
     class ACM_itemtext {
         ACME_BUILD_CONFIG("itemtext");
         version = "1.2.4.1";
-        name = "ACM Extended Late Config Patches";
+        name = "ACME Late Config Patches";
         units[] = {};
         weapons[] = {};
         requiredVersion = 2.18;

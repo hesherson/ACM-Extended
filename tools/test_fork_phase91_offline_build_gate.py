@@ -5,10 +5,14 @@ import re
 ROOT=Path(__file__).resolve().parents[1]; ADDONS=ROOT/'addons'
 CARD_PREFIXES={'card':'z\\DD1380\\addons\\card','card_main':'z\\DD1380\\addons\\main'}
 
+def bare_prefix(name):
+ # acm_extended and the ACME equipment addons (acme_*, since B306) are packed under their bare folder name.
+ return name=='acm_extended' or name.lower().startswith('acme_')
+
 def validate_prefix(addon):
  pf=addon/'$PBOPREFIX$'; assert pf.is_file(),addon
  got=pf.read_text(errors='replace').strip().replace('/','\\')
- exp=CARD_PREFIXES.get(addon.name,'acm_extended' if addon.name=='acm_extended' else 'x\\ACM\\addons\\'+addon.name)
+ exp=CARD_PREFIXES.get(addon.name,addon.name if bare_prefix(addon.name) else 'x\\ACM\\addons\\'+addon.name)
  assert got.lower()==exp.lower(),f'{addon.name}: {got!r} != {exp!r}'
  if addon.name in CARD_PREFIXES:
   options=addon/'addon.toml'; assert options.is_file(),f'{addon.name}: missing addon-scoped prefix declaration'
@@ -24,6 +28,8 @@ def virtual(s):
  for folder,prefix in CARD_PREFIXES.items():
   pref='\\'+prefix+'\\'
   if lo.startswith(pref.lower()): return (ADDONS/folder).joinpath(*[x for x in n[len(pref):].split('\\') if x])
+ head=[x for x in n.split('\\') if x]
+ if head and bare_prefix(head[0]) and (ADDONS/head[0]).is_dir(): return ADDONS.joinpath(*head)
  if any(lo.startswith(x) for x in external): return None
  if n.startswith('\\'): unknown.append(n); return None
  raise AssertionError(n)

@@ -15,7 +15,7 @@ _sources = (_sources apply {configName _x}) select {[_x] call _isDrawer};
 private _useSources = _sources isNotEqualTo [];
 private _names = if (_useSources) then {_sources} else {(animationNames _cabinet) select {[_x] call _isDrawer}};
 if (_names isEqualTo []) exitWith {
-    diag_log format ["[ACME] No drawer animations found for %1: %2", typeOf _cabinet, animationNames _cabinet];
+    if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME] No drawer animations found for %1: %2", typeOf _cabinet, animationNames _cabinet];};
     [[], [], false]
 };
 private _phases = _names apply {selectRandom [0, 0.23, 0.38, 0.52, 0.62]};

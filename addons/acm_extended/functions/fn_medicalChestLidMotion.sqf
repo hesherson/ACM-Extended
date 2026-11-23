@@ -28,8 +28,8 @@ _clear set [2, (_seated select 2) max _uprightZ];
 private _extraHeight = (_clear select 2) - _uprightZ;
 
 if (_opening) then {
-    diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then %3 m sideways; landing normal %4",
-        _pull toFixed 3, _outward, (abs _lateralDistance) toFixed 3, _normal];
+    if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME] Medical chest lid path: %1 m pull along %2, then %3 m sideways; landing normal %4",
+        _pull toFixed 3, _outward, (abs _lateralDistance) toFixed 3, _normal];};
 };
 
 private _apply = {
@@ -48,7 +48,7 @@ private _apply = {
     };
     if (isNull _cabinet || {isNull _lid}) exitWith {
         [_handle] call CBA_fnc_removePerFrameHandler;
-        diag_log "[ACME] Medical chest lid motion interrupted by a missing cabinet or lid";
+        if (call ACME_fnc_debugEnabled) then {diag_log "[ACME] Medical chest lid motion interrupted by a missing cabinet or lid";};
         [_chest, false, _revision, true] call ACME_fnc_medicalChestSetOpen;
     };
     // A closing chest waits at the resting pose until every drawer is flush.
@@ -125,13 +125,13 @@ private _apply = {
         private _openedRevision = _revision + 1;
         _chest setVariable ["ACME_medicalChestState", [_openedRevision, true], true];
         _chest setVariable ["ACME_medicalChestTransition", false, true];
-        diag_log format ["[ACME] Medical chest opened: %1 in %2 seconds", typeOf _cabinet, _elapsed toFixed 2];
+        if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME] Medical chest opened: %1 in %2 seconds", typeOf _cabinet, _elapsed toFixed 2];};
         if (!isNull _actor && {!isNull _cargo}) then {
             ["ACME_medicalChestOpened", [_actor, _chest, _cargo, _openedRevision], _actor] call CBA_fnc_targetEvent;
         };
     } else {
         [_lid, _seated, _caseDir, _caseUp] call _apply;
-        diag_log format ["[ACME] Medical chest closed: %1 in %2 seconds", typeOf _cabinet, _elapsed toFixed 2];
+        if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME] Medical chest closed: %1 in %2 seconds", typeOf _cabinet, _elapsed toFixed 2];};
         [_chest, false, _revision, true] call ACME_fnc_medicalChestSetOpen;
     };
 }, [0, 0.03] select isMultiplayer, [_chest, _cabinet, _lid, _cargo, _actor, _revision, _opening,

@@ -157,4 +157,5 @@ def test_scope_preserves_ace_handlers_original_art_and_existing_site_flags():
     assert current==subprocess.check_output(['git','show',BASE+':'+dialog],cwd=ROOT,text=True)
     for name in ['updateTransfusionAccessHotspots','transfusionTagLeader','transfusionTagRect','reactMedicalMessage','reactMedicalValid']:
         path='addons/acm_extended/functions/fn_'+name+'.sqf'
-        assert (ROOT/path).read_bytes()==subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT)
+        # Line-ending neutral: core.autocrlf checks LF blobs out as CRLF files.
+        assert (ROOT/path).read_bytes().replace(b'\r\n',b'\n')==subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT).replace(b'\r\n',b'\n')

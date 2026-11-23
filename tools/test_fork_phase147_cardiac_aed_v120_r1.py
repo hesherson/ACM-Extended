@@ -108,7 +108,7 @@ def test_current_contract():
     for p in (ROOT/'addons').rglob('*.sqf'):
         t = p.read_text(encoding='utf-8', errors='replace')
         if 'set ["totalAcidosis"' in t or 'set ["metabolicAcidosis"' in t or 'set ["acidosis"' in t:
-            writers.append(str(p.relative_to(ROOT)))
+            writers.append(p.relative_to(ROOT).as_posix())  # OS-neutral separator
     need(writers == ['addons/acm_extended/functions/fn_circHandle.sqf'], f"acidosis: multiple state writers remain: {writers}")
 
     # Runtime PFHs are idempotent: replaying postInit cannot duplicate the 0.25 s circulation integration loop.

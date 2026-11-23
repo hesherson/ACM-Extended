@@ -93,12 +93,11 @@ if (_needFrontFirst) exitWith {
                 [_retryStart, [_m,_p,_body,_auto,true,_startPoseToken,_startEpoch], 0.05] call CBA_fnc_waitAndExecute;
             }] call CBA_fnc_waitUntilAndExecute;
         } else {
-            // Roll request was denied by an older patient-animation lease. Stabilize to face-up and retry on the
-            // next scheduling slice instead of waiting several seconds for a transition that never started.
-            private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];
-            _patient setVariable ["ACME_CS_facing","front",true];
-            ["ace_common_switchMove",[_patient,_faceUp]] call CBA_fnc_globalEvent;
-            [_retryStart, [_medic,_patient,_bodyPart,_auto,true,_startPoseToken,_startEpoch], 0.05] call CBA_fnc_waitAndExecute;
+            // Roll request was denied by an older patient-animation lease: another provider's treatment holds the
+            // casualty. B393: never force a face-up pose over that lease (the two took turns on his body); wait
+            // until it ends, then try the roll again. If it never ends within 8 s, this placement is dropped.
+            [{!([_this select 1] call ACME_fnc_patientAnimHeld)}, _retryStart,
+                [_medic,_patient,_bodyPart,_auto,false,_startPoseToken,_startEpoch], 8] call CBA_fnc_waitUntilAndExecute;
         };
     } else {
         private _faceUp = missionNamespace getVariable ["ACME_uncon_faceUp","ACM_LyingState"];

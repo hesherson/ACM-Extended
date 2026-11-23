@@ -80,11 +80,11 @@ class ProcedureAccessContracts(unittest.TestCase):
 
     def test_shared_surgical_kit_is_optional_reusable_and_disposable_is_preferred(self):
         kit = source("thoraKitItem")
-        self.assertLess(kit.index('exitWith {"ACM_ThoracostomyKit"}'), kit.index('ACME_thora_allowSurgicalKit'))
+        self.assertLess(kit.index('exitWith {"ACME_ThoracostomyKit"}'), kit.index('ACME_thora_allowSurgicalKit'))
         self.assertIn('getVariable ["ACME_thora_allowSurgicalKit", false]', kit)
         self.assertEqual(kit.count('call ace_medical_treatment_fnc_hasItem'), 2)
         click = source("thoraMouseDown")
-        begin = click.index('private _usedKit = _kit == "ACM_ThoracostomyKit"')
+        begin = click.index('private _usedKit = _kit == "ACME_ThoracostomyKit"')
         end = click.index('call ACME_fnc_thoraAftercareRequest;', begin)
         debit = click[begin:end]
         self.assertIn('if (_usedKit) then', debit)

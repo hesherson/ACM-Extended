@@ -59,10 +59,8 @@ for "_i" from 0 to ((lbSize _list) - 1) do {
     };
     if (_physicalClass != "" && {_vials <= 0} && {_total <= 0.000001}) then {
         private _directCount = [_holder, _physicalClass] call ACME_fnc_vialItemCount;
-        if (_med == "EpinephrineCardiac") then {
-            _directCount = ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount)
-                + ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
-        };
+        // B394: one vial class since the ACME_ rename (the old ACM_ + ACME_ sum counted every sealed vial twice)
+        if (_med == "EpinephrineCardiac") then {_directCount = [_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount;};
         private _cap = [_med] call ACME_fnc_vialCapacity;
         if (_directCount > 0 && {_cap > 0}) then {
             _vials = _directCount;

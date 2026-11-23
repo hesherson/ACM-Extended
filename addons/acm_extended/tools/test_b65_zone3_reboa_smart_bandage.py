@@ -161,7 +161,7 @@ def test_ventilator_custody_is_not_destroyed_only_because_patient_died():
 def test_experimental_smart_bandage_bundle_is_removed_and_native_acm_bandaging_is_restored():
     action = text("addons/core/ACE_Medical_Treatment_Actions.hpp")
     pressure = cfg_class(action, "PressureBandage")
-    assert 'items[] = {"ACM_PressureBandage"};' in pressure
+    assert 'items[] = {"ACME_PressureBandage"};' in pressure  # one ACME_ item set
     assert 'consumeItem = 1;' in pressure
     assert 'callbackSuccess = QACEFUNC(medical_treatment,bandage);' in pressure
     assert 'smartBandage' not in pressure
@@ -195,9 +195,15 @@ def test_all_acme_function_references_have_a_file_and_cfgfunctions_registration(
     refs = set()
     for p in source_paths:
         refs.update(re.findall(r'\bACME_fnc_([A-Za-z0-9_]+)\b', read_source(p, encoding="utf-8-sig")))
-    files = {p.stem[3:] for p in (ROOT / "functions").glob("fn_*.sqf")}
-    cfg = text("addons/acm_extended/config.cpp")
-    registrations = set(re.findall(r'\bclass\s+([A-Za-z0-9_]+)\s*\{\s*\};', cfg))
+    # ACME functions live in acm_extended and in the ACME equipment addons (acme_equipment owns e.g.
+    # equipmentUseAccuvac / equipmentCoolerMenu); each addon registers its own in its config.cpp CfgFunctions.
+    owners = [ROOT] + sorted(p for p in (REPO / "addons").glob("acme_*") if p.is_dir())
+    files = {p.stem[3:] for owner in owners for p in (owner / "functions").glob("fn_*.sqf")}
+    registrations = set()
+    for owner in owners:
+        if (owner / "config.cpp").is_file():
+            cfg = read_source(owner / "config.cpp", encoding="utf-8-sig")
+            registrations |= set(re.findall(r'\bclass\s+([A-Za-z0-9_]+)\s*\{\s*\};', cfg))
     missing_files = sorted(refs - files)
     missing_reg = sorted(refs - registrations)
     assert not missing_files, f"ACME callback(s) have no function file: {missing_files}"

@@ -1,7 +1,9 @@
 // the local input lock for the full-body hang bag pose.
 // it blocks locomotion and stance changes and deliberately leaves mouse movement untouched, so the head and camera of
 // the player can freelook while the body remains fixed with the raised arm animation.
-params [["_medic", objNull, [objNull]], ["_enable", false, [false]]];
+// B395: with _armOnly (the right-arm gesture hold) only weapon use, going prone and vaulting are held; the provider
+// walks, turns, stands, crouches and leans freely.
+params [["_medic", objNull, [objNull]], ["_enable", false, [false]], ["_armOnly", false, [false]]];
 if (!hasInterface || {isNull _medic}) exitWith {};
 if (_enable && {!(_medic isEqualTo (call ACME_fnc_controlledProvider))
     || {!(missionNamespace getVariable ["ACME_interventionAnimations", true])}}) exitWith {};
@@ -36,7 +38,11 @@ if (!isNull _oldDisplay && {_oldMouseEH >= 0}) then {
 };
 
 // resolve the actual keybinds of the user rather than assuming wasd or the default stance keys.
-private _blockedActions = [
+private _blockedActions = if (_armOnly) then {[
+    "Prone", "GetOver",
+    "Fire", "Throw", "ReloadMagazine", "SwitchWeapon", "NextWeapon", "PrevWeapon",
+    "Handgun", "PrimaryWeapon", "SecondaryWeapon", "Binocular"
+]} else {[
     "MoveForward", "MoveBack", "MoveLeft", "MoveRight",
     "MoveFastForward", "MoveSlowForward", "Evasive", "Turbo", "TurboToggle",
     "TurnLeft", "TurnRight", "Stand", "Crouch", "Prone",
@@ -44,7 +50,7 @@ private _blockedActions = [
     "LeanLeft", "LeanRight", "LeanLeftToggle", "LeanRightToggle", "GetOver",
     "Fire", "Throw", "ReloadMagazine", "SwitchWeapon", "NextWeapon", "PrevWeapon",
     "Handgun", "PrimaryWeapon", "SecondaryWeapon", "Binocular"
-];
+]};
 private _blockedKeys = [];
 {
     {

@@ -312,10 +312,8 @@ def test_flush_placement_mouse_semantics_and_disabled_styles():
 
 
 def test_debug_layout_unchanged_from_b226():
-    import subprocess
-    p='addons/acm_extended/functions/fn_debugMenuClinical.sqf'
-    base=subprocess.check_output(['git','show','78479131fbce624659e83e8132034dd778ef17cc:'+p],cwd=ROOT)
-    assert (ROOT/p).read_bytes()==base
+    from test_debug_single_overlay import unchanged_since  # EOL-neutral, allows only the B363 theme backing
+    assert unchanged_since('addons/acm_extended/functions/fn_debugMenuClinical.sqf','78479131fbce624659e83e8132034dd778ef17cc')
 
 
 def pump_setup():

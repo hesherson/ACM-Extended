@@ -11,7 +11,8 @@ if !(_medic getVariable ["ACME_hang_Active", false]) then {
     [_medic] call ACME_fnc_hangBagRestoreWeapons;
     // A cancelled/failed holster never entered our medical pose. Do not interrupt that native weapon motion
     // with an invented crouch exit or another logical weapon change.
-    if (_medic getVariable ["ACME_hang_PrepPoseEntered", false]) then {
+    // B395: the arm-gesture hold never took the body into a medical pose, so there is no crouch to leave.
+    if (_medic getVariable ["ACME_hang_PrepPoseEntered", false] && {!(_medic getVariable ["ACME_hang_GestureMode", false])}) then {
         _medic enableAI "ANIM";
         _medic selectWeapon "";
         _medic setUnitPos "AUTO";

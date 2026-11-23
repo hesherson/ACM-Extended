@@ -35,7 +35,7 @@ _data params ["_patient", "_bagModel", "_bagTexture", "_handOffset", "_handSel",
 if (isNull _patient || {_bagModel == ""}) exitWith {};
 private _bag = createSimpleObject [_bagModel, [0,0,0], true];
 if (isNull _bag) exitWith {};
-_bag setObjectTexture [0, _bagTexture];
+_bag setObjectTexture [0, _bagTexture];  // (_bagModel is the bag class since B395, so the texture slot is known)
 _bag attachTo [_medic, _handOffset, _handSel, true];
 [_bag, _bagEuler] call BIS_fnc_setObjectRotation;
 private _anchor = _anchorClass createVehicleLocal [0, 0, 0];

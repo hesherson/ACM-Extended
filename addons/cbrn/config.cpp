@@ -7,10 +7,10 @@ class CfgPatches {
         name = COMPONENT_NAME;
         units[] = {
             "ACM_HazardObject",
-            QGVAR(moduleCreateHazardZone),
-            QGVAR(moduleCreateChemicalDevice),
-            QGVAR(Eden_HazardZone),
-            QGVAR(Eden_ChemicalDevice)
+            "ACME_ModuleCreateHazardZone",
+            "ACME_ModuleCreateChemicalDevice",
+            "ACME_ModuleHazardZone",
+            "ACME_ModuleChemicalDevice"
         };
         weapons[] = {
             "ACME_GasMaskFilter",

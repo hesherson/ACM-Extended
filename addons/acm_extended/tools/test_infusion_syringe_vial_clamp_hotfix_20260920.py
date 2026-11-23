@@ -15,7 +15,7 @@ def circ(name: str) -> str:
 
 def test_native_drag_uses_vial_session_limit_in_same_frame():
     src = circ("fnc_Syringe_Draw.sqf")
-    moving = src.split("if (GVAR(SyringeDraw_Moving)) then {", 1)[1]
+    moving = src.split('if (GVAR(SyringeDraw_Moving) && {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) then {', 1)[1]
     assert 'if !(isNil "ACME_fnc_vialSession")' in moving
     assert '["limit", _acmeMed, GVAR(SyringeDraw_DrawnAmount), _acmeDisplay] call ACME_fnc_vialSession' in moving
     assert '_effectiveMax = (_effectiveMax max 0) min _size;' in moving

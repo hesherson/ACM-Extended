@@ -42,37 +42,37 @@ def mass(source, name):
 
 def test_autoinjector_weight_does_not_replace_medical_classification():
     source = (ROOT / "addons/cbrn/CfgWeapons.hpp").read_text()
-    assert number(source, "ACM_Autoinjector_ATNA", "ACE_isMedicalItem") == 1
-    assert mass(source, "ACM_Autoinjector_ATNA") == Decimal("1.8")
-    assert "class ACM_Autoinjector_Midazolam: ACM_Autoinjector_ATNA" in source
+    assert number(source, "ACME_Autoinjector_ATNA", "ACE_isMedicalItem") == 1
+    assert mass(source, "ACME_Autoinjector_ATNA") == Decimal("1.8")
+    assert "class ACME_Autoinjector_Midazolam: ACME_Autoinjector_ATNA" in source
 
 
 def test_filled_oxygen_tank_cannot_weigh_less_than_empty_tank():
     full = (ROOT / "addons/breathing/CfgMagazines.hpp").read_text()
     empty = (ROOT / "addons/breathing/CfgWeapons.hpp").read_text()
-    assert mass(full, "ACM_OxygenTank_425") > mass(empty, "ACM_OxygenTank_425_Empty")
-    assert number(full, "ACM_OxygenTank_425", "count") == 283
-    assert number(full, "ACM_OxygenTank_425", "ACE_isMedicalItem") == 1
+    assert mass(full, "ACME_OxygenTank_425") > mass(empty, "ACME_OxygenTank_425_Empty")
+    assert number(full, "ACME_OxygenTank_425", "count") == 283
+    assert number(full, "ACME_OxygenTank_425", "ACE_isMedicalItem") == 1
 
 
 @pytest.mark.parametrize("size", [1, 3, 5, 10])
 def test_prepared_syringe_carrier_matches_empty_syringe(size):
-    assert mass(MAGAZINES, f"ACME_PreparedSyringe_{size}") == mass(CIRCULATION, f"ACM_Syringe_{size}")
+    assert mass(MAGAZINES, f"ACME_PreparedSyringe_{size}") == mass(CIRCULATION, f"ACME_Syringe_{size}")
 
 
 def test_native_prepared_syringe_magazines_match_each_empty_size():
-    assert mass(NATIVE_MAGS, "ACM_Syringe_10_Epinephrine") == mass(CIRCULATION, "ACM_Syringe_10")
+    assert mass(NATIVE_MAGS, "ACME_Syringe_10_Epinephrine") == mass(CIRCULATION, "ACME_Syringe_10")
     entries = re.findall(r"PREPARE_SYRINGE\(\d+,([\d.]+),(\d+),", NATIVE_MAGS)
     assert len(entries) >= 40
     for value, size in entries:
-        assert Decimal(value) == mass(CIRCULATION, f"ACM_Syringe_{size}")
+        assert Decimal(value) == mass(CIRCULATION, f"ACME_Syringe_{size}")
 
 
 def test_extended_prepared_syringes_match_each_empty_size():
-    names = re.findall(r"class\s+(ACM_Syringe_(1|3|5|10)_\w+)\s*:", MAGAZINES)
+    names = re.findall(r"class\s+(ACME_Syringe_(1|3|5|10)_\w+)\s*:", MAGAZINES)
     assert len(names) >= 40
     for name, size in names:
-        assert mass(MAGAZINES, name) == mass(CIRCULATION, f"ACM_Syringe_{size}")
+        assert mass(MAGAZINES, name) == mass(CIRCULATION, f"ACME_Syringe_{size}")
 
 
 def carrier_masses():
@@ -86,11 +86,11 @@ def carrier_masses():
 ACE_FLUID_MASSES = [Decimal("2.5"), Decimal("5"), Decimal("10")]
 SINGLE_BAGS = [
     "ACME_SalineBag_50", "ACME_SalineBag_100", "ACME_MagnesiumBag",
-    "ACME_MannitolBag", "ACME_HTSBag", "ACM_EsmololBag",
+    "ACME_MannitolBag", "ACME_HTSBag", "ACME_EsmololBag",
     "ACME_PlasmaLyteBag", "ACME_PlasmaLyteBag_500",
-    "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100", "ACM_Vial_Propofol",
+    "ACME_PlasmaLyteBag_250", "ACME_PlasmaLyteBag_100", "ACME_Vial_Propofol",
 ]
-BLOOD_BAGS = ["ACM_BloodBag_O_250", "ACM_BloodBag_O_500", "ACM_BloodBag_O_1000"]
+BLOOD_BAGS = ["ACME_BloodBag_O_250", "ACME_BloodBag_O_500", "ACME_BloodBag_O_1000"]
 
 
 @pytest.mark.parametrize("name", SINGLE_BAGS)
@@ -110,14 +110,14 @@ def test_blood_preparation_and_y_pairing_preserve_native_mass(name):
 
 @pytest.mark.parametrize("size", [250, 500])
 def test_fresh_blood_and_typed_blood_use_the_same_mass(size):
-    assert mass(BLOOD, f"ACM_FreshBloodBag_{size}") == mass(BLOOD, f"ACM_BloodBag_O_{size}")
+    assert mass(BLOOD, f"ACME_FreshBloodBag_{size}") == mass(BLOOD, f"ACME_BloodBag_O_{size}")
 
 
-@pytest.mark.parametrize("name", ["ACM_Vial_Norepinephrine", "ACM_SalineFlush_10", "ACM_Thermometer", "ACM_HPMK", "ACM_EMMA", "ACM_CombatGauze"])
+@pytest.mark.parametrize("name", ["ACME_Vial_Norepinephrine", "ACME_SalineFlush_10", "ACME_Thermometer", "ACME_HPMK", "ACME_EMMA", "ACME_CombatGauze"])
 def test_inactive_reference_does_not_hide_a_requested_live_weight(name):
     reference = (ROOT / "addons/acm_extended/CfgWeapons.hpp").read_text()
     assert mass(WEAPONS, name) == mass(reference, name)
 
 
 def test_fentanyl_weight_matches_across_native_and_active_extended_configs():
-    assert mass(CIRCULATION, "ACM_Vial_Fentanyl") == mass(WEAPONS, "ACM_Vial_Fentanyl")
+    assert mass(CIRCULATION, "ACME_Vial_Fentanyl") == mass(WEAPONS, "ACME_Vial_Fentanyl")

@@ -98,7 +98,8 @@ def test_same_vehicle_treatment_is_clinical_without_forcing_animation():
 
     assert "private _sameVehicleTreatment" not in native
     assert 'if (isNull objectParent _medic && {_medicAnim != ""})' in native
-    assert "if (!_isSelf && {isNull objectParent _patient})" in native
+    # B393: an attached (litter) casualty keeps the litter pose as well
+    assert "if (!_isSelf && {isNull objectParent _patient} && {isNull attachedTo _patient})" in native
 
     assert "private _sameVehicleTreatment" in bridge
     assert "private _interactionChecks" in bridge

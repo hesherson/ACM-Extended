@@ -66,7 +66,7 @@ if (!isNull _shell) then {
     };
 };
 if (!_shellOK) then {
-    diag_log format ["[ACME CARRIER B267] retired carrier recovery retained; class=%1 shell=%2 live=%3 archive=%4",
-        _class, _shellOK, _hadLive, netId _archive];
+    if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME CARRIER B267] retired carrier recovery retained; class=%1 shell=%2 live=%3 archive=%4",
+        _class, _shellOK, _hadLive, netId _archive];};
 };
 _archive

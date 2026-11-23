@@ -10,12 +10,12 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(EvacuationPoint): Module_F {
+    class ACME_ModuleEvacuationPoint: Module_F {
         scope = 2;
         displayName = CSTRING(Module_EvacuationPoint);
         icon = QPATHTOF(ui\Icon_Evacuation_ca.paa);
         portrait = QPATHTOF(ui\Icon_Evacuation_ca.paa);
-        category = QGVAR(Category_Evacuation);
+        category = "ACME_Category_Evacuation";
         function = QFUNC(moduleCreateEvacuationPoint);
         functionPriority = 1;
         isGlobal = 1;
@@ -23,7 +23,7 @@ class CfgVehicles {
         author = AUTHOR;
         class Attributes: AttributesBase {
             class Side: Combo {
-                property = QGVAR(Eden_EvacuationPoint_Side);
+                property = "ACME_ModuleEvacuationPoint_Side";
                 displayName = CSTRING(Module_PlayerFaction);
                 typeName = "NUMBER";
                 defaultValue = 0;
@@ -43,13 +43,13 @@ class CfgVehicles {
                 };
             };
             class InteractionDistance: Edit {
-                property = QGVAR(Eden_EvacuationPoint_InteractionDistance);
+                property = "ACME_ModuleEvacuationPoint_InteractionDistance";
                 displayName = ECSTRING(core,Common_Module_InteractionDistance);
                 typeName = "NUMBER";
                 defaultValue = 5;
             };
             class InteractionPosition: Edit {
-                property = QGVAR(Eden_EvacuationPoint_InteractionPosition);
+                property = "ACME_ModuleEvacuationPoint_InteractionPosition";
                 displayName = ECSTRING(core,Common_Module_InteractionPosition);
                 tooltip = ECSTRING(core,Common_Module_InteractionPosition_Tooltip);
                 typeName = "STRING";
@@ -58,12 +58,12 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(ReinforcePoint): Module_F {
+    class ACME_ModuleReinforcePoint: Module_F {
         scope = 2;
         displayName = CSTRING(Module_ReinforcePoint);
         icon = QPATHTOF(ui\Icon_Evacuation_ca.paa);
         portrait = QPATHTOF(ui\Icon_Evacuation_ca.paa);
-        category = QGVAR(Category_Evacuation);
+        category = "ACME_Category_Evacuation";
         function = QFUNC(moduleCreateReinforcePoint);
         functionPriority = 1;
         isGlobal = 1;
@@ -71,7 +71,7 @@ class CfgVehicles {
         author = AUTHOR;
         class Attributes: AttributesBase {
             class Side: Combo {
-                property = QGVAR(Eden_ReinforcePoint_Side);
+                property = "ACME_ModuleReinforcePoint_Side";
                 displayName = CSTRING(Module_PlayerFaction);
                 typeName = "NUMBER";
                 defaultValue = 0;

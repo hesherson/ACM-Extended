@@ -20,10 +20,15 @@
         [_medic, _patient, _alreadyFlat, false, false, _classLC == "recoveryposition"] call ACME_fnc_headElevateStop;
     };
 
+    // B393: Semi-Fowler stays for everything that can be done with the casualty sitting up: IV/IO, bandages and
+    // tourniquets (torso too), medications, monitors and cuffs, splints, airway adjuncts and i-gel/ET tube (ramped
+    // position), suction, chest seals on the front, needle decompression, chest tubes, auscultation, AED pads.
+    // Only an action that cannot be done sitting up lays the casualty flat for its duration: a surgical airway
+    // (neck extension), or any action whose config sets ACME_needsFlat = 1. (CPR and recovery position replace the
+    // posture above; a back-of-chest seal rolls the casualty through its own chest-seal roll.)
     private _cfg = configFile >> "ace_medical_treatment_actions" >> _classname;
-    private _roll = (getNumber (_cfg >> "ACM_rollToBack")) > 0;
-    private _isBody = if (_bodyPart isEqualType "") then {toLower _bodyPart == "body"} else {_bodyPart == 1};
-    if !(_roll || _isBody) exitWith {};
+    private _needsFlat = (_classLC in ["establishsurgicalairway"]) || {(getNumber (_cfg >> "ACME_needsFlat")) > 0};
+    if (!_needsFlat) exitWith {};
 
     // Unsupported/manual Semi-Fowler has no physical prop. Once the supporting provider must yield to ANY
     // intervention that requires a flat/body-access posture, the episode is over and must be explicitly restarted.

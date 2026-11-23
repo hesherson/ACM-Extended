@@ -77,6 +77,9 @@ class CfgMagazines {
 class CfgVehicles {
     class ACME_IVLine_Rope;
     class ACME_TempusCable: ACME_IVLine_Rope {
+        // B395: a line's colour is its segment model's own texture; the dark copy (acm_extended config)
+        model = "\acm_extended\models\iv_line_segment_dark.p3d";
+        segmentType = "ACME_IVLine_Segment_Dark";
         hiddenSelectionsTextures[] = {"#(argb,8,8,3)color(0.16,0.16,0.16,1,co)"};
     };
     class Items_base_F;

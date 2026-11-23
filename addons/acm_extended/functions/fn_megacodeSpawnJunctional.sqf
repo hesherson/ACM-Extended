@@ -22,7 +22,8 @@ private _part = _parts select _free;
 [_d, _part] call ACME_fnc_junctionalInflict;
 
 // how many of this region are now applied, for the log.
-private _n = {((_d getVariable [format ["ACME_Junc_%1", _x], ""]) isEqualTo "open")} count _parts;
+// counted from the state before this one (the inflict runs on the server and its "open" arrives later).
+private _n = 1 + ({((_d getVariable [format ["ACME_Junc_%1", _x], ""]) isNotEqualTo "")} count (_parts - [_part]));
 [format ["Megacode: %1 hemorrhage applied (%2/2).", _label, _n], 2] call ace_common_fnc_displayTextStructured;
 [[format ["Wound: %1 hemorrhage (%2/2)", _label, _n], "#ff8a8a"]] call ACME_fnc_megacodeLog;
 [87300, "wounds"] call ACME_fnc_megacodeMenu;

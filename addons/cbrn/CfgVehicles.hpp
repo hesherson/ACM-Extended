@@ -10,11 +10,11 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(Eden_HazardZone): Module_F {
+    class ACME_ModuleHazardZone: Module_F {
         scope = 2;
         displayName = CSTRING(Module_HazardZone);
         icon = QPATHTOF(ui\Icon_ChemicalHazard_ca.paa);
-        category = QGVAR(CBRN);
+        category = "ACME_Category_CBRN";
         function = QFUNC(moduleCreateHazardZone_Eden);
         functionPriority = 1;
         isGlobal = 1;
@@ -27,7 +27,7 @@ class CfgVehicles {
 		};
         class Attributes: AttributesBase {
             class HazardType: Combo {
-                property = QGVAR(Eden_HazardZone_HazardType);
+                property = "ACME_ModuleHazardZone_HazardType";
                 displayName = CSTRING(Module_Generic_HazardType);
                 typeName = "NUMBER";
                 defaultValue = 0;
@@ -55,33 +55,33 @@ class CfgVehicles {
                 };
             };
             class ZoneRadius: Edit {
-                property = QGVAR(Eden_HazardZone_ZoneRadius);
+                property = "ACME_ModuleHazardZone_ZoneRadius";
                 displayName = CSTRING(Module_Generic_ZoneRadius);
                 typeName = "NUMBER";
                 defaultValue = 5;
             };
             class EffectTime: Edit {
-                property = QGVAR(Eden_HazardZone_EffectTime);
+                property = "ACME_ModuleHazardZone_EffectTime";
                 displayName = CSTRING(Module_Generic_EffectTime);
                 tooltip = CSTRING(Module_Generic_EffectTime_Tooltip);
                 typeName = "NUMBER";
                 defaultValue = 0;
             };
             class AttachToObject: Checkbox {
-                property = QGVAR(Eden_HazardZone_AttachToObject);
+                property = "ACME_ModuleHazardZone_AttachToObject";
                 displayName = CSTRING(Module_Generic_AttachToObject);
                 tooltip = CSTRING(Module_Generic_AttachToObject_TooltipEden);
                 typeName = "BOOL";
             };
             class ShowMist: Checkbox {
-                property = QGVAR(Eden_HazardZone_ShowMist);
+                property = "ACME_ModuleHazardZone_ShowMist";
                 displayName = CSTRING(Module_Generic_ShowMist);
                 tooltip = CSTRING(Module_Generic_ShowMist_Tooltip);
                 typeName = "BOOL";
                 defaultValue = 1;
             };
             class AffectAI: Checkbox {
-                property = QGVAR(Eden_HazardZone_AffectAI);
+                property = "ACME_ModuleHazardZone_AffectAI";
                 displayName = CSTRING(Module_Generic_AffectAI);
                 typeName = "BOOL";
                 defaultValue = 1;
@@ -89,11 +89,11 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(Eden_ChemicalDevice): Module_F {
+    class ACME_ModuleChemicalDevice: Module_F {
         scope = 2;
         displayName = CSTRING(Module_ChemicalDevice);
         icon = QPATHTOF(ui\Icon_ChemicalHazard_ca.paa);
-        category = QGVAR(CBRN);
+        category = "ACME_Category_CBRN";
         function = QFUNC(moduleCreateChemicalDevice_Eden);
         functionPriority = 1;
         isGlobal = 1;
@@ -106,7 +106,7 @@ class CfgVehicles {
 		};
         class Attributes: AttributesBase {
             class HazardType: Combo {
-                property = QGVAR(Eden_ChemicalDevice_HazardType);
+                property = "ACME_ModuleChemicalDevice_HazardType";
                 displayName = CSTRING(Module_Generic_HazardType);
                 typeName = "NUMBER";
                 defaultValue = 0;
@@ -126,7 +126,7 @@ class CfgVehicles {
                 };
             };
             class ExplosionCloudSize: Combo {
-                property = QGVAR(Eden_ChemicalDevice_ExplosionCloudSize);
+                property = "ACME_ModuleChemicalDevice_ExplosionCloudSize";
                 displayName = CSTRING(Module_CreateChemicalDevice_CloudSize);
                 typeName = "NUMBER";
                 defaultValue = 0;
@@ -146,20 +146,20 @@ class CfgVehicles {
                 };
             };
             class ZoneRadius: Edit {
-                property = QGVAR(Eden_ChemicalDevice_ZoneRadius);
+                property = "ACME_ModuleChemicalDevice_ZoneRadius";
                 displayName = CSTRING(Module_Generic_ZoneRadius);
                 typeName = "NUMBER";
                 defaultValue = 5;
             };
             class PermanentHazard: Checkbox {
-                property = QGVAR(Eden_ChemicalDevice_PermanentHazard);
+                property = "ACME_ModuleChemicalDevice_PermanentHazard";
                 displayName = CSTRING(Module_CreateChemicalDevice_PermanentHazard);
                 tooltip = CSTRING(Module_CreateChemicalDevice_PermanentHazard_Tooltip);
                 typeName = "BOOL";
                 defaultValue = 0;
             };
             class AffectAI: Checkbox {
-                property = QGVAR(Eden_ChemicalDevice_AffectAI);
+                property = "ACME_ModuleChemicalDevice_AffectAI";
                 displayName = CSTRING(Module_Generic_AffectAI);
                 typeName = "BOOL";
                 defaultValue = 1;
@@ -167,9 +167,9 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(moduleBase): Module_F {
+    class ACME_ModuleBase_CBRN: Module_F {
         curatorCanAttach = 1;
-        category = QGVAR(CBRN);
+        category = "ACME_Category_CBRN";
         displayName = "Module";
         functionPriority = 1;
         isGlobal = 1;
@@ -179,12 +179,12 @@ class CfgVehicles {
         author = AUTHOR;
     };
 
-    class GVAR(moduleCreateHazardZone): GVAR(moduleBase) {
+    class ACME_ModuleCreateHazardZone: ACME_ModuleBase_CBRN {
         displayName = CSTRING(Module_CreateHazardZone);
         icon = QPATHTOF(ui\Icon_ChemicalHazard_ca.paa);
         curatorInfoType = QGVAR(RscCreateHazardZone);
     };
-    class GVAR(moduleCreateChemicalDevice): GVAR(moduleBase) {
+    class ACME_ModuleCreateChemicalDevice: ACME_ModuleBase_CBRN {
         displayName = CSTRING(Module_CreateChemicalDevice);
         icon = QPATHTOF(ui\Icon_ChemicalHazard_ca.paa);
         curatorInfoType = QGVAR(RscCreateChemicalDevice);

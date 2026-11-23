@@ -195,7 +195,16 @@ def test_semifowler_cpr_cancels_but_supported_bvm_preserves_posture():
     assert '[_patient] call ACM_core_fnc_bvmActive' not in resume
     assert 'ACME_chestAccess_maneuverHandoffUntil' in resume
 
-    assert 'private _preserveHeadElevation = _treatmentClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];' in acquire
+    # B393: auscultation, chest inspection, check breathing and AED pads keep Semi-Fowler too; CPR does not.
+    # The preserve list keeps growing (thoracostomy, chest-seal context), so check members, not the exact literal.
+    import re
+    match = re.search(r'private _preserveHeadElevation = _treatmentClass in \[([^\]]*)\]', acquire)
+    assert match, "Semi-Fowler preserve list missing from chest-access acquire"
+    preserved = set(re.findall(r'"([^"]+)"', match.group(1)))
+    assert {"usebvm", "usebvm_oxygen", "usebvm_vehicleoxygen", "usebvm_portableoxygen",
+            "usestethoscope", "checkbreathing", "acme_inspectchest", "aed_applypads"} <= preserved
+    assert "cpr" not in preserved
+    assert '&& {!_preserveHeadElevation}' in acquire
     assert 'private _bvmChestClass = _nativeContinuousClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];' in treatment
 
 

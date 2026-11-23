@@ -179,7 +179,6 @@ def test_true_client_preferences_are_local_only_and_non_overridable():
         "ACME_seizure_animEnabled",
     ]
     extra_client = [
-        "ACME_tbi_debugHud",
         "ACME_a11y_colorblindMode",
         "ACME_a11y_bvmVentCircle",
         "ACME_a11y_bvmVentInflateSec",

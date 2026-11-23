@@ -27,6 +27,8 @@ private _id = [{
     // the litter's straps sit on what he wears now (bare, or the HPMK)
     [_litter] call acme_sked_fnc_strapFit;
     if (!alive _patient) exitWith {};
+    // B393: a provider's animation lease on him (a treatment, a roll) owns his body until it ends: never take turns
+    if (!isNil "ACME_fnc_patientAnimHeld" && {[_patient] call ACME_fnc_patientAnimHeld}) exitWith {_patient setVariable ["acme_sked_poseMiss", 0]};
     private _anim = [_patient] call acme_sked_fnc_patientPose;
     if ((toLowerANSI animationState _patient) isEqualTo (toLowerANSI _anim)) exitWith {_patient setVariable ["acme_sked_poseMiss", 0]};
     private _miss = (_patient getVariable ["acme_sked_poseMiss", 0]) + 1;

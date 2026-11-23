@@ -33,6 +33,25 @@ private _pfh = [{
     };
     if (_releaseHold) exitWith {[objNull, _patient] call ACME_fnc_headElevateStop;};
     private _suspended = _patient getVariable ["ACME_headElev_Suspended", false];
+    // B393: a provider who left, died or went down in the middle of a treatment never ends his lease; it no longer
+    // holds the casualty flat (the takeover does the same after an owner change).
+    if (_suspended) then {
+        private _leases = _patient getVariable ["ACME_headElev_treatments", createHashMap];
+        if (_leases isEqualType createHashMap && {count _leases > 0}) then {
+            private _gone = (keys _leases) select {
+                private _m = (_leases get _x) param [0, objNull];
+                isNull _m || {!alive _m} || {_m getVariable ["ACE_isUnconscious", false]}
+            };
+            if (_gone isNotEqualTo []) then {
+                {_leases deleteAt _x;} forEach _gone;
+                _patient setVariable ["ACME_headElev_treatments", _leases, true];
+                if (count _leases == 0) then {
+                    _patient setVariable ["ACME_headElev_ResumePending", true, true];
+                    [{_this call ACME_fnc_headElevTryResume;}, [_patient, _patient getVariable ["ACME_headElev_poseToken", ""]], 0.75] call CBA_fnc_waitAndExecute;
+                };
+            };
+        };
+    };
     if (!_suspended && {(_patient call ace_common_fnc_isBeingDragged) || {_patient call ace_common_fnc_isBeingCarried}}) then {
         ["ACME_headElev_transportDown", [_patient], _patient] call CBA_fnc_targetEvent;
     };

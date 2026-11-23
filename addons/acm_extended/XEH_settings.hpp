@@ -7,16 +7,6 @@
 // the duplicate setting ACME_debug_enabled is registered in XEH_preInit.sqf. it is kept out here so CBA does not
 // overwrite saved values.
 
-[
-    "ACME_tbi_debugHud",
-    "CHECKBOX",
-    ["TBI debug HUD", "Show a live TBI / CPP readout overlay (top-left) for the nearest tracked patient. Requires 'Enable debug features'."],
-    ["ACM Extended: Debug", "Options"],
-    false,
-    2,
-    {}
-] call CBA_fnc_addSetting;
-
 // the duplicate setting ACME_tbi_applyVitals is registered in XEH_preInit.sqf. it is kept out here so CBA does
 // not overwrite saved values.
 
@@ -36,7 +26,7 @@
     "ACME_bloodSpoilEnabled",
     "CHECKBOX",
     ["Blood spoilage", "When ON, warm/out-of-date blood spoils into Spoiled Blood (the normal cold-chain). Turn OFF to disable new spoilage. Server setting. Restart the mission after editing."],
-    ["ACM Extended: Systems", "Blood"],
+    ["ACME: Systems", "Blood"],
     true,
     1,
     {},
@@ -47,7 +37,7 @@
     "ACME_flushReqEnabled",
     "CHECKBOX",
     ["Require saline flush after push", "When ON, selected Narc Box IV/IO pushes require a saline flush before taking effect."],
-    ["ACM Extended: Circulation", "Medications"],
+    ["ACME: Circulation", "Medications"],
     true,
     1,
     {}
@@ -60,7 +50,7 @@
     "ACME_coldBloodHypothermia",
     "CHECKBOX",
     ["Cold blood causes hypothermia", "When ON, unwarmed (cold/[Cooled]) blood drops the patient's core temperature during transfusion. Use the LifeWarmer to negate it. Turn OFF to make all blood temperature-neutral."],
-    ["ACM Extended: Systems", "Blood"],
+    ["ACME: Systems", "Blood"],
     true,
     1,
     {}
@@ -70,7 +60,7 @@
     "ACME_cooler_tempDropPerLiter",
     "SLIDER",
     ["Cold blood cooling (C per liter)", "How many degrees C of core temperature one liter of unwarmed cold blood removes as it transfuses. Higher = harsher transfusion hypothermia."],
-    ["ACM Extended: Systems", "Blood"],
+    ["ACME: Systems", "Blood"],
     [0, 4, 1.1, 2],
     1,
     {}
@@ -84,7 +74,7 @@
     "ACME_coldBlood_flowMult",
     "SLIDER",
     ["Cold blood flow rate (x)", "Flow-rate multiplier for unwarmed COLD ([Cooled]) blood. Below 1 = slower (more viscous). Set to 1 to remove the cold flow penalty."],
-    ["ACM Extended: Systems", "Blood"],
+    ["ACME: Systems", "Blood"],
     [0.2, 1, 0.65, 2],
     1,
     {}
@@ -94,7 +84,7 @@
     "ACME_warmedBlood_flowMult",
     "SLIDER",
     ["Warmed blood flow rate (x)", "Flow-rate multiplier for WARMED blood. Above 1 = slightly faster. Set to 1 for no warmed-flow bonus."],
-    ["ACM Extended: Systems", "Blood"],
+    ["ACME: Systems", "Blood"],
     [1, 2, 1.1, 2],
     1,
     {}
@@ -109,7 +99,7 @@
     "ACME_hang_removeWeapon",
     "CHECKBOX",
     ["Stow weapons off-body while holding bag", "ON: remove back weapons during the hold (restored when it ends) to stop the ground-collision audio loop. OFF: keep the weapon on the back."],
-    ["ACM Extended: Infusion & IV", "Hold Bag"],
+    ["ACME: Infusion & IV", "Hold Bag"],
     true,
     1,
     {}
@@ -122,7 +112,7 @@
     "ACME_a11y_colorblindMode",
     "LIST",
     ["Colorblind mode", "Recolors ACM Extended procedural cues into palettes that remain distinguishable for common color-vision deficiencies. Applies to IV palpation, chest-seal fingers, BVM/EMMA/AED cues, and other colored runtime overlays."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     [
         ["normal", "deuteranomaly", "deuteranopia", "protanomaly", "protanopia", "tritanomaly", "tritanopia", "achromatopsia"],
         ["Off / normal", "Deuteranomaly", "Deuteranopia", "Protanomaly", "Protanopia", "Tritanomaly", "Tritanopia", "Achromatopsia / monochrome"],
@@ -151,7 +141,7 @@
     "ACME_a11y_bvmVentCircle",
     "CHECKBOX",
     ["BVM ventilation visual cue", "Show a blue inflating circle when the BVM ventilation sound plays. Client-side per player."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     true,
     2,
     {}
@@ -162,7 +152,7 @@
     "ACME_a11y_bvmVentInflateSec",
     "SLIDER",
     ["BVM cue: inflate time (s)", "How long the circle takes to inflate from default size to peak."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     [0.3, 3, 1.23, 2],
     2,
     {}
@@ -174,7 +164,7 @@
     "ACME_a11y_menuLeftAlign",
     "CHECKBOX",
     ["Left-align medical menu", "Left-align treatment menu button labels. Client-side per player."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     false,
     2,
     {
@@ -192,7 +182,7 @@
     "ACME_menuNestEnabled",
     "CHECKBOX",
     ["Group medical menu into dropdowns", "Groups treatments into expandable Airway, Breathing, Chest, Positioning, Capnography, AED and Debug sections. Head medications use PO/IN/BUC or By Mouth/Inhaled/Buccal, according to Clinical Descriptors. Groups use left alignment; turning this off restores a flat menu and your alignment choice. Client-side per player."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     true,
     2,
     {
@@ -214,7 +204,7 @@
     "ACME_vent_batteryEnabled",
     "CHECKBOX",
     ["Ventilator battery drains", "ON (default): the Ventway Sparrow runs on its battery, drains faster at high PEEP, rate and pressure, raises LOW BATTERY at 25% and BATTERY CRITICAL at 10%, and stops at 0% leaving you to bag. Vehicle power halts the drain and recharges it. OFF: the machine simply runs, no charge management and no battery alarms."],
-    ["ACM Extended: Airway", "Ventilator"],
+    ["ACME: Airway", "Ventilator"],
     true,
     1,
     {}
@@ -225,7 +215,7 @@
     "ACME_menuColorHeaders",
     "CHECKBOX",
     ["Use separate colors for medical menu sections", "OFF (default): all dropdown headings use cream text. ON: each section uses its own color. Open headings keep their brightness. Regular action rows use uniform white text. Requires grouped menus for headings. Personal display preference."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     false,
     2,
     {}
@@ -236,7 +226,7 @@
     "ACME_a11y_colorblindStrength",
     "SLIDER",
     ["Colorblind correction strength", "How far to push the correction. Full strength is not always the most readable result, particularly for mild deficiency, so this can be dialled back. No effect when the mode above is Off."],
-    ["ACM Extended: Accessibility", "Options"],
+    ["ACME: Accessibility", "Options"],
     [0, 1, 1, 2],
     2,
     { missionNamespace setVariable ["ACME_a11y_colorblindStrength", _this, false]; }
@@ -251,7 +241,7 @@
     "ACME_junctionalBleedMult",
     "SLIDER",
     ["Junctional bleed rate", "Multiplier on the junctional arterial bleed rate (per open/packed junction). 1.0 = default. Higher bleeds out faster."],
-    ["ACM Extended: Trauma", "1. Junctional"],
+    ["ACME: Trauma", "1. Junctional"],
     [0.25, 3.0, 1.0, 2],
     1,
     {
@@ -273,7 +263,7 @@
     "ACME_junctionalFreqMult",
     "SLIDER",
     ["Junctional appearance frequency", "Multiplier on the chance an incoming wound spawns a junctional bleed. 1.0 = default. 0 = junctionals never spawn from wounds."],
-    ["ACM Extended: Trauma", "1. Junctional"],
+    ["ACME: Trauma", "1. Junctional"],
     [0.0, 2.0, 1.0, 2],
     1,
     {
@@ -296,7 +286,7 @@
     "ACME_bloodTypeLock",
     "LIST",
     ["Lock blood type (Single player ONLY!)", "SINGLE PLAYER ONLY. Forces every casualty to the chosen blood type instead of ACM's random per-reload roll, for repeatable testing. Has no effect in multiplayer (blood type is UID-stable there). Clientside."],
-    ["ACM Extended: Systems", "Blood"],
+    ["ACME: Systems", "Blood"],
     [
         [0, 1, 2, 3, 4, 5, 6, 7, 8],
         ["Off", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"],
@@ -313,7 +303,7 @@
 [
     "ACME_bf_defOPos", "SLIDER",
     ["Blood fridge: default O+ units", "Default number of 500 mL O-positive units a newly placed blood fridge spawns with (and regenerates to)."],
-    ["ACM Extended: Blood Fridge", "Default stock"],
+    ["ACME: Blood Fridge", "Default stock"],
     [0, 40, 6, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_bf_defOPos", round _v, false]; }
@@ -321,7 +311,7 @@
 [
     "ACME_bf_defONeg", "SLIDER",
     ["Blood fridge: default O- units", "Default number of 500 mL O-negative (universal donor) units a newly placed blood fridge spawns with."],
-    ["ACM Extended: Blood Fridge", "Default stock"],
+    ["ACME: Blood Fridge", "Default stock"],
     [0, 40, 2, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_bf_defONeg", round _v, false]; }
@@ -329,7 +319,7 @@
 [
     "ACME_bf_defOther", "SLIDER",
     ["Blood fridge: default units (each other type)", "Default number of 500 mL units of each remaining type (A+, A-, B+, B-, AB+, AB-) a newly placed fridge spawns with."],
-    ["ACM Extended: Blood Fridge", "Default stock"],
+    ["ACME: Blood Fridge", "Default stock"],
     [0, 40, 0, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_bf_defOther", round _v, false]; }
@@ -342,7 +332,7 @@
 [
     "ACME_bf_regenHours", "SLIDER",
     ["Blood fridge: regen interval (hours)", "In-game HOURS between blood fridge regenerations. Adds to the minutes setting. Default 24. Set hours and minutes both to 0 to disable regeneration."],
-    ["ACM Extended: Blood Fridge", "Regeneration"],
+    ["ACME: Blood Fridge", "Regeneration"],
     [0, 72, 24, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_bf_regenHours", round _v, false]; }
@@ -350,7 +340,7 @@
 [
     "ACME_bf_regenMinutes", "SLIDER",
     ["Blood fridge: regen interval (minutes)", "In-game MINUTES between blood fridge regenerations, added to the hours setting. Default 0."],
-    ["ACM Extended: Blood Fridge", "Regeneration"],
+    ["ACME: Blood Fridge", "Regeneration"],
     [0, 59, 0, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_bf_regenMinutes", round _v, false]; }
@@ -362,7 +352,7 @@
 [
     "ACME_ket_induceThreshold", "SLIDER",
     ["Ketamine: induction threshold", "Legacy IV-equivalent ketamine load for AI induction. Default 7 equals approximately 1.75 mg/kg IV or 4.4 mg/kg IM at full modeled effect, without other sedatives. Game tuning, not a clinical dosing tool. Propofol and midazolam contribute through a shared normalized hypnosis model; small analgesic doses alone do not cause induction."],
-    ["ACM Extended: Airway", "Ketamine sedation"],
+    ["ACME: Airway", "Ketamine sedation"],
     [2, 25, 7, 1],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_ket_induceThreshold", _v, false]; }
@@ -370,7 +360,7 @@
 [
     "ACME_ket_maintainThreshold", "SLIDER",
     ["Ketamine: maintenance threshold", "Legacy-equivalent maintenance setting shared by ALL hypnotics. Divided by the induction setting to obtain the normalized maintenance threshold. Default 1.2 supports sustained manual infusions after induction. Below it, only drug-caused unconsciousness can resolve, and only with stable native vitals. Tube presence does not provide sedation."],
-    ["ACM Extended: Airway", "Ketamine sedation"],
+    ["ACME: Airway", "Ketamine sedation"],
     [0.5, 20, 1.2, 1],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_ket_maintainThreshold", _v, false]; }
@@ -383,7 +373,7 @@
 [
     "ACME_roc_blockThreshold", "SLIDER",
     ["Rocuronium: paralysis threshold", "Effective modeled rocuronium level at/above which neuromuscular blockade is established. Default 0.5 matches the runtime/debug model. Game tuning only; not a clinical dosing tool."],
-    ["ACM Extended: Airway", "Rocuronium paralysis"],
+    ["ACME: Airway", "Rocuronium paralysis"],
     [0.1, 3, 0.5, 1],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_roc_blockThreshold", _v, false]; }
@@ -391,7 +381,7 @@
 [
     "ACME_roc_onsetSeconds", "SLIDER",
     ["Rocuronium: onset (seconds)", "Time from a paralyzing dose to full paralysis. Real rocuronium onset at an intubating dose is about 45-60 s."],
-    ["ACM Extended: Airway", "Rocuronium paralysis"],
+    ["ACME: Airway", "Rocuronium paralysis"],
     [15, 120, 60, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_roc_onsetSeconds", _v, false]; }
@@ -405,7 +395,7 @@
 [
     "ACME_vent_scrollCooldown", "SLIDER",
     ["Ventilator: scroll rate cap (s)", "Minimum seconds between dial steps on the ventilator. Higher slows the max scroll speed and reduces dial-sound spam."],
-    ["ACM Extended: Airway", "Ventilator"],
+    ["ACME: Airway", "Ventilator"],
     [0.02, 0.30, 0.09, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_vent_scrollCooldown", _v, false]; }
@@ -419,7 +409,7 @@
 [
     "ACME_motion_enable", "CHECKBOX",
     ["Enable cabin motion", "Minigames shake in a moving vehicle. Off = perfectly steady everywhere."],
-    ["ACM Extended: Cabin Motion", "Cabin motion"],
+    ["ACME: Cabin Motion", "Cabin motion"],
     [true],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_enable", _v, false]; }
@@ -428,7 +418,7 @@
 [
     "ACME_motion_maxSpeed", "SLIDER",
     ["Full-shake airspeed (km/h)", "Airspeed at which the vibration reaches full strength. MH-60 cruises 260-280 km/h."],
-    ["ACM Extended: Cabin Motion", "Cabin motion"],
+    ["ACME: Cabin Motion", "Cabin motion"],
     [120, 320, 260, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_maxSpeed", _v, false]; }
@@ -437,7 +427,7 @@
 [
     "ACME_motion_vibAmplitude", "SLIDER",
     ["Vibration strength", "The airframe humming. Small and fast. Felt, not seen."],
-    ["ACM Extended: Cabin Motion", "Vibration"],
+    ["ACME: Cabin Motion", "Vibration"],
     [0, 0.03, 0.007, 3],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_vibAmplitude", _v, false]; }
@@ -446,7 +436,7 @@
 [
     "ACME_motion_vibTau", "SLIDER",
     ["Vibration ramp (s)", "Seconds for the vibration to settle to a new level. Nothing snaps."],
-    ["ACM Extended: Cabin Motion", "Vibration"],
+    ["ACME: Cabin Motion", "Vibration"],
     [0.1, 4, 1.1, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_vibTau", _v, false]; }
@@ -455,7 +445,7 @@
 [
     "ACME_motion_taperSpeed", "SLIDER",
     ["Taper below (km/h)", "Below this airspeed the buzz falls away. Landing should feel like landing."],
-    ["ACM Extended: Cabin Motion", "Vibration"],
+    ["ACME: Cabin Motion", "Vibration"],
     [0, 200, 100, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_taperSpeed", _v, false]; }
@@ -464,7 +454,7 @@
 [
     "ACME_motion_rotorIdle", "SLIDER",
     ["Rotors-idling hum", "Rotors turning on the deck: a gentle hum, not silence, not a cruise."],
-    ["ACM Extended: Cabin Motion", "Vibration"],
+    ["ACME: Cabin Motion", "Vibration"],
     [0, 0.6, 0.12, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_rotorIdle", _v, false]; }
@@ -473,7 +463,7 @@
 [
     "ACME_motion_manAmplitude", "SLIDER",
     ["Bank strength", "The airframe banking. Large and slow. This is where the severity lives."],
-    ["ACM Extended: Cabin Motion", "Banking"],
+    ["ACME: Cabin Motion", "Banking"],
     [0, 0.2, 0.055, 3],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_manAmplitude", _v, false]; }
@@ -482,7 +472,7 @@
 [
     "ACME_motion_manTau", "SLIDER",
     ["Bank ramp (s)", "Seconds for a bank to ramp in and ramp back out. No instant on/off."],
-    ["ACM Extended: Cabin Motion", "Banking"],
+    ["ACME: Cabin Motion", "Banking"],
     [0.1, 4, 0.75, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_manTau", _v, false]; }
@@ -491,7 +481,7 @@
 [
     "ACME_motion_envMin", "SLIDER",
     ["Lull floor (the opening)", "In a lull the cabin settles to this fraction of full strength, giving you a WINDOW to commit. Lower = bigger openings."],
-    ["ACM Extended: Cabin Motion", "Openings"],
+    ["ACME: Cabin Motion", "Openings"],
     [0.05, 1, 0.3, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_envMin", _v, false]; }
@@ -500,7 +490,7 @@
 [
     "ACME_motion_envRateA", "SLIDER",
     ["Swell rate A (Hz)", "First envelope oscillator. Incommensurate with B so the pattern never repeats."],
-    ["ACM Extended: Cabin Motion", "Openings"],
+    ["ACME: Cabin Motion", "Openings"],
     [0.03, 0.8, 0.17, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_envRateA", _v, false]; }
@@ -509,7 +499,7 @@
 [
     "ACME_motion_envRateB", "SLIDER",
     ["Swell rate B (Hz)", "Second envelope oscillator."],
-    ["ACM Extended: Cabin Motion", "Openings"],
+    ["ACME: Cabin Motion", "Openings"],
     [0.03, 0.8, 0.29, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_envRateB", _v, false]; }
@@ -518,7 +508,7 @@
 [
     "ACME_motion_bumpAmp", "SLIDER",
     ["Bump strength", "A discrete jolt of rough air. Sharp attack, fast decay."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [0, 0.1, 0.022, 3],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_bumpAmp", _v, false]; }
@@ -527,7 +517,7 @@
 [
     "ACME_motion_bumpDur", "SLIDER",
     ["Bump duration (s)", "How long one jolt lasts. Short. It is a hit, not a wallow."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [0.05, 1, 0.2, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_bumpDur", _v, false]; }
@@ -536,7 +526,7 @@
 [
     "ACME_motion_burstMax", "SLIDER",
     ["Max bumps per burst", "Rough air hits you up to this many times in quick succession."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [1, 6, 3, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_burstMax", _v, false]; }
@@ -545,7 +535,7 @@
 [
     "ACME_motion_burstGapMin", "SLIDER",
     ["Gap within a burst, min (s)", "Spacing between hits inside one burst."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [0.05, 1, 0.13, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_burstGapMin", _v, false]; }
@@ -554,7 +544,7 @@
 [
     "ACME_motion_burstGapMax", "SLIDER",
     ["Gap within a burst, max (s)", "Spacing between hits inside one burst."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [0.05, 1.5, 0.34, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_burstGapMax", _v, false]; }
@@ -563,7 +553,7 @@
 [
     "ACME_motion_bumpCooldownMin", "SLIDER",
     ["Cooldown after a burst, min (s)", "The calm after rough air. This is what PROTECTS the window: if a bump could land at any instant there would be no safe moment to commit."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [0.5, 30, 4, 1],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_bumpCooldownMin", _v, false]; }
@@ -572,7 +562,7 @@
 [
     "ACME_motion_bumpCooldownMax", "SLIDER",
     ["Cooldown after a burst, max (s)", "The calm after rough air."],
-    ["ACM Extended: Cabin Motion", "Bumps"],
+    ["ACME: Cabin Motion", "Bumps"],
     [1, 60, 14, 1],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_motion_bumpCooldownMax", _v, false]; }
@@ -582,19 +572,19 @@
 [
     "ACME_motion_interpolate", "CHECKBOX",
     ["Smooth vehicle shake", "Smooths the shared motion offset before artwork and hit targets move. Helps readability at low FPS. Does not generate frames."],
-    ["ACM Extended: Cabin Motion", "Accessibility"],
+    ["ACME: Cabin Motion", "Accessibility"],
     true, 2, {}
 ] call CBA_fnc_addSetting;
 [
     "ACME_motion_interpolationTime", "SLIDER",
     ["Vehicle shake smoothing (s)", "Longer values soften rapid vibration more. Lower values follow the original movement more closely."],
-    ["ACM Extended: Cabin Motion", "Accessibility"],
+    ["ACME: Cabin Motion", "Accessibility"],
     [0.02, 0.4, 0.12, 2], 2, {}
 ] call CBA_fnc_addSetting;
 [
     "ACME_minigameNV_focusBlur", "SLIDER",
     ["NV scene focus blur", "Adds a small local scene blur while goggles are on in a procedure. Zero disables it. Native NV masks, colors, grain and gain are left alone. This does not blur 2D dialog text or art."],
-    ["ACM Extended: Cabin Motion", "Accessibility"],
+    ["ACME: Cabin Motion", "Accessibility"],
     [0, 1, 0.35, 2], 2, {}
 ] call CBA_fnc_addSetting;
 
@@ -605,7 +595,7 @@
 [
     "ACME_darkness_enable", "CHECKBOX",
     ["Enable minigame darkness", "Minigames go dark at night. You need a light source to work."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [true],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_enable", _v, false]; }
@@ -614,7 +604,7 @@
 [
     "ACME_darkness_maxAlpha", "SLIDER",
     ["Darkness intensity", "How black it gets with no light. 1.0 = fully black. Anything less and a bright body image is still readable."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [0.5, 1, 1.0, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_maxAlpha", _v, false]; }
@@ -623,7 +613,7 @@
 [
     "ACME_darkness_cabinRelief", "SLIDER",
     ["Closed-cabin relief", "A buttoned-up vehicle gets a hint of instrument glow. 1.0 = none at all. A doorless bird always gets none."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [0.5, 1, 0.97, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_cabinRelief", _v, false]; }
@@ -632,7 +622,7 @@
 [
     "ACME_darkness_beamScale", "SLIDER",
     ["Torch beam width", "Divided by each flashlight's own size value, exactly as ACE does it, so a Maglite throws a wider pool than a weapon light."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [0.5, 4, 1.55, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_beamScale", _v, false]; }
@@ -641,7 +631,7 @@
 [
     "ACME_darkness_boost", "SLIDER",
     ["Darkness boost", "Multiplies ACE's own darkness before clamping. ACE tops out near 0.86 at a moonlit ambient because the map only needs to be hard to read. Raise this until the body image is genuinely invisible without a torch."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [1.0, 3.0, 1.25, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_boost", _v, false]; }
@@ -651,7 +641,7 @@
 [
     "ACME_darkness_adaptRelief", "SLIDER",
     ["Dark adaptation relief", "How much fully dark-adapted eyes lift the shade. Not enough to work by: enough to make out a limb. This is the ONLY thing that is ever less than black at night, and using a torch takes it away. Set to 0 to disable dark adaptation entirely."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [0, 0.35, 0.11, 2],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_adaptRelief", _v, false]; }
@@ -660,7 +650,7 @@
 [
     "ACME_darkness_constrictTau", "SLIDER",
     ["Pupil constriction (s)", "Seconds for your pupils to shut when the light comes on. Fast."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [0.2, 8, 1.6, 1],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_constrictTau", _v, false]; }
@@ -669,7 +659,7 @@
 [
     "ACME_darkness_dilateTau", "SLIDER",
     ["Dark recovery (s)", "Seconds for your night vision to come back after the light goes off. SLOW. The asymmetry is the point: switching the torch off does not hand you your night vision back."],
-    ["ACM Extended: Cabin Motion", "Darkness"],
+    ["ACME: Cabin Motion", "Darkness"],
     [1, 60, 16, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_darkness_dilateTau", _v, false]; }
@@ -682,7 +672,7 @@
 [
     "ACME_laryngo_attemptLimit", "SLIDER",
     ["Intubation: attempt time limit (s)", "Seconds a single laryngoscopy attempt may run before it is abandoned as no view. The clock runs from blade insertion until the tube passes."],
-    ["ACM Extended: Airway", "Intubation"],
+    ["ACME: Airway", "Intubation"],
     [10, 90, 30, 0],
     1,
     { params ["_v"]; missionNamespace setVariable ["ACME_laryngo_attemptLimit", _v, false]; }
@@ -691,17 +681,17 @@
 // ACME consumes the Server source only. Restart fixes the policy for the mission's saved clocks.
 ["ACME_clinicalTimeBasis","LIST",
  ["Drug and blood clock","Server setting. In-game time follows the server's time multiplier. Real-life time uses elapsed seconds. Restart the mission after editing."],
- ["ACM Extended: Persistence","Clinical timing"],[[0,1],["Real-life time","In-game time"],0],1,{},true] call CBA_fnc_addSetting;
+ ["ACME: Persistence","Clinical timing"],[[0,1],["Real-life time","In-game time"],0],1,{},true] call CBA_fnc_addSetting;
 ["ACME_medicationTimeScale","SLIDER",
  ["Medication half-life multiplier","Server setting. 1.00 uses reference half-lives; lower values speed up washout. Restart the mission after editing."],
- ["ACM Extended: Circulation","Medications"],[0.05,4,1,2],1,{},true] call CBA_fnc_addSetting;
+ ["ACME: Circulation","Medications"],[0.05,4,1,2],1,{},true] call CBA_fnc_addSetting;
 ["ACME_bloodRealTime","CHECKBOX",
  ["Real-time blood storage","Server setting. Uses reference cold-chain and use windows in real elapsed seconds. Disable for the older short-mission cold chain. Restart the mission after editing."],
- ["ACM Extended: Persistence","Blood storage"],true,1,{},true] call CBA_fnc_addSetting;
+ ["ACME: Persistence","Blood storage"],true,1,{},true] call CBA_fnc_addSetting;
 {
     _x params ["_name","_title","_max","_default"];
     [_name,"SLIDER",[_title,"Server setting. Restart the mission after editing."],
-        ["ACM Extended: Persistence","Blood storage"],[1,_max,_default,0],1,{},true] call CBA_fnc_addSetting;
+        ["ACME: Persistence","Blood storage"],[1,_max,_default,0],1,{},true] call CBA_fnc_addSetting;
 } forEach [
     ["ACME_persistentCooler1Hours","1U cooler cooling hours",120,24],
     ["ACME_persistentCooler2Hours","2U cooler cooling hours",120,24],

@@ -80,10 +80,11 @@ private _setStructured = {
     params ["_map","_key","_text"];
     private _entry = _map getOrDefault [_key,[]];
     if (count _entry < 2) exitWith {};
-    _entry params ["_ctrl","_col"];
-    if (!isNull _ctrl) then {
-        private _hex = switch _key do {case "HR":{"#00ff00"}; case "SpO2":{"#0099ff"}; case "EtCO2":{"#ff8033"}; case "Temp":{"#ffb34d"}; default {"#ffffff"};};
-        _ctrl ctrlSetStructuredText parseText format ["<t align='left' size='1.0' color='%1'>%2</t>",_hex,_text];
+    _entry params ["_ctrl","_col",["_hex","#ffffff"],["_align","left"]];
+    // only when the number changed: re-parsing six fields 33 times a second is wasted work.
+    if (!isNull _ctrl && {(_ctrl getVariable ["mc_text",""]) isNotEqualTo _text}) then {
+        _ctrl setVariable ["mc_text",_text];
+        _ctrl ctrlSetStructuredText parseText format ["<t align='%1' font='RobotoCondensedBold' color='%2'>%3</t>",_align,_hex,_text];
     };
 };
 [_v,"HR",str _displayHR] call _setStructured;
@@ -91,7 +92,37 @@ private _setStructured = {
 [_v,"BP",_displayBP] call _setStructured;
 [_v,"EtCO2",str _displayEtCO2] call _setStructured;
 [_v,"RR",str (round _rr)] call _setStructured;
-[_v,"Temp",format ["%1",(round (_temp*10))/10]] call _setStructured;
+[_v,"Temp",(round (_temp*10)/10) toFixed 1] call _setStructured;
+
+// Title-bar status and the open page's state, about twice a second. A page drawn from state that has since
+// changed elsewhere (the server started a scenario, the manikin went unconscious) is redrawn.
+if (_nowDiag >= (uiNamespace getVariable ["ACME_MC_sigCheckT",0])) then {
+    uiNamespace setVariable ["ACME_MC_sigCheckT",_nowDiag + 0.5];
+    private _statusCtrl = uiNamespace getVariable ["ACME_MC_statusCtrl",controlNull];
+    if (!isNull _statusCtrl) then {
+        private _rk = toLowerANSI (_dummy getVariable ["ACME_MC_rhythmKey",_dummy getVariable ["ACME_MC_rhythm","sinus"]]);
+        private _rName = createHashMapFromArray [
+            ["sinus","Sinus"],["stach","Sinus tachycardia"],["sbrady","Sinus bradycardia"],["afib","A-fib"],["afibrvr","A-fib RVR"],
+            ["atrialtach","Atrial tachycardia"],["svt","SVT"],["vt","V-tach"],["torsades","Torsades"],["vfib","V-fib"],
+            ["asystole","Asystole"],["pea","PEA"]
+        ] getOrDefault [_rk,_rk];
+        private _scen = if (_dummy getVariable ["ACME_MC_scenActive",false]) then {_dummy getVariable ["ACME_MC_scenName",""]} else {"none"};
+        private _st = format [
+            "<t align='right' color='#a8a8a8'>RHYTHM </t><t align='right' font='RobotoCondensedBold' color='%1'>%2</t><t align='right' color='#a8a8a8'>     SCENARIO </t><t align='right' font='RobotoCondensedBold' color='#f3f1ed'>%3</t>",
+            if (_arrest || {_dummy getVariable ["ACME_MC_pulseless",false]}) then {"#ff8a8a"} else {"#f3f1ed"}, _rName, _scen
+        ];
+        if ((_statusCtrl getVariable ["mc_text",""]) isNotEqualTo _st) then {
+            _statusCtrl setVariable ["mc_text",_st];
+            _statusCtrl ctrlSetStructuredText parseText _st;
+        };
+    };
+    (uiNamespace getVariable ["ACME_MC_pageSig",["",[]]]) params [["_sigPage",""],["_sigWas",[]]];
+    private _page = uiNamespace getVariable ["ACME_MC_page",""];
+    if (_page == _sigPage && {!(_page in ["log","wounds"])}) then {
+        private _sigNow = [_dummy,_page] call (uiNamespace getVariable ["ACME_MC_pageSigFn",{[]}]);
+        if (_sigNow isNotEqualTo _sigWas) then {[87300,_page] call ACME_fnc_megacodeMenu;};
+    };
+};
 
 // Two consecutive LifePak windows share one boundary sample: 351 points / 350 drawable segments.
 // Sampling remains 0.03 s, so morphology is narrower rather than stretching a 176-point sweep across the full panel.

@@ -6,7 +6,7 @@
 class CfgPatches {
     class acme_sked_ace {
         ACME_BUILD_CONFIG("acme_sked_ace");
-        name = "ACM Extended SKED: litter";
+        name = "ACME SKED: litter";
         author = "mavis";
         requiredVersion = 2.0;
         requiredAddons[] = {"acme_sked", "acme_talon", "cba_main", "ace_common", "ace_interact_menu", "ace_interaction", "ace_dragging", "ace_medical_treatment", "A3_Structures_F_Mil_Helipads"};

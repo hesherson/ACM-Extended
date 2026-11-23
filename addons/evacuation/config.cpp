@@ -6,8 +6,8 @@ class CfgPatches {
         ACME_BUILD_CONFIG("evacuation");
         name = COMPONENT_NAME;
         units[] = {
-            QGVAR(EvacuationPoint),
-            QGVAR(ReinforcePoint)
+            "ACME_ModuleEvacuationPoint",
+            "ACME_ModuleReinforcePoint"
         };
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;

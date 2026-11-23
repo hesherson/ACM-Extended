@@ -69,7 +69,10 @@ if (_ropeClass isEqualTo "") then {
         _length,
         [],
         [],
-        _ropeClass
+        _ropeClass,
+        // B395: the segment count (9th argument, engine maximum 63); without it the engine made about 20 for a
+        // 3 m line, which showed as straight pieces
+        ((round _segments) max 2) min 63
     ];
 };
 

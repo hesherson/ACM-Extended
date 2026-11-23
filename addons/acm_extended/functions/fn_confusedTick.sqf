@@ -5,6 +5,13 @@ private _on = !isNull _p && {alive _p} && {_p getVariable ["ACME_confused", fals
     && {!(_p getVariable ["ACME_obtunded", false])} && {!(_p getVariable ["ACE_isUnconscious", false])}
     && {isNull curatorCamera};
 private _db = uiNamespace getVariable ["ACME_confused_blur", -1];
+// B393: what others see of it: he can only walk (ACE's own status effect, so it never clashes with fatigue or
+// carrying), and now and then shakes his head as if to clear it.
+private _walk = missionNamespace getVariable ["ACME_confused_forceWalk", false];
+if (!isNull _p && {_on isNotEqualTo _walk}) then {
+    [_p, "forceWalk", "ACME_confused", _on] call ace_common_fnc_statusEffect_set;
+    ACME_confused_forceWalk = _on;
+};
 if (!_on) exitWith {
     if (_db isEqualType 0 && {_db >= 0}) then {
         _db ppEffectEnable false;
@@ -27,4 +34,8 @@ _db ppEffectCommit 0;
 if (diag_tickTime >= (uiNamespace getVariable ["ACME_confused_swayNext", 0])) then {
     uiNamespace setVariable ["ACME_confused_swayNext", diag_tickTime + 3 + random 3];
     addCamShake [0.6, 2.5, 0.8];
+    if (isNull objectParent _p && {random 1 < 0.35}
+        && {isClass (configFile >> "CfgGesturesMale" >> "States" >> "GestureNo")}) then {
+        _p playActionNow "GestureNo";
+    };
 };

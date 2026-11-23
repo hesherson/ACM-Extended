@@ -8,8 +8,8 @@ class CfgPatches {
         units[] = {
             QGVAR(TrainingPatient),
             QGVAR(TrainingCivilian),
-            QGVAR(Eden_FullHealFacility),
-            QGVAR(Eden_ElevationOverride)
+            "ACME_ModuleFullHealFacility",
+            "ACME_ModuleElevationOverride"
         };
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;

@@ -33,7 +33,7 @@ def test_vial_parser_keeps_full_suffix():
     assert '["_vial_", "_ampule_"]' in s
     assert '_class select [_at + count _needle]' in s
     assert 'splitString "_"' not in s
-    assert 'ACM_Ampule_Dimercaprol' in text('functions/fn_vialClass.sqf')
+    assert 'ACME_Ampule_Dimercaprol' in text('functions/fn_vialClass.sqf')
 
 
 def test_auscultate_chest_keeps_group_child_indent():

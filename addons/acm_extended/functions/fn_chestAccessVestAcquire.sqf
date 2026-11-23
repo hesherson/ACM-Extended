@@ -21,7 +21,13 @@ _context = toLowerANSI _context;
 if !(_context in ["access","chestseal"]) then {_context = "access";};
 _treatmentClass = toLowerANSI _treatmentClass;
 if (_treatmentClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"]) exitWith {true};
-private _preserveHeadElevation = _treatmentClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen"];
+// B393: listening to, inspecting and checking the chest, and placing AED pads, are done with the casualty sitting
+// up: the carrier comes off without laying him flat (as for BVM). CPR still lays him flat.
+private _preserveHeadElevation = _treatmentClass in ["usebvm","usebvm_oxygen","usebvm_vehicleoxygen","usebvm_portableoxygen",
+    "usestethoscope","checkbreathing","acme_inspectchest","aed_applypads","thoracostomy"]
+    // the chest seal and thoracostomy workspaces are screens, not a camera on his chest: he can sit up for them;
+    // a flip to his back inside the chest-seal workspace lays him flat first (fn_chestSealRoll.sqf)
+    || {_context == "chestseal"};
 
 private _savedVar = ["ACME_chestAccess_vestLoadout","ACME_CS_vestLoadout"] select (_context == "chestseal");
 private _propVar = ["ACME_chestAccess_vestProp","ACME_CS_vestProp"] select (_context == "chestseal");

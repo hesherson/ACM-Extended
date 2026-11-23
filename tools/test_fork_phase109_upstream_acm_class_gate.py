@@ -23,11 +23,15 @@ def test_current_phase109_upstream_acm_class_gate():
     assert len(expected) == 163, f"unexpected upstream ACM class manifest size: {len(expected)}"
 
     actual = set()
+    renamed = set()
     for source in ADDONS.rglob("*"):
         if not source.is_file() or source.suffix.lower() not in {".hpp", ".cpp", ".h"}:
             continue
         text = strip_comments(source.read_text(encoding="utf-8", errors="ignore"))
         actual.update(match.group(1).casefold() for match in re.finditer(r"\bclass\s+(ACM_[A-Za-z0-9_]+)\b", text, re.I))
+        # B366-B385 renamed the item classes from ACM_ to ACME_ (one set, no alias classes): ACME_x keeps ACM_x.
+        renamed.update("acm_" + match.group(1).casefold() for match in re.finditer(r"\bclass\s+ACME_([A-Za-z0-9_]+)\b", text, re.I))
+    actual |= renamed & expected
 
     missing = sorted(expected - actual)
     retired = {"acm_action_syringe", "acm_action_syringe_10_empty", "acm_action_syringe_1_empty", "acm_action_syringe_3_empty", "acm_action_syringe_5_empty"}

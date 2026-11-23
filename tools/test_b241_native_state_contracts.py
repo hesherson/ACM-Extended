@@ -72,7 +72,8 @@ def integration_routes():
         'if (isNull _object) exitWith {false};','_object setVariable ["ace_cargo_canLoad", _canLoad, _public];')
     require('addons/core/functions/fnc_suppressPhysicalBandageReopening.sqf',
         'missionNamespace setVariable ["ace_medical_treatment_woundReopenChance", -1, false];')
-    startup=require(F+'fn_initForkStartupRuntime.sqf','["CBA_settingsInitialized", { call ACM_core_fnc_suppressPhysicalBandageReopening; }] call CBA_fnc_addEventHandler;')
+    # B318 added the server clinical-timing sync to the same post-settings handler.
+    startup=require(F+'fn_initForkStartupRuntime.sqf','["CBA_settingsInitialized", { call ACM_core_fnc_suppressPhysicalBandageReopening; if (isServer) then {call ACME_fnc_clinicalTimingSync;}; }] call CBA_fnc_addEventHandler;')
     assert startup.count('call ACM_core_fnc_suppressPhysicalBandageReopening;')==2
 
 
@@ -115,7 +116,11 @@ def test_contract_rejects_missing_guards_and_direct_write_regressions(monkeypatc
 
 def test_strict_scan_now_covers_all_repaired_namespaces_without_exceptions():
     assert {'ACM_damage_','ACM_CBRN_','ace_'}<=set(PREFIXES)
-    assert scan_directory(ROOT/F)==[]
+    # B366-B385 ACM_ -> ACME_ item rename: ACE Arsenal's stored loadout lists are rewritten to the canonical classnames
+    # (fn_initItemClassRuntime). Not ACE medical/runtime state; same exact exception as phase 56.
+    rename_migration={('fn_initItemClassRuntime.sqf','ace_arsenal_saved_loadouts'),
+                      ('fn_initItemClassRuntime.sqf','ace_arsenal_defaultLoadoutsList')}
+    assert [v for v in scan_directory(ROOT/F) if (v.path,v.key) not in rename_migration]==[]
 
 
 def test_repaired_legacy_boundary_modules_are_mandatory():

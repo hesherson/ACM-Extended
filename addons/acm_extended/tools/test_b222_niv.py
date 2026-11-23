@@ -387,8 +387,8 @@ def test_real_live_edit_simple_guard_applies_to_invasive_but_not_mask(mask):
 
 
 def test_debug_renderer_and_geometry_are_byte_identical_to_b221():
-    original=__import__('subprocess').check_output(['git','show','7e6a66401e66e881a009b2bf3f56e33ae9084abf:addons/acm_extended/functions/fn_debugMenuClinical.sqf'],cwd=ROOT)
-    assert (ROOT/'addons/acm_extended/functions/fn_debugMenuClinical.sqf').read_bytes()==original
+    from test_debug_single_overlay import unchanged_since  # EOL-neutral, allows only the B363 theme backing
+    assert unchanged_since('addons/acm_extended/functions/fn_debugMenuClinical.sqf','7e6a66401e66e881a009b2bf3f56e33ae9084abf')
 
 
 def test_build_helper_packages_only_and_never_installs_or_publishes():

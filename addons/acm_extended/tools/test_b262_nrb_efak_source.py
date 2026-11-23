@@ -47,19 +47,19 @@ def test_nrb_donor_selection_executes_with_kit_and_loose_cylinders():
         [([_medic, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo _patient,
             "patient's EFAK kit oxygen missing"] call _check;
         ACME_test_kitMedic = 1;
-        ACME_test_cargoPatient = [[["ACM_OxygenTank_425", 9]]];
+        ACME_test_cargoPatient = [[["ACME_OxygenTank_425", 9]]];
         [([_medic, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo _medic,
             "medic's kit must take donor priority over patient's loose tank"] call _check;
         ACME_test_kitMedic = 0;
         [([_medic, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo _patient,
             "loose oxygen donor not selected when kit unavailable"] call _check;
-        ACME_test_cargoPatient = [[["ACM_OxygenTank_425", 0]]];
+        ACME_test_cargoPatient = [[["ACME_OxygenTank_425", 0]]];
         [([_medic, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo _patient,
             "patient's valid EFAK kit was ignored after zero-charge loose cylinder"] call _check;
         ACME_test_kitPatient = 0;
         [([_medic, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo objNull,
             "zero-charge tank incorrectly accepted as oxygen"] call _check;
-        ACME_test_cargoMedic = [[["ACM_OxygenTank_425", 6]]];
+        ACME_test_cargoMedic = [[["ACME_OxygenTank_425", 6]]];
         [([_medic, _patient] call ACME_fnc_nrbOxygenSource) isEqualTo _medic,
             "positive loose reserve rejected"] call _check;
     """)
@@ -71,10 +71,10 @@ def test_kit_eligibility_and_owner_local_reserve_debit_agree():
     native = (B / "fnc_useOxygenTankReserve.sqf").read_text(encoding="utf-8-sig")
     count = source("itemCount")
     assert 'if (!_available && {!isNil "efak_medical_fnc_drawCharge"}) then {' in source_code
-    assert '([_unit, "ACM_OxygenTank_425"] call ACME_fnc_itemCount) > 0' in source_code
+    assert '([_unit, "ACME_OxygenTank_425"] call ACME_fnc_itemCount) > 0' in source_code
     assert 'efak_medical_fnc_countItem' in count
     assert '_source' in draw and '[_source] call ACM_breathing_fnc_useOxygenTankReserve' in draw
-    assert 'if (_magClassname == "ACM_OxygenTank_425" && {_magCount > 0}) then {' in native
+    assert 'if (_magClassname == "ACME_OxygenTank_425" && {_magCount > 0}) then {' in native
     assert 'if (!_found && {!isNil "efak_medical_fnc_drawCharge"}) then {' in native
-    assert '[_unit, "ACM_OxygenTank_425"] call efak_medical_fnc_drawCharge' in native
+    assert '[_unit, "ACME_OxygenTank_425"] call efak_medical_fnc_drawCharge' in native
     assert 'if (_left == 0) then {' in native

@@ -33,10 +33,10 @@ def bottle_transaction_fixture():
     fixture += r'''
       _configuredType="ACME_Propofol";_configuredVolume=50;
       _validClasses pushBack "Propofol_IV";
-      _set=["set1","ACM_Vial_Propofol","ACME_PropofolIV_50","","","","Propofol 500mg",false,"propofol",50,0];
-      _prepared=["set1","ACM_Vial_Propofol","ACME_PropofolIV_50","Propofol",500,1800,20,0,0,10,50,0,_medic,objNull,[["Propofol",500,1]],"set1",50,"propofol-bottle"];
+      _set=["set1","ACME_Vial_Propofol","ACME_PropofolIV_50","","","","Propofol 500mg",false,"propofol",50,0];
+      _prepared=["set1","ACME_Vial_Propofol","ACME_PropofolIV_50","Propofol",500,1800,20,0,0,10,50,0,_medic,objNull,[["Propofol",500,1]],"set1",50,"propofol-bottle"];
       call _store;
-      _request=[_medic,_patient,_medic,"ACM_Vial_Propofol","ACME_PropofolIV_50",objNull,"leftarm",true,0,50,_prepared,0,"Propofol 500mg"];
+      _request=[_medic,_patient,_medic,"ACME_Vial_Propofol","ACME_PropofolIV_50",objNull,"leftarm",true,0,50,_prepared,0,"Propofol 500mg"];
     '''
     return fixture, execute
 
@@ -97,7 +97,7 @@ def test_spiking_captures_selected_unopened_source_and_debits_one_line():
     assert 'objectParent _medic' in source
     assert '[_medic, _patient, _mode, _vehicle, _holder, _token, _release], 1.6]' in source
     assert source.count('call ACME_fnc_transfusionTakeSelected') == 1
-    assert '[_medic, _patient, "ACM_Vial_Propofol", _mode, _vehicle]' in source
+    assert '[_medic, _patient, "ACME_Vial_Propofol", _mode, _vehicle]' in source
     assert source.count('call ACME_fnc_treatmentSupplyTake;') == 1
     assert '[_medic, _patient, ["ACME_IVLine"]]' in source
     assert '[_bottleReceipt] call ACME_fnc_treatmentSupplyRefund;' in source
@@ -128,7 +128,7 @@ def test_prepared_bottle_retains_custody_until_owner_ack_and_uses_existing_clamp
     assert 'setVariable ["ACME_infusion_PreparedBags", _prepared, true]' in source
     owner = read("preparedAttachLocal")
     for guard in (
-        '_item == "ACM_Vial_Propofol"', '_action == "ACME_PropofolIV_50"',
+        '_item == "ACME_Vial_Propofol"', '_action == "ACME_PropofolIV_50"',
         '_carrierVolume == 50', '(_prepared param [17, ""]) == "propofol-bottle"',
         '_components isEqualTo [["Propofol", 500, 1]]',
         '(_set param [8, ""]) == "propofol"', '(_set param [9, 0]) == 50',
@@ -145,7 +145,7 @@ def test_prepared_bottle_retains_custody_until_owner_ack_and_uses_existing_clamp
     assert 'ACME_fnc_queueInfusionClamp' in ack
     assert 'ACME_fnc_openRollerClamp' not in source
     plain_hang = read('preparedHangCommit')
-    assert 'if (_kind == "propofol" || {_bloodClass == "ACM_Vial_Propofol"}' in plain_hang
+    assert 'if (_kind == "propofol" || {_bloodClass == "ACME_Vial_Propofol"}' in plain_hang
     assert plain_hang.index('if (_kind == "propofol"') < plain_hang.index('private _bloodUid =')
 
 
@@ -160,7 +160,7 @@ def test_propofol_is_not_a_saline_admixture_and_syringe_bolus_registry_remains()
     assert 'if (_infusion && {!(_med in _allowedMeds)}) then {continue};' in rows
     config = (ROOT / 'addons/acm_extended/config.cpp').read_text()
     assert 'class Propofol_IV: ACM_IV_Medication' in config
-    assert 'class ACM_Vial_Propofol: ACE_ItemCore' in config
+    assert 'class ACME_Vial_Propofol: ACE_ItemCore' in config
 
 
 def test_emulsion_volume_cannot_credit_saline_blood_plasma_or_return_unopened_stock():

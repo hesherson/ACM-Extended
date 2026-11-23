@@ -20,6 +20,12 @@ if (!(_patient getVariable ["ACME_headElevated", false])) exitWith {
 };
 // With presentation disabled, the patient's ordinary lying animation is expected. Clinical treatment and
 // transport events still suspend/cancel the posture through their existing logical leases.
+// B393: wrapped in the HPMK, his pose is the shell's (fn_hpmkPose.sqf); the raised head is kept without animation
+// until he is unwrapped. Never suspend or resume on the wrap pose: that was a loop of lower, re-pose, lift.
+if ((_patient getVariable ["ACME_hpmk_state", ""]) in ["wrapped", "exposed"]
+    && {!(_patient getVariable ["ACME_headElev_noAnimation", false])}) then {
+    _patient setVariable ["ACME_headElev_noAnimation", true, true];
+};
 if (!(missionNamespace getVariable ["ACME_interventionAnimations", true])
     || {_patient getVariable ["ACME_headElev_noAnimation", false]}) exitWith {
     _patient setVariable ["ACME_headElev_lastAnim", ""];
@@ -56,5 +62,35 @@ if (_cancelOn findIf { _anim find _x >= 0 } >= 0) exitWith {
 if (_yieldOn findIf { _anim find _x >= 0 } >= 0) then {
     if (!(_patient getVariable ["ACME_headElev_Suspended", false])) then {
         [_patient] call ACME_fnc_headElevSuspend;
+        // B393: a lowering no treatment holds a lease for (seen in game: Check Breathing on a sitting casualty laid
+        // him flat and he stayed flat for good) is temporary. Once nothing has held his body for 4 s (no treatment
+        // lease, no animation lease, no CPR), he sits up again; at most three times a minute, so it can never loop.
+        private _token = _patient getVariable ["ACME_headElev_poseToken", ""];
+        private _free = {
+            params ["_p", "_token"];
+            !isNull _p && {local _p} && {alive _p}
+            && {_p getVariable ["ACME_headElevated", false]} && {_p getVariable ["ACME_headElev_Suspended", false]}
+            && {(_p getVariable ["ACME_headElev_poseToken", ""]) == _token}
+            && {(count (_p getVariable ["ACME_headElev_treatments", createHashMap])) == 0}
+            && {!([_p] call ACME_fnc_patientAnimHeld)}
+            && {isNull (_p getVariable ["ACM_circulation_CPR_Medic", objNull])}
+            && {!(_p getVariable ["ACM_airway_RecoveryPosition_State", false])}
+            && {isNull attachedTo _p} && {isNull objectParent _p}
+        };
+        [{
+            params ["_p", "_token", "_since", "_free"];
+            if !([_p, _token] call _free) then {_this set [2, CBA_missionTime];};
+            !([_p, _token] call _free) && {isNull _p || {!(_p getVariable ["ACME_headElevated", false])} || {!(_p getVariable ["ACME_headElev_Suspended", false])}}
+            || {CBA_missionTime > _since + 4}
+        }, {
+            params ["_p", "_token", "_since", "_free"];
+            if !([_p, _token] call _free) exitWith {};
+            private _recent = (_p getVariable ["ACME_headElev_autoResumes", []]) select {_x > CBA_missionTime - 60};
+            if (count _recent >= 3) exitWith {};
+            _recent pushBack CBA_missionTime;
+            _p setVariable ["ACME_headElev_autoResumes", _recent];
+            _p setVariable ["ACME_headElev_ResumePending", true, true];
+            [_p, _token] call ACME_fnc_headElevTryResume;
+        }, [_patient, _token, CBA_missionTime, _free], 120] call CBA_fnc_waitUntilAndExecute;
     };
 };

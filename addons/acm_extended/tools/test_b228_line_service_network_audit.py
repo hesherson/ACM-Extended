@@ -283,7 +283,7 @@ def test_single_service_button_and_diagnostic_free_stop_label_source_contract():
     assert 'ctrlSetBackgroundColor' in paint and 'sin (360' not in paint
     assert 'playSoundUI' in paint and '"soundClick"' in paint
     assert '"MouseButtonUp"' not in paint  # no second queue cancel or click sound
-    assert 'LW Quantum · Warming' in read('transfusionBagPresentation')
+    assert 'LW Quantum / Warming' in read('transfusionBagPresentation')  # ASCII separator since the B301 pane alignment
 
 
 def test_renderer_never_publishes_viewer_bag_map_and_slot_repair_is_bounded():
@@ -345,9 +345,8 @@ def test_used_bag_results_require_owned_pending_record_and_settle_only_once(pend
 
 
 def test_debug_renderer_is_byte_identical_to_b227():
-    path='addons/acm_extended/functions/fn_debugMenuClinical.sqf'
-    before=subprocess.check_output(['git','show','6135b2758ff1c8a772da2cef40939642ab1b174e:'+path],cwd=ROOT)
-    assert (ROOT/path).read_bytes()==before
+    from test_debug_single_overlay import unchanged_since  # EOL-neutral, allows only the B363 theme backing
+    assert unchanged_since('addons/acm_extended/functions/fn_debugMenuClinical.sqf','6135b2758ff1c8a772da2cef40939642ab1b174e')
 
 
 def test_y_claim_id_cannot_be_reused_for_the_other_limb():

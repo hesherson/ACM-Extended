@@ -417,7 +417,7 @@ if !(_repairs isEqualTo []) then {
     _patient setVariable ["ACME_transientRepairCount",
         (_patient getVariable ["ACME_transientRepairCount", 0]) + count _repairs, false];
     _patient setVariable ["ACME_transientRepairLast", [_netNow, +_repairs], false];
-    diag_log format ["[ACME STATE RECONCILE] %1 repaired: %2", netId _patient, _repairs joinString " | "];
+    if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME STATE RECONCILE] %1 repaired: %2", netId _patient, _repairs joinString " | "];};
 };
 
 count _repairs

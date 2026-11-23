@@ -93,6 +93,8 @@ private _forceFrontRest = {
     if ((count _lock) >= 5 && {(_lock param [4,-1]) > serverTime}) exitWith {};
 
     _p setVariable ["ACME_CS_facing", "front", true];
+    // B393: still sitting up (he never had to roll): leave him sitting
+    if ((_p getVariable ["ACME_headElevated", false]) && {!(_p getVariable ["ACME_headElev_Suspended", false])}) exitWith {};
 
     if ((missionNamespace getVariable ["ACME_interventionAnimations", true])
         && {alive _p} && {isNull objectParent _p} && {[_p] call ACME_fnc_chestSealCanPhysicalRoll}) then {

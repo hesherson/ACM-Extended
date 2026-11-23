@@ -112,7 +112,9 @@ def test_all_iv_tray_labels_share_one_native_typography_and_no_runtime_size_over
         brace=next(i for i in range(start,len(tokens)) if tokens[i].value=='{')
         return cpp[tokens[brace].offset:tokens[pairs[brace]].offset+1]
     label=native_class('ACME_IV_ToolLabel')
-    assert 'font="RobotoCondensed"' in label
+    # B363 moved ACME UI fonts to the shared theme macro (main/ui_theme.hpp: ACM_UI_FONT "RobotoCondensed").
+    theme=(ROOT/'addons/main/ui_theme.hpp').read_text()
+    assert 'font = ACM_UI_FONT;' in label and '#define ACM_UI_FONT "RobotoCondensed"' in theme
     assert 'sizeEx="0.018 * safezoneH"' in label
     assert 'style=2' in label
     for name in ('IV_BandLbl','IV_PadLbl','IV_G14Lbl'):

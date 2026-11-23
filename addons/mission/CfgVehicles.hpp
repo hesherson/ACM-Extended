@@ -29,12 +29,12 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(Eden_FullHealFacility): Module_F {
+    class ACME_ModuleFullHealFacility: Module_F {
         scope = 2;
         displayName = CSTRING(FullHealFacility_Module);
         icon = QPATHTOF(ui\Icon_Module_FullHealFacility_ca.paa);
         portrait = QPATHTOF(ui\Icon_Module_FullHealFacility_ca.paa);
-        category = QGVAR(Category_Mission);
+        category = "ACME_Curator_Category";
         function = QFUNC(moduleInitFullHealFacility_Eden);
         functionPriority = 1;
         isGlobal = 1;
@@ -42,13 +42,13 @@ class CfgVehicles {
         author = AUTHOR;
         class Attributes: AttributesBase {
             class InteractionDistance: Edit {
-                property = QGVAR(Eden_FullHealFacility_InteractionDistance);
+                property = "ACME_ModuleFullHealFacility_InteractionDistance";
                 displayName = ECSTRING(core,Common_Module_InteractionDistance);
                 typeName = "NUMBER";
                 defaultValue = 5;
             };
             class InteractionPosition: Edit {
-                property = QGVAR(Eden_FullHealFacility_InteractionPosition);
+                property = "ACME_ModuleFullHealFacility_InteractionPosition";
                 displayName = ECSTRING(core,Common_Module_InteractionPosition);
                 tooltip = ECSTRING(core,Common_Module_InteractionPosition_Tooltip);
                 typeName = "STRING";
@@ -57,10 +57,10 @@ class CfgVehicles {
         };
     };
 
-    class GVAR(Eden_ElevationOverride): Module_F {
+    class ACME_ModuleElevationOverride: Module_F {
         scope = 2;
         displayName = "ACME Elevation Override";
-        category = QGVAR(Category_Mission);
+        category = "ACME_Curator_Category";
         function = QFUNC(moduleInitElevationOverride_Eden);
         functionPriority = 1;
         isGlobal = 1;
@@ -70,7 +70,7 @@ class CfgVehicles {
 
         class Attributes: AttributesBase {
             class DetectedBaseElevation: Edit {
-                property = QGVAR(Eden_ElevationOverride_DetectedBaseElevation);
+                property = "ACME_ModuleElevationOverride_DetectedBaseElevation";
                 displayName = "Detected ACE Base Elevation (m)";
                 tooltip = "Informational. Prefilled from ACE's resolved map altitude when available, otherwise the terrain elevationOffset. The runtime report shows the value ACME actually replaced.";
                 typeName = "NUMBER";
@@ -78,7 +78,7 @@ class CfgVehicles {
             };
 
             class Mode: Combo {
-                property = QGVAR(Eden_ElevationOverride_Mode);
+                property = "ACME_ModuleElevationOverride_Mode";
                 displayName = "Override Mode";
                 tooltip = "Calibration is recommended: place this module at a location with a known real elevation and enter that elevation below. Manual mode sets ACE's base map elevation directly.";
                 typeName = "NUMBER";
@@ -96,7 +96,7 @@ class CfgVehicles {
             };
 
             class ElevationUnits: Combo {
-                property = QGVAR(Eden_ElevationOverride_Units);
+                property = "ACME_ModuleElevationOverride_Units";
                 displayName = "Elevation Units";
                 tooltip = "Units used by Desired Elevation below.";
                 typeName = "NUMBER";
@@ -114,7 +114,7 @@ class CfgVehicles {
             };
 
             class DesiredElevation: Edit {
-                property = QGVAR(Eden_ElevationOverride_DesiredElevation);
+                property = "ACME_ModuleElevationOverride_DesiredElevation";
                 displayName = "Desired Elevation";
                 tooltip = "Calibration mode: the real elevation at this module's position. Manual mode: the desired ACE map base elevation. Relative hills and valleys are preserved.";
                 typeName = "NUMBER";
@@ -122,7 +122,7 @@ class CfgVehicles {
             };
 
             class ShowStartupReport: Checkbox {
-                property = QGVAR(Eden_ElevationOverride_ShowStartupReport);
+                property = "ACME_ModuleElevationOverride_ShowStartupReport";
                 displayName = "Show Startup Report";
                 tooltip = "Shows the original ACE base, corrected base, and effective elevation at this module once when the mission starts. The same information is always written to the RPT.";
                 typeName = "BOOL";

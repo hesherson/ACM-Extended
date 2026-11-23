@@ -12,12 +12,20 @@ _d setVariable ["ACME_MC_airway", _k, true];
 switch (_k) do {
     case "patent": {
         [_d, [["blood", 0], ["vomit", 0], ["collapse", 0]], true] call ACM_airway_fnc_setAirwayState;
+        // breathing again after an apnea: the respiratory rate comes back to baseline.
+        if ((_d getVariable ["ACME_MC_RRTgt", 14]) <= 0) then {
+            _d setVariable ["ACME_MC_RRTgt", 14, true];
+            [_d, [["respirationRate", 14]], true] call ACM_core_fnc_setTargetVitalsState;
+            [_d, [["respirationRate", 14]], true] call ACM_breathing_fnc_setRuntimeState;
+        };
     };
     case "blood":    { [_d, [["blood", 2]], true] call ACM_airway_fnc_setAirwayState; };
     case "vomit":    { [_d, [["vomit", 2]], true] call ACM_airway_fnc_setAirwayState; };
     case "collapse": { [_d, [["collapse", 3]], true] call ACM_airway_fnc_setAirwayState; };
     case "apnea": {
+        // the target too: the keeper eases the live value toward it, and a live 0 alone ramped back to the old rate.
         _d setVariable ["ACME_MC_RR", 0, true];
+        _d setVariable ["ACME_MC_RRTgt", 0, true];
         [_d, [["respirationRate", 0]], true] call ACM_core_fnc_setTargetVitalsState;
         [_d, [["respirationRate", 0]], true] call ACM_breathing_fnc_setRuntimeState;
     };

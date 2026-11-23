@@ -16,7 +16,7 @@ def test_switching_large_bore_needles_keeps_selected_gauge():
     assert g.index('uiNamespace getVariable ["ACME_IV_Gauge",16]) == _gauge') < g.index('private _grabMedic =') < g.index('uiNamespace setVariable ["ACME_IV_Gauge", _gauge];')
 def test_both_field_gauges_have_owner_supply_and_commit_paths():
     a=read("ivFinishStart"); b=read("ivFinishCommit"); c=read("ivSupplyScopeCheck")
-    for action,item in (("field14","ACM_IV_14g"),("field16","ACM_IV_16g")):
+    for action,item in (("field14","ACME_IV_14g"),("field16","ACME_IV_16g")):
         assert action in a and item in a and action in b and item in b and action in c and item in c
 def test_extension_seats_twenty_authored_pixels_deeper():
     assert '["_socketV",1032/2048]' in read("ivFinishPose")

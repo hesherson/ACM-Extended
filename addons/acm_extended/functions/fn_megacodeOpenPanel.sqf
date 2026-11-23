@@ -7,11 +7,11 @@ if (isNull _target || {!(_target getVariable ["ACME_isMegacode",false])}) exitWi
 };
 if (!hasInterface) exitWith {};
 
+// Already open on this manikin: nothing to do. (An exitWith inside the "then" block below only left that block, so
+// a second Open on the same manikin, e.g. the AAR action, stacked a second panel and a second monitor PFH.)
 private _existing = uiNamespace getVariable ["ACME_Megacode_DLG",displayNull];
-if (!isNull _existing) then {
-    if ((uiNamespace getVariable ["ACME_MC_target",objNull]) isEqualTo _target) exitWith {};
-    closeDialog 0;
-};
+if (!isNull _existing && {(uiNamespace getVariable ["ACME_MC_target",objNull]) isEqualTo _target}) exitWith {};
+if (!isNull _existing) then {closeDialog 0;};
 uiNamespace setVariable ["ACME_MC_target",_target];
 uiNamespace setVariable ["ACME_MC_operator",_caller];
 _target setVariable ["ACME_MC_operatorClient",_caller,true];

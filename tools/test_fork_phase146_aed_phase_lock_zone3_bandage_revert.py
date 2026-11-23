@@ -46,7 +46,7 @@ need('getCountOfItem' not in z, "AAJT: manual provider-only item check can hide 
 # Experimental smart multi-bandage transaction is gone; native ACM action semantics are back.
 need('class PressureBandage: BasicBandage {' in actions, "bandage: native PressureBandage missing")
 need('callbackSuccess = QACEFUNC(medical_treatment,bandage);' in actions, "bandage: native callback missing")
-need('items[] = {"ACM_PressureBandage"};' in actions and 'consumeItem = 1;' in actions,
+need('items[] = {"ACME_PressureBandage"};' in actions and 'consumeItem = 1;' in actions,
      "bandage: native item consumption not restored")
 need('smartBandage' not in actions, "bandage: smart bundle still wired")
 for name in (

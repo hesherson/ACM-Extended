@@ -130,7 +130,7 @@ def test_native_preparation_debits_the_exact_stored_magazine_volume(dose,ammo):
 @pytest.mark.parametrize('opened_size,current_size',[(10,1),(1,10),(10,3),(3,5)])
 def test_native_drag_uses_current_in_place_barrel_capacity(opened_size,current_size):
     native=(F.parents[1]/'circulation/functions/fnc_Syringe_Draw.sqf').read_text()
-    mover=native.split('if (GVAR(SyringeDraw_Moving)) then {',1)[1].split('\n    };\n}, true',1)[0]
+    mover=native.split('if (GVAR(SyringeDraw_Moving) && {(uiNamespace getVariable ["ACME_SK_View","syringe"]) != "body"}) then {',1)[1].split('\n    };\n}, true',1)[0]
     mover=mover.replace('_display displayCtrl IDC_SYRINGEDRAW_PLUNGER','_hitCtrl')
     mover=mover.replace('_display displayCtrl GVAR(SyringeDraw_Ctrl_PlungerVisual)','_visualCtrl')
     mover=mover.replace('ctrlPosition _ctrlPlungerVisual','(_visualCtrl getVariable ["position",[]])')

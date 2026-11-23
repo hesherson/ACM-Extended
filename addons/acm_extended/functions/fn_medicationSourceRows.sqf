@@ -70,10 +70,8 @@ private _seenMed = [];
 
     // This is the same membership decision native ACM ultimately makes: registered vial + positive selected-stock count.
     private _sealed = [_holder, _class] call ACME_fnc_vialItemCount;
-    if (_med == "EpinephrineCardiac") then {
-        _sealed = ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount)
-            + ([_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount);
-    };
+    // B394: one vial class since the ACME_ rename (the old ACM_ + ACME_ sum counted every sealed vial twice)
+    if (_med == "EpinephrineCardiac") then {_sealed = [_holder, "ACME_Vial_EpinephrineCardiac"] call ACME_fnc_vialItemCount;};
     private _openMl = (_open getOrDefault [_med, 0]) max 0;
     if (_sealed <= 0 && {_openMl <= 0.000001}) then {continue};
 

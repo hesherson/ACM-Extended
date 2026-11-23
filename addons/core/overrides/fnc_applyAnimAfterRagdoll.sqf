@@ -28,6 +28,17 @@ private _random = (toArray (hashValue _unit)) param [0, 0];
 private _index = _random % (count _animsArray);
 private _unconsciousAnimation = _animsArray select _index;
 
+// B393: this runs on each machine by itself when its own ragdoll of the unit ends, which can be well after a provider
+// put the casualty into another pose. Never put a raised, wrapped, litter or provider-held casualty back into a
+// lying sprawl on one machine only: show the pose he is in everywhere else.
+if ((_unit getVariable ["ACME_headElevated", false]) && {!(_unit getVariable ["ACME_headElev_Suspended", false])}
+    && {!(_unit getVariable ["ACME_headElev_noAnimation", false])}) exitWith {
+    _unit switchMove "ACME_HeadElevPatientHold";
+};
+if ((_unit getVariable ["ACME_hpmk_state", ""]) in ["wrapped", "exposed"]) exitWith {_unit switchMove "ACME_Litter_Side";};
+if (!isNull attachedTo _unit || {!isNull (_unit getVariable ["acme_sked_litter", objNull])}) exitWith {};
+if (!isNil "ACME_fnc_patientAnimHeld" && {[_unit] call ACME_fnc_patientAnimHeld}) exitWith {};
+
 if (_unit getVariable [QGVAR(Lying_State), false]) exitWith {
     _unit switchMove "ACM_LyingState";
 };

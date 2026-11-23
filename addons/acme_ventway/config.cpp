@@ -7,7 +7,7 @@
 class CfgPatches {
     class acme_ventway {
         ACME_BUILD_CONFIG("acme_ventway");
-        name = "ACM Extended Ventway Sparrow";
+        name = "ACME Ventway Sparrow";
         author = "mavis";
         requiredVersion = 2.0;
         requiredAddons[] = {"A3_Data_F_AoW_Loadorder"};
@@ -18,7 +18,7 @@ class CfgPatches {
 
 class CfgEditorCategories {
     class ACME_EdCat_Medical {
-        displayName = "ACM Extended";
+        displayName = "ACME";
     };
 };
 

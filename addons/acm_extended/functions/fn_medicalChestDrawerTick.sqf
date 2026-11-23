@@ -25,7 +25,7 @@ if (_next != _current) then {
     [_cabinet, _chest getVariable "ACME_medicalChestDrawerPlan", _eased] call ACME_fnc_medicalChestDrawers;
     _chest setVariable ["ACME_medicalChestDrawerFraction", _next];
     if (_next in [0, 1]) then {
-        diag_log format ["[ACME] Medical chest drawers: %1 (%2)", ["shut", "extended"] select (_next == 1), typeOf _cabinet];
+        if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME] Medical chest drawers: %1 (%2)", ["shut", "extended"] select (_next == 1), typeOf _cabinet];};
     };
 };
 if (!_targetOpen && {_next == 0}) then {

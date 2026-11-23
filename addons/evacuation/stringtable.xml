@@ -2,7 +2,7 @@
 <Project name="ACM">
     <Package name="Evacuation">
         <Key ID="STR_ACM_Evacuation_Category">
-            <English>ACM: Evacuation</English>
+            <English>ACME: Evacuation</English>
             <French>ACM : Evacuation</French>
             <Spanish>ACM: Evacuación</Spanish>
             <Polish>ACM: Ewakuacja</Polish>

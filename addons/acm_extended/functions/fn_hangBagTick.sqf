@@ -107,6 +107,34 @@ if (hasInterface
     [true] call ACME_fnc_hangBagHint;
 };
 
+// B395 arm-gesture hold: the body is the provider's own, so there is no full-body pose to watch. Keep the arm up:
+// if another gesture (a hand signal, a weapon gesture) replaced the hold, play the hold again, at most every
+// ACME_hang_gestureReassertSec. Going prone is held off by the input lock; if the stance is forced prone anyway,
+// lower the bag (the arm pose is not made for lying).
+if (_medic getVariable ["ACME_hang_GestureMode", false]) exitWith {
+    if !(missionNamespace getVariable ["ACME_interventionAnimations", true]) exitWith {};
+    // not before fn_hangBagActivate has raised the bag (it may still be waiting for empty hands; it ends the
+    // hold itself if they never come)
+    if ((_medic getVariable ["ACME_hang_Pose", ""]) != "gesture") exitWith {};
+    if (stance _medic == "PRONE") exitWith {
+        ["Bag lowered.", 2, _medic] call ace_common_fnc_displayTextStructured;
+        [true, _medic] call ACME_fnc_hangBagStop;
+    };
+    if (CBA_missionTime < (_medic getVariable ["ACME_hang_GestureAssertAt", 0])) exitWith {};
+    private _hold = missionNamespace getVariable ["ACME_hang_gesture", "ACME_HangBagArmHold"];
+    // tell the other machines (late joiners included) every few seconds; they only act if theirs differs
+    if (CBA_missionTime >= (_medic getVariable ["ACME_hang_GestureShareAt", 0])) then {
+        _medic setVariable ["ACME_hang_GestureShareAt", CBA_missionTime + 5];
+        [_medic, _hold, true] call ACME_fnc_hangBagGesture;
+    };
+    // (standing or crouching: the stance's own version, so a change of stance swaps it)
+    private _want = _hold + (["", "K"] select (stance _medic == "CROUCH"));
+    if ((toLowerANSI gestureState _medic) != toLowerANSI _want) then {
+        [_medic, _hold] call ACME_fnc_hangBagGesture;
+        _medic setVariable ["ACME_hang_GestureAssertAt", CBA_missionTime + (missionNamespace getVariable ["ACME_hang_gestureReassertSec", 1.5])];
+    };
+};
+
 // Input-lock key handlers already consume locomotion. Never correct player translation/heading with setPosASL,
 // setDir or velocity writes here: those transforms caused the reported slow rightward slide and can fight vehicle/
 // animation state. Likewise, do not continuously restart the full-body pose; repeated animation assertions can

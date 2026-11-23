@@ -23,8 +23,10 @@ def test_flowing_supported_infusion_has_orange_ascii_warmer_and_native_dots(kind
 
 def paint_function():
     source=read('paintTransfusionYBracket')
-    a=source.index('private _ensure =');b=source.index('private _controls =',a)
-    source=source[:a]+'private _ensure={_this select 0};\n'+source[b:]
+    # B316 dropped the create-on-demand _ensure helper: rails are now dialog-owned controls fetched by IDC.
+    # The fixture models each rail control by its IDC, as the old _ensure stub did.
+    assert source.count('apply {_display displayCtrl _x};')==2
+    source=source.replace('apply {_display displayCtrl _x};','apply {_x};')
     source=source.replace('_display displayCtrl 86004','86004').replace('_display displayCtrl 86160','86160')
     source=source.replace('isNull _list','false').replace('ctrlPosition _list','(_positions get _list)')
     source=source.replace('lbSize _list','(_counts get _list)').replace('_list lbValue _row','_row').replace('_list lbValue _x','_x')
@@ -171,7 +173,12 @@ def test_b301_scope_keeps_ace_clinical_inventory_custody_and_original_body_art_e
     assert not subprocess.check_output(['git','diff','--name-only',BASE,'de71fb771a30ae4e3cc25e1c115b65e7753a47d2','--',*protected],cwd=ROOT).strip()
     native='addons/circulation/functions/fnc_TransfusionMenu_SwitchTargetInventory.sqf'
     marker=b'private _cachedItems'
-    assert (ROOT/native).read_bytes().split(marker,1)[1]==baseline(native).split(marker,1)[1]
+    # Compare text, not checkout bytes (core.autocrlf turns LF blobs into CRLF files), and apply the later
+    # one-set ACM_ -> ACME_ item-class rename to the baseline; nothing else after the marker may change.
+    import re
+    current_tail=(ROOT/native).read_bytes().replace(b'\r\n',b'\n').split(marker,1)[1]
+    base_tail=re.sub(rb'"ACM(_[A-Z]|")',rb'"ACME\1',baseline(native).replace(b'\r\n',b'\n').split(marker,1)[1])
+    assert current_tail==base_tail
     for name in ['updateTransfusionControls','updateTransfusionAccessHotspots','transfusionTagLeader','transfusionTagRect','piggybackAttachRequest','piggybackAttachLocal','reactMedicalMessage','reactMedicalValid']:
         path='addons/acm_extended/functions/fn_'+name+'.sqf'
         # This guard describes the B301 layout patch. B309 intentionally adds
@@ -179,7 +186,7 @@ def test_b301_scope_keeps_ace_clinical_inventory_custody_and_original_body_art_e
         # own that later behavior. Preserve the historical B301 boundary here.
         current=(subprocess.check_output(['git','show','de71fb771a30ae4e3cc25e1c115b65e7753a47d2:'+path],cwd=ROOT)
                  if name in {'updateTransfusionControls','piggybackAttachLocal'} else (ROOT/path).read_bytes())
-        assert current==baseline(path)
+        assert current.replace(b'\r\n',b'\n')==baseline(path).replace(b'\r\n',b'\n')  # autocrlf-neutral
     dialog='addons/circulation/TransfusionMenu_Dialog.hpp'
     from source_scan import lex,matching
     def class_block(source,name):

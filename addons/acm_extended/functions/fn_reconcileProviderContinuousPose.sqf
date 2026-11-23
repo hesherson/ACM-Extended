@@ -33,5 +33,5 @@ private _idle = ["AmovPknlMstpSnonWnonDnon", "AmovPpneMstpSnonWnonDnon"] select 
 // An exact, ownerless loop that survives interpolation qualifies for ACE's forced recovery.
 // Call ACE directly so an already-acquired pose can also be released with choreography disabled.
 [_medic, _idle, 1 + _attempts] call ace_common_fnc_doAnimation;
-diag_log format ["[ACME STATE RECONCILE] Recovering unowned provider pose %1, attempt %2", _animation, _attempts + 1];
+if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME STATE RECONCILE] Recovering unowned provider pose %1, attempt %2", _animation, _attempts + 1];};
 true

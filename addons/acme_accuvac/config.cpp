@@ -7,7 +7,7 @@
 class CfgPatches {
     class acme_accuvac {
         ACME_BUILD_CONFIG("acme_accuvac");
-        name = "ACM Extended ACCUVAC Rescue";
+        name = "ACME ACCUVAC Rescue";
         author = "mavis";
         requiredVersion = 2.0;
         requiredAddons[] = {"A3_Data_F_AoW_Loadorder"};
@@ -18,7 +18,7 @@ class CfgPatches {
 
 class CfgEditorCategories {
     class ACME_EdCat_Medical {
-        displayName = "ACM Extended";
+        displayName = "ACME";
     };
 };
 

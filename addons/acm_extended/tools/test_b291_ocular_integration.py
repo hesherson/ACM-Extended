@@ -314,8 +314,8 @@ def test_build_identity_and_native_item_consumption_are_declared():
     actions = (OCULAR / "ACE_Medical_Treatment_Actions.hpp").read_text()
     assert 'ACME_BUILD_CONFIG("ophthalmology")' in config
     assert 'consumeItem = 1;' in actions
-    assert 'items[] = {"KAT_Eyewasher"};' in actions
-    assert '"kat_eyecovers"' in actions
+    assert 'items[] = {"ACME_Eyewasher"};' in actions
+    assert '"ACME_EyeCover"' in actions  # kat_eyecovers became ACME_EyeCover in the one-set rename (B366-B385)
     assert '[true],' in (OCULAR / "initSettings.inc.sqf").read_text().split('QGVAR(enable)', 1)[1].split('call CBA_fnc_addSetting', 1)[0]
 
 

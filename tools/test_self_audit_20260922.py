@@ -40,6 +40,11 @@ REVIEWED_B212_UPDATES = {
     'addons/acm_extended/functions/fn_stethoscopeEntryFlipTick.sqf': '870cae13caadc0bc947b6c8093d7b4e9a5492c1203f1cbf0c0696030408063d3',
     'tools/test_fork_phase164_chest_access_animation_flow.py': 'cc222cced22f64fdece8b7699e42bdd3a3a93dcbfb8db3ffcfd62d3774298b13',
 }
+# B395 reviewed update: the Hang Bag arm-gesture settings and their cross-machine event; the F04 ACK registration
+# and token-scoped disconnect release below them are unchanged.
+REVIEWED_B395_UPDATES = {
+    'addons/acm_extended/functions/fn_initHangBagRuntime.sqf': '22d8012d26278486b8c56ea98d951f34c72c26a87839c8255cec76fb1a267444',
+}
 # B213 reviewed contract update: chest-seal close now inserts medicEnd before the existing carrier reach.
 REVIEWED_B213_UPDATES = {
     'tools/test_fork_phase164_chest_animation_contract.py': '70e52fbd3e10fcdd0ef3c7847ba86d01a7f139a6a0eb1c7a1c6da0cae1bf9a79',
@@ -49,6 +54,10 @@ REVIEWED_B213_UPDATES = {
 # Keep the original snapshot parameter identity and all unrelated protected hashes.
 REVIEWED_B216_UPDATES = {
     'addons/acm_extended/functions/fn_chestSealBurp.sqf': '387cb1d08890377d76f2db08682a600a159fec3dec40ddf6210f876c3043bc51',
+}
+# B366-B385 ACM_ -> ACME_ item rename only (the F01 snapshot with ACM_CricKit -> ACME_CricKit hashes to 20ac5b96...).
+REVIEWED_ACME_RENAME_UPDATES = {
+    'addons/airway/functions/fnc_establishSurgicalAirway.sqf': '707a61609c95246711d89b62b77c7dfbc5829a3dc5baaafa6c658a37ed7c0d83',
 }
 
 # Current stable behavior has intentionally evolved beyond the September source snapshot.
@@ -150,6 +159,8 @@ def test_prior_fix_restored_without_rewrite(path, expected):
         return
     expected = REVIEWED_B213_UPDATES.get(path, REVIEWED_B212_UPDATES.get(path, REVIEWED_AW_UPDATES.get(path, expected)))
     expected = REVIEWED_B216_UPDATES.get(path, expected)
+    expected = REVIEWED_ACME_RENAME_UPDATES.get(path, expected)
+    expected = REVIEWED_B395_UPDATES.get(path, expected)
     data = (ROOT / path).read_bytes().replace(b"\r\n", b"\n")
     actual = hashlib.sha256(data).hexdigest()
     if actual == expected:

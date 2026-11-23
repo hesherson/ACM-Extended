@@ -7,14 +7,14 @@
 // overwritten.
 
 // multiple top-level addon options listings, so the settings are not dumped into one giant category.
-private _cSys  = "ACM Extended: Systems";  // the control panel: the per-system enable and hardcore.
-private _cIV   = "ACM Extended: Infusion & IV";  // the infusion flow, roller clamp, iv line and hang bag.
-private _cCirc = "ACM Extended: Circulation";  // shock, push-dose, ICH, auto bp and access.
-private _cTBI  = "ACM Extended: Neuro & TBI";  // the TBI model tuning.
-private _cTrau = "ACM Extended: Trauma";  // the chest seal, junctional, direct pressure, NRB and obtundation.
-private _cDbg  = "ACM Extended: Debug";  // the debug overlay.
-private _cVent = "ACM Extended: Ventilator";
-private _cAir  = "ACM Extended: Airway";
+private _cSys  = "ACME: Systems";  // the control panel: the per-system enable and hardcore.
+private _cIV   = "ACME: Infusion & IV";  // the infusion flow, roller clamp, iv line and hang bag.
+private _cCirc = "ACME: Circulation";  // shock, push-dose, ICH, auto bp and access.
+private _cTBI  = "ACME: Neuro & TBI";  // the TBI model tuning.
+private _cTrau = "ACME: Trauma";  // the chest seal, junctional, direct pressure, NRB and obtundation.
+private _cDbg  = "ACME: Debug";  // the debug overlay.
+private _cVent = "ACME: Ventilator";
+private _cAir  = "ACME: Airway";
 
 
 // Keep ACME's patient-state dump next to ACE's own pause-menu diagnostics. This is intentionally client-only.
@@ -562,33 +562,33 @@ private _settings = [
 } forEach _settings;
 
 // Procedure access controls gate new starts while preserving existing aftercare.
-["ACME_allowThoracostomy", "CHECKBOX", ["Allow Thoracostomy", "Allow new incisions and finger sweeps. Existing wounds remain accessible for sealing, drainage and closure. Required training uses ACM Breathing: Thoracostomy."], ["ACM Extended: Trauma", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowThoracostomy", "CHECKBOX", ["Allow Thoracostomy", "Allow new incisions and finger sweeps. Existing wounds remain accessible for sealing, drainage and closure. Required training uses ACM Breathing: Thoracostomy."], ["ACME: Trauma", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_allowChestTubes", "CHECKBOX", ["Allow Chest Tubes", "Allow new chest tubes. Existing tubes retain drainage, suturing and removal."], ["ACM Extended: Trauma", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowChestTubes", "CHECKBOX", ["Allow Chest Tubes", "Allow new chest tubes. Existing tubes retain drainage, suturing and removal."], ["ACME: Trauma", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_thora_allowSurgicalKit", "CHECKBOX", ["Allow Surgical Kit use for Thoracostomy", "Accept a reusable ACE Surgical Kit for the thoracostomy minigame. A disposable Thoracostomy Kit is used first if available, and is consumed once per completed side."], ["ACM Extended: Trauma", "Procedures"], false, 1, {}] call CBA_fnc_addSetting;
+["ACME_thora_allowSurgicalKit", "CHECKBOX", ["Allow Surgical Kit use for Thoracostomy", "Accept a reusable ACE Surgical Kit for the thoracostomy minigame. A disposable Thoracostomy Kit is used first if available, and is consumed once per completed side."], ["ACME: Trauma", "Procedures"], false, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_allowNCD", "CHECKBOX", ["Allow Needle Decompression", "Allow new NAR SPEAR placements, including in the chest-seal minigame. Existing decompressions and their consequences persist. Required training uses ACM Breathing: Needle Decompression."], ["ACM Extended: Trauma", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowNCD", "CHECKBOX", ["Allow Needle Decompression", "Allow new NAR SPEAR placements, including in the chest-seal minigame. Existing decompressions and their consequences persist. Required training uses ACM Breathing: Needle Decompression."], ["ACME: Trauma", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_allowIntubation", "CHECKBOX", ["Allow Orotracheal Intubation", "Allow new tube passage. Existing tubes remain accessible for cuff management, suction and extubation."], ["ACM Extended: Airway", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowIntubation", "CHECKBOX", ["Allow Orotracheal Intubation", "Allow new tube passage. Existing tubes remain accessible for cuff management, suction and extubation."], ["ACME: Airway", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_allowVentilator", "CHECKBOX", ["Allow Ventilator Connections", "Allow a new ventilator connection. Existing devices keep running and can be adjusted or disconnected."], ["ACM Extended: Ventilator", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowVentilator", "CHECKBOX", ["Allow Ventilator Connections", "Allow a new ventilator connection. Existing devices keep running and can be adjusted or disconnected."], ["ACME: Ventilator", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_allowPushDoseAction", "CHECKBOX", ["Allow Push-Dose Epinephrine Action", "Show the dedicated measured push-dose action. Ordinary medication syringes and infusions remain available through their existing rules."], ["ACM Extended: Circulation", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowPushDoseAction", "CHECKBOX", ["Allow Push-Dose Epinephrine Action", "Show the dedicated measured push-dose action. Ordinary medication syringes and infusions remain available through their existing rules."], ["ACME: Circulation", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_allowHTSBolus", "CHECKBOX", ["Allow Osmotherapy Bolus Actions", "Allow the dedicated hypertonic saline bullet and mannitol bolus treatments. Ordinary medication and infusion handling retain their existing rules."], ["ACM Extended: Neuro & TBI", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
+["ACME_allowHTSBolus", "CHECKBOX", ["Allow Osmotherapy Bolus Actions", "Allow the dedicated hypertonic saline bullet and mannitol bolus treatments. Ordinary medication and infusion handling retain their existing rules."], ["ACME: Neuro & TBI", "Procedures"], true, 1, {}] call CBA_fnc_addSetting;
 
-["ACME_skillChestTube", "LIST", ["Chest Tubes: Required Training", "Minimum ACE medical trait for placing or removing chest tubes."], ["ACM Extended: Trauma", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 2], 1, {}] call CBA_fnc_addSetting;
+["ACME_skillChestTube", "LIST", ["Chest Tubes: Required Training", "Minimum ACE medical trait for placing or removing chest tubes."], ["ACME: Trauma", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 2], 1, {}] call CBA_fnc_addSetting;
 
-["ACME_skillThoracostomySeal", "LIST", ["Seal Thoracostomy: Required Training", "Minimum ACE medical trait to cover an existing thoracostomy with a chest seal. This is independent of permission to place a tube or make a new incision."], ["ACM Extended: Trauma", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
+["ACME_skillThoracostomySeal", "LIST", ["Seal Thoracostomy: Required Training", "Minimum ACE medical trait to cover an existing thoracostomy with a chest seal. This is independent of permission to place a tube or make a new incision."], ["ACME: Trauma", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
 
-["ACME_skillIntubation", "LIST", ["Orotracheal Intubation: Required Training", "Minimum ACE medical trait for intubation and existing endotracheal-tube care."], ["ACM Extended: Airway", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
+["ACME_skillIntubation", "LIST", ["Orotracheal Intubation: Required Training", "Minimum ACE medical trait for intubation and existing endotracheal-tube care."], ["ACME: Airway", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
 
-["ACME_skillVentilator", "LIST", ["Ventilator: Required Training", "Minimum ACE medical trait for connecting and controlling a ventilator."], ["ACM Extended: Ventilator", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
+["ACME_skillVentilator", "LIST", ["Ventilator: Required Training", "Minimum ACE medical trait for connecting and controlling a ventilator."], ["ACME: Ventilator", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
 
-["ACME_skillMedicationPreparation", "LIST", ["Patient Narc Box: Required Training", "Minimum ACE medical trait for the previously Medic-gated patient Draw Medication action. Self preparation and native ACM medication permissions retain their own rules."], ["ACM Extended: Infusion & IV", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
+["ACME_skillMedicationPreparation", "LIST", ["Patient Narc Box: Required Training", "Minimum ACE medical trait for the previously Medic-gated patient Draw Medication action. Self preparation and native ACM medication permissions retain their own rules."], ["ACME: Infusion & IV", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
 
-["ACME_skillMedicationBolus", "LIST", ["Dedicated Bolus Actions: Required Training", "Minimum ACE medical trait for dedicated push-dose epinephrine and osmotherapy bolus actions."], ["ACM Extended: Circulation", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
+["ACME_skillMedicationBolus", "LIST", ["Dedicated Bolus Actions: Required Training", "Minimum ACE medical trait for dedicated push-dose epinephrine and osmotherapy bolus actions."], ["ACME: Circulation", "Required Training"], [[0, 1, 2], ["Everyone", "Medic", "Doctor"], 1], 1, {}] call CBA_fnc_addSetting;
 
 
 

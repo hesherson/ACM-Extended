@@ -2450,10 +2450,10 @@ class Mission {
                 position[] = {1471.807, 5, 3613.696};
             };
             id = 263;
-            type = "ACM_mission_Eden_FullHealFacility";
+            type = "ACME_ModuleFullHealFacility";
             class CustomAttributes {
                 class Attribute0 {
-                    property = "ACM_mission_Eden_FullHealFacility_InteractionDistance";
+                    property = "ACME_ModuleFullHealFacility_InteractionDistance";
                     expression = "_this setVariable ['InteractionDistance',_value,true];";
                     class Value {
                         class data {
@@ -2463,7 +2463,7 @@ class Mission {
                     };
                 };
                 class Attribute1 {
-                    property = "ACM_mission_Eden_FullHealFacility_InteractionPosition";
+                    property = "ACME_ModuleFullHealFacility_InteractionPosition";
                     expression = "_this setVariable ['InteractionPosition',_value,true];";
                     class Value {
                         class data {

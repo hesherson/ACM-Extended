@@ -11,8 +11,11 @@ drawn a little way in, so nothing ends in the open when the place is a few milli
             bore in the middle, the green of the user's reference pictures (2026-11-20)
   OPA       a Guedel airway as in the user's reference: the white oval flange lying on the lips, in it the red
             oval of the bite block round the dark slot
-  i-gel     as in the user's reference: the clear, wide stem out of the mouth, the green wings of size 4 on
-            it, the clear 15 mm connector on top
+  i-gel     the i-gel O2, size 4 (asked for 2026-11-22: "improve the i-gel model and make it more realistic",
+            the O2 chosen): the clear, flat oval stem 25 x 14 mm out of the mouth, the grey bite block and the
+            gastric channel's lumen showing in it, the green hook ring with its four prongs and the clear flange,
+            the clear 15 mm connector with its dark bore, the green-capped oxygen port and the gastric channel's
+            opening beside it
   ET tube   a 7.5 mm tube out of the left corner of the mouth, bent toward the chin as the tube is made,
             its 15 mm connector, and the pilot line with its balloon lying on the cheek
 They are shown by ACME_fnc_casualtyVisualTick as plain objects fixed to his head: no collision shape, no shadow.
@@ -231,28 +234,128 @@ def opa(sides):
     return m
 
 
+# The i-gel O2, size 4, as outside the lips (2026-11-22). Measured from the user's pictures, the 15 mm connector
+# (taken as 15 mm across) giving the scale. Lengths along the device's axis; 0 is the middle of the lips.
+IGEL_STEM = ((-0.022, 0.0105, 0.0062), (-0.004, 0.0124, 0.0070), (0.012, 0.0123, 0.0071), (0.0270, 0.0127, 0.0072))   # (s, half-width, half-thickness)
+IGEL_RIM = 0.0325                       # the top of the green hook ring (its collar stands from the stem's end, 0.027)
+IGEL_FLANGE = 0.0345                    # the top of the clear flange
+IGEL_CONNECTOR = 0.0510                 # the top of the 15 mm connector
+IGEL_PORT_X = 0.0112                    # the oxygen port's stalk, to one side of the connector
+IGEL_GASTRIC_X = -0.0105                # the gastric channel's opening, to the other
+BITE = colour(0.26, 0.27, 0.26)         # the bite block, opaque grey: darker than the clear stem round it
+LUMEN = colour(0.29, 0.31, 0.31)        # the airway's lumen seen through the stem
+GASTRIC = colour(0.21, 0.23, 0.23)      # the gastric channel's lumen
+MARK = colour(0.38, 0.39, 0.38)         # the size number's white on its dark disc
+
+
+def igel_stem_at(s):
+    """Half-width and half-thickness of the stem at s (the barrel of it: widest near the lips)."""
+    for (s0, x0, y0), (s1, x1, y1) in zip(IGEL_STEM, IGEL_STEM[1:]):
+        if s <= s1:
+            k = (s - s0) / (s1 - s0)
+            return x0 + (x1 - x0) * k, y0 + (y1 - y0) * k
+    return IGEL_STEM[-1][1:]
+
+
+def facing(m, ids, tex, want, smooth=False):
+    """A face of the points 'ids', turned so that it shows toward 'want'."""
+    q = [m.pts[i] for i in ids]
+    if np.cross(q[1] - q[0], q[2] - q[0]) @ want < 0:
+        ids = ids[::-1]
+    m.faces.append((list(ids), tex, smooth))
+
+
 def igel(sides):
     m = Model()
     a = np.array([0.0, 1.0, -0.10])
     a /= np.linalg.norm(a)
-    # the stem (wide: it is its own bite block), from between the teeth to 3.4 cm before the lips
-    stem = [m.ring(a * s, a, (1, 0, 0), rx, ry, sides) for s, rx, ry in ((-0.022, 0.0120, 0.0075), (0.0, 0.0125, 0.0080), (0.034, 0.0125, 0.0085))]
-    m.band(stem[0], stem[1], CLEAR)
-    m.band(stem[1], stem[2], CLEAR)
+    x = np.array([1.0, 0.0, 0.0])
+    down = np.cross(a, x)
+    down /= np.linalg.norm(down)
+    top = -down                                 # the thin way of the stem, to the top of his head: its printed face
+
+    def zr(s, r, ry=None, at=0.0):
+        return m.ring(a * s + x * at, a, x, r, r if ry is None else ry, sides)
+
+    small = max(sides // 2, 4)
+    # the stem (wide and flat: it is its own bite block), barrel-shaped, from between the teeth to the hook ring
+    stem = [zr(s, rx, ry) for s, rx, ry in IGEL_STEM]
+    for p, q in zip(stem, stem[1:]):
+        m.band(p, q, CLEAR)
     m.cap(stem[0], CLEAR, outward=False)
-    # the green plate on its end, with a wing to each side
-    plate = [m.ring(a * s, a, (1, 0, 0), rx, ry, sides) for s, rx, ry in ((0.034, 0.0185, 0.0105), (0.039, 0.0185, 0.0105))]
-    m.band(stem[2], plate[0], GREEN, smooth=False)
-    m.band(plate[0], plate[1], GREEN, smooth=False)
-    # the 15 mm connector, clear, open
-    neck = [m.ring(a * s, a, (1, 0, 0), 0.0075, 0.0075, sides) for s in (0.039, 0.058)]
-    m.band(plate[1], neck[0], GREEN, smooth=False)
+    # the green hook ring: its collar round the stem's end, its top, the clear flange standing out of it
+    collar = [zr(0.0270, 0.0155, 0.0102), zr(IGEL_RIM, 0.0155, 0.0102)]
+    m.band(stem[-1], collar[0], GREEN, smooth=False)                # (its underside, toward the lips)
+    m.band(collar[0], collar[1], GREEN)
+    inner = zr(IGEL_RIM, 0.0143, 0.0090)
+    m.band(collar[1], inner, GREEN, smooth=False)
+    flange = [zr(IGEL_RIM, 0.0143, 0.0090), zr(IGEL_FLANGE, 0.0143, 0.0090)]
+    m.band(flange[0], flange[1], WHITE)
+    # the 15 mm connector, clear, open, with the dark bore
+    neck = [zr(IGEL_FLANGE, 0.0076), zr(IGEL_CONNECTOR, 0.0075)]
+    m.band(flange[1], neck[0], WHITE, smooth=False)                 # (the flange's top, outer to inner)
     m.band(neck[0], neck[1], CLEAR)
-    bore = m.ring(a * 0.058, a, (1, 0, 0), 0.0060, 0.0060, sides)
+    bore = zr(IGEL_CONNECTOR, 0.0058)
     m.band(neck[1], bore, CLEAR, smooth=False)
-    deep = m.ring(a * 0.040, a, (1, 0, 0), 0.0056, 0.0056, sides)
+    deep = zr(IGEL_FLANGE - 0.010, 0.0054)
     m.band(bore, deep, DARK)
     m.cap(deep, DARK, outward=True)
+    # four upright prongs on the green ring, two to each side
+    for ang in (35, 145, 215, 325):
+        t = math.radians(ang)
+        c = x * (0.0149 * math.cos(t)) + down * (0.0096 * math.sin(t)) + a * IGEL_RIM
+        radial = x * math.cos(t) * 0.0096 + down * math.sin(t) * 0.0149
+        radial /= np.linalg.norm(radial)
+        tang = np.cross(a, radial)
+        corners = [c + radial * (0.0008 * dr) + tang * (0.0013 * dt) + a * (0.0090 * da) for da in (0, 1) for dr in (-1, 1) for dt in (-1, 1)]
+        ids = [m.add(p) for p in corners]
+        centre = np.mean([m.pts[i] for i in ids], axis=0)
+        for quad in ((0, 1, 3, 2), (4, 5, 7, 6), (0, 1, 5, 4), (2, 3, 7, 6), (0, 2, 6, 4), (1, 3, 7, 5)):
+            q = [ids[k] for k in quad]
+            facing(m, q, GREEN, np.mean([m.pts[i] for i in q], axis=0) - centre)
+    # the oxygen port: a thin stalk beside the connector (leaning out a little), the green cap on it
+    def lean(s):
+        return IGEL_PORT_X + 0.12 * (s - IGEL_FLANGE)
+    stalk = [IGEL_FLANGE - 0.0040, IGEL_FLANGE + 0.0050, IGEL_FLANGE + 0.0100]
+    m.tube([a * s + x * lean(s) for s in stalk], 0.0017, small, CLEAR, ends=(False, False))
+    s0 = stalk[-1]
+    cap = [(s0, 0.0019), (s0 + 0.0004, 0.0031), (s0 + 0.0014, 0.0049), (s0 + 0.0034, 0.0050), (s0 + 0.0046, 0.0040),
+           (s0 + 0.0050, 0.0030), (s0 + 0.0060, 0.0030), (s0 + 0.0066, 0.0022)]
+    m.tube([a * s + x * lean(s) for s, r in cap], [r for s, r in cap], small, GREEN, ends=(False, True))
+    # the gastric channel's opening on the flange, on the other side: a short stub, its dark bore
+    g = [zr(s, r, at=IGEL_GASTRIC_X) for s, r in ((IGEL_FLANGE - 0.0020, 0.0034), (IGEL_FLANGE + 0.0042, 0.0034))]
+    m.band(g[0], g[1], CLEAR)
+    gb = zr(IGEL_FLANGE + 0.0042, 0.0021, at=IGEL_GASTRIC_X)
+    m.band(g[1], gb, CLEAR, smooth=False)
+    gd = zr(IGEL_FLANGE - 0.0050, 0.0019, at=IGEL_GASTRIC_X)
+    m.band(gb, gd, DARK)
+    m.cap(gd, DARK, outward=True)
+    # what shows through the clear stem, on its printed face (only where the stem is round enough to hold it)
+    if sides >= 14:
+        def skin(u, s, lift):
+            rx, ry = igel_stem_at(s)
+            return a * s + x * u + top * (ry * math.sqrt(max(0.0, 1 - (u / rx) ** 2)) + lift)
+
+        def strip(u0, u1, s0, s1, tex, lift, cols=3):
+            grid = [[m.add(skin(u0 + (u1 - u0) * i / cols, s, lift)) for i in range(cols + 1)] for s in (s0, s1)]
+            for i in range(cols):
+                facing(m, [grid[0][i], grid[0][i + 1], grid[1][i + 1], grid[1][i]], tex, top)
+
+        strip(-0.0050, 0.0105, 0.0020, 0.0262, LUMEN, 0.0006)             # the airway's lumen
+        strip(-0.0108, -0.0074, 0.0020, 0.0262, GASTRIC, 0.0006, cols=2)  # the gastric channel's, beside it
+        strip(-0.0062, 0.0062, 0.0035, 0.0165, BITE, 0.0009, cols=4)       # the bite block, in the upper stem
+        # the size number: a dark disc with a white 4 on it, above the bite block
+        cs, rr = 0.0213, 0.0033
+        rim = [m.add(skin(rr * math.cos(2 * math.pi * k / 8), cs + rr * math.sin(2 * math.pi * k / 8), 0.0010)) for k in range(8)]
+        hub = m.add(skin(0.0, cs, 0.0010))
+        for k in range(8):
+            facing(m, [hub, rim[k], rim[(k + 1) % 8]], BITE, top)
+
+        def mark(pts2):
+            facing(m, [m.add(skin(u, cs + v, 0.0013)) for u, v in pts2], MARK, top)
+        mark([(0.0002, -0.0022), (0.0011, -0.0022), (0.0011, 0.0022), (0.0002, 0.0022)])      # the 4's upright
+        mark([(-0.0019, -0.0006), (0.0021, -0.0006), (0.0021, 0.0001), (-0.0019, 0.0001)])     # its bar
+        mark([(-0.0019, -0.0006), (-0.0019, 0.0001), (0.0002, 0.0022), (0.0002, 0.0013)])      # and its slant
     return m
 
 

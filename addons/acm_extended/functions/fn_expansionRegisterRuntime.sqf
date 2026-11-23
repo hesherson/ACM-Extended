@@ -91,4 +91,4 @@ if ((hasInterface || isServer) && {!isNil "ace_interact_menu_fnc_createAction"})
     ["Land_Laptop_03_olive_F",0,["ACE_MainActions","ACME_MegacodeShock"],_shockNeuro] call ace_interact_menu_fnc_addActionToClass;
 };
 
-diag_log "[ACME][Expansion] Batch 3 registered: cumulative physiology + aspiration + Megacode AAR";
+if (call ACME_fnc_debugEnabled) then {diag_log "[ACME][Expansion] Batch 3 registered: cumulative physiology + aspiration + Megacode AAR";};

@@ -351,7 +351,7 @@ def test_flush_switch_reuses_display_and_checks_flush_not_empty_syringe_stock():
     assert '[10, _flushClass] call ACME_fnc_skApplySize' in pick
     assert 'closeDisplay' not in pick and 'skOpenDraw' not in pick and 'waitAndExecute' not in pick
     assert 'call ACME_fnc_skWasteBegin' in pick
-    assert '"ACM_SalineFlush_10"' in size
+    assert '"ACME_SalineFlush_10"' in size
     assert '_flushClass == ""' in size and '_flushClass != ""' in size
     assert 'call ACME_fnc_skCompoundCommit' in size
 

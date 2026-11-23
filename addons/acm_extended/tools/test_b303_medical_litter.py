@@ -206,23 +206,9 @@ def test_scope_uses_the_same_animation_names_and_only_registered_litter_deletion
     for forbidden in ['nearestObjects','allMissionObjects','nearestTerrainObjects','isMedic','medicalLevel','setUnitLoadout','addItem']:
         assert forbidden not in new
     assert 'ace_medical_treatment_litterObjects' in new
-    scope_base='1b153d0023a776cbb74f762a3abfe91e0d207e71'  # B305 already contains subsequent flow/navigation corrections.
-    for path in ['addons/gui','addons/circulation','addons/acm_extended/ui','frontend/medical-ui','addons/acm_extended/functions/fn_headElevMedicSeq.sqf','addons/acm_extended/functions/fn_headElevateStart.sqf','addons/acm_extended/functions/fn_headElevateStop.sqf']:
-        changed=set(subprocess.check_output(['git','diff','--name-only',scope_base,'--',path],cwd=ROOT,text=True).splitlines())
-        # Later B306 work adds native LS electrical-rate display and corrects IV removal,
-        # plus build-only include separators. Litter still cannot touch unrelated surfaces.
-        permitted={'addons/gui/config.cpp','addons/circulation/config.cpp',
-                   'addons/circulation/functions/fnc_getEKGHeartRate.sqf',
-                   'addons/circulation/functions/fnc_getBloodVolumeChange.sqf',  # B309 use-expiry gate, separately executed.
-                   'addons/circulation/functions/fnc_TransfusionMenu_AddBag.sqf',  # B309 native use-clock handoff.
-                   'addons/circulation/functions/fnc_setIVComplication.sqf'}
-        assert changed <= permitted
-        for item in changed:
-            if item.endswith('/config.cpp'):
-                before=subprocess.check_output(['git','show',scope_base+':'+item],cwd=ROOT,text=True)
-                after=(ROOT/item).read_text()
-                normalize=lambda s: ''.join(line.replace(chr(92),'/') if line.lstrip().startswith('#include') else line for line in s.splitlines(keepends=True))
-                assert normalize(before)==normalize(after)
+    # Retired: the frozen 'files changed since B305 <= permitted' list. Later builds (one-set ACME_ item rename,
+    # B366-B385 menu work, B393 Semi-Fowler) intentionally changed gui/circulation/head-elevation files, so the
+    # historical diff scope no longer describes anything; the litter-specific checks above still apply.
 
 
 def test_cancelled_claim_and_duplicate_request_never_delete_and_do_not_lock_new_pickup():

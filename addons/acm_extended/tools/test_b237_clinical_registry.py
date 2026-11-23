@@ -21,7 +21,8 @@ def test_all_registry_rows_have_valid_names_clocks_and_boolean_flags():
         assert isinstance(row,list) and len(row) in (3,4),row
         assert isinstance(row[0],str) and row[0] and row[0].casefold() not in seen,row
         seen.add(row[0].casefold())
-        assert row[1] in ('','time','cba'),row
+        # fn_clinicalCodec / fn_clinicalEncodedValid accept the paused-aware "clinical" clock too (ACME_coldBloodHungAt).
+        assert row[1] in ('','time','cba','clinical'),row
         assert type(row[2]) is bool,row
         assert len(row)==3 or type(row[3]) is bool,row
 

@@ -38,9 +38,11 @@ def test_dead_vent_actions_only_manage_an_existing_device():
     block=action("ACME_VentOpenPatient")
     assert '"ACME_vent_onPatient", false' in block
     assert '"ACME_vent_recovering", false' in block
-    assert '"ACME_vent_circuit", false' in block or '"ACME_vent_configured", false' in block
-    # The corpse panel opens only its mounted device; the explicit connect action acquires a new device.
-    assert 'alive _patient || {_patient getVariable ["ACME_vent_onPatient", false]}' in block
+    # B317: the panel opens only a device mounted on the patient (alive or dead); acquiring a new device is the
+    # separate connect/deploy action, so the old circuit/configured/inventory branch is gone from this action.
+    assert '&& {_patient getVariable ["ACME_vent_onPatient", false]}' in block
+    assert "alive _patient" not in block
+    assert "getCountOfItem" not in block
 
     disconnect = fn("ventDisconnectPatient")
     custody = fn("ventCustodyRequest")

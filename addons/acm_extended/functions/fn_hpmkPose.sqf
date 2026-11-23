@@ -73,7 +73,15 @@ if (_lock >= 0) then {
 };
 if (!isNull objectParent _patient || {!isNull attachedTo _patient}) exitWith {};
 if (!isNull (_patient getVariable ["acme_sked_litter", objNull]) || {!isNull (_patient getVariable ["acme_sked_placing", objNull])}) exitWith {};
-if (_patient getVariable ["ACME_headElevated", false]) exitWith {};
+if (_patient getVariable ["ACME_headElevated", false]) exitWith {
+    // B393: his head was raised while he was wrapped (kept without animation): now the shell is off, lift it visibly
+    if (_now == _pose && {_patient getVariable ["ACME_headElev_noAnimation", false]}
+        && {missionNamespace getVariable ["ACME_interventionAnimations", true]}
+        && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) then {
+        _patient setVariable ["ACME_headElev_noAnimation", false, true];
+        [_patient, true] call ACME_fnc_headElevApplyTilt;
+    };
+};
 if (_now != _pose) exitWith {};
 private _lying = _patient getVariable ["ACM_core_Lying_State", false];
 if !(_lying isEqualType true) then {_lying = _lying > 0;};

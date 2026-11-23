@@ -25,7 +25,7 @@ def test_fbtk_full_boundary_yields_nominal_bag_size():
     assert 'ACME_fbtk_fullToleranceMl' in s
     assert '_tol = (_tol max 0) min 5;' in s
     assert '_remainingVolume >= ((_volume - _tol) max 0)' in s
-    assert 'format ["ACM_FieldBloodTransfusionKit_%1", _volume]' in s
+    assert 'format ["ACME_FieldBloodTransfusionKit_%1", _volume]' in s
 
 
 def test_fbtk_collection_conserves_volume_and_cannot_overdraw_donor():

@@ -97,7 +97,7 @@ private _terrainASLFt = round (_terrainASL * _mToFt);
 private _oldEffectiveFt = round (_oldEffectiveElevation * _mToFt);
 private _newEffectiveFt = round (_newEffectiveElevation * _mToFt);
 
-diag_log format [
+if (!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled}) then {diag_log format [
     "[ACME][Elevation] World=%1 | mode=%2 | CfgWorlds base=%3m (%4ft) | ACE base before=%5m (%6ft) | raw terrain at module=%7m (%8ft) | corrected ACE base=%9m (%10ft) | effective at module: %11m/%12ft -> %13m/%14ft",
     worldName,
     _modeName,
@@ -113,7 +113,7 @@ diag_log format [
     _oldEffectiveFt,
     round _newEffectiveElevation,
     _newEffectiveFt
-];
+];};
 
 if (_showStartupReport && {hasInterface}) then {
     systemChat format ["[ACME Elevation] Map: %1 | ACE base: %2 m / %3 ft", worldName, round _aceBaseBefore, _aceBaseBeforeFt];

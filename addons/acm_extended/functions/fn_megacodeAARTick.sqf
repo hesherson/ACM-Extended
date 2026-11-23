@@ -32,7 +32,12 @@
     private _rhythm = if (!isNil "ACME_fnc_rhythmGet") then {[_u] call ACME_fnc_rhythmGet} else {-1};
     private _prevRhythm = _last getOrDefault ["rhythm",-999];
     if (_rhythm != _prevRhythm) then {
-        [_u,"rhythm",format ["Rhythm changed: %1",_rhythm],0] call ACME_fnc_megacodeAARRecord;
+        // the rhythm by name (the codes of ACME_fnc_megacodeSetRhythm), not the bare number.
+        private _rhythmName = createHashMapFromArray [
+            [0,"sinus"],[1,"asystole"],[2,"VF"],[3,"pulseless VT"],[4,"VT"],[5,"PEA"],
+            [100,"A-fib RVR"],[101,"atrial tach"],[102,"torsades"],[103,"A-fib"],[104,"SVT"]
+        ] getOrDefault [_rhythm, str _rhythm];
+        [_u,"rhythm",format ["Rhythm changed: %1",_rhythmName],0] call ACME_fnc_megacodeAARRecord;
     };
     _last set ["rhythm",_rhythm];
 

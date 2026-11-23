@@ -309,4 +309,4 @@ if (hasInterface) then {
     [{call acme_sked_fnc_slungUpdate}, 1, []] call CBA_fnc_addPerFrameHandler;
 };
 
-if (isServer) then {diag_log "[ACME] SKED assets and ACE transport actions registered";};
+if (isServer && {(missionNamespace getVariable ["acme_sked_debug", false]) || (!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})}) then {diag_log "[ACME] SKED assets and ACE transport actions registered";};

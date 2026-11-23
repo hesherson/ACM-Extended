@@ -53,7 +53,7 @@ ACME_fnc_ivMinigameViewValid={_viewValid};
 ACME_fnc_ivMinigameRenderMarks={_renders=_renders+1;};
 ACME_fnc_ivMinigameRefreshBandSlot={_refreshes=_refreshes+1;};
 ace_common_fnc_displayTextStructured={_messages pushBack (_this select 0);};
-private _receipt=[_medic,"ACM_SalineFlush_10",objNull,"stock1"];
+private _receipt=[_medic,"ACME_SalineFlush_10",objNull,"stock1"];
 private _row=["leftarm","front",0.5,0.5,"hub","","",16,-1,1,"middle",0,1,0,"ivhub:7:1",[false,false,false,false],[]];
 _patient setVariable ["ACME_IV_Marks",[+_row]];
 _patient setVariable ["ACME_IV_FinishReceipts",[]];
@@ -273,7 +273,7 @@ def test_no_new_permanent_frame_worker_and_native_site_result_retained():
     assert 'setVariable' not in read('ivFinishPatency')
     assert 'ACME_ivCompromised_' in read('ivFinishPatency')
     assert read('ivMinigameResetView').index('ivFinishAbort') < read('ivMinigameResetView').index('ACME_IV_ViewGeneration')
-    assert 'ACM_SalineFlush_10' in read('ivFinishStart')
+    assert 'ACME_SalineFlush_10' in read('ivFinishStart')
     assert 'ACM_Syringe_10' not in read('ivFinishStart')
 
 @pytest.mark.parametrize('name', FUNCTIONS+['ivFinishStart','ivFinishTick','ivFinishTray','ivFinishGrab','ivFinishPose'])

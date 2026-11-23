@@ -42,9 +42,13 @@ owned_weapons = {
     'ACM_Thermometer','ACM_NRBMask','ACM_HPMK','ACM_EMMA','ACM_CombatGauze','ACME_NARSPEAR','ACME_AAJT_S',
     'ACME_XStat','ACME_SpoiledBlood','ACME_BloodCooler_CSWB1U','ACME_BloodCooler_CSWB2U','ACME_BloodCooler_CSWB4U'
 }
-owned_mags = {f'ACM_Syringe_{size}_{drug}' for drug in [
+owned_mags = {f'ACME_Syringe_{size}_{drug}' for drug in [
     'EpinephrineCardiac','Norepinephrine','Phentolamine','Hyaluronidase','Midazolam','Rocuronium',
     'Sugammadex','CalciumGluconate','Propofol','Ceftriaxone'] for size in [10,5,3,1]}
+# Every item class is ACME_ since the one-set rename (no ACM_ alias classes), so the B77 list is checked under
+# its current names.  The former native ACM paracetamol override is now the ACME-owned ACME_Paracetamol.
+owned_weapons = {('ACME_' + n[4:]) if n.startswith('ACM_') else n for n in owned_weapons}
+owned_mags.add('ACME_Paracetamol')
 
 def get_root_block(root):
     m=re.search(rf'class\s+{root}\s*\{{', CFG)
@@ -77,11 +81,8 @@ for root, names in [('CfgWeapons', owned_weapons), ('CfgMagazines', owned_mags)]
             check(f'{root}/{name} author', re.search(r'(?m)^\s*author\s*=\s*"mavis"\s*;', body) is not None)
             check(f'{root}/{name} logo identity', re.search(r'(?m)^\s*dlc\s*=\s*"ACM_Extended"\s*;', body) is not None)
 
-# Native ACM acetaminophen override remains attributed to ACM and is not rebranded as an ACME item.
-mag = get_root_block('CfgMagazines')
-para = child_body(mag, 'ACM_Paracetamol') or ''
-check('native ACM paracetamol author preserved', 'author = "Blue";' in para)
-check('native ACM paracetamol no ACME dlc', 'dlc = "ACM_Extended";' not in para)
+# Retired: the native ACM_Paracetamol override (author Blue) became ACME_Paracetamol in the one-set rename and is
+# checked with the ACME-owned magazines above.
 
 @pytest.mark.parametrize("name,ok,detail", checks, ids=[c[0] for c in checks])
 def test_branding_contract(name, ok, detail):

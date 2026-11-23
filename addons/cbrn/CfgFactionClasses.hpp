@@ -1,6 +1,6 @@
 class CfgFactionClasses {
-    class GVAR(CBRN) {
-        displayName = "ACM CBRN";
+    class ACME_Category_CBRN {
+        displayName = "ACME CBRN";
         priority = 2;
         side = 7;
     };

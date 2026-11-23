@@ -64,8 +64,15 @@ def test_debug_aed_visual_matches_real_monitor_precedence():
 
 
 def test_all_acme_function_references_resolve_to_cfgfunctions_registration():
-    rows = tagcheck.parse_config(ROOT / "config.cpp")
-    registered = {row["resolved"].lower() for row in rows}
+    # ACME functions are registered by several addons (acm_extended, acme_atak, acme_equipment, acme_tempus,
+    # acme_tempusls, ...), each in its own config.cpp CfgFunctions; a name registered by any shipped addon resolves.
+    registered = set()
+    for cfg in sorted(ADDONS.glob("*/config.cpp")):
+        try:
+            rows = tagcheck.parse_config(cfg)
+        except ValueError:  # this addon declares no CfgFunctions
+            continue
+        registered |= {row["resolved"].lower() for row in rows}
     refs = {}
     for addon in ADDONS.iterdir():
         if not addon.is_dir():

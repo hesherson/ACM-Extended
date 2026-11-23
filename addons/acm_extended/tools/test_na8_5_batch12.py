@@ -136,10 +136,10 @@ class SharedSuctionSource(unittest.TestCase):
 class EpinephrineSource(unittest.TestCase):
     def test_concentration_is_one_tenth(self):
         t=read('config.cpp');self.assertRegex(t,r'class EpinephrineCardiac\s*\{\s*concentration = 0\.1;')
-        self.assertIn('ACM_Vial_EpinephrineCardiac',t)
+        self.assertIn('ACME_Vial_EpinephrineCardiac',t)  # one ACME_ item set
     def test_native_magazine_family(self):
         t=read('config.cpp')
-        for n in (1,3,5,10):self.assertIn('class ACM_Syringe_'+str(n)+'_EpinephrineCardiac',t)
+        for n in (1,3,5,10):self.assertIn('class ACME_Syringe_'+str(n)+'_EpinephrineCardiac',t)
     def test_recipe_exact_and_canonical_store(self):
         self.assertIn('_drugMl - 1',src('epinephrineRecipe'));self.assertIn('_salineMl - 9',src('epinephrineRecipe'))
         self.assertIn('["EpinephrineCardiac", 10, 1,',src('epinephrinePrepare'))
@@ -202,7 +202,7 @@ class EpinephrineSource(unittest.TestCase):
     def test_infusion_not_double_counted(self):self.assertIn('ACME_vesicant_infusionDelivery',src('postInit'))
     def test_bolus_circulation_bounded_and_washes_out(self):
         self.assertIn('min _ceiling',src('epinephrineBolusLocal'))
-        t=src('circHandle');self.assertIn('0.5 ^ (_dt / (_halfLife max 1))',t);self.assertIn('epiBolusReserve',t)
+        t=src('circHandle');self.assertIn('0.5 ^ (_pkDt / (_halfLife max 1))',t)  # B319 clinical clock: decay runs on _pkDt;self.assertIn('epiBolusReserve',t)
     def test_strings_valid_xml(self):ET.fromstring(read('stringtable.xml'))
     def test_no_pde_from_concentrated_source_compat_action(self):
         t=src('salineFlush');self.assertIn('call ACME_fnc_epinephrinePrepare',t)

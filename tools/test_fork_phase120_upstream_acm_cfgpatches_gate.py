@@ -13,6 +13,8 @@ def test_source_contract():
     extras={x.casefold() for x in ADDITIONAL_PATCHES}
     for addon in sorted((ROOT/'addons').iterdir()):
         if not addon.is_dir() or addon.name in ('acm_extended','itemtext') or not (addon/'config.cpp').is_file(): continue
+        # The ACME equipment addons (acme_*, B306 on) carry their own bare CfgPatches (e.g. acme_sked); not ACM identities.
+        if addon.name.lower().startswith('acme_'): continue
         identity=patch_name(addon).casefold()
         if identity in extras:
             integrated.add(identity)
@@ -20,7 +22,7 @@ def test_source_contract():
             actual.add(identity)
     assert actual==expected, f'native CfgPatches identity drift: missing={sorted(expected-actual)} extra={sorted(actual-expected)}'
     assert integrated==extras, f'integrated CfgPatches identity drift: missing={sorted(extras-integrated)} extra={sorted(integrated-extras)}'
-    assert len(list((ROOT/'addons').glob('*/config.cpp')))==19
+    assert len([p for p in (ROOT/'addons').glob('*/config.cpp') if not p.parent.name.lower().startswith('acme_')])==19
     ext_cfg=(ROOT/'addons/acm_extended/config.cpp').read_text(encoding='utf-8',errors='replace')
     assert re.search(r'class\s+ACM_Extended\s*\{',ext_cfg), 'Extended CfgPatches identity missing'
     print('PASS phase120: 12/12 supplied upstream ACM identities preserved; 3 clinical and 2 DD1380 identities added')

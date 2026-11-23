@@ -26,6 +26,15 @@ if !(_patient getVariable ["ACME_CS_ProcedureActive", false]) then {
     };
 };
 
+// B393: the workspace can be opened with him sitting up. A roll (to his back, or back to front) lays him flat first,
+// with the authored lowering, then rolls; the workspace's end sits him up again (fn_chestSealPatientEnd.sqf).
+if ((_patient getVariable ["ACME_CS_ProcedureActive", false])
+    && {_patient getVariable ["ACME_headElevated", false]}
+    && {!(_patient getVariable ["ACME_headElev_Suspended", false])}) exitWith {
+    [_patient, true] call ACME_fnc_headElevSuspend;
+    private _wait = ((_patient getVariable ["ACME_headElev_suspendReadyAt", CBA_missionTime + 1.5]) - CBA_missionTime + 0.1) max 0.3;
+    [{_this call ACME_fnc_chestSealRoll}, _this, _wait] call CBA_fnc_waitAndExecute;
+};
 private _actual = [_patient, _patient getVariable ["ACME_CS_facing", "front"]] call ACME_fnc_chestSealActualSide;
 _patient setVariable ["ACME_CS_facing", _actual, true];
 // A side-lying recovery pose can classify as front. It still needs a physical

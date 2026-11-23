@@ -61,5 +61,5 @@ switch (_cmd) do {
 		private _i = ACME_batdok_roster find ([_a param [1, ""]] call _unit);
 		if (_i >= 0) then { ACME_batdok_roster deleteAt _i };
 	};
-	case "log": { diag_log text ("[ACME] BATDOK: " + (_a param [1, ""])) };
+	case "log": { if (!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled}) then {diag_log text ("[ACME] BATDOK: " + (_a param [1, ""]))} };
 };

@@ -1274,6 +1274,6 @@ if (!isNull _ctrlY && {_selIsBlood || {_yPending != ""} || {_yBusyUi}}) then {
     if (_traceCount < 16 && {_inputState isNotEqualTo (_display getVariable ["ACME_txInputTraceLast",[]])}) then {
         _display setVariable ["ACME_txInputTraceLast",_inputState];
         _display setVariable ["ACME_txInputTraceCount",_traceCount + 1];
-        diag_log format ["[ACME B280 TX] [source,prepared,row,item,action,blood,pendingBlood,pendingSaline,tubing,busy,building,shown,enabled,label]=%1",_inputState];
+        if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME B280 TX] [source,prepared,row,item,action,blood,pendingBlood,pendingSaline,tubing,busy,building,shown,enabled,label]=%1",_inputState];};
     };
 };

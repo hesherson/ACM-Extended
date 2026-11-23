@@ -1,7 +1,3 @@
 class CfgFactionClasses {
-    class GVAR(Modules) {
-        displayName = "ACM Modules";
-        priority = 3;
-        side = 7;
-    };
+    // B393: Zeus modules are filed under ACME_Curator_Category ("ACME", defined in acm_extended)
 };

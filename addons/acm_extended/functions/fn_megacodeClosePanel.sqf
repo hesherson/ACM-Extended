@@ -9,7 +9,8 @@ uiNamespace setVariable ["ACME_MC_contentCtrls",[]];
 // Dynamic panel controls are destroyed with the display; clear references so no later call touches stale handles.
 {uiNamespace setVariable [_x,nil];} forEach [
     "ACME_MC_dynamicCtrls","ACME_MC_navCtrls","ACME_MC_traceCtrls","ACME_MC_laneCenters","ACME_MC_vitalCtrls",
-    "ACME_MC_waveBuffers","ACME_MC_waveSig","ACME_MC_geometry","ACME_MC_step","ACME_MC_stepAcc","ACME_MC_lastT"
+    "ACME_MC_waveBuffers","ACME_MC_waveSig","ACME_MC_geometry","ACME_MC_step","ACME_MC_stepAcc","ACME_MC_lastT",
+    "ACME_MC_statusCtrl","ACME_MC_pageSig","ACME_MC_sigCheckT"
 ];
 
 private _dummy=uiNamespace getVariable ["ACME_MC_target",objNull];

@@ -15,8 +15,8 @@ if (_classname in ["ApplyChestSeal", "PerformThoracostomy"]) then {
     _classname = ["ACME_ApplyChestSeal", "ACME_PerformThoracostomy"]
         select (_classname == "PerformThoracostomy");
     _this set [3, _classname];
-    diag_log format ["[ACME MODAL] ACME-B263-modal-route remapped legacy action %1 => %2 on %3",
-        _oldName, _classname, if (isNull _patient) then {"null"} else {netId _patient}];
+    if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME MODAL] ACME-B263-modal-route remapped legacy action %1 => %2 on %3",
+        _oldName, _classname, if (isNull _patient) then {"null"} else {netId _patient}];};
 };
 // An explicit successor click invalidates an older assessment's pending menu return.
 if (!isNull _medic && {local _medic}) then {
@@ -158,8 +158,8 @@ if (_classname in [
     if (isNull _medic || {isNull _patient} || {!local _medic}) exitWith {false};
     private _modalRefused = {
         params ["_cause"];
-        diag_log format ["[ACME MODAL B263] launch denied; action=%1 patient=%2 cause=%3 providerOwner=%4 patientOwner=%5",
-            _classname, netId _patient, _cause, owner _medic, owner _patient];
+        if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME MODAL B263] launch denied; action=%1 patient=%2 cause=%3 providerOwner=%4 patientOwner=%5",
+            _classname, netId _patient, _cause, owner _medic, owner _patient];};
         if (hasInterface && {[_medic] call ace_common_fnc_isPlayer}) then {
             [format ["Procedure could not start (%1).", _cause], 3, _medic] call ACME_fnc_netNotice;
         };
@@ -262,7 +262,9 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
     private _needsPhysicalPrep = _restoreInFlight
         || {_needsFrontNormalize}
         || {((vest _patient) != "" && {(count _chestSaved) != 2})}
+        // B393: listening to, inspecting and checking the chest and AED pads are done with him sitting up
         || {!_bvmChestClass
+            && {!(_nativeContinuousClass in ["usestethoscope","checkbreathing","acme_inspectchest","aed_applypads"])}
             && {_patient getVariable ["ACME_headElevated", false]}
             && {!(_patient getVariable ["ACME_headElev_Suspended", false])}};
 
@@ -296,8 +298,8 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
         _medic setVariable ["ACME_checkBreathingProviderRequested", "", false];
         _medic setVariable ["ACME_chestAccess_treatment", [_patient, _nativeContinuousClass, _leaseId]];
         if (_nativeContinuousClass == "checkbreathing") then {
-            diag_log format ["[ACME CHECK BREATHING] preparing patient %1; build %2; lease %3",
-                netId _patient, missionNamespace getVariable ["ACME_buildBatch","?"], _leaseId];
+            if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME CHECK BREATHING] preparing patient %1; build %2; lease %3",
+                netId _patient, missionNamespace getVariable ["ACME_buildBatch","?"], _leaseId];};
         };
 
         // The medical menu closes on the accepted click. Its normal pending-reopen handler is suppressed by the
@@ -334,7 +336,7 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
             if (isNull _m || {!local _m}) exitWith {};
             if ((_m getVariable ["ACME_chestAccessPreflightToken",""]) != _tok) exitWith {};
             if (_classKey == "checkbreathing") then {
-                diag_log format ["[ACME CHECK BREATHING] preparation aborted; lease %1", _leaseId];
+                if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME CHECK BREATHING] preparation aborted; lease %1", _leaseId];};
             };
 
             // Retire the provider theatre locally. Never wait for a casualty-owner packet to end this pose.
@@ -400,8 +402,8 @@ if !(_classname in ["ACME_ConnectETVent", "ACME_ConnectNIVVent"]) exitWith {
             _m setVariable ["ACME_chestAccessPreflightCancel", false, false];
 
             if (_timedOut) then {
-                diag_log format ["[ACME CHEST ACCESS] Prep timeout for %1 on %2; launching clinical action fail-open.",
-                    _classKey, netId _p];
+                if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME CHEST ACCESS] Prep timeout for %1 on %2; launching clinical action fail-open.",
+                    _classKey, netId _p];};
             };
 
             private _started = if (_classKey == "checkbreathing") then {

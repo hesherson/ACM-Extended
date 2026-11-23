@@ -91,7 +91,7 @@ def test_current_phase145_zone3_reboa_smart_bandage():
     # behavior is authoritative again, including its native item consumption, timing and callbacks.
     actions = txt("addons/core/ACE_Medical_Treatment_Actions.hpp")
     need('class PressureBandage: BasicBandage {' in actions, "bandage: native PressureBandage action missing")
-    need('items[] = {"ACM_PressureBandage"};' in actions and 'consumeItem = 1;' in actions,
+    need('items[] = {"ACME_PressureBandage"};' in actions and 'consumeItem = 1;' in actions,
          "bandage: native PressureBandage inventory semantics not restored")
     need('callbackSuccess = QACEFUNC(medical_treatment,bandage);' in actions,
          "bandage: native ACE/ACM bandage callback not restored")
@@ -114,8 +114,13 @@ def test_current_phase145_zone3_reboa_smart_bandage():
 
     # Every ACME callback referenced by treatment/config surfaces must have both bytes and a CfgFunctions registration.
     refs = set(re.findall(r'\bACME_fnc_([A-Za-z0-9_]+)\b', cfg + actions))
-    files = {p.stem[3:] for p in (ROOT / "addons/acm_extended/functions").glob("fn_*.sqf")}
-    regs = set(re.findall(r'\bclass\s+([A-Za-z0-9_]+)\s*\{\s*\};', cfg))
+    # acm_extended and the ACME equipment addons (acme_*) each own and register their own ACME functions.
+    owners = [ROOT / "addons/acm_extended"] + sorted(p for p in (ROOT / "addons").glob("acme_*") if p.is_dir())
+    files = {p.stem[3:] for o in owners for p in (o / "functions").glob("fn_*.sqf")}
+    regs = set()
+    for o in owners:
+        if (o / "config.cpp").is_file():
+            regs |= set(re.findall(r'\bclass\s+([A-Za-z0-9_]+)\s*\{\s*\};', (o / "config.cpp").read_text(encoding="utf-8", errors="replace")))
     need(not (refs-files), f"paths: missing ACME function files: {sorted(refs-files)}")
     need(not (refs-regs), f"paths: unregistered ACME callbacks: {sorted(refs-regs)}")
 

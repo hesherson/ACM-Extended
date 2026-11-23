@@ -2,7 +2,7 @@
 <Project name="ACM">
     <Package name="Damage">
         <Key ID="STR_ACM_Damage_Category">
-            <English>ACM: Damage</English>
+            <English>ACME: Damage</English>
             <French>ACM : Dommages</French>
             <Spanish>ACM: Daño</Spanish>
             <Polish>ACM: Obrażenia</Polish>

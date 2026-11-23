@@ -40,7 +40,7 @@ if (_rk != "") then {
     private _map = createHashMapFromArray [
         ["sinus",["sinus",78,false,0,false]], ["stach",["sinus",130,false,0,false]], ["sbrady",["sinus",45,false,0,false]],
         ["afib",["afib",84,false,103,false]], ["vt",["vt",180,false,4,false]],
-        ["torsades",["torsades",0,true,3,true]], ["vfib",["vfib",0,true,2,true]],
+        ["torsades",["torsades",0,true,102,true]], ["vfib",["vfib",0,true,2,true]],
         ["asystole",["asystole",0,true,1,true]], ["pea",["sinus",0,true,5,true]]
     ];
     (_map getOrDefault [_rk, ["sinus",-1,false,0,false]]) params ["_disp","_dhr","_pl","_acm","_arr"];

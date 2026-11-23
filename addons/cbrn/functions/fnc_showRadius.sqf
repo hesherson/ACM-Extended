@@ -18,6 +18,9 @@
  */
 
 params ["_unit", "_originObject", "_radiusDimensions"];
+
+// debug-only visualisation of the hazard radius.
+if !(!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled}) exitWith {};
 _radiusDimensions params ["_radiusX", "_radiusY"];
 
 [missionNamespace, "Draw3D", {

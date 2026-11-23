@@ -7,8 +7,30 @@ from test_menu_death_lifecycle import ROOT, execute, read
 from test_historical_core_boundaries import block_at
 
 
+# B363 restyled the overlay backing with the shared transfusion theme; nothing else in the renderer changed.
+B363_DEBUG_THEME = (
+    ('#include "\\x\\acm\\addons\\main\\ui_theme.hpp"\n', ''),
+    ('_ctrlB ctrlSetBackgroundColor (ACM_UI_PANEL_RGB + [0.74]);',
+     '_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.74];'),
+)
+
+
+def unchanged_since(path, commit):
+    """True when `path` equals its blob at `commit`, ignoring checkout line endings (core.autocrlf)
+    and, for the debug renderer, only the B363 theme change."""
+    import subprocess
+    current = (ROOT / path).read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
+    if path.endswith("fn_debugMenuClinical.sqf"):
+        for new, old in B363_DEBUG_THEME:
+            assert current.count(new) == 1, new
+            current = current.replace(new, old)
+    before = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)
+    return current == before.replace(b"\r\n", b"\n").decode("utf-8")
+
+
 def definition(name):
-    text = read("debugMenuClinical")
+    # The source is UTF-8 (the bullet glyph); read it as such so hashes do not depend on the OS code page.
+    text = (ROOT / "addons/acm_extended/functions/fn_debugMenuClinical.sqf").read_text(encoding="utf-8-sig")
     start = text.index(f"private {name} = {{")
     opening = text.index("{", start)
     return text[start:opening] + block_at(text, opening) + ";"
@@ -144,7 +166,9 @@ def test_layout_is_narrow_single_column_and_spans_safearea_height(header, body):
 def test_original_navy_backing_is_created_below_all_text_and_ignores_mouse_input():
     source = read("debugMenuClinical")
     assert source.index('private _ctrlB =') < source.index('private _ctrlH =')
-    assert '_ctrlB ctrlSetBackgroundColor [0.043, 0.082, 0.188, 0.74];' in source
+    # B363 replaced the original navy with the shared transfusion panel colour (addons/main/ui_theme.hpp).
+    assert source.startswith('#include "\\x\\acm\\addons\\main\\ui_theme.hpp"')
+    assert '_ctrlB ctrlSetBackgroundColor (ACM_UI_PANEL_RGB + [0.74]);' in source
     assert '_ctrlB ctrlEnable false;' in source
     # Introducing the backing to a running old overlay must first remove its existing text controls.
     before = source[:source.index('private _control =')]

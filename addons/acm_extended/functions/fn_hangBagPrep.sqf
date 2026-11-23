@@ -20,6 +20,9 @@ private _prepToken = (_medic getVariable ["ACME_hang_PrepToken", 0]) + 1;
 private _localityEpoch = _medic getVariable ["ACME_providerLocalityEpoch", 0];
 _medic setVariable ["ACME_hang_PrepToken", _prepToken];
 _medic setVariable ["ACME_hang_Prone", _prone];
+// B395: standing or crouching, the bag is held by a right-arm gesture and the body stays free (see
+// fn_initHangBagRuntime.sqf). Prone keeps the old full-body prone hold.
+_medic setVariable ["ACME_hang_GestureMode", !_prone && {missionNamespace getVariable ["ACME_hang_useGesture", true]}];
 _medic setVariable ["ACME_hang_Raising", true];
 _medic setVariable ["ACME_hang_PrepPoseEntered", false];
 _medic setVariable ["ACME_hang_PrepComplete", false];
@@ -77,6 +80,15 @@ private _enter = {
                 [true, _medic] call ACME_fnc_hangBagStop;
             } else {[_medic] call ACME_fnc_hangBagPrepStop;};
         };
+    };
+    // B395: the arm-gesture hold needs only empty hands (just checked). The body keeps its own stance and the
+    // weapons stay on the back: no crouch, no medical pose, no weapon removal.
+    if (_medic getVariable ["ACME_hang_GestureMode", false] && {stance _medic == "PRONE"}) then {
+        _medic setVariable ["ACME_hang_GestureMode", false];
+    };
+    if (_medic getVariable ["ACME_hang_GestureMode", false]) exitWith {
+        _medic setVariable ["ACME_hang_PrepPoseEntered", true];
+        _medic setVariable ["ACME_hang_PrepComplete", true];
     };
     // some weapon mods make a back-slung weapon clip the ground in the crouched hold pose and loop a rapid
     // collision-audio smacking sound. fully removing the back weapons, the primary and the launcher, for the duration

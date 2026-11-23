@@ -67,12 +67,23 @@ def test_approximate_network_helper_rejects_non_finite_scalars():
     assert "_maxAge = _maxAge max 0;" in s
 
 
+# Mission-lifetime JIP events: one fixed id per mission that replaces itself, which every later joiner must still
+# receive, so they are never removed. The exception is bound to that exact call (event name and id).
+MISSION_LIFETIME_JIP = {
+    "fn_babelEnsureRequest.sqf": '["ACME_babelEnsure", [], "ACME_babelEnsure"] call CBA_fnc_globalEventJIP;',  # B391
+    "fn_persistModuleInit.sqf": '["ACME_persistStart", [], "ACME_persistStart"] call CBA_fnc_globalEventJIP;',  # B393
+}
+
+
 def test_jip_events_have_explicit_cleanup_in_same_runtime_module():
     offenders = []
     for path in (ACME / "functions").glob("*.sqf"):
         text = path.read_text(encoding="utf-8-sig", errors="strict")
         identifiers, _ = network_ops(text)
         if "cba_fnc_globaleventjip" in identifiers and "cba_fnc_removeglobaleventjip" not in identifiers:
+            exempt = MISSION_LIFETIME_JIP.get(path.name)
+            if exempt and text.count("CBA_fnc_globalEventJIP") == 1 and exempt in text:
+                continue
             offenders.append(path.name)
     assert offenders == [], offenders
 
@@ -157,6 +168,11 @@ def test_acme_networking_does_not_use_raw_publicvariable_commands():
         text = path.read_text(encoding="utf-8-sig", errors="strict")
         identifiers, _ = network_ops(text)
         if {"publicvariable", "publicvariableserver", "publicvariableclient"} & identifiers:
+            # B393 Persistence module: one publication of its immutable per-mission config, guarded by
+            # `if (!isNil "ACME_persist") exitWith {}`; never a hot or mutable state path.
+            if (path.name == "fn_persistModuleInit.sqf" and text.count("publicVariable") == 1
+                    and 'publicVariable "ACME_persist";' in text):
+                continue
             offenders.append(path.name)
     assert offenders == [], offenders
 

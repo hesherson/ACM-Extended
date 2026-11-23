@@ -113,7 +113,8 @@ def test_continuous_action_acquisition_self_heals_only_stale_generation():
     assert 'GVAR(ContinuousAction_Controller) = [_medic, _patient, _epoch, _worker, _workerArgs, _pfh];' in begin
     # Acquisition rejects an occupied native controller; recorded-owner recovery runs its real cleanup.
     admission=begin[:begin.index('// Bind only a session')]
-    assert '|| {GVAR(ContinuousAction_Active)}' in admission
+    # B390: read with a default (the flag can be nil on a machine that never started an action)
+    assert '|| {missionNamespace getVariable [QGVAR(ContinuousAction_Active), false]}' in admission
     assert '|| {!([_medic,_patient] call ACME_fnc_patientInteractionContact)}) exitWith {false};' in admission
     # A CPR grant received after this controller starts cannot acquire another
     # controller. It must still match the provider's exact pending request.

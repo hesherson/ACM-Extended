@@ -4,6 +4,10 @@
  * variable carried by the selected patient. This makes state drift/locality issues inspectable without requiring
  * the on-screen overlay to render hundreds of variables.
  */
+if !(call ACME_fnc_debugEnabled) exitWith {
+    ["Turn on ACME's Debug menu setting first.", 2] call ace_common_fnc_displayTextStructured;
+};
+
 private _out = {
     params ["_line"];
     diag_log text _line;

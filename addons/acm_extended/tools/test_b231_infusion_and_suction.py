@@ -304,7 +304,8 @@ def test_refill_fields_are_replicated_save_aware_and_reset_by_clinical_registry(
 
 
 def test_debug_renderer_unchanged_from_b230():
-    assert raw('debugMenuClinical') == raw('debugMenuClinical',True)
+    from test_debug_single_overlay import unchanged_since  # EOL-neutral, allows only the B363 theme backing
+    assert unchanged_since('addons/acm_extended/functions/fn_debugMenuClinical.sqf', BASE)
 
 
 def test_new_native_blood_after_external_clear_does_not_reuse_old_partial_volume():

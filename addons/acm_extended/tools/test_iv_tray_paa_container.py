@@ -55,7 +55,9 @@ def test_hemtt_loader_finds_every_mip_and_decodes_visible_pixels(path, tmp_path)
     def run(*args):
         return subprocess.run(
             [HEMTT, "utils", "paa", *map(str, args)],
-            capture_output=True, text=True, check=True,
+            # HEMTT prints UTF-8 box-drawing tables; the Windows locale codec cannot decode them
+            # (the reader thread then leaves stdout as None), so decode explicitly.
+            capture_output=True, encoding="utf-8", errors="replace", check=True,
         ).stdout
 
     inspection = run("inspect", path)

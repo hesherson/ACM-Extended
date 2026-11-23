@@ -109,7 +109,9 @@ if (_animationsEnabled && {alive _patient}) then {
             _patientAnim = "";
         };
 
-        if (!_isSelf && {isNull objectParent _patient}) then {
+        // B393: a casualty strapped to a litter (attached) keeps the litter's pose: the litter's pose guard would
+        // otherwise put it back over the treatment animation, and the two would take turns on him.
+        if (!_isSelf && {isNull objectParent _patient} && {isNull attachedTo _patient}) then {
             if (_patientAnim == "" && _rollToBack && IS_UNCONSCIOUS(_patient) && {!(_animationStatePatient in LYING_ANIMATION)}) then {
                 _patientAnim = "AinjPpneMstpSnonWrflDnon_rolltoback";
             };
@@ -120,7 +122,12 @@ if (_animationsEnabled && {alive _patient}) then {
                     private _lowerPatientAnim = toLowerANSI _patientAnim;
                     // Head-elevation owns the lay-flat transition. Do not start a native roll underneath the authored
                     // lowering animation; the treatment-start event will suspend the elevation on the patient owner.
-                    if !((_patient getVariable ["ACME_headElevated", false]) && {_lowerPatientAnim find "rolltoback" >= 0}) then {
+                    // B393: a casualty sitting up in Semi-Fowler keeps that posture for every treatment that can be
+                    // done sitting up: no treatment animation is played on him while he is elevated and not laid
+                    // flat for the moment (an action that needs him flat suspends the posture first).
+                    private _sittingUp = (_patient getVariable ["ACME_headElevated", false])
+                        && {!(_patient getVariable ["ACME_headElev_Suspended", false])};
+                    if (!_sittingUp && {!((_patient getVariable ["ACME_headElevated", false]) && {_lowerPatientAnim find "rolltoback" >= 0})}) then {
                         private _lease = ((_treatmentTime max 1.5) min 5);
                         private _lockPriority = [2, 1] select (_lowerPatientAnim find "rolltoback" >= 0);
                         [_patient, _patientAnim, _animPriority, format ["treatment:%1", toLowerANSI _classname], _medic, _lease, _lockPriority] call ACME_fnc_patientAnimRequest;

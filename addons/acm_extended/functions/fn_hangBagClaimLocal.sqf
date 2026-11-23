@@ -13,7 +13,8 @@ if (_operation == "release") exitWith {
     private _releaseEpoch = if (_epoch >= 0) then {_epoch} else {[_patient] call ACME_fnc_clinicalEpoch};
     [_patient,"hang",_medic,_episode,_releaseEpoch,"cancel"] call ACME_fnc_actionClaimLedger;
     if (_exact) then {
-        _patient setVariable ["ACME_hang_flowMult", 1, true];
+        // B395: a bag handed over to an IV stand keeps its boost (fn_ivStandServer.sqf owns it from then on)
+        if (isNull (_patient getVariable ["ACME_hang_Stand", objNull])) then {_patient setVariable ["ACME_hang_flowMult", 1, true];};
         _patient setVariable ["ACME_hang_Medic", objNull, true];
         _patient setVariable ["ACME_hang_Episode", -1, true];
         _patient setVariable ["ACME_hang_LeaseUntil", -1, true];

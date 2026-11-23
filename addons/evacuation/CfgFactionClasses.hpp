@@ -1,6 +1,6 @@
 class CfgFactionClasses {
-    class GVAR(Category_Evacuation) {
-        displayName = "ACM Evacuation";
+    class ACME_Category_Evacuation {
+        displayName = "ACME Evacuation";
         priority = 2;
         side = 7;
     };

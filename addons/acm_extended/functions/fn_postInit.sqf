@@ -222,12 +222,8 @@ call ACME_fnc_initProcedureEnvironmentConfig;
 // Phase 24: HPMK blanket reconciliation, pickup interaction and client visual runtime.
 call ACME_fnc_registerHpmkVisualRuntime;
 
-// What is seen on and under the casualties near the camera: an airway adjunct on the face, the HPMK laid out
-// under one who is prepped for it (fn_casualtyVisualTick.sqf). On this machine for itself.
-if (hasInterface) then {
-    ACME_casualtyVisuals = createHashMap;
-    [{call ACME_fnc_casualtyVisualTick}, 0.5, []] call CBA_fnc_addPerFrameHandler;
-};
+// What is seen on and under the casualties near the camera (airway adjuncts on faces, the HPMK under the prepped).
+call ACME_fnc_registerCasualtyVisualRuntime;
 
 // Phase 25: Chest-seal collaborative cursor/tool presence events.
 call ACME_fnc_registerChestSealPresenceRuntime;
@@ -285,6 +281,14 @@ call ACME_fnc_initMonitorSyncConfig;
 
 // Phase 31: obtundation/consciousness PFHs, wrapping audio and treatment-grace/debug-target lifecycle.
 call ACME_fnc_registerConsciousnessRuntime;
+
+// B393: ACME Persistence module events (idle unless the mission has the module).
+call ACME_fnc_registerPersistenceRuntime;
+
+// B395: the game's IV stands hold IV bags (menu actions, server hooks, hung-bag drawing).
+call ACME_fnc_ivStandInit;
+// B395: medical lines pull before they snap (fn_lineTension.sqf).
+call ACME_fnc_registerLineTensionRuntime;
 
 // Phase 31: ordinary treatment provider-stance release after ACE completion/failure.
 call ACME_fnc_registerProviderStanceReleaseRuntime;

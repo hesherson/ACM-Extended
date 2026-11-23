@@ -22,7 +22,8 @@ if !(missionNamespace getVariable ["acme_sked_orientKeep", true]) exitWith {};
         // trusted: the first three times this machine sees him on this litter (at once, 1.5 s and 4.5 s later)
         // it puts him into the pose itself, and again whenever the name is another. For this machine only;
         // where he is local the pose guard keeps it (fn_poseGuard.sqf).
-        if (alive _patient && {!local _patient}) then {
+        // B393: not while a provider's animation lease holds his body (his owner plays that animation everywhere)
+        if (alive _patient && {!local _patient} && {isNil "ACME_fnc_patientAnimHeld" || {!([_patient] call ACME_fnc_patientAnimHeld)}}) then {
             private _pose = [_patient, _litter] call acme_sked_fnc_patientPose;
             (_patient getVariable ["acme_sked_poseSet", [objNull, 0, 0]]) params ["_for", "_times", "_next"];
             if (_for isNotEqualTo _litter) then {_times = 0; _next = 0;};

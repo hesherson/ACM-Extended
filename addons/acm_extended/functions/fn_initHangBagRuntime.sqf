@@ -16,12 +16,25 @@ ACME_coldBlood_mlPerMin    = 100;  // cold-stored blood baseline
 ACME_coldBloodHang_mlPerMin = 200; // cold-stored blood while Hang Bag is active
 ACME_bloodMax_mlPerMin     = 300;  // absolute cap for every blood/fresh-blood path, including pressure infusion
 ACME_hang_leash     = 3;  // m the medic can be from the patient before the bag lowers. this is the 3 m maximum line range.
-// walk-and-carry arm-raise gesture. it is an upper-body overlay, so the legs keep walking. see CfgGesturesMale
-// > ACME_IV_Gesture.
-ACME_hang_useGesture = true;  // raise the left arm while carrying
-ACME_hang_gesture = "ACME_IV_Gesture";  // the gesture state to play
-ACME_hang_gestureReassertSec = 1.5;  // re-trigger cadence so the pose survives action interruptions
-ACME_hang_gestureDelay = 0.4;  // beat between the weapon sling and the gesture, which lets the holster settle.
+// B395: the bag arm is a right-arm-only gesture (CfgGesturesMale > ACME_HangBagArmUp/Hold/Down), playing the
+// crouch hold's own raise, hold and lower RTMs. The provider stays free to stand, crouch, walk (walking pace, inside
+// the line's reach) and look around; only weapon use and going prone are held off. A provider who starts the
+// hold lying prone keeps the old full-body prone hold.
+ACME_hang_useGesture = true;  // false returns to the old full-body crouch hold
+ACME_hang_gestureIn = "ACME_HangBagArmUp";
+ACME_hang_gesture = "ACME_HangBagArmHold";  // the held gesture state
+ACME_hang_gestureOut = "ACME_HangBagArmDown";
+ACME_hang_gestureInTime = 1.0;  // = ACME_HangBagArmUp speed -1.0
+ACME_hang_gestureOutTime = 0.45;  // = ACME_HangBagArmDown speed -0.45 (B395: quick, no pause after letting go)
+ACME_hang_gestureReassertSec = 1.5;  // re-play the hold if another gesture (a reload, a hand signal) replaced it
+// other machines show a provider's arm gesture (fn_hangBagGesture.sqf)
+if (isNil "ACME_hang_gestureEH") then {
+    ACME_hang_gestureEH = ["ACME_hangBagGesture", {
+        params [["_unit", objNull], ["_state", ""]];
+        if (isNull _unit || {local _unit} || {_state == ""}) exitWith {};
+        if ((toLowerANSI gestureState _unit) != toLowerANSI _state) then {_unit switchGesture [_state, 0, 1, false];};
+    }] call CBA_fnc_addEventHandler;
+};
 ACME_hang_stowWeapon = true;  // sling the rifle to the back smoothly before the hold, which frees the hands so the gesture reads. it re-arms on lower.
 ACME_coolerAutoStore = true;  // auto-move received loose blood into a carried cooler that has room, filling empty coolers first. false disables it.
 ACME_coolerAutoUse = true;  // surface cooler blood as [cooled] rows in the transfusion add-bag list, and pull from the cooler when a medic hangs one, so it can be used with no manual unload. false disables it.
@@ -40,7 +53,7 @@ ACME_hang_bagUp     = [0, 1, 0];  // bag model-space up vector
 // the engine, always renders, and collides with terrain. it needs no custom segment .p3d, no binarization and
 // no Draw3D.
 ACME_hang_lineLength    = 3;  // meters of tubing laid out (rope length / max reach)
-ACME_hang_lineSagSegs   = 24;  // back-compat only; the engine rope picks its own segmentation
+ACME_hang_lineSagSegs   = 48;  // B395: rope segments (fn_ivLineCreate passes it; engine maximum 63): a smoother hanging line
 // ACME_hang_useRope is a CBA addon option, set in XEH_preInit, so it can be toggled in game. do not assign it
 // here. postinit runs after preinit and would stomp the user's choice, which is the settings-stomp rule.
 // iv line rope class. the thin pale-blue custom line is the default, and it needs the segment .p3d binarized by

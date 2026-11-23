@@ -337,11 +337,12 @@ def test_testing_mission_loadout_matches_supplied_array_and_retains_partial_stoc
     file=ROOT/'addons/mission/ACM_TestZone.VR/defaultLoadout.sqf'
     text=file.read_text();loadout=json.loads(text[text.index('[[['):].strip().rstrip(';'))
     normalized=json.dumps(loadout,separators=(',',':'),ensure_ascii=False).encode()
-    assert hashlib.sha256(normalized).hexdigest()=='97337a6ddc6c6358a35662b6f56c9cba748a7272ef61a7bf9341de05bb00b1c8'
+    # Re-pinned after B366-B385 renamed the supplied kit's items to the single ACME_ set (no other change).
+    assert hashlib.sha256(normalized).hexdigest()=='8a68a5a9901f1f0abd2a38e5c58b91108abfcf3acc88b9ad636319a79317dcfe'
     backpack=loadout[0][5][1]
-    assert ['ACM_OxygenTank_425',1,283] in backpack
-    assert ['ACM_AmmoniaInhalant',4,8] in backpack
-    assert ['ACM_Paracetamol',4,10] in backpack
+    assert ['ACME_OxygenTank_425',1,283] in backpack
+    assert ['ACME_AmmoniaInhalant',4,8] in backpack
+    assert ['ACME_Paracetamol',4,10] in backpack
     assert loadout[0][2][4]==['11Rnd_45ACP_Mag',15]
     assert loadout[1]==[['ace_arsenal_voice','ACE_NoVoice'],['ace_arsenal_face','WhiteHead_24']]
     init=(file.parent/'init.sqf').read_text()
@@ -352,8 +353,8 @@ def test_testing_mission_loadout_matches_supplied_array_and_retains_partial_stoc
 @pytest.mark.parametrize('path',['addons/acm_extended/functions/fn_debugMenuClinical.sqf',
  'addons/acm_extended/functions/fn_wakeAnimationEvent.sqf'])
 def test_debug_layout_and_patient_wake_presentations_not_redesigned(path):
-    baseline=subprocess.check_output(['git','show','f6a9e8d3659ed768d3eaaf452b574a8a14d481ba:'+path],cwd=ROOT)
-    assert (ROOT/path).read_bytes()==baseline
+    from test_debug_single_overlay import unchanged_since  # EOL-neutral, allows only the B363 theme backing
+    assert unchanged_since(path,'f6a9e8d3659ed768d3eaaf452b574a8a14d481ba')
 
 
 @pytest.mark.parametrize('weapon',["rifle","pistol"])

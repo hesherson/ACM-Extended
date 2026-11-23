@@ -6,16 +6,16 @@ class CfgPatches {
         ACME_BUILD_CONFIG("zeus");
         name = COMPONENT_NAME;
         units[] = {
-            QGVAR(forceWakeUp),
-            QGVAR(inflictCardiacArrest),
-            QGVAR(inflictChestInjury),
-            QGVAR(setBloodVolume),
-            QGVAR(unCardiacArrest),
-            QGVAR(givePain),
-            QGVAR(setOxygen),
-            QGVAR(setBloodType),
-            QGVAR(togglePlotArmor),
-            QGVAR(assignFullHealFacility)
+            "ACME_ModuleForceWakeUp",
+            "ACME_ModuleInflictCardiacArrest",
+            "ACME_ModuleInflictChestInjury",
+            "ACME_ModuleSetBloodVolume",
+            "ACME_ModuleUnCardiacArrest",
+            "ACME_ModuleGivePain",
+            "ACME_ModuleSetOxygen",
+            "ACME_ModuleSetBloodType",
+            "ACME_ModuleTogglePlotArmor",
+            "ACME_ModuleAssignFullHealFacility"
         };
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;

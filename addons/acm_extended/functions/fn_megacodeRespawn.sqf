@@ -14,7 +14,7 @@ _old setVariable ["ACME_MC_respawning", true, false];
 
 // capture the placement, the rig objects and the operator before we delete anything.
 private _pos     = getPosATL _old;
-private _dir     = getDir _old;
+private _dir     = _old getVariable ["ACME_MC_spawnDir", getDir _old];  // the placement heading; a corpse can lie turned.
 private _op      = _old getVariable ["ACME_MC_operatorClient", objNull];
 private _laptop  = _old getVariable ["ACME_MC_laptop", objNull];
 private _helpers = _old getVariable ["ACME_MC_helpers", []];
@@ -30,6 +30,7 @@ deleteVehicle _old;
 // offsets re-applied.
 private _new = [_pos, _dir] call ACME_fnc_megacodeSpawn;
 if (isNull _new) exitWith {
+    objNull
 };
 _new setVariable ["ACME_MC_operatorClient", _op, true];
 

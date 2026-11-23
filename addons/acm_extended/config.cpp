@@ -67,6 +67,15 @@ class CfgMovesBasic {
         ACME_SeizureSpasm4[] = {"ACME_SeizureSpasm4", "Gesture"};
         ACME_SeizureSpasm5[] = {"ACME_SeizureSpasm5", "Gesture"};
         ACME_SeizureSpasm6[] = {"ACME_SeizureSpasm6", "Gesture"};
+        // B395 Hang Bag: the raised-bag arm as right-arm-only gestures (CfgGesturesMale), so the provider keeps
+        // standing, crouching, walking and looking around while the arm holds the bag exactly as the crouch hold did.
+        ACME_HangBagArmUp[] = {"ACME_HangBagArmUp", "Gesture"};
+        ACME_HangBagArmHold[] = {"ACME_HangBagArmHold", "Gesture"};
+        ACME_HangBagArmDown[] = {"ACME_HangBagArmDown", "Gesture"};
+        ACME_HangBagArmNone[] = {"GestureEmpty", "Gesture"};
+        ACME_HangBagArmUpK[] = {"ACME_HangBagArmUpK", "Gesture"};
+        ACME_HangBagArmHoldK[] = {"ACME_HangBagArmHoldK", "Gesture"};
+        ACME_HangBagArmDownK[] = {"ACME_HangBagArmDownK", "Gesture"};
     };
 };
 class CfgMovesMaleSdr: CfgMovesBasic {
@@ -538,7 +547,7 @@ class CfgMovesMaleSdr: CfgMovesBasic {
 class CfgPatches {
     class ACM_Extended {
         ACME_BUILD_CONFIG("extended");
-        name = "ACM Extended";
+        name = "ACME";
         units[] = {"ACME_MedicalChest", "ACME_ModuleMegacodeKelly", "ACME_ModuleBloodFridge", "ACME_BloodFridge_Closed", "ACME_BloodFridge_Open",
             // zeus enumerates units[]. a module that is not in this list does not exist as far as the curator is
             // concerned, however correctly it is built and whatever its scopecurator says. these five were fully
@@ -546,6 +555,7 @@ class CfgPatches {
             "ACME_ModuleInflictBlastLung", "ACME_ModuleInflictJunctional", "ACME_ModuleInduceObtundation", "ACME_ModuleInduceConfusion",
             "ACME_ModuleInflictTBI", "ACME_ModuleClearTBI", "ACME_ModuleInsertIV",
             "ACME_ModuleInflictEdema", "ACME_ModuleClearEdema",
+            "ACME_ModulePersistence", "ACME_ModulePersistenceSave", "ACME_ModulePersistenceClear", "ACME_ModulePersistenceStatus",
             "ACME_MedicalChest_01", "ACME_MedicalChest_02", "ACME_MedicalChest_03", "ACME_MedicalChest_04", "ACME_MedicalChest_05",
             "ACME_MedicalChest_06", "ACME_MedicalChest_07", "ACME_MedicalChest_08", "ACME_MedicalChest_09", "ACME_MedicalChest_10", "ACME_MedicalChest_11",
             "ACME_BloodCoolerBox_CSWB1U", "ACME_BloodCoolerBox_CSWB2U", "ACME_BloodCoolerBox_CSWB4U"};
@@ -2129,6 +2139,17 @@ class CfgNonAIVehicles {
         animated = 0;
         model = "\acm_extended\models\iv_line_segment.p3d";
     };
+    // B395: the line's colour is the segment model's own texture (a colour on the rope class does not reach it), so
+    // the coloured lines have their own segment models (copies with another colour, made in B395).
+    class ACME_IVLine_Segment_Blood: ACME_IVLine_Segment {
+        model = "\acm_extended\models\iv_line_segment_blood.p3d";
+    };
+    class ACME_IVLine_Segment_Plasma: ACME_IVLine_Segment {
+        model = "\acm_extended\models\iv_line_segment_plasma.p3d";
+    };
+    class ACME_IVLine_Segment_Dark: ACME_IVLine_Segment {
+        model = "\acm_extended\models\iv_line_segment_dark.p3d";
+    };
 };
 // the iv line, bag and anchor CfgVehicles classes are merged into the single CfgVehicles block below, so
 // mikero rapify does not see two top-level CfgVehicles definitions.
@@ -2144,12 +2165,67 @@ class CfgNonAIVehicles {
 // for upper-body-only masking.
 class CfgGesturesMale {
     class Default;
+    // B395: the right arm alone (upper arm to finger tips, the collar bone held upright). Used by the Hang Bag
+    // arm gestures below (tools/build_hangbag_arm_gesture.py).
+    class BlendAnims {
+        ACME_HangBagArm[] = {
+            "RightShoulder", 1, "RightArm", 1, "RightArmRoll", 1, "RightForeArm", 1, "RightForeArmRoll", 1, "RightHand", 1,
+            "RightHandRing", 1, "RightHandPinky1", 1, "RightHandPinky2", 1, "RightHandPinky3", 1,
+            "RightHandRing1", 1, "RightHandRing2", 1, "RightHandRing3", 1,
+            "RightHandMiddle1", 1, "RightHandMiddle2", 1, "RightHandMiddle3", 1,
+            "RightHandIndex1", 1, "RightHandIndex2", 1, "RightHandIndex3", 1,
+            "RightHandThumb1", 1, "RightHandThumb2", 1, "RightHandThumb3", 1
+        };
+    };
     class States {
         class GestureFreezeStand;  // vanilla upper-body arm gesture base. it inherits the movement-friendly mask.
         class GestureSpasm0;
         class GestureSpasm4;
         class GestureSpasm5;
         class GestureSpasm6;
+
+        // B395 Hang Bag arm: raise, hold and lower, the right arm of the old crouch hold (Acts_Jets_crewaidF_crouch_thumbup
+        // _in/_loop/_out) re-made so the arm points where it pointed there, measured in the man's own axes, from an
+        // upright shoulder (tools/build_hangbag_arm_gesture.py). The script (fn_hangBagGesture.sqf) also forces the
+        // state where the gesture graph does not lead there by itself.
+        class ACME_HangBagArmUp: GestureFreezeStand {
+            file = "\acm_extended\animations\acme_hangbag_arm_in.rtm";
+            mask = "ACME_HangBagArm";
+            looped = 0;
+            speed = -1.0;
+            disableWeapons = 1;
+            enableOptics = 0;
+            canPullTrigger = 0;
+            connectTo[] = {"ACME_HangBagArmHold", 0.02};
+            interpolateTo[] = {"ACME_HangBagArmHold", 0.02, "ACME_HangBagArmDown", 0.1};
+        };
+        class ACME_HangBagArmHold: ACME_HangBagArmUp {
+            file = "\acm_extended\animations\acme_hangbag_arm_hold.rtm";
+            looped = 1;
+            speed = -1000000;
+            connectTo[] = {};
+            interpolateTo[] = {"ACME_HangBagArmDown", 0.02, "GestureEmpty", 0.1, "ACME_HangBagArmHoldK", 0.05};
+        };
+        class ACME_HangBagArmDown: ACME_HangBagArmUp {
+            file = "\acm_extended\animations\acme_hangbag_arm_out.rtm";
+            speed = -0.45;
+            connectTo[] = {};
+            interpolateTo[] = {"ACME_HangBagArmUp", 0.1, "GestureEmpty", 0.1};
+        };
+        // the same against the crouch's own torso (the _k files), chosen by fn_hangBagGesture.sqf while crouching
+        class ACME_HangBagArmUpK: ACME_HangBagArmUp {
+            file = "\acm_extended\animations\acme_hangbag_arm_in_k.rtm";
+            connectTo[] = {"ACME_HangBagArmHoldK", 0.02};
+            interpolateTo[] = {"ACME_HangBagArmHoldK", 0.02, "ACME_HangBagArmDownK", 0.1};
+        };
+        class ACME_HangBagArmHoldK: ACME_HangBagArmHold {
+            file = "\acm_extended\animations\acme_hangbag_arm_hold_k.rtm";
+            interpolateTo[] = {"ACME_HangBagArmDownK", 0.02, "GestureEmpty", 0.1, "ACME_HangBagArmHold", 0.05};
+        };
+        class ACME_HangBagArmDownK: ACME_HangBagArmDown {
+            file = "\acm_extended\animations\acme_hangbag_arm_out_k.rtm";
+            interpolateTo[] = {"ACME_HangBagArmUpK", 0.1, "GestureEmpty", 0.1};
+        };
 
         class ACME_IV_Gesture: GestureFreezeStand {
             file = "\acm_extended\animations\acm_iv_stand_lh.rtm";
@@ -2245,6 +2321,23 @@ class CfgFunctions {
             class registerCompatibilityCheck {};
             class initMonitorSyncConfig {};
             class registerConsciousnessRuntime {};
+            class registerPersistenceRuntime {};
+            class registerCasualtyVisualRuntime {};
+            class ivStandInit {};
+            class hangBagGesture {};
+            class lineTension {};
+            class registerLineTensionRuntime {};
+            class ivStandCandidates {};
+            class ivStandFlowing {};
+            class ivStandRequest {};
+            class ivStandServer {};
+            class ivStandVisual {};
+            class persistModuleInit {};
+            class persistServer {};
+            class persistClient {};
+            class persistZeusModule {};
+            class persistDevices {};
+            class persistBind {};
             class registerProviderStanceReleaseRuntime {};
             class providerAnimSpeedOwned {};
             class registerHeadElevationTransportRuntime {};
@@ -3058,6 +3151,8 @@ class CfgFunctions {
             class directPressurePoseBusy {};
             class patientAnimRequest {};
             class patientAnimRelease {};
+            class patientAnimHeld {};
+            class headElevTakeOver {};
             class treatmentPatientSettle {};
             class junctionalInjuryEntry {};
             class junctionalGuiSyncTick {};
@@ -3794,6 +3889,7 @@ class CfgFunctions {
             class megacodeCableTunerOpen {};
             class megacodeCableTunerLoad {};
             class megacodeCableApply {};
+            class megacodeCableBuild {};
             class megacodeLaptopOrient {};
             class megacodeLaptopMove {};
             class megacodePanelTick {};
@@ -6888,139 +6984,18 @@ class ACME_Laryngoscopy_Dialog {
 };
 
 // megacode kelly, the instructor control panel.
-// this is a lean static frame: a dark backdrop, a title, the black waveform field, and the main-menu button
-// row. everything that animates, the four sweep traces, the big vitals readouts, and the sliders and buttons
-// of each category, is built at runtime by ACME_fnc_megacodePanelLoad and _megacodemenu.
-class ACME_MC_MenuBtn: RscButton {
-    idc = -1;
-    colorText[] = ACM_UI_INK(1);
-    colorDisabled[] = ACM_UI_MUTED(0.25);
-    colorBackground[] = ACM_UI_SURFACE(1);
-    colorBackgroundDisabled[] = ACM_UI_PANEL(1);
-    colorBackgroundActive[] = {0.16,0.42,0.58,1};
-    colorFocused[] = ACM_UI_ACTIVE(1);
-    colorBorder[] = {0,0,0,0};
-    font = ACM_UI_FONT;
-    sizeEx = "safeZoneH * 0.022";
-    style = 2;
-    shadow = 0;
-    y = "safeZoneY + safeZoneH*0.075 + safeZoneH*0.85*0.600";
-    h = "safeZoneH * 0.045";
-    w = "((safeZoneH*0.85*1.61) - 0.028)/9 - 0.004";
-};
-
+// the whole visible panel, its frame, monitor, tabs and every page, is built at runtime by
+// ACME_fnc_megacodePanelLoad and ACME_fnc_megacodeMenu, sized from the aspect-safe canvas (ACME_fnc_uiCanvas), so it
+// fits 4:3 through ultrawide. the dialog itself stays empty: a static frame authored for one width used to stick
+// out past the runtime panel on narrow screens, with live buttons under it.
 class ACME_Megacode_Panel {
     idd = 87300;
     movingEnable = 0;
     enableSimulation = 1;
     onLoad = "_this call ACME_fnc_megacodePanelLoad";
     onUnload = "_this call ACME_fnc_megacodeClosePanel";
-
-    class ControlsBackground {
-        class MC_Backdrop: RscText {
-            idc = -1;
-            text = "";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2";
-            y = "safeZoneY + safeZoneH * 0.075";
-            w = "(safeZoneH*0.85*1.61)";
-            h = "safeZoneH * 0.85";
-            colorBackground[] = ACM_UI_PANEL(0.97);
-        };
-        class MC_TitleBar: RscText {
-            idc = -1;
-            text = "  MEGACODE KELLY   //   INSTRUCTOR CONTROL PANEL";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2";
-            y = "safeZoneY + safeZoneH * 0.075";
-            w = "(safeZoneH*0.85*1.61)";
-            h = "safeZoneH * 0.045";
-            colorBackground[] = ACM_UI_SURFACE(1);
-            colorText[] = {0.50,0.85,1,1};
-            sizeEx = "safeZoneH * 0.026";
-            font = ACM_UI_FONT;
-        };
-        class MC_WaveBG: RscText {
-            idc = -1;
-            text = "";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.010";
-            y = "safeZoneY + safeZoneH*0.075 + safeZoneH*0.050";
-            w = "(safeZoneH*0.85*1.61)*0.605";
-            h = "safeZoneH*0.85*0.50 + 0.004";
-            colorBackground[] = ACM_UI_PANEL(1);
-        };
-        class MC_VitalsBG: MC_WaveBG {
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + (safeZoneH*0.85*1.61)*0.625 - 0.004";
-            w = "(safeZoneH*0.85*1.61)*0.36";
-            colorBackground[] = {0.015,0.02,0.03,1};
-        };
-        class MC_ContentBG: MC_WaveBG {
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.010";
-            y = "safeZoneY + safeZoneH*0.075 + safeZoneH*0.85*0.655";
-            w = "(safeZoneH*0.85*1.61) - 0.020";
-            h = "safeZoneH*0.85*0.330";
-            colorBackground[] = {0.04,0.05,0.07,1};
-        };
-    };
-
-    class Controls {
-        class MC_BtnVitals: ACME_MC_MenuBtn {
-            text = "VITALS";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(0/9)";
-            action = "[87300, 'vitals'] call ACME_fnc_megacodeMenu";
-            tooltip = "Heart rate, SpO2, BP, RR, EtCO2, temperature, pulse";
-        };
-        class MC_BtnRhythm: ACME_MC_MenuBtn {
-            text = "RHYTHM";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(1/9)";
-            action = "[87300, 'rhythm'] call ACME_fnc_megacodeMenu";
-            tooltip = "Cardiac rhythm library (sinus through asystole)";
-        };
-        class MC_BtnAirway: ACME_MC_MenuBtn {
-            text = "AIRWAY";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(2/9)";
-            action = "[87300, 'airway'] call ACME_fnc_megacodeMenu";
-            tooltip = "Airway / breathing states and tension pneumothorax";
-        };
-        class MC_BtnWounds: ACME_MC_MenuBtn {
-            text = "WOUNDS";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(3/9)";
-            action = "[87300, 'wounds'] call ACME_fnc_megacodeMenu";
-            tooltip = "Add wounds of any type to any region";
-        };
-        class MC_BtnNeuro: ACME_MC_MenuBtn {
-            text = "NEURO/+";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(4/9)";
-            action = "[87300, 'neuro'] call ACME_fnc_megacodeMenu";
-            tooltip = "ICP, GCS, herniation, seizure, posturing, pupils";
-        };
-        class MC_BtnScenario: ACME_MC_MenuBtn {
-            text = "SCENARIO";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(5/9)";
-            colorBackground[] = {0.20,0.12,0.28,1};
-            action = "[87300, 'scenario'] call ACME_fnc_megacodeMenu";
-            tooltip = "Run an evolving clinical scenario that deteriorates toward arrest";
-        };
-        class MC_BtnLog: ACME_MC_MenuBtn {
-            text = "LOG";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(6/9)";
-            colorBackground[] = {0.10,0.20,0.16,1};
-            action = "[87300, 'log'] call ACME_fnc_megacodeMenu";
-            tooltip = "Activity log of everything applied to the manikin";
-        };
-        class MC_BtnReset: ACME_MC_MenuBtn {
-            text = "RESET";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(7/9)";
-            colorBackground[] = {0.35,0.20,0.10,1};
-            action = "call ACME_fnc_megacodeReset";
-            tooltip = "Reset the manikin to a clean baseline";
-        };
-        class MC_BtnDone: ACME_MC_MenuBtn {
-            text = "DONE";
-            x = "safeZoneX + (safeZoneW-(safeZoneH*0.85*1.61))/2 + 0.014 + ((safeZoneH*0.85*1.61) - 0.028)*(8/9)";
-            colorBackground[] = {0.30,0.10,0.12,1};
-            action = "closeDialog 0";
-            tooltip = "Close the control panel";
-        };
-    };
+    class ControlsBackground {};
+    class Controls {};
 };
 
 // megacode laptop cable tuner. it has live sliders for the cable attach points, the laptop rotation and the
@@ -7049,7 +7024,7 @@ class ACME_MC_CableTuner {
             w = "safeZoneW * 0.90";
             h = "safeZoneH * 0.034";
             colorBackground[] = ACM_UI_SURFACE(1);
-            colorText[] = {0.50,0.85,1,1};
+            colorText[] = ACM_UI_INK(1);
             sizeEx = "safeZoneH * 0.024";
             font = ACM_UI_FONT;
         };
@@ -7775,7 +7750,7 @@ class CfgSFX {
 class CfgFactionClasses {
     class NO_CATEGORY;
     class ACME_Curator_Category: NO_CATEGORY {
-        displayName = "ACM Extended";
+        displayName = "ACME";
         priority = 3;
         side = 7;
     };
@@ -7821,10 +7796,14 @@ class CfgVehicles {
     };
     // blood line, deep red. the runtime selects it when the hung unit is blood or fresh blood.
     class ACME_IVLine_Rope_Blood: ACME_IVLine_Rope {
+        model = "\acm_extended\models\iv_line_segment_blood.p3d";
+        segmentType = "ACME_IVLine_Segment_Blood";
         hiddenSelectionsTextures[] = {"#(argb,8,8,3)color(0.55,0.05,0.05,1.0,co)"};
     };
     // plasma line, amber or straw. the runtime selects it when the hung unit is plasma.
     class ACME_IVLine_Rope_Plasma: ACME_IVLine_Rope {
+        model = "\acm_extended\models\iv_line_segment_plasma.p3d";
+        segmentType = "ACME_IVLine_Segment_Plasma";
         hiddenSelectionsTextures[] = {"#(argb,8,8,3)color(0.86,0.72,0.32,1.0,co)"};
     };
     // pale-blue line that reuses ACE's refuel hose. it is binarized, so it always loads, and it is hose-thick. it
@@ -8225,6 +8204,23 @@ class CfgVehicles {
             description = "Spawns a controllable Megacode Kelly training manikin: a bare, gearless casualty locked in ACM_LyingState. Interact with it to open the instructor control panel (vitals, rhythms, airway, wounds, neuro/ICP).";
         };
     };
+    // the megacode laptop cable: a thin dark lead in the iv line's rope model (about 5 mm), so it reads as a
+    // monitor cable and not as ACE's fuel hose. it reuses the binarized iv segment and only recolors it.
+    class ACME_MegacodeCable_Rope: ACME_IVLine_Rope {
+        model = "\acm_extended\models\iv_line_segment_dark.p3d";
+        segmentType = "ACME_IVLine_Segment_Dark";
+        hiddenSelectionsTextures[] = {"#(argb,8,8,3)color(0.07,0.075,0.08,1.0,co)"};
+    };
+    // the plug at the laptop end of that cable (tools/build_megacode_plug.py). it is fixed on the laptop's back face,
+    // its origin on the port, and the rope is anchored just inside its tail, so the cable runs into the laptop.
+    // no geometry: nothing collides with it and nothing can pick it up.
+    class ACME_MegacodePlug: ThingX {
+        scope = 1;
+        scopeCurator = 0;
+        displayName = "Megacode Cable Plug";
+        model = "\acm_extended\models\megacode_plug.p3d";
+        destrType = "DestructNo";
+    };
 
     // drop-on-unit inflict modules. curatorCanAttach is 1, so the module attaches to the casualty it is placed on,
     // and the function resolves that unit through attachedto. isglobal is 0, so the function runs on the placing
@@ -8468,6 +8464,63 @@ class CfgVehicles {
         class ModuleDescription {
             description = "Places a stocked blood fridge. Set per-type unit counts (defaults 2x O-, 6x O+) and daily restock. ACE-interact to take units; blood keeps indefinitely while inside and the model opens while anyone is using it.";
         };
+    };
+    // B393: ACME Persistence. Keeps ACME's own state (players' medical state and the state of their ACME items, and
+    // ACME's objects: blood fridges, cooler boxes, prepared items in ACME containers, the donor registry) across
+    // reconnects and mission restarts. It never saves or sets loadouts, positions or objects, so it runs beside any
+    // other persistence system. Saved on the server with the mission (missionProfileNamespace).
+    class ACME_ModulePersistence: Module_F {
+        scope = 2;
+        scopeCurator = 0;
+        displayName = "Persistence";
+        category = "ACME_Curator_Category";
+        function = "ACME_fnc_persistModuleInit";
+        functionPriority = 1;
+        isGlobal = 0;
+        isTriggerActivated = 0;
+        is3DEN = 0;
+        icon = "\a3\ui_f\data\igui\cfg\simpletasks\types\download_ca.paa";
+        portrait = "\a3\ui_f\data\igui\cfg\simpletasks\types\download_ca.paa";
+        class Arguments {
+            class Medical { displayName = "Players' medical state"; description = "Wounds, bandages, tourniquets, fractures, blood volume, vitals, medications, airway, breathing, circulation, IVs and every ACME condition of each player, brought back when he joins again (not after he died)."; typeName = "BOOL"; defaultValue = 1; };
+            class Items { displayName = "State of players' ACME items"; description = "Prepared IVs and syringes, partial vials, bag volumes, cooler times, warm blood ages and ventilator settings of the ACME items a player carries. The items themselves come from his slot or from another persistence system."; typeName = "BOOL"; defaultValue = 1; };
+            class RestoreItems { displayName = "Give back missing ACME items"; description = "Also give a joining player the ACME items he carried and does not have now. Leave off if another persistence system restores loadouts."; typeName = "BOOL"; defaultValue = 0; };
+            class World { displayName = "ACME objects in the world"; description = "Blood fridges (stock, restock time), blood cooler boxes (coolant and warm times), prepared items in ACME containers, loose blood ages and the fresh whole blood donor registry. The objects themselves are placed by the mission or by another persistence system; ACME finds them again by class and place."; typeName = "BOOL"; defaultValue = 1; };
+            class Devices { displayName = "Placed medical devices"; description = "Tempus Pro and LS monitors, the Accuvac and the ventilator placed in the world: saved with their power, sensors, pairing and mount, and recreated at mission start (a device comes back without its patient when he is not in the mission yet; a ventilator only with its patient). Turn off if another persistence system already recreates placed objects."; typeName = "BOOL"; defaultValue = 1; };
+            class AgeOffline { displayName = "Blood ages while the server is down"; description = "If yes, blood and coolers age by the real time between the save and the restart. If no (default), time stops while the mission is not running."; typeName = "BOOL"; defaultValue = 0; };
+            class Interval { displayName = "Autosave every (seconds)"; description = "The server writes the saved state this often, and also when a player leaves and when the mission ends."; typeName = "NUMBER"; defaultValue = 180; };
+            class CaptureInterval { displayName = "Players send their state every (seconds)"; description = "Each player's state is sent to the server this often, and a few seconds after he is hurt or treated."; typeName = "NUMBER"; defaultValue = 30; };
+            class Campaign { displayName = "Save name"; description = "Missions with the same save name share one save. Empty: this mission's own save."; typeName = "STRING"; defaultValue = ""; };
+        };
+        class ModuleDescription {
+            description = "Keeps ACME's state across reconnects and mission restarts: players' medical state and the state of their ACME items, blood fridges, cooler boxes, prepared items in ACME containers, the donor registry and placed medical devices. Does not save loadouts, positions or objects that are not ACME's, so another persistence system can keep doing those. Zeus: Persistence: save now / status / forget saved state.";
+        };
+    };
+    class ACME_ModulePersistenceSave: Module_F {
+        scope = 1;
+        scopeCurator = 2;
+        displayName = "Persistence: save now";
+        category = "ACME_Curator_Category";
+        function = "ACME_fnc_persistZeusModule";
+        functionPriority = 1;
+        isGlobal = 1;
+        isTriggerActivated = 0;
+        curatorCanAttach = 0;
+        icon = "\a3\ui_f\data\igui\cfg\simpletasks\types\download_ca.paa";
+        portrait = "\a3\ui_f\data\igui\cfg\simpletasks\types\download_ca.paa";
+    };
+    class ACME_ModulePersistenceClear: ACME_ModulePersistenceSave {
+        displayName = "Persistence: forget saved state";
+        icon = "\a3\ui_f\data\igui\cfg\simpletasks\types\destroy_ca.paa";
+        portrait = "\a3\ui_f\data\igui\cfg\simpletasks\types\destroy_ca.paa";
+    };
+    class ACME_ModulePersistenceStatus: ACME_ModulePersistenceSave {
+        scope = 1;
+        scopeCurator = 2;
+        displayName = "Persistence: status";
+        category = "ACME_Curator_Category";
+        icon = "\a3\ui_f\data\igui\cfg\simpletasks\types\documents_ca.paa";
+        portrait = "\a3\ui_f\data\igui\cfg\simpletasks\types\documents_ca.paa";
     };
 };
 
@@ -9529,7 +9582,9 @@ class ace_medical_treatment_actions {
         medicRequired = 0;
         treatmentTime = 0.5;
         allowedSelections[] = {"Head"};
-        condition = "!(_patient isEqualTo _medic) && {_patient getVariable ['ACME_headElevated', false]}";
+        // B394: not in the middle of a lift or another provider's animation on him (two providers raising and
+        // lowering against each other took turns on his body)
+        condition = "!(_patient isEqualTo _medic) && {_patient getVariable ['ACME_headElevated', false]} && {!([_patient] call ACME_fnc_patientAnimHeld)}";
         callbackSuccess = "[_this select 0, _this select 1] call ACME_fnc_headElevateStop";
         callbackFailure = "";
         callbackProgress = "";

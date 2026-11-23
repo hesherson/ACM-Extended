@@ -16,7 +16,8 @@ def test_source_contract():
         assert (ROOT/required).is_file(), f'HEMTT package file absent: {required}'
     assert project.get('version',{}).get('git_hash')==0
     mod=(ROOT/'mod.cpp').read_text(encoding='utf-8',errors='replace')
-    assert 'name = "ACM Extended";' in mod and 'stable release' in mod and 'external ACM is not required' in mod
+    # B366-B385 renamed the launcher display name to ACME; the HEMTT project name above stays "ACM Extended".
+    assert 'name = "ACME";' in mod and 'stable release' in mod and 'external ACM is not required' in mod
     print('PASS phase116: HEMTT project keeps x/ACM compatibility identity and required root package files')
 
 

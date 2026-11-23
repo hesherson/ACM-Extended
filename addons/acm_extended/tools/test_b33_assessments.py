@@ -18,13 +18,13 @@ class AssessmentContracts(unittest.TestCase):
         for name in ("checkTemperature", "readCoreTemp"):
             with self.subTest(callback=name):
                 text = source(name)
-                gate = text.index('([_medic, _patient, "ACM_Thermometer"] call ACME_fnc_treatmentSupplyCount) <= 0')
+                gate = text.index('([_medic, _patient, "ACME_Thermometer"] call ACME_fnc_treatmentSupplyCount) <= 0')
                 self.assertLess(gate, text.index('getVariable ["ACME_hypo_temp"'))
                 self.assertLess(gate, text.index("call ace_common_fnc_displayTextStructured"))
                 self.assertLess(gate, text.index("call ACME_fnc_medLog"))
                 self.assertIn("exitWith {};", text[gate:text.index("private _t", gate)])
                 self.assertNotIn("removeItem", text)
-        self.assertLess(source("checkTemperature").index('"ACM_Thermometer"'),
+        self.assertLess(source("checkTemperature").index('"ACME_Thermometer"'),
                         source("checkTemperature").index('setVariable ["ACME_tempReading"'))
 
     def test_eye_movement_is_appended_after_all_existing_injury_findings(self):

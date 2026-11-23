@@ -15,16 +15,26 @@ def test_handle_claim_does_not_attach_or_drive_the_provider():
 def test_talon_steps_preserve_each_endpoint_and_handle_order():
     import re
 
-    # B373: only the handles are animated. The authored fold garbles in the engine, so the models are swapped.
+    # B366-B385 replaced the B373 handles-only swap with the full authored sequence played on four part models
+    # (fn_talonTransition.sqf): folding puts the handles in first, unfolding takes them out last.
     source = (SKED / "functions/fn_talonSteps.sqf").read_text()
-    fold, unfold = source.split("2.45]")
+    step_re = r'\["(fold|handles)",\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)\]'
+    fold, unfold = source.split('if (_mode == "fold") exitWith {', 1)[1].split("};", 1)
     for mode, state in ((fold, 1), (unfold, 0)):
-        steps = [(kind, float(phase)) for kind, phase in re.findall(r'\["(fold|handles)",\s*([\d.]+)', mode)]
-        assert len(steps) == 4
-        assert all(kind == "handles" for kind, _ in steps)
-        assert steps[-1] == ("handles", state)
-        phases = [phase for _, phase in steps]
-        assert phases == sorted(phases, reverse=not state)
+        steps = [(kind, float(phase), float(sec), float(pause)) for kind, phase, sec, pause in re.findall(step_re, mode)]
+        kinds = [kind for kind, *_ in steps]
+        handles = [phase for kind, phase, *_ in steps if kind == "handles"]
+        folds = [phase for kind, phase, *_ in steps if kind == "fold"]
+        assert len(handles) == 4 and folds
+        # every source reaches its endpoint and moves one way only
+        for phases in (handles, folds):
+            assert phases[-1] == state
+            assert phases == sorted(phases, reverse=not state)
+        # handle order: all handles before the fold when folding, all after it when unfolding
+        assert kinds == (["handles"] * 4 + ["fold"] * len(folds) if state else ["fold"] * len(folds) + ["handles"] * 4)
+        # the returned total is the sum of every step's seconds and pause
+        total = float(re.search(r'\],\s*([\d.]+)\]', mode).group(1))
+        assert abs(total - sum(sec + pause for _, _, sec, pause in steps)) < 1e-6
 
 
 def test_server_checks_actor_ownership_and_distance_before_strapping():

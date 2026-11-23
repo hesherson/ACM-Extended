@@ -28,7 +28,9 @@ def test_transfusion_page_buttons_stay_blue():
     assert 'class ACME_TX_PageButton: ACME_SK_PulseButton' in cfg
     assert 'ctrlCreate ["RscText",86952]' in openf
     assert 'ctrlCreate ["RscText",86953]' in openf
-    assert 'diag_tickTime * 220' in openf
+    # B296: steady accessibility-blue backings replaced the old diag_tickTime pulse.
+    assert 'diag_tickTime * 220' not in openf
+    assert '["info", 0.52] call ACME_fnc_a11yColor' in openf and '} forEach [86952,86953];' in openf
     assert 'ctrlCreate ["ACME_TX_PageButton",86950]' in openf
     assert '(_uiW / 11) * 0.72' in openf
 

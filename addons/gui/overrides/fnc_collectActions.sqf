@@ -79,21 +79,28 @@ if ("ace_dragging" call ACEFUNC(common,isModLoaded)) then {
         LELSTRING(core,SupinePosition_Action), "drag",
         {
             [ACEGVAR(medical_gui,target)] call ACEFUNC(common,isAwake) && (call ACME_fnc_controlledProvider) != ACEGVAR(medical_gui,target) && {!(ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,Lying_State), false]) && stance ACEGVAR(medical_gui,target) == "PRONE" && currentWeapon ACEGVAR(medical_gui,target) == ""}
+            // B393: not while another provider's animation lease holds his body
+            && {isNil "ACME_fnc_patientAnimHeld" || {!([ACEGVAR(medical_gui,target)] call ACME_fnc_patientAnimHeld)}}
         },
         {
-            if (ACEGVAR(medical_gui,target) getVariable [QEGVAR(core,Lying_State), false]) exitWith {};
-            [ACEGVAR(medical_gui,target), "AinjPpneMstpSnonWrflDnon_rolltoback", 2] call ACEFUNC(common,doAnimation);
+            private _target = ACEGVAR(medical_gui,target);
+            if (_target getVariable [QEGVAR(core,Lying_State), false]) exitWith {};
+            if (!isNil "ACME_fnc_patientAnimHeld" && {[_target] call ACME_fnc_patientAnimHeld}) exitWith {};
+            [_target, "AinjPpneMstpSnonWrflDnon_rolltoback", 2] call ACEFUNC(common,doAnimation);
 
+            // B393: the casualty rolled is the one this was done to, even if the menu shows another one by now
             [{
-                ACEGVAR(medical_gui,target) setVariable [QEGVAR(core,Lying_State), true, true];
-                [QACEGVAR(common,switchMove), [ACEGVAR(medical_gui,target), "ACM_LyingState"]] call CBA_fnc_globalEvent;
+                params ["_target"];
+                if (isNull _target || {!alive _target}) exitWith {};
+                _target setVariable [QEGVAR(core,Lying_State), true, true];
+                [QACEGVAR(common,switchMove), [_target, "ACM_LyingState"]] call CBA_fnc_globalEvent;
                 if (!isNil "ACME_fnc_aiProtectionSync") then {
-                    ["ACME_aiProtectionRefresh", [ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
+                    ["ACME_aiProtectionRefresh", [_target], _target] call CBA_fnc_targetEvent;
                 };
-                [QEGVAR(core,getUpPrompt), [ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
-                [QACEGVAR(common,displayTextStructured), [LELSTRING(core,SupinePosition_Hint), 2, ACEGVAR(medical_gui,target)], ACEGVAR(medical_gui,target)] call CBA_fnc_targetEvent;
+                [QEGVAR(core,getUpPrompt), [_target], _target] call CBA_fnc_targetEvent;
+                [QACEGVAR(common,displayTextStructured), [LELSTRING(core,SupinePosition_Hint), 2, _target], _target] call CBA_fnc_targetEvent;
                 [LELSTRING(core,SupinePosition_Complete), 2, (call ACME_fnc_controlledProvider)] call ACEFUNC(common,displayTextStructured);
-            }, [], 1.85] call CBA_fnc_waitAndExecute;
+            }, [_target], 1.85] call CBA_fnc_waitAndExecute;
         }
     ];
 };

@@ -89,7 +89,7 @@ if (_active) then {
                 };
                 missionNamespace setVariable ["ACME_providerInvalidContinuousAt", -1];
                 _repairs = _repairs + 1;
-                diag_log "[ACME STATE RECONCILE] Cleared stale provider ContinuousAction controller.";
+                if (call ACME_fnc_debugEnabled) then {diag_log "[ACME STATE RECONCILE] Cleared stale provider ContinuousAction controller.";};
             };
         };
     } else {
@@ -123,8 +123,8 @@ if (_medic getVariable ["ACME_treatmentPreflightActive", false]) then {
         _medic setVariable ["ACME_treatmentPreflightBypass", [], false];
         _medic setVariable ["ACME_treatmentPreflightStartedAt", -1, false];
         _repairs = _repairs + 1;
-        diag_log format ["[ACME STATE RECONCILE] Cleared stale treatment preflight token=%1 age=%2.",
-            _token, if (_startedAt isEqualType 0) then {CBA_missionTime - _startedAt} else {-1}];
+        if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME STATE RECONCILE] Cleared stale treatment preflight token=%1 age=%2.",
+            _token, if (_startedAt isEqualType 0) then {CBA_missionTime - _startedAt} else {-1}];};
     };
 };
 
@@ -141,8 +141,8 @@ if (_dpPending isEqualType [] && {count _dpPending >= 4}) then {
         _medic setVariable ["ACME_DP_ClaimRequestedAt", -1, false];
         _repairs = _repairs + 1;
         // This runs only when retiring the pending slot, never every reconciliation tick.
-        diag_log format ["[ACME STATE RECONCILE] Cleared stale Direct Pressure claim request. token=%1 epoch=%2 patient=%3 age=%4",
-            _token, _epoch, netId _patient, if (_requestedAt isEqualType 0) then {diag_tickTime - _requestedAt} else {-1}];
+        if (call ACME_fnc_debugEnabled) then {diag_log format ["[ACME STATE RECONCILE] Cleared stale Direct Pressure claim request. token=%1 epoch=%2 patient=%3 age=%4",
+            _token, _epoch, netId _patient, if (_requestedAt isEqualType 0) then {diag_tickTime - _requestedAt} else {-1}];};
     };
 };
 

@@ -65,7 +65,11 @@ if (!isNil "ACME_fnc_medmashReconcile") then {[_patient] call ACME_fnc_medmashRe
 
 // Same-object recovery/debug resurrection must be able to arm a future death freeze again.
 _patient setVariable ["ACME_deadPhysiologyFrozenLocal", false, false];
-if (_patient getVariable ["ACME_headElevated", false]) then {[_patient] call ACME_fnc_headElevWatch;};
+if (_patient getVariable ["ACME_headElevated", false]) then {
+    [_patient] call ACME_fnc_headElevWatch;
+    // B393: finish what the old owner's timers would have done (a sit-up after a treatment, the sitting pose)
+    [{_this call ACME_fnc_headElevTakeOver;}, [_patient], 0.5] call CBA_fnc_waitAndExecute;
+};
 private _hpmkState = _patient getVariable ["ACME_hpmk_state", ""];
 if (_hpmkState != "") then {["ACME_hpmkServerTrack", [_patient, _hpmkState]] call CBA_fnc_serverEvent;};
 if ((_patient getVariable ["ACME_vent_onPatient", false])

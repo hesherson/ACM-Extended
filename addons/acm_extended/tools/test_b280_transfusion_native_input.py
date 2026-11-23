@@ -279,7 +279,11 @@ def assert_startup_identity_log_is_outside_callbacks():
     emitters = [i for i, token in enumerate(tokens) if token.kind == 'ident' and token.value == 'diag_log']
     assert len(emitters) == 1
     emitter = emitters[0]
-    assert not any(start < emitter < end for start, end in pairs.items() if tokens[start].value == '{')
+    # The line is gated by the debug option (`if (call ACME_fnc_debugEnabled) then {diag_log ...}`); that
+    # `then` block is not a callback, so only other brace groups count as runtime callbacks.
+    assert any(tokens[i].value == 'debugEnabled' or tokens[i].value == 'ACME_fnc_debugEnabled' for i in range(max(0, emitter - 12), emitter))
+    assert not any(start < emitter < end for start, end in pairs.items()
+                   if tokens[start].value == '{' and not (start > 0 and tokens[start - 1].value == 'then'))
     assert '"[ACME BUILD] version=%1 batch=%2 revision=%3"' in source
     assert 'ACME_infusion_version,ACME_buildBatch,ACME_networkAuditRevision' in source
     startup = lex(read('postInit'))

@@ -71,9 +71,9 @@ class ManualInfusionSource(unittest.TestCase):
         s=re.search(r'ACME_infusion_allowedMedications\s*=\s*(\[[^;]+)',src('postInit')).group(1)
         self.assertIn('"Ketamine"',s)
         self.assertNotIn('"Propofol"',s)
-        self.assertIn('if (_class == "ACM_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};',src('transfusionSpikeOrAdd'))
+        self.assertIn('if (_class == "ACME_Vial_Propofol") exitWith {call ACME_fnc_spikePropofolBottle;};',src('transfusionSpikeOrAdd'))
         bottle=src('spikePropofolBottle')
-        self.assertIn('[_medic, _patient, "ACM_Vial_Propofol", _mode, _vehicle] call ACME_fnc_transfusionTakeSelected',bottle)
+        self.assertIn('[_medic, _patient, "ACME_Vial_Propofol", _mode, _vehicle] call ACME_fnc_transfusionTakeSelected',bottle)
         self.assertIn('[_medic, _patient, ["ACME_IVLine"]] call ACME_fnc_treatmentSupplyTake',bottle)
         self.assertIn('[["Propofol", 500, 1]], _uid, 50, "propofol-bottle"',bottle)
         self.assertIn('_medic setVariable ["ACME_infusion_PreparedBags", _prepared, true]',bottle)
@@ -193,9 +193,9 @@ class ThoracostomySource(unittest.TestCase):
         self.assertIn('[_patient, _medic, "thoraSeal", [_side, _epoch]] call ACME_fnc_chestSealEffectLocal',src('thoraAftercareLocal'))
         self.assertNotIn('ACME_fnc_thoraSideStateCommit',s)
     def test_seal_consumed_and_verified(self):
-        s=src('thoraMouseDown');self.assertIn('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',s);self.assertIn('if (_receipt isEqualTo []) exitWith',s)
+        s=src('thoraMouseDown');self.assertIn('[_medS, _patient, ["ACME_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',s);self.assertIn('if (_receipt isEqualTo []) exitWith',s)
     def test_repeat_dressing_checks_precede_consumption(self):
-        s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');take=s.index('[_medS, _patient, ["ACM_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',a)
+        s=src('thoraMouseDown');a=s.index('if (_held == "seal") exitWith');take=s.index('[_medS, _patient, ["ACME_ChestSeal"]] call ACME_fnc_treatmentSupplyTake',a)
         self.assertLess(s.index('ACME_thora_sealed_%1',a),take)
         self.assertLess(s.index('ACME_Thora_SealPending',a),take)
         # A vented dressing can cover completed finger access before the leak

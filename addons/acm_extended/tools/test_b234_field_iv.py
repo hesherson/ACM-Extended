@@ -205,9 +205,8 @@ def test_new_functions_registered_and_debug_unchanged():
     cpp=(ROOT/'addons/acm_extended/config.cpp').read_text()
     for p in (ROOT/'addons/acm_extended/functions').glob('fn_ivField*.sqf'):
         assert 'class '+p.stem[3:]+' {};' in cpp
-    import subprocess
-    base=subprocess.check_output(['git','show','43b63622b28766869c4ef1d2597eee43674fcb53:addons/acm_extended/functions/fn_debugMenuClinical.sqf'],cwd=ROOT)
-    assert (ROOT/'addons/acm_extended/functions/fn_debugMenuClinical.sqf').read_bytes()==base
+    from test_debug_single_overlay import unchanged_since  # EOL-neutral, allows only the B363 theme backing
+    assert unchanged_since('addons/acm_extended/functions/fn_debugMenuClinical.sqf','43b63622b28766869c4ef1d2597eee43674fcb53')
 
 
 def ui_source(name):

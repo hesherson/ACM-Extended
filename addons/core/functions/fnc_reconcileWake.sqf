@@ -32,6 +32,6 @@ if (_awake) then {
     _patient setVariable ["ACME_consciousRepairCount",
         (_patient getVariable ["ACME_consciousRepairCount", 0]) + 1, false];
     _patient setVariable ["ACME_consciousRepairLast", [serverTime, _reason, _state], false];
-    diag_log format ["[ACME CONSCIOUSNESS REPAIR] %1: %2 (%3)", netId _patient, _reason, _state];
+    if ((!isNil "ACME_fnc_debugEnabled" && {call ACME_fnc_debugEnabled})) then {diag_log format ["[ACME CONSCIOUSNESS REPAIR] %1: %2 (%3)", netId _patient, _reason, _state];};
 };
 _awake

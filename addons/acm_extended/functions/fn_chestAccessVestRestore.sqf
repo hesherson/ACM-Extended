@@ -201,7 +201,10 @@ private _canAnimate = (missionNamespace getVariable ["ACME_interventionAnimation
     && {alive _patient}
     && {isNull objectParent _patient}
     && {!([_patient] call ACME_fnc_animBlocked)}
-    && {[_patient] call ACME_fnc_chestSealCanPhysicalRoll};
+    && {[_patient] call ACME_fnc_chestSealCanPhysicalRoll}
+    // B393: a casualty sitting up (Semi-Fowler) gets his carrier back without the lift/lower theatre, as it was taken
+    // off (fn_chestAccessVestAcquire.sqf): that theatre ends face-up flat, and laid him down after Check Breathing.
+    && {!((_patient getVariable ["ACME_headElevated", false]) && {!(_patient getVariable ["ACME_headElev_Suspended", false])})};
 
 if (!_canAnimate) exitWith {
     [_patient,_saved,_prop,_savedVar,_propVar,_busyVar,_readyVar,_pfhVar,_finishBookkeeping] call _restoreNow

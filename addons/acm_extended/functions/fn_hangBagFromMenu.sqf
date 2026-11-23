@@ -22,6 +22,9 @@ if (!isNull objectParent _medic) exitWith {
 };
 
 
+if (!isNull (_patient getVariable ["ACME_hang_Stand", objNull])) exitWith {
+    ["This bag is hanging on an IV stand.", 2, _medic] call ace_common_fnc_displayTextStructured;
+};
 // there must be a bag to raise.
 if (!([_medic, _patient] call ACME_fnc_hangBagCanStart)) exitWith {
     ["No hung IV bag on this patient to raise.", 2, _medic] call ace_common_fnc_displayTextStructured;

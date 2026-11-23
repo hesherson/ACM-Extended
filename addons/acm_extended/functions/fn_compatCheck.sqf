@@ -91,7 +91,7 @@ private _probe = [
 
 missionNamespace setVariable ["ACME_compatMissing", +_missing, false];
 if (_missing isEqualTo []) exitWith {
-    diag_log "[ACME COMPAT] OK: required runtime functions/markers verified";
+    if (call ACME_fnc_debugEnabled) then {diag_log "[ACME COMPAT] OK: required runtime functions/markers verified";};
 };
 
 // A partial update can leave only ACM_acm_extended.pbo beside the upstream ACM components. Those functions
@@ -104,7 +104,7 @@ if (hasInterface) then {
     [{
         params ["_issues", "_installAdvice"];
         private _detail = _issues joinString " | ";
-        [format ["ACM Extended: %1 compatibility problem(s). %2 Missing/stale functions: %3", count _issues, _installAdvice, _detail], 8]
+        [format ["ACME: %1 compatibility problem(s). %2 Missing/stale functions: %3", count _issues, _installAdvice, _detail], 8]
             call ace_common_fnc_displayTextStructured;
     }, [+_missing, _installAdvice], 12] call CBA_fnc_waitAndExecute;
 };

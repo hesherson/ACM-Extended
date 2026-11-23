@@ -34,9 +34,10 @@ if (!isNull _op) then {
 [{
     params ["_d", "_op"];
     if (isNull _d) exitWith {};
-    [_d] call ACME_fnc_megacodeResetUnit;  // clears the dying latch + restores baseline
-    if (!isNull _op) then {
-        [["Manikin reset and ready.", "#9be08c"]] remoteExec ["ACME_fnc_megacodeLog", _op];
-        [87300, (uiNamespace getVariable ["ACME_MC_page", "vitals"])] remoteExec ["ACME_fnc_megacodeMenu", _op];
+    [_d] call ACME_fnc_megacodeResetUnit;  // clears the dying latch + restores baseline (or respawns a true corpse)
+    // refresh the operator's open panel on their own page (the server's uiNamespace knows nothing of it). a corpse
+    // that was respawned instead is re-pointed by ACME_fnc_megacodeRespawn itself.
+    if (!isNull _op && {!isNull _d} && {alive _d}) then {
+        [_d] remoteExec ["ACME_fnc_megacodePanelRetarget", _op];
     };
 }, [_d, _op], missionNamespace getVariable ["ACME_megacode_deathBeat", 3.0]] call CBA_fnc_waitAndExecute;

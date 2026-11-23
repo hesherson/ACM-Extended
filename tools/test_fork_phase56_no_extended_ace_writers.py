@@ -18,13 +18,17 @@ def test_current_phase56_no_extended_ace_writers():
     assert 'ACM_core_fnc_setDraggingCapability' in read('addons/acm_extended/functions/fn_coolerBoxBroker.sqf')
     assert 'ACM_core_fnc_setCursorInteractionMode' in read('addons/acm_extended/functions/fn_installLightKey.sqf')
     assert 'ACM_core_fnc_setCursorInteractionMode' in read('addons/acm_extended/functions/fn_aceCursorRestore.sqf')
+    # B366-B385 ACM_ -> ACME_ item rename (one item set, no alias classes): ACE Arsenal's stored loadout lists are
+    # rewritten to the canonical classnames when the loadouts display opens. Not ACE runtime state; exact file/vars.
+    rename_migration={('fn_initItemClassRuntime.sqf','ace_arsenal_saved_loadouts'),
+                      ('fn_initItemClassRuntime.sqf','ace_arsenal_defaultLoadoutsList')}
     viol=[]
     for p in EXT.rglob('*.sqf'):
         for i,raw in enumerate(p.read_text(encoding='utf-8',errors='replace').splitlines(),1):
             line=raw.split('//',1)[0]
             if not line.strip(): continue
             m=re.search(r'(?:missionNamespace\s+)?setVariable\s*\[\s*["\'](ace_[^"\']+)["\']',line,re.I)
-            if m: viol.append((p,i,m.group(1),raw.strip(),'setVariable'))
+            if m and (p.name,m.group(1)) not in rename_migration: viol.append((p,i,m.group(1),raw.strip(),'setVariable'))
             if 'ACME_fnc_setVarNet' in line:
                 m=re.search(r'\[\s*[^,\]]+\s*,\s*["\'](ace_[^"\']+)["\']\s*,',line,re.I)
                 if m: viol.append((p,i,m.group(1),raw.strip(),'setVarNet'))

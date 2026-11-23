@@ -19,6 +19,9 @@ private _holder = _patient getVariable ["ACME_hang_Medic", objNull];
 if (!isNull _holder && {!(_holder isEqualTo _medic)}
     && {alive _holder} && {_holder getVariable ["ACME_hang_Active", false]}) exitWith { false };
 
+// B395: a bag hung on an IV stand is already up (fn_ivStandServer.sqf); take it down from the stand first.
+if (!isNull (_patient getVariable ["ACME_hang_Stand", objNull])) exitWith { false };
+
 private _ivBags = _patient getVariable ["ACM_circulation_IV_Bags", createHashMap];
 if !(_ivBags isEqualType createHashMap) exitWith { false };
 ((values _ivBags) findIf { _x isEqualType [] && {count _x > 0} }) > -1

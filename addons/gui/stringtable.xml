@@ -2,7 +2,7 @@
 <Project name="ACM">
     <Package name="GUI">
         <Key ID="STR_ACM_GUI_Category">
-            <English>ACM: GUI</English>
+            <English>ACME: GUI</English>
             <French>ACM : INTERFACE</French>
             <Spanish>ACM: Interfaz</Spanish>
             <Polish>ACM: Interfejs</Polish>

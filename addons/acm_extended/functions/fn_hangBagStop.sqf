@@ -35,6 +35,7 @@ if (!(_medic getVariable ["ACME_hang_Claimed", false]) || {
         ["ACME_hangRestoreWeapons", [_medic, _episodeStart], _medic] call CBA_fnc_targetEvent;
     };
 };
+private _gestureMode = _medic getVariable ["ACME_hang_GestureMode", false];
 private _prone = _medic getVariable ["ACME_hang_Prone", false];
 _prone = _prone || {([_medic, "AmovPknlMstpSnonWnonDnon"] call ACME_fnc_providerAnimation) == "AmovPpneMstpSnonWnonDnon"};
 private _visualEpoch = _medic getVariable ["ACME_hang_VisualEpoch", -1];
@@ -50,6 +51,7 @@ _medic setVariable ["ACME_hang_Active", false, true];
 // immediate: stop all the per-frame machinery and the cancel prompt.
 private _ownsInput = (uiNamespace getVariable ["ACME_HangInputMedic", objNull]) isEqualTo _medic;
 [_medic, false] call ACME_fnc_hangBagInputLock;
+if (local _medic) then {[_medic, "forceWalk", "ACME_hangBag", false] call ace_common_fnc_statusEffect_set;};
 if (_ownsInput) then {[false] call ACME_fnc_hangBagHint;};
 
 private _pfh = _medic getVariable ["ACME_hang_PFH", -1];
@@ -67,7 +69,20 @@ private _bag       = _medic getVariable ["ACME_hang_Bag", objNull];
 
 private _outAnim = [_medic, missionNamespace getVariable ["ACME_hang_outAnim", "ACME_Acts_JetsCrewaidFCrouchThumbup_out"], _prone] call ACME_fnc_providerAnimation;
 private _playedOut = false;
-if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {!_kitReset} && {local _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic} && {(toLower animationState _medic) find "jetscrewaidfcrouchthumbup" >= 0}) then {
+if (_gestureMode && {local _medic}) then {
+    // B395: lower the arm with the hold's own lowering RTM (right-arm gesture); an unconscious, dead or seated
+    // provider just drops the gesture.
+    if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {!_kitReset} && {alive _medic}
+        && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic}
+        && {((toLowerANSI gestureState _medic) find "acme_hangbagarm") == 0}) then {
+        _outAnim = missionNamespace getVariable ["ACME_hang_gestureOut", "ACME_HangBagArmDown"];
+        [_medic, _outAnim] call ACME_fnc_hangBagGesture;
+        _playedOut = true;
+    } else {
+        if (((toLowerANSI gestureState _medic) find "acme_hangbagarm") == 0) then {[_medic, "ACME_HangBagArmNone"] call ACME_fnc_hangBagGesture;};
+    };
+};
+if (!_gestureMode && {missionNamespace getVariable ["ACME_interventionAnimations", true]} && {!_kitReset} && {local _medic} && {alive _medic} && {!(_medic getVariable ["ACE_isUnconscious", false])} && {isNull objectParent _medic} && {(toLower animationState _medic) find "jetscrewaidfcrouchthumbup" >= 0}) then {
     // The loop now exposes an explicit interpolateTo edge to this state, and the out state has a ConnectTo edge
     // back to normal crouch. Do not delete props or restore the loadout until this authored lower-bag move has
     // actually entered and completed, because setUnitLoadout/idle restoration can cancel it mid-frame.
@@ -78,7 +93,7 @@ if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {!_k
 private _returnPart = _medic getVariable ["ACME_hang_Part", missionNamespace getVariable ["ACM_circulation_TransfusionMenu_Selected_BodyPart", ""]];
 
 private _teardown = {
-    params ["_medic", "_rope", "_anchor", "_bagHelper", "_bag", "_playedOut", "_outAnim", "_patient", "_returnPart", "_silent", "_episodeStart", "_visualEpoch", "_visualJip", "_prone", "_kitEpoch", "_kitReset"];
+    params ["_medic", "_rope", "_anchor", "_bagHelper", "_bag", "_playedOut", "_outAnim", "_patient", "_returnPart", "_silent", "_episodeStart", "_visualEpoch", "_visualJip", "_prone", "_kitEpoch", "_kitReset", ["_gestureMode", false]];
 
     // Observers keep the props throughout the authored lowering animation, then retire this exact episode.
     if ((_medic getVariable ["ACME_hang_VisualEpisode", []]) isEqualTo [_visualEpoch, true]) then {
@@ -130,7 +145,8 @@ private _teardown = {
         ["ace_common_switchMove", [_medic, _neutral]] call CBA_fnc_globalEvent;
     };
 
-    if ((missionNamespace getVariable ["ACME_interventionAnimations", true]) && {_providerCanRestore} && {local _medic} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}
+    // (B395: the arm-gesture hold leaves the provider in their own stance: nothing to recover.)
+    if (!_gestureMode && {missionNamespace getVariable ["ACME_interventionAnimations", true]} && {_providerCanRestore} && {local _medic} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}
         && {!([_medic] call ACME_fnc_providerStanceOwned)}) then {
         _medic enableAI "ANIM";
         // Normal path: the authored out move has already connected itself to crouch. Fallback path: if the move
@@ -163,7 +179,8 @@ private _teardown = {
         _medic setVariable ["ACME_DP_LastPoseAssert", 0, false];
     };
 
-    if (!_silent && {!isNull _patient} && {_providerCanRestore} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
+    // (B395: not after the free-moving arm hold: a menu opening by itself stops the provider where they stand)
+    if (!_silent && {!_gestureMode} && {!isNull _patient} && {_providerCanRestore} && {alive _medic} && {_medic isEqualTo (call ACME_fnc_controlledProvider)}) then {
         [{
             params ["_medic", "_patient", "_bp", "_episodeStart", "_kitEpoch"];
             if (isNull _medic || {isNull _patient}) exitWith {};
@@ -176,7 +193,11 @@ private _teardown = {
     };
 };
 
-private _cleanupArgs = [_medic, _rope, _anchor, _bagHelper, _bag, _playedOut, _outAnim, _patient, _returnPart, _silent, _episodeStart, _visualEpoch, _visualJip, _prone, _kitEpoch, _kitReset];
+private _cleanupArgs = [_medic, _rope, _anchor, _bagHelper, _bag, _playedOut, _outAnim, _patient, _returnPart, _silent, _episodeStart, _visualEpoch, _visualJip, _prone, _kitEpoch, _kitReset, _gestureMode];
+if (_playedOut && {_gestureMode}) then {
+    // the bag stays in the hand until the arm is down
+    [{_this call (_this select 17)}, _cleanupArgs + [_teardown], missionNamespace getVariable ["ACME_hang_gestureOutTime", 0.8]] call CBA_fnc_waitAndExecute;
+} else {
 if (_playedOut) then {
     // First wait until playMoveNow reaches the authored out state. Then wait until the state leaves naturally via
     // its ConnectTo edge. Both waits are bounded; timeout still runs the same safe teardown/recovery path.
@@ -203,6 +224,7 @@ if (_playedOut) then {
 } else {
     _cleanupArgs call _teardown;
 };
+};
 
 // clear the references and the state now. the delayed block holds its own copies.
 _medic setVariable ["ACME_hang_Rope", objNull];
@@ -213,6 +235,7 @@ _medic setVariable ["ACME_hang_RopeShown", false, true];
 _medic setVariable ["ACME_hang_Pose", nil];
 _medic setVariable ["ACME_hang_PoseRetryAt", nil];
 _medic setVariable ["ACME_hang_Raising", false];
+_medic setVariable ["ACME_hang_GestureMode", false];
 
 if (!isNull _patient) then {
     // Release only this exact claim. A delayed stop from an earlier episode cannot clear a newer Hang Bag.

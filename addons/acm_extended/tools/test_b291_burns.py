@@ -144,12 +144,12 @@ def test_proper_coverage_reduces_risk_and_new_burn_removes_only_its_regional_pro
     execute(setup() + '''
         [_patient,"leftarm","Burn3",1] call (_burnEvents get "ACM_burns_burnApplied");
         private _before=_patient getVariable "ACM_burns_InfectionRiskMult";
-        [_patient,"leftarm","ACM_SilverNylonDressing"] call (_burnEvents get "ace_medical_treatment_bandageLocal");
+        [_patient,"leftarm","ACME_SilverNylonDressing"] call (_burnEvents get "ace_medical_treatment_bandageLocal");
         CBA_missionTime=1002;[_patient] call ACM_burns_fnc_tickPatient;
         [(_patient getVariable "ACM_burns_InfectionRiskMult")<_before
             && {(_patient getVariable "ACM_burns_BurnProtected") select 2},
             "proper coverage did not reduce the exposed skin-barrier burden"] call _check;
-        [_patient,"rightarm","ACM_SilverNylonDressing"] call (_burnEvents get "ace_medical_treatment_bandageLocal");
+        [_patient,"rightarm","ACME_SilverNylonDressing"] call (_burnEvents get "ace_medical_treatment_bandageLocal");
         [_patient,"leftarm","Burn2",0.2] call (_burnEvents get "ACM_burns_burnApplied");
         private _protected=_patient getVariable "ACM_burns_BurnProtected";
         [!(_protected select 2) && {_protected select 3},
@@ -157,7 +157,7 @@ def test_proper_coverage_reduces_risk_and_new_burn_removes_only_its_regional_pro
     ''')
 
 
-@pytest.mark.parametrize("bandage", ["ACM_BurnCream", "ACM_SilverNylonDressing"])
+@pytest.mark.parametrize("bandage", ["ACME_BurnCream", "ACME_SilverNylonDressing"])
 def test_mixed_or_partial_deep_burn_care_cannot_protect_the_whole_region(bandage):
     execute(setup() + f'''
         [_patient,"body","Burn3",1] call (_burnEvents get "ACM_burns_burnApplied");
@@ -169,7 +169,7 @@ def test_mixed_or_partial_deep_burn_care_cannot_protect_the_whole_region(bandage
             && {{(_patient getVariable "ACM_burns_InfectionRiskMult")==_before}},
             "cream or partial coverage protected a remaining open deep burn"] call _check;
         _patient setVariable ["ace_medical_openWounds",createHashMapFromArray [["body",[[11,0,0,0.1],[21,0,0,0.2]]]]];
-        [_patient,"body","ACM_SilverNylonDressing"] call (_burnEvents get "ace_medical_treatment_bandageLocal");
+        [_patient,"body","ACME_SilverNylonDressing"] call (_burnEvents get "ace_medical_treatment_bandageLocal");
         CBA_missionTime=1004;[_patient] call ACM_burns_fnc_tickPatient;
         [((_patient getVariable "ACM_burns_BurnProtected") select 1)
             && {{(_patient getVariable "ACM_burns_InfectionRiskMult")<_before}},
@@ -178,7 +178,7 @@ def test_mixed_or_partial_deep_burn_care_cannot_protect_the_whole_region(bandage
 
 
 @pytest.mark.parametrize("bandage,expected", [
-    ("FieldDressing", 1), ("ACM_SilverNylonDressing", 0), ("ACM_BurnCream", 0),
+    ("FieldDressing", 1), ("ACME_SilverNylonDressing", 0), ("ACME_BurnCream", 0),
 ])
 def test_dressing_pain_respects_existing_native_bandage_callback_and_owner(bandage, expected):
     execute(setup() + f'''
@@ -395,6 +395,6 @@ def test_burn_names_resolve_for_every_native_wound_size_and_uses_the_native_trea
         for size in ("Minor", "Medium", "Large"):
             assert keys[f"STR_ACE_Medical_Damage_Burn{depth}_{size}"].findtext("English")
     actions = (BURNS / "ACE_Medical_Treatment_Actions.hpp").read_text()
-    for name in ("ACM_SilverNylonDressing", "ACM_BurnCream"):
+    for name in ("ACME_SilverNylonDressing", "ACME_BurnCream"):
         assert f"class {name}: PressureBandage" in actions
         assert f'items[]             = {{"{name}"}};' in actions

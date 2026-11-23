@@ -108,7 +108,8 @@ def opener_fade(source):
 def delayed_reveal():
     source = read("updateTransfusionControls")
     start = source.index('private _initialLayoutControls = _display getVariable')
-    end = source.index('[_display] call ACME_fnc_paintTransfusionYBracket;', start)
+    # The Y-bracket paint moved into fn_layoutTransfusionMenu (B316); the reveal block now ends at the cuff paint.
+    end = source.index('[_display,(_display displayCtrl 86148)', start)
     return ui_boundary(source[start:end])
 
 
