@@ -33,5 +33,7 @@ _bag params [["_bagType", ""], "", "", "", "", ["_bloodType", ""]];
 private _bt = if (_bagType isEqualType "") then { toLower _bagType } else { toLower (str _bagType) };
 private _hasBloodType = (_bloodType isEqualType "" && {_bloodType != ""}) || {_bloodType isEqualType 0 && {_bloodType >= 0}};  // B395: ACM blood types are 0 (O) to 7; -1 means none
 if ((_bt find "blood" >= 0) || {_hasBloodType}) exitWith { "blood" };
+// (Plasma-Lyte is a clear crystalloid, not plasma: B395)
+if (_bt find "plasmalyte" >= 0) exitWith { "fluid" };
 if (_bt find "plasma" >= 0) exitWith { "plasma" };
 "fluid"

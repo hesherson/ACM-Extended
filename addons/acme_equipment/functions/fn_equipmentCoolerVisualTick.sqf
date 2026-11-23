@@ -31,8 +31,10 @@ private _boxes=missionNamespace getVariable ["ACME_eqCoolerVisuals",[]];
                 {_x params ["","_prop"];deleteVehicle _prop;} forEach _drawn;
                 _drawn = _wanted apply {
                     private _volume = [_x] call ACME_fnc_coolerBagVolume;
-                    private _path = format ["\z\ace\addons\medical_treatment\data\IVBag_%1ml.p3d",_volume];
-                    private _prop = createSimpleObject [_path,getPosWorld _visual,true];
+                    // made from the bag class (B395): a simple object made from a model path ignores setObjectTexture, so
+                    // spoiled blood showed as fresh (the model's own texture)
+                    private _class = ["ACME_IVBagObject","ACME_IVBagObject_250","ACME_IVBagObject_1000"] select (([500,250,1000] find _volume) max 0);
+                    private _prop = createSimpleObject [_class,getPosWorld _visual,true];
                     private _texture = if ((_x find "ACME_SpoiledBlood") == 0) then {
                         "#(argb,8,8,3)color(0.22,0.12,0.09,1,CO)"
                     } else {format ["\z\ace\addons\medical_treatment\data\IVBag_blood_%1ml_ca.paa",_volume]};
