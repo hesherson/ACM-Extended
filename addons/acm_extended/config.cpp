@@ -3228,6 +3228,7 @@ class CfgFunctions {
             class conscSpeech {};
             class babelEnsure {};
             class babelEnsureRequest {};
+            class babelOrder {};
             class setConfused {};
             class consciousnessBudget {};
             class toggleHypothermia {};

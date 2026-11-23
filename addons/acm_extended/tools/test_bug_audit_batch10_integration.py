@@ -27,7 +27,7 @@ def test_retired_acre_babel_runtime_does_not_reappear():
         text = read(path)
         for needle in needles:
             assert needle not in text, f"{needle} survived in {path.relative_to(ROOT)}"
-    allowed = {"fn_babelEnsure.sqf", "fn_conscSpeech.sqf", "fn_babelEnsureRequest.sqf"}
+    allowed = {"fn_babelEnsure.sqf", "fn_conscSpeech.sqf", "fn_babelEnsureRequest.sqf", "fn_babelOrder.sqf"}
     for path in F.glob("*.sqf"):
         if path.name in allowed:
             continue
@@ -35,7 +35,11 @@ def test_retired_acre_babel_runtime_does_not_reappear():
         assert "acre_api_fnc_babel" not in text, f"Babel call outside the speech runtime: {path.name}"
     ensure = source("babelEnsure")
     assert 'if !("acme_garbled" in _keys)' in ensure
-    assert "if (_keys isEqualTo []) then {" in ensure  # spoken languages are only set when the mission has none
+    assert "if (!_missionHasLanguages && {" in ensure  # spoken languages are only set when the mission has none
+    order = source("babelOrder")
+    # B392: ACME's languages always end the list, in a fixed order, so every client numbers them alike
+    assert '_want = _mission + (_mine apply' in order
+    assert 'call ACME_fnc_babelOrder' in ensure
     speech = source("conscSpeech")
     assert '["acme_garbled"] call acre_api_fnc_babelSetSpeakingLanguage' in speech
     assert 'ACME_babelSaved' in speech

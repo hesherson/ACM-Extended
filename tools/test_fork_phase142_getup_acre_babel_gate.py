@@ -78,7 +78,7 @@ def test_current_phase142_getup_acre_babel_gate():
     # B391: garbled speech for confused/obtunded players is back as its own runtime (fn_babelEnsure, fn_conscSpeech);
     # obtundation itself (fn_obtunded*) still never touches Babel.
     for path in (ROOT/'addons/acm_extended/functions').glob('*.sqf'):
-        if path.name in ('fn_babelEnsure.sqf','fn_conscSpeech.sqf','fn_babelEnsureRequest.sqf'):
+        if path.name in ('fn_babelEnsure.sqf','fn_conscSpeech.sqf','fn_babelEnsureRequest.sqf','fn_babelOrder.sqf'):
             continue
         tokens=lex(path.read_text())
         babel_calls=[t.value for t in tokens if t.kind=='ident' and
