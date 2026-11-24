@@ -22,6 +22,9 @@ if (isNil "ACME_ivStand_bagVectors") then {ACME_ivStand_bagVectors = [[0, 1, 0],
 if (isNil "ACME_ivStand_bagOutlet") then {ACME_ivStand_bagOutlet = [0, 0, -0.16];};  // from the hook to the bag's port
 
 ["ACME_ivStandVisual", {_this call ACME_fnc_ivStandVisual}] call CBA_fnc_addEventHandler;
+// B397: staged sets (fn_ivStandStage.sqf, fn_ivStandGive.sqf, fn_ivStandStagedVisual.sqf)
+["ACME_ivStandStagedVisual", {_this call ACME_fnc_ivStandStagedVisual}] call CBA_fnc_addEventHandler;
+["ACME_ivStandGive", {_this call ACME_fnc_ivStandGive}] call CBA_fnc_addEventHandler;
 ["ACME_ivStandMessage", {
     params [["_text", "", [""]]];
     if (_text != "") then {[_text, 2] call ace_common_fnc_displayTextStructured;};
@@ -30,6 +33,7 @@ if (isNil "ACME_ivStand_bagOutlet") then {ACME_ivStand_bagOutlet = [0, 0, -0.16]
 if (isServer) then {
     ACME_ivStand_hung = [];
     ["ACME_ivStandRequest", {["request", _this] call ACME_fnc_ivStandServer}] call CBA_fnc_addEventHandler;
+    ["ACME_ivStandStaging", {_this call ACME_fnc_ivStandServer}] call CBA_fnc_addEventHandler;
     [{["watch", []] call ACME_fnc_ivStandServer}, 1] call CBA_fnc_addPerFrameHandler;
 };
 
@@ -66,6 +70,28 @@ if (hasInterface) then {
             };
         } forEach ACME_ivStand_local;
     }, 0.25] call CBA_fnc_addPerFrameHandler;
+    // B397: a staged set taken down to be connected goes back up on its stand once it runs into the casualty
+    [{
+        private _player = call ACME_fnc_controlledProvider;
+        if (isNull _player) exitWith {};
+        private _pending = _player getVariable ["ACME_ivStand_connect", []];
+        if (_pending isEqualTo []) exitWith {};
+        _pending params ["_stand", "_patient", "_setId", "_until", "_before"];
+        if (isNull _stand || {isNull _patient} || {!alive _patient} || {CBA_missionTime > _until}) exitWith {_player setVariable ["ACME_ivStand_connect", nil];};
+        if (((_player getVariable ["ACME_preparedIVSets", []]) findIf {(_x select 0) == _setId}) >= 0) exitWith {};
+        // the set has left the provider: hung on the casualty (a set refused comes back into the provider's gear)
+        private _hung = _patient getVariable ["ACME_hang_StandParts", []];
+        private _part = "";
+        {
+            private _now = count (_y select {(_x param [1, 0]) > 0.01});
+            if (_part == "" && {_now > (_before getOrDefault [toLowerANSI _x, 0])} && {!(toLowerANSI _x in _hung)}) then {_part = toLowerANSI _x;};
+        } forEach (_patient getVariable ["ACM_circulation_IV_Bags", createHashMap]);
+        if (_part == "") exitWith {};
+        _player setVariable ["ACME_ivStand_connect", nil];
+        if ((_stand distance _patient) <= (missionNamespace getVariable ["ACME_hang_leash", 3])) then {
+            ["ACME_ivStandRequest", [_stand, _patient, true, _player, _part]] call CBA_fnc_serverEvent;
+        };
+    }, 1] call CBA_fnc_addPerFrameHandler;
 };
 
 if (!hasInterface) exitWith {};
@@ -91,9 +117,84 @@ private _down = ["ACME_IVStandDown", "Take down bag", "", {}, {
         }, {true}, {}, [_patient, _part]] call ace_interact_menu_fnc_createAction, [], _target]
     }
 }] call ace_interact_menu_fnc_createAction;
+// B397: staging. "Stage IV set": one of the player's Prepared IV Sets onto a free hook, ready. "Connect staged set":
+// a staged set taken down into the player's gear and the transfusion menu opened on a casualty within the line's
+// reach who has an IV or IO; once it runs, it goes back up on the stand. "Take down staged set": back into the gear.
+private _freeHook = {
+    params ["_stand"];
+    private _slots = _stand getVariable ["ACME_ivStand_slots", [objNull, objNull]];
+    private _staged = _stand getVariable ["ACME_ivStand_staged", [[], []]];
+    ([0, 1] findIf {isNull (_slots select _x) && {(_staged select _x) isEqualTo []}}) >= 0
+};
+missionNamespace setVariable ["ACME_ivStand_freeHookCode", _freeHook];
+private _setLabel = {
+    params ["_set"];
+    private _label = _set param [6, ""];
+    if (_label == "") then {_label = getText (configFile >> "CfgWeapons" >> (_set param [1, ""]) >> "displayName");};
+    if (_label == "") then {_label = "IV set";};
+    _label
+};
+missionNamespace setVariable ["ACME_ivStand_setLabelCode", _setLabel];
+private _stage = ["ACME_IVStandStage", "Stage IV set", "", {}, {
+    (missionNamespace getVariable ["ACME_sys_hang", true]) && {(_player getVariable ["ACME_preparedIVSets", []]) isNotEqualTo []}
+        && {[_target] call ACME_ivStand_freeHookCode}
+}, {
+    (_player getVariable ["ACME_preparedIVSets", []]) apply {
+        private _id = _x select 0;
+        [["ACME_IVStandStage_" + _id, [_x] call ACME_ivStand_setLabelCode, "", {
+            params ["_target", "_player", "_args"];
+            [_target, _args select 0] call ACME_fnc_ivStandStage;
+        }, {true}, {}, [_id]] call ace_interact_menu_fnc_createAction, [], _target]
+    }
+}] call ace_interact_menu_fnc_createAction;
+private _connect = ["ACME_IVStandConnect", "Connect staged set", "", {}, {
+    ((_target getVariable ["ACME_ivStand_staged", [[], []]]) findIf {_x isNotEqualTo []}) >= 0
+}, {
+    private _stand = _target;
+    private _staged = _stand getVariable ["ACME_ivStand_staged", [[], []]];
+    private _leash = missionNamespace getVariable ["ACME_hang_leash", 3];
+    private _patients = (_stand nearEntities ["CAManBase", _leash]) select {
+        _x isNotEqualTo _player && {alive _x} && {isNull objectParent _x}
+            && {([_x, "", 0, -1] call ACM_circulation_fnc_hasIV) || {[_x, "", 0] call ACM_circulation_fnc_hasIO}}
+    };
+    private _out = [];
+    {
+        if (_x isNotEqualTo []) then {
+            private _slot = _forEachIndex;
+            private _entry = _x;
+            private _kids = _patients apply {
+                [["ACME_IVStandConnect_" + str _slot + "_" + netId _x, [_x, false, true] call ace_common_fnc_getName, "", {
+                    params ["_target", "_player", "_args"];
+                    ["ACME_ivStandStaging", ["unstage", [_target, _args select 0, _player, _args select 1]]] call CBA_fnc_serverEvent;
+                }, {true}, {}, [_slot, _x]] call ace_interact_menu_fnc_createAction, [], _stand]
+            };
+            if (_kids isNotEqualTo []) then {
+                _out pushBack [["ACME_IVStandConnectSet_" + str _slot, _entry select 3, "", {}, {true}, {}, []] call ace_interact_menu_fnc_createAction, _kids, _stand];
+            };
+        };
+    } forEach _staged;
+    _out
+}] call ace_interact_menu_fnc_createAction;
+private _unstage = ["ACME_IVStandUnstage", "Take down staged set", "", {}, {
+    ((_target getVariable ["ACME_ivStand_staged", [[], []]]) findIf {_x isNotEqualTo []}) >= 0
+}, {
+    private _out = [];
+    {
+        if (_x isNotEqualTo []) then {
+            _out pushBack [["ACME_IVStandUnstage_" + str _forEachIndex, _x select 3, "", {
+                params ["_target", "_player", "_args"];
+                ["ACME_ivStandStaging", ["unstage", [_target, _args select 0, _player, objNull]]] call CBA_fnc_serverEvent;
+            }, {true}, {}, [_forEachIndex]] call ace_interact_menu_fnc_createAction, [], _target];
+        };
+    } forEach (_target getVariable ["ACME_ivStand_staged", [[], []]]);
+    _out
+}] call ace_interact_menu_fnc_createAction;
 private _classes = ("configName _x isKindOf ['Land_IntravenStand_01_base_F', configFile >> 'CfgVehicles']" configClasses (configFile >> "CfgVehicles")) apply {configName _x};
 {
     [_x, 0] call ace_interact_menu_fnc_addMainAction;
     [_x, 0, ["ACE_MainActions"], _hang] call ace_interact_menu_fnc_addActionToClass;
     [_x, 0, ["ACE_MainActions"], _down] call ace_interact_menu_fnc_addActionToClass;
+    [_x, 0, ["ACE_MainActions"], _stage] call ace_interact_menu_fnc_addActionToClass;
+    [_x, 0, ["ACE_MainActions"], _connect] call ace_interact_menu_fnc_addActionToClass;
+    [_x, 0, ["ACE_MainActions"], _unstage] call ace_interact_menu_fnc_addActionToClass;
 } forEach _classes;

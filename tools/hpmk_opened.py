@@ -65,7 +65,10 @@ BORDER = 0.15         # the bottom sheet shows this far beside him (as drawn the
 PANEL_UP = 0.010      # and lies this high over what he lies on (clear of ground that is not level)
 PANEL_TO = 0.735      # along him: to behind his neck (above that the photographs show the hood alone)
 CURL = (0.06, 0.012)  # its edge stands up a little: over this width, by this much
-BLANKET = 0.80        # the blanket is square, this long, and comes up to here along him (the base of his neck)
+# The blanket: a Ready-Heat II 4-panel, 34 x 48 in, the long way along him (chosen 2026-11-23: "it lays over the
+# patient like a blanket from arm to arm"; until then it was 0.80 square and lay on him as close as a vest, tucked
+# under at his sides). It comes up to here along him (the base of his neck).
+BLANKET_W, BLANKET_L = 0.864, 1.219
 BLANKET_TOP = 0.668   # (at his throat, under the hood's strips)
 BLANKET_SIDE = 0.708  # and to here beside his neck, just under the hood's hem (lower, his shoulders showed between blanket and hood, seen in game)
 # The level that casts the shadow, for the opened bag: what of it is taken off is drawn together into one point
@@ -75,8 +78,13 @@ SHADOW_CHEST, SHADOW_NECK = (0.45, 0.09), (0.70, 0.12)
 # and what was left of the shape there cast a shadow on the bare ground)
 SHADOW_BACK = 0.50
 BLANKET_OFF = 0.016   # over the measured body (his skin is about 1 cm proud of it)
+# Laid loose, it spans from what it rests on to what it rests on (shoulder to chest to arm) and sags between them
+# by about this much over a span of this width (a blur of these widths, across and along, kept over his outline);
+# off his arms it falls to what he lies on over about REACH of its height, and the rest lies flat there.
+SPAN_X, SPAN_Y = 0.045, 0.040
+REACH = 0.55
+LOOSE_FROM = 0.06     # beside the fold it comes down to lie close to him over this far (the cover lies on it there)
 PAD = 0.004           # the heating cells stand this high in the blanket
-HEM = 0.035           # the blanket ends this far beyond where it leaves him (what is left of its width is tucked under)
 # the blanket's picture in the kit's atlas (2048 x 2048): left, top, size in pixels (make_pictures() cuts it out)
 ATLAS = (4, 770, 982)
 CELLS = ((0.036, 0.517, 0.965), (0.042, 0.519, 0.952))   # the cells' frame in the blanket's picture: edges and middle
@@ -517,16 +525,29 @@ class Opened:
         return mesh
 
     # ------------------------------------------------------------ the blanket
+    def panel_z(self, x, Y):
+        """How high the bottom sheet lies at a place, or 0 (what he lies on) where it is not."""
+        y0 = self.cut_l - 0.08
+        r = float(np.interp(Y, self.ext_y, self.ext_r)) - 0.015 - (BORDER - 0.015) * H.step((Y - (self.cut_r - 0.05)) / 0.12)
+        l = float(np.interp(Y, self.ext_y, self.ext_l)) + 0.015 + (BORDER - 0.015) * H.step((Y - (self.cut_l - 0.05)) / 0.15)
+        if Y < y0 or Y > PANEL_TO or not (r <= x <= l):
+            return 0.0
+        e = min(l - x, x - r, PANEL_TO - Y)
+        return PANEL_UP + 0.003 + CURL[1] * max(0.0, 1 - e / CURL[0]) ** 2
+
     def drape(self):
-        """A cloth lying on him: its height over what he lies on, on a grid (5 mm across, 1 cm along)."""
+        """The blanket's height over what he lies on, on a grid (5 mm across, 1 cm along): (X, Ys, loose, close).
+        close: a cloth lying on him (as the blanket lay until 2026-11-23); loose: the blanket as it is laid on him,
+        resting on his shoulders, chest and arms, sagging a little between them and falling off his arms to the
+        bottom sheet (to what he lies on beyond it)."""
         if hasattr(self, "_drape"):
             return self._drape
-        X = np.arange(-0.50, 0.5001, 0.005)
-        Ys = np.arange(-0.10, BLANKET_SIDE + 0.03, 0.01)
+        X = np.arange(-0.75, 0.7501, 0.005)
+        Ys = np.arange(BLANKET_SIDE - BLANKET_L - 0.04, BLANKET_SIDE + 0.03, 0.01)
         hull = np.zeros((len(Ys), len(X)))
         for k, Y in enumerate(Ys):
             for px, pz in self.fit.body.cut(Y, 0.021 if Y < 0.60 else 0.011):
-                i = int(round((px + 0.50) / 0.005))
+                i = int(round((px + 0.75) / 0.005))
                 # (as far out again as the measuring was coarse, and his skin is proud of it sideways)
                 for j in range(max(0, i - 3), min(len(X), i + 4)):
                     hull[k, j] = max(hull[k, j], pz)
@@ -539,16 +560,40 @@ class Opened:
                 g = np.apply_along_axis(lambda v: np.convolve(np.pad(v, r, mode="edge"), kern, mode="valid"), axis, g)
             return g
 
-        s = hull.copy()
+        close = hull.copy()
         for _ in range(4):
-            s = np.maximum(blur(s, 2.6, 1.3), hull)
-        s = blur(s, 1.0, 0.7)
-        self._drape = (X, Ys, s + BLANKET_OFF)
+            close = np.maximum(blur(close, 2.6, 1.3), hull)
+        close = blur(close, 1.0, 0.7) + BLANKET_OFF
+
+        # loose: over him a smooth cover of his outline that bridges the hollows (between arm and chest, below the
+        # collar bones, between the thighs) ...
+        top = hull.copy()
+        for _ in range(8):
+            top = np.maximum(blur(top, SPAN_X / 0.005, SPAN_Y / 0.01), hull)
+        top = blur(top, 1.5, 1.0) + BLANKET_OFF
+        # ... and off his outermost on each side (smooth along him) it falls to what lies beside him
+        floor = np.array([[self.panel_z(x, Y) + 0.004 for x in X] for Y in Ys])
+        on = hull > 0.02
+        edge_r = H.smooth(np.array([X[np.argmax(row)] if row.any() else -0.05 for row in on]), 2.0)
+        edge_l = H.smooth(np.array([X[len(X) - 1 - np.argmax(row[::-1])] if row.any() else 0.05 for row in on]), 2.0)
+        loose = top.copy()
+        for k in range(len(Ys)):
+            for side, e in ((-1, edge_r[k]), (1, edge_l[k])):
+                j0 = int(np.argmin(np.abs(X - e)))
+                z0 = top[k, j0]
+                reach = REACH * z0 + 0.015
+                for j in range(len(X)):
+                    out = (X[j] - e) * side
+                    if out > 0:
+                        loose[k, j] = floor[k, j] + (z0 - floor[k, j]) * (1 - H.step(out / reach))
+        loose = np.maximum(blur(loose, 1.5, 1.5), floor)
+        self._drape = (X, Ys, loose, close)
         return self._drape
 
-    def cloth(self, px, Y):
-        """How high the blanket lies at a place."""
-        X, Ys, S = self.drape()
+    def cloth(self, px, Y, which=2):
+        """How high the blanket lies at a place (which: 2 loose, 3 close)."""
+        d = self.drape()
+        X, Ys, S = d[0], d[1], d[which]
         f, g = (Y - Ys[0]) / 0.01, (px - X[0]) / 0.005
         a, b = min(max(int(f), 0), len(Ys) - 2), min(max(int(g), 0), len(X) - 2)
         u, v = f - a, g - b
@@ -560,12 +605,12 @@ class Opened:
 
     def blanket(self, detail):
         mesh = Mesh()
-        X, Ys, S = self.drape()
+        X, Ys, loose, close = self.drape()
         step = 0.0125 * detail
-        arcs = np.arange(-BLANKET / 2, BLANKET / 2 + 1e-6, step)
-        rows = np.arange(BLANKET_SIDE - step * int((BLANKET_SIDE - Ys[0] - 0.02) / step), BLANKET_SIDE + 1e-6, step)
-        height = self.cloth
+        arcs = np.arange(-BLANKET_W / 2, BLANKET_W / 2 + 1e-6, step)
+        rows = np.arange(BLANKET_SIDE - step * int(BLANKET_L / step), BLANKET_SIDE + 1e-6, step)
         mid = int(np.argmin(np.abs(X)))
+        lines = {}
 
         def pad(s, t):
             out = 1.0
@@ -574,46 +619,54 @@ class Opened:
                 out *= H.step((min(v - lo, hi - v) - 0.03) / 0.025)
             return out
 
-        # Each row: the cloth's line across him, and how far along it the blanket goes on each side: down to
-        # what he lies on and a little beyond. (At its full width it covered the bottom sheet to its edge.)
-        lines = []
-        for Y in rows:
-            f = (Y - Ys[0]) / 0.01
-            a = min(int(f), len(Ys) - 2)
-            z = S[a] + (S[a + 1] - S[a]) * (f - a)
-            length = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(X), np.diff(z)))])
-            length -= length[mid]
-            on = np.nonzero(z > BLANKET_OFF + 0.012)[0]
-            lines.append((z, length, length[on[0]] - HEM, length[on[-1]] + HEM))
-        ends = [H.smooth(np.array([l[i] for l in lines]), 2.5) for i in (2, 3)]
+        def line(which, Y):
+            """The cloth's line across him at a place along him, and the length along it from his middle."""
+            key = (which, round(Y, 5))
+            if key not in lines:
+                S = (loose, close)[which]
+                f = (Y - Ys[0]) / 0.01
+                a = min(max(int(f), 0), len(Ys) - 2)
+                z = S[a] + (S[a + 1] - S[a]) * (f - a)
+                length = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(X), np.diff(z)))])
+                lines[key] = (z, length - length[mid])
+            return lines[key]
+
+        def at(which, arc, Y):
+            z, length = line(which, Y)
+            px, pz = float(np.interp(arc, length, X)), float(np.interp(arc, length, z))
+            i = min(max(int(np.searchsorted(length, arc)) - 1, 0), len(X) - 2)
+            tx, tz = X[i + 1] - X[i], z[i + 1] - z[i]
+            return px, pz, -tz / math.hypot(tx, tz), tx / math.hypot(tx, tz)
+
         grid = {}
         for k, Y in enumerate(rows):
-            z, length = lines[k][:2]
             y_d = self.drawn_along(Y)
             let = self.let_out(y_d)
             for j, whole in enumerate(arcs):
-                arc = min(max(whole, ends[0][k]), ends[1][k])
-                px, pz = float(np.interp(arc, length, X)), float(np.interp(arc, length, z))
-                i = min(max(int(np.searchsorted(length, arc)) - 1, 0), len(X) - 2)
-                tx, tz = X[i + 1] - X[i], z[i + 1] - z[i]
-                nx, nz = -tz / math.hypot(tx, tz), tx / math.hypot(tx, tz)
-                s_, t_ = (BLANKET_SIDE - Y) / BLANKET, (BLANKET / 2 - whole) / BLANKET
+                px, pz, nx, nz = at(0, whole, Y)
+                d = FOLD.dist(whole / let, y_d)
+                # laid loose where it is uncovered; beside the fold, where the cover comes down onto it, close
+                w = H.step(d / LOOSE_FROM)
+                if w < 1:
+                    cx, cz, cnx, cnz = at(1, whole, Y)
+                    px, pz, nx, nz = cx + (px - cx) * w, cz + (pz - cz) * w, cnx + (nx - cnx) * w, cnz + (nz - cnz) * w
+                s_, t_ = (BLANKET_SIDE - Y) / BLANKET_L, (BLANKET_W / 2 - whole) / BLANKET_W
                 # its upper edge dips at his throat, where the hood's strips are
                 dip = self.dip(px) * H.step((Y - (BLANKET_SIDE - 0.06)) / 0.06)
-                at = Y - dip
+                Y_at = Y - dip
                 if dip > 1e-4:
-                    pz = float(height(px, at))
-                d = FOLD.dist(arc / let, y_d)
-                # (a soft thing: its cells stand in it, and it lies in slow waves)
-                up = PAD * pad(s_, t_) + 0.0025 * wave(arc * 1.3, Y * 1.3) + 0.001 * wave(arc * 3.1 + 2.0, Y * 2.9)
+                    pz = float(self.cloth(px, Y_at)) * w + float(self.cloth(px, Y_at, 3)) * (1 - w)
+                # (a soft thing: its cells stand in it, and it lies in slow waves; where it hangs off his arm the
+                # waves are folds down its fall)
+                hang = H.step((abs(nx) - 0.35) / 0.4)
+                up = PAD * pad(s_, t_) + 0.0025 * wave(whole * 1.3, Y * 1.3) + 0.001 * wave(whole * 3.1 + 2.0, Y * 2.9)
+                up += 0.006 * hang * wave(0.4 + whole * 0.3, Y * 2.2)
                 # (under the cover it lies closer to him; its upper hem is turned down onto him)
                 up -= 0.006 * H.step(-d / 0.02) + 0.002 * H.step((Y - (BLANKET_SIDE - 0.02)) / 0.02)
                 # (over his shoulders beside his neck it lies a little looser: his collar came through it there)
                 up += 0.004 * H.step((Y - (BLANKET_SIDE - 0.06)) / 0.05) * H.step((abs(px) - 0.04) / 0.03)
-                p = [px + nx * up, at, max(pz + nz * up, PANEL_UP + 0.004)]
-                if whole != arc:
-                    # (tucked back under itself)
-                    p = [px - (whole - arc) * 0.8, at, PANEL_UP + 0.002]
+                floor = self.panel_z(px, Y_at) + 0.003
+                p = [px + nx * up, Y_at, max(pz + nz * up, floor)]
                 if self.sked:
                     p = in_sled(p, self.fit.body, 0.008)
                 grid[(k, j)] = (p, d, (s_, t_))
@@ -711,21 +764,7 @@ def make_pictures():
     subprocess.run([TO_PAA, str(work / "hpmk_closure_co.png"), str(out)], capture_output=True)
     print("wrote", out, "(%d rows of the coyote band darkened)" % int(tan.sum()))
 
-    # hpmk_blanket_co.paa: the blanket's picture cut out of the kit's atlas, darker, with the cloudiness of a
-    # felted cloth (the atlas has it as flat as paper)
-    subprocess.run(["hemtt", "utils", "paa", "convert", str(data / "hpmk_co.paa"), str(work / "atlas.png")], capture_output=True)
-    atlas = Image.open(work / "atlas.png").convert("RGB")
-    cloth = atlas.crop((ATLAS[0], ATLAS[1], ATLAS[0] + ATLAS[2], ATLAS[1] + ATLAS[2])).resize((1024, 1024), Image.LANCZOS)
-    cloth = np.asarray(cloth).astype(float) * BLANKET_DARKER
-    rng = np.random.default_rng(20261120)
-    f = np.fft.fftfreq(1024)
-    soft = lambda g, sg: np.real(np.fft.ifft2(np.fft.fft2(g) * np.exp(-2 * (np.pi * sg) ** 2 * (f[:, None] ** 2 + f[None, :] ** 2))))
-    cloud, grain = soft(rng.normal(size=(1024, 1024)), 30.0), soft(rng.normal(size=(1024, 1024)), 1.2)
-    cloth *= (1.0 + 0.05 * cloud / cloud.std() + 0.035 * grain / grain.std())[:, :, None]
-    Image.fromarray(np.clip(cloth, 0, 255).astype(np.uint8)).save(work / "hpmk_blanket_co.png")
-    out = data / "hpmk_blanket_co.paa"
-    subprocess.run([TO_PAA, str(work / "hpmk_blanket_co.png"), str(out)], capture_output=True)
-    print("wrote", out, "mean colour", cloth.reshape(-1, 3).mean(axis=0).round())
+    blanket_picture(data, work)
 
     def dull(source, name, note, shine, smdi=None):
         s = (data / source).read_text()
@@ -749,5 +788,52 @@ def make_pictures():
     (data / "hpmk_blanket.rvmat").write_text(s[:a] + stage + s[b:])
 
 
+def blanket_picture(data, work):
+    """hpmk_blanket_co.paa: the blanket's picture cut out of the kit's atlas, darker, with the cloudiness of a
+    felted cloth (the atlas has it as flat as paper). The picture is square and the blanket is not (its length
+    runs along the picture's width), so the printed label is drawn narrower by as much as the blanket stretches
+    it, to read in its own proportions on him."""
+    import subprocess
+
+    from PIL import Image
+
+    subprocess.run(["hemtt", "utils", "paa", "convert", str(data / "hpmk_co.paa"), str(work / "atlas.png")], capture_output=True)
+    atlas = Image.open(work / "atlas.png").convert("RGB")
+    cloth = atlas.crop((ATLAS[0], ATLAS[1], ATLAS[0] + ATLAS[2], ATLAS[1] + ATLAS[2])).resize((1024, 1024), Image.LANCZOS)
+    pic = np.asarray(cloth).astype(float)
+    # the label: the ink in the first cell
+    x0, x1 = int(CELLS[0][0] * 1024) + 12, int(CELLS[0][1] * 1024) - 12
+    y0, y1 = int(CELLS[1][0] * 1024) + 12, int(CELLS[1][1] * 1024) - 12
+    cell = pic[y0:y1, x0:x1]
+    ground = np.median(cell.reshape(-1, 3), axis=0)
+    ink = np.abs(cell - ground).sum(axis=2) > 60
+    ys, xs = np.nonzero(ink)
+    bx0, bx1, by0, by1 = xs.min() - 6, xs.max() + 7, ys.min() - 6, ys.max() + 7
+    label = Image.fromarray(cell[by0:by1, bx0:bx1].astype(np.uint8))
+    narrow = max(1, int(round(label.width * BLANKET_W / BLANKET_L)))
+    label = np.asarray(label.resize((narrow, label.height), Image.LANCZOS)).astype(float)
+    cell[by0:by1, bx0:bx1] = ground
+    at = (bx0 + bx1) // 2 - narrow // 2
+    cell[by0:by1, at:at + narrow] = label
+    pic[y0:y1, x0:x1] = cell
+    print("   the label (%d x %d px) drawn %d px wide" % (bx1 - bx0, by1 - by0, narrow))
+    cloth = pic * BLANKET_DARKER
+    rng = np.random.default_rng(20261120)
+    f = np.fft.fftfreq(1024)
+    soft = lambda g, sg: np.real(np.fft.ifft2(np.fft.fft2(g) * np.exp(-2 * (np.pi * sg) ** 2 * (f[:, None] ** 2 + f[None, :] ** 2))))
+    cloud, grain = soft(rng.normal(size=(1024, 1024)), 30.0), soft(rng.normal(size=(1024, 1024)), 1.2)
+    cloth *= (1.0 + 0.05 * cloud / cloud.std() + 0.035 * grain / grain.std())[:, :, None]
+    Image.fromarray(np.clip(cloth, 0, 255).astype(np.uint8)).save(work / "hpmk_blanket_co.png")
+    out = data / "hpmk_blanket_co.paa"
+    subprocess.run([TO_PAA, str(work / "hpmk_blanket_co.png"), str(out)], capture_output=True)
+    print("wrote", out, "mean colour", cloth.reshape(-1, 3).mean(axis=0).round())
+
+
 if __name__ == "__main__":
-    make_pictures()
+    import sys
+    import tempfile
+    from pathlib import Path
+    if sys.argv[1:] == ["--blanket"]:
+        blanket_picture(Path(__file__).resolve().parents[1] / "addons/acme_hpmk/data", Path(tempfile.mkdtemp(prefix="hpmk_blanket_")))
+    else:
+        make_pictures()

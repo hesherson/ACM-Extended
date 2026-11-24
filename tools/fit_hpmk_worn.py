@@ -47,11 +47,20 @@ OUTLINE = Path(__file__).with_name("assets") / "hpmk_shell_outline.npy"
 # up to 3.4 cm more at hands and elbows: a bag of lumps, and wider than a SKED.)
 CLEAR = 0.030         # the cloth's smooth shape stands this far off the measured outline
 LEAST = 0.018         # and no crease comes closer to him than this
-MOST = 0.022          # nor stands further off the cloth's smooth shape than this (the hood's string hangs free in the drawing)
+MOST = 0.016          # nor stands further off the cloth's smooth shape than this (the hood's string hangs free in the drawing)
 # The drawn creases are kept at this share of their height ("some of the triangles are a little too pointy
 # looking"), and almost flat where a strap of a litter lies across the bag, so that the strap lies on cloth and
 # not on the tips of creases with air under it. In a SKED the bag is pulled taut all over by five straps.
-RELIEF, RELIEF_STRAP, RELIEF_SKED = 0.55, 0.12, 0.22
+# (2026-11-23, "too tented in a lot of spots": 0.55 and 2.2 cm before; and the creases are then smoothed, SMOOTH.)
+RELIEF, RELIEF_STRAP, RELIEF_SKED = 0.40, 0.12, 0.20
+# Along him the cloth leaves a high place no steeper than this (rise over run). At 0.6 (build_hpmk_shell.DROP_BAG)
+# it stood off his shins 10 cm on the average and up to 25 cm, a tent from his toes; and from his chest over his belly.
+DROP_ALONG = 1.2
+# The top sheet's creases are rounded by this many passes of a smoothing that keeps their size (Taubin's: lambda,
+# mu): drawn at full size the triangles met at sharp ridges, a fifth of them at more than 30 degrees on his legs.
+SMOOTH = (6, 0.5, -0.53)
+SMOOTH_DRAWN = 0.25
+SHADOW_IN = 0.015
 STRAPS_ACROSS = ((-0.215, -0.165), (0.215, 0.277))    # the Talon II's two straps, along him (scan axes)
 STRAP_EASE = 0.05     # the creases come back over this distance beside a strap
 BACK = -0.155         # the drawn bottom sheet: so far behind the model's middle
@@ -207,7 +216,7 @@ class Outline:
         raw = radii.copy()
         for s in range(len(self.ys)):
             if self.ys[s] >= H.FIRST:
-                radii[s] = np.max(raw - H.DROP_BAG * np.abs(self.ys - self.ys[s])[:, None], axis=0)
+                radii[s] = np.max(raw - DROP_ALONG * np.abs(self.ys - self.ys[s])[:, None], axis=0)
         own = self.ys >= H.FIRST
         for k in range(ROUND):
             radii[own, k] = np.maximum(radii[own, k], H.smooth(radii[own, k], 1.5))
@@ -598,6 +607,55 @@ class Fit:
                     target[i] = target[i] + (posed - target[i]) * with_head
             if sked:
                 target[i] = H.held_in_sked(H.in_sked(list(target[i]), self.body))
+        # The top sheet's creases rounded (SMOOTH): every point of the bag's cover that is not of the hood, not of
+        # the bottom sheet under him and not drawn together for the shadow, among neighbours that are so too.
+        cover = (hood < 0.5) & ~own_hood & (facing > -0.3)
+        for to, ids in together.items():
+            cover[ids] = False
+        near = [set() for _ in range(n)]
+        for vs, fl, tex, mat in lv["faces"]:
+            ids = [v[0] for v in vs]
+            for a in ids:
+                near[a].update(b for b in ids if b != a)
+        inner = [i for i in range(n) if cover[i] and near[i] and all(cover[b] for b in near[i])]
+        nb = [np.array(sorted(near[i])) for i in inner]
+        inner = np.array(inner, int)
+        passes, lam, mu = SMOOTH
+        # (not the level that casts the shadow: coarse, smoothed on its own it stood out of the smoothed bag in
+        # places and shaded it in dark patches, seen in game; it is drawn a little inside the bag instead, below)
+        shadow_level = lv["res"] >= 1000
+        if shadow_level:
+            passes = 0
+        for _ in range(passes):
+            for f in (lam, mu):
+                mean = np.array([target[b].mean(axis=0) for b in nb]) if len(inner) else np.zeros((0, 3))
+                target[inner] = target[inner] + f * (mean - target[inner])
+        if sked:
+            for i in inner:
+                target[i] = H.held_in_sked(H.in_sked(list(target[i]), self.body))
+        # The smoothed points are lit as the smoothed surface lies: each one's normal is the mean of its faces' (as
+        # laid, scan axes), with a little of the drawn one's turn kept for the cloth's texture (SMOOTH_DRAWN). (With
+        # the drawn normals alone the flattened creases still shaded as sharp ones: dark blotches, seen in game.)
+        smoothed = set(inner.tolist())
+        geom = np.zeros((n, 3))
+        for vs, fl, tex, mat in lv["faces"]:
+            ids = [v[0] for v in vs]
+            q = target[ids]
+            for k in range(1, len(ids) - 1):
+                c = np.cross(q[k] - q[0], q[k + 1] - q[0])
+                for a in (ids[0], ids[k], ids[k + 1]):
+                    geom[a] += c
+        if shadow_level:
+            # the shadow's cover SHADOW_IN inside the bag's: along its own normal, toward his middle
+            for i in np.nonzero(cover)[0]:
+                g = geom[i]
+                if np.linalg.norm(g) < 1e-12:
+                    continue
+                g = g / np.linalg.norm(g)
+                if g @ (target[i] - np.array([0.0, target[i][1], 0.08])) < 0:
+                    g = -g
+                target[i] = target[i] - g * SHADOW_IN
+            smoothed = set()
         # opened: the hood ends in a straight hem under his chin (hpmk_opened.HOOD_ENDS). Its faces that come to lie
         # wholly below that are left out; corners of the others that are below it are brought up to the hem.
         below = np.zeros(n, bool)
@@ -713,6 +771,13 @@ class Fit:
                         drawn_n = np.array([lv["nrm"][normal][0], lv["nrm"][normal][1], -lv["nrm"][normal][2]])
                         t = m @ drawn_n
                         t = t / (np.linalg.norm(t) or 1.0)
+                        if point in smoothed and np.linalg.norm(geom[point]) > 1e-12:
+                            g = back[point][:3, :3] @ self.skin.turned(geom[point] / np.linalg.norm(geom[point]))
+                            g = g / (np.linalg.norm(g) or 1.0)
+                            if g @ t < 0:
+                                g = -g
+                            t = g * (1 - SMOOTH_DRAWN) + t * SMOOTH_DRAWN
+                            t = t / (np.linalg.norm(t) or 1.0)
                         done[key] = len(nrm)
                         nrm.append(tuple(H.to_file(t)))
                 out.append([point, done[key], u, v])

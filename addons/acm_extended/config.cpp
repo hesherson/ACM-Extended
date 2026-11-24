@@ -2332,6 +2332,9 @@ class CfgFunctions {
             class ivStandRequest {};
             class ivStandServer {};
             class ivStandVisual {};
+            class ivStandStage {};
+            class ivStandGive {};
+            class ivStandStagedVisual {};
             class persistModuleInit {};
             class persistServer {};
             class persistClient {};

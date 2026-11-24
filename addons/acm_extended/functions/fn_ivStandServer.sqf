@@ -87,7 +87,9 @@ switch (_mode) do {
             "Someone is holding that bag up." call _say;
         };
         private _slots = _stand getVariable ["ACME_ivStand_slots", [objNull, objNull]];
-        private _slot = _slots findIf {isNull _x};
+        // (a hook with a staged set on it is not free: B397)
+        private _stagedNow = _stand getVariable ["ACME_ivStand_staged", [[], []]];
+        private _slot = [0, 1] findIf {isNull (_slots select _x) && {(_stagedNow select _x) isEqualTo []}};
         if (_slot < 0) exitWith {"Both hooks on this stand are in use." call _say;};
 
         // the bag art: that limb's running bag, its fluid and size, as for a bag held up by hand
@@ -124,7 +126,84 @@ switch (_mode) do {
             [_patient, "activity", "%1 hung an IV bag on a stand", [[_requester, false, true] call ace_common_fnc_getName]] call ace_medical_treatment_fnc_addToLog;
         };
     };
+    // B397: staged sets. A stand keeps them in a hidden, locked holder (ACME_ivStand_holder), as magazines with their
+    // ledger tokens, and on its hooks: ACME_ivStand_staged [[set id, magazine, token, label, fluid, volume] or [], x2]
+    // (public). The holder goes with the stand; when the stand is gone its sets lie on the ground there.
+    case "stage": {
+        _args params [["_stand", objNull, [objNull]], ["_medic", objNull, [objNull]], ["_class", ""], ["_token", -1],
+            ["_setId", ""], ["_label", ""], ["_fluid", "fluid"], ["_volume", 500]];
+        if (isNull _medic || {_class == ""} || {_token < 0}) exitWith {};
+        private _back = {["ACME_ivStandGive", [_class, _token, objNull, objNull, _setId, _this], _medic] call CBA_fnc_targetEvent;};
+        if (isNull _stand) exitWith {"The IV stand is gone." call _back;};
+        private _slots = _stand getVariable ["ACME_ivStand_slots", [objNull, objNull]];
+        private _staged = +(_stand getVariable ["ACME_ivStand_staged", [[], []]]);
+        private _slot = [0, 1] findIf {isNull (_slots select _x) && {(_staged select _x) isEqualTo []}};
+        if (_slot < 0) exitWith {"Both hooks on this stand are in use." call _back;};
+        private _holder = _stand getVariable ["ACME_ivStand_holder", objNull];
+        if (isNull _holder) then {
+            _holder = createVehicle ["GroundWeaponHolder_Scripted", getPosATL _stand, [], 0, "CAN_COLLIDE"];
+            _holder attachTo [_stand, [0, 0, -0.9]];
+            _holder hideObjectGlobal true;
+            _holder lockInventory true;
+            _holder setVariable ["ACME_ivStand_holderOf", _stand, true];
+            _stand setVariable ["ACME_ivStand_holder", _holder, true];
+            ACME_ivStand_holders = (missionNamespace getVariable ["ACME_ivStand_holders", []]) + [_holder];
+        };
+        _holder addMagazineAmmoCargo [_class, 1, _token];
+        _staged set [_slot, [_setId, _class, _token, _label, _fluid, _volume]];
+        _stand setVariable ["ACME_ivStand_staged", _staged, true];
+        if ((_stand getVariable ["ACME_ivStand_decor", []]) isEqualTo []) then {
+            _stand setVariable ["ACME_ivStand_decor", _sources apply {_stand animationSourcePhase _x}];
+        };
+        _stand animateSource [_sources select _slot, 1, true];
+        private _jip = format ["ACME_ivStandStaged_%1_%2", netId _stand, _slot];
+        ["ACME_ivStandStagedVisual", [_stand, _slot, true, _fluid, _volume], _jip] call CBA_fnc_globalEventJIP;
+        ["ACME_ivStandMessage", ["Set staged on the IV stand."], _medic] call CBA_fnc_targetEvent;
+    };
+    case "unstage": {
+        // [stand, hook, provider, casualty to connect it to or objNull]: the set goes back into the provider's gear
+        _args params [["_stand", objNull, [objNull]], ["_slot", -1], ["_medic", objNull, [objNull]], ["_patient", objNull, [objNull]]];
+        if (isNull _stand || {isNull _medic} || {!(_slot in [0, 1])}) exitWith {};
+        private _staged = +(_stand getVariable ["ACME_ivStand_staged", [[], []]]);
+        private _entry = _staged select _slot;
+        if (_entry isEqualTo []) exitWith {};
+        _entry params ["_setId", "_class", "_token"];
+        private _holder = _stand getVariable ["ACME_ivStand_holder", objNull];
+        private _cargo = if (isNull _holder) then {[]} else {magazinesAmmoCargo _holder};
+        private _i = _cargo findIf {(_x select 0) == _class && {(_x select 1) == _token}};
+        if (_i < 0) exitWith {
+            // (gone from the holder: drop the stale hook entry)
+            _staged set [_slot, []];
+            _stand setVariable ["ACME_ivStand_staged", _staged, true];
+            ["ACME_ivStandStagedVisual", [_stand, _slot, false], format ["ACME_ivStandStaged_%1_%2", netId _stand, _slot]] call CBA_fnc_globalEventJIP;
+        };
+        _cargo deleteAt _i;
+        clearMagazineCargoGlobal _holder;
+        {_holder addMagazineAmmoCargo [_x select 0, 1, _x select 1];} forEach _cargo;
+        _staged set [_slot, []];
+        _stand setVariable ["ACME_ivStand_staged", _staged, true];
+        private _phases = _stand getVariable ["ACME_ivStand_decor", []];
+        if ((count _phases) > _slot && {isNull ((_stand getVariable ["ACME_ivStand_slots", [objNull, objNull]]) select _slot)}) then {
+            _stand animateSource [_sources select _slot, _phases select _slot, true];
+        };
+        ["ACME_ivStandStagedVisual", [_stand, _slot, false], format ["ACME_ivStandStaged_%1_%2", netId _stand, _slot]] call CBA_fnc_globalEventJIP;
+        ["ACME_ivStandGive", [_class, _token, _patient, _stand, _setId, ""], _medic] call CBA_fnc_targetEvent;
+    };
     case "watch": {
+        // B397: a stand that is gone leaves its staged sets on the ground where it stood
+        {
+            private _holder = _x;
+            private _of = _holder getVariable ["ACME_ivStand_holderOf", objNull];
+            if (isNull _of) then {
+                private _cargo = magazinesAmmoCargo _holder;
+                if (_cargo isNotEqualTo []) then {
+                    private _drop = createVehicle ["GroundWeaponHolder", getPosATL _holder, [], 0, "CAN_COLLIDE"];
+                    {_drop addMagazineAmmoCargo [_x select 0, 1, _x select 1];} forEach _cargo;
+                };
+                deleteVehicle _holder;
+            };
+        } forEach (missionNamespace getVariable ["ACME_ivStand_holders", []]);
+        ACME_ivStand_holders = (missionNamespace getVariable ["ACME_ivStand_holders", []]) select {!isNull _x};
         {
             _x params ["_stand", "_slot", "_patient", "_jip", ["_part", ""]];
             private _why = switch (true) do {

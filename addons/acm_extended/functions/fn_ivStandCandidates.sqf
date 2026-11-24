@@ -24,7 +24,8 @@ if (_mode == "down") exitWith {
     } forEach _slots;
     _out
 };
-if ((_slots findIf {isNull _x}) < 0) exitWith {[]};
+private _stagedNow = _stand getVariable ["ACME_ivStand_staged", [[], []]];
+if (([0, 1] findIf {isNull (_slots select _x) && {(_stagedNow select _x) isEqualTo []}}) < 0) exitWith {[]};
 private _leash = missionNamespace getVariable ["ACME_hang_leash", 3];
 private _out = [];
 {
