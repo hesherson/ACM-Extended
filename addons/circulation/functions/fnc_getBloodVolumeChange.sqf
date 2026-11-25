@@ -103,6 +103,44 @@ if (!(_nativeCOForFlow isEqualType 0) || {!finite _nativeCOForFlow}) then {_nati
 private _fluidPerfusionOpen = _cprActiveForFlow || {!_inCardiacArrest && {_nativeCOForFlow > 0.0001}};
 _unit setVariable ["ACME_fluidFlowPerfusionBlocked", !_fluidPerfusionOpen, false];
 
+// Vascular transit is integrated by the patient owner's existing vitals tick.
+// No flow earns no progress; the first observed flowing tick anchors the clock.
+// Preserve each original bolus/HC slice intact so nonlinear exposure hooks are not
+// multiplied by artificial dose splitting. 5 effective flow-seconds is a gameplay
+// transit calibration, not a clinical transport-time claim. CPR earns 35% of that.
+private _transit = _unit getVariable ["ACME_vascularTransit", []];
+if (_transit isNotEqualTo []) then {
+    private _epoch = [_unit] call ACME_fnc_clinicalEpoch;
+    private _now = CBA_missionTime;
+    private _keep = [];
+    private _ready = [];
+    {
+        _x params ["_queuedEpoch", "_args", "_remaining", "_lastFlowAt", "_lastOwner"];
+        if (alive _unit && {_queuedEpoch == _epoch}) then {
+            if (_fluidPerfusionOpen) then {
+                if (_lastOwner == clientOwner && {_lastFlowAt >= 0} && {_now >= _lastFlowAt}) then {
+                    private _dtFlow = (_now - _lastFlowAt) min _deltaT;
+                    _remaining = _remaining - (_dtFlow * (if (_inCardiacArrest) then {0.35} else {1}));
+                };
+                if (_remaining <= 0) then {
+                    _ready pushBack _args;
+                } else {
+                    _keep pushBack [_queuedEpoch, _args, _remaining, _now, clientOwner];
+                };
+            } else {
+                _keep pushBack [_queuedEpoch, _args, _remaining, -1, -1];
+            };
+        };
+    } forEach _transit;
+    // Commit removal before any callback can re-enter; no replay after transfer.
+    if (_keep isNotEqualTo _transit) then {_unit setVariable ["ACME_vascularTransit", _keep, true];};
+    {
+        if (alive _unit && {local _unit} && {([_unit] call ACME_fnc_clinicalEpoch) == _epoch}) then {
+            ([_unit] + _x) call ACEFUNC(medical_treatment,medicationLocal);
+        };
+    } forEach _ready;
+};
+
 private _TXAEffect = ([_unit, "TXA_IV", false] call ACEFUNC(medical_status,getMedicationCount));
 
 private _internalBleedingSeverity = 0;
