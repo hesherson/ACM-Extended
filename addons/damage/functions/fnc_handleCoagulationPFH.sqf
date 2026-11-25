@@ -44,7 +44,12 @@ private _id = [{
     private _interval = ((12 - ((_txaCount * 3) + _plateletCount)) max 2) / (0.35 + (0.65 * _clotStrength));
     _patient setVariable [QGVAR(Coagulation_NextAttempt), CBA_missionTime + _interval];
 
-    if (GET_HEART_RATE(_patient) < 20 || (_plateletCount < 1 && _txaCount < 0.5) || (GET_EFF_BLOOD_VOLUME(_patient) < 3.8) || {_clotStrength < 0.10 && {_txaCount < 0.5}}) exitWith {};
+    // Restore B135 without removing the later clot-strength/platelet checks.
+    private _hemostaticPerfusion = (GET_HEART_RATE(_patient) >= 20) || {[_patient] call EFUNC(core,cprActive)} || {_txaCount > 0.1};
+    if (!_hemostaticPerfusion
+        || {_plateletCount < 1 && {_txaCount < 0.5}}
+        || {GET_EFF_BLOOD_VOLUME(_patient) < 3.8 && {_txaCount < 0.1}}
+        || {_clotStrength < 0.10 && {_txaCount < 0.5}}) exitWith {};
 
     private _exit = true;
 
