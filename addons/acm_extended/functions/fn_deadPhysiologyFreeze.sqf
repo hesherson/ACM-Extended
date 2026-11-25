@@ -26,6 +26,7 @@ _patient setVariable ["ACME_deadPhysiologyFrozenLocal", true, false];
     };
 } forEach [
     ["ACME_medicationDriveQueue", []],
+    ["ACME_vascularTransit", []],
     ["ACME_adenosineEpisodes", []],
     ["ACME_ketRapidLoad", 0],
     ["ACME_hcMed_rapidPropofol", 0],
