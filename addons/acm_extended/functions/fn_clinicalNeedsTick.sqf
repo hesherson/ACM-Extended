@@ -24,6 +24,7 @@ if (_patient getVariable ["ace_medical_inCardiacArrest", false]
     || {count (_patient getVariable ["ACME_infusion_BagMedications", []]) > 0}
     || {count (_patient getVariable ["ace_medical_medications", []]) > 0}
     || {count (_patient getVariable ["ACME_medicationDriveQueue", []]) > 0}
+    || {count (_patient getVariable ["ACME_vascularTransit", []]) > 0}
     || {count (_patient getVariable ["ACME_yFlushJobs", createHashMap]) > 0}
     || {count (_patient getVariable ["ACME_suctionSessions", []]) > 0}
     || {(_patient getVariable ["ACME_suctionExposure", 0]) > 0}
