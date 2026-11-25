@@ -154,6 +154,7 @@
   ["ACME_medicationGenerations", "", true, true],
   ["ACME_medicationToxicityFired", "", true, true],
   ["ACME_medicationDriveQueue", "", true, true],
+  ["ACME_vascularTransit", "", true, true],
   ["ACME_ketRapidLoad", "", true, true],
   ["ACME_hcMed_rapidPropofol", "", true, true],
   ["ACME_hcMed_rapidMidazolam", "", true, true],
