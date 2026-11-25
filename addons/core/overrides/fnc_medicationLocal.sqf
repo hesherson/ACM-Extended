@@ -52,6 +52,23 @@ if (_classname in ["Phentolamine", "Hyaluronidase"] && {!_iv} && {!_preparedMixt
 if (_classname in ["EpinephrineCardiac", "EpinephrineCardiac_IV"] && {!_iv} && {!_preparedMixture}) exitWith {};
 if (_classname in ["EpinephrineCardiac", "EpinephrineCardiac_IV"]) then {_classname = "Epinephrine_IV";};
 
+// A patent line can accept a dose even when there is no systemic circulation.
+// Do not create an active medication record or start onset/toxicity until transport.
+private _holdVascular = false;
+if (_iv) then {
+    private _cprFlow = [_patient] call EFUNC(core,cprActive);
+    if (!_cprFlow) then {
+        private _nativeCO = if (IN_CRDC_ARRST(_patient)) then {0} else {[_patient] call ACEFUNC(medical_status,getCardiacOutput)};
+        _holdVascular = IN_CRDC_ARRST(_patient) || {!(_nativeCO isEqualType 0)} || {!finite _nativeCO} || {_nativeCO <= 0.0001};
+    };
+};
+if (_holdVascular) exitWith {
+    private _queue = _patient getVariable ["ACME_vascularTransit", []];
+    _queue pushBack [[_patient] call ACME_fnc_clinicalEpoch, [_bodyPart, _classname, _dose, _iv, _alreadyAdmitted, +_delivery], 5, -1, -1];
+    _patient setVariable ["ACME_vascularTransit", _queue, true];
+    [_patient] call ACME_fnc_ownerRegister;
+};
+
 // Exit with basic medication handling if advanced medication not enabled
 if (!_useAdvanced) exitWith {
     switch (_classname) do {
